@@ -32750,5 +32750,69 @@
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_merge_commit": "de5acc1a979dfa8707ca4f66542cdfeec0f0e4f1",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_summary": "Doc 839 proof records current-main sync for PR #1444 merge commit de5acc1a979dfa8707ca4f66542cdfeec0f0e4f1 with green backend-layer3-api and test checks, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_summary": "Doc 839 proof records current-main sync for PR #1444 merge commit de5acc1a979dfa8707ca4f66542cdfeec0f0e4f1 with green backend-layer3-api and test checks, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_proof": {
+    "proof_kind": "runtime_entry_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control",
+    "status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_implemented_branch_local",
+    "branch": "codex/l3-next-gap-after-hybrid-delivery",
+    "doc": "next_milestone_plans/Layer3_planning_docs/840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
+    "predecessor": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+    "proof_commands": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js",
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivers_selected_package -q",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "git diff --check"
+    ],
+    "proof_results": [
+      "PASS",
+      "PASS",
+      "PASS 4 passed 3 warnings",
+      "PASS 5 passed 3 warnings",
+      "PASS",
+      "PASS frozen",
+      "PASS",
+      "PASS",
+      "PASS with CRLF normalization warnings only"
+    ],
+    "proof_terms": [
+      "rendered_source_directory_hybrid_external_export_download_delivery_control",
+      "sourceDirectoryHybridExternalExportDownloadDeliveryPayload",
+      "sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches",
+      "inspectSourceDirectoryHybridExternalExportDownloadDelivery",
+      "submitSourceDirectoryHybridExternalExportDownloadDelivery",
+      "deliver_source_directory_hybrid_external_export_download",
+      "same_origin_artifact_stream",
+      "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1",
+      "frontend durable authority remains blocked"
+    ],
+    "blocked_scope": [
+      "provider-public delivery/use",
+      "provider-private signed URL behavior",
+      "connector dispatch",
+      "credentials",
+      "network egress",
+      "frontend durable authority",
+      "durable delivery rows",
+      "package mutation",
+      "source package row mutation",
+      "package payload rewrite",
+      "new source family",
+      "arbitrary ingestion",
+      "raw local path exposure",
+      "raw payload ref exposure",
+      "raw vector exposure"
+    ],
+    "next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+    "next_major_deferred_lane_after_sync": "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_branch": "codex/l3-next-gap-after-hybrid-delivery",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_implemented_branch_local",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_summary": "Doc 840 proof records bounded rendered /review/layer3 source-directory hybrid external export/download delivery controls over existing current-main delivery status and attachment routes."
 }

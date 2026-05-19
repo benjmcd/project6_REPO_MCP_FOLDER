@@ -2286,6 +2286,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPO
     PLANNING_DOCS
     / "839_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71839,7 +71843,98 @@ def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_
         for term in terms:
             if term not in text:
                 errors.append(
-                    f"{_rel(path)} missing source-directory hybrid external export/download delivery sync artifact term: {term}"
+                f"{_rel(path)} missing source-directory hybrid external export/download delivery sync artifact term: {term}"
+            )
+
+
+def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local rendered delivery control runtime entry for `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime`.",
+        "840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
+        "codex/l3-next-gap-after-hybrid-delivery",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync",
+        "rendered_source_directory_hybrid_external_export_download_delivery_control",
+        "deliver_source_directory_hybrid_external_export_download",
+        "source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference",
+        "same_origin_artifact_stream",
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1",
+        "Frontend durable authority introduced by this pass: `false`.",
+        "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+        "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY)} "
+                f"missing source-directory hybrid rendered delivery-control runtime entry term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Hybrid Context Qualitative Analysis External Export Download Rendered Delivery Control Runtime Entry",
+            "840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
+            "rendered_source_directory_hybrid_external_export_download_delivery_control",
+            "source-directory-hybrid-external-export-download-delivery-submit",
+            "Frontend rendered controls introduced by this pass: `true`.",
+            "Frontend durable authority introduced by this pass: `false`.",
+            "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+        ),
+        MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_implemented_branch_local",
+            "rendered_source_directory_hybrid_external_export_download_delivery_control",
+            '"frontend_rendered_controls_enabled": true',
+            '"frontend_durable_authority_enabled": false',
+            "source-directory-hybrid-external-export-download-delivery-authority",
+            "deliver_source_directory_hybrid_external_export_download",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+            "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_proof",
+            "runtime_entry_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control",
+            "sourceDirectoryHybridExternalExportDownloadDeliveryPayload",
+            "sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches",
+            "frontend durable authority remains blocked",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+        ),
+        LAYER3_HTML: (
+            "source-directory-hybrid-external-export-download-delivery-form",
+            "data-rendered-mode=\"rendered_source_directory_hybrid_external_export_download_delivery_control\"",
+            "source-directory-hybrid-external-export-download-delivery-authority",
+            "source-directory-hybrid-external-export-download-delivery-submit",
+        ),
+        LAYER3_JS: (
+            "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID",
+            "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+            "sourceDirectoryHybridExternalExportDownloadDeliveryPayload",
+            "sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches",
+            "inspectSourceDirectoryHybridExternalExportDownloadDelivery",
+            "submitSourceDirectoryHybridExternalExportDownloadDelivery",
+            "status.provider_public_delivery_enabled === false",
+            "status.frontend_durable_authority_enabled === false",
+            "submitAttachmentForm(",
+        ),
+        LAYER3_PAGE_TEST: (
+            "test_layer3_source_directory_hybrid_delivery_control_is_bounded",
+            "rendered_source_directory_hybrid_external_export_download_delivery_control",
+            "deliver_source_directory_hybrid_external_export_download",
+            "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+            "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+            "status.frontend_durable_authority_enabled === false",
+            "raw_vector",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory hybrid rendered delivery-control artifact term: {term}"
                 )
 
 
@@ -72549,6 +72644,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry(
         errors
     )
 
