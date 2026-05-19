@@ -357,3 +357,10 @@ Current Layer 3 internal webhook rendered status freeze to preserve when present
 - preserve the only future session-summary field as `internal_webhook_dispatch: dict[str, Any]` on existing `GET /api/v1/layer3/session/{session_id}`, rendered only through `State.sessionSummary.internal_webhook_dispatch` in `/review/layer3`
 - do not treat this freeze as runtime behavior, rendered behavior, implementation before current-main sync, dispatch rerun, rendered dispatch/submit control, URL or credential input, connector run creation, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, browser-storage authority, or frontend-only durable authority
 - preserve the next posture as `current_main_sync_internal_webhook_rendered_status_freeze_then_implementation`
+
+Current Layer 3 internal webhook rendered status freeze current-main sync to preserve when present:
+- `873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md` records PR `#1488` merge commit `32bb43e9c44ecdedd583020737ab0a91fd84c0fe`
+- classify current main as `current_main_synced_internal_webhook_rendered_status_freeze`
+- preserve the next implementation as only `implement_internal_webhook_rendered_read_only_status_projection`
+- do not treat the sync as runtime behavior, rendered behavior, dispatch rerun, rendered dispatch/submit control, URL or credential input, connector run creation, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, browser-storage authority, or frontend-only durable authority
+- preserve the next posture as `implement_internal_webhook_rendered_read_only_status_projection`
