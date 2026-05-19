@@ -7015,7 +7015,7 @@ Fixture authority selection introduced by this validator: `false`.
 
 The pending structured record uses schema `layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1` and candidate tools `tabpfn,nrc_licensing_rag`.
 
-`tools/l3-fixture-validate.py --expect pending` proves the current no-selection state. Later `selected` and `frozen` validator states now validate per-tool fixture authority statuses: selected tools must fill every required field, deferred/no-adopted tools must keep their fields null, and runtime, benchmark execution, fixture materialization, dependencies, provider/network calls, and package/handoff/export/download integration remain blocked.
+`tools/l3-fixture-validate.py --expect pending` proves the current no-selection state. Later `checkpoint`, `selected`, and `frozen` validator states now validate per-tool fixture authority statuses: checkpoint records must not select tools, selected tools must fill every required field, deferred/no-adopted tools must keep their fields null, and runtime, benchmark execution, fixture materialization, dependencies, provider/network calls, and package/handoff/export/download integration remain blocked.
 
 The validator fail-closes selected and frozen records unless TabPFN uses `dataset_version_supervised_tabular_micro_fixture`, a `classification` or `regression` task with the matching metric family, and NRC RAG uses `regulatory_context_grounding_query_set`.
 
@@ -7023,4 +7023,26 @@ The inspected package `layer3_ingress_to_insight_example_final_audited` provides
 
 This pass admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, fixture selection, dependency, provider credential, network egress, rendered optional-tool controls, agent tool-call runtime, Gate C/pass-entry admission, source-authority promotion, TabPFN runtime, NRC RAG runtime, package/handoff/export/download integration, or auth/security behavior.
 
-The next exact posture remains `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
+The default pending record remains at `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
+
+## Sublayer 3C Fixture Authority Checkpoint
+
+No-runtime fixture-authority checkpoint: `851_FIXTURE_CHECKPOINT.md` records the current per-tool absence of exact authority without changing the default pending record in doc 850.
+
+Runtime behavior introduced by this checkpoint: `false`.
+
+Benchmark execution introduced by this checkpoint: `false`.
+
+Fixture materialization introduced by this checkpoint: `false`.
+
+Fixture authority selection introduced by this checkpoint: `false`.
+
+The checkpoint structured record sets `tabpfn_fixture_authority_status: deferred_absent_fixture_authority` and `nrc_rag_fixture_authority_status: deferred_absent_fixture_authority`, keeps every fixture/query-set authority field `null`, keeps `selection_complete: false`, and keeps `implementation_entry_freeze_written: false`.
+
+`tools/l3-fixture-validate.py .\next_milestone_plans\Layer3_planning_docs\851_FIXTURE_CHECKPOINT.md --expect checkpoint` proves the checkpoint state. The checkpoint should not pass `pending`, `selected`, or `frozen` validation.
+
+TabPFN remains candidate-supported but not selected. The proposed product-review target is the `ING-0022__epa_fueleconomy_vehicles.csv` regression candidate with target `comb08`, features `year`, `cylinders`, `displ`, `drive`, `trany`, `VClass`, `fuelType1`, and `phevBlended`, `mae_or_rmse`, mean/median baseline, a future `micro_100_to_1000_rows` static fixture basis, and deterministic temporal holdout before normalization or encoding.
+
+NRC RAG remains deferred for absent query-set authority. No stable query ids, query texts, answerability labels, expected source identifiers, expected source spans, unsupported-query refusal behavior, or citation rubric are selected.
+
+The next exact posture is `await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection`.

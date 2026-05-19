@@ -7170,7 +7170,12 @@
     "latest_sublayer3c_optional_tool_fixture_validate_status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending",
     "latest_sublayer3c_optional_tool_fixture_validate_runtime_behavior_change": false,
     "latest_sublayer3c_optional_tool_fixture_validate_next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection",
-    "latest_sublayer3c_optional_tool_fixture_validate_summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority and no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
+    "latest_sublayer3c_optional_tool_fixture_validate_summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority and no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission.",
+    "latest_sublayer3c_optional_tool_fixture_checkpoint_doc": "next_milestone_plans/Layer3_planning_docs/851_FIXTURE_CHECKPOINT.md",
+    "latest_sublayer3c_optional_tool_fixture_checkpoint_status": "sublayer3c_optional_tool_fixture_authority_checkpoint_no_runtime_deferred",
+    "latest_sublayer3c_optional_tool_fixture_checkpoint_runtime_behavior_change": false,
+    "latest_sublayer3c_optional_tool_fixture_checkpoint_next_posture": "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
+    "latest_sublayer3c_optional_tool_fixture_checkpoint_summary": "Doc 851 records a no-runtime checkpoint where TabPFN and NRC RAG are deferred for absent exact fixture/query-set authority. TabPFN remains candidate-supported but not selected, NRC RAG remains query-set-authority absent, and no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission is introduced."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -35249,6 +35254,7 @@
     },
     "validator_states": [
       "pending",
+      "checkpoint",
       "selected",
       "frozen"
     ],
@@ -35326,6 +35332,7 @@
     },
     "validation": [
       "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
       "python -m pytest .\\backend\\tests\\test_layer3_fixture_validate.py -q PASS",
       "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-fixture-validate.py PASS",
       "python .\\tools\\l3-progress-check.py PASS",
@@ -35342,5 +35349,84 @@
   "latest_sublayer3c_optional_tool_fixture_validate_status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending",
   "latest_sublayer3c_optional_tool_fixture_validate_runtime_behavior_change": false,
   "latest_sublayer3c_optional_tool_fixture_validate_next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection",
-  "latest_sublayer3c_optional_tool_fixture_validate_summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed per-tool status validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority; package evidence supports only TabPFN candidate context, not a selected micro-fixture, and does not support NRC RAG query-set authority. This admits no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
+  "latest_sublayer3c_optional_tool_fixture_validate_summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed per-tool status validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority; package evidence supports only TabPFN candidate context, not a selected micro-fixture, and does not support NRC RAG query-set authority. This admits no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission.",
+  "sublayer3c_optional_tool_fixture_checkpoint": {
+    "status": "sublayer3c_optional_tool_fixture_authority_checkpoint_no_runtime_deferred",
+    "doc": "next_milestone_plans/Layer3_planning_docs/851_FIXTURE_CHECKPOINT.md",
+    "branch": "codex/l3-fixture-authority-checkpoint",
+    "prior_record": "next_milestone_plans/Layer3_planning_docs/850_FIXTURE_VALIDATE_ONLY.md",
+    "schema_id": "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
+    "validator": "tools/l3-fixture-validate.py",
+    "validator_test": "backend/tests/test_layer3_fixture_validate.py",
+    "runtime_behavior_change": false,
+    "benchmark_execution_change": false,
+    "fixture_materialization_change": false,
+    "fixture_selection_change": false,
+    "selection_complete": false,
+    "implementation_entry_freeze_written": false,
+    "tool_statuses": {
+      "tabpfn_fixture_authority_status": "deferred_absent_fixture_authority",
+      "nrc_rag_fixture_authority_status": "deferred_absent_fixture_authority"
+    },
+    "checkpoint_validation": "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint",
+    "tabpfn_candidate_proposal": {
+      "source": "layer3_ingress_to_insight_example_final_audited/01_initial_received_ingress_objects/ING-0022__epa_fueleconomy_vehicles.csv",
+      "target": "comb08",
+      "task": "regression",
+      "features": [
+        "year",
+        "cylinders",
+        "displ",
+        "drive",
+        "trany",
+        "VClass",
+        "fuelType1",
+        "phevBlended"
+      ],
+      "row_basis": "proposed_not_selected_micro_100_to_1000_recent_complete_rows_ordered_by_year_then_source_row_ordinal",
+      "split": "proposed_not_selected_deterministic_temporal_holdout_older_80_train_newest_20_test_before_normalization_or_encoding",
+      "duplicate_cross_split_rule": "proposed_not_selected_duplicate_key_year_cylinders_displ_drive_trany_vclass_fueltype1_phevblended_comb08_kept_on_one_split_side",
+      "metric": "mae_or_rmse",
+      "baseline": "mean_or_median_baseline_plus_project6_wrapped_quantitative_if_applicable",
+      "no_adopt_threshold": "no_adopt_unless_regression_reduces_mae_or_rmse_by_at_least_0_10_relative_to_baseline_without_runtime_policy_violation"
+    },
+    "nrc_rag_authority_posture": {
+      "status": "deferred_absent_fixture_authority",
+      "missing_fields": [
+        "stable_query_ids",
+        "fixed_query_texts",
+        "answerability_labels",
+        "expected_source_identifiers",
+        "expected_source_spans",
+        "unsupported_query_refusal_behavior",
+        "citation_rubric"
+      ]
+    },
+    "blocked_scope": {
+      "runtime_behavior": false,
+      "benchmark_execution": false,
+      "fixture_data_creation": false,
+      "fixture_materialization": false,
+      "fixture_selection": false,
+      "dependency": false,
+      "provider_adapter_or_credentials": false,
+      "network_egress": false,
+      "rendered_optional_tool_controls": false,
+      "agent_tool_call_runtime": false,
+      "package_handoff_export_download_integration": false,
+      "gate_c_or_pass_entry_admission": false,
+      "source_authority_promotion": false,
+      "tabpfn_runtime": false,
+      "nrc_rag_runtime": false,
+      "auth_security_behavior_change": false
+    },
+    "next_posture": "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
+    "summary": "Doc 851 records a no-runtime checkpoint where TabPFN and NRC RAG are deferred for absent exact fixture/query-set authority. TabPFN remains candidate-supported but not selected; NRC RAG remains query-set-authority absent. The checkpoint introduces no runtime behavior, benchmark execution, fixture materialization, fixture selection, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
+  },
+  "latest_sublayer3c_optional_tool_fixture_checkpoint_branch": "codex/l3-fixture-authority-checkpoint",
+  "latest_sublayer3c_optional_tool_fixture_checkpoint_doc": "next_milestone_plans/Layer3_planning_docs/851_FIXTURE_CHECKPOINT.md",
+  "latest_sublayer3c_optional_tool_fixture_checkpoint_status": "sublayer3c_optional_tool_fixture_authority_checkpoint_no_runtime_deferred",
+  "latest_sublayer3c_optional_tool_fixture_checkpoint_runtime_behavior_change": false,
+  "latest_sublayer3c_optional_tool_fixture_checkpoint_next_posture": "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
+  "latest_sublayer3c_optional_tool_fixture_checkpoint_summary": "Doc 851 records a no-runtime checkpoint where TabPFN and NRC RAG are deferred for absent exact fixture/query-set authority. TabPFN remains candidate-supported but not selected; NRC RAG remains query-set-authority absent. The checkpoint introduces no runtime behavior, benchmark execution, fixture materialization, fixture selection, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
 }

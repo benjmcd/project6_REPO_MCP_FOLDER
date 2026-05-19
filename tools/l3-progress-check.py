@@ -2329,6 +2329,9 @@ LAYER3_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE = (
 LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_VALIDATE = (
     PLANNING_DOCS / "850_FIXTURE_VALIDATE_ONLY.md"
 )
+LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_CHECKPOINT = (
+    PLANNING_DOCS / "851_FIXTURE_CHECKPOINT.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72950,6 +72953,32 @@ def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
                 f"missing Sublayer 3C fixture validate-only term: {term}"
             )
 
+    checkpoint_doc_text = _read_required_text(
+        LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_CHECKPOINT,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime fixture-authority checkpoint for `sublayer3c_optional_tool_benchmark_fixture_authority_selection`.",
+        "851_FIXTURE_CHECKPOINT.md",
+        "tabpfn_fixture_authority_status: deferred_absent_fixture_authority",
+        "nrc_rag_fixture_authority_status: deferred_absent_fixture_authority",
+        "selection_complete: false",
+        "implementation_entry_freeze_written: false",
+        "TabPFN is candidate-supported but not selected.",
+        "ING-0022__epa_fueleconomy_vehicles.csv",
+        "comb08",
+        "micro_100_to_1000_rows",
+        "deterministic temporal holdout",
+        "NRC RAG remains deferred for absent query-set authority",
+        "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint",
+        "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
+    ):
+        if term not in checkpoint_doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_CHECKPOINT)} "
+                f"missing Sublayer 3C fixture checkpoint term: {term}"
+            )
+
     for path, terms in {
         LAYER3_FIXTURE_VALIDATE_CLI: (
             "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
@@ -72957,8 +72986,12 @@ def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
             "TOOL_STATUS_FIELDS",
             "TABPFN_FIELDS",
             "NRC_RAG_FIELDS",
+            '"pending", "checkpoint", "selected", "frozen"',
             "pending_field_must_be_null",
             "pending_tool_status_must_be_pending",
+            "checkpoint_record_must_not_select_tool",
+            "checkpoint_record_requires_nonpending_tool_status",
+            "checkpoint_field_must_be_null",
             "selected_record_requires_selected_tool",
             "invalid_tool_fixture_authority_status",
             "nonselected_tool_field_must_be_null",
@@ -72972,6 +73005,9 @@ def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
         LAYER3_FIXTURE_VALIDATE_TEST: (
             "test_current_fixture_authority_record_validates_as_pending",
             "test_selected_and_frozen_fixture_records_have_distinct_freeze_expectations",
+            "test_checkpoint_record_validates_as_no_runtime_nonselection",
+            "test_checkpoint_record_rejects_selected_tools_and_fixture_fields",
+            "test_candidate_checkpoint_file_validates_only_as_checkpoint",
             "test_per_tool_selected_tabpfn_with_nrc_deferred_stays_pre_freeze",
             "test_per_tool_selected_nrc_with_tabpfn_deferred_stays_pre_freeze",
             "test_fixture_record_rejects_runtime_or_network_admission",
@@ -72984,14 +73020,18 @@ def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
         BOARD: (
             "## Sublayer 3C Fixture Authority Validate-Only Contract",
             "850_FIXTURE_VALIDATE_ONLY.md",
+            "## Sublayer 3C Fixture Authority Checkpoint",
+            "851_FIXTURE_CHECKPOINT.md",
             "Runtime behavior introduced by this validator: `false`.",
+            "Runtime behavior introduced by this checkpoint: `false`.",
             "Benchmark execution introduced by this validator: `false`.",
             "Fixture authority selection introduced by this validator: `false`.",
             "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
             "tools/l3-fixture-validate.py --expect pending",
+            "tools/l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint",
             "dataset_version_supervised_tabular_micro_fixture",
             "regulatory_context_grounding_query_set",
-            "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+            "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
         ),
         MANIFEST: (
             '"sublayer3c_optional_tool_fixture_validate"',
@@ -72999,21 +73039,30 @@ def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
             '"status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending"',
             '"schema_id": "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1"',
             '"validator": "tools/l3-fixture-validate.py"',
+            '"sublayer3c_optional_tool_fixture_checkpoint"',
+            '"latest_sublayer3c_optional_tool_fixture_checkpoint_doc"',
+            '"status": "sublayer3c_optional_tool_fixture_authority_checkpoint_no_runtime_deferred"',
+            '"checkpoint_validation": "python .\\\\tools\\\\l3-fixture-validate.py .\\\\next_milestone_plans\\\\Layer3_planning_docs\\\\851_FIXTURE_CHECKPOINT.md --expect checkpoint"',
             '"selection_complete": false',
             '"implementation_entry_freeze_written": false',
             '"fixture_selection_change": false',
             '"tabpfn_required_fields"',
             '"nrc_rag_required_fields"',
             '"next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection"',
+            '"next_posture": "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection"',
         ),
         PROOF_MANIFEST: (
             '"sublayer3c_optional_tool_fixture_validate_proof"',
+            '"sublayer3c_optional_tool_fixture_checkpoint_proof"',
             '"validate_only_sublayer3c_optional_tool_fixture_authority_record_contract"',
+            '"no_runtime_sublayer3c_optional_tool_fixture_authority_checkpoint"',
             "layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1",
             "pending fixture authority record",
+            "checkpoint fixture authority record",
             "selection_complete false",
             "implementation_entry_freeze_written false",
             "tools/l3-fixture-validate.py --expect pending",
+            "tools/l3-fixture-validate.py --expect checkpoint",
             "per-tool fixture authority statuses pending selected deferred_absent_fixture_authority no_adopt_absent_fixture_authority",
             "selected tools require all fields",
             "nonselected tool fields remain null",
@@ -73022,15 +73071,20 @@ def _check_sublayer3c_optional_tool_fixture_validate(errors: list[str]) -> None:
             "regulatory_context_grounding_query_set",
             "no dependency/provider/network admission",
             "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+            "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
         ),
         PROGRESS_PROMPT: (
             "850_FIXTURE_VALIDATE_ONLY.md",
+            "851_FIXTURE_CHECKPOINT.md",
             "python .\\tools\\l3-fixture-validate.py --expect pending",
+            "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint",
             "do not treat the validator as fixture selection",
         ),
         REFRESH_SPEC: (
             "850_FIXTURE_VALIDATE_ONLY.md",
+            "851_FIXTURE_CHECKPOINT.md",
             "pending validate-only fixture-authority record contract",
+            "no-runtime checkpoint",
             "tools/l3-fixture-validate.py --expect pending",
             "do not classify the validator as runtime behavior",
         ),
