@@ -7275,3 +7275,19 @@ Canonical rendered authority is `State.sessionSummary.analysis_environment_proje
 This freeze admits no runtime behavior, no rendered behavior now, no route/API/DTO/model/migration/backend-service behavior change, no new submit control or operation step, no package/source/provider/connector/auth/security widening, and no frontend-only durable authority.
 
 Next exact posture: `current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation`. After that sync, the only admitted implementation action is `implement_downstream_analysis_environment_rendered_projection_read_only_panel`.
+
+## Downstream Analysis Environment Rendered Projection Freeze Current-Main Sync
+
+Current-main proof/control sync: PR `#1482` merged `866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md` at merge commit `8211c13341bec3dd6ae478b1b260d684cbf01dc8`.
+
+Sync doc: `867_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` succeeded in `3m14s`, `test` succeeded in `3m37s`, PR comments/reviews/latestReviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for JSON manifest parsing, checker py_compile, `python .\tools\l3-progress-check.py`, target-selection validation, fixture-authority validation, checkpoint fixture validation, and `git diff --check`.
+
+The downstream Analysis Environment rendered projection freeze is now current-main synced as `current_main_synced_downstream_analysis_environment_rendered_projection_freeze`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`.
+
+Next exact posture: `implement_downstream_analysis_environment_rendered_projection_read_only_panel`. The implementation must stay inside existing `/review/layer3` `backend/app/review_ui/static/layer3.js` read-only rendering over `State.sessionSummary.analysis_environment_projection` and include headed plus headless Chromium proof.

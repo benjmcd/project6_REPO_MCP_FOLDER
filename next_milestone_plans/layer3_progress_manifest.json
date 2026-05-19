@@ -36333,5 +36333,47 @@
     },
     "next_posture": "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
     "summary": "Doc 866 freezes the first read-only rendered Analysis Environment projection implementation entry over existing /review/layer3 Sublayer 3C lanes, with State.sessionSummary.analysis_environment_projection as authority and headed/headless Chromium proof required for the later implementation."
+  },
+  "downstream_analysis_environment_rendered_projection_freeze_current_main_sync": {
+    "status": "current_main_synced_downstream_analysis_environment_rendered_projection_freeze",
+    "doc": "next_milestone_plans/Layer3_planning_docs/867_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-analysis-environment-rendered-freeze-sync",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+    "freeze_pr": "#1482",
+    "freeze_branch": "codex/l3-analysis-environment-rendered-freeze",
+    "freeze_branch_commit": "9192f4cac15e106eacbf437c0b52e7b5bb0914cc",
+    "freeze_merge_commit": "8211c13341bec3dd6ae478b1b260d684cbf01dc8",
+    "synced_result": "current_main_synced_downstream_analysis_environment_rendered_projection_freeze",
+    "runtime_behavior_introduced_by_freeze": false,
+    "runtime_behavior_change": false,
+    "rendered_behavior_introduced_by_freeze": false,
+    "rendered_behavior_change": false,
+    "implementation_entry_allowed_next": true,
+    "selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+    "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+    "rendered_surface": "backend/app/review_ui/static/layer3.js",
+    "rendered_route": "/review/layer3",
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS 3m14s",
+      "test": "SUCCESS 3m37s",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads_totalCount": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "post_merge_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+    "summary": "Doc 867 syncs PR #1482 to current main as the no-runtime/no-rendered rendered Analysis Environment projection freeze, preserving implementation entry for only implement_downstream_analysis_environment_rendered_projection_read_only_panel with headed and headless Chromium proof required."
   }
 }
