@@ -32,6 +32,15 @@ MODE = "source_directory_hybrid_context_packet_qualitative_analysis_authority"
 ANALYSIS_CONTRACT_ID = "source_directory_hybrid_context_packet_qualitative_analysis_authority"
 ANALYSIS_MODE = "hybrid_context_packet_grounded_qualitative_analysis"
 SOURCE_GATE = "824_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_RUNTIME_ENTRY_FREEZE"
+ANALYSIS_STATUS_SCHEMA_ID = (
+    "layer3.source_directory_hybrid_context_packet_qualitative_analysis_status.v1"
+)
+ANALYSIS_STATUS_MODE = (
+    "source_directory_hybrid_context_packet_qualitative_analysis_status_authority"
+)
+ANALYSIS_STATUS_SOURCE_GATE = (
+    "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE"
+)
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = (
     "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview.v1"
 )
@@ -437,6 +446,103 @@ def source_directory_hybrid_context_packet_qualitative_analysis(
         **row_write_flags,
         "negative_invariants": negative_invariants,
         "next_allowed_actions": [],
+    }
+
+
+def source_directory_hybrid_context_packet_qualitative_analysis_status(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    analysis = source_directory_hybrid_context_packet_qualitative_analysis(db, payload)
+    status_state = _hybrid_qualitative_analysis_status_state(db, analysis=analysis)
+    negative_invariants = {
+        **dict(analysis["negative_invariants"]),
+        "package_payload_rewrite_enabled": False,
+        "source_package_row_mutation_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+        "raw_local_path_exposed": False,
+        "raw_vector_exposed": False,
+    }
+    return {
+        "schema_id": ANALYSIS_STATUS_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": analysis["request_id"],
+        "server_time": _server_time(),
+        "mode": ANALYSIS_STATUS_MODE,
+        "status": "available",
+        "analysis_status": (
+            "source_directory_hybrid_context_packet_qualitative_analysis_available"
+        ),
+        "source_gate": ANALYSIS_STATUS_SOURCE_GATE,
+        "validated_analysis_schema_id": analysis["schema_id"],
+        "validated_analysis_mode": analysis["mode"],
+        "analysis_contract_id": analysis["analysis_contract_id"],
+        "analysis_mode": analysis["analysis_mode"],
+        "qualitative_analysis_hash": analysis["qualitative_analysis_hash"],
+        "hybrid_context_packet_hash": analysis["hybrid_context_packet_hash"],
+        "hybrid_context_contract_id": analysis["hybrid_context_contract_id"],
+        "hybrid_context_mode": analysis["hybrid_context_mode"],
+        "validated_hybrid_context_schema_id": analysis["validated_hybrid_context_schema_id"],
+        "validated_hybrid_context_mode": analysis["validated_hybrid_context_mode"],
+        "lexical_context_packet_hash": analysis["lexical_context_packet_hash"],
+        "lexical_context_packet_contract_id": analysis["lexical_context_packet_contract_id"],
+        "lexical_context_packet_mode": analysis["lexical_context_packet_mode"],
+        "vector_retrieval_contract_id": analysis["vector_retrieval_contract_id"],
+        "vector_retrieval_mode": analysis["vector_retrieval_mode"],
+        "embedding_contract_id": analysis["embedding_contract_id"],
+        "embedding_mode": analysis["embedding_mode"],
+        "vector_index_mode": analysis["vector_index_mode"],
+        "feature_hash_version": analysis["feature_hash_version"],
+        "vector_dimensions": int(analysis["vector_dimensions"]),
+        "query_tokens": list(analysis["query_tokens"]),
+        "coverage_label": str(analysis["evidence_summary"].get("coverage_label") or ""),
+        "supporting_segment_count": len(analysis["supporting_segments"]),
+        "salient_term_count": len(analysis["salient_terms"]),
+        "coverage_note_count": len(analysis["coverage_notes"]),
+        "analysis_limit_count": len(analysis["analysis_limits"]),
+        "lexical_total": int(analysis["lexical_total"]),
+        "lexical_limit": int(analysis["lexical_limit"]),
+        "lexical_offset": int(analysis["lexical_offset"]),
+        "vector_total": int(analysis["vector_total"]),
+        "vector_top_k": int(analysis["vector_top_k"]),
+        "hybrid_total": int(analysis["hybrid_total"]),
+        "index_authority_hash": analysis["index_authority_hash"],
+        "embedding_index_authority_hash": analysis["embedding_index_authority_hash"],
+        "source_ingestion_batch_id": analysis["source_ingestion_batch_id"],
+        "source_ingestion_file_id": analysis["source_ingestion_file_id"],
+        "material_snapshot_id": analysis["material_snapshot_id"],
+        "source_shape": analysis.get("source_shape"),
+        "content_sha256": analysis["content_sha256"],
+        "file_identity_hash": analysis["file_identity_hash"],
+        "authority_basis_hash": analysis["authority_basis_hash"],
+        "payload_hash": analysis["payload_hash"],
+        "source_directory_package_review_preview_available": True,
+        "source_directory_hybrid_package_review_preview_hash": analysis[
+            "source_directory_hybrid_package_review_preview_hash"
+        ],
+        "source_directory_hybrid_package_review_preview_payload_redacted": True,
+        "supporting_segments_redacted": True,
+        "analysis_result_redacted": True,
+        "source_index_rows_written": bool(analysis["source_index_rows_written"]),
+        "embedding_vector_rows_written": bool(analysis["embedding_vector_rows_written"]),
+        "vector_index_rows_written": bool(analysis["vector_index_rows_written"]),
+        "retrieval_rows_written": bool(analysis["retrieval_rows_written"]),
+        "context_packet_rows_written": bool(analysis["context_packet_rows_written"]),
+        "qualitative_analysis_rows_written": bool(analysis["qualitative_analysis_rows_written"]),
+        "qualitative_generation_rows_written": bool(
+            analysis["qualitative_generation_rows_written"]
+        ),
+        "analysis_run_rows_written": bool(analysis["analysis_run_rows_written"]),
+        "package_rows_written": False,
+        "connector_rows_written": False,
+        "negative_invariants": negative_invariants,
+        **status_state,
     }
 
 
@@ -1715,6 +1821,262 @@ def _negative_invariants() -> dict[str, bool]:
         "raw_local_path_exposed": False,
         "raw_vector_exposed": False,
     }
+
+
+def _hybrid_qualitative_analysis_status_state(
+    db: Session,
+    *,
+    analysis: Mapping[str, Any],
+) -> dict[str, Any]:
+    base = {
+        "source_directory_hybrid_package_commit_available": False,
+        "source_directory_hybrid_package_review_submit_available": False,
+        "source_directory_hybrid_handoff_export_prepare_available": False,
+        "reconciliation_record_id": None,
+        "construction_basis_hash": None,
+        "output_packages": [],
+        "output_package_ids": [],
+        "package_kinds": [],
+        "payload_hashes": [],
+        "payload_refs_redacted": True,
+        "package_review_state": None,
+        "package_review_submit_record_ref": None,
+        "handoff_export_state": None,
+        "handoff_export_prepare_record_ref": None,
+        "handoff_target": None,
+        "export_mode": None,
+        "package_review_submit_enabled": False,
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "external_export_download_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+        "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        "status_defects": [],
+        "next_allowed_actions": [
+            "commit_source_directory_hybrid_context_packet_qualitative_analysis_package"
+        ],
+    }
+    snapshot = db.get(L3MaterialSnapshot, str(analysis["material_snapshot_id"]))
+    if snapshot is None:
+        return {
+            **base,
+            "next_allowed_actions": [],
+            "status_defects": ["material_snapshot_not_found"],
+        }
+    session = db.get(L3Session, snapshot.session_id)
+    if session is None:
+        return {
+            **base,
+            "next_allowed_actions": [],
+            "status_defects": ["session_not_found"],
+        }
+    reconciliation = _matching_hybrid_package_reconciliation(
+        db,
+        session_id=session.session_id,
+        analysis=analysis,
+    )
+    if reconciliation is None:
+        return base
+
+    summary = reconciliation.summary_json or {}
+    if not isinstance(summary, dict):
+        return {
+            **base,
+            "next_allowed_actions": [],
+            "status_defects": ["reconciliation_summary_invalid"],
+        }
+    commit_summary = summary.get("source_directory_hybrid_context_qualitative_package_commit")
+    if not isinstance(commit_summary, dict):
+        return base
+
+    packages = _hybrid_status_packages(
+        db,
+        session_id=session.session_id,
+        reconciliation_record_id=reconciliation.reconciliation_record_id,
+    )
+    complete_package_set = (
+        len(packages) == len(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+        and {package.package_kind for package in packages}
+        == set(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)
+    )
+    if not complete_package_set:
+        return {
+            **base,
+            "reconciliation_record_id": reconciliation.reconciliation_record_id,
+            "next_allowed_actions": [],
+            "status_defects": ["source_directory_hybrid_package_set_incomplete"],
+        }
+
+    construction_basis_hash = str(
+        commit_summary.get("construction_basis_hash")
+        or next(
+            (
+                str((package.summary_json or {}).get("construction_basis_hash") or "")
+                for package in packages
+                if str((package.summary_json or {}).get("construction_basis_hash") or "")
+            ),
+            "",
+        )
+        or commit_summary.get("authority_basis_hash")
+        or ""
+    )
+    package_state = {
+        **base,
+        "source_directory_hybrid_package_commit_available": True,
+        "reconciliation_record_id": reconciliation.reconciliation_record_id,
+        "construction_basis_hash": construction_basis_hash,
+        "output_packages": [
+            {
+                "output_package_id": package.output_package_id,
+                "package_kind": package.package_kind,
+                "status": package.status,
+                "payload_hash": package.payload_hash,
+                "payload_ref_redacted": True,
+            }
+            for package in packages
+        ],
+        "output_package_ids": [package.output_package_id for package in packages],
+        "package_kinds": [package.package_kind for package in packages],
+        "payload_hashes": [package.payload_hash for package in packages],
+        "package_review_submit_enabled": True,
+        "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
+        "next_allowed_actions": ["submit_package_review"],
+    }
+    submit_state = summary.get("package_review_submit")
+    if not isinstance(submit_state, dict):
+        return package_state
+
+    package_review_state = str(submit_state.get("package_review_state") or "")
+    submit_available = (
+        str(submit_state.get("schema_id") or "") == PACKAGE_REVIEW_SUBMIT_STATE_SCHEMA_ID
+        and str(submit_state.get("package_review_submit_schema_id") or "")
+        == PACKAGE_REVIEW_SUBMIT_SCHEMA_ID
+    )
+    if not submit_available:
+        return {
+            **package_state,
+            "package_review_submit_enabled": False,
+            "next_allowed_actions": [],
+            "status_defects": ["package_review_submit_state_invalid"],
+        }
+
+    handoff_allowed = package_review_state == PACKAGE_REVIEW_APPROVED_STATE
+    review_state = {
+        **package_state,
+        "source_directory_hybrid_package_review_submit_available": True,
+        "package_review_state": package_review_state,
+        "package_review_submit_record_ref": submit_state.get("submit_record_ref"),
+        "package_review_submit_enabled": False,
+        "handoff_enabled": handoff_allowed,
+        "export_enabled": handoff_allowed,
+        "downstream_unavailable": (
+            [
+                item
+                for item in PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE
+                if item not in {"handoff", "export"}
+            ]
+            if handoff_allowed
+            else list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE)
+        ),
+        "next_allowed_actions": ["prepare_handoff_export"] if handoff_allowed else [],
+    }
+    prepare_state = summary.get("handoff_export_prepare")
+    if not isinstance(prepare_state, dict):
+        return review_state
+
+    prepare_available = (
+        str(prepare_state.get("schema_id") or "") == HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID
+        and str(prepare_state.get("handoff_export_prepare_schema_id") or "")
+        == HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+    )
+    if not prepare_available:
+        return {
+            **review_state,
+            "handoff_enabled": False,
+            "export_enabled": False,
+            "next_allowed_actions": [],
+            "status_defects": ["handoff_export_prepare_state_invalid"],
+        }
+    return {
+        **review_state,
+        "source_directory_hybrid_handoff_export_prepare_available": True,
+        "handoff_export_state": prepare_state.get("handoff_export_state"),
+        "handoff_export_prepare_record_ref": prepare_state.get("prepare_record_ref"),
+        "handoff_target": prepare_state.get("handoff_target"),
+        "export_mode": prepare_state.get("export_mode"),
+        "handoff_enabled": False,
+        "export_enabled": False,
+        "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        "next_allowed_actions": [],
+    }
+
+
+def _matching_hybrid_package_reconciliation(
+    db: Session,
+    *,
+    session_id: str,
+    analysis: Mapping[str, Any],
+) -> L3ReconciliationRecord | None:
+    records = (
+        db.query(L3ReconciliationRecord)
+        .filter(L3ReconciliationRecord.session_id == session_id)
+        .all()
+    )
+    for record in records:
+        summary = record.summary_json or {}
+        if not isinstance(summary, dict):
+            continue
+        if (
+            str(summary.get("source_gate") or "")
+            != SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE
+        ):
+            continue
+        commit_summary = summary.get("source_directory_hybrid_context_qualitative_package_commit")
+        if not isinstance(commit_summary, dict):
+            continue
+        authority_basis = commit_summary.get("authority_basis")
+        if not isinstance(authority_basis, dict):
+            authority_basis = {}
+        expected = {
+            "package_review_preview_hash": analysis[
+                "source_directory_hybrid_package_review_preview_hash"
+            ],
+            "qualitative_analysis_hash": analysis["qualitative_analysis_hash"],
+            "hybrid_context_packet_hash": analysis["hybrid_context_packet_hash"],
+            "embedding_index_authority_hash": analysis["embedding_index_authority_hash"],
+        }
+        if all(
+            str(commit_summary.get(field) or authority_basis.get(field) or "") == str(value)
+            for field, value in expected.items()
+        ):
+            return record
+    return None
+
+
+def _hybrid_status_packages(
+    db: Session,
+    *,
+    session_id: str,
+    reconciliation_record_id: str,
+) -> list[L3OutputPackage]:
+    packages = (
+        db.query(L3OutputPackage)
+        .filter(
+            L3OutputPackage.session_id == session_id,
+            L3OutputPackage.reconciliation_record_id == reconciliation_record_id,
+        )
+        .all()
+    )
+    review_order = {kind: index for index, kind in enumerate(PACKAGE_REVIEW_PREVIEW_CANDIDATE_KINDS)}
+    return sorted(
+        packages,
+        key=lambda package: review_order.get(package.package_kind, len(review_order)),
+    )
 
 
 def _load_material_snapshot_for_commit(

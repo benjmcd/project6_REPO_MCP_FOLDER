@@ -73,6 +73,11 @@ def test_layer3_readiness_contract_is_shared() -> None:
         "/api/v1/layer3/source/ingestion/server-configured-directory/"
         "hybrid-context-packet/qualitative-analysis"
     )
+    assert direct["source_directory_hybrid_context_packet_qualitative_analysis_status_admitted"] is True
+    assert direct["source_directory_hybrid_context_packet_qualitative_analysis_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "hybrid-context-packet/qualitative-analysis/status"
+    )
     assert direct["source_directory_hybrid_context_packet_qualitative_analysis_package_commit_admitted"] is True
     assert direct["source_directory_hybrid_context_packet_qualitative_analysis_package_commit_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/"
@@ -148,6 +153,12 @@ def test_layer3_readiness_contract_is_shared() -> None:
     )
     assert (
         direct["idempotency_contract"][
+            "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_status"
+        ]
+        is False
+    )
+    assert (
+        direct["idempotency_contract"][
             "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_package_commit"
         ]
         is True
@@ -209,6 +220,12 @@ def test_layer3_readiness_contract_is_shared() -> None:
     )
     assert (
         direct["concurrency_contract"][
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_is_read_only"
+        ]
+        is True
+    )
+    assert (
+        direct["concurrency_contract"][
             "source_directory_hybrid_context_packet_qualitative_analysis_package_commit_uses_session_reconciliation_and_package_locks"
         ]
         is True
@@ -264,6 +281,9 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["deferred_decisions"][
         "source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview"
     ].startswith("admitted only as a read-only package-review preview")
+    assert direct["deferred_decisions"][
+        "source_directory_hybrid_context_packet_qualitative_analysis_status"
+    ].startswith("admitted only as a read-only operator-visible status reader")
     assert direct["deferred_decisions"][
         "source_directory_hybrid_context_packet_qualitative_analysis_package_commit"
     ].startswith("admitted only as bounded package construction")

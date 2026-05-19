@@ -2262,6 +2262,10 @@ LAYER3_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SY
     PLANNING_DOCS
     / "813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71393,6 +71397,63 @@ def _check_source_directory_external_export_download_prepare_runtime_current_mai
                 )
 
 
+def _check_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Base authority: `project6-origin/main` at `8a177fe960824216e4b2554f10f928e4c1e45b7f`.",
+        "833_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_CURRENT_MAIN_SYNC.md",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/status",
+        "Recomputes current source-directory hybrid context-packet qualitative-analysis authority",
+        "Reads existing package commit, package-review submit, and handoff/export prepare state",
+        "The status reader must not create package rows",
+        "External export/download delivery.",
+        "Raw vector exposure or raw local path exposure.",
+        "await a narrow sync pass for this status surface",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY)} "
+                f"missing source-directory hybrid qualitative-analysis status runtime term: {term}"
+            )
+
+    for path, terms in {
+        MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry",
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_implemented_branch_local",
+            "codex/l3-hybrid-analysis-status-surface",
+            "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_context_qualitative_analysis_handoff_export_prepare_sync",
+            "layer3.source_directory_hybrid_context_packet_qualitative_analysis_status.v1",
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_authority",
+            '"read_only_status_surface": true',
+            '"package_rows_written": false',
+            '"connector_dispatch_enabled": false',
+            '"frontend_rendered_controls_enabled": false',
+            "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_proof",
+            "branch_local_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry",
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_implemented_branch_local",
+            "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
+            "status before package commit reports analysis and preview availability without package or reconciliation rows",
+            "status after handoff/export prepare reports existing package commit package-review submit and handoff/export prepare state without creating rows",
+            "supporting segments analysis result package-review preview payload and package payload refs remain redacted",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory hybrid qualitative-analysis status runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72081,6 +72142,9 @@ def main() -> int:
     )
     _check_source_directory_external_export_download_prepare_runtime_entry(errors)
     _check_source_directory_external_export_download_prepare_runtime_current_main_sync(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry(
         errors
     )
 

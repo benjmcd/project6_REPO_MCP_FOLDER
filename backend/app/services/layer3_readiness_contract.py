@@ -38,6 +38,7 @@ READINESS_REQUIRED_GATES = (
     "source-directory-hybrid-context-packet",
     "source-directory-hybrid-context-packet-qualitative-analysis",
     "source-directory-hybrid-context-packet-qualitative-analysis-package-review-preview",
+    "source-directory-hybrid-context-packet-qualitative-analysis-status",
     "source-directory-hybrid-context-packet-qualitative-analysis-package-commit",
     "source-directory-hybrid-context-packet-qualitative-analysis-package-review-submit",
     "source-directory-hybrid-context-packet-qualitative-analysis-handoff-export-prepare",
@@ -72,6 +73,7 @@ READINESS_IMPLEMENTED_GATES = (
     "source-directory-hybrid-context-packet",
     "source-directory-hybrid-context-packet-qualitative-analysis",
     "source-directory-hybrid-context-packet-qualitative-analysis-package-review-preview",
+    "source-directory-hybrid-context-packet-qualitative-analysis-status",
     "source-directory-hybrid-context-packet-qualitative-analysis-package-commit",
     "source-directory-hybrid-context-packet-qualitative-analysis-package-review-submit",
     "source-directory-hybrid-context-packet-qualitative-analysis-handoff-export-prepare",
@@ -173,6 +175,11 @@ def build_readiness_contract(
         "source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview_endpoint": (
             f"{api_root}/source/ingestion/server-configured-directory/"
             "hybrid-context-packet/qualitative-analysis"
+        ),
+        "source_directory_hybrid_context_packet_qualitative_analysis_status_admitted": True,
+        "source_directory_hybrid_context_packet_qualitative_analysis_status_endpoint": (
+            f"{api_root}/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
         ),
         "source_directory_hybrid_context_packet_qualitative_analysis_package_commit_admitted": True,
         "source_directory_hybrid_context_packet_qualitative_analysis_package_commit_endpoint": (
@@ -277,6 +284,7 @@ def build_readiness_contract(
             "client_request_id_required_for_source_directory_hybrid_context_packet": False,
             "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis": False,
             "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview": False,
+            "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_status": False,
             "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_package_commit": True,
             "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit": True,
             "client_request_id_required_for_source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare": True,
@@ -319,6 +327,7 @@ def build_readiness_contract(
             "duplicate_source_directory_hybrid_context_packet": "read-only deterministic hybrid context packet revalidates source-directory lexical context-packet and vector-retrieval authority without durable retrieval rows",
             "duplicate_source_directory_hybrid_context_packet_qualitative_analysis": "read-only deterministic qualitative analysis revalidates source-directory hybrid context-packet authority without package, provider, connector, network, or durable analysis rows",
             "duplicate_source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview": "read-only deterministic package-review preview revalidates source-directory hybrid qualitative-analysis authority without package rows or package payload writes",
+            "duplicate_source_directory_hybrid_context_packet_qualitative_analysis_status": "read-only status revalidates source-directory hybrid context-packet qualitative-analysis authority and existing package/review/handoff state without evidence payloads, package payloads, or durable rows",
             "duplicate_source_directory_hybrid_context_packet_qualitative_analysis_package_commit": "same client_request_id and same source-directory hybrid qualitative-analysis package authority returns existing package rows; conflicts fail closed",
             "duplicate_source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit": "same authority basis and same source-directory hybrid operator decision returns existing package-review state; conflicts fail closed",
             "duplicate_source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare": "same authority basis and same source-directory hybrid operator decision returns existing handoff/export prepare state; conflicts fail closed",
@@ -368,6 +377,7 @@ def build_readiness_contract(
             "source_directory_hybrid_context_packet_is_read_only": True,
             "source_directory_hybrid_context_packet_qualitative_analysis_is_read_only": True,
             "source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview_is_read_only": True,
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_is_read_only": True,
             "source_directory_hybrid_context_packet_qualitative_analysis_package_commit_uses_session_reconciliation_and_package_locks": True,
             "source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit_uses_session_reconciliation_and_package_locks": True,
             "source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare_uses_session_reconciliation_and_package_locks": True,
@@ -406,6 +416,7 @@ def build_readiness_contract(
             "source_directory_hybrid_context_packet": "admitted only as a read-only deterministic fusion of existing source-directory lexical context-packet and vector-retrieval authority; persistent vector stores, RAG execution, provider/model runtime, package mutation, connector dispatch, network egress, and frontend controls remain disabled",
             "source_directory_hybrid_context_packet_qualitative_analysis": "admitted only as a read-only deterministic qualitative-analysis reader over the source-directory hybrid context packet; package construction, package-review submit, handoff/export, provider/model runtime, RAG execution, connector dispatch, network egress, frontend controls, and durable analysis rows remain disabled",
             "source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview": "admitted only as a read-only package-review preview over the source-directory hybrid context-packet qualitative-analysis authority; package construction, package-review submit, handoff/export, payload writes, package mutation, provider/model runtime, connector dispatch, network egress, and frontend controls remain disabled",
+            "source_directory_hybrid_context_packet_qualitative_analysis_status": "admitted only as a read-only operator-visible status reader over the source-directory hybrid context-packet qualitative-analysis chain; evidence payloads, package payloads, package mutation, provider/model runtime, connector dispatch, network egress, frontend controls, and raw path exposure remain disabled",
             "source_directory_hybrid_context_packet_qualitative_analysis_package_commit": "admitted only as bounded package construction over source-directory hybrid context-packet qualitative-analysis package-preview authority; package-review submit, handoff/export, package mutation, provider/model runtime, connector dispatch, network egress, frontend controls, and new source families remain disabled",
             "source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit": "admitted only as bounded decision recording over constructed source-directory hybrid context-packet qualitative-analysis packages; handoff/export, package mutation, provider/model runtime, connector dispatch, network egress, frontend controls, and new source families remain disabled",
             "source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare": "admitted only as prepare-only internal export envelope recording after approved source-directory hybrid package-review submit; external export/download, provider URLs, connector dispatch, network egress, frontend controls, package mutation, and new source families remain disabled",
