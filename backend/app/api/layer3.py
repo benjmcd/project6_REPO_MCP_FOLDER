@@ -2398,6 +2398,12 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisRequest(
     analysis_focus: str = Field(min_length=1)
 
 
+class Layer3SourceDirectoryHybridContextQualitativeAnalysisStatusRequest(
+    Layer3SourceDirectoryHybridContextQualitativeAnalysisRequest
+):
+    client_request_id: str | None = Field(default=None, min_length=1)
+
+
 class Layer3SourceDirectoryHybridContextQualitativeAnalysisPackageCommitRequest(
     Layer3SourceDirectoryHybridContextQualitativeAnalysisRequest
 ):
@@ -7898,7 +7904,7 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis(
     responses=_workbench_error_responses(400, 404, 409),
 )
 def post_source_directory_hybrid_context_packet_qualitative_analysis_status(
-    payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisRequest,
+    payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisStatusRequest,
     db: Session = Depends(get_db),
 ) -> dict[str, Any] | JSONResponse:
     try:
