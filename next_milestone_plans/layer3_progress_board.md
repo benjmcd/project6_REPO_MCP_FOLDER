@@ -6652,3 +6652,29 @@ The synced runtime keeps `same_origin_delivery_enabled: False`, `browser_downloa
 No models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, same-origin delivery/streaming, browser download, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
 
 The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync`.
+
+## Source Directory Hybrid Context Qualitative Analysis External Export Download Prepare Runtime Entry Freeze
+
+Branch-local implementation-entry freeze and runtime proof: `836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md` follows the source-directory hybrid context-packet qualitative-analysis status current-main sync and resolves `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync` by selecting the bounded source-directory hybrid external export/download readiness prepare runtime.
+
+Runtime branch `codex/l3-next-gap-after-835` starts from current-main checkpoint `7d341da135a0`.
+
+Selected implementation action: `implement_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_after_status_sync`.
+
+Runtime status after implementation: `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_implemented_branch_local`.
+
+Runtime behavior introduced by this pass: `true`.
+
+The source-directory hybrid external export/download prepare route is `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare`.
+
+The response uses schema `layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1`, mode `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_authority`, source gate `836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE`, target `source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference`, mode `reference_only_prepare`, and durable state schema `layer3.external_export_download_prepare_state.v1`.
+
+The runtime validates existing source-directory hybrid package construction, approved package-review submit, and handoff/export prepare authority, including qualitative-analysis hash, package-review preview hash, construction basis hash, reconciliation id, submit ref, prepare ref, handoff state, envelope ref, output package ids, package kinds, and payload hashes.
+
+The runtime records `external_export_download_prepared` readiness in the existing reconciliation/session summaries, supports idempotent replay as `already_prepared`, keeps payload refs redacted from API response and readiness descriptor, and extends the read-only status route to report existing external export/download prepare readiness without enabling delivery.
+
+Proof: `python -m pytest .\backend\tests\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_records_readiness .\backend\tests\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_status_reports_existing_review_and_handoff_state -q` passed with `2 passed`.
+
+Non-admitted: models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, same-origin delivery/streaming, browser download, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, and full mockup activation.
+
+The next exact posture after merge is `await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync` unless current-main evidence shows a concrete unresolved source-directory hybrid external export/download prepare defect or named downstream reader.

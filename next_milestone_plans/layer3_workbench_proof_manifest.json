@@ -32578,5 +32578,51 @@
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_summary": "Doc 835 records current-main adoption of the corrected read-only source-directory hybrid context-packet qualitative-analysis status runtime after PR #1439 and review-fix PR #1440."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_summary": "Doc 835 records current-main adoption of the corrected read-only source-directory hybrid context-packet qualitative-analysis status runtime after PR #1439 and review-fix PR #1440.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry_proof": {
+    "proof_kind": "branch_local_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry",
+    "status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-next-gap-after-835",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "7d341da135a0",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+    "runtime_behavior_change": true,
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_hybrid_analysis.py .\\backend\\app\\api\\layer3.py .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_records_readiness .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_status_reports_existing_review_and_handoff_state -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py -q",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen"
+    ],
+    "proof_results": [
+      "PASS",
+      "PASS 2 passed 3 warnings",
+      "PASS 18 passed 3 warnings",
+      "PASS",
+      "PASS",
+      "PASS",
+      "PASS frozen"
+    ],
+    "proof_coverage": [
+      "source-directory hybrid external export/download prepare route is POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare",
+      "response schema is layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1",
+      "runtime mode is source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_authority",
+      "source gate is 836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE",
+      "prepare validates existing package-review submit and handoff/export prepare authority",
+      "prepare records external_export_download_prepared readiness with payload refs redacted",
+      "prepare supports idempotent replay as already_prepared",
+      "prepare rejects stale package payload authority",
+      "status reports existing external export/download prepare readiness without enabling delivery",
+      "same-origin delivery browser download provider delivery connector dispatch network egress frontend durable authority package mutation package rewrite source package row mutation and new source families remain blocked"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry_branch": "codex/l3-next-gap-after-835",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_implemented_branch_local",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry_summary": "Doc 836 proof records the prepare-only source-directory hybrid external export/download readiness reader plus status reporting without admitting delivery, provider, connector, network, frontend, package mutation, package rewrite, source package row mutation, new source family, raw path, or raw vector behavior."
 }
