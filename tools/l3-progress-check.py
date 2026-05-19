@@ -2354,6 +2354,9 @@ LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE_SYNC = (
 LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF = (
     PLANNING_DOCS / "858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md"
 )
+LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_SYNC = (
+    PLANNING_DOCS / "859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -73688,6 +73691,33 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                 f"missing recursive source ingestion runtime proof term: {term}"
             )
 
+    runtime_sync_text = _read_required_text(
+        LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `recursive_server_configured_directory_text_table_policy_v1` runtime implementation.",
+        "859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "Implementation PR: `#1468`.",
+        "Implementation branch commit: `e50f65bf873e00f299bb3fb73c55c9c200db7c6e`.",
+        "Implementation merge commit: `2fa84f5f`.",
+        "Synced result: `current_main_synced_recursive_source_ingestion_runtime_implementation`.",
+        "Runtime behavior introduced by this sync: `false`",
+        "`direct_child_only: False`",
+        "`recursive_traversal_admitted: True`",
+        "maximum recursion depth: `2`",
+        "maximum normalized relative path segments: `3`, including filename",
+        "`backend-layer3-api`: `SUCCESS`, `3m27s`",
+        "`test`: `SUCCESS`, `3m52s`",
+        "reviewThreads totalCount: `0`",
+        "The next exact posture is `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`.",
+    ):
+        if term not in runtime_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_SYNC)} "
+                f"missing recursive source ingestion runtime current-main sync term: {term}"
+            )
+
     service_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE, errors)
     for term in (
         "RUNTIME_POLICY_ID = \"recursive_server_configured_directory_text_table_policy_v1\"",
@@ -73717,15 +73747,19 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "## Recursive Source Ingestion Runtime Policy Selection Freeze",
             "## Recursive Source Ingestion Runtime Policy Selection Current-Main Sync",
             "## Recursive Source Ingestion Runtime Proof",
+            "## Recursive Source Ingestion Runtime Current-Main Sync",
             "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
             "855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
             "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
             "857_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_CURRENT_MAIN_SYNC.md",
             "858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md",
+            "859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
             "PR `#1464`",
             "PR `#1466`",
+            "PR `#1468`",
             "cd7cd385710102724c572615b33105956a22d52b",
             "4afd496541649f68812b2c148817dd8e84259b83",
+            "2fa84f5f",
             "recursive_server_configured_operator_directory_text_table_source_family",
             "recursive_server_configured_local_directory_text_table_ingestion",
             "recursive_server_configured_directory_text_table_policy_v1",
@@ -73739,7 +73773,9 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "implement_recursive_server_configured_operator_directory_text_table_ingestion",
             "current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze",
             "recursive_source_ingestion_runtime_implementation_proof",
+            "current_main_synced_recursive_source_ingestion_runtime_implementation",
             "15 passed, 1 skipped",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
         ),
         MANIFEST: (
             '"recursive_source_ingestion_family_selection_freeze"',
@@ -73747,20 +73783,24 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             '"recursive_source_ingestion_runtime_policy_selection_freeze"',
             '"recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync"',
             '"recursive_source_ingestion_runtime_proof"',
+            '"recursive_source_ingestion_runtime_current_main_sync"',
             '"latest_recursive_source_ingestion_family_selection_freeze_doc"',
             '"latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_doc"',
             '"latest_recursive_source_ingestion_runtime_policy_selection_freeze_doc"',
             '"latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_doc"',
+            '"latest_recursive_source_ingestion_runtime_current_main_sync_doc"',
             '"status": "recursive_source_ingestion_family_selection_freeze_no_runtime"',
             '"status": "current_main_synced_recursive_source_ingestion_family_selection_freeze"',
             '"status": "recursive_source_ingestion_runtime_policy_selection_freeze_no_runtime"',
             '"status": "current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze"',
             '"status": "recursive_source_ingestion_runtime_implementation_proof"',
+            '"status": "current_main_synced_recursive_source_ingestion_runtime_implementation"',
             '"selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family"',
             '"selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion"',
             '"runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1"',
             '"runtime_behavior_change": false',
             '"runtime_behavior_change": true',
+            '"current_main_runtime_behavior": true',
             '"implementation_entry_allowed_next": false',
             '"implementation_entry_allowed_next": true',
             '"current_recursive_traversal_admitted": false',
@@ -73768,11 +73808,13 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             '"freeze_pr": "#1464"',
             '"freeze_pr": "#1466"',
             '"freeze_merge_commit": "4afd496541649f68812b2c148817dd8e84259b83"',
+            '"implementation_merge_commit": "2fa84f5f"',
             '"next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy"',
             '"next_posture": "select_recursive_source_ingestion_runtime_policy_before_implementation"',
             '"next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation"',
             '"next_posture": "implement_recursive_server_configured_operator_directory_text_table_ingestion"',
             '"next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1"',
+            '"next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"',
         ),
         PROOF_MANIFEST: (
             '"recursive_source_ingestion_family_selection_freeze_proof"',
@@ -73780,11 +73822,13 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             '"recursive_source_ingestion_runtime_policy_selection_freeze_proof"',
             '"recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_proof"',
             '"recursive_source_ingestion_runtime_proof"',
+            '"recursive_source_ingestion_runtime_current_main_sync"',
             '"no_runtime_recursive_source_ingestion_family_selection_freeze"',
             '"current_main_synced_recursive_source_ingestion_family_selection_freeze"',
             '"no_runtime_recursive_source_ingestion_runtime_policy_selection_freeze"',
             '"current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze"',
             '"recursive_source_ingestion_runtime_implementation_proof"',
+            '"current_main_synced_recursive_source_ingestion_runtime_implementation"',
             '"recursive_server_configured_operator_directory_text_table_source_family"',
             '"recursive_server_configured_directory_text_table_policy_v1"',
             '"implementation_entry_allowed_next": false',
@@ -73798,7 +73842,9 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "no caller-selected recursive flag",
             "PR #1464 merged",
             "PR #1466 merged",
+            "PR #1468 merged",
             "4afd496541649f68812b2c148817dd8e84259b83",
+            "2fa84f5f",
             "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
             "select_recursive_source_ingestion_runtime_policy_before_implementation",
             "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
@@ -73806,6 +73852,7 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "nested material preview reaches Gate B",
             "nested deterministic text indexing",
             "15 passed 1 skipped",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
         ),
         PROGRESS_PROMPT: (
             "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
@@ -73813,6 +73860,7 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
             "857_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_CURRENT_MAIN_SYNC.md",
             "858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md",
+            "859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
             "recursive_server_configured_operator_directory_text_table_source_family",
             "recursive_server_configured_directory_text_table_policy_v1",
             "cd7cd385710102724c572615b33105956a22d52b",
@@ -73822,7 +73870,8 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "select_recursive_source_ingestion_runtime_policy_before_implementation",
             "current_main_sync_recursive_server_configured_directory_text_table_policy_v1",
             "implement_recursive_server_configured_operator_directory_text_table_ingestion",
-            "branch-local doc `858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md`",
+            "PR `#1468` implements the bounded recursive source-directory runtime",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
         ),
         REFRESH_SPEC: (
             "854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
@@ -73830,6 +73879,7 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
             "857_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_CURRENT_MAIN_SYNC.md",
             "858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md",
+            "859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
             "branch-local no-runtime source-family selection governance",
             "branch-local no-runtime runtime-policy selection governance",
             "classify only the no-runtime family selection as current-main governance",
@@ -73837,6 +73887,7 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
             "classify only the no-runtime recursive source-ingestion runtime policy selection as current-main governance",
             "current-main sync for the no-runtime recursive source-ingestion runtime policy selection",
             "branch-local runtime implementation proof for `recursive_server_configured_directory_text_table_policy_v1` only",
+            "current-main sync for the bounded recursive source-ingestion runtime implementation",
             "direct-child `LAYER3_SOURCE_INGESTION_DIR` ingestion remains unchanged",
         ),
     }.items():
@@ -73922,6 +73973,18 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                 ),
                 "latest_recursive_source_ingestion_runtime_proof_next_posture": (
                     "current_main_sync_recursive_server_configured_directory_text_table_policy_v1"
+                ),
+                "latest_recursive_source_ingestion_runtime_current_main_sync_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md"
+                ),
+                "latest_recursive_source_ingestion_runtime_current_main_sync_status": (
+                    "current_main_synced_recursive_source_ingestion_runtime_implementation"
+                ),
+                "latest_recursive_source_ingestion_runtime_current_main_sync_runtime_behavior_change": False,
+                "latest_recursive_source_ingestion_runtime_current_main_sync_pr": "#1468",
+                "latest_recursive_source_ingestion_runtime_current_main_sync_merge_commit": "2fa84f5f",
+                "latest_recursive_source_ingestion_runtime_current_main_sync_next_posture": (
+                    "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"
                 ),
             }
             for key, value in expected.items():
@@ -74102,6 +74165,37 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                 if runtime_proof.get(key) != value:
                     errors.append(
                         f"{_rel(MANIFEST)} recursive_source_ingestion_runtime_proof.{key} must be {value!r}"
+                    )
+
+        runtime_sync = manifest_data.get("recursive_source_ingestion_runtime_current_main_sync")
+        if not isinstance(runtime_sync, dict):
+            errors.append(f"{_rel(MANIFEST)} missing recursive_source_ingestion_runtime_current_main_sync object")
+        else:
+            expected_runtime_sync_scalars = {
+                "status": "current_main_synced_recursive_source_ingestion_runtime_implementation",
+                "doc": "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-recursive-source-ingestion-runtime-sync",
+                "implementation_pr": "#1468",
+                "implementation_branch": "codex/l3-recursive-source-ingestion-runtime",
+                "implementation_branch_commit": "e50f65bf873e00f299bb3fb73c55c9c200db7c6e",
+                "implementation_merge_commit": "2fa84f5f",
+                "synced_proof_doc": "next_milestone_plans/Layer3_planning_docs/858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md",
+                "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+                "runtime_behavior_change": False,
+                "current_main_runtime_behavior": True,
+                "source_root_authority": "LAYER3_SOURCE_INGESTION_DIR",
+                "direct_child_only": False,
+                "recursive_traversal_admitted": True,
+                "max_recursion_depth": 2,
+                "max_normalized_relative_path_segments_including_filename": 3,
+                "max_file_count": 100,
+                "caller_selected_recursive_flag_allowed": False,
+                "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+            }
+            for key, value in expected_runtime_sync_scalars.items():
+                if runtime_sync.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} recursive_source_ingestion_runtime_current_main_sync.{key} must be {value!r}"
                     )
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
@@ -74337,6 +74431,53 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in runtime_proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_proof.proof_terms missing {term}"
+                        )
+
+        runtime_sync = proof_data.get("recursive_source_ingestion_runtime_current_main_sync")
+        if not isinstance(runtime_sync, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing recursive_source_ingestion_runtime_current_main_sync object")
+        else:
+            expected_runtime_sync_scalars = {
+                "proof_kind": "current_main_synced_recursive_source_ingestion_runtime_implementation",
+                "status": "current_main_synced_recursive_source_ingestion_runtime_implementation",
+                "doc": "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-recursive-source-ingestion-runtime-sync",
+                "runtime_behavior_change": False,
+                "current_main_runtime_behavior": True,
+                "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+                "implementation_pr": "#1468",
+                "implementation_merge_commit": "2fa84f5f",
+                "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+            }
+            for key, value in expected_runtime_sync_scalars.items():
+                if runtime_sync.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_current_main_sync.{key} must be {value!r}"
+                    )
+            runtime_sync_terms = runtime_sync.get("proof_terms")
+            if not isinstance(runtime_sync_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_current_main_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "PR #1468 merged",
+                    "2fa84f5f",
+                    "current_main_synced_recursive_source_ingestion_runtime_implementation",
+                    "backend-layer3-api SUCCESS 3m27s",
+                    "test SUCCESS 3m52s",
+                    "reviewThreads totalCount 0",
+                    "post-merge validation passed",
+                    "direct_child_only False",
+                    "recursive_traversal_admitted True",
+                    "maximum recursion depth 2",
+                    "maximum normalized relative path segments 3 including filename",
+                    "no runtime behavior introduced by sync",
+                    "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+                ):
+                    if term not in runtime_sync_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_current_main_sync.proof_terms missing {term}"
                         )
 
 
