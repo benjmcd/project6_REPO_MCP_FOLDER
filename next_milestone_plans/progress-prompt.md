@@ -343,3 +343,10 @@ Current Layer 3 optional-tool authority revalidation selection to preserve when 
 - preserve the decision `keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority`
 - do not treat this selection as runtime behavior, benchmark execution, fixture materialization, fixture authority selection, dependency/provider/network admission, rendered optional-tool controls, package/handoff/export/download integration, or Gate C/pass-entry admission
 - preserve the next posture as `select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation`
+
+Current Layer 3 internal webhook rendered status gap selection to preserve when present:
+- `871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md` records a no-runtime selection for `server_configured_internal_webhook_rendered_read_only_status_projection`
+- canonical backend authority remains `backend/app/services/layer3_internal_webhook_connector.py`, `POST /api/v1/layer3/handoff/export/internal-webhook/dispatch`, `GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}`, `L3InternalWebhookDispatchReceipt`, and `L3InternalWebhookDispatchAuditEvent`
+- preserve the gap as missing read-only `State.sessionSummary.internal_webhook_dispatch` projection into `/review/layer3`, not a missing dispatch runtime
+- do not treat this selection as runtime behavior, rendered behavior, route/API/DTO/model/migration/service behavior change, internal webhook dispatch rerun, rendered write/submit control, connector run creation, arbitrary destination URL, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, or frontend-only durable authority
+- preserve the next posture as `freeze_internal_webhook_rendered_read_only_status_projection_before_runtime`

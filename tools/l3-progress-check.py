@@ -2397,6 +2397,9 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_SYNC = (
 LAYER3_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION = (
     PLANNING_DOCS / "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md"
 )
+LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION = (
+    PLANNING_DOCS / "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -76438,6 +76441,196 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_authority_revalidation_selection_proof.proof_terms missing {term}"
+                        )
+
+    internal_webhook_rendered_status_text = _read_required_text(
+        LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime current-main selection control for `server_configured_internal_webhook_rendered_read_only_status_projection`.",
+        "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+        "853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+        "4e6eb6e8b119f0b787fa7e3ddf5a1b3a0a794ad3",
+        "Selected gap: `server_configured_internal_webhook_rendered_read_only_status_projection`.",
+        "Runtime behavior introduced by this selection: `false`.",
+        "Rendered behavior introduced by this selection: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "backend/app/services/layer3_internal_webhook_connector.py",
+        "POST /api/v1/layer3/handoff/export/internal-webhook/dispatch",
+        "GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}",
+        "L3InternalWebhookDispatchReceipt",
+        "L3InternalWebhookDispatchAuditEvent",
+        "State.sessionSummary.internal_webhook_dispatch",
+        "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+    ):
+        if term not in internal_webhook_rendered_status_text:
+            errors.append(
+                f"{_rel(LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION)} "
+                f"missing internal webhook rendered status gap selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Internal Webhook Rendered Status Gap Selection",
+            "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+            "server_configured_internal_webhook_rendered_read_only_status_projection",
+            "State.sessionSummary.internal_webhook_dispatch",
+            "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 internal webhook rendered status gap selection to preserve when present",
+            "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+            "server_configured_internal_webhook_rendered_read_only_status_projection",
+            "State.sessionSummary.internal_webhook_dispatch",
+            "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+        ),
+        REFRESH_SPEC: (
+            "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+            "server_configured_internal_webhook_rendered_read_only_status_projection",
+            "Do not render doc `871` as runtime behavior",
+            "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+        ),
+        MANIFEST: (
+            '"internal_webhook_rendered_status_gap_selection"',
+            '"status": "selected_internal_webhook_rendered_status_gap_no_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md"',
+            '"selected_gap": "server_configured_internal_webhook_rendered_read_only_status_projection"',
+            '"missing_session_summary_projection": "State.sessionSummary.internal_webhook_dispatch"',
+            '"runtime_behavior_change": false',
+            '"rendered_behavior_change": false',
+            '"frontend_only_durable_authority": false',
+            '"latest_internal_webhook_rendered_status_gap_selection_status"',
+            '"next_posture": "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"internal_webhook_rendered_status_gap_selection_proof"',
+            '"proof_kind": "selected_internal_webhook_rendered_status_gap_no_runtime"',
+            '"State.sessionSummary.internal_webhook_dispatch missing"',
+            '"no runtime behavior"',
+            '"no rendered behavior"',
+            '"no internal webhook dispatch rerun"',
+            '"no rendered write/submit control"',
+            '"no frontend-only durable authority"',
+            '"freeze_internal_webhook_rendered_read_only_status_projection_before_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing internal webhook rendered status gap selection term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        webhook_selection = manifest.get("internal_webhook_rendered_status_gap_selection")
+        if not isinstance(webhook_selection, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing internal_webhook_rendered_status_gap_selection object"
+            )
+        else:
+            expected_webhook_scalars = {
+                "status": "selected_internal_webhook_rendered_status_gap_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-selection",
+                "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "predecessor_optional_tool_revalidation_doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+                "current_main_checkpoint": "4e6eb6e8b119f0b787fa7e3ddf5a1b3a0a794ad3",
+                "selected_gap": "server_configured_internal_webhook_rendered_read_only_status_projection",
+                "missing_session_summary_projection": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_route": "/review/layer3",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "route_api_dto_model_migration_service_change": False,
+                "internal_webhook_dispatch_rerun": False,
+                "rendered_write_submit_control": False,
+                "connector_run_creation": False,
+                "arbitrary_destination_url_admission": False,
+                "provider_public_signed_url_behavior": False,
+                "package_source_auth_security_widening": False,
+                "optional_tool_runtime": False,
+                "frontend_only_durable_authority": False,
+                "implementation_entry_allowed_next": False,
+                "next_posture": "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+            }
+            for key, value in expected_webhook_scalars.items():
+                if webhook_selection.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} internal_webhook_rendered_status_gap_selection.{key} must be {value!r}"
+                    )
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_internal_webhook_rendered_status_gap_selection_status": "selected_internal_webhook_rendered_status_gap_no_runtime",
+                    "latest_internal_webhook_rendered_status_gap_selection_gap": "server_configured_internal_webhook_rendered_read_only_status_projection",
+                    "latest_internal_webhook_rendered_status_gap_selection_runtime_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_gap_selection_rendered_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_gap_selection_next_posture": "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("internal_webhook_rendered_status_gap_selection_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing internal_webhook_rendered_status_gap_selection_proof object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "selected_internal_webhook_rendered_status_gap_no_runtime",
+                "status": "selected_internal_webhook_rendered_status_gap_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-selection",
+                "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "predecessor_optional_tool_revalidation_doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+                "current_main_checkpoint": "4e6eb6e8b119f0b787fa7e3ddf5a1b3a0a794ad3",
+                "selected_gap": "server_configured_internal_webhook_rendered_read_only_status_projection",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "route_api_dto_model_migration_service_change": False,
+                "rendered_write_submit_control": False,
+                "connector_run_creation": False,
+                "arbitrary_destination_url_admission": False,
+                "provider_public_signed_url_behavior": False,
+                "optional_tool_runtime": False,
+                "frontend_only_durable_authority": False,
+                "next_posture": "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_gap_selection_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_gap_selection_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+                    "server_configured_internal_webhook_rendered_read_only_status_projection",
+                    "backend/app/services/layer3_internal_webhook_connector.py",
+                    "POST /api/v1/layer3/handoff/export/internal-webhook/dispatch",
+                    "GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}",
+                    "State.sessionSummary.internal_webhook_dispatch missing",
+                    "no runtime behavior",
+                    "no rendered behavior",
+                    "no internal webhook dispatch rerun",
+                    "no rendered write/submit control",
+                    "no arbitrary destination URL",
+                    "no provider/public/signed URL behavior",
+                    "no optional-tool runtime",
+                    "no frontend-only durable authority",
+                    "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_gap_selection_proof.proof_terms missing {term}"
                         )
 
 

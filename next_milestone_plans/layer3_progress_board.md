@@ -7339,3 +7339,13 @@ Decision: `keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_au
 This selection admits no runtime behavior, no benchmark execution, no fixture materialization, no fixture authority selection, no dependency/provider/network admission, no rendered optional-tool controls, no package/handoff/export/download integration, and no Gate C/pass-entry admission.
 
 Next exact posture: `select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation`.
+
+## Internal Webhook Rendered Status Gap Selection
+
+Gap selection: `871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md` records a no-runtime current-main selection for `server_configured_internal_webhook_rendered_read_only_status_projection`.
+
+Current-main evidence separates the already-synced internal webhook backend authority from rendered operator visibility: `backend/app/services/layer3_internal_webhook_connector.py`, `POST /api/v1/layer3/handoff/export/internal-webhook/dispatch`, `GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}`, `L3InternalWebhookDispatchReceipt`, and `L3InternalWebhookDispatchAuditEvent` exist, while `backend/app/services/layer3_workbench.py::session_summary` and `/review/layer3` do not yet expose `State.sessionSummary.internal_webhook_dispatch`.
+
+This selection admits no runtime behavior, no rendered behavior, no route/API/DTO/model/migration/service behavior change, no internal webhook dispatch rerun, no rendered write/submit control, no connector run creation, no arbitrary destination URL, no provider/public/signed URL behavior, no package/source/auth/security widening, no optional-tool runtime, and no frontend-only durable authority.
+
+Next exact posture: `freeze_internal_webhook_rendered_read_only_status_projection_before_runtime`.
