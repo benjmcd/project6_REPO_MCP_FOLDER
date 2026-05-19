@@ -3841,8 +3841,51 @@ function isRoutableAnalysisObject(item) {
     return Boolean(modality && modality !== 'unclassified');
 }
 
+function currentAnalysisEnvironmentProjection() {
+    const projection = State.sessionSummary?.analysis_environment_projection;
+    return projection && typeof projection === 'object' && !Array.isArray(projection) ? projection : null;
+}
+
+function analysisEnvironmentProjectionStatus(projection = currentAnalysisEnvironmentProjection()) {
+    const schemaValid = projection?.schema_id === 'layer3.analysis_environment_projection.v1';
+    const readOnly = projection?.no_side_effects === true;
+    const blockedReasons = Array.isArray(projection?.blocked_reasons)
+        ? projection.blocked_reasons
+        : [];
+    const state = schemaValid && readOnly
+        ? (projection.projection_state || 'blocked')
+        : 'blocked';
+    const missingReasons = [];
+    if (!projection) missingReasons.push('analysis_environment_projection_missing');
+    if (projection && !schemaValid) missingReasons.push('analysis_environment_projection_schema_invalid');
+    if (projection && !readOnly) missingReasons.push('analysis_environment_projection_not_read_only');
+    return {
+        available: Boolean(schemaValid && readOnly && projection?.available_for_downstream_analysis === true),
+        state,
+        schemaValid,
+        readOnly,
+        authoritySource: projection?.authority_source || 'not reported',
+        blockedReasons: missingReasons.length ? missingReasons : blockedReasons,
+        downstreamUnavailable: Array.isArray(projection?.downstream_unavailable)
+            ? projection.downstream_unavailable
+            : [],
+        forbiddenRuntimeAuthority: projection?.forbidden_runtime_authority
+            && typeof projection.forbidden_runtime_authority === 'object'
+            && !Array.isArray(projection.forbidden_runtime_authority)
+            ? projection.forbidden_runtime_authority
+            : {},
+    };
+}
+
+function analysisEnvironmentPlaneReadiness(modality, projection = currentAnalysisEnvironmentProjection()) {
+    const readiness = Array.isArray(projection?.plane_readiness) ? projection.plane_readiness : [];
+    return readiness.find((item) => item?.plane === modality) || null;
+}
+
 function currentSublayerVisualizationModel() {
     const rail = currentAuthorityRail() || {};
+    const analysisEnvironmentProjection = currentAnalysisEnvironmentProjection();
+    const analysisProjectionStatus = analysisEnvironmentProjectionStatus(analysisEnvironmentProjection);
     const materialObjects = currentMaterialObjects();
     const typingObjects = currentTypingObjects();
     const planObjects = currentPlanSetObjects();
@@ -3905,6 +3948,11 @@ function currentSublayerVisualizationModel() {
                 passes,
                 processCards,
                 outputs,
+                analysisEnvironmentProjectionStatus: analysisProjectionStatus,
+                analysisEnvironmentPlaneReadiness: analysisEnvironmentPlaneReadiness(
+                    modality,
+                    analysisEnvironmentProjection
+                ),
                 state: outputs.length ? 'outputs' : (passes.length || inputs.length ? 'inputs' : 'empty'),
             };
         });
@@ -3931,6 +3979,7 @@ function currentSublayerVisualizationModel() {
             planes: analysisPlanes,
             executionPipeline,
             message: planeIntro,
+            analysisEnvironmentProjectionStatus: analysisProjectionStatus,
         },
     };
 }
@@ -4048,8 +4097,72 @@ function renderExecutionPipeline(pipeline) {
     `;
 }
 
+function renderAnalysisEnvironmentProjectionStatus(status, readiness, modality) {
+    const blockedReasons = status.blockedReasons.length
+        ? status.blockedReasons
+        : ['no projection blockers reported'];
+    const downstreamUnavailable = status.downstreamUnavailable.length
+        ? status.downstreamUnavailable
+        : ['none reported'];
+    const forbiddenAuthority = status.forbiddenRuntimeAuthority || {};
+    const forbiddenLabels = Object.entries(forbiddenAuthority)
+        .filter(([, value]) => value === false)
+        .map(([key]) => humanizeToken(key));
+    const readinessState = readiness?.state || 'not reported';
+    const counts = [
+        ['typing', readiness?.typing_record_count],
+        ['sets', readiness?.analysis_set_count],
+        ['runs', readiness?.pass_run_count],
+        ['outputs', readiness?.output_payload_count],
+    ]
+        .filter(([, value]) => Number.isFinite(Number(value)))
+        .map(([label, value]) => `${label} ${value}`)
+        .join(' / ');
+    return `
+        <section class="analysis-environment-projection" data-projection-state="${escapeHtml(status.state)}" data-projection-available="${status.available ? 'true' : 'false'}" data-schema-valid="${status.schemaValid ? 'true' : 'false'}" data-read-only="${status.readOnly ? 'true' : 'false'}" aria-label="${escapeHtml(modalityMeta(modality).label)} downstream Analysis Environment projection">
+            <div class="analysis-environment-projection-head">
+                <span>Server projection</span>
+                <strong>${escapeHtml(humanizeToken(status.state))}</strong>
+                <em>${escapeHtml(status.available ? 'downstream ready' : 'read-only blocked')}</em>
+            </div>
+            <dl>
+                <div>
+                    <dt>Plane readiness</dt>
+                    <dd>${escapeHtml(humanizeToken(readinessState))}${counts ? ` / ${escapeHtml(counts)}` : ''}</dd>
+                </div>
+                <div>
+                    <dt>Authority</dt>
+                    <dd>${escapeHtml(shortText(status.authoritySource, 54))}</dd>
+                </div>
+                <div>
+                    <dt>Blocked reasons</dt>
+                    <dd>${escapeHtml(shortText(blockedReasons.join(', '), 72))}</dd>
+                </div>
+                <div>
+                    <dt>Downstream unavailable</dt>
+                    <dd>${escapeHtml(shortText(downstreamUnavailable.join(', '), 72))}</dd>
+                </div>
+                <div>
+                    <dt>Forbidden runtime</dt>
+                    <dd>${escapeHtml(shortText(forbiddenLabels.length ? forbiddenLabels.join(', ') : 'not reported', 72))}</dd>
+                </div>
+            </dl>
+        </section>
+    `;
+}
+
 function renderAnalysisPlane(plane) {
-    const { modality, meta, inputs, passes, processCards, outputs, state } = plane;
+    const {
+        modality,
+        meta,
+        inputs,
+        passes,
+        processCards,
+        outputs,
+        state,
+        analysisEnvironmentProjectionStatus,
+        analysisEnvironmentPlaneReadiness,
+    } = plane;
     const passRows = passes.map((pass) => `
             <li>
                 <strong>${escapeHtml(humanizeToken(pass.pass_type || pass.method_family || 'planned pass'))}</strong>
@@ -4074,6 +4187,11 @@ function renderAnalysisPlane(plane) {
                 <h4>${escapeHtml(meta.plane)}</h4>
                 <span class="plane-state-label">${escapeHtml(sublayerStateLabel(state))}</span>
             </div>
+            ${renderAnalysisEnvironmentProjectionStatus(
+                analysisEnvironmentProjectionStatus,
+                analysisEnvironmentPlaneReadiness,
+                modality
+            )}
             <div class="plane-flow-frame" data-plane-role="analysis-environment-lane">
                 <span class="plane-lane-spine" aria-hidden="true"></span>
                 <span class="plane-lane-bracket" aria-hidden="true"></span>
