@@ -7291,3 +7291,21 @@ The downstream Analysis Environment rendered projection freeze is now current-ma
 Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`.
 
 Next exact posture: `implement_downstream_analysis_environment_rendered_projection_read_only_panel`. The implementation must stay inside existing `/review/layer3` `backend/app/review_ui/static/layer3.js` read-only rendering over `State.sessionSummary.analysis_environment_projection` and include headed plus headless Chromium proof.
+
+## Downstream Analysis Environment Rendered Projection Runtime Proof
+
+Runtime implementation proof: `868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md` implements only `implement_downstream_analysis_environment_rendered_projection_read_only_panel`.
+
+Implemented surface: existing `/review/layer3` Sublayer 3C Analysis Environment planes in `backend/app/review_ui/static/layer3.js`, with styling in `backend/app/review_ui/static/layer3.css` and bounded static proof in `backend/tests/test_layer3_page.py`.
+
+Rendered behavior introduced by this pass: `true`, limited to a read-only server projection panel over `State.sessionSummary.analysis_environment_projection`.
+
+Backend runtime behavior introduced by this pass: `false`.
+
+Proof status: headed in-app Chromium and headless Chromium passed for `/review/layer3`; both found three `.analysis-environment-projection` panels, no console/page errors, no framework/error overlays, no horizontal overflow, and the empty local runtime state failed closed with `analysis_environment_projection_missing`.
+
+Static proof passed: `node --check .\backend\app\review_ui\static\layer3.js` and `python -m pytest .\backend\tests\test_layer3_page.py -q -k "static_assets_are_mounted or analysis_environment_projection_rendered_reader_is_bounded"` with `2 passed, 4 deselected`.
+
+Still blocked: backend route/API/DTO/model/migration/service behavior changes, new submit controls or operation dock steps, package/source/provider/connector/auth/security widening, frontend-only durable authority, browser-storage authority, package mutation/reconstruction, handoff/export/download or delivery reruns, connector dispatch, provider URLs, credentials/network behavior, vector/RAG or broad qualitative runtime, and optional-tool runtime.
+
+Next exact posture after merge: `current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime`.

@@ -34010,5 +34010,50 @@
     ],
     "next_posture": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
     "summary": "Doc 867 records current-main sync for PR #1482 merge commit 8211c13341bec3dd6ae478b1b260d684cbf01dc8 with checks passed, review surfaces empty, post-merge validation passed, and the next posture set to the bounded read-only rendered projection implementation."
+  },
+  "downstream_analysis_environment_rendered_projection_runtime_proof": {
+    "proof_kind": "implemented_downstream_analysis_environment_rendered_projection_read_only_panel_branch_local",
+    "status": "implemented_downstream_analysis_environment_rendered_projection_read_only_panel_branch_local",
+    "doc": "next_milestone_plans/Layer3_planning_docs/868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+    "branch": "codex/l3-analysis-environment-rendered-runtime",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": true,
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/867_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_implementation": "16b3f79f3e0f3c9fe7aceefbce622342af5591b2",
+    "selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+    "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+    "rendered_surface": "backend/app/review_ui/static/layer3.js",
+    "proof_terms": [
+      "branch-local rendered implementation proof",
+      "868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+      "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+      "16b3f79f3e0f3c9fe7aceefbce622342af5591b2",
+      "State.sessionSummary.analysis_environment_projection",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/app/review_ui/static/layer3.css",
+      "backend/tests/test_layer3_page.py",
+      "/review/layer3",
+      ".analysis-environment-projection",
+      "analysis_environment_projection_missing",
+      "analysis_environment_projection_schema_invalid",
+      "analysis_environment_projection_not_read_only",
+      "headed in-app Chromium proof",
+      "headless Chromium desktop proof",
+      "headless Chromium mobile proof",
+      "console/page errors: []",
+      "horizontal overflow: false",
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js PASS",
+      "2 passed, 4 deselected",
+      "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime"
+    ],
+    "proof_commands": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py -q -k \"static_assets_are_mounted or analysis_environment_projection_rendered_reader_is_bounded\" PASS 2 passed, 4 deselected",
+      "headed in-app Chromium proof for http://127.0.0.1:8012/review/layer3 PASS",
+      "headless Chromium desktop 1365x900 proof PASS",
+      "headless Chromium mobile 390x844 proof PASS"
+    ],
+    "next_posture_after_merge": "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+    "summary": "Doc 868 proves the bounded read-only rendered /review/layer3 Analysis Environment projection panel over State.sessionSummary.analysis_environment_projection, with headed in-app Chromium and headless Chromium proof and no backend route/API/DTO/model/migration/service behavior change."
   }
 }

@@ -321,3 +321,10 @@ Success criteria:
 - the scheduled refresh and the artifact are wired so the visible artifact actually updates after refresh
 - `python .\tools\l3-progress-check.py` passes after any progress-packet edit
 ```
+
+Current Layer 3 rendered projection branch-local proof to preserve when present:
+- `868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md` implements only `implement_downstream_analysis_environment_rendered_projection_read_only_panel` on branch `codex/l3-analysis-environment-rendered-runtime`
+- canonical rendered authority remains `State.sessionSummary.analysis_environment_projection`, read through existing `/review/layer3` Sublayer 3C lanes in `backend/app/review_ui/static/layer3.js`
+- classify the change as rendered behavior only; backend runtime behavior remains false because no route/API/DTO/model/migration/service behavior changes are admitted
+- preserve headed in-app Chromium proof and headless Chromium proof: three `.analysis-environment-projection` panels render, empty runtime state fails closed with `analysis_environment_projection_missing`, console/page errors are empty, overlays are absent, and horizontal overflow is false
+- after merge, preserve the next posture as `current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime`

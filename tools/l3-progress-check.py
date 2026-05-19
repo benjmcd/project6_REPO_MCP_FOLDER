@@ -2386,6 +2386,10 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_SYNC = (
     PLANNING_DOCS
     / "867_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF = (
+    PLANNING_DOCS
+    / "868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -75870,6 +75874,193 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in rendered_freeze_sync_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_freeze_current_main_sync_proof.proof_terms missing {term}"
+                        )
+
+    rendered_projection_runtime_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local rendered implementation proof for `implement_downstream_analysis_environment_rendered_projection_read_only_panel`.",
+        "868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+        "Predecessor current-main sync doc: `867_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md`.",
+        "Runtime branch: `codex/l3-analysis-environment-rendered-runtime`.",
+        "Current-main checkpoint before implementation: `16b3f79f3e0f3c9fe7aceefbce622342af5591b2`.",
+        "Rendered behavior introduced by this pass: `true`",
+        "Backend runtime behavior introduced by this pass: `false`.",
+        "`State.sessionSummary.analysis_environment_projection`",
+        "`currentAnalysisEnvironmentProjection()`",
+        "`analysisEnvironmentProjectionStatus()`",
+        "`analysisEnvironmentPlaneReadiness()`",
+        "`renderAnalysisEnvironmentProjectionStatus()`",
+        "analysis_environment_projection_missing",
+        "analysis_environment_projection_schema_invalid",
+        "analysis_environment_projection_not_read_only",
+        "Headed in-app Chromium proof passed",
+        "Headless Chromium desktop proof passed at `1365x900`",
+        "Headless Chromium mobile proof passed at `390x844`",
+        "`node --check .\\backend\\app\\review_ui\\static\\layer3.js`",
+        "`2 passed, 4 deselected`",
+        "After merge, the next exact posture is `current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime`.",
+    ):
+        if term not in rendered_projection_runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF)} "
+                f"missing downstream Analysis Environment rendered projection runtime proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Rendered Projection Runtime Proof",
+            "868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+            "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+            "State.sessionSummary.analysis_environment_projection",
+            ".analysis-environment-projection",
+            "analysis_environment_projection_missing",
+            "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+            "codex/l3-analysis-environment-rendered-runtime",
+            "State.sessionSummary.analysis_environment_projection",
+            "analysis_environment_projection_missing",
+            "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+        ),
+        REFRESH_SPEC: (
+            "868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+            "bounded read-only rendered `/review/layer3` implementation",
+            "State.sessionSummary.analysis_environment_projection",
+            "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_rendered_projection_runtime_proof"',
+            '"status": "implemented_downstream_analysis_environment_rendered_projection_read_only_panel_branch_local"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md"',
+            '"rendered_behavior_change": true',
+            '"runtime_behavior_change": false',
+            '"next_posture_after_merge": "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_rendered_projection_runtime_proof"',
+            '"proof_kind": "implemented_downstream_analysis_environment_rendered_projection_read_only_panel_branch_local"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md"',
+            '"rendered_behavior_change": true',
+            '"runtime_behavior_change": false',
+            '"next_posture_after_merge": "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing downstream Analysis Environment rendered projection runtime proof term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        rendered_runtime = manifest.get(
+            "downstream_analysis_environment_rendered_projection_runtime_proof"
+        )
+        if not isinstance(rendered_runtime, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing downstream_analysis_environment_rendered_projection_runtime_proof object"
+            )
+        else:
+            expected_rendered_runtime_scalars = {
+                "status": "implemented_downstream_analysis_environment_rendered_projection_read_only_panel_branch_local",
+                "doc": "next_milestone_plans/Layer3_planning_docs/868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+                "branch": "codex/l3-analysis-environment-rendered-runtime",
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/867_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint_before_implementation": "16b3f79f3e0f3c9fe7aceefbce622342af5591b2",
+                "selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+                "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+                "rendered_route": "/review/layer3",
+                "rendered_surface": "backend/app/review_ui/static/layer3.js",
+                "style_surface": "backend/app/review_ui/static/layer3.css",
+                "test_surface": "backend/tests/test_layer3_page.py",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": True,
+                "backend_route_api_dto_model_migration_service_change": False,
+                "new_submit_control_or_operation_step": False,
+                "frontend_only_durable_authority_enabled": False,
+                "browser_storage_authority_enabled": False,
+                "panel_selector": ".analysis-environment-projection",
+                "next_posture_after_merge": "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+            }
+            for key, value in expected_rendered_runtime_scalars.items():
+                if rendered_runtime.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_rendered_projection_runtime_proof.{key} must be {value!r}"
+                    )
+            fail_closed = rendered_runtime.get("fail_closed_reasons")
+            if fail_closed != [
+                "analysis_environment_projection_missing",
+                "analysis_environment_projection_schema_invalid",
+                "analysis_environment_projection_not_read_only",
+            ]:
+                errors.append(
+                    f"{_rel(MANIFEST)} downstream_analysis_environment_rendered_projection_runtime_proof.fail_closed_reasons must name the exact fail-closed reasons"
+                )
+
+    if isinstance(proof_manifest, dict):
+        rendered_runtime_proof = proof_manifest.get(
+            "downstream_analysis_environment_rendered_projection_runtime_proof"
+        )
+        if not isinstance(rendered_runtime_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_rendered_projection_runtime_proof object"
+            )
+        else:
+            expected_rendered_runtime_proof_scalars = {
+                "proof_kind": "implemented_downstream_analysis_environment_rendered_projection_read_only_panel_branch_local",
+                "status": "implemented_downstream_analysis_environment_rendered_projection_read_only_panel_branch_local",
+                "doc": "next_milestone_plans/Layer3_planning_docs/868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+                "branch": "codex/l3-analysis-environment-rendered-runtime",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": True,
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/867_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint_before_implementation": "16b3f79f3e0f3c9fe7aceefbce622342af5591b2",
+                "selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+                "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+                "rendered_surface": "backend/app/review_ui/static/layer3.js",
+                "next_posture_after_merge": "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+            }
+            for key, value in expected_rendered_runtime_proof_scalars.items():
+                if rendered_runtime_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_runtime_proof.{key} must be {value!r}"
+                    )
+            rendered_runtime_terms = rendered_runtime_proof.get("proof_terms")
+            if not isinstance(rendered_runtime_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_runtime_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "branch-local rendered implementation proof",
+                    "868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+                    "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+                    "16b3f79f3e0f3c9fe7aceefbce622342af5591b2",
+                    "State.sessionSummary.analysis_environment_projection",
+                    "backend/app/review_ui/static/layer3.js",
+                    "backend/app/review_ui/static/layer3.css",
+                    "backend/tests/test_layer3_page.py",
+                    "/review/layer3",
+                    ".analysis-environment-projection",
+                    "analysis_environment_projection_missing",
+                    "analysis_environment_projection_schema_invalid",
+                    "analysis_environment_projection_not_read_only",
+                    "headed in-app Chromium proof",
+                    "headless Chromium desktop proof",
+                    "headless Chromium mobile proof",
+                    "console/page errors: []",
+                    "horizontal overflow: false",
+                    "node --check .\\backend\\app\\review_ui\\static\\layer3.js PASS",
+                    "2 passed, 4 deselected",
+                    "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+                ):
+                    if term not in rendered_runtime_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_runtime_proof.proof_terms missing {term}"
                         )
 
 
