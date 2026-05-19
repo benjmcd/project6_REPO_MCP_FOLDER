@@ -6678,3 +6678,25 @@ Proof: `python -m pytest .\backend\tests\test_layer3_source_directory_vector_ret
 Non-admitted: models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, same-origin delivery/streaming, browser download, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, and full mockup activation.
 
 The next exact posture after merge is `await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime`; after sync, pivot to `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync` unless current-main evidence shows a concrete unresolved source-directory hybrid external export/download prepare defect or named downstream reader.
+
+## Source Directory Hybrid Context Qualitative Analysis External Export Download Prepare Runtime Current-Main Sync
+
+Current-main proof/control sync: `837_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1442` for `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime`.
+
+Runtime branch `codex/l3-next-gap-after-835` landed branch commit `397e2b77267943ef777c48dd732e215e7055c795` into current main at merge commit `41f1657c73b02541dc2dd2694d614630fc02b4a1`.
+
+Synced result: `current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime`.
+
+Current main now includes the source-directory hybrid external export/download prepare route `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare`.
+
+PR `#1442` had green `backend-layer3-api` (`3m6s`) and `test` (`3m33s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `same_origin_delivery_enabled: False`, `browser_download_enabled: False`, `provider_public_delivery_enabled: False`, `provider_private_signed_url_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `frontend_durable_authority_enabled: False`, `frontend_rendered_controls_enabled: False`, `package_payload_write_enabled: False`, `package_mutation_reconstruction_enabled: False`, `source_package_row_mutation_enabled: False`, and `new_source_family_enabled: False`.
+
+No models, migrations, package rows, package payload writes, package payload rewrites, package mutation/reconstruction, source package row mutation, replacement package rows, APS handoff dispatch, same-origin delivery/streaming, browser download, provider-public delivery/use, provider-private signed URL behavior, connector/destination dispatch, real connector invocation, credentials, network egress, auth/security broadening, frontend-durable authority, frontend-rendered controls, prompt/model/provider runtime, qualitative generation runtime, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, raw local path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync`.
