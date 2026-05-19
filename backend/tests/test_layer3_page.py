@@ -148,6 +148,14 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="external-export-download-delivery-form"' in response.text
     assert 'id="external-export-download-delivery-panel"' in response.text
     assert 'id="external-export-download-delivery-submit"' in response.text
+    assert 'id="source-directory-hybrid-external-export-download-delivery-form"' in response.text
+    assert (
+        'data-rendered-mode="rendered_source_directory_hybrid_external_export_download_delivery_control"'
+        in response.text
+    )
+    assert 'id="source-directory-hybrid-external-export-download-delivery-authority"' in response.text
+    assert 'id="source-directory-hybrid-external-export-download-delivery-status"' in response.text
+    assert 'id="source-directory-hybrid-external-export-download-delivery-submit"' in response.text
     assert 'id="external-export-download-signed-reference-form"' in response.text
     assert 'id="external-export-download-signed-reference-panel"' in response.text
     assert 'id="external-export-download-signed-reference-generate"' in response.text
@@ -550,6 +558,21 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "deliveryUi.browser_managed_same_origin_attachment_enabled === true" in js.text
     assert "deliveryUi.public_url_enabled === false" in js.text
     assert ".blob()" not in js.text
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID" in js.text
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID" in js.text
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH" in js.text
+    assert "function sourceDirectoryHybridExternalExportDownloadDeliveryPayload" in js.text
+    assert "inspectSourceDirectoryHybridExternalExportDownloadDelivery" in js.text
+    assert "submitSourceDirectoryHybridExternalExportDownloadDelivery" in js.text
+    assert "deliver_source_directory_hybrid_external_export_download" in js.text
+    assert (
+        "postJson(\n            SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH"
+        in js.text
+    )
+    assert (
+        "submitAttachmentForm(\n            SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH"
+        in js.text
+    )
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
     assert "operator_decision: elements.packageReviewSubmitDecision.value" in js.text
@@ -772,6 +795,59 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "destination:" not in signed_slice
     assert "runtime_db_write:" not in signed_slice
     assert "schema_migration:" not in signed_slice
+
+
+def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    payload_start = js.text.find("function sourceDirectoryHybridExternalExportDownloadDeliveryPayload")
+    payload_end = js.text.find("function sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull")
+    status_start = js.text.find("function sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches")
+    inspect_start = js.text.find("async function inspectSourceDirectoryHybridExternalExportDownloadDelivery")
+    submit_start = js.text.find("async function submitSourceDirectoryHybridExternalExportDownloadDelivery")
+    signed_start = js.text.find("async function submitExternalExportDownloadSignedReference")
+    assert payload_start != -1
+    assert payload_end != -1
+    assert status_start != -1
+    assert inspect_start != -1
+    assert submit_start != -1
+    assert signed_start != -1
+
+    payload_slice = js.text[payload_start:payload_end]
+    inspect_slice = js.text[inspect_start:submit_start]
+    submit_slice = js.text[submit_start:signed_start]
+    status_slice = js.text[status_start:submit_start]
+    assert "operator_decision: 'deliver_source_directory_hybrid_external_export_download'" in payload_slice
+    assert "external_export_download_target: SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET" in payload_slice
+    assert "delivery_mode: 'same_origin_artifact_stream'" in payload_slice
+    assert "SOURCE_DIRECTORY_HYBRID_DELIVERY_PAYLOAD_FIELDS.forEach" in payload_slice
+    assert "postJson(" in inspect_slice
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH" in inspect_slice
+    assert "submitAttachmentForm(" in submit_slice
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH" in submit_slice
+    assert "status.provider_public_delivery_enabled === false" in status_slice
+    assert "status.provider_private_signed_url_enabled === false" in status_slice
+    assert "status.connector_dispatch_enabled === false" in status_slice
+    assert "status.network_egress_enabled === false" in status_slice
+    assert "status.frontend_durable_authority_enabled === false" in status_slice
+    assert "status.raw_local_path_exposed === false" in status_slice
+    for forbidden in (
+        "payload_refs",
+        "raw_payload_path",
+        "local_file_path",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "network_egress:",
+        "package_payload_rewrite:",
+        "source_package_row_mutation:",
+        "raw_vector",
+    ):
+        assert forbidden not in payload_slice
 
 
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
