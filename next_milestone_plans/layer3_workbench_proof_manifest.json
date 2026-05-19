@@ -32534,5 +32534,49 @@
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_implemented_branch_local",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_summary": "Doc 834 proof records the read-only source-directory hybrid context-packet qualitative-analysis status surface over existing package-review and handoff/export state."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_summary": "Doc 834 proof records the read-only source-directory hybrid context-packet qualitative-analysis status surface over existing package-review and handoff/export state.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+    "status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+    "sync_branch": "codex/l3-834-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1439",
+    "runtime_merge_commit": "8323cab6638a74b6a73f30fc9c35c878219f06e3",
+    "review_fix_pr": "#1440",
+    "review_fix_merge_commit": "6b14c93f53ddbf9acfa7dae356107d6f9a13b36e",
+    "resolved_review_threads": [
+      "PRRT_kwDORzuv8M6DAzOt",
+      "PRRT_kwDORzuv8M6DAzOu"
+    ],
+    "proof_results": [
+      "backend-layer3-api SUCCESS for PR #1439",
+      "test SUCCESS for PR #1439",
+      "backend-layer3-api SUCCESS for PR #1440",
+      "test SUCCESS for PR #1440",
+      "PR #1440 reviewThreads totalCount 0",
+      "PR #1439 review threads resolved after PR #1440 merge",
+      "status accepts omitted client_request_id",
+      "status package matching no longer depends on request-scoped qualitative_analysis_hash or source_directory_hybrid_package_review_preview_hash",
+      "current-main sync introduces no additional runtime behavior"
+    ],
+    "blocked_scope": [
+      "same-family package/export proof loop without named defect",
+      "package mutation",
+      "source package row mutation",
+      "package payload rewrite",
+      "durable retrieval or qualitative-analysis rows",
+      "connector dispatch",
+      "provider delivery/use",
+      "network egress",
+      "frontend durable authority",
+      "raw local path exposure"
+    ],
+    "next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_branch": "codex/l3-834-current-main-sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_summary": "Doc 835 records current-main adoption of the corrected read-only source-directory hybrid context-packet qualitative-analysis status runtime after PR #1439 and review-fix PR #1440."
 }
