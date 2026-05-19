@@ -6932,3 +6932,21 @@ Current-main use-site candidates are limited to `quantitative_single_item_datase
 no TabPFN runtime, TabPFN dependency, `pip install tabpfn`, TabPFN fit/predict execution, TabPFN model/checkpoint loading, TabPFN cloud/API inference, request-owned TabPFN runtime settings, TabPFN output persistence, TabPFN package artifact, rendered optional-tool controls, Gate C/pass-entry admission, quantitative method-selection behavior, package/handoff/export/download integration, network egress, provider credential, hidden model call, browser login, token handling, model cache write, or causal/econometric claim is admitted by this ADR.
 
 The next exact posture is `select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan`.
+
+## NRC RAG Sublayer 3C Optional Tool ADR
+
+Evaluation-only ADR: `847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md` follows the TabPFN ADR and satisfies `select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan`.
+
+Decision: `evaluate_nrc_rag_static_benchmark_planning_only`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this ADR: `false`.
+
+Current external nrc-licensing-rag-adjacent guidance was rechecked from `https://huggingface.co/datasets/davenporten/nrc-regulatory-embeddings` and `https://github.com/chroma-core/chroma` on 2026-05-19. The public dataset is built for nrc-licensing-rag and contains NRC regulatory chunks with OpenAI `text-embedding-3-small` embeddings and Chroma loading examples, which are planning context only and not current-main runtime authority.
+
+Current-main comparison surfaces are limited to `source_directory_material_preview`, `source_directory_vector_retrieval`, `source_directory_hybrid_context_packet`, `source_directory_qualitative_hybrid_analysis`, and `source_directory_hybrid_context_packet_qualitative_analysis`.
+
+no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, OpenAI embedding provider, OpenAI/Claude generation provider, external embeddings dataset load, new Layer 3 retrieval endpoint, rendered retrieval controls, source-authority promotion, quantitative method-selection influence, package/handoff/export/download use, agent tool-call runtime, provider credential, network egress, hidden model call, embedding call, vector-store startup, corpus download, or auth/security behavior is admitted by this ADR.
+
+The next exact posture is `select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority`.

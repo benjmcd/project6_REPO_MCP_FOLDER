@@ -33075,5 +33075,50 @@
   "latest_tabpfn_sublayer3c_optional_predictive_method_adr_status": "tabpfn_sublayer3c_optional_predictive_method_adr_evaluation_only",
   "latest_tabpfn_sublayer3c_optional_predictive_method_adr_decision": "evaluate_tabpfn_static_benchmark_planning_only",
   "latest_tabpfn_sublayer3c_optional_predictive_method_adr_next_posture": "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
-  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_summary": "Doc 846 records an evaluation-only TabPFN ADR. It selects static benchmark planning as a possible future lane while admitting no TabPFN runtime, dependency, checkpoint/model loading, token handling, hidden download, fit/predict execution, package/handoff/export/download integration, or causal/econometric claims."
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_summary": "Doc 846 records an evaluation-only TabPFN ADR. It selects static benchmark planning as a possible future lane while admitting no TabPFN runtime, dependency, checkpoint/model loading, token handling, hidden download, fit/predict execution, package/handoff/export/download integration, or causal/econometric claims.",
+  "nrc_rag_sublayer3c_optional_tool_adr_proof": {
+    "proof_kind": "planning_control_nrc_rag_sublayer3c_optional_tool_adr",
+    "status": "nrc_rag_sublayer3c_optional_tool_adr_evaluation_only",
+    "doc": "next_milestone_plans/Layer3_planning_docs/847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md",
+    "branch": "codex/l3-nrc-rag-optional-tool-adr",
+    "current_main_preflight_checkpoint": "1405234f6d44634b059b33a63787948b1e7fecb3",
+    "proof_terms": [
+      "nrc_rag_sublayer3c_optional_tool_adr",
+      "evaluate_nrc_rag_static_benchmark_planning_only",
+      "runtime_behavior_change false",
+      "davenporten/nrc-regulatory-embeddings",
+      "OpenAI text-embedding-3-small embeddings",
+      "Chroma loading examples",
+      "source_directory_vector_retrieval",
+      "source_directory_hybrid_context_packet",
+      "source_directory_qualitative_hybrid_analysis",
+      "no NRC RAG runtime",
+      "no nrc-licensing-rag dependency",
+      "no Chroma/vector provider runtime",
+      "no OpenAI embedding provider",
+      "no external embeddings dataset load",
+      "no new Layer 3 retrieval endpoint",
+      "no rendered retrieval controls",
+      "no source-authority promotion",
+      "no package/handoff/export/download use",
+      "no agent tool-call runtime",
+      "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
+    "summary": "Doc 847 records an evaluation-only NRC RAG ADR. It selects static benchmark planning as a possible future lane while admitting no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, external embeddings load, new retrieval endpoint, rendered controls, source-authority promotion, package/handoff/export/download use, or agent tool-call runtime."
+  },
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_branch": "codex/l3-nrc-rag-optional-tool-adr",
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_doc": "next_milestone_plans/Layer3_planning_docs/847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md",
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_status": "nrc_rag_sublayer3c_optional_tool_adr_evaluation_only",
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_decision": "evaluate_nrc_rag_static_benchmark_planning_only",
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_next_posture": "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_summary": "Doc 847 records an evaluation-only NRC RAG ADR. It selects static benchmark planning as a possible future lane while admitting no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, external embeddings load, new retrieval endpoint, rendered controls, source-authority promotion, package/handoff/export/download use, or agent tool-call runtime."
 }
