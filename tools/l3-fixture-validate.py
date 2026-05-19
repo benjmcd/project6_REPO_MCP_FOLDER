@@ -20,6 +20,12 @@ EXPECTED_STATES = ("pending", "selected", "frozen")
 NULL_VALUES = {"null", "none"}
 TRUE_VALUE = "true"
 FALSE_VALUE = "false"
+TOOL_STATUS_VALUES = {
+    "pending",
+    "selected",
+    "deferred_absent_fixture_authority",
+    "no_adopt_absent_fixture_authority",
+}
 
 FIXED_FIELDS = {
     "benchmark_fixture_authority_schema_id": (
@@ -34,6 +40,11 @@ FIXED_FIELDS = {
     "benchmark_execution_change": FALSE_VALUE,
     "fixture_materialization_change": FALSE_VALUE,
 }
+
+TOOL_STATUS_FIELDS = (
+    "tabpfn_fixture_authority_status",
+    "nrc_rag_fixture_authority_status",
+)
 
 TABPFN_FIELDS = (
     "tabpfn_fixture_authority",
@@ -69,7 +80,7 @@ NRC_RAG_FIELDS = (
 
 SELECTION_FIELDS = TABPFN_FIELDS + NRC_RAG_FIELDS
 CONTROL_FIELDS = ("selection_complete", "implementation_entry_freeze_written")
-ALL_FIELDS = tuple(FIXED_FIELDS) + SELECTION_FIELDS + CONTROL_FIELDS
+ALL_FIELDS = tuple(FIXED_FIELDS) + TOOL_STATUS_FIELDS + SELECTION_FIELDS + CONTROL_FIELDS
 
 
 @dataclass(frozen=True)
@@ -219,7 +230,23 @@ def _validate_fixed_fields(values: dict[str, str]) -> list[ValidationIssue]:
     return issues
 
 
-def _validate_selected_values(values: dict[str, str]) -> list[ValidationIssue]:
+def _validate_tool_status_fields(values: dict[str, str]) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    for field in TOOL_STATUS_FIELDS:
+        if _normalized(values[field]) not in TOOL_STATUS_VALUES:
+            issues.append(
+                ValidationIssue(
+                    "invalid_tool_fixture_authority_status",
+                    (
+                        f"{field} must be one of "
+                        f"{', '.join(sorted(TOOL_STATUS_VALUES))}"
+                    ),
+                )
+            )
+    return issues
+
+
+def _validate_tabpfn_selected_values(values: dict[str, str]) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     if values["tabpfn_fixture_kind"] != "dataset_version_supervised_tabular_micro_fixture":
         issues.append(
@@ -252,7 +279,11 @@ def _validate_selected_values(values: dict[str, str]) -> list[ValidationIssue]:
                 "regression fixtures must use mae_or_rmse",
             )
         )
+    return issues
 
+
+def _validate_nrc_rag_selected_values(values: dict[str, str]) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
     if values["nrc_rag_fixture_kind"] != "regulatory_context_grounding_query_set":
         issues.append(
             ValidationIssue(
@@ -261,6 +292,45 @@ def _validate_selected_values(values: dict[str, str]) -> list[ValidationIssue]:
             )
         )
     return issues
+
+
+def _validate_tool_selection_fields(
+    values: dict[str, str],
+    *,
+    status: str,
+    fields: tuple[str, ...],
+    expected_state: str,
+) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    if status == "selected":
+        for field in fields:
+            if not _is_filled(values[field]):
+                issues.append(
+                    ValidationIssue(
+                        f"{expected_state}_field_must_be_filled",
+                        f"{expected_state} fixture authority field {field!r} must be filled",
+                    )
+                )
+    else:
+        for field in fields:
+            if not _is_nullish(values[field]):
+                issues.append(
+                    ValidationIssue(
+                        "nonselected_tool_field_must_be_null",
+                        (
+                            f"fixture authority field {field!r} must remain null "
+                            f"unless its tool status is selected"
+                        ),
+                    )
+                )
+    return issues
+
+
+def _tool_statuses(values: dict[str, str]) -> tuple[str, str]:
+    return (
+        _normalized(values["tabpfn_fixture_authority_status"]),
+        _normalized(values["nrc_rag_fixture_authority_status"]),
+    )
 
 
 def validate_record(values: dict[str, str], expected_state: str) -> list[ValidationIssue]:
@@ -272,8 +342,14 @@ def validate_record(values: dict[str, str], expected_state: str) -> list[Validat
         return issues
 
     issues.extend(_validate_fixed_fields(values))
+    issues.extend(_validate_tool_status_fields(values))
     selection_complete = _normalized(values["selection_complete"])
     freeze_written = _normalized(values["implementation_entry_freeze_written"])
+    tabpfn_status, nrc_rag_status = _tool_statuses(values)
+    selected_tool_count = sum(
+        1 for status in (tabpfn_status, nrc_rag_status) if status == "selected"
+    )
+    any_pending_tool = any(status == "pending" for status in (tabpfn_status, nrc_rag_status))
 
     if selection_complete not in {TRUE_VALUE, FALSE_VALUE}:
         issues.append(
@@ -291,6 +367,14 @@ def validate_record(values: dict[str, str], expected_state: str) -> list[Validat
         )
 
     if expected_state == "pending":
+        for field in TOOL_STATUS_FIELDS:
+            if _normalized(values[field]) != "pending":
+                issues.append(
+                    ValidationIssue(
+                        "pending_tool_status_must_be_pending",
+                        f"pending fixture authority record must keep {field} pending",
+                    )
+                )
         for field in SELECTION_FIELDS:
             if not _is_nullish(values[field]):
                 issues.append(
@@ -314,19 +398,38 @@ def validate_record(values: dict[str, str], expected_state: str) -> list[Validat
                 )
             )
     elif expected_state == "selected":
-        for field in SELECTION_FIELDS:
-            if not _is_filled(values[field]):
-                issues.append(
-                    ValidationIssue(
-                        "selected_field_must_be_filled",
-                        f"selected fixture authority field {field!r} must be filled",
-                    )
-                )
-        if selection_complete != TRUE_VALUE:
+        if selected_tool_count == 0:
             issues.append(
                 ValidationIssue(
-                    "selected_selection_complete_must_be_true",
-                    "selected fixture authority record must set selection_complete true",
+                    "selected_record_requires_selected_tool",
+                    "selected fixture authority record must select at least one tool",
+                )
+            )
+        issues.extend(
+            _validate_tool_selection_fields(
+                values,
+                status=tabpfn_status,
+                fields=TABPFN_FIELDS,
+                expected_state="selected",
+            )
+        )
+        issues.extend(
+            _validate_tool_selection_fields(
+                values,
+                status=nrc_rag_status,
+                fields=NRC_RAG_FIELDS,
+                expected_state="selected",
+            )
+        )
+        expected_selection_complete = FALSE_VALUE if any_pending_tool else TRUE_VALUE
+        if selection_complete != expected_selection_complete:
+            issues.append(
+                ValidationIssue(
+                    "selected_selection_complete_mismatch",
+                    (
+                        "selected fixture authority record must set selection_complete "
+                        f"{expected_selection_complete}"
+                    ),
                 )
             )
         if freeze_written != FALSE_VALUE:
@@ -336,16 +439,41 @@ def validate_record(values: dict[str, str], expected_state: str) -> list[Validat
                     "selected fixture authority record must keep implementation_entry_freeze_written false until a separate freeze lands",
                 )
             )
-        issues.extend(_validate_selected_values(values))
+        if tabpfn_status == "selected":
+            issues.extend(_validate_tabpfn_selected_values(values))
+        if nrc_rag_status == "selected":
+            issues.extend(_validate_nrc_rag_selected_values(values))
     else:
-        for field in SELECTION_FIELDS:
-            if not _is_filled(values[field]):
-                issues.append(
-                    ValidationIssue(
-                        "frozen_field_must_be_filled",
-                        f"frozen fixture authority field {field!r} must be filled",
-                    )
+        if selected_tool_count == 0:
+            issues.append(
+                ValidationIssue(
+                    "frozen_record_requires_selected_tool",
+                    "frozen fixture authority record must select at least one tool",
                 )
+            )
+        if any_pending_tool:
+            issues.append(
+                ValidationIssue(
+                    "frozen_tool_status_must_not_be_pending",
+                    "frozen fixture authority record cannot leave a tool pending",
+                )
+            )
+        issues.extend(
+            _validate_tool_selection_fields(
+                values,
+                status=tabpfn_status,
+                fields=TABPFN_FIELDS,
+                expected_state="frozen",
+            )
+        )
+        issues.extend(
+            _validate_tool_selection_fields(
+                values,
+                status=nrc_rag_status,
+                fields=NRC_RAG_FIELDS,
+                expected_state="frozen",
+            )
+        )
         if selection_complete != TRUE_VALUE:
             issues.append(
                 ValidationIssue(
@@ -360,7 +488,10 @@ def validate_record(values: dict[str, str], expected_state: str) -> list[Validat
                     "frozen fixture authority record must set implementation_entry_freeze_written true",
                 )
             )
-        issues.extend(_validate_selected_values(values))
+        if tabpfn_status == "selected":
+            issues.extend(_validate_tabpfn_selected_values(values))
+        if nrc_rag_status == "selected":
+            issues.extend(_validate_nrc_rag_selected_values(values))
     return issues
 
 
