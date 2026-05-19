@@ -34931,5 +34931,161 @@
   "latest_nrc_rag_sublayer3c_optional_tool_adr_decision": "evaluate_nrc_rag_static_benchmark_planning_only",
   "latest_nrc_rag_sublayer3c_optional_tool_adr_runtime_behavior_change": false,
   "latest_nrc_rag_sublayer3c_optional_tool_adr_next_posture": "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
-  "latest_nrc_rag_sublayer3c_optional_tool_adr_summary": "Doc 847 records an evaluation-only NRC RAG ADR. It selects static benchmark planning as a possible future lane while admitting no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, external embeddings load, new retrieval endpoint, rendered controls, source-authority promotion, package/handoff/export/download use, or agent tool-call runtime."
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_summary": "Doc 847 records an evaluation-only NRC RAG ADR. It selects static benchmark planning as a possible future lane while admitting no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, external embeddings load, new retrieval endpoint, rendered controls, source-authority promotion, package/handoff/export/download use, or agent tool-call runtime.",
+  "sublayer3c_optional_tool_static_benchmark_plan": {
+    "status": "sublayer3c_optional_tool_static_benchmark_plan_selected_no_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md",
+    "branch": "codex/l3-optional-tool-static-benchmark-plan",
+    "current_main_preflight_checkpoint": "c01bed789b4ba4f83fa1bc7899dd85ba3348085f",
+    "selected_from_posture": "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
+    "decision": "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime",
+    "runtime_status": "not_implemented",
+    "runtime_behavior_change": false,
+    "benchmark_execution_change": false,
+    "fixture_materialization_change": false,
+    "planning_context_only": true,
+    "benchmark_plan_schema_id": "layer3.sublayer3c_optional_tool_static_benchmark_plan.v1",
+    "governing_docs": [
+      "next_milestone_plans/Layer3_planning_docs/844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md",
+      "next_milestone_plans/Layer3_planning_docs/845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md",
+      "next_milestone_plans/Layer3_planning_docs/846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md",
+      "next_milestone_plans/Layer3_planning_docs/847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md"
+    ],
+    "shared_required_fields": [
+      "benchmark_plan_schema_id",
+      "benchmark_case_id",
+      "candidate_tool",
+      "current_main_use_site",
+      "source_authority",
+      "fixture_kind",
+      "baseline_family",
+      "metric_family",
+      "no_adopt_threshold",
+      "runtime_isolation_required",
+      "default_dependency_allowed",
+      "network_or_provider_call_allowed",
+      "package_handoff_export_download_allowed",
+      "readiness_or_runtime_gate_required_before_execution"
+    ],
+    "tabpfn_static_plan": {
+      "candidate_tool": "tabpfn",
+      "admitted_use_sites": [
+        "quantitative_single_item_dataset_version",
+        "quantitative_associated_cohort_dataset_version"
+      ],
+      "engine_family": "wrapped_quantitative_analysis",
+      "current_baselines": [
+        "cross_correlation",
+        "descriptive_summary",
+        "decomposition",
+        "structural_break",
+        "majority_class_or_persistence_or_descriptive_simple_baseline"
+      ],
+      "fixture_kind": "dataset_version_supervised_tabular_micro_fixture",
+      "required_fixture_metadata": [
+        "dataset_version_authority",
+        "target_column_declared",
+        "feature_columns_declared",
+        "train_test_split_declared",
+        "leakage_checks_declared",
+        "row_count_band",
+        "task_type",
+        "metric_family",
+        "fixture_materialization_status"
+      ],
+      "no_adopt_thresholds": [
+        "no_adopt_tabpfn_for_absent_supervised_fixture_authority",
+        "no_adopt_tabpfn_for_sublayer3c_optional_predictive_method",
+        "no_adopt_or_readiness_unavailable_tabpfn"
+      ]
+    },
+    "nrc_rag_static_plan": {
+      "candidate_tool": "nrc_licensing_rag",
+      "admitted_use_sites": [
+        "source_directory_material_preview",
+        "source_directory_vector_retrieval",
+        "source_directory_hybrid_context_packet",
+        "source_directory_qualitative_hybrid_analysis",
+        "source_directory_hybrid_context_packet_qualitative_analysis"
+      ],
+      "fixture_kind": "regulatory_context_grounding_query_set",
+      "current_baselines": [
+        "source_directory_lexical_retrieval",
+        "source_directory_vector_retrieval",
+        "source_directory_hybrid_context_packet",
+        "source_directory_qualitative_hybrid_analysis"
+      ],
+      "required_fixture_metadata": [
+        "query_set_authority",
+        "query_id",
+        "query_text",
+        "answerability",
+        "expected_source_identifiers_declared",
+        "expected_source_spans_declared",
+        "expected_refusal_behavior_declared",
+        "citation_rubric_declared",
+        "baseline_surface_set_declared",
+        "fixture_materialization_status"
+      ],
+      "no_adopt_thresholds": [
+        "no_adopt_nrc_rag_for_absent_query_set_authority",
+        "no_adopt_nrc_rag_for_sublayer3c_optional_tool_use",
+        "no_adopt_or_readiness_unavailable_nrc_rag"
+      ]
+    },
+    "execution_gate_required_before_any_benchmark_run": true,
+    "blocked_scope": {
+      "runtime_behavior": false,
+      "benchmark_execution": false,
+      "fixture_data_creation": false,
+      "fixture_materialization": false,
+      "backend_route": false,
+      "api_dto_or_response_model": false,
+      "database_model_or_migration": false,
+      "dependency": false,
+      "package_installation": false,
+      "provider_adapter_or_credentials": false,
+      "network_egress": false,
+      "rendered_optional_tool_controls": false,
+      "frontend_durable_authority": false,
+      "connector_dispatch": false,
+      "agent_tool_call_runtime": false,
+      "package_handoff_export_download_integration": false,
+      "signed_reference_integration": false,
+      "gate_c_or_pass_entry_admission": false,
+      "source_authority_promotion": false,
+      "quantitative_method_selection_behavior": false,
+      "hidden_model_call": false,
+      "cloud_api_inference": false,
+      "embedding_call": false,
+      "vector_store_startup": false,
+      "corpus_download": false,
+      "chroma_runtime": false,
+      "openai_claude_provider_runtime": false,
+      "tabpfn_runtime": false,
+      "tabpfn_dependency": false,
+      "tabpfn_fit_predict_execution": false,
+      "tabpfn_checkpoint_loading": false,
+      "nrc_licensing_rag_dependency": false,
+      "nrc_rag_runtime": false,
+      "auth_security_behavior_change": false
+    },
+    "validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+    "summary": "Doc 848 records a combined no-runtime static benchmark plan for TabPFN and NRC RAG. It defines use-sites, fixture metadata, baselines, metrics, no-adopt thresholds, and execution-gate requirements while admitting no runtime behavior, benchmark execution, fixture materialization, dependencies, provider calls, endpoints, rendered controls, package/handoff/export/download integration, or Gate C/pass-entry admission."
+  },
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_branch": "codex/l3-optional-tool-static-benchmark-plan",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_doc": "next_milestone_plans/Layer3_planning_docs/848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_status": "sublayer3c_optional_tool_static_benchmark_plan_selected_no_runtime",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_decision": "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_runtime_behavior_change": false,
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_next_posture": "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_summary": "Doc 848 records a combined no-runtime static benchmark plan for TabPFN and NRC RAG. It defines use-sites, fixture metadata, baselines, metrics, no-adopt thresholds, and execution-gate requirements while admitting no runtime behavior, benchmark execution, fixture materialization, dependencies, provider calls, endpoints, rendered controls, package/handoff/export/download integration, or Gate C/pass-entry admission."
 }
