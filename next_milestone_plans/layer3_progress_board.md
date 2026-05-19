@@ -7359,3 +7359,19 @@ Canonical backend authority remains `backend/app/services/layer3_internal_webhoo
 This freeze admits no runtime behavior and no rendered behavior now. Still blocked: implementation before current-main sync, dispatch rerun, rendered dispatch/submit controls, destination selection, URL or credential inputs, connector run creation, provider/public/signed URL behavior, package/source/auth/security widening, optional-tool runtime, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `current_main_sync_internal_webhook_rendered_status_freeze_then_implementation`. After that sync, the only admitted implementation action is `implement_internal_webhook_rendered_read_only_status_projection`.
+
+## Internal Webhook Rendered Status Freeze Current-Main Sync
+
+Current-main proof/control sync: PR `#1488` merged `872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md` at merge commit `32bb43e9c44ecdedd583020737ab0a91fd84c0fe`.
+
+Sync doc: `873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` succeeded in `3m20s`, `test` succeeded in `3m38s`, PR comments/reviews/latestReviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for JSON manifest parsing, checker py_compile, `python .\tools\l3-progress-check.py`, target-selection validation, fixture-authority validation, checkpoint fixture validation, and `git diff --check`.
+
+The internal webhook rendered status freeze is now current-main synced as `current_main_synced_internal_webhook_rendered_status_freeze`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`.
+
+Next exact posture: `implement_internal_webhook_rendered_read_only_status_projection`.

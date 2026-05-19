@@ -7260,7 +7260,16 @@
     "latest_internal_webhook_rendered_status_freeze_runtime_behavior_change": false,
     "latest_internal_webhook_rendered_status_freeze_rendered_behavior_change": false,
     "latest_internal_webhook_rendered_status_freeze_next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
-    "latest_internal_webhook_rendered_status_freeze_summary": "Doc 872 freezes the future implementation entry for internal webhook rendered read-only status projection. It permits only a later current-main-synced implementation of internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch, while admitting no runtime/rendered behavior now, dispatch rerun, write/submit control, URL/credential input, connector rows, provider URL behavior, optional-tool runtime, browser-storage authority, or frontend-only durable authority."
+    "latest_internal_webhook_rendered_status_freeze_summary": "Doc 872 freezes the future implementation entry for internal webhook rendered read-only status projection. It permits only a later current-main-synced implementation of internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch, while admitting no runtime/rendered behavior now, dispatch rerun, write/submit control, URL/credential input, connector rows, provider URL behavior, optional-tool runtime, browser-storage authority, or frontend-only durable authority.",
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_branch": "codex/l3-internal-webhook-rendered-status-freeze-sync",
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_status": "current_main_synced_internal_webhook_rendered_status_freeze",
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_pr": "#1488",
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_merge_commit": "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_runtime_behavior_change": false,
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_rendered_behavior_change": false,
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_next_posture": "implement_internal_webhook_rendered_read_only_status_projection",
+    "latest_internal_webhook_rendered_status_freeze_current_main_sync_summary": "Doc 873 syncs PR #1488 merge commit 32bb43e9c44ecdedd583020737ab0a91fd84c0fe to current main. The internal webhook rendered status freeze is current-main synced with the next implementation limited to internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -36592,5 +36601,47 @@
     "frontend_only_durable_authority": false,
     "next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
     "summary": "Doc 872 freezes the future implementation entry for internal webhook rendered read-only status projection. It permits only a later current-main-synced implementation of internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch, while admitting no runtime/rendered behavior now, dispatch rerun, write/submit control, URL/credential input, connector rows, provider URL behavior, optional-tool runtime, browser-storage authority, or frontend-only durable authority."
+  },
+  "internal_webhook_rendered_status_freeze_current_main_sync": {
+    "status": "current_main_synced_internal_webhook_rendered_status_freeze",
+    "doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-internal-webhook-rendered-status-freeze-sync",
+    "synced_freeze_doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+    "freeze_pr": "#1488",
+    "freeze_branch": "codex/l3-internal-webhook-rendered-status-freeze",
+    "freeze_branch_commit": "7c6c4ab7744c7a0acc0e82f00c7aeac22c2179c1",
+    "freeze_merge_commit": "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+    "synced_result": "current_main_synced_internal_webhook_rendered_status_freeze",
+    "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+    "runtime_behavior_introduced_by_freeze": false,
+    "runtime_behavior_introduced_by_sync": false,
+    "rendered_behavior_introduced_by_freeze": false,
+    "rendered_behavior_introduced_by_sync": false,
+    "implementation_entry_allowed_next": true,
+    "future_session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+    "future_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+    "rendered_route": "/review/layer3",
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS 3m20s",
+      "test": "SUCCESS 3m38s",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads_totalCount": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "post_merge_validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py .\\tools\\l3-fixture-validate.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "implement_internal_webhook_rendered_read_only_status_projection",
+    "summary": "Doc 873 syncs PR #1488 merge commit 32bb43e9c44ecdedd583020737ab0a91fd84c0fe to current main. The internal webhook rendered status freeze is current-main synced with the next implementation limited to internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch."
   }
 }
