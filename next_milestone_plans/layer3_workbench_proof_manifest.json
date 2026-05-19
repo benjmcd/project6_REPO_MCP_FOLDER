@@ -34289,5 +34289,69 @@
       "implement_internal_webhook_rendered_read_only_status_projection"
     ],
     "summary": "Doc 873 syncs PR #1488 merge commit 32bb43e9c44ecdedd583020737ab0a91fd84c0fe to current main. The internal webhook rendered status freeze is current-main synced with the next implementation limited to internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch."
+  },
+  "internal_webhook_rendered_status_runtime_proof": {
+    "proof_kind": "internal_webhook_rendered_read_only_status_projection_runtime_proof",
+    "status": "internal_webhook_rendered_read_only_status_projection_runtime_proved",
+    "doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+    "branch": "codex/l3-internal-webhook-rendered-status-runtime",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_implementation": "374e5576f5c2841de9eecffb711500f881af51a6",
+    "implemented_action": "implement_internal_webhook_rendered_read_only_status_projection",
+    "session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+    "rendered_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+    "rendered_panel": "#internal-webhook-dispatch-panel",
+    "rendered_route": "/review/layer3",
+    "runtime_behavior_change": true,
+    "runtime_behavior_summary": "read-only session-summary projection over durable internal webhook dispatch receipt and audit rows",
+    "rendered_behavior_change": true,
+    "dispatch_behavior_change": false,
+    "changed_files": [
+      "backend/app/services/layer3_workbench.py",
+      "backend/app/api/layer3.py",
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_api.py",
+      "backend/tests/test_layer3_page.py"
+    ],
+    "validation": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted .\\backend\\tests\\test_layer3_page.py::test_layer3_page_route_serves_workbench_shell .\\backend\\tests\\test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS 3 passed",
+      "in-app headed browser proof PASS: panel exists, rendered mode present, read-only status content present, console errors 0 under isolated harness",
+      "headless Chromium proof PASS: panel textLength 2300, rendered mode present, consoleErrors 0"
+    ],
+    "non_admitted": [
+      "internal webhook rerun retry cancel queue or background worker behavior",
+      "rendered dispatch button submit control URL input credential input destination selector or operation dock step",
+      "operator-supplied destination URL authority",
+      "raw target URL token headers local path package payload or package bytes exposure",
+      "ConnectorRun or ConnectorRunTarget creation",
+      "provider-public URL provider-private signed URL or cloud object-store write",
+      "package mutation source expansion RAG/vector optional-tool runtime auth/security implementation browser-storage authority frontend-only durable authority"
+    ],
+    "next_posture": "current_main_sync_internal_webhook_rendered_status_runtime",
+    "summary": "Doc 874 proves the bounded internal webhook rendered read-only status projection runtime: session summary now exposes internal_webhook_dispatch from durable receipt/audit authority, /review/layer3 renders #internal-webhook-dispatch-panel from State.sessionSummary.internal_webhook_dispatch, and headed plus headless browser proof passed without admitting dispatch rerun, destination selection, connector rows, raw URL/token/package exposure, provider URL behavior, optional-tool runtime, or frontend-only durable authority.",
+    "proof_terms": [
+      "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+      "implement_internal_webhook_rendered_read_only_status_projection",
+      "internal_webhook_dispatch: dict[str, Any]",
+      "State.sessionSummary.internal_webhook_dispatch",
+      "#internal-webhook-dispatch-panel",
+      "rendered_internal_webhook_dispatch_read_only_status_surface",
+      "L3InternalWebhookDispatchReceipt",
+      "L3InternalWebhookDispatchAuditEvent",
+      "GET /api/v1/layer3/session/{session_id}",
+      "internal_webhook_dispatch_ready",
+      "internal_webhook_dispatched",
+      "headed browser proof console errors 0",
+      "headless Chromium proof consoleErrors 0",
+      "no internal webhook rerun",
+      "no rendered dispatch/submit control",
+      "no operator-supplied destination URL authority",
+      "no raw target URL token headers package payload or package bytes exposure",
+      "no ConnectorRun or ConnectorRunTarget creation",
+      "no frontend-only durable authority",
+      "current_main_sync_internal_webhook_rendered_status_runtime"
+    ]
   }
 }

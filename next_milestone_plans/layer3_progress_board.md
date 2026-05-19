@@ -7375,3 +7375,17 @@ The internal webhook rendered status freeze is now current-main synced as `curre
 Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`.
 
 Next exact posture: `implement_internal_webhook_rendered_read_only_status_projection`.
+
+## Internal Webhook Rendered Status Runtime Proof
+
+Branch-local runtime/rendered proof: `874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md` implements only `implement_internal_webhook_rendered_read_only_status_projection`.
+
+Implemented surface: `GET /api/v1/layer3/session/{session_id}` now exposes `internal_webhook_dispatch: dict[str, Any]` from durable `L3InternalWebhookDispatchReceipt` and `L3InternalWebhookDispatchAuditEvent` authority, and `/review/layer3` renders `#internal-webhook-dispatch-panel` from `State.sessionSummary.internal_webhook_dispatch`.
+
+Runtime behavior introduced by this pass: `true`, limited to a read-only session-summary status projection. Rendered behavior introduced by this pass: `true`, limited to read-only `/review/layer3` status rendering. Dispatch behavior introduced by this pass: `false`.
+
+Proof status: targeted backend/static tests passed, in-app headed browser proof passed with zero console errors under the isolated browser harness, and headless Chromium proof passed with `textLength 2300`, rendered mode `rendered_internal_webhook_dispatch_read_only_status_surface`, and `consoleErrors 0`.
+
+Still blocked: internal webhook rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selectors, operator-supplied destination URL authority, raw target URL/token/header/local-path/package-payload/package-bytes exposure, `ConnectorRun` or `ConnectorRunTarget` creation, provider URL behavior, cloud object-store write, package mutation, source expansion, RAG/vector, optional-tool runtime, auth/security implementation, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture after merge: `current_main_sync_internal_webhook_rendered_status_runtime`.
