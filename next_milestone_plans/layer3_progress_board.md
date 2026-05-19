@@ -7174,3 +7174,21 @@ Proof status: `python -m pytest .\backend\tests\test_layer3_source_directory_ing
 Still blocked: caller-provided paths/URLs/globs/file bytes/recursive flags, rendered controls, source authority promotion, package/handoff/export/download behavior changes, connector dispatch, provider URL behavior, credentials or network behavior, semantic/vector RAG widening beyond current deterministic local source-directory surfaces, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs/OCR/Office/images/archives/arbitrary binaries, browser uploads, web connectors, and database connectors.
 
 Next exact posture: `current_main_sync_recursive_server_configured_directory_text_table_policy_v1`. After sync, pivot to the next highest-value deferred platform lane unless current-main evidence names a concrete recursive-ingestion defect or blocker.
+
+## Recursive Source Ingestion Runtime Current-Main Sync
+
+Current-main proof/control sync: PR `#1468` merged at merge commit `2fa84f5f`.
+
+Sync doc: `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` succeeded in `3m27s`, `test` succeeded in `3m52s`, PR comments/reviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, pending fixture validation, and checkpoint fixture validation.
+
+The recursive source-ingestion runtime implementation is now current-main synced as `current_main_synced_recursive_source_ingestion_runtime_implementation`.
+
+Current main now implements recursive server-configured directory text/table ingestion under `recursive_server_configured_directory_text_table_policy_v1`: `direct_child_only: False`, `recursive_traversal_admitted: True`, maximum recursion depth `2`, maximum normalized relative path segments `3` including filename, text/table extensions only, deterministic normalized relative path ordering, no caller-selected recursive flag, redacted relative path authority, and existing source-directory material-preview/text-index compatibility.
+
+Still blocked: caller-provided paths/URLs/globs/file bytes/recursive flags, rendered controls, source authority promotion, package/handoff/export/download behavior changes, connector dispatch changes, provider URL behavior, credentials or network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs/OCR/Office/images/archives/arbitrary binaries, browser uploads, web connectors, and database connectors.
+
+Next exact posture: `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`. Do not continue recursive source-ingestion polish unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
