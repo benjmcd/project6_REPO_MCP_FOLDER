@@ -2403,6 +2403,9 @@ LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION = (
 LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE = (
     PLANNING_DOCS / "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md"
 )
+LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_SYNC = (
+    PLANNING_DOCS / "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -76838,6 +76841,194 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_proof.proof_terms missing {term}"
+                        )
+
+    internal_webhook_rendered_status_freeze_sync_text = _read_required_text(
+        LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `server_configured_internal_webhook_rendered_read_only_status_projection` freeze.",
+        "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+        "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+        "Freeze PR: `#1488`.",
+        "7c6c4ab7744c7a0acc0e82f00c7aeac22c2179c1",
+        "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+        "Synced result: `current_main_synced_internal_webhook_rendered_status_freeze`.",
+        "Implementation-entry allowed next: true, limited to `implement_internal_webhook_rendered_read_only_status_projection`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m20s`",
+        "`test`: `SUCCESS`, `3m38s`",
+        "reviewThreads totalCount: `0`",
+        "Post-merge validation passed on current main at `32bb43e9c44ecdedd583020737ab0a91fd84c0fe`",
+        "internal_webhook_dispatch: dict[str, Any]",
+        "State.sessionSummary.internal_webhook_dispatch",
+        "The next exact posture is `implement_internal_webhook_rendered_read_only_status_projection`.",
+    ):
+        if term not in internal_webhook_rendered_status_freeze_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_SYNC)} "
+                f"missing internal webhook rendered status freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Internal Webhook Rendered Status Freeze Current-Main Sync",
+            "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1488`",
+            "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+            "current_main_synced_internal_webhook_rendered_status_freeze",
+            "implement_internal_webhook_rendered_read_only_status_projection",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 internal webhook rendered status freeze current-main sync to preserve when present",
+            "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+            "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+            "current_main_synced_internal_webhook_rendered_status_freeze",
+            "implement_internal_webhook_rendered_read_only_status_projection",
+        ),
+        REFRESH_SPEC: (
+            "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+            "PR `#1488` only as current-main sync",
+            "current_main_synced_internal_webhook_rendered_status_freeze",
+            "implement_internal_webhook_rendered_read_only_status_projection",
+        ),
+        MANIFEST: (
+            '"internal_webhook_rendered_status_freeze_current_main_sync"',
+            '"status": "current_main_synced_internal_webhook_rendered_status_freeze"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md"',
+            '"freeze_pr": "#1488"',
+            '"freeze_merge_commit": "32bb43e9c44ecdedd583020737ab0a91fd84c0fe"',
+            '"selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection"',
+            '"runtime_behavior_introduced_by_sync": false',
+            '"rendered_behavior_introduced_by_sync": false',
+            '"next_posture": "implement_internal_webhook_rendered_read_only_status_projection"',
+        ),
+        PROOF_MANIFEST: (
+            '"internal_webhook_rendered_status_freeze_current_main_sync_proof"',
+            '"proof_kind": "current_main_synced_internal_webhook_rendered_status_freeze"',
+            '"PR #1488 merged"',
+            '"backend-layer3-api SUCCESS 3m20s"',
+            '"test SUCCESS 3m38s"',
+            '"reviewThreads totalCount 0"',
+            '"post-merge validation passed"',
+            '"implement_internal_webhook_rendered_read_only_status_projection"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing internal webhook rendered status freeze sync term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        sync_entry = manifest.get("internal_webhook_rendered_status_freeze_current_main_sync")
+        if not isinstance(sync_entry, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing internal_webhook_rendered_status_freeze_current_main_sync object"
+            )
+        else:
+            expected_sync_scalars = {
+                "status": "current_main_synced_internal_webhook_rendered_status_freeze",
+                "doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-freeze-sync",
+                "synced_freeze_doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+                "freeze_pr": "#1488",
+                "freeze_branch": "codex/l3-internal-webhook-rendered-status-freeze",
+                "freeze_branch_commit": "7c6c4ab7744c7a0acc0e82f00c7aeac22c2179c1",
+                "freeze_merge_commit": "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+                "synced_result": "current_main_synced_internal_webhook_rendered_status_freeze",
+                "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "runtime_behavior_introduced_by_freeze": False,
+                "runtime_behavior_introduced_by_sync": False,
+                "rendered_behavior_introduced_by_freeze": False,
+                "rendered_behavior_introduced_by_sync": False,
+                "implementation_entry_allowed_next": True,
+                "future_session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "future_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_route": "/review/layer3",
+                "next_posture": "implement_internal_webhook_rendered_read_only_status_projection",
+            }
+            for key, value in expected_sync_scalars.items():
+                if sync_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} internal_webhook_rendered_status_freeze_current_main_sync.{key} must be {value!r}"
+                    )
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_internal_webhook_rendered_status_freeze_current_main_sync_status": "current_main_synced_internal_webhook_rendered_status_freeze",
+                    "latest_internal_webhook_rendered_status_freeze_current_main_sync_pr": "#1488",
+                    "latest_internal_webhook_rendered_status_freeze_current_main_sync_merge_commit": "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+                    "latest_internal_webhook_rendered_status_freeze_current_main_sync_runtime_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_freeze_current_main_sync_rendered_behavior_change": False,
+                    "latest_internal_webhook_rendered_status_freeze_current_main_sync_next_posture": "implement_internal_webhook_rendered_read_only_status_projection",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(
+            "internal_webhook_rendered_status_freeze_current_main_sync_proof"
+        )
+        if not isinstance(proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing internal_webhook_rendered_status_freeze_current_main_sync_proof object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "current_main_synced_internal_webhook_rendered_status_freeze",
+                "status": "current_main_synced_internal_webhook_rendered_status_freeze",
+                "doc": "next_milestone_plans/Layer3_planning_docs/873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-internal-webhook-rendered-status-freeze-sync",
+                "synced_freeze_doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+                "freeze_pr": "#1488",
+                "freeze_branch": "codex/l3-internal-webhook-rendered-status-freeze",
+                "freeze_branch_commit": "7c6c4ab7744c7a0acc0e82f00c7aeac22c2179c1",
+                "freeze_merge_commit": "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+                "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+                "runtime_behavior_introduced_by_freeze": False,
+                "runtime_behavior_introduced_by_sync": False,
+                "rendered_behavior_introduced_by_freeze": False,
+                "rendered_behavior_introduced_by_sync": False,
+                "implementation_entry_allowed_next": True,
+                "future_session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+                "future_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+                "rendered_route": "/review/layer3",
+                "next_posture": "implement_internal_webhook_rendered_read_only_status_projection",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_current_main_sync_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_current_main_sync_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "873_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE_CURRENT_MAIN_SYNC.md",
+                    "872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+                    "PR #1488 merged",
+                    "32bb43e9c44ecdedd583020737ab0a91fd84c0fe",
+                    "backend-layer3-api SUCCESS 3m20s",
+                    "test SUCCESS 3m38s",
+                    "reviewThreads totalCount 0",
+                    "post-merge validation passed",
+                    "current_main_synced_internal_webhook_rendered_status_freeze",
+                    "internal_webhook_dispatch: dict[str, Any]",
+                    "State.sessionSummary.internal_webhook_dispatch",
+                    "no runtime behavior introduced by sync",
+                    "no rendered behavior introduced by sync",
+                    "implement_internal_webhook_rendered_read_only_status_projection",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_freeze_current_main_sync_proof.proof_terms missing {term}"
                         )
 
 
