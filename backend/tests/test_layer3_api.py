@@ -3796,6 +3796,7 @@ def test_layer3_special_route_openapi_contracts(client: TestClient) -> None:
         "server_owned_local_outbox_write",
         "local_outbox_provider_private_handoff",
         "sublayer_visualization",
+        "analysis_environment_projection",
         "state_action_contract",
         "downstream_unavailable",
         "authority_rail",
@@ -8943,6 +8944,20 @@ def test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_sess
     assert len(sublayer["latest_plan"]["approved_sets"]) == 1
     assert len(sublayer["latest_plan"]["planned_passes"]) == 1
     assert sublayer["pass_runs"] == []
+    projection = summary_body["analysis_environment_projection"]
+    assert projection["schema_id"] == "layer3.analysis_environment_projection.v1"
+    assert projection["authority_source"] == "read_only_session_summary_projection"
+    assert projection["projection_state"] == "planned"
+    assert projection["available_for_downstream_analysis"] is False
+    assert projection["no_side_effects"] is True
+    assert projection["source_state"]["sublayer_schema_id"] == "layer3.sublayer_visualization_state.v1"
+    assert projection["source_state"]["material_object_count"] == 1
+    assert projection["source_state"]["typing_record_count"] == 1
+    assert projection["source_state"]["analysis_set_count"] == 1
+    assert projection["source_state"]["pass_run_count"] == 0
+    assert projection["source_state"]["latest_plan_approved"] is True
+    assert projection["forbidden_runtime_authority"]["write_route_enabled"] is False
+    assert projection["forbidden_runtime_authority"]["connector_dispatch_enabled"] is False
 
     db = client.layer3_session_factory()
     try:
@@ -10291,6 +10306,15 @@ def test_layer3_api_analysis_execution_start_runs_selected_pass_once(client: Tes
     assert sublayer_pass_run["output_payload_available"] is True
     assert sublayer_pass_run["analysis_run_id"] == start_body["analysis_run_id"]
     assert sublayer_pass_run["selected_method_name"] == "decomposition"
+    projection = summary_body["analysis_environment_projection"]
+    assert projection["schema_id"] == "layer3.analysis_environment_projection.v1"
+    assert projection["authority_source"] == "read_only_session_summary_projection"
+    assert projection["projection_state"] == "output_ready"
+    assert projection["available_for_downstream_analysis"] is True
+    assert projection["source_state"]["pass_run_count"] == 1
+    assert projection["source_state"]["output_payload_count"] == 1
+    assert {item["plane"]: item["state"] for item in projection["plane_readiness"]}["quantitative"] == "output_ready"
+    assert projection["forbidden_runtime_authority"]["package_mutation_enabled"] is False
 
     db = client.layer3_session_factory()
     try:

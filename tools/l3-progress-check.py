@@ -2367,6 +2367,9 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_SYNC = (
     PLANNING_DOCS
     / "862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF = (
+    PLANNING_DOCS / "863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -74936,6 +74939,194 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in freeze_sync_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof.proof_terms missing {term}"
+                        )
+
+    analysis_environment_runtime_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: runtime proof for `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`.",
+        "863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+        "Predecessor sync doc: `862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md`.",
+        "Runtime behavior introduced by this pass: `true`, limited to one read-only session-summary projection field.",
+        "Rendered behavior introduced by this pass: `false`.",
+        "backend/app/services/layer3_analysis_environment_projection.py",
+        "backend/app/services/layer3_workbench.py::session_summary",
+        "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+        "GET /api/v1/layer3/session/{session_id}",
+        "Layer3SessionSummaryResponse",
+        "analysis_environment_projection: dict[str, Any]",
+        "layer3.analysis_environment_projection.v1",
+        "read_only_session_summary_projection",
+        "projection_state",
+        "available_for_downstream_analysis",
+        "plane_readiness",
+        "forbidden_runtime_authority",
+        "Observed results: py_compile `PASS`; projection helper tests `3 passed`; targeted API tests `3 passed, 186 deselected`.",
+        "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    ):
+        if term not in analysis_environment_runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF)} "
+                f"missing downstream Analysis Environment runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Authority Projection Runtime Proof",
+            "863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+            "analysis_environment_projection: dict[str, Any]",
+            "layer3.analysis_environment_projection.v1",
+            "read_only_session_summary_projection",
+            "3 passed, 186 deselected",
+            "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+            "backend/app/services/layer3_analysis_environment_projection.py",
+            "analysis_environment_projection: dict[str, Any]",
+            "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+        ),
+        REFRESH_SPEC: (
+            "863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+            "bounded read-only session-summary projection implementation",
+            "analysis_environment_projection: dict[str, Any]",
+            "read_only_session_summary_projection",
+            "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_runtime_proof"',
+            '"status": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md"',
+            '"selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary"',
+            '"response_field_type": "analysis_environment_projection: dict[str, Any]"',
+            '"next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_runtime_proof"',
+            '"proof_kind": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime"',
+            '"backend/app/services/layer3_analysis_environment_projection.py"',
+            '"analysis_environment_projection: dict[str, Any]"',
+            '"current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing downstream Analysis Environment runtime term: {term}"
+                )
+
+    if isinstance(manifest_data, dict):
+        runtime_proof = manifest_data.get("downstream_analysis_environment_authority_projection_runtime_proof")
+        if not isinstance(runtime_proof, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing downstream_analysis_environment_authority_projection_runtime_proof object"
+            )
+        else:
+            expected_runtime_scalars = {
+                "status": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+                "branch": "codex/l3-analysis-environment-projection-runtime",
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+                "runtime_behavior_change": True,
+                "rendered_behavior_change": False,
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "canonical_source_of_truth": "backend/app/services/layer3_workbench.py::session_summary",
+                "structural_source": "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_model": "backend/app/api/layer3.py::Layer3SessionSummaryResponse",
+                "response_field": "analysis_environment_projection",
+                "response_field_type": "analysis_environment_projection: dict[str, Any]",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "write_route_added": False,
+                "new_route_family_added": False,
+                "model_migration_change": False,
+                "package_mutation_enabled": False,
+                "source_promotion_enabled": False,
+                "connector_dispatch_enabled": False,
+                "provider_url_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+            }
+            for key, value in expected_runtime_scalars.items():
+                if runtime_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_runtime_proof.{key} must be {value!r}"
+                    )
+            targeted_validation = runtime_proof.get("targeted_validation")
+            if not isinstance(targeted_validation, list):
+                errors.append(
+                    f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_runtime_proof.targeted_validation must be a list"
+                )
+            else:
+                for term in ("py_compile", "test_layer3_analysis_environment_projection.py", "3 passed 186 deselected"):
+                    if not any(term in item for item in targeted_validation if isinstance(item, str)):
+                        errors.append(
+                            f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_runtime_proof.targeted_validation missing {term}"
+                        )
+
+    if isinstance(proof_data, dict):
+        runtime_proof_entry = proof_data.get("downstream_analysis_environment_authority_projection_runtime_proof")
+        if not isinstance(runtime_proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_authority_projection_runtime_proof object"
+            )
+        else:
+            expected_runtime_proof_scalars = {
+                "proof_kind": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "status": "downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+                "branch": "codex/l3-analysis-environment-projection-runtime",
+                "runtime_behavior_change": True,
+                "rendered_behavior_change": False,
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "canonical_source_of_truth": "backend/app/services/layer3_workbench.py::session_summary",
+                "structural_source": "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_model": "backend/app/api/layer3.py::Layer3SessionSummaryResponse",
+                "response_field": "analysis_environment_projection",
+                "response_field_type": "analysis_environment_projection: dict[str, Any]",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+            }
+            for key, value in expected_runtime_proof_scalars.items():
+                if runtime_proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_proof.{key} must be {value!r}"
+                    )
+            runtime_terms = runtime_proof_entry.get("proof_terms")
+            if not isinstance(runtime_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "runtime proof for implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                    "backend/app/services/layer3_analysis_environment_projection.py",
+                    "backend/app/services/layer3_workbench.py::session_summary",
+                    "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+                    "analysis_environment_projection: dict[str, Any]",
+                    "layer3.analysis_environment_projection.v1",
+                    "read_only_session_summary_projection",
+                    "projection_state",
+                    "available_for_downstream_analysis",
+                    "plane_readiness",
+                    "forbidden_runtime_authority",
+                    "no input mutation",
+                    "no rendered behavior introduced",
+                    "no write route added",
+                    "no model or migration change",
+                    "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                ):
+                    if term not in runtime_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_proof.proof_terms missing {term}"
                         )
 
 

@@ -253,6 +253,9 @@ from app.services.layer3_sublayer_state import (
     session_sublayer_visualization_state as _session_sublayer_visualization_state,
     snapshot_projection as _snapshot_projection,
 )
+from app.services.layer3_analysis_environment_projection import (
+    analysis_environment_projection as _analysis_environment_projection,
+)
 from app.services.layer3_utils import (
     epoch_seconds_iso_z as _epoch_iso,
     json_clone as _json_clone,
@@ -14066,6 +14069,31 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         )
     )
 
+    downstream_unavailable_values = list(downstream_unavailable)
+    sublayer_visualization_state = _session_sublayer_visualization_state(db, session_id=session_id)
+    authority_rail_state = _authority_rail(
+        session_id=session_id,
+        current_gate=current_gate,
+        persistence_mode="durable_layer3_control",
+        counts=gate_b_counts,
+        typing_status="committed" if typing_committed else "previewed",
+        downstream_unavailable=downstream_unavailable,
+    )
+    analysis_environment_projection_state = _analysis_environment_projection(
+        sublayer_visualization=sublayer_visualization_state,
+        package_construction=package_construction_state,
+        package_review_submit=package_review_submit_state,
+        handoff_export_prepare=handoff_export_prepare_state,
+        aps_handoff_dispatch=aps_handoff_dispatch_state,
+        external_export_download=external_export_download_state,
+        server_owned_local_outbox_write=server_owned_local_outbox_write_state,
+        local_outbox_provider_private_handoff=local_outbox_provider_private_handoff_state,
+        external_local_export=external_local_export_state,
+        current_gate=current_gate,
+        downstream_unavailable=downstream_unavailable_values,
+        authority_rail=authority_rail_state,
+    )
+
     return {
         **_base_response("layer3.workbench_session_summary.v1"),
         "session_id": session_id,
@@ -14099,15 +14127,9 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         "local_outbox_provider_private_handoff": local_outbox_provider_private_handoff_state,
         "external_local_export": external_local_export_state,
         "pdf_location_projection": _pdf_location_projection_for_session(db, session_id=session_id),
-        "sublayer_visualization": _session_sublayer_visualization_state(db, session_id=session_id),
+        "sublayer_visualization": sublayer_visualization_state,
+        "analysis_environment_projection": analysis_environment_projection_state,
         "state_action_contract": _workbench_state_action_contract(),
-        "downstream_unavailable": list(downstream_unavailable),
-        "authority_rail": _authority_rail(
-            session_id=session_id,
-            current_gate=current_gate,
-            persistence_mode="durable_layer3_control",
-            counts=gate_b_counts,
-            typing_status="committed" if typing_committed else "previewed",
-            downstream_unavailable=downstream_unavailable,
-        ),
+        "downstream_unavailable": downstream_unavailable_values,
+        "authority_rail": authority_rail_state,
     }
