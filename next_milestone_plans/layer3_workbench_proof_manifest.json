@@ -33697,5 +33697,48 @@
     ],
     "next_posture": "freeze_downstream_analysis_environment_authority_projection_before_runtime",
     "summary": "Doc 860 selects the downstream Analysis Environment authority projection gap from current-main evidence without admitting runtime. A later freeze must define exact server, rendered, proof, leakage, and no-go authority before implementation."
+  },
+  "downstream_analysis_environment_authority_projection_freeze_proof": {
+    "proof_kind": "downstream_analysis_environment_authority_projection_freeze_no_runtime",
+    "status": "downstream_analysis_environment_authority_projection_freeze_no_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+    "branch": "codex/l3-analysis-environment-authority-freeze",
+    "runtime_behavior_change": false,
+    "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+    "implementation_entry_allowed_next": true,
+    "implementation_entry_allowed_after_current_main_sync": true,
+    "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+    "api_surface": "GET /api/v1/layer3/session/{session_id}",
+    "response_field": "analysis_environment_projection",
+    "schema_id": "layer3.analysis_environment_projection.v1",
+    "authority_source": "read_only_session_summary_projection",
+    "proof_terms": [
+      "no-runtime implementation-entry freeze",
+      "downstream_analysis_environment_authority_projection",
+      "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+      "existing server-owned Layer 3 session state",
+      "backend/app/services/layer3_workbench.py::session_summary",
+      "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+      "backend/app/services/layer3_analysis_environment_projection.py",
+      "GET /api/v1/layer3/session/{session_id}",
+      "Layer3SessionSummaryResponse",
+      "analysis_environment_projection: dict[str, Any]",
+      "layer3.analysis_environment_projection.v1",
+      "read_only_session_summary_projection",
+      "no rendered control is admitted by this freeze",
+      "headed Chromium proof",
+      "headless Chromium proof",
+      "no package mutation package reconstruction or payload rewrite",
+      "no connector dispatch destination writes ConnectorRun or ConnectorRunTarget",
+      "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation"
+    ],
+    "proof_commands": [
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python .\\tools\\l3-fixture-validate.py --expect pending",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint"
+    ],
+    "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
+    "summary": "Doc 861 freezes a read-only downstream Analysis Environment authority projection over existing session-summary state. It admits no runtime now, no rendered behavior now, and no adjacent source/package/provider/connector/auth/security widening."
   }
 }
