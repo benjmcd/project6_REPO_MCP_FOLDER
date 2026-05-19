@@ -36285,5 +36285,53 @@
     },
     "next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
     "summary": "Doc 865 selects the next no-runtime/no-rendered gap as a read-only rendered projection over server-owned State.sessionSummary.analysis_environment_projection, with future work limited to a freeze before any /review/layer3 UI implementation."
+  },
+  "downstream_analysis_environment_rendered_projection_freeze": {
+    "status": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+    "branch": "codex/l3-analysis-environment-rendered-freeze",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+    "current_main_checkpoint": "9f68fe8b56f6d268cc0dbb2cce167b596c5ee4ca",
+    "selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "implementation_entry_allowed_next": true,
+    "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+    "server_owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+    "api_surface": "GET /api/v1/layer3/session/{session_id}",
+    "response_field": "analysis_environment_projection: dict[str, Any]",
+    "schema_id": "layer3.analysis_environment_projection.v1",
+    "authority_source": "read_only_session_summary_projection",
+    "rendered_surface": "backend/app/review_ui/static/layer3.js",
+    "rendered_route": "/review/layer3",
+    "rendered_functions": [
+      "State.sessionSummary",
+      "currentAnalysisEnvironmentProjection()",
+      "currentSublayerVisualizationModel()",
+      "renderSublayerMap()",
+      "renderAnalysisPlane()"
+    ],
+    "proof_requires_headed_chromium": true,
+    "proof_requires_headless_chromium": true,
+    "blocked_scope": {
+      "implementation_before_current_main_sync": false,
+      "route_api_dto_model_migration_backend_service_change": false,
+      "new_submit_control_or_operation_step": false,
+      "frontend_only_durable_authority": false,
+      "browser_storage_authority": false,
+      "package_mutation_or_reconstruction": false,
+      "handoff_export_or_delivery_rerun": false,
+      "source_authority_promotion": false,
+      "caller_provided_paths_or_urls": false,
+      "connector_dispatch_or_destination_write": false,
+      "provider_urls": false,
+      "credentials_or_network": false,
+      "semantic_vector_rag_widening": false,
+      "prompt_model_provider_qualitative_generation": false,
+      "optional_tool_runtime": false,
+      "broad_auth_security_behavior": false
+    },
+    "next_posture": "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
+    "summary": "Doc 866 freezes the first read-only rendered Analysis Environment projection implementation entry over existing /review/layer3 Sublayer 3C lanes, with State.sessionSummary.analysis_environment_projection as authority and headed/headless Chromium proof required for the later implementation."
   }
 }
