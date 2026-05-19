@@ -7001,7 +7001,7 @@ The next exact posture is `await_product_authority_for_optional_tool_benchmark_f
 
 ## Sublayer 3C Fixture Authority Validate-Only Contract
 
-Validate-only fixture-authority record contract: `850_FIXTURE_VALIDATE_ONLY.md` follows the no-runtime fixture-authority stop and keeps the active posture at `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
+Validate-only fixture-authority record contract: `850_FIXTURE_VALIDATE_ONLY.md` follows the no-runtime fixture-authority stop and preserves that gate's local blocked posture at `await_product_authority_for_optional_tool_benchmark_fixture_selection` without overriding later current-main posture entries.
 
 Runtime status: `not_implemented`.
 
