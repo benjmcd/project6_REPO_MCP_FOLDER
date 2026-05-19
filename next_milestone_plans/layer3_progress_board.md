@@ -7046,3 +7046,23 @@ TabPFN remains candidate-supported but not selected. The proposed product-review
 NRC RAG remains deferred for absent query-set authority. No stable query ids, query texts, answerability labels, expected source identifiers, expected source spans, unsupported-query refusal behavior, or citation rubric are selected.
 
 The next exact posture is `await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection`.
+
+## Internal Webhook Connector Freeze
+
+Implementation-entry freeze: `852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md` records the first real connector/destination target as `server_configured_internal_webhook_destination`.
+
+Target class: `real_connector_invocation`.
+
+Selected dispatch mode: `server_configured_allowlisted_internal_webhook_post`.
+
+Runtime status before implementation: `not_implemented`.
+
+Runtime behavior introduced by this freeze: `false`.
+
+Implementation-entry allowed next: true, after current-main sync, for only `implement_server_configured_internal_webhook_destination_dispatch`.
+
+The freeze selects a redacted handoff/export delivery envelope over approved package-review submit, handoff/export prepare, export/download readiness where required, and server-owned package artifact/hash authority.
+
+The first implementation proof path must use a server-configured fake/internal webhook receiver. No arbitrary destination URL, operator-supplied URL, public URL, provider-private signed URL, provider-public URL, cloud object-store write, OAuth/provider credential, stored provider credential, `ConnectorRun`, `ConnectorRunTarget`, package mutation, source expansion, vector/RAG widening, optional-tool runtime, Gate C/pass-entry optional-tool admission, rendered write/submit control, or broad auth/security behavior is admitted.
+
+The next exact posture after this freeze is current-main sync for `server_configured_internal_webhook_destination`, followed by `implement_server_configured_internal_webhook_destination_dispatch`.

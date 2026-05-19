@@ -7175,7 +7175,14 @@
     "latest_sublayer3c_optional_tool_fixture_checkpoint_status": "sublayer3c_optional_tool_fixture_authority_checkpoint_no_runtime_deferred",
     "latest_sublayer3c_optional_tool_fixture_checkpoint_runtime_behavior_change": false,
     "latest_sublayer3c_optional_tool_fixture_checkpoint_next_posture": "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
-    "latest_sublayer3c_optional_tool_fixture_checkpoint_summary": "Doc 851 records a no-runtime checkpoint where TabPFN and NRC RAG are deferred for absent exact fixture/query-set authority. TabPFN remains candidate-supported but not selected, NRC RAG remains query-set-authority absent, and no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission is introduced."
+    "latest_sublayer3c_optional_tool_fixture_checkpoint_summary": "Doc 851 records a no-runtime checkpoint where TabPFN and NRC RAG are deferred for absent exact fixture/query-set authority. TabPFN remains candidate-supported but not selected, NRC RAG remains query-set-authority absent, and no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission is introduced.",
+    "latest_internal_webhook_connector_freeze_branch": "codex/l3-internal-webhook-freeze",
+    "latest_internal_webhook_connector_freeze_doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+    "latest_internal_webhook_connector_freeze_status": "internal_webhook_connector_implementation_entry_freeze_no_runtime",
+    "latest_internal_webhook_connector_freeze_runtime_behavior_change": false,
+    "latest_internal_webhook_connector_freeze_selected_target_identity": "server_configured_internal_webhook_destination",
+    "latest_internal_webhook_connector_freeze_next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
+    "latest_internal_webhook_connector_freeze_summary": "Doc 852 records the first real connector/destination target as server_configured_internal_webhook_destination and freezes only the future internal webhook dispatch slice. It admits no runtime behavior by itself and keeps arbitrary destinations, public/provider URLs, credentials, ConnectorRun/ConnectorRunTarget, package mutation, source expansion, vector/RAG widening, optional-tool runtime, rendered write controls, and broad auth/security behavior blocked."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -35428,5 +35435,68 @@
   "latest_sublayer3c_optional_tool_fixture_checkpoint_status": "sublayer3c_optional_tool_fixture_authority_checkpoint_no_runtime_deferred",
   "latest_sublayer3c_optional_tool_fixture_checkpoint_runtime_behavior_change": false,
   "latest_sublayer3c_optional_tool_fixture_checkpoint_next_posture": "await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection",
-  "latest_sublayer3c_optional_tool_fixture_checkpoint_summary": "Doc 851 records a no-runtime checkpoint where TabPFN and NRC RAG are deferred for absent exact fixture/query-set authority. TabPFN remains candidate-supported but not selected; NRC RAG remains query-set-authority absent. The checkpoint introduces no runtime behavior, benchmark execution, fixture materialization, fixture selection, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
+  "latest_sublayer3c_optional_tool_fixture_checkpoint_summary": "Doc 851 records a no-runtime checkpoint where TabPFN and NRC RAG are deferred for absent exact fixture/query-set authority. TabPFN remains candidate-supported but not selected; NRC RAG remains query-set-authority absent. The checkpoint introduces no runtime behavior, benchmark execution, fixture materialization, fixture selection, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission.",
+  "internal_webhook_connector_freeze": {
+    "status": "internal_webhook_connector_implementation_entry_freeze_no_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+    "branch": "codex/l3-internal-webhook-freeze",
+    "predecessor_decision_packet": "next_milestone_plans/Layer3_planning_docs/609_REAL_CONNECTOR_DESTINATION_DECISION_PACKET_AFTER_LOCAL_OUTBOX_WRITE.md",
+    "current_main_preflight_checkpoint": "10ebfbbe9422ca92907f320a2b0efed75b0fc544",
+    "runtime_behavior_change": false,
+    "implementation_entry_allowed_next": true,
+    "selected_implementation_action": "implement_server_configured_internal_webhook_destination_dispatch",
+    "target_identity": "server_configured_internal_webhook_destination",
+    "target_class": "real_connector_invocation",
+    "target_owner": "Bennet / project operator",
+    "dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+    "destination_address_model": "server_configured_allowlisted_url",
+    "operator_surface": "read_only_status_only",
+    "credential_model": "no_credentials",
+    "network_posture": "private_internal_only_server_configured_allowlist",
+    "artifact_family": "handoff_export_delivery_envelope_plus_package_artifact_metadata_no_raw_package_bytes",
+    "authority_basis": [
+      "approved_package_review_submit_authority",
+      "handoff_export_prepare_authority",
+      "external_export_download_prepare_authority_where_applicable",
+      "server_owned_package_artifact_hash_size_authority"
+    ],
+    "idempotency_semantics": [
+      "same_client_request_id_same_basis_returns_same_receipt_status",
+      "same_client_request_id_different_basis_fails_closed",
+      "same_package_export_basis_new_client_request_id_returns_existing_status_unless_duplicate_dispatch_later_frozen",
+      "identical_replay_returns_existing_receipt_status",
+      "conflicting_replay_fails_closed"
+    ],
+    "required_proof": [
+      "authority_binding_negative_tests",
+      "forbidden_input_rejection",
+      "fake_internal_webhook_receiver_happy_path",
+      "idempotent_replay_and_conflict_replay",
+      "timeout_partial_ambiguous_response_fail_closed",
+      "receipt_audit_response_redaction",
+      "no_connector_run_or_connector_run_target_rows",
+      "no_forbidden_adjacent_behavior"
+    ],
+    "blocked_scope": {
+      "arbitrary_connector_dispatch": false,
+      "arbitrary_destination_url": false,
+      "operator_supplied_url": false,
+      "provider_public_url": false,
+      "provider_private_signed_url": false,
+      "cloud_object_store_write": false,
+      "oauth_or_provider_credentials": false,
+      "connector_run": false,
+      "connector_run_target": false,
+      "package_mutation": false,
+      "source_expansion": false,
+      "vector_rag_widening": false,
+      "tabpfn_runtime": false,
+      "nrc_rag_runtime": false,
+      "optional_tool_gate_c_or_pass_entry_admission": false,
+      "rendered_write_submit_control": false,
+      "broad_auth_security_behavior": false
+    },
+    "next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
+    "summary": "Doc 852 freezes the first real connector/destination target as a server-configured allowlisted internal webhook dispatch of one redacted handoff/export envelope. Runtime remains blocked until the freeze is synced and an implementation pass proves authority binding, idempotency, redaction, fake/internal receiver behavior, and forbidden-adjacent-surface guards."
+  }
 }
