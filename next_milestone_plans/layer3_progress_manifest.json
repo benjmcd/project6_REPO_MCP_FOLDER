@@ -7214,7 +7214,15 @@
     "latest_recursive_source_ingestion_runtime_policy_selection_freeze_runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
     "latest_recursive_source_ingestion_runtime_policy_selection_freeze_implementation_entry_allowed_next": true,
     "latest_recursive_source_ingestion_runtime_policy_selection_freeze_next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
-    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_summary": "Doc 856 selects the exact recursive server-configured directory text/table ingestion runtime policy without introducing runtime behavior. It admits only a later implementation of recursive traversal under LAYER3_SOURCE_INGESTION_DIR with .csv/.json/.txt/.md files, depth 2, 3 normalized relative path segments including filename, 100 files, MAX_UPLOAD_MB-derived file and aggregate limits, deterministic normalized relative path ordering, redacted relative path authority, and fail-closed traversal rules; caller-controlled paths, recursive flags, new source families, downstream package/export/connector/provider/vector/model/optional-tool/auth behavior remain blocked."
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_summary": "Doc 856 selects the exact recursive server-configured directory text/table ingestion runtime policy without introducing runtime behavior. It admits only a later implementation of recursive traversal under LAYER3_SOURCE_INGESTION_DIR with .csv/.json/.txt/.md files, depth 2, 3 normalized relative path segments including filename, 100 files, MAX_UPLOAD_MB-derived file and aggregate limits, deterministic normalized relative path ordering, redacted relative path authority, and fail-closed traversal rules; caller-controlled paths, recursive flags, new source families, downstream package/export/connector/provider/vector/model/optional-tool/auth behavior remain blocked.",
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_branch": "codex/l3-recursive-source-ingestion-policy-sync",
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/857_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_CURRENT_MAIN_SYNC.md",
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_status": "current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze",
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_runtime_behavior_change": false,
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_pr": "#1466",
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_merge_commit": "4afd496541649f68812b2c148817dd8e84259b83",
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_next_posture": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+    "latest_recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_summary": "Doc 857 syncs PR #1466 to current main as the no-runtime recursive source-ingestion runtime policy selection. Recursive traversal remains unimplemented; the next exact posture is implementation of only recursive_server_configured_directory_text_table_policy_v1 with fail-closed traversal, redaction, durable authority, idempotency, stale-authority, direct-child regression, and no-forbidden-adjacent-behavior proof."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -35806,5 +35814,59 @@
     },
     "next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
     "summary": "Doc 856 selects the no-runtime runtime policy needed before recursive source-directory implementation: server-configured root only, text/table extensions only, depth and segment limits, file and byte ceilings, deterministic ordering, relative-path redaction, durable authority reuse, idempotent fingerprint basis, and fail-closed traversal policy. It does not implement recursive traversal or admit downstream, connector, provider, vector, model, optional-tool, rendered-control, source-promotion, or auth/security behavior."
+  },
+  "recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync": {
+    "status": "current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze",
+    "doc": "next_milestone_plans/Layer3_planning_docs/857_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-recursive-source-ingestion-policy-sync",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
+    "freeze_pr": "#1466",
+    "freeze_branch": "codex/l3-recursive-source-ingestion-policy",
+    "freeze_branch_commit": "106d6c97f0cdd03bf94e4fd44db1bf0cdc9c25f0",
+    "freeze_merge_commit": "4afd496541649f68812b2c148817dd8e84259b83",
+    "runtime_behavior_change": false,
+    "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+    "selected_implementation_action": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+    "implementation_entry_allowed_next": true,
+    "current_direct_child_ingestion_unchanged": true,
+    "current_recursive_traversal_admitted": false,
+    "checks": [
+      "backend-layer3-api SUCCESS 4m1s",
+      "test SUCCESS 3m56s"
+    ],
+    "review_surface": {
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads_totalCount": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS"
+    ],
+    "blocked_scope": {
+      "runtime_behavior_before_implementation": false,
+      "caller_provided_paths_or_urls": false,
+      "pdf_ocr_office_image_archive_binary_ingestion": false,
+      "browser_upload_web_or_database_connector": false,
+      "rendered_control_change": false,
+      "source_authority_promotion": false,
+      "package_handoff_export_download_integration": false,
+      "connector_dispatch": false,
+      "provider_urls": false,
+      "credentials_or_network": false,
+      "semantic_vector_rag_widening": false,
+      "prompt_model_provider_qualitative_generation": false,
+      "tabpfn_runtime": false,
+      "nrc_rag_runtime": false,
+      "optional_tool_gate_c_or_pass_entry_admission": false,
+      "broad_auth_security_behavior": false
+    },
+    "next_posture": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+    "summary": "Current main now includes the no-runtime recursive source-ingestion runtime policy selection from doc 856 via PR #1466. The live direct-child server-configured source-directory ingestion behavior remains unchanged and recursive traversal is still unimplemented; the next exact posture is implementing only recursive_server_configured_directory_text_table_policy_v1."
   }
 }

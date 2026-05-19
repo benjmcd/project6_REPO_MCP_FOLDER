@@ -33553,5 +33553,43 @@
     ],
     "next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1_then_implementation",
     "summary": "Doc 856 proves only no-runtime selection of the exact recursive source-directory traversal policy. It makes the next implementation slice reviewable by selecting depth, segment, count, byte, ordering, redaction, durable authority, idempotency, and fail-closed traversal rules while keeping recursive traversal unimplemented until current-main sync and a later implementation pass."
+  },
+  "recursive_source_ingestion_runtime_policy_selection_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze",
+    "status": "current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze",
+    "doc": "next_milestone_plans/Layer3_planning_docs/857_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-recursive-source-ingestion-policy-sync",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/856_RECURSIVE_SOURCE_INGESTION_RUNTIME_POLICY_SELECTION_FREEZE.md",
+    "freeze_pr": "#1466",
+    "freeze_merge_commit": "4afd496541649f68812b2c148817dd8e84259b83",
+    "runtime_behavior_change": false,
+    "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+    "selected_implementation_action": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+    "implementation_entry_allowed_next": true,
+    "proof_terms": [
+      "current-main proof/control sync",
+      "PR #1466 merged",
+      "4afd496541649f68812b2c148817dd8e84259b83",
+      "current_main_synced_recursive_source_ingestion_runtime_policy_selection_freeze",
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "recursive_server_configured_directory_text_table_policy_v1",
+      "current direct-child ingestion unchanged",
+      "recursive_traversal_admitted False",
+      "no runtime behavior introduced by sync",
+      "recursive traversal still unimplemented",
+      "implementation-entry allowed next true",
+      "implement_recursive_server_configured_operator_directory_text_table_ingestion"
+    ],
+    "proof_commands": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS"
+    ],
+    "next_posture": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+    "summary": "Doc 857 records current-main adoption of the no-runtime recursive source-ingestion runtime policy selection from PR #1466. Recursive traversal remains unimplemented, and the next exact posture is the bounded implementation of recursive_server_configured_directory_text_table_policy_v1."
   }
 }
