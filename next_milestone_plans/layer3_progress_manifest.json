@@ -34089,5 +34089,60 @@
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_implemented_branch_local",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_runtime_behavior_change": true,
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_summary": "Doc 834 and branch codex/l3-hybrid-analysis-status-surface implement a read-only operator-visible status reader over source-directory hybrid context-packet qualitative-analysis and existing package/review/handoff state, while keeping external export/download, APS dispatch, provider URLs, provider/model runtime, RAG execution, persistent vector stores, package mutation, connector dispatch, network egress, frontend controls, new source families, raw vectors, and raw path exposure blocked."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_summary": "Doc 834 and branch codex/l3-hybrid-analysis-status-surface implement a read-only operator-visible status reader over source-directory hybrid context-packet qualitative-analysis and existing package/review/handoff state, while keeping external export/download, APS dispatch, provider URLs, provider/model runtime, RAG execution, persistent vector stores, package mutation, connector dispatch, network egress, frontend controls, new source families, raw vectors, and raw path exposure blocked.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync": {
+    "status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+    "sync_branch": "codex/l3-834-current-main-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1439",
+    "runtime_branch": "codex/l3-hybrid-analysis-status-surface",
+    "runtime_branch_commit": "65b75842f17b888ae533cc22d21d30c88500971b",
+    "runtime_merge_commit": "8323cab6638a74b6a73f30fc9c35c878219f06e3",
+    "review_fix_pr": "#1440",
+    "review_fix_branch": "codex/l3-834-postmerge-sync",
+    "review_fix_branch_commit": "f4e71f88ca4a5f25d1b7a7cd8d2956ec2641c5c5",
+    "review_fix_merge_commit": "6b14c93f53ddbf9acfa7dae356107d6f9a13b36e",
+    "resolved_review_threads": [
+      "PRRT_kwDORzuv8M6DAzOt",
+      "PRRT_kwDORzuv8M6DAzOu"
+    ],
+    "runtime_behavior_introduced_by_implementation_pr": true,
+    "runtime_behavior_introduced_by_review_fix_pr": true,
+    "runtime_behavior_in_this_sync": false,
+    "post_merge_checks": {
+      "pr_1439_backend_layer3_api": "SUCCESS",
+      "pr_1439_test": "SUCCESS",
+      "pr_1440_backend_layer3_api": "SUCCESS",
+      "pr_1440_test": "SUCCESS",
+      "pr_1440_reviewThreads": 0
+    },
+    "corrected_status_surface": {
+      "client_request_id_required": false,
+      "request_scoped_hash_matching_enabled": false,
+      "stable_package_state_matching_fields": [
+        "hybrid_context_packet_hash",
+        "embedding_index_authority_hash"
+      ],
+      "read_only_status_surface": true,
+      "package_rows_written": false,
+      "connector_dispatch_enabled": false,
+      "frontend_rendered_controls_enabled": false
+    },
+    "post_merge_validation": [
+      "python -m py_compile backend/app/services/layer3_source_directory_hybrid_analysis.py backend/app/api/layer3.py backend/tests/test_layer3_source_directory_vector_retrieval.py PASS",
+      "python -m pytest backend/tests/test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_status_reports_existing_review_and_handoff_state backend/tests/test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_status_is_read_only_before_package_commit -q PASS 2 passed 3 warnings",
+      "python -m pytest backend/tests/test_layer3_source_directory_vector_retrieval.py backend/tests/test_layer3_bootstrap_contract.py backend/tests/test_layer3_readiness_contract.py -q PASS 17 passed 3 warnings",
+      "python tools/l3-progress-check.py PASS",
+      "python tools/l3-target-selection-validate.py --expect frozen PASS",
+      "git diff --check PASS with CRLF normalization warnings only"
+    ],
+    "next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_branch": "codex/l3-834-current-main-sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_summary": "Doc 835 syncs PR #1439 and review-fix PR #1440 to current main. The corrected read-only source-directory hybrid context-packet qualitative-analysis status runtime is current-main truth; this sync adds no runtime behavior and pivots to the next named Layer 3 end-to-end gap."
 }
