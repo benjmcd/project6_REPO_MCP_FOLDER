@@ -524,6 +524,36 @@
                 <p id="source-intake-gate-b-status" class="source-intake-status" data-state="idle" role="status" aria-live="polite">Gate B admission is waiting for a server-authoritative source-intake preview.</p>
             </section>
 
+            <section id="source-directory-ingestion-rendered-controls" class="workband source-intake-panel" data-rendered-mode="rendered_server_configured_source_directory_ingestion_control" aria-labelledby="source-directory-ingestion-heading" tabindex="-1">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">Source directory ingestion</p>
+                        <h2 id="source-directory-ingestion-heading">Server-configured directory scan / status</h2>
+                    </div>
+                    <button id="source-directory-ingestion-status" class="secondary-btn" type="button" disabled>Inspect Batch</button>
+                </div>
+                <form id="source-directory-ingestion-scan-form" class="source-intake-form">
+                    <div class="source-intake-grid">
+                        <label>
+                            Client request ID
+                            <input id="source-directory-ingestion-client-request-id" type="text" autocomplete="off" placeholder="Generated on submit when blank">
+                        </label>
+                        <label>
+                            Batch ID
+                            <input id="source-directory-ingestion-batch-id" type="text" autocomplete="off" placeholder="Filled after scan or pasted from server response">
+                        </label>
+                    </div>
+                    <div class="source-intake-actions">
+                        <button id="source-directory-ingestion-scan-submit" class="primary-btn" type="submit">Scan Directory</button>
+                        <span id="source-directory-ingestion-message" class="source-intake-status" role="status">Idle: server configuration is the only directory authority.</span>
+                    </div>
+                </form>
+                <div id="source-directory-ingestion-panel" class="source-intake-card source-intake-preview" aria-live="polite">
+                    <h3>Directory authority</h3>
+                    <p class="muted">No server-configured directory batch has been inspected.</p>
+                </div>
+            </section>
+
             <section id="gate-b-band" class="workband material-band" aria-labelledby="material-heading" tabindex="-1">
                 <div class="section-heading">
                     <h2 id="material-heading">Gate B Material Ledger</h2>

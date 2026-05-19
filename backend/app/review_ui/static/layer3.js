@@ -10601,3 +10601,242 @@ init();
         bindSourceIntakeControls();
     }
 }());
+
+(function sourceDirectoryIngestionRenderedControls() {
+    const SOURCE_DIRECTORY_INGESTION_SCAN_PATH = '/source/ingestion/server-configured-directory/scan';
+    const SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX = '/source/ingestion/server-configured-directory/status/';
+    const SOURCE_DIRECTORY_INGESTION_SCHEMA_ID = 'layer3.source_directory_ingestion_batch.v1';
+    const SOURCE_DIRECTORY_INGESTION_STATUS_SCHEMA_ID = 'layer3.source_directory_ingestion_status.v1';
+    const SOURCE_DIRECTORY_INGESTION_MODE = 'server_configured_operator_directory_text_table_ingestion';
+    const SOURCE_DIRECTORY_INGESTION_SOURCE_FAMILY = 'server_configured_operator_directory_text_table_source_family';
+    const SOURCE_DIRECTORY_INGESTION_CONFIG_AUTHORITY = 'LAYER3_SOURCE_INGESTION_DIR';
+    const SOURCE_DIRECTORY_INGESTION_OPERATOR_DECISION = 'scan_server_configured_operator_directory';
+    const state = {
+        latestBatch: null,
+        latestError: null,
+        pending: false,
+    };
+    const byId = (id) => document.getElementById(id);
+    const escapeDirectoryText = (value) => String(value ?? '').replace(/[&<>"]/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+    }[char]));
+
+    function setDirectoryMessage(message, status = 'idle') {
+        const element = byId('source-directory-ingestion-message');
+        if (!element) return;
+        element.textContent = message;
+        element.dataset.state = status;
+    }
+
+    function directoryBatchId() {
+        return byId('source-directory-ingestion-batch-id')?.value.trim() || state.latestBatch?.source_ingestion_batch_id || '';
+    }
+
+    function setDirectoryControls() {
+        const scan = byId('source-directory-ingestion-scan-submit');
+        const status = byId('source-directory-ingestion-status');
+        if (scan) scan.disabled = state.pending;
+        if (status) status.disabled = state.pending || !directoryBatchId();
+    }
+
+    function sourceDirectoryIngestionPayload() {
+        const input = byId('source-directory-ingestion-client-request-id');
+        const clientRequestId = input?.value.trim() || `source-directory-ui-${requestId()}`;
+        if (input && !input.value.trim()) {
+            input.value = clientRequestId;
+        }
+        return {
+            client_request_id: clientRequestId,
+            operator_decision: SOURCE_DIRECTORY_INGESTION_OPERATOR_DECISION,
+            source_family: SOURCE_DIRECTORY_INGESTION_SOURCE_FAMILY,
+            ingestion_mode: SOURCE_DIRECTORY_INGESTION_MODE,
+        };
+    }
+
+    function sourceDirectoryIngestionForbiddenPayloadTerms() {
+        return [
+            'path',
+            'paths',
+            'directory',
+            'local_path',
+            'url',
+            'urls',
+            'glob',
+            'recursive',
+            'file',
+            'files',
+            'file_bytes',
+            'rag_vector_index',
+            'web_connector',
+        ];
+    }
+
+    function renderDirectoryError(error) {
+        if (!error) return '';
+        const details = error.error || error.detail || error;
+        const code = details.code || details.error_code || error.error_code || 'source_directory_ingestion_blocked';
+        const message = details.message || error.message || 'Server blocked source-directory ingestion.';
+        return `
+            <section class="source-intake-card">
+                <strong>Blocked</strong>
+                <ul class="source-intake-proof-list">
+                    <li><strong>code:</strong> ${escapeDirectoryText(code)}</li>
+                    <li><strong>message:</strong> ${escapeDirectoryText(message)}</li>
+                </ul>
+            </section>`;
+    }
+
+    function renderDirectoryFiles(files) {
+        if (!Array.isArray(files) || !files.length) {
+            return '<li>No admitted direct child files returned.</li>';
+        }
+        return files.map((file) => `
+            <li>
+                <strong>${escapeDirectoryText(file.relative_name || 'unnamed')}</strong>
+                <span>${escapeDirectoryText(file.extension || '')}</span>
+                <span>${escapeDirectoryText(file.media_type || '')}</span>
+                <span>${escapeDirectoryText(file.content_size_bytes ?? 'unknown')} bytes</span>
+                <code>${escapeDirectoryText(file.file_identity_hash || '')}</code>
+            </li>
+        `).join('');
+    }
+
+    function renderDirectoryPanel(payload = state.latestBatch) {
+        const panel = byId('source-directory-ingestion-panel');
+        if (!panel) return;
+        if (state.latestError) {
+            panel.innerHTML = renderDirectoryError(state.latestError);
+            return;
+        }
+        if (!payload) {
+            panel.innerHTML = `
+                <h3>Directory authority</h3>
+                <p class="muted">No server-configured directory batch has been inspected.</p>
+            `;
+            return;
+        }
+        const invariants = payload.negative_invariants || {};
+        panel.innerHTML = `
+            <h3>Directory authority</h3>
+            <div class="source-intake-meta">
+                <span>${escapeDirectoryText(payload.schema_id || (payload.mode === `${SOURCE_DIRECTORY_INGESTION_MODE}_status` ? SOURCE_DIRECTORY_INGESTION_STATUS_SCHEMA_ID : SOURCE_DIRECTORY_INGESTION_SCHEMA_ID))}</span>
+                <span>${escapeDirectoryText(payload.status || 'status unavailable')}</span>
+                <span>${escapeDirectoryText(payload.source_ingestion_batch_id || 'batch unavailable')}</span>
+            </div>
+            <ul class="source-intake-proof-list">
+                <li><strong>source family:</strong> ${escapeDirectoryText(payload.source_family || SOURCE_DIRECTORY_INGESTION_SOURCE_FAMILY)}</li>
+                <li><strong>mode:</strong> ${escapeDirectoryText(payload.ingestion_mode || SOURCE_DIRECTORY_INGESTION_MODE)}</li>
+                <li><strong>config authority:</strong> ${escapeDirectoryText(payload.config_authority || SOURCE_DIRECTORY_INGESTION_CONFIG_AUTHORITY)}</li>
+                <li><strong>root ref:</strong> ${escapeDirectoryText(payload.source_root_ref || 'redacted')}</li>
+                <li><strong>raw path exposed:</strong> ${escapeDirectoryText(payload.source_root_absolute_path_exposed === false ? 'blocked' : payload.source_root_absolute_path_exposed)}</li>
+                <li><strong>direct child only:</strong> ${escapeDirectoryText(payload.direct_child_only)}</li>
+                <li><strong>allowed extensions:</strong> ${escapeDirectoryText((payload.allowed_extensions || []).join(', '))}</li>
+                <li><strong>eligible files:</strong> ${escapeDirectoryText(payload.eligible_file_count ?? 0)}</li>
+            </ul>
+            <h4>Admitted Files</h4>
+            <ul class="source-intake-proof-list">${renderDirectoryFiles(payload.files)}</ul>
+            <h4>Blocked Runtime</h4>
+            <div class="downstream-locks">${renderDownstreamLocks([
+                'caller_supplied_path',
+                'recursive_ingestion',
+                'browser_file_bytes',
+                'web_connector',
+                'rag_vector_index',
+                'package_construction',
+                'connector_dispatch',
+                'provider_public_delivery',
+                'frontend_durable_authority',
+            ])}</div>
+            <ul class="source-intake-proof-list">
+                <li><strong>recursive traversal:</strong> ${escapeDirectoryText(invariants.recursive_traversal_enabled === false ? 'blocked' : invariants.recursive_traversal_enabled)}</li>
+                <li><strong>RAG/vector index:</strong> ${escapeDirectoryText(invariants.rag_vector_index_enabled === false ? 'blocked' : invariants.rag_vector_index_enabled)}</li>
+                <li><strong>package construction:</strong> ${escapeDirectoryText(invariants.package_construction_enabled === false ? 'blocked' : invariants.package_construction_enabled)}</li>
+                <li><strong>connector dispatch:</strong> ${escapeDirectoryText(invariants.connector_dispatch_enabled === false ? 'blocked' : invariants.connector_dispatch_enabled)}</li>
+            </ul>
+        `;
+    }
+
+    async function scanSourceDirectory(event) {
+        event.preventDefault();
+        if (state.pending) return;
+        state.pending = true;
+        state.latestError = null;
+        setDirectoryControls();
+        setDirectoryMessage('Scanning server-configured source directory...', 'busy');
+        try {
+            const payload = await postJson(SOURCE_DIRECTORY_INGESTION_SCAN_PATH, sourceDirectoryIngestionPayload());
+            state.latestBatch = payload;
+            const batchInput = byId('source-directory-ingestion-batch-id');
+            if (batchInput && payload.source_ingestion_batch_id) {
+                batchInput.value = payload.source_ingestion_batch_id;
+            }
+            renderDirectoryPanel(payload);
+            setDirectoryMessage(`Directory batch recorded: ${payload.source_ingestion_batch_id || 'batch id unavailable'}.`, 'ok');
+            addEvent('Source-directory ingestion scan recorded from server-configured authority.');
+        } catch (error) {
+            state.latestBatch = null;
+            state.latestError = error.payload || {
+                error_code: 'source_directory_ingestion_scan_request_failed',
+                message: error.message,
+            };
+            renderDirectoryPanel();
+            setDirectoryMessage(`Directory scan blocked: ${error.message}`, 'error');
+            addEvent(`Source-directory ingestion scan blocked: ${error.message}`);
+        } finally {
+            state.pending = false;
+            setDirectoryControls();
+        }
+    }
+
+    async function inspectSourceDirectoryBatch() {
+        const batchId = directoryBatchId();
+        if (!batchId || state.pending) return;
+        state.pending = true;
+        state.latestError = null;
+        setDirectoryControls();
+        setDirectoryMessage('Inspecting server-recorded source-directory batch...', 'busy');
+        try {
+            const payload = await getJson(`${SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX}${encodeURIComponent(batchId)}`);
+            state.latestBatch = payload;
+            renderDirectoryPanel(payload);
+            setDirectoryMessage(`Directory batch status loaded: ${payload.source_ingestion_batch_id || batchId}.`, 'ok');
+            addEvent('Source-directory ingestion status loaded from server authority.');
+        } catch (error) {
+            state.latestError = error.payload || {
+                error_code: 'source_directory_ingestion_status_request_failed',
+                message: error.message,
+            };
+            renderDirectoryPanel();
+            setDirectoryMessage(`Directory status blocked: ${error.message}`, 'error');
+            addEvent(`Source-directory ingestion status blocked: ${error.message}`);
+        } finally {
+            state.pending = false;
+            setDirectoryControls();
+        }
+    }
+
+    function bindSourceDirectoryIngestionControls() {
+        const form = byId('source-directory-ingestion-scan-form');
+        const status = byId('source-directory-ingestion-status');
+        const batchId = byId('source-directory-ingestion-batch-id');
+        if (!form) return;
+        form.addEventListener('submit', (event) => {
+            scanSourceDirectory(event);
+        });
+        status?.addEventListener('click', () => {
+            inspectSourceDirectoryBatch();
+        });
+        batchId?.addEventListener('input', setDirectoryControls);
+        setDirectoryControls();
+        sourceDirectoryIngestionForbiddenPayloadTerms();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindSourceDirectoryIngestionControls);
+    } else {
+        bindSourceDirectoryIngestionControls();
+    }
+}());
