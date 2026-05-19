@@ -328,3 +328,10 @@ Current Layer 3 rendered projection branch-local proof to preserve when present:
 - classify the change as rendered behavior only; backend runtime behavior remains false because no route/API/DTO/model/migration/service behavior changes are admitted
 - preserve headed in-app Chromium proof and headless Chromium proof: three `.analysis-environment-projection` panels render, empty runtime state fails closed with `analysis_environment_projection_missing`, console/page errors are empty, overlays are absent, and horizontal overflow is false
 - after merge, preserve the next posture as `current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime`
+
+Current Layer 3 rendered projection current-main sync to preserve when present:
+- `869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1484` merge commit `9862fe1eb09925889926bfb79febd9f7abe585ee`
+- classify current main as `current_main_synced_downstream_analysis_environment_rendered_projection_read_only_panel_runtime`
+- preserve the live behavior as only the bounded read-only `/review/layer3` Analysis Environment server projection panel over `State.sessionSummary.analysis_environment_projection`
+- do not treat the sync as a backend route/API/DTO/model/migration/service change, write-control admission, package/source/provider/connector/auth/security widening, or frontend-only durable authority
+- preserve the next posture as `select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync`
