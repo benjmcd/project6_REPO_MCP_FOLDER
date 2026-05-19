@@ -204,10 +204,10 @@ As of `2026-05-06`:
 
 ## Program State Summary
 
-- Done now on `main`: 29 merged milestones from Phase 1A feeder-ledger foundation through the landed APS promotion continuation freeze from PR `#145`, with its later docs/progress, settlement, and progress-packet closeouts from PR `#146`, `#147`, and `#148`
-- Current focus: the bounded later APS family packet beyond the landed dedicated validate-only runtime/report-ref boundary is now settled on current `main` and tracked through the post-PR147 progress-packet closeout from PR `#148`; no further later APS family decision or implementation lane is currently justified by default
-- Candidate next consumers: after PR `#479` readiness implementation, the next possible consumers are separate governance/implementation for associated-cohort delivery or rendered controls; no delivery/downstream behavior is admitted by PR `#479`
-- Deferred but not active: 8 explicitly deferred scope items remain out until later freezes admit them; see the activation-criteria section below for the exact candidate-next and current-focus gates
+- Done now on `main`: current `project6-origin/main` is synced through the bounded recursive source-directory runtime current-main sync in doc `859`, plus the later docs/control wording corrections from PRs `#1470` and `#1471`.
+- Current focus: no new runtime implementation lane is admitted by default. The active current-main posture is `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`; recursive source-ingestion polish remains blocked unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
+- Candidate next consumers: future work must start from current-main evidence for a named Layer 3 gap, or from exact product/use-case authority for a deferred lane such as optional-tool fixture/query-set selection. Candidate history below remains boundary evidence, not a current implementation recommendation.
+- Deferred but not active: deferred platform lanes remain out until later freezes or authority packets admit them; see the activation-criteria section below for candidate-next and current-focus gates.
 - Current theme synthesis reference pack: `next_milestone_plans/Layer3_planning_docs/238_LAYER3_THEME_TO_FULL_PIPELINE_SYNTHESIS.md` consolidates the live `/review/layer3` admitted themes with the static Claude prototype boundary and the deferred category ladder; it is planning/reference-only and does not admit runtime behavior by itself
 - Current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, plus the post-PR165 docs/progress/front-door sync from PR `#166`; those landed docs prepare deferred-scope work and align artifact/front-door surfaces only, without changing the 29 merged milestone count or reopening the settled packet
 - Current `main` also includes the merged broader-workbench implementation-entry prep packet from PR `#168`, the post-PR168 current-main closeout from PR `#169`, and the post-PR169 duplicate-default cleanup from PR `#170`; together they land and finalize `26_L3_WB_INPUTS.md` plus companion updates to `24_L3_WB_FREEZE.md`, `25_L3_QUAL1_FREEZE.md`, `README_LAYER3_PHASE1A_PACK.md`, and the progress/control packet, and they still remain planning-only deferred-scope prep rather than an active lane
@@ -474,41 +474,28 @@ flowchart LR
 
 ## Current Focus
 
-The bounded later APS family packet beyond the landed dedicated validate-only runtime/report-ref boundary is now settled on current `main`.
+Current `main` is synced through `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md` and the docs/control posture corrections from PRs `#1470` and `#1471`.
 
-The current method focus is narrower than broader deferred work: docs `72`/`73` govern, PR `#411` implements lower-level deterministic `descriptive_summary` analysis API support, PR `#417` admits the existing single-item Gate C wrapped quantitative path, PR `#424`/`#425` admit the explicit service-owned associated-cohort `materialize_pass_entry(...)` path, PR `#432` admits only selected-pass associated-cohort execution-start/result/status, PR `#438` admits only exact selected-pass associated-cohort result review over that PR `#432` authority, PR `#443` admits only exact rendered `/review/layer3` associated-cohort result-review presentation/control over that authority, PR `#447` implements only read-only associated-cohort package-review preview/readiness over docs `86`/`87`, PR `#451` implements docs `88`/`89` as the bounded associated-cohort package-construction slice, PR `#456` implements only bounded associated-cohort package-review submit, PR `#458` docs `92`/`93` freeze associated-cohort handoff/export prepare-only governance, PR `#460` implements that bounded backend/API prepare-only state on current `main`, PR `#462` proves the existing rendered prepare control over that server state, PR `#464` docs `94`/`95` select associated-cohort APS handoff dispatch governance only, and PR `#466` implements only exact backend/API associated-cohort APS evidence-bundle handoff dispatch. The current-main path does not admit schema/runtime/source widening, external export/download, connector dispatch, qualitative/hybrid/RAG/vector, retry/recovery beyond deterministic dispatch idempotency, pass-entry changes, broader UI behavior, or full mockup work.
+Current focus is a selection posture, not an implementation lane: `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`.
 
-Current-main selected-pass associated-cohort APS dispatch state:
-- docs `94_COHORT_APS_HANDOFF_DISPATCH_FREEZE.md` and `95_COHORT_APS_HANDOFF_DISPATCH_CONTRACT.md` remain the governance source for associated-cohort APS evidence-bundle handoff dispatch after PR `#460`/`#462`
-- PR `#466` implements only that bounded backend/API dispatch path and is live on current `main`
-- the admitted success path creates exactly one associated-cohort APS handoff dispatch object, one `aps_evidence_bundle_handoff` package row, and one APS evidence-bundle artifact through the existing owner-service family
-- invalid associated-cohort APS dispatch still fails closed with `associated_cohort_aps_handoff_dispatch_not_admitted` when the exact authority chain or provenance does not match
-- external export/download readiness is admitted only for the exact docs `96`/`97` + PR `#466` authority chain; stale or mismatched cohort provenance remains blocked with `associated_cohort_external_export_download_prepare_not_admitted`
-- connector/generic dispatch, destination selection, package mutation/reconstruction, schema/runtime/source widening, broader UI, qualitative/hybrid/RAG/vector, retry/recovery beyond deterministic dispatch idempotency, pass-entry changes, and full mockup behavior remain deferred
+Current-main recursive source-directory ingestion is live only under `recursive_server_configured_directory_text_table_policy_v1`: server-configured `LAYER3_SOURCE_INGESTION_DIR`, `.csv`/`.json`/`.txt`/`.md`, maximum recursion depth `2`, maximum normalized relative path segments `3` including filename, maximum file count `100`, deterministic normalized relative path ordering, no caller-selected recursive flag, redacted relative path authority, and existing source-directory material-preview/text-index compatibility.
 
-Current bounded selection state:
-- current `main` is settled through the dedicated validate-only runtime/report-ref implementation lane from PR `#143` and the post-PR143 docs/progress sync from PR `#144`
-- current `main` now also includes the landed read-only `23_GATED_APS_PROMOTION_FREEZE.md` freeze from PR `#145`, the post-PR145 docs/progress sync from PR `#146`, the later APS family settlement closeout from PR `#147`, and the post-PR147 progress-packet closeout from PR `#148`
-- promotion is the landed first later-family choice on current `main` under `23_GATED_APS_PROMOTION_FREEZE.md`
-- the existing promotion governance family is already sufficient on current `main` through `backend/app/services/nrc_aps_promotion_gate.py`, `tests/test_nrc_aps_promotion_gate.py`, `backend/app/services/nrc_aps_promotion_tuning.py`, `tests/test_nrc_aps_promotion_tuning.py`, `backend/app/services/nrc_adams_resources/aps_promotion_policy_v1.json`, and `project6.ps1`
-- retrieval cutover already exists on current `main` as a separate validate-only parity-proof family through `backend/app/services/aps_retrieval_plane_cutover_validation.py`, `backend/tests/test_aps_retrieval_plane_cutover_validation.py`, `backend/tests/test_aps_retrieval_plane_cutover_gate.py`, `tools/nrc_aps_retrieval_cutover_gate.py`, and `project6.ps1`
-- no further later APS family decision or implementation lane is currently justified by default from this merged-main state
-- the landed freeze does not invent a separate repo-backed post-validate-only top-chain family
+Still blocked from the current focus: caller-provided paths/URLs/globs/file bytes/recursive flags, rendered controls, source authority promotion, package/handoff/export/download behavior changes, connector dispatch changes, provider URL behavior, credentials or network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs/OCR/Office/images/archives/arbitrary binaries, browser uploads, web connectors, and database connectors.
+
+Optional-tool fixture/query-set authority remains a local blocked posture under docs `849` through `851`, not the global current-main focus. It can become actionable only after product authority selects exact TabPFN supervised fixture authority or NRC RAG regulatory grounding query-set authority.
 
 Hard rule:
-- do not invent another later APS family lane by default from this merged-main state alone
+- do not continue recursive source-ingestion polish or create a new runtime implementation lane unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, named downstream operator-flow blocker, or exact product/use-case authority for a deferred lane.
 
 ## Candidate Next Consumers
 
-Near-term direction as of the local-only `2026-05-06` sync:
+Near-term direction after doc `859` and PRs `#1470`/`#1471`:
 
-- remaining authentication/security work is intentionally deferred and must not be selected as the next slice by default
-- provider/public URL implementation, connector/destination dispatch, upload-security hardening, signed-reference security hardening, qualitative/hybrid/RAG execution, broad source/runtime/schema widening, package mutation/reconstruction, frontend-only durable state, hidden LLM planning, broad workbench rewrite, and full mockup activation remain blocked as immediate next slices
-- PR `#531` now makes Gate B post-commit retry idempotency and material-preview hash hardening current-main bounded behavior; do not keep treating that exact slice as branch-only or unstarted
-- PR `#533` now makes server-derived `state_action_contract` hardening current-main bounded behavior; do not keep treating canonical state/action contract hardening as unstarted unless fresh drift proof appears
-- PR `#609` now makes APS source-family extraction current-main no-behavior-change refactor/proof; do not keep treating that exact slice as branch-only or unstarted
-- the current external synthesis/adjudication report is `C:\Users\benny\Downloads\audit\AUDIT_SYNTHESIS_ADJUDICATION.md`; if work continues now, the supported order is progress/proof refresh first, API request-contract hardening for forbidden sentinel fields second, and approved-plan cancel negative-invariant proof/widening correction before any broad feature admission
-- the historical candidate/deferred entries below remain useful boundary records, not near-term implementation recommendations
+- select the next major Layer 3 gap only from current-main evidence; do not infer a new implementation lane from adjacency alone
+- optional-tool progression remains blocked until product authority selects exact fixture/query-set authority
+- recursive source-ingestion runtime is already current-main synced and should not be extended without a named defect, failed check, stale sync, unresolved review item, or operator-flow blocker
+- historical candidate/deferred entries below remain useful boundary records, not near-term implementation recommendations
+- retained local-sync boundary terms: remaining authentication/security work is intentionally deferred; PR `#531` now makes Gate B post-commit retry idempotency and material-preview hash hardening current-main bounded behavior; PR `#533` now makes server-derived `state_action_contract` hardening current-main bounded behavior; PR `#609` now makes APS source-family extraction current-main no-behavior-change refactor/proof; API request-contract hardening for forbidden sentinel fields second.
 
 - current-main state: PR `#487` proves associated-cohort rendered delivery UI activation through an explicit server-authoritative gate over the existing same-origin attachment form
 - current-main docs `102`/`103` from PR `#497` select signed delivery-reference planning/control questions; PR `#499` implements the bounded backend/API same-origin signed-reference generation/use path and proves token/signature strategy, route ownership, expiry, stale-authority failure, and no row/file creation
@@ -526,8 +513,8 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after PR #148"] --> B["Later APS family packet settled"]
-    B -.-> C["Reopen only if live repo truth proves a concrete gap"]
+    A["Current main after doc 859 and PRs #1470/#1471"] --> B["Selection posture only: no runtime lane admitted"]
+    B -.-> C["Select next major gap only from current-main evidence"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
