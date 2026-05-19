@@ -33876,5 +33876,49 @@
     ],
     "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
     "summary": "Doc 864 syncs the read-only Analysis Environment projection runtime to current main after PR #1479, records green checks and empty review surfaces, preserves no-new-runtime sync boundaries, and selects the next posture as a fresh exact Layer 3 end-to-end gap selection."
+  },
+  "downstream_analysis_environment_rendered_projection_gap_selection_proof": {
+    "proof_kind": "selected_downstream_analysis_environment_rendered_projection_read_only_gap",
+    "status": "selected_downstream_analysis_environment_rendered_projection_read_only_gap",
+    "doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+    "branch": "codex/l3-analysis-environment-rendered-gap-selection",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint": "61441742337a66f6793a5985987fec8a94d9d518",
+    "selected_gap": "downstream_analysis_environment_rendered_projection_read_only",
+    "selected_next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+    "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+    "candidate_rendered_surface": "backend/app/review_ui/static/layer3.js",
+    "proof_terms": [
+      "no-runtime current-main gap-selection control",
+      "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+      "downstream_analysis_environment_rendered_projection_read_only",
+      "61441742337a66f6793a5985987fec8a94d9d518",
+      "State.sessionSummary.analysis_environment_projection",
+      "backend/app/services/layer3_analysis_environment_projection.py",
+      "analysis_environment_projection: dict[str, Any]",
+      "layer3.analysis_environment_projection.v1",
+      "read_only_session_summary_projection",
+      "backend/app/review_ui/static/layer3.js",
+      "/review/layer3",
+      "currentSublayerVisualizationModel()",
+      "renderAnalysisPlane()",
+      "no runtime behavior introduced",
+      "no rendered behavior introduced",
+      "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime"
+    ],
+    "proof_commands": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+    "summary": "Doc 865 selects the read-only rendered projection gap using server-owned analysis_environment_projection as future UI authority, admits no implementation, and preserves a freeze-first posture before any rendered /review/layer3 change."
   }
 }
