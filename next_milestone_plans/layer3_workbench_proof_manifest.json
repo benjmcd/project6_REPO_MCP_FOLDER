@@ -34055,5 +34055,47 @@
     ],
     "next_posture_after_merge": "current_main_sync_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
     "summary": "Doc 868 proves the bounded read-only rendered /review/layer3 Analysis Environment projection panel over State.sessionSummary.analysis_environment_projection, with headed in-app Chromium and headless Chromium proof and no backend route/API/DTO/model/migration/service behavior change."
+  },
+  "downstream_analysis_environment_rendered_projection_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_synced_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+    "status": "current_main_synced_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-analysis-environment-rendered-runtime-sync",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/868_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1484",
+    "runtime_branch_commit": "a71380c3af6cc5a7824a16e9b16c4c0847d3ffd6",
+    "runtime_merge_commit": "9862fe1eb09925889926bfb79febd9f7abe585ee",
+    "synced_result": "current_main_synced_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+    "proof_terms": [
+      "current-main proof/control sync",
+      "PR #1484 merged",
+      "9862fe1eb09925889926bfb79febd9f7abe585ee",
+      "current_main_synced_downstream_analysis_environment_rendered_projection_read_only_panel_runtime",
+      "backend-layer3-api SUCCESS 3m21s",
+      "test SUCCESS 3m53s",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "State.sessionSummary.analysis_environment_projection",
+      "backend/app/review_ui/static/layer3.js",
+      "/review/layer3",
+      ".analysis-environment-projection",
+      "analysis_environment_projection_missing",
+      "no backend runtime behavior introduced by sync",
+      "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync"
+    ],
+    "proof_commands": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py -q PASS 6 passed"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync",
+    "summary": "Doc 869 records current-main sync for PR #1484 merge commit 9862fe1eb09925889926bfb79febd9f7abe585ee with checks passed, review surfaces empty, post-merge validation passed, and the next posture set to selecting the next exact Layer 3 end-to-end gap after rendered projection runtime sync."
   }
 }
