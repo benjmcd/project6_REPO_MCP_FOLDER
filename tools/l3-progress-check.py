@@ -2360,6 +2360,9 @@ LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_SYNC = (
 LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION = (
     PLANNING_DOCS / "860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE = (
+    PLANNING_DOCS / "861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -74617,6 +74620,159 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in proof_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_gap_selection_proof.proof_terms missing {term}"
+                        )
+
+    analysis_environment_freeze_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime implementation-entry freeze for `downstream_analysis_environment_authority_projection`.",
+        "861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+        "Predecessor gap-selection doc: `860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md`.",
+        "Selected implementation action: `implement_downstream_analysis_environment_authority_projection_read_only_session_summary`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed next: true only after current-main sync for this freeze",
+        "backend/app/services/layer3_workbench.py::session_summary",
+        "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+        "backend/app/services/layer3_analysis_environment_projection.py",
+        "GET /api/v1/layer3/session/{session_id}",
+        "Layer3SessionSummaryResponse",
+        "analysis_environment_projection: dict[str, Any]",
+        "schema id: `layer3.analysis_environment_projection.v1`",
+        "authority source: `read_only_session_summary_projection`",
+        "No rendered control is admitted by this freeze.",
+        "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
+    ):
+        if term not in analysis_environment_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE)} "
+                f"missing downstream Analysis Environment freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Authority Projection Freeze",
+            "861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+            "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+            "backend/app/services/layer3_analysis_environment_projection.py",
+            "analysis_environment_projection: dict[str, Any]",
+            "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
+        ),
+        PROGRESS_PROMPT: (
+            "861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+            "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+            "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
+            "Layer3SessionSummaryResponse",
+        ),
+        REFRESH_SPEC: (
+            "861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+            "no-runtime implementation-entry freeze only",
+            "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+            "backend/app/services/layer3_analysis_environment_projection.py",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_freeze"',
+            '"status": "downstream_analysis_environment_authority_projection_freeze_no_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md"',
+            '"selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary"',
+            '"implementation_entry_allowed_after_current_main_sync": true',
+            '"schema_id": "layer3.analysis_environment_projection.v1"',
+            '"next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_freeze_proof"',
+            '"proof_kind": "downstream_analysis_environment_authority_projection_freeze_no_runtime"',
+            '"backend/app/services/layer3_analysis_environment_projection.py"',
+            '"analysis_environment_projection: dict[str, Any]"',
+            '"current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing downstream Analysis Environment freeze term: {term}")
+
+    if isinstance(manifest_data, dict):
+        freeze = manifest_data.get("downstream_analysis_environment_authority_projection_freeze")
+        if not isinstance(freeze, dict):
+            errors.append(f"{_rel(MANIFEST)} missing downstream_analysis_environment_authority_projection_freeze object")
+        else:
+            expected_freeze_scalars = {
+                "status": "downstream_analysis_environment_authority_projection_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+                "branch": "codex/l3-analysis-environment-authority-freeze",
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "runtime_behavior_change": False,
+                "implementation_entry_allowed_next": True,
+                "implementation_entry_allowed_after_current_main_sync": True,
+                "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_model": "backend/app/api/layer3.py::Layer3SessionSummaryResponse",
+                "response_field": "analysis_environment_projection",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "rendered_surface_admitted_now": False,
+                "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
+            }
+            for key, value in expected_freeze_scalars.items():
+                if freeze.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_freeze.{key} must be {value!r}"
+                    )
+
+    if isinstance(proof_data, dict):
+        freeze_proof = proof_data.get("downstream_analysis_environment_authority_projection_freeze_proof")
+        if not isinstance(freeze_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_authority_projection_freeze_proof object"
+            )
+        else:
+            expected_freeze_proof_scalars = {
+                "proof_kind": "downstream_analysis_environment_authority_projection_freeze_no_runtime",
+                "status": "downstream_analysis_environment_authority_projection_freeze_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/861_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE.md",
+                "branch": "codex/l3-analysis-environment-authority-freeze",
+                "runtime_behavior_change": False,
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "implementation_entry_allowed_next": True,
+                "implementation_entry_allowed_after_current_main_sync": True,
+                "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_field": "analysis_environment_projection",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
+            }
+            for key, value in expected_freeze_proof_scalars.items():
+                if freeze_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_proof.{key} must be {value!r}"
+                    )
+            freeze_terms = freeze_proof.get("proof_terms")
+            if not isinstance(freeze_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "no-runtime implementation-entry freeze",
+                    "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                    "backend/app/services/layer3_workbench.py::session_summary",
+                    "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+                    "backend/app/services/layer3_analysis_environment_projection.py",
+                    "GET /api/v1/layer3/session/{session_id}",
+                    "Layer3SessionSummaryResponse",
+                    "analysis_environment_projection: dict[str, Any]",
+                    "layer3.analysis_environment_projection.v1",
+                    "read_only_session_summary_projection",
+                    "no rendered control is admitted by this freeze",
+                    "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
+                ):
+                    if term not in freeze_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_freeze_proof.proof_terms missing {term}"
                         )
 
 
