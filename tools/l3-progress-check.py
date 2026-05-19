@@ -2322,6 +2322,10 @@ LAYER3_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN = (
     PLANNING_DOCS
     / "848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md"
 )
+LAYER3_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE = (
+    PLANNING_DOCS
+    / "849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72687,6 +72691,161 @@ def _check_sublayer3c_optional_tool_static_benchmark_plan(
                 )
 
 
+def _check_sublayer3c_optional_tool_benchmark_fixture_authority_gate(
+    errors: list[str],
+) -> None:
+    gate_text = _read_required_text(
+        LAYER3_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime fixture-authority gate for `sublayer3c_optional_tool_benchmark_fixture_authority_gate`.",
+        "849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md",
+        "codex/l3-optional-tool-fixture-authority-gate",
+        "d79b832a884ada38a471a2d42991cf31d3cd09ee",
+        "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+        "stop_optional_tool_benchmark_progression_until_fixture_authority_selected",
+        "Runtime behavior introduced by this gate: `false`.",
+        "Benchmark execution introduced by this gate: `false`.",
+        "Fixture materialization introduced by this gate: `false`.",
+        "Fixture authority status: `absent_current_main_authority`.",
+        "Selected TabPFN benchmark fixture authority: `none`.",
+        "Selected NRC RAG benchmark fixture authority: `none`.",
+        "Result: `optional_tool_benchmark_fixture_authority_not_selected`.",
+        "no selected `target_column_declared`",
+        "no selected `feature_columns_declared`",
+        "no selected `train_test_split_declared`",
+        "no selected `leakage_checks_declared`",
+        "no_adopt_tabpfn_for_absent_supervised_fixture_authority",
+        "no selected `query_set_authority`",
+        "no selected expected source identifiers",
+        "no selected expected source spans",
+        "no selected citation rubric",
+        "no_adopt_nrc_rag_for_absent_query_set_authority",
+        "no runtime behavior",
+        "benchmark execution",
+        "fixture data creation",
+        "fixture materialization",
+        "fixture selection",
+        "no TabPFN runtime",
+        "NRC RAG runtime",
+        "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+    ):
+        if term not in gate_text:
+            errors.append(
+                f"{_rel(LAYER3_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE)} "
+                f"missing Sublayer 3C optional-tool benchmark fixture authority gate term: {term}"
+            )
+
+    for path, terms in {
+        ROOT / "backend" / "app" / "services" / "analysis.py": (
+            "ANALYSIS_METHOD_REGISTRY",
+            "cross_correlation",
+            "descriptive_summary",
+            "decomposition",
+            "structural_break",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_pass_entry.py": (
+            "PASS_SCOPE_QUANT_SINGLE_ITEM",
+            "PASS_SCOPE_QUANT_ASSOCIATED_COHORT",
+            "SUPPORTED_WRAPPED_QUANTITATIVE_METHODS",
+            "wrapped_quantitative_analysis",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_pass_entry.py": (
+            "_seed_timeseries_dataset_version",
+            "dv-cohort-001",
+            "dv-cohort-002",
+            "descriptive_summary",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_source_directory_vector_retrieval.py": (
+            "_write_vector_retrieval_source_dir",
+            "alpha beta beta lead",
+            "source_directory_material_vector_retrieval",
+            "deterministic_local_hash_vector_similarity_retrieval",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_source_directory_context_packet.py": (
+            "_write_context_source_dir",
+            "source_directory_material_retrieval_augmented_context_packet",
+            "retrieval_augmented_qualitative_context_packet",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_source_directory_qualitative_analysis.py": (
+            "_write_analysis_source_dir",
+            "source_directory_material_context_packet_qualitative_hybrid_analysis",
+            "context_packet_grounded_qualitative_hybrid_analysis",
+        ),
+        ROOT / "tests" / "fixtures" / "nrc_aps_docs" / "v1" / "manifest.json": (
+            "schema_id",
+        ),
+        ROOT / "tests" / "fixtures" / "nrc_aps_replay" / "v1" / "index.json": (
+            "case_checksums",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing fixture-authority source evidence term: {term}"
+                )
+
+    for path, terms in {
+        BOARD: (
+            "## Sublayer 3C Optional Tool Benchmark Fixture Authority Gate",
+            "849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md",
+            "stop_optional_tool_benchmark_progression_until_fixture_authority_selected",
+            "Runtime behavior introduced by this gate: `false`.",
+            "Benchmark execution introduced by this gate: `false`.",
+            "Fixture authority status: `absent_current_main_authority`.",
+            "Selected TabPFN benchmark fixture authority: `none`.",
+            "Selected NRC RAG benchmark fixture authority: `none`.",
+            "Current-main quantitative pass-entry and execution tests",
+            "Current-main source-directory tests",
+            "This gate admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, fixture selection",
+            "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+        ),
+        MANIFEST: (
+            '"sublayer3c_optional_tool_benchmark_fixture_authority_gate"',
+            '"latest_sublayer3c_optional_tool_benchmark_fixture_authority_gate_doc"',
+            '"decision": "stop_optional_tool_benchmark_progression_until_fixture_authority_selected"',
+            '"runtime_behavior_change": false',
+            '"benchmark_execution_change": false',
+            '"fixture_materialization_change": false',
+            '"fixture_authority_status": "absent_current_main_authority"',
+            '"selected_tabpfn_benchmark_fixture_authority": "none"',
+            '"selected_nrc_rag_benchmark_fixture_authority": "none"',
+            '"target_column_declared"',
+            '"expected_source_identifiers"',
+            '"fixture_selection": false',
+            '"tabpfn_runtime": false',
+            '"nrc_rag_runtime": false',
+            '"next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection"',
+        ),
+        PROOF_MANIFEST: (
+            '"sublayer3c_optional_tool_benchmark_fixture_authority_gate_proof"',
+            '"planning_control_sublayer3c_optional_tool_benchmark_fixture_authority_gate"',
+            "stop_optional_tool_benchmark_progression_until_fixture_authority_selected",
+            "runtime_behavior_change false",
+            "benchmark execution forbidden",
+            "fixture materialization forbidden",
+            "absent_current_main_authority",
+            "selected TabPFN benchmark fixture authority none",
+            "selected NRC RAG benchmark fixture authority none",
+            "target_column_declared absent",
+            "query_set_authority absent",
+            "no_adopt_tabpfn_for_absent_supervised_fixture_authority",
+            "no_adopt_nrc_rag_for_absent_query_set_authority",
+            "no benchmark execution",
+            "no fixture selection",
+            "await_product_authority_for_optional_tool_benchmark_fixture_selection",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing Sublayer 3C optional-tool benchmark fixture authority gate artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -73412,6 +73571,7 @@ def main() -> int:
     _check_tabpfn_sublayer3c_optional_predictive_method_adr(errors)
     _check_nrc_rag_sublayer3c_optional_tool_adr(errors)
     _check_sublayer3c_optional_tool_static_benchmark_plan(errors)
+    _check_sublayer3c_optional_tool_benchmark_fixture_authority_gate(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
