@@ -6775,3 +6775,32 @@ Provider-public delivery/use, provider-private signed URL behavior, signed-refer
 Validation: `node --check .\backend\app\review_ui\static\layer3.js` passed; `python -m py_compile .\tools\l3-progress-check.py` passed; `python -m pytest .\backend\tests\test_layer3_page.py -q` passed with `4 passed`, `3 warnings`; `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivers_selected_package -q` passed with `5 passed`, `3 warnings`; JSON manifest validation passed; `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed; `git diff --check` passed with CRLF normalization warnings only.
 
 The next required action after merge is `current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime`; after that sync, pivot to `select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync` unless current-main evidence names a concrete unresolved rendered delivery-control defect or required downstream reader.
+
+## Source Directory Hybrid Context Qualitative Analysis External Export Download Rendered Delivery Control Current-Main Sync
+
+Current-main proof/control sync: `841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1446` for `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime`.
+
+Runtime branch `codex/l3-next-gap-after-hybrid-delivery` landed branch commit `ba3948e9` into current main at merge commit `1b71c4aa7c5f8792abfa6242cec0315e9d687367`.
+
+Synced result: `current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime`.
+
+Current main now includes bounded rendered `/review/layer3` controls for source-directory hybrid context-packet qualitative-analysis external export/download delivery:
+
+- `#source-directory-hybrid-external-export-download-delivery-form`;
+- `#source-directory-hybrid-external-export-download-delivery-authority`;
+- `#source-directory-hybrid-external-export-download-delivery-status`;
+- `#source-directory-hybrid-external-export-download-delivery-submit`.
+
+PR `#1446` had green `backend-layer3-api` (`3m35s`) and `test` (`3m31s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `frontend_rendered_controls_enabled: True`, `frontend_durable_authority_enabled: False`, `provider_public_delivery_enabled: False`, `provider_private_signed_url_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `durable_delivery_rows_enabled: False`, `package_payload_rewrite_enabled: False`, `package_mutation_reconstruction_enabled: False`, `source_package_row_mutation_enabled: False`, `new_source_family_enabled: False`, `arbitrary_ingestion_enabled: False`, `recursive_ingestion_enabled: False`, `persistent_vector_store_enabled: False`, and `raw_vector_exposure_enabled: False`.
+
+This sync introduces no runtime behavior and does not admit additional same-family package/export/active-authority proof loops without a named defect or downstream reader.
+
+Post-merge validation: `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed.
+
+The next exact current-main posture is `select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync`.

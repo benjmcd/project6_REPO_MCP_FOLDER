@@ -34433,5 +34433,59 @@
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_implemented_branch_local",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_runtime_behavior_change": true,
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_summary": "Doc 840 and branch codex/l3-next-gap-after-hybrid-delivery implement a bounded rendered /review/layer3 delivery control over the already current-main source-directory hybrid external export/download delivery backend, while keeping frontend durable authority, provider delivery, signed URLs, connector dispatch, network egress, package mutation, source row mutation, new source families, arbitrary ingestion, raw paths, raw payload refs, and raw vectors blocked."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime_entry_summary": "Doc 840 and branch codex/l3-next-gap-after-hybrid-delivery implement a bounded rendered /review/layer3 delivery control over the already current-main source-directory hybrid external export/download delivery backend, while keeping frontend durable authority, provider delivery, signed URLs, connector dispatch, network egress, package mutation, source row mutation, new source families, arbitrary ingestion, raw paths, raw payload refs, and raw vectors blocked.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync": {
+    "status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/840_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_RUNTIME_ENTRY.md",
+    "runtime_pr": "#1446",
+    "runtime_branch": "codex/l3-next-gap-after-hybrid-delivery",
+    "runtime_branch_commit": "ba3948e9",
+    "runtime_merge_commit": "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+    "sync_branch": "codex/l3-840-rendered-delivery-current-main-sync",
+    "runtime_behavior_in_implementation_pr": true,
+    "runtime_behavior_in_this_sync": false,
+    "merge_gate": {
+      "pr_1446_backend_layer3_api": "SUCCESS",
+      "pr_1446_backend_layer3_api_duration": "3m35s",
+      "pr_1446_test": "SUCCESS",
+      "pr_1446_test_duration": "3m31s",
+      "pr_1446_comments": 0,
+      "pr_1446_reviews": 0,
+      "pr_1446_latestReviews": 0,
+      "pr_1446_reviewThreads": 0,
+      "pr_1446_unresolvedReviewThreads": 0
+    },
+    "current_main_runtime": {
+      "rendered_mode": "rendered_source_directory_hybrid_external_export_download_delivery_control",
+      "frontend_rendered_controls_enabled": true,
+      "frontend_durable_authority_enabled": false,
+      "provider_public_delivery_enabled": false,
+      "provider_private_signed_url_enabled": false,
+      "connector_dispatch_enabled": false,
+      "network_egress_enabled": false,
+      "durable_delivery_rows_enabled": false,
+      "package_payload_rewrite_enabled": false,
+      "package_mutation_reconstruction_enabled": false,
+      "source_package_row_mutation_enabled": false,
+      "new_source_family_enabled": false,
+      "arbitrary_ingestion_enabled": false,
+      "recursive_ingestion_enabled": false,
+      "persistent_vector_store_enabled": false,
+      "raw_vector_exposure_enabled": false
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS"
+    ],
+    "next_posture": "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_branch": "codex/l3-840-rendered-delivery-current-main-sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/841_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_RENDERED_DELIVERY_CONTROL_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_pr": "#1446",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_merge_commit": "1b71c4aa7c5f8792abfa6242cec0315e9d687367",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_runtime_behavior_change": false,
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_next_posture": "select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_rendered_delivery_control_current_main_sync_summary": "Doc 841 syncs PR #1446 to current main. The source-directory hybrid external export/download rendered delivery control runtime is current-main truth; this sync adds no runtime behavior and pivots to server-configured local source-directory ingestion."
 }
