@@ -32665,5 +32665,60 @@
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/837_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync_summary": "Doc 837 records current-main adoption of the source-directory hybrid external export/download prepare runtime after PR #1442."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync_summary": "Doc 837 records current-main adoption of the source-directory hybrid external export/download prepare runtime after PR #1442.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_proof": {
+    "proof_kind": "runtime_entry_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery",
+    "status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_implemented_branch_local",
+    "branch": "codex/l3-source-directory-mixed-files-ingestion",
+    "doc": "next_milestone_plans/Layer3_planning_docs/838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md",
+    "predecessor": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_hybrid_analysis.py .\\backend\\app\\api\\layer3.py .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivers_selected_package -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py -q",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen"
+    ],
+    "proof_results": [
+      "PASS",
+      "PASS 1 passed 3 warnings",
+      "PASS 19 passed 3 warnings",
+      "PASS",
+      "PASS frozen"
+    ],
+    "proof_coverage": [
+      "delivery status route reports source_directory_hybrid_external_export_download_delivery_ready without streaming",
+      "delivery route streams a selected server-owned source-directory hybrid package payload as a same-origin attachment",
+      "delivery validates external_export_download_prepared authority before package selection",
+      "delivery rejects stale package payload hash",
+      "no connector rows, provider delivery, network egress, durable delivery row, package mutation, source package row mutation, raw local path exposure, or frontend durable authority are introduced"
+    ],
+    "blocked_scope": [
+      "provider-public delivery/use",
+      "provider-private signed URL behavior",
+      "signed-reference use",
+      "connector dispatch",
+      "real connector invocation",
+      "credentials",
+      "destination writes",
+      "network egress",
+      "frontend durable authority",
+      "rendered controls",
+      "durable delivery rows",
+      "delivery audit rows",
+      "package mutation",
+      "source package row mutation",
+      "package payload rewrite",
+      "new source family",
+      "raw local path exposure",
+      "raw payload ref exposure",
+      "raw vector exposure"
+    ],
+    "next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_branch": "codex/l3-source-directory-mixed-files-ingestion",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_implemented_branch_local",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_summary": "Doc 838 proof records same-origin source-directory hybrid external export/download package delivery over existing prepare authority."
 }

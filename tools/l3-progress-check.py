@@ -2278,6 +2278,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPO
     PLANNING_DOCS
     / "837_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2316,6 +2320,9 @@ LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_SERVICE = (
 )
 LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_source_directory_vector_retrieval.py"
+)
+LAYER3_SOURCE_DIRECTORY_HYBRID_ANALYSIS_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_source_directory_hybrid_analysis.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_MIGRATION = (
     ROOT / "backend" / "alembic" / "versions" / "0034_layer3_source_directory_ingestion.py"
@@ -71675,7 +71682,81 @@ def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_
         for term in terms:
             if term not in text:
                 errors.append(
-                    f"{_rel(path)} missing source-directory hybrid external export/download prepare sync artifact term: {term}"
+                f"{_rel(path)} missing source-directory hybrid external export/download prepare sync artifact term: {term}"
+            )
+
+
+def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry(
+    errors: list[str],
+) -> None:
+    entry_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime entry freeze and implementation for `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime`.",
+        "838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md",
+        "codex/l3-source-directory-mixed-files-ingestion",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver",
+        "deliver_source_directory_hybrid_external_export_download",
+        "same_origin_artifact_stream",
+        "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+    ):
+        if term not in entry_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY)} "
+                f"missing source-directory hybrid external export/download delivery runtime entry term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Hybrid Context Qualitative Analysis External Export Download Delivery Runtime Entry",
+            "838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md",
+            "source-directory hybrid context-packet qualitative-analysis external export/download package",
+            "delivery_streaming_performed: False",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_implemented_branch_local",
+            "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1",
+            "same_origin_delivery_enabled",
+            "browser_managed_same_origin_attachment_enabled",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_proof",
+            "runtime_entry_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery",
+            "delivery validates external_export_download_prepared authority before package selection",
+            "delivery rejects stale package payload hash",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+        ),
+        LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST: (
+            "test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivers_selected_package",
+            "deliver_source_directory_hybrid_external_export_download",
+            "X-Layer3-Source-Directory-Hybrid-Package-Kind",
+            "source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch",
+        ),
+        LAYER3_SOURCE_DIRECTORY_HYBRID_ANALYSIS_SERVICE: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status",
+            "EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SOURCE_GATE",
+            "browser_managed_same_origin_attachment_enabled",
+            "SourceDirectoryHybridExternalExportDownloadDeliveryError",
+        ),
+        LAYER3_API: (
+            "Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliverRequest",
+            "Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliveryStatusResponse",
+            "post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory hybrid external export/download delivery artifact term: {term}"
                 )
 
 
@@ -72379,6 +72460,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry(
         errors
     )
 
