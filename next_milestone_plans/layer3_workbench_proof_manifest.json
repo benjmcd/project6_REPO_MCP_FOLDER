@@ -33458,5 +33458,44 @@
     ],
     "next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
     "summary": "Doc 854 records the next broader source-ingestion family as recursive server-configured local directory text/table ingestion while keeping runtime blocked. It proves only the no-runtime selection boundary; direct-child source-directory ingestion remains unchanged and recursive traversal requires a later runtime-entry freeze."
+  },
+  "recursive_source_ingestion_family_selection_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_synced_recursive_source_ingestion_family_selection_freeze",
+    "status": "current_main_synced_recursive_source_ingestion_family_selection_freeze",
+    "doc": "next_milestone_plans/Layer3_planning_docs/855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-recursive-source-ingestion-freeze-sync",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+    "freeze_pr": "#1464",
+    "freeze_merge_commit": "cd7cd385710102724c572615b33105956a22d52b",
+    "runtime_behavior_change": false,
+    "selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family",
+    "selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion",
+    "implementation_entry_allowed_next": false,
+    "proof_terms": [
+      "current-main proof/control sync",
+      "PR #1464 merged",
+      "cd7cd385710102724c572615b33105956a22d52b",
+      "current_main_synced_recursive_source_ingestion_family_selection_freeze",
+      "backend-layer3-api SUCCESS",
+      "test SUCCESS",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "direct-child source-directory ingestion unchanged",
+      "recursive_traversal_admitted False",
+      "no runtime behavior",
+      "no recursive traversal in the live API",
+      "no request-schema change",
+      "no rendered control change",
+      "later runtime-entry freeze required",
+      "select_recursive_source_ingestion_runtime_policy_before_implementation"
+    ],
+    "proof_commands": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS"
+    ],
+    "next_posture": "select_recursive_source_ingestion_runtime_policy_before_implementation",
+    "summary": "Doc 855 records current-main adoption of the no-runtime recursive source-ingestion family selection from PR #1464. The live direct-child source-directory ingestion path remains unchanged and recursive traversal remains blocked until a later runtime-entry freeze."
   }
 }
