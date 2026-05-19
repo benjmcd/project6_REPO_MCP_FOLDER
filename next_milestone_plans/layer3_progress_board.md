@@ -6836,3 +6836,35 @@ No backend routes, models, migrations, durable scanner behavior, source-family b
 Validation: `node --check .\backend\app\review_ui\static\layer3.js` passed; `python -m py_compile .\tools\l3-progress-check.py` passed; `python -m pytest .\backend\tests\test_layer3_page.py -q` passed with `5 passed`, `3 warnings`; `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_source_directory_ingestion.py -q` passed with `18 passed`, `3 warnings`; `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed; JSON manifest validation passed; `git diff --check` passed with CRLF normalization warnings only.
 
 The next required action after merge is `current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime`; after that sync, select the next major Layer 3 end-to-end gap from current-main evidence rather than reopening source ingestion by default.
+
+## Server Configured Source Directory Ingestion Rendered Control Current-Main Sync
+
+Current-main proof/control sync: `843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1448` for `server_configured_source_directory_ingestion_rendered_control_runtime`.
+
+Runtime branch `codex/l3-source-ingestion-runtime` landed branch commit `63f6c2ebf98ce849aad14b02c67e8dc79a2cdd03` into current main at merge commit `d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42`.
+
+Synced result: `current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime`.
+
+Current main now includes bounded rendered `/review/layer3` scan/status controls for the already current-main server-configured source-directory ingestion backend:
+
+- `#source-directory-ingestion-rendered-controls`;
+- `#source-directory-ingestion-scan-form`;
+- `#source-directory-ingestion-client-request-id`;
+- `#source-directory-ingestion-batch-id`;
+- `#source-directory-ingestion-status`;
+- `#source-directory-ingestion-scan-submit`;
+- `#source-directory-ingestion-panel`.
+
+PR `#1448` had green `backend-layer3-api` (`3m13s`) and `test` (`3m32s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `frontend_rendered_controls_enabled: True`, `frontend_durable_authority_enabled: False`, `backend_route_behavior_change: False`, `database_model_or_migration_change: False`, `caller_supplied_path_or_url_enabled: False`, `recursive_ingestion_enabled: False`, `browser_file_bytes_enabled: False`, `rag_vector_indexing_enabled: False`, `qualitative_hybrid_runtime_enabled: False`, `provider_public_delivery_use_enabled: False`, `provider_private_signed_url_behavior_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `package_construction_or_mutation_enabled: False`, `package_payload_rewrite_enabled: False`, `source_package_row_mutation_enabled: False`, and `raw_local_path_exposure_enabled: False`.
+
+This sync introduces no runtime behavior and does not admit additional source ingestion widening without a named current-main defect or downstream reader.
+
+Post-merge validation: `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed.
+
+The next exact current-main posture is `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`.
