@@ -7252,7 +7252,15 @@
     "latest_internal_webhook_rendered_status_gap_selection_runtime_behavior_change": false,
     "latest_internal_webhook_rendered_status_gap_selection_rendered_behavior_change": false,
     "latest_internal_webhook_rendered_status_gap_selection_next_posture": "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
-    "latest_internal_webhook_rendered_status_gap_selection_summary": "Doc 871 selects the next non-optional-tool Layer 3 gap: rendered read-only operator visibility for the already-current-main server-configured internal webhook dispatch/status authority. It admits no runtime behavior, rendered behavior, dispatch rerun, route/API/model/migration/service change, write/submit control, destination widening, provider URL behavior, optional-tool runtime, or frontend-only durable authority."
+    "latest_internal_webhook_rendered_status_gap_selection_summary": "Doc 871 selects the next non-optional-tool Layer 3 gap: rendered read-only operator visibility for the already-current-main server-configured internal webhook dispatch/status authority. It admits no runtime behavior, rendered behavior, dispatch rerun, route/API/model/migration/service change, write/submit control, destination widening, provider URL behavior, optional-tool runtime, or frontend-only durable authority.",
+    "latest_internal_webhook_rendered_status_freeze_branch": "codex/l3-internal-webhook-rendered-status-freeze",
+    "latest_internal_webhook_rendered_status_freeze_doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+    "latest_internal_webhook_rendered_status_freeze_status": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered",
+    "latest_internal_webhook_rendered_status_freeze_action": "implement_internal_webhook_rendered_read_only_status_projection",
+    "latest_internal_webhook_rendered_status_freeze_runtime_behavior_change": false,
+    "latest_internal_webhook_rendered_status_freeze_rendered_behavior_change": false,
+    "latest_internal_webhook_rendered_status_freeze_next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+    "latest_internal_webhook_rendered_status_freeze_summary": "Doc 872 freezes the future implementation entry for internal webhook rendered read-only status projection. It permits only a later current-main-synced implementation of internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch, while admitting no runtime/rendered behavior now, dispatch rerun, write/submit control, URL/credential input, connector rows, provider URL behavior, optional-tool runtime, browser-storage authority, or frontend-only durable authority."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -36550,5 +36558,39 @@
     "implementation_entry_allowed_next": false,
     "next_posture": "freeze_internal_webhook_rendered_read_only_status_projection_before_runtime",
     "summary": "Doc 871 selects the next non-optional-tool Layer 3 gap: rendered read-only operator visibility for the already-current-main server-configured internal webhook dispatch/status authority. It admits no runtime behavior, rendered behavior, dispatch rerun, route/API/model/migration/service change, write/submit control, destination widening, provider URL behavior, optional-tool runtime, or frontend-only durable authority."
+  },
+  "internal_webhook_rendered_status_freeze": {
+    "status": "frozen_internal_webhook_rendered_status_no_runtime_no_rendered",
+    "doc": "next_milestone_plans/Layer3_planning_docs/872_INTERNAL_WEBHOOK_RENDERED_STATUS_FREEZE.md",
+    "branch": "codex/l3-internal-webhook-rendered-status-freeze",
+    "predecessor_gap_selection_doc": "next_milestone_plans/Layer3_planning_docs/871_INTERNAL_WEBHOOK_RENDERED_STATUS_GAP_SELECTION.md",
+    "current_main_checkpoint": "df811aa9f9e8263ed8b233d5f530b82267be7b93",
+    "selected_gap": "server_configured_internal_webhook_rendered_read_only_status_projection",
+    "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+    "canonical_backend_authority": [
+      "backend/app/services/layer3_internal_webhook_connector.py",
+      "L3InternalWebhookDispatchReceipt",
+      "L3InternalWebhookDispatchAuditEvent",
+      "POST /api/v1/layer3/handoff/export/internal-webhook/dispatch",
+      "GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}"
+    ],
+    "future_session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+    "future_response_authority": "State.sessionSummary.internal_webhook_dispatch",
+    "rendered_route": "/review/layer3",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "implementation_entry_allowed_next_after_current_main_sync": true,
+    "implementation_before_current_main_sync": false,
+    "dispatch_rerun_admitted": false,
+    "rendered_dispatch_submit_control": false,
+    "url_or_credential_input": false,
+    "connector_run_creation": false,
+    "provider_public_signed_url_behavior": false,
+    "package_source_auth_security_widening": false,
+    "optional_tool_runtime": false,
+    "browser_storage_authority": false,
+    "frontend_only_durable_authority": false,
+    "next_posture": "current_main_sync_internal_webhook_rendered_status_freeze_then_implementation",
+    "summary": "Doc 872 freezes the future implementation entry for internal webhook rendered read-only status projection. It permits only a later current-main-synced implementation of internal_webhook_dispatch session-summary projection and /review/layer3 read-only rendering over State.sessionSummary.internal_webhook_dispatch, while admitting no runtime/rendered behavior now, dispatch rerun, write/submit control, URL/credential input, connector rows, provider URL behavior, optional-tool runtime, browser-storage authority, or frontend-only durable authority."
   }
 }
