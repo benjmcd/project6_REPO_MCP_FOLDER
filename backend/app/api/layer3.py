@@ -15,6 +15,7 @@ from app.services import (
     layer3_connector_local_destination_receipt,
     layer3_corrected_package_artifact_set,
     layer3_external_local_export,
+    layer3_internal_webhook_connector,
     layer3_package_mutation_entry,
     layer3_package_supersession_commit,
     layer3_raw_mixed_bridge,
@@ -2348,6 +2349,26 @@ class Layer3ExternalLocalExportWriteRequest(BaseModel):
     decision_notes: str | None = None
 
 
+class Layer3InternalWebhookDispatchRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    connector_dispatch_record_ref: str | None = None
+    connector_local_destination_receipt_id: str | None = None
+    server_owned_local_outbox_target_receipt_id: str | None = None
+    server_owned_local_outbox_write_receipt_id: str | None = None
+    external_export_download_record_ref: str | None = None
+    target_identity: str | None = None
+    target_class: str | None = None
+    dispatch_mode: str | None = None
+    operator_decision: str | None = None
+    decision_notes: str | None = None
+
+
 class Layer3SourceDirectoryIngestionScanRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -4619,6 +4640,62 @@ class Layer3ExternalLocalExportResponse(Layer3BaseResponse):
     full_mockup_activation_enabled: bool
     frontend_durable_authority_enabled: bool
     generic_downstream_dispatch_enabled: bool
+    downstream_unavailable: list[str]
+    next_allowed_actions: list[str]
+    next_state: str
+
+
+class Layer3InternalWebhookDispatchResponse(Layer3BaseResponse):
+    session_id: str
+    pass_run_id: str
+    reconciliation_record_id: str
+    internal_webhook_dispatch_receipt_id: str
+    server_owned_local_outbox_write_receipt_id: str
+    server_owned_local_outbox_target_receipt_id: str
+    connector_local_destination_receipt_id: str
+    connector_dispatch_record_ref: str
+    external_export_download_record_ref: str
+    package_kind: str
+    package_artifact_ref: str
+    package_artifact_hash: str
+    package_artifact_size_bytes: int
+    handoff_export_prepare_ref: str
+    target_identity: str
+    target_class: str
+    dispatch_mode: str
+    internal_webhook_dispatch_state: str
+    dispatch_operation_state: str
+    redacted_destination_display_name: str
+    idempotency_key: str
+    request_basis_hash: str
+    authority_basis_hash: str
+    response_status_code: int | None
+    redacted_response_summary: dict[str, Any]
+    failure_code: str | None
+    audit_receipt: dict[str, Any]
+    server_configured_internal_webhook_enabled: bool
+    internal_webhook_post_performed: bool
+    real_connector_invocation_enabled: bool
+    server_configured_allowlisted_url_enabled: bool
+    operator_destination_url_enabled: bool
+    raw_target_url_exposed: bool
+    raw_token_exposed: bool
+    raw_headers_exposed: bool
+    raw_local_path_exposed: bool
+    raw_package_payload_exposed: bool
+    raw_package_bytes_exposed: bool
+    connector_run_created: bool
+    connector_run_target_created: bool
+    credentials_enabled: bool
+    provider_public_url_enabled: bool
+    provider_private_signed_url_enabled: bool
+    cloud_object_store_write_enabled: bool
+    package_mutation_enabled: bool
+    source_expansion_enabled: bool
+    rag_vector_enabled: bool
+    optional_tool_runtime_enabled: bool
+    auth_security_implementation_enabled: bool
+    rendered_write_submit_control_enabled: bool
     downstream_unavailable: list[str]
     next_allowed_actions: list[str]
     next_state: str
@@ -7701,6 +7778,57 @@ EXTERNAL_LOCAL_EXPORT_WRITE_REQUEST_SCHEMA: dict[str, Any] = {
 }
 
 
+INTERNAL_WEBHOOK_DISPATCH_FORBIDDEN_REQUEST_FIELDS = tuple(
+    sorted(layer3_internal_webhook_connector.INTERNAL_WEBHOOK_FORBIDDEN_FIELDS)
+)
+
+INTERNAL_WEBHOOK_DISPATCH_REQUEST_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "description": (
+        "Server-configured internal webhook dispatch from durable local outbox authority. "
+        "The caller supplies only receipt and authority refs; destination URLs, provider URLs, "
+        "raw local paths, package payloads, package bytes, credentials, tokens, arbitrary headers, "
+        "connector targets, retries, source expansion, RAG/vector input, optional-tool input, and "
+        "auth/security overrides are not admitted."
+    ),
+    "required": sorted(layer3_internal_webhook_connector.INTERNAL_WEBHOOK_REQUIRED_FIELDS),
+    "properties": {
+        "client_request_id": {"type": "string"},
+        "session_id": {"type": "string"},
+        "analysis_plan_id": {"type": "string"},
+        "pass_run_id": {"type": "string"},
+        "reconciliation_record_id": {"type": "string"},
+        "connector_dispatch_record_ref": {"type": "string"},
+        "connector_local_destination_receipt_id": {"type": "string"},
+        "server_owned_local_outbox_target_receipt_id": {"type": "string"},
+        "server_owned_local_outbox_write_receipt_id": {"type": "string"},
+        "external_export_download_record_ref": {"type": "string"},
+        "target_identity": {
+            "type": "string",
+            "enum": [layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TARGET_IDENTITY],
+        },
+        "target_class": {
+            "type": "string",
+            "enum": [layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TARGET_CLASS],
+        },
+        "dispatch_mode": {
+            "type": "string",
+            "enum": [layer3_internal_webhook_connector.INTERNAL_WEBHOOK_DISPATCH_MODE],
+        },
+        "operator_decision": {
+            "type": "string",
+            "enum": [layer3_internal_webhook_connector.INTERNAL_WEBHOOK_OPERATOR_DECISION],
+        },
+        "decision_notes": {"type": "string"},
+        **{
+            field: _forbidden_request_field_schema()
+            for field in INTERNAL_WEBHOOK_DISPATCH_FORBIDDEN_REQUEST_FIELDS
+        },
+    },
+}
+
+
 class Layer3SessionSummaryResponse(Layer3BaseResponse):
     session_id: str
     selection_manifest_id: str
@@ -9185,6 +9313,41 @@ def get_external_local_export_status(
         lambda: layer3_external_local_export.external_local_export_status(
             db,
             external_local_export_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/handoff/export/internal-webhook/dispatch",
+    response_model=Layer3InternalWebhookDispatchResponse,
+    openapi_extra={"requestBody": _json_request_body(INTERNAL_WEBHOOK_DISPATCH_REQUEST_SCHEMA)},
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_internal_webhook_dispatch(
+    payload: Layer3InternalWebhookDispatchRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_internal_webhook_connector.dispatch_internal_webhook(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.get(
+    "/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}",
+    response_model=Layer3InternalWebhookDispatchResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_internal_webhook_dispatch_status(
+    internal_webhook_dispatch_receipt_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_internal_webhook_connector.internal_webhook_status(
+            db,
+            internal_webhook_dispatch_receipt_id,
         )
     )
 

@@ -39,6 +39,8 @@ from app.models.models import (
     L3ExternalLocalExportAuditEvent,
     L3ExternalLocalExportReceipt,
     L3GateBIdempotencyKey,
+    L3InternalWebhookDispatchAuditEvent,
+    L3InternalWebhookDispatchReceipt,
     L3LocalOutboxProviderPrivateHandoffAuditEvent,
     L3LocalOutboxProviderPrivateHandoffReceipt,
     L3OutputPackage,
@@ -72,6 +74,7 @@ from app.services import (
     layer3_connector_local_destination_receipt,
     layer3_corrected_package_artifact_set,
     layer3_external_local_export,
+    layer3_internal_webhook_connector,
     layer3_package_mutation_entry,
     layer3_package_replacement_activation,
     layer3_package_supersession_commit,
@@ -129,6 +132,8 @@ def client(tmp_path, monkeypatch):
     storage_dir = tmp_path / "storage"
     monkeypatch.setattr(settings, "storage_dir", str(storage_dir))
     monkeypatch.setattr(settings, "layer3_external_local_export_dir", str(tmp_path / "external-local-export"))
+    monkeypatch.setattr(settings, "layer3_internal_webhook_url", "http://127.0.0.1/layer3-internal-webhook")
+    monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "test-internal-webhook")
     bootstrap_storage_tree(storage_dir)
     engine = create_engine(
         "sqlite:///:memory:",
@@ -5514,6 +5519,39 @@ def _external_local_export_payload(
     return payload
 
 
+def _internal_webhook_payload(
+    *,
+    request_id: str,
+    session_id: str,
+    approval_body: dict,
+    selection_body: dict,
+    commit_body: dict,
+    connector_body: dict,
+    local_receipt_body: dict,
+    target_body: dict,
+    write_body: dict,
+    readiness_body: dict,
+) -> dict:
+    return {
+        "client_request_id": request_id,
+        "session_id": session_id,
+        "analysis_plan_id": approval_body["analysis_plan_id"],
+        "pass_run_id": selection_body["pass_run_ids"][0],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "connector_dispatch_record_ref": connector_body["connector_dispatch_record_ref"],
+        "connector_local_destination_receipt_id": local_receipt_body["connector_local_destination_receipt_id"],
+        "server_owned_local_outbox_target_receipt_id": (
+            target_body["server_owned_local_outbox_target_receipt_id"]
+        ),
+        "server_owned_local_outbox_write_receipt_id": write_body["server_owned_local_outbox_write_receipt_id"],
+        "external_export_download_record_ref": readiness_body["external_export_download_record_ref"],
+        "target_identity": "server_configured_internal_webhook_destination",
+        "target_class": "real_connector_invocation",
+        "dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+        "operator_decision": "dispatch_server_configured_internal_webhook",
+    }
+
+
 def _prepare_cohort_connector_dispatch_record(
     client: TestClient,
     tmp_path,
@@ -5832,6 +5870,11 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
         "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/status/"
         "{external_local_export_receipt_id}"
     )
+    internal_webhook_dispatch_path = "/api/v1/layer3/handoff/export/internal-webhook/dispatch"
+    internal_webhook_status_path = (
+        "/api/v1/layer3/handoff/export/internal-webhook/status/"
+        "{internal_webhook_dispatch_receipt_id}"
+    )
     assert prepare_path in spec["paths"]
     assert status_path in spec["paths"]
     assert revoke_path in spec["paths"]
@@ -5839,6 +5882,8 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
     assert local_outbox_status_path in spec["paths"]
     assert external_local_export_write_path in spec["paths"]
     assert external_local_export_status_path in spec["paths"]
+    assert internal_webhook_dispatch_path in spec["paths"]
+    assert internal_webhook_status_path in spec["paths"]
     assert "/api/v1/layer3/handoff/export/download/provider-private-signed-url/use" not in spec["paths"]
 
     prepare_schema = spec["paths"][prepare_path]["post"]["requestBody"]["content"]["application/json"]["schema"]
@@ -6008,10 +6053,306 @@ def test_layer3_api_provider_private_signed_url_openapi_prepare_status_schema(cl
     assert _openapi_response_schema(spec, external_local_export_status_path, "get")["title"] == (
         "Layer3ExternalLocalExportResponse"
     )
+    internal_webhook_schema = spec["paths"][internal_webhook_dispatch_path]["post"]["requestBody"]["content"][
+        "application/json"
+    ]["schema"]
+    assert internal_webhook_schema["additionalProperties"] is False
+    assert set(internal_webhook_schema["required"]) == {
+        "client_request_id",
+        "session_id",
+        "analysis_plan_id",
+        "pass_run_id",
+        "reconciliation_record_id",
+        "connector_dispatch_record_ref",
+        "connector_local_destination_receipt_id",
+        "server_owned_local_outbox_target_receipt_id",
+        "server_owned_local_outbox_write_receipt_id",
+        "external_export_download_record_ref",
+        "target_identity",
+        "target_class",
+        "dispatch_mode",
+        "operator_decision",
+    }
+    assert internal_webhook_schema["properties"]["target_identity"]["enum"] == [
+        "server_configured_internal_webhook_destination"
+    ]
+    assert internal_webhook_schema["properties"]["target_class"]["enum"] == ["real_connector_invocation"]
+    assert internal_webhook_schema["properties"]["dispatch_mode"]["enum"] == [
+        "server_configured_allowlisted_internal_webhook_post"
+    ]
+    for forbidden in (
+        "destination_url",
+        "provider_url",
+        "credentials",
+        "token",
+        "headers",
+        "connector_run_id",
+        "connector_run_target_id",
+        "package_payload",
+        "package_bytes",
+        "source_expansion",
+        "rag_vector_input",
+        "optional_tool_input",
+        "auth_security_override",
+    ):
+        assert internal_webhook_schema["properties"][forbidden]["not"] == {}
+    assert _openapi_response_schema(spec, internal_webhook_dispatch_path, "post")["title"] == (
+        "Layer3InternalWebhookDispatchResponse"
+    )
+    assert _openapi_response_schema(spec, internal_webhook_status_path, "get")["title"] == (
+        "Layer3InternalWebhookDispatchResponse"
+    )
     same_origin_prepare_schema = spec["paths"]["/api/v1/layer3/handoff/export/download/prepare"]["post"][
         "requestBody"
     ]["content"]["application/json"]["schema"]
     assert "provider_private_signed_url" not in json.dumps(same_origin_prepare_schema)
+
+
+def test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted(
+    client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-internal-webhook-success",
+    )
+    db = client.layer3_session_factory()
+    try:
+        connector_runs_before = db.query(ConnectorRun).count()
+        connector_run_targets_before = db.query(ConnectorRunTarget).count()
+    finally:
+        db.close()
+    calls: list[dict] = []
+
+    def fake_transport(url, envelope, headers, timeout_seconds):
+        calls.append(
+            {
+                "url": url,
+                "envelope": envelope,
+                "headers": headers,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        return 202, {"accepted": True, "receipt": "ok"}
+
+    monkeypatch.setattr(layer3_internal_webhook_connector, "INTERNAL_WEBHOOK_TRANSPORT", fake_transport)
+    payload = _internal_webhook_payload(
+        request_id="api-internal-webhook-dispatch",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+    dispatch = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
+    assert dispatch.status_code == 200, dispatch.json()
+    body = dispatch.json()
+    assert body["schema_id"] == "layer3.internal_webhook.dispatch.v1"
+    assert body["status"] == "dispatched"
+    assert body["internal_webhook_dispatch_state"] == "internal_webhook_dispatched"
+    assert body["internal_webhook_post_performed"] is True
+    assert body["target_identity"] == "server_configured_internal_webhook_destination"
+    assert body["target_class"] == "real_connector_invocation"
+    assert body["dispatch_mode"] == "server_configured_allowlisted_internal_webhook_post"
+    assert body["redacted_destination_display_name"] == "test-internal-webhook"
+    assert body["package_kind"] == "handoff_export_delivery_envelope"
+    assert body["package_artifact_ref"].startswith("storage://server-owned-local-outbox/")
+    assert body["package_artifact_hash"] == write_body["outbox_artifact_hash"]
+    assert body["package_artifact_size_bytes"] == write_body["outbox_artifact_size_bytes"]
+    assert body["response_status_code"] == 202
+    assert body["redacted_response_summary"]["response_keys"] == ["accepted", "receipt"]
+    assert body["server_configured_allowlisted_url_enabled"] is True
+    assert body["operator_destination_url_enabled"] is False
+    assert body["raw_target_url_exposed"] is False
+    assert body["raw_token_exposed"] is False
+    assert body["raw_headers_exposed"] is False
+    assert body["raw_package_payload_exposed"] is False
+    assert body["raw_package_bytes_exposed"] is False
+    assert body["connector_run_created"] is False
+    assert body["connector_run_target_created"] is False
+    assert body["credentials_enabled"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert body["provider_private_signed_url_enabled"] is False
+    assert body["package_mutation_enabled"] is False
+    assert body["source_expansion_enabled"] is False
+    assert body["rag_vector_enabled"] is False
+    assert body["optional_tool_runtime_enabled"] is False
+    response_text = json.dumps(body, sort_keys=True)
+    assert "http://127.0.0.1/layer3-internal-webhook" not in response_text
+    assert str(Path(settings.storage_dir)) not in response_text
+    assert readiness_body["source_artifact_ref"] not in response_text
+    assert len(calls) == 1
+    assert calls[0]["url"] == "http://127.0.0.1/layer3-internal-webhook"
+    envelope = calls[0]["envelope"]
+    assert envelope["schema_id"] == "layer3.internal_webhook.delivery_envelope.v1"
+    assert envelope["raw_package_bytes_included"] is False
+    assert envelope["raw_package_payload_included"] is False
+    assert envelope["raw_target_url_included"] is False
+    envelope_text = json.dumps(envelope, sort_keys=True)
+    assert "http://127.0.0.1/layer3-internal-webhook" not in envelope_text
+    assert str(Path(settings.storage_dir)) not in envelope_text
+    assert readiness_body["source_artifact_ref"] not in envelope_text
+
+    status = client.get(
+        "/api/v1/layer3/handoff/export/internal-webhook/status/"
+        f"{body['internal_webhook_dispatch_receipt_id']}"
+    )
+    assert status.status_code == 200, status.json()
+    assert status.json()["schema_id"] == "layer3.internal_webhook.status.v1"
+    assert status.json()["internal_webhook_dispatch_state"] == "internal_webhook_dispatched"
+
+    replay = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
+    assert replay.status_code == 200, replay.json()
+    assert replay.json()["status"] == "already_recorded"
+    assert replay.json()["internal_webhook_dispatch_receipt_id"] == body["internal_webhook_dispatch_receipt_id"]
+    assert len(calls) == 1
+
+    new_key_payload = {**payload, "client_request_id": "api-internal-webhook-dispatch-second-key"}
+    new_key_replay = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=new_key_payload)
+    assert new_key_replay.status_code == 200, new_key_replay.json()
+    assert new_key_replay.json()["status"] == "already_recorded"
+    assert new_key_replay.json()["internal_webhook_dispatch_receipt_id"] == body[
+        "internal_webhook_dispatch_receipt_id"
+    ]
+    assert len(calls) == 1
+
+    monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "changed-internal-webhook")
+    conflicting_replay = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
+    assert conflicting_replay.status_code == 409
+    assert conflicting_replay.json()["error_code"] == "internal_webhook_client_request_conflict"
+    assert len(calls) == 1
+
+    forbidden_payload = {**new_key_payload, "client_request_id": "api-internal-webhook-forbidden-url"}
+    forbidden_payload["destination_url"] = "http://127.0.0.1/attacker-controlled"
+    forbidden = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=forbidden_payload)
+    assert forbidden.status_code == 400
+    assert forbidden.json()["error_code"] == "internal_webhook_scope_not_admitted"
+    assert "destination_url" in forbidden.json()["blocked_fields"]
+    assert len(calls) == 1
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3InternalWebhookDispatchReceipt).count() == 1
+        assert db.query(L3InternalWebhookDispatchAuditEvent).count() == 4
+        assert db.query(ConnectorRun).count() == connector_runs_before
+        assert db.query(ConnectorRunTarget).count() == connector_run_targets_before
+        row = db.query(L3InternalWebhookDispatchReceipt).one()
+        assert row.authority_snapshot_json["destination_url_hash"]
+        assert "destination_url" not in row.authority_snapshot_json
+        assert row.redacted_destination_display_name == "test-internal-webhook"
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        state = reconciliation.summary_json["internal_webhook_dispatch"]
+        assert state["state"] == "internal_webhook_dispatched"
+        assert state["connector_run_created"] is False
+        assert state["connector_run_target_created"] is False
+        assert "destination_url" not in json.dumps(state, sort_keys=True)
+    finally:
+        db.close()
+
+
+def test_layer3_api_internal_webhook_dispatch_fails_closed_on_stale_authority_and_target(
+    client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-internal-webhook-fail-closed",
+    )
+    db = client.layer3_session_factory()
+    try:
+        connector_runs_before = db.query(ConnectorRun).count()
+        connector_run_targets_before = db.query(ConnectorRunTarget).count()
+    finally:
+        db.close()
+    calls: list[dict] = []
+
+    def fake_transport(url, envelope, headers, timeout_seconds):
+        calls.append({"url": url, "envelope": envelope})
+        return 202, {"accepted": True}
+
+    monkeypatch.setattr(layer3_internal_webhook_connector, "INTERNAL_WEBHOOK_TRANSPORT", fake_transport)
+    payload = _internal_webhook_payload(
+        request_id="api-internal-webhook-stale",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+    wrong_target = {**payload, "target_identity": "not_admitted_target"}
+    wrong_target_response = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=wrong_target)
+    assert wrong_target_response.status_code == 400
+    assert wrong_target_response.json()["error_code"] == "internal_webhook_target_identity_not_admitted"
+    assert calls == []
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        summary.pop("handoff_export_prepare", None)
+        reconciliation.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+    stale = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
+    assert stale.status_code == 409
+    assert stale.json()["error_code"] == "internal_webhook_stale_authority"
+    assert calls == []
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3InternalWebhookDispatchReceipt).count() == 0
+        assert db.query(ConnectorRun).count() == connector_runs_before
+        assert db.query(ConnectorRunTarget).count() == connector_run_targets_before
+    finally:
+        db.close()
 
 
 def test_layer3_api_provider_private_signed_url_prepare_success_status_idempotent_and_negative_side_effect_absence(
