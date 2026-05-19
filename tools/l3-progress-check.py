@@ -2310,6 +2310,10 @@ LAYER3_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE = (
     PLANNING_DOCS
     / "845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md"
 )
+LAYER3_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR = (
+    PLANNING_DOCS
+    / "846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72367,6 +72371,108 @@ def _check_sublayer3c_optional_tool_planning_index_adr_gate(
                 )
 
 
+def _check_tabpfn_sublayer3c_optional_predictive_method_adr(
+    errors: list[str],
+) -> None:
+    adr_text = _read_required_text(
+        LAYER3_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR,
+        errors,
+    )
+    for term in (
+        "Status: evaluation-only ADR for `tabpfn_sublayer3c_optional_predictive_method_adr`.",
+        "846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md",
+        "codex/l3-tabpfn-optional-tool-adr",
+        "82607f277201dd1aa3c6126395b7a3f77f164b76",
+        "select_first_sublayer3c_optional_tool_adr_from_planning_index",
+        "evaluate_tabpfn_static_benchmark_planning_only",
+        "Runtime behavior introduced by this ADR: `false`.",
+        "https://github.com/PriorLabs/tabpfn",
+        "https://priorlabs.ai/tabpfn-license/",
+        "TabPFN-3",
+        "first use can download model checkpoints",
+        "TABPFN_TOKEN",
+        "current default model weights are under non-commercial licenses",
+        "quantitative_single_item_dataset_version",
+        "quantitative_associated_cohort_dataset_version",
+        "wrapped_quantitative_analysis",
+        "cross_correlation",
+        "descriptive_summary",
+        "decomposition",
+        "structural_break",
+        "no TabPFN runtime",
+        "no TabPFN dependency",
+        "no `pip install tabpfn`",
+        "no TabPFN fit/predict execution",
+        "no TabPFN model/checkpoint loading",
+        "no TabPFN cloud/API inference",
+        "no package/handoff/export/download integration",
+        "no causal/econometric claims",
+        "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+    ):
+        if term not in adr_text:
+            errors.append(
+                f"{_rel(LAYER3_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR)} "
+                f"missing TabPFN Sublayer 3C optional predictive method ADR term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## TabPFN Sublayer 3C Optional Predictive Method ADR",
+            "846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md",
+            "evaluate_tabpfn_static_benchmark_planning_only",
+            "Runtime behavior introduced by this ADR: `false`.",
+            "TabPFN-3",
+            "TABPFN_TOKEN",
+            "quantitative_single_item_dataset_version",
+            "quantitative_associated_cohort_dataset_version",
+            "wrapped_quantitative_analysis",
+            "no TabPFN runtime",
+            "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+        ),
+        MANIFEST: (
+            '"tabpfn_sublayer3c_optional_predictive_method_adr"',
+            '"latest_tabpfn_sublayer3c_optional_predictive_method_adr_doc"',
+            '"decision": "evaluate_tabpfn_static_benchmark_planning_only"',
+            '"runtime_behavior_change": false',
+            '"current_default_model": "TabPFN-3"',
+            '"first_use_can_download_checkpoints": true',
+            '"headless_ci_can_require_TABPFN_TOKEN": true',
+            '"current_default_model_weights_non_commercial": true',
+            '"tabpfn_runtime": false',
+            '"tabpfn_dependency": false',
+            '"tabpfn_fit_predict_execution": false',
+            '"next_posture": "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan"',
+        ),
+        PROOF_MANIFEST: (
+            '"tabpfn_sublayer3c_optional_predictive_method_adr_proof"',
+            '"planning_control_tabpfn_sublayer3c_optional_predictive_method_adr"',
+            "evaluate_tabpfn_static_benchmark_planning_only",
+            "runtime_behavior_change false",
+            "TabPFN-3",
+            "first use can download checkpoints",
+            "TABPFN_TOKEN",
+            "current default model weights are non-commercial",
+            "quantitative_single_item_dataset_version",
+            "quantitative_associated_cohort_dataset_version",
+            "wrapped_quantitative_analysis",
+            "no TabPFN runtime",
+            "no TabPFN dependency",
+            "no pip install tabpfn",
+            "no TabPFN fit/predict execution",
+            "no TabPFN model/checkpoint loading",
+            "no package/handoff/export/download integration",
+            "no causal/econometric claims",
+            "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing TabPFN Sublayer 3C optional predictive method ADR artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -73089,6 +73195,7 @@ def main() -> int:
     )
     _check_public_url_delivery_sublayer3c_prerequisite_closeout(errors)
     _check_sublayer3c_optional_tool_planning_index_adr_gate(errors)
+    _check_tabpfn_sublayer3c_optional_predictive_method_adr(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

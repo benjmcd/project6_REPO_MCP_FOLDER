@@ -33032,5 +33032,48 @@
   "latest_sublayer3c_optional_tool_planning_index_adr_gate_doc": "next_milestone_plans/Layer3_planning_docs/845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md",
   "latest_sublayer3c_optional_tool_planning_index_adr_gate_status": "sublayer3c_optional_tool_planning_index_adr_gate_selected",
   "latest_sublayer3c_optional_tool_planning_index_adr_gate_next_posture": "select_first_sublayer3c_optional_tool_adr_from_planning_index",
-  "latest_sublayer3c_optional_tool_planning_index_adr_gate_summary": "Doc 845 records the Sublayer 3C optional-tool planning index and ADR gate for TabPFN and nrc-licensing-rag. It introduces no runtime behavior, dependencies, provider/runtime calls, rendered controls, source-authority promotion, or package/handoff/export/download integration."
+  "latest_sublayer3c_optional_tool_planning_index_adr_gate_summary": "Doc 845 records the Sublayer 3C optional-tool planning index and ADR gate for TabPFN and nrc-licensing-rag. It introduces no runtime behavior, dependencies, provider/runtime calls, rendered controls, source-authority promotion, or package/handoff/export/download integration.",
+  "tabpfn_sublayer3c_optional_predictive_method_adr_proof": {
+    "proof_kind": "planning_control_tabpfn_sublayer3c_optional_predictive_method_adr",
+    "status": "tabpfn_sublayer3c_optional_predictive_method_adr_evaluation_only",
+    "doc": "next_milestone_plans/Layer3_planning_docs/846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md",
+    "branch": "codex/l3-tabpfn-optional-tool-adr",
+    "current_main_preflight_checkpoint": "82607f277201dd1aa3c6126395b7a3f77f164b76",
+    "proof_terms": [
+      "tabpfn_sublayer3c_optional_predictive_method_adr",
+      "evaluate_tabpfn_static_benchmark_planning_only",
+      "runtime_behavior_change false",
+      "TabPFN-3",
+      "first use can download checkpoints",
+      "TABPFN_TOKEN",
+      "current default model weights are non-commercial",
+      "quantitative_single_item_dataset_version",
+      "quantitative_associated_cohort_dataset_version",
+      "wrapped_quantitative_analysis",
+      "no TabPFN runtime",
+      "no TabPFN dependency",
+      "no pip install tabpfn",
+      "no TabPFN fit/predict execution",
+      "no TabPFN model/checkpoint loading",
+      "no package/handoff/export/download integration",
+      "no causal/econometric claims",
+      "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+    "summary": "Doc 846 records an evaluation-only TabPFN ADR. It selects static benchmark planning as a possible future lane while admitting no TabPFN runtime, dependency, checkpoint/model loading, token handling, hidden download, fit/predict execution, package/handoff/export/download integration, or causal/econometric claims."
+  },
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_branch": "codex/l3-tabpfn-optional-tool-adr",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_doc": "next_milestone_plans/Layer3_planning_docs/846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_status": "tabpfn_sublayer3c_optional_predictive_method_adr_evaluation_only",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_decision": "evaluate_tabpfn_static_benchmark_planning_only",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_next_posture": "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_summary": "Doc 846 records an evaluation-only TabPFN ADR. It selects static benchmark planning as a possible future lane while admitting no TabPFN runtime, dependency, checkpoint/model loading, token handling, hidden download, fit/predict execution, package/handoff/export/download integration, or causal/econometric claims."
 }
