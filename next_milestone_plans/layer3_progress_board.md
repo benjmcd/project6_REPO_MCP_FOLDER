@@ -6914,3 +6914,21 @@ Default posture before each ADR: `no_runtime_no_dependency_no_default_provider`.
 No TabPFN runtime, TabPFN dependency, TabPFN fit/predict execution, TabPFN model/checkpoint loading, hidden TabPFN download, NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, OpenAI/Claude/provider runtime, new Layer 3 retrieval endpoint, rendered optional-tool control, source-authority promotion, quantitative method-selection behavior, agent tool-call runtime, Gate C/pass-entry admission, package/handoff/export/download integration, provider credential, network egress, hidden model call, or auth/security behavior is admitted by this index.
 
 The next exact posture is `select_first_sublayer3c_optional_tool_adr_from_planning_index`.
+
+## TabPFN Sublayer 3C Optional Predictive Method ADR
+
+Evaluation-only ADR: `846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md` follows the Sublayer 3C optional-tool planning index and satisfies `select_first_sublayer3c_optional_tool_adr_from_planning_index`.
+
+Decision: `evaluate_tabpfn_static_benchmark_planning_only`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this ADR: `false`.
+
+Current external TabPFN guidance was rechecked from `https://github.com/PriorLabs/tabpfn` and `https://priorlabs.ai/tabpfn-license/` on 2026-05-19. The current default model is `TabPFN-3`; first use can download checkpoints; headless use can require `TABPFN_TOKEN`; model cache behavior can write outside repo-owned state; and current default model weights are non-commercial, with commercial or production use requiring separate licensing.
+
+Current-main use-site candidates are limited to `quantitative_single_item_dataset_version` and `quantitative_associated_cohort_dataset_version` under `wrapped_quantitative_analysis`, with existing supported method names `cross_correlation`, `descriptive_summary`, `decomposition`, and `structural_break`.
+
+no TabPFN runtime, TabPFN dependency, `pip install tabpfn`, TabPFN fit/predict execution, TabPFN model/checkpoint loading, TabPFN cloud/API inference, request-owned TabPFN runtime settings, TabPFN output persistence, TabPFN package artifact, rendered optional-tool controls, Gate C/pass-entry admission, quantitative method-selection behavior, package/handoff/export/download integration, network egress, provider credential, hidden model call, browser login, token handling, model cache write, or causal/econometric claim is admitted by this ADR.
+
+The next exact posture is `select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan`.
