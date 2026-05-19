@@ -2370,6 +2370,10 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_SYNC = (
 LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF = (
     PLANNING_DOCS / "863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -75127,6 +75131,205 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in runtime_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_proof.proof_terms missing {term}"
+                        )
+
+    analysis_environment_runtime_sync_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `downstream_analysis_environment_authority_projection_read_only_session_summary_runtime`.",
+        "864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "Synced runtime proof doc: `863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md`.",
+        "Runtime PR: `#1479`.",
+        "Runtime branch commit: `be62382228425559a7437ea47cfbf2ffc45d18f0`.",
+        "Runtime merge commit: `3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34`.",
+        "Synced result: `current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime`.",
+        "Runtime behavior introduced by runtime: `true`, limited to one read-only session-summary projection field.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m14s`",
+        "`test`: `SUCCESS`, `3m52s`",
+        "reviewThreads totalCount: `0`",
+        "merge state before merge: `CLEAN`",
+        "Post-merge validation passed on current main at `3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34`",
+        "The next exact posture is `select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync`.",
+    ):
+        if term not in analysis_environment_runtime_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC)} "
+                f"missing downstream Analysis Environment runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Authority Projection Runtime Current-Main Sync",
+            "864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1479`",
+            "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34",
+            "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+            "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
+        ),
+        PROGRESS_PROMPT: (
+            "864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "#1479",
+            "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34",
+            "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
+        ),
+        REFRESH_SPEC: (
+            "864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "current-main sync for the bounded read-only downstream Analysis Environment authority projection runtime",
+            "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_runtime_current_main_sync"',
+            '"status": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md"',
+            '"runtime_pr": "#1479"',
+            '"runtime_merge_commit": "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34"',
+            '"next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof"',
+            '"proof_kind": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime"',
+            '"runtime_pr": "#1479"',
+            '"runtime_merge_commit": "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34"',
+            '"next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing downstream Analysis Environment runtime sync term: {term}"
+                )
+
+    if isinstance(manifest_data, dict):
+        runtime_sync = manifest_data.get(
+            "downstream_analysis_environment_authority_projection_runtime_current_main_sync"
+        )
+        if not isinstance(runtime_sync, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing downstream_analysis_environment_authority_projection_runtime_current_main_sync object"
+            )
+        else:
+            expected_runtime_sync_scalars = {
+                "status": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-analysis-environment-projection-sync",
+                "runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+                "runtime_pr": "#1479",
+                "runtime_branch": "codex/l3-analysis-environment-projection-runtime",
+                "runtime_branch_commit": "be62382228425559a7437ea47cfbf2ffc45d18f0",
+                "runtime_merge_commit": "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34",
+                "synced_result": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "runtime_behavior_introduced_by_runtime": True,
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "canonical_source_of_truth": "backend/app/services/layer3_workbench.py::session_summary",
+                "structural_source": "backend/app/services/layer3_sublayer_state.py::session_sublayer_visualization_state",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_model": "backend/app/api/layer3.py::Layer3SessionSummaryResponse",
+                "response_field": "analysis_environment_projection",
+                "response_field_type": "analysis_environment_projection: dict[str, Any]",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "write_route_added": False,
+                "new_route_family_added": False,
+                "model_migration_change": False,
+                "package_mutation_enabled": False,
+                "source_promotion_enabled": False,
+                "connector_dispatch_enabled": False,
+                "provider_url_enabled": False,
+                "frontend_durable_authority_enabled": False,
+                "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
+            }
+            for key, value in expected_runtime_sync_scalars.items():
+                if runtime_sync.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_runtime_current_main_sync.{key} must be {value!r}"
+                    )
+            merge_gate = runtime_sync.get("merge_gate")
+            if not isinstance(merge_gate, dict):
+                errors.append(
+                    f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_runtime_current_main_sync.merge_gate must be an object"
+                )
+            else:
+                for key, value in {
+                    "backend-layer3-api": "SUCCESS 3m14s",
+                    "test": "SUCCESS 3m52s",
+                    "comments": 0,
+                    "reviews": 0,
+                    "latestReviews": 0,
+                    "reviewThreads_totalCount": 0,
+                    "unresolved_reviewThreads_totalCount": 0,
+                    "merge_state_before_merge": "CLEAN",
+                }.items():
+                    if merge_gate.get(key) != value:
+                        errors.append(
+                            f"{_rel(MANIFEST)} downstream_analysis_environment_authority_projection_runtime_current_main_sync.merge_gate.{key} must be {value!r}"
+                        )
+
+    if isinstance(proof_data, dict):
+        runtime_sync_proof = proof_data.get(
+            "downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof"
+        )
+        if not isinstance(runtime_sync_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof object"
+            )
+        else:
+            expected_runtime_sync_proof_scalars = {
+                "proof_kind": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "status": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-analysis-environment-projection-sync",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+                "runtime_pr": "#1479",
+                "runtime_branch_commit": "be62382228425559a7437ea47cfbf2ffc45d18f0",
+                "runtime_merge_commit": "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34",
+                "synced_result": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+                "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_field_type": "analysis_environment_projection: dict[str, Any]",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
+            }
+            for key, value in expected_runtime_sync_proof_scalars.items():
+                if runtime_sync_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof.{key} must be {value!r}"
+                    )
+            runtime_sync_terms = runtime_sync_proof.get("proof_terms")
+            if not isinstance(runtime_sync_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "PR #1479 merged",
+                    "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34",
+                    "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+                    "backend-layer3-api SUCCESS 3m14s",
+                    "test SUCCESS 3m52s",
+                    "reviewThreads totalCount 0",
+                    "post-merge validation passed",
+                    "backend/app/services/layer3_analysis_environment_projection.py",
+                    "analysis_environment_projection: dict[str, Any]",
+                    "layer3.analysis_environment_projection.v1",
+                    "read_only_session_summary_projection",
+                    "no runtime behavior introduced by sync",
+                    "no rendered control change",
+                    "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
+                ):
+                    if term not in runtime_sync_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof.proof_terms missing {term}"
                         )
 
 
