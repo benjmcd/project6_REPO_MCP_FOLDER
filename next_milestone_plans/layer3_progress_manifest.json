@@ -34761,5 +34761,92 @@
   "latest_sublayer3c_optional_tool_planning_index_adr_gate_status": "sublayer3c_optional_tool_planning_index_adr_gate_selected",
   "latest_sublayer3c_optional_tool_planning_index_adr_gate_runtime_behavior_change": false,
   "latest_sublayer3c_optional_tool_planning_index_adr_gate_next_posture": "select_first_sublayer3c_optional_tool_adr_from_planning_index",
-  "latest_sublayer3c_optional_tool_planning_index_adr_gate_summary": "Doc 845 records the Sublayer 3C optional-tool planning index and ADR gate for TabPFN and nrc-licensing-rag. It introduces no runtime behavior, dependencies, provider/runtime calls, rendered controls, source-authority promotion, or package/handoff/export/download integration."
+  "latest_sublayer3c_optional_tool_planning_index_adr_gate_summary": "Doc 845 records the Sublayer 3C optional-tool planning index and ADR gate for TabPFN and nrc-licensing-rag. It introduces no runtime behavior, dependencies, provider/runtime calls, rendered controls, source-authority promotion, or package/handoff/export/download integration.",
+  "tabpfn_sublayer3c_optional_predictive_method_adr": {
+    "status": "tabpfn_sublayer3c_optional_predictive_method_adr_evaluation_only",
+    "doc": "next_milestone_plans/Layer3_planning_docs/846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md",
+    "branch": "codex/l3-tabpfn-optional-tool-adr",
+    "current_main_preflight_checkpoint": "82607f277201dd1aa3c6126395b7a3f77f164b76",
+    "selected_from_posture": "select_first_sublayer3c_optional_tool_adr_from_planning_index",
+    "decision": "evaluate_tabpfn_static_benchmark_planning_only",
+    "runtime_status": "not_implemented",
+    "runtime_behavior_change": false,
+    "planning_context_only": true,
+    "governing_index_doc": "next_milestone_plans/Layer3_planning_docs/845_SUBLAYER3C_OPTIONAL_TOOL_PLANNING_INDEX_ADR_GATE.md",
+    "accepted_planning_pack": "C:/Users/benny/Downloads/Planning_packs/accepted/l3_tabpfn_sublayer3c_tool_planning_pack",
+    "external_sources_checked_2026_05_19": [
+      "https://github.com/PriorLabs/tabpfn",
+      "https://priorlabs.ai/tabpfn-license/"
+    ],
+    "external_checkpoint": {
+      "current_default_model": "TabPFN-3",
+      "first_use_can_download_checkpoints": true,
+      "headless_ci_can_require_TABPFN_TOKEN": true,
+      "model_cache_can_write_outside_repo_state": true,
+      "current_default_model_weights_non_commercial": true,
+      "commercial_or_production_use_requires_separate_license": true
+    },
+    "current_main_use_site_candidates": [
+      "quantitative_single_item_dataset_version",
+      "quantitative_associated_cohort_dataset_version"
+    ],
+    "current_main_engine_family": "wrapped_quantitative_analysis",
+    "current_main_supported_method_names": [
+      "cross_correlation",
+      "descriptive_summary",
+      "decomposition",
+      "structural_break"
+    ],
+    "blocked_scope": {
+      "runtime_behavior": false,
+      "backend_route": false,
+      "api_dto_or_response_model": false,
+      "database_model_or_migration": false,
+      "dependency": false,
+      "provider_adapter_or_credentials": false,
+      "network_egress": false,
+      "rendered_optional_tool_controls": false,
+      "frontend_durable_authority": false,
+      "connector_dispatch": false,
+      "agent_tool_call_runtime": false,
+      "package_handoff_export_download_integration": false,
+      "signed_reference_integration": false,
+      "gate_c_or_pass_entry_admission": false,
+      "source_authority_promotion": false,
+      "quantitative_method_selection_behavior": false,
+      "hidden_model_call": false,
+      "cloud_api_inference": false,
+      "checkpoint_loading": false,
+      "hidden_download": false,
+      "browser_login": false,
+      "token_handling": false,
+      "model_cache_write": false,
+      "auth_security_behavior_change": false,
+      "tabpfn_runtime": false,
+      "tabpfn_dependency": false,
+      "tabpfn_fit_predict_execution": false,
+      "tabpfn_model_checkpoint_loading": false,
+      "tabpfn_cloud_api_inference": false,
+      "tabpfn_output_persistence": false,
+      "tabpfn_package_artifact": false,
+      "causal_econometric_claims": false
+    },
+    "validation": [
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+    "summary": "Doc 846 records an evaluation-only TabPFN ADR. It selects static benchmark planning as a possible future lane while admitting no TabPFN runtime, dependency, checkpoint/model loading, token handling, hidden download, fit/predict execution, package/handoff/export/download integration, or causal/econometric claims."
+  },
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_branch": "codex/l3-tabpfn-optional-tool-adr",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_doc": "next_milestone_plans/Layer3_planning_docs/846_TABPFN_SUBLAYER3C_OPTIONAL_PREDICTIVE_METHOD_ADR.md",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_status": "tabpfn_sublayer3c_optional_predictive_method_adr_evaluation_only",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_decision": "evaluate_tabpfn_static_benchmark_planning_only",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_runtime_behavior_change": false,
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_next_posture": "select_nrc_rag_sublayer3c_optional_tool_adr_or_tabpfn_static_benchmark_plan",
+  "latest_tabpfn_sublayer3c_optional_predictive_method_adr_summary": "Doc 846 records an evaluation-only TabPFN ADR. It selects static benchmark planning as a possible future lane while admitting no TabPFN runtime, dependency, checkpoint/model loading, token handling, hidden download, fit/predict execution, package/handoff/export/download integration, or causal/econometric claims."
 }
