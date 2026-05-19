@@ -21,8 +21,16 @@ SOURCE_FAMILY = "server_configured_operator_directory_text_table_source_family"
 CONFIG_AUTHORITY = "LAYER3_SOURCE_INGESTION_DIR"
 OPERATOR_DECISION = "scan_server_configured_operator_directory"
 STATUS_RECORDED = "recorded"
+RUNTIME_POLICY_ID = "recursive_server_configured_directory_text_table_policy_v1"
 ALLOWED_EXTENSIONS = (".csv", ".json", ".txt", ".md")
 MAX_BATCH_FILES = 100
+MAX_RECURSION_DEPTH = 2
+MAX_RELATIVE_PATH_SEGMENTS = 3
+DIRECT_CHILD_ONLY = False
+RECURSIVE_TRAVERSAL_ADMITTED = True
+_WINDOWS_FILE_ATTRIBUTE_HIDDEN = 0x2
+_WINDOWS_FILE_ATTRIBUTE_SYSTEM = 0x4
+_WINDOWS_FILE_ATTRIBUTE_REPARSE_POINT = 0x400
 
 _MEDIA_TYPES = {
     ".csv": "text/csv",
@@ -126,12 +134,17 @@ def scan_server_configured_directory(
         )
 
     root = _configured_root()
-    observations = _observe_direct_child_files(root)
+    observations = _observe_recursive_files(root)
     total_size = sum(item.content_size_bytes for item in observations)
     directory_fingerprint_hash = _stable_hash(
         {
+            "runtime_policy_id": RUNTIME_POLICY_ID,
             "mode": MODE,
             "source_family": SOURCE_FAMILY,
+            "config_authority": CONFIG_AUTHORITY,
+            "source_root_ref": _source_root_ref(),
+            "allowed_extensions": list(ALLOWED_EXTENSIONS),
+            "max_recursion_depth": MAX_RECURSION_DEPTH,
             "files": [
                 {
                     "relative_name": item.relative_name,
@@ -147,6 +160,7 @@ def scan_server_configured_directory(
     )
     authority_basis = {
         "schema_id": SCHEMA_ID,
+        "runtime_policy_id": RUNTIME_POLICY_ID,
         "mode": MODE,
         "source_family": SOURCE_FAMILY,
         "config_authority": CONFIG_AUTHORITY,
@@ -167,13 +181,17 @@ def scan_server_configured_directory(
 
     authority_snapshot = {
         "schema_id": SCHEMA_ID,
+        "runtime_policy_id": RUNTIME_POLICY_ID,
         "mode": MODE,
         "source_family": SOURCE_FAMILY,
         "config_authority": CONFIG_AUTHORITY,
         "configured_root_hash": _stable_hash({"configured_root": str(root)}),
-        "direct_child_only": True,
+        "direct_child_only": DIRECT_CHILD_ONLY,
         "allowed_extensions": list(ALLOWED_EXTENSIONS),
-        "recursive_traversal_admitted": False,
+        "recursive_traversal_admitted": RECURSIVE_TRAVERSAL_ADMITTED,
+        "max_recursion_depth": MAX_RECURSION_DEPTH,
+        "max_relative_path_segments": MAX_RELATIVE_PATH_SEGMENTS,
+        "caller_selected_recursive_flag_allowed": False,
         "caller_supplied_paths_admitted": False,
         "browser_supplied_file_bytes_admitted": False,
         "directory_fingerprint_hash": directory_fingerprint_hash,
@@ -378,6 +396,102 @@ def _observe_direct_child_files(root: Path) -> list[_FileObservation]:
     return observations
 
 
+def _observe_recursive_files(root: Path) -> list[_FileObservation]:
+    observations: list[_FileObservation] = []
+    seen_names: set[str] = set()
+    stack = [root]
+    root_children_seen = False
+
+    while stack:
+        directory = stack.pop()
+        try:
+            children = sorted(directory.iterdir(), key=lambda item: _relative_name(root, item).lower())
+        except OSError as exc:
+            raise SourceDirectoryIngestionError(
+                "source_directory_ingestion_directory_unreadable",
+                "The configured source ingestion directory could not be enumerated.",
+                http_status=409,
+                details={"relative_name": _relative_name(root, directory) if directory != root else "."},
+            ) from exc
+        if directory == root:
+            root_children_seen = bool(children)
+        for child in reversed(children):
+            relative_name = _relative_name(root, child)
+            relative_parts = tuple(part for part in Path(relative_name).parts if part)
+            _assert_relative_path_shape(child, relative_name, relative_parts)
+            _assert_path_within_root(root, child, relative_name)
+            if _is_disallowed_filesystem_entry(child):
+                raise SourceDirectoryIngestionError(
+                    "source_directory_ingestion_reparse_or_device_not_admitted",
+                    "Symlinks, reparse points, device paths, sockets, pipes, and non-regular filesystem entries are blocked.",
+                    details={"relative_name": relative_name},
+                )
+            if _is_hidden_path(child, relative_parts):
+                raise SourceDirectoryIngestionError(
+                    "source_directory_ingestion_hidden_path_not_admitted",
+                    "Hidden source-directory file or directory segments are blocked.",
+                    details={"relative_name": relative_name},
+                )
+            if child.is_dir():
+                if len(relative_parts) > MAX_RECURSION_DEPTH:
+                    raise SourceDirectoryIngestionError(
+                        "source_directory_ingestion_recursion_depth_exceeded",
+                        "The recursive source directory policy does not admit traversal beyond depth 2.",
+                        details={"relative_name": relative_name, "max_recursion_depth": MAX_RECURSION_DEPTH},
+                    )
+                stack.append(child)
+                continue
+            if not child.is_file():
+                raise SourceDirectoryIngestionError(
+                    "source_directory_ingestion_non_file_not_admitted",
+                    "Only regular files are admitted; directories, sockets, pipes, and device paths are blocked.",
+                    details={"relative_name": relative_name},
+                )
+            normalized_name = relative_name.casefold()
+            if normalized_name in seen_names:
+                raise SourceDirectoryIngestionError(
+                    "source_directory_ingestion_duplicate_relative_name",
+                    "The configured source ingestion directory has duplicate conflicting relative names.",
+                    details={"relative_name": relative_name},
+                )
+            seen_names.add(normalized_name)
+            extension = child.suffix.lower()
+            if extension not in ALLOWED_EXTENSIONS:
+                raise SourceDirectoryIngestionError(
+                    "source_directory_ingestion_extension_not_admitted",
+                    "Only CSV, JSON, TXT, and MD files are admitted.",
+                    details={"relative_name": relative_name, "extension": extension},
+                )
+            observations.append(_observe_file(child, relative_name, extension))
+
+    if not root_children_seen:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_empty_directory",
+            "The configured source ingestion directory has no eligible files under the recursive policy.",
+        )
+    if not observations:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_empty_eligible_directory",
+            "The configured source ingestion directory has no eligible files under the recursive policy.",
+        )
+    observations.sort(key=lambda item: item.relative_name.lower())
+    if len(observations) > MAX_BATCH_FILES:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_batch_too_large",
+            "The configured source ingestion directory exceeds the maximum admitted file count.",
+            details={"max_batch_files": MAX_BATCH_FILES, "received_file_count": len(observations)},
+        )
+    max_batch_bytes = _max_file_bytes() * MAX_BATCH_FILES
+    total_size = sum(item.content_size_bytes for item in observations)
+    if total_size > max_batch_bytes:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_batch_bytes_too_large",
+            "The configured source ingestion directory exceeds the maximum admitted batch size.",
+            details={"max_batch_bytes": max_batch_bytes, "received_bytes": total_size},
+        )
+    return observations
+
+
 def _observe_file(path: Path, relative_name: str, extension: str) -> _FileObservation:
     before = path.stat()
     if before.st_size <= 0:
@@ -440,6 +554,85 @@ def _observe_file(path: Path, relative_name: str, extension: str) -> _FileObserv
     )
 
 
+def _relative_name(root: Path, path: Path) -> str:
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError as exc:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_path_escape",
+            "A source directory entry is outside the configured server-owned root.",
+            http_status=409,
+        ) from exc
+
+
+def _assert_relative_path_shape(path: Path, relative_name: str, relative_parts: tuple[str, ...]) -> None:
+    del path
+    if not relative_name or relative_name.startswith("/") or "\\" in relative_name:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_relative_path_not_admitted",
+            "Recursive source-directory file authority must use normalized relative paths.",
+            details={"relative_name": relative_name},
+        )
+    if any(part in {"", ".", ".."} for part in relative_parts):
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_relative_path_not_admitted",
+            "Recursive source-directory file authority must not include empty, current, or parent path segments.",
+            details={"relative_name": relative_name},
+        )
+    if len(relative_parts) > MAX_RELATIVE_PATH_SEGMENTS:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_relative_path_too_deep",
+            "The recursive source directory policy does not admit more than 3 relative path segments including filename.",
+            details={
+                "relative_name": relative_name,
+                "max_relative_path_segments": MAX_RELATIVE_PATH_SEGMENTS,
+            },
+        )
+
+
+def _assert_path_within_root(root: Path, path: Path, relative_name: str) -> None:
+    resolved_root = root.resolve()
+    try:
+        resolved_path = path.resolve()
+    except OSError as exc:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_path_unreadable",
+            "A source directory entry could not be resolved for traversal safety.",
+            http_status=409,
+            details={"relative_name": relative_name},
+        ) from exc
+    if resolved_path != resolved_root and resolved_root not in resolved_path.parents:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_path_escape",
+            "A source directory entry resolves outside the configured server-owned root.",
+            http_status=409,
+            details={"relative_name": relative_name},
+        )
+
+
+def _is_disallowed_filesystem_entry(path: Path) -> bool:
+    if path.is_symlink():
+        return True
+    try:
+        stat_result = path.stat(follow_symlinks=False)
+    except OSError:
+        return True
+    attrs = int(getattr(stat_result, "st_file_attributes", 0) or 0)
+    return bool(attrs & _WINDOWS_FILE_ATTRIBUTE_REPARSE_POINT)
+
+
+def _is_hidden_path(path: Path, relative_parts: tuple[str, ...]) -> bool:
+    if any(part.startswith(".") for part in relative_parts):
+        return True
+    try:
+        stat_result = path.stat(follow_symlinks=False)
+    except OSError:
+        return True
+    attrs = int(getattr(stat_result, "st_file_attributes", 0) or 0)
+    hidden_or_system = _WINDOWS_FILE_ATTRIBUTE_HIDDEN | _WINDOWS_FILE_ATTRIBUTE_SYSTEM
+    return bool(attrs & hidden_or_system)
+
+
 def _existing_batch(
     db: Session,
     client_request_id: str,
@@ -462,6 +655,7 @@ def _batch_response(
     response_status: str | None = None,
     request_id: str | None = None,
 ) -> dict[str, Any]:
+    authority_snapshot = batch.authority_snapshot_json or {}
     files = (
         db.query(L3SourceDirectoryIngestionFile)
         .filter(L3SourceDirectoryIngestionFile.source_ingestion_batch_id == batch.source_ingestion_batch_id)
@@ -477,18 +671,23 @@ def _batch_response(
         "status": response_status or batch.status,
         "message": "Layer 3 server-configured source directory ingestion recorded durable file authority.",
         "source_ingestion_batch_id": batch.source_ingestion_batch_id,
+        "runtime_policy_id": authority_snapshot.get("runtime_policy_id", RUNTIME_POLICY_ID),
         "source_family": batch.source_family,
         "ingestion_mode": batch.ingestion_mode,
         "config_authority": batch.config_authority,
         "source_root_ref": _source_root_ref(),
         "source_root_absolute_path_exposed": False,
-        "direct_child_only": True,
+        "direct_child_only": authority_snapshot.get("direct_child_only", True),
+        "recursive_traversal_admitted": authority_snapshot.get("recursive_traversal_admitted", False),
+        "max_recursion_depth": authority_snapshot.get("max_recursion_depth"),
+        "max_relative_path_segments": authority_snapshot.get("max_relative_path_segments"),
+        "caller_selected_recursive_flag_allowed": authority_snapshot.get("caller_selected_recursive_flag_allowed", False),
         "allowed_extensions": list(ALLOWED_EXTENSIONS),
         "eligible_file_count": batch.eligible_file_count,
         "total_size_bytes": batch.total_size_bytes,
         "directory_fingerprint_hash": batch.directory_fingerprint_hash,
         "authority_basis_hash": batch.authority_basis_hash,
-        "authority_snapshot": batch.authority_snapshot_json or {},
+        "authority_snapshot": authority_snapshot,
         "files": [_stored_file_response(item) for item in files],
         "negative_invariants": _negative_invariants(),
         "next_allowed_actions": [
@@ -559,7 +758,8 @@ def _required(fields: Mapping[str, str], key: str) -> str:
 def _negative_invariants() -> dict[str, bool]:
     return {
         "caller_supplied_paths_enabled": False,
-        "recursive_traversal_enabled": False,
+        "recursive_traversal_enabled": True,
+        "caller_selected_recursive_flag_enabled": False,
         "browser_file_upload_enabled": False,
         "pdf_ocr_office_binary_enabled": False,
         "web_connector_enabled": False,
