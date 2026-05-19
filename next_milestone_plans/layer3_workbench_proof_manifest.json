@@ -33740,5 +33740,47 @@
     ],
     "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_freeze_then_implementation",
     "summary": "Doc 861 freezes a read-only downstream Analysis Environment authority projection over existing session-summary state. It admits no runtime now, no rendered behavior now, and no adjacent source/package/provider/connector/auth/security widening."
+  },
+  "downstream_analysis_environment_authority_projection_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+    "status": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+    "doc": "next_milestone_plans/Layer3_planning_docs/862_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-analysis-environment-freeze-sync",
+    "runtime_behavior_change": false,
+    "freeze_pr": "#1477",
+    "freeze_branch_commit": "3a674eb5a28737b62e6ad68855b9475b2cf8c721",
+    "freeze_merge_commit": "9bb024d66be2b8fa8699403b063795feecc8aa94",
+    "synced_result": "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+    "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+    "implementation_entry_allowed_next": true,
+    "proof_terms": [
+      "current-main proof/control sync",
+      "PR #1477 merged",
+      "9bb024d66be2b8fa8699403b063795feecc8aa94",
+      "current_main_synced_downstream_analysis_environment_authority_projection_freeze",
+      "backend-layer3-api SUCCESS 3m22s",
+      "test SUCCESS 3m44s",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+      "backend/app/services/layer3_analysis_environment_projection.py",
+      "GET /api/v1/layer3/session/{session_id}",
+      "analysis_environment_projection: dict[str, Any]",
+      "layer3.analysis_environment_projection.v1",
+      "read_only_session_summary_projection",
+      "no runtime behavior introduced by sync",
+      "no rendered control change",
+      "implement_downstream_analysis_environment_authority_projection_read_only_session_summary"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+    "summary": "Doc 862 records current-main sync for PR #1477 merge commit 9bb024d66be2b8fa8699403b063795feecc8aa94 with checks passed, review surfaces empty, post-merge validation passed, and the next posture set to the read-only session-summary projection implementation."
   }
 }
