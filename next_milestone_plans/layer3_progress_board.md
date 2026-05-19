@@ -6804,3 +6804,35 @@ This sync introduces no runtime behavior and does not admit additional same-fami
 Post-merge validation: `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed.
 
 The next exact current-main posture is `select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync`.
+
+## Server Configured Source Directory Ingestion Rendered Control Runtime Entry
+
+Branch-local rendered control runtime entry: `842_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_RUNTIME_ENTRY.md` follows the current-main-synced 841 rendered delivery control posture and satisfies `select_server_configured_local_source_directory_ingestion_runtime_after_hybrid_delivery_rendered_control_sync`.
+
+Current main already includes the backend source-directory ingestion runtime through `745_SERVER_CONFIGURED_OPERATOR_DIRECTORY_TEXT_TABLE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md`, so this pass does not duplicate scanner, model, migration, or API route behavior.
+
+Runtime branch `codex/l3-source-ingestion-runtime` adds only rendered `/review/layer3` operator scan/status controls for the already current-main server-configured source-directory ingestion backend.
+
+The rendered control is `rendered_server_configured_source_directory_ingestion_control`.
+
+The pass adds `#source-directory-ingestion-rendered-controls`, `#source-directory-ingestion-scan-form`, `#source-directory-ingestion-client-request-id`, `#source-directory-ingestion-batch-id`, `#source-directory-ingestion-status`, `#source-directory-ingestion-scan-submit`, and `#source-directory-ingestion-panel`.
+
+The control submits only `scan_server_configured_operator_directory`, `server_configured_operator_directory_text_table_source_family`, and `server_configured_operator_directory_text_table_ingestion` to `POST /api/v1/layer3/source/ingestion/server-configured-directory/scan`, then reads existing batch authority from `GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}`.
+
+Runtime behavior introduced by this pass: `true`.
+
+Frontend rendered controls introduced by this pass: `true`.
+
+Frontend durable authority introduced by this pass: `false`.
+
+Backend route behavior introduced by this pass: `false`.
+
+Database model or migration behavior introduced by this pass: `false`.
+
+The rendered panel reports schema `layer3.source_directory_ingestion_batch.v1`, server-configured root ref, raw-path blocked posture, direct-child-only posture, allowed extension set, eligible file count, admitted file summaries, and blocked downstream runtime locks.
+
+No backend routes, models, migrations, durable scanner behavior, source-family breadth, caller-supplied paths/URLs/globs/directories/recursive flags, browser file bytes, PDFs, OCR, Office documents, arbitrary binaries, web connectors, RAG/vector indexing, vector retrieval, qualitative-hybrid runtime, provider-public delivery/use, provider-private signed URL behavior, connector dispatch, credentials, network egress, package construction, package mutation/reconstruction, package payload rewrite, source package row mutation, raw local path exposure, raw vector exposure, auth/security broadening, full mockup activation, or frontend-durable authority is admitted.
+
+Validation: `node --check .\backend\app\review_ui\static\layer3.js` passed; `python -m py_compile .\tools\l3-progress-check.py` passed; `python -m pytest .\backend\tests\test_layer3_page.py -q` passed with `5 passed`, `3 warnings`; `python -m pytest .\backend\tests\test_layer3_page.py .\backend\tests\test_layer3_source_directory_ingestion.py -q` passed with `18 passed`, `3 warnings`; `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed; JSON manifest validation passed; `git diff --check` passed with CRLF normalization warnings only.
+
+The next required action after merge is `current_main_sync_server_configured_source_directory_ingestion_rendered_control_runtime`; after that sync, select the next major Layer 3 end-to-end gap from current-main evidence rather than reopening source ingestion by default.
