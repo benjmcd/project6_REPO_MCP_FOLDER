@@ -335,3 +335,11 @@ Current Layer 3 rendered projection current-main sync to preserve when present:
 - preserve the live behavior as only the bounded read-only `/review/layer3` Analysis Environment server projection panel over `State.sessionSummary.analysis_environment_projection`
 - do not treat the sync as a backend route/API/DTO/model/migration/service change, write-control admission, package/source/provider/connector/auth/security widening, or frontend-only durable authority
 - preserve the next posture as `select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync`
+
+Current Layer 3 optional-tool authority revalidation selection to preserve when present:
+- `870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md` records a no-runtime selection after the rendered Analysis Environment projection runtime sync
+- canonical optional-tool authority remains `850_FIXTURE_VALIDATE_ONLY.md`, `851_FIXTURE_CHECKPOINT.md`, `tools/l3-fixture-validate.py`, and `backend/tests/test_layer3_fixture_validate.py`
+- preserve `850` as `pending` and `851` as `checkpoint`; do not treat either as a selected or frozen fixture-authority record
+- preserve the decision `keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority`
+- do not treat this selection as runtime behavior, benchmark execution, fixture materialization, fixture authority selection, dependency/provider/network admission, rendered optional-tool controls, package/handoff/export/download integration, or Gate C/pass-entry admission
+- preserve the next posture as `select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation`
