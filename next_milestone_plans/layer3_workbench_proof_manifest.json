@@ -33628,5 +33628,43 @@
     ],
     "next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1",
     "summary": "Doc 858 proves the exact recursive source-directory runtime implementation admitted by docs 856 and 857. The proof covers normalized nested relative authority, downstream material preview/text index compatibility, fail-closed traversal boundaries, redaction, idempotency, and no forbidden adjacent rows or behavior."
+  },
+  "recursive_source_ingestion_runtime_current_main_sync": {
+    "proof_kind": "current_main_synced_recursive_source_ingestion_runtime_implementation",
+    "status": "current_main_synced_recursive_source_ingestion_runtime_implementation",
+    "doc": "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-recursive-source-ingestion-runtime-sync",
+    "runtime_behavior_change": false,
+    "current_main_runtime_behavior": true,
+    "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+    "implementation_pr": "#1468",
+    "implementation_merge_commit": "2fa84f5f",
+    "proof_terms": [
+      "current-main proof/control sync",
+      "PR #1468 merged",
+      "2fa84f5f",
+      "current_main_synced_recursive_source_ingestion_runtime_implementation",
+      "backend-layer3-api SUCCESS 3m27s",
+      "test SUCCESS 3m52s",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "recursive_server_configured_directory_text_table_policy_v1",
+      "direct_child_only False",
+      "recursive_traversal_admitted True",
+      "maximum recursion depth 2",
+      "maximum normalized relative path segments 3 including filename",
+      "no caller-selected recursive flag",
+      "material preview and text indexing compatibility",
+      "no runtime behavior introduced by sync",
+      "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"
+    ],
+    "proof_commands": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    "summary": "Doc 859 syncs PR #1468 to current main as the bounded recursive source-directory runtime implementation. The sync introduces no behavior and pivots the next posture away from recursive ingestion polish unless current-main evidence names a concrete defect or blocker."
   }
 }

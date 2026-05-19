@@ -7229,7 +7229,15 @@
     "latest_recursive_source_ingestion_runtime_proof_runtime_behavior_change": true,
     "latest_recursive_source_ingestion_runtime_proof_runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
     "latest_recursive_source_ingestion_runtime_proof_next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1",
-    "latest_recursive_source_ingestion_runtime_proof_summary": "Doc 858 proves the bounded recursive source-directory runtime implementation under recursive_server_configured_directory_text_table_policy_v1: server-configured root only, text/table extensions only, depth 2, 3 relative path segments including filename, 100 files, MAX_UPLOAD_MB-derived byte limits, deterministic normalized relative path ordering, no caller-selected recursive flag, redacted normalized relative paths, downstream material preview and text index compatibility, and no forbidden adjacent connector/provider/package/vector/model/optional-tool/auth behavior."
+    "latest_recursive_source_ingestion_runtime_proof_summary": "Doc 858 proves the bounded recursive source-directory runtime implementation under recursive_server_configured_directory_text_table_policy_v1: server-configured root only, text/table extensions only, depth 2, 3 relative path segments including filename, 100 files, MAX_UPLOAD_MB-derived byte limits, deterministic normalized relative path ordering, no caller-selected recursive flag, redacted normalized relative paths, downstream material preview and text index compatibility, and no forbidden adjacent connector/provider/package/vector/model/optional-tool/auth behavior.",
+    "latest_recursive_source_ingestion_runtime_current_main_sync_branch": "codex/l3-recursive-source-ingestion-runtime-sync",
+    "latest_recursive_source_ingestion_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "latest_recursive_source_ingestion_runtime_current_main_sync_status": "current_main_synced_recursive_source_ingestion_runtime_implementation",
+    "latest_recursive_source_ingestion_runtime_current_main_sync_runtime_behavior_change": false,
+    "latest_recursive_source_ingestion_runtime_current_main_sync_pr": "#1468",
+    "latest_recursive_source_ingestion_runtime_current_main_sync_merge_commit": "2fa84f5f",
+    "latest_recursive_source_ingestion_runtime_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    "latest_recursive_source_ingestion_runtime_current_main_sync_summary": "Doc 859 syncs PR #1468 to current main as the exact recursive source-directory runtime implementation. Current main now records recursive normalized relative file authority under recursive_server_configured_directory_text_table_policy_v1 while keeping caller-controlled paths, rendered controls, package/export/connector/provider/vector/model/optional-tool/auth behavior, credentials, network, and broader ingestion blocked."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -35928,5 +35936,61 @@
     },
     "next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1",
     "summary": "The recursive source-directory runtime implementation is branch-local and limited to the selected server-configured directory text/table policy. It records normalized relative paths, reuses existing durable source-directory authority, preserves downstream material preview and text-index compatibility, and keeps forbidden adjacent platform lanes blocked."
+  },
+  "recursive_source_ingestion_runtime_current_main_sync": {
+    "status": "current_main_synced_recursive_source_ingestion_runtime_implementation",
+    "doc": "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-recursive-source-ingestion-runtime-sync",
+    "implementation_pr": "#1468",
+    "implementation_branch": "codex/l3-recursive-source-ingestion-runtime",
+    "implementation_branch_commit": "e50f65bf873e00f299bb3fb73c55c9c200db7c6e",
+    "implementation_merge_commit": "2fa84f5f",
+    "synced_proof_doc": "next_milestone_plans/Layer3_planning_docs/858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md",
+    "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+    "runtime_behavior_change": false,
+    "current_main_runtime_behavior": true,
+    "source_root_authority": "LAYER3_SOURCE_INGESTION_DIR",
+    "direct_child_only": false,
+    "recursive_traversal_admitted": true,
+    "max_recursion_depth": 2,
+    "max_normalized_relative_path_segments_including_filename": 3,
+    "max_file_count": 100,
+    "caller_selected_recursive_flag_allowed": false,
+    "merge_gate": {
+      "backend-layer3-api": "SUCCESS 3m27s",
+      "test": "SUCCESS 3m52s",
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads_totalCount": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS"
+    ],
+    "blocked_scope": {
+      "caller_provided_paths_or_urls": false,
+      "caller_selected_recursive_flag": false,
+      "pdf_ocr_office_image_archive_binary_ingestion": false,
+      "browser_upload_web_or_database_connector": false,
+      "rendered_control_change": false,
+      "source_authority_promotion": false,
+      "package_handoff_export_download_behavior_change": false,
+      "connector_dispatch_change": false,
+      "provider_urls": false,
+      "credentials_or_network": false,
+      "semantic_vector_rag_widening_beyond_current_local_surfaces": false,
+      "prompt_model_provider_qualitative_generation": false,
+      "tabpfn_runtime": false,
+      "nrc_rag_runtime": false,
+      "optional_tool_gate_c_or_pass_entry_admission": false,
+      "broad_auth_security_behavior": false
+    },
+    "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    "summary": "Current main now includes the recursive source-directory runtime implementation from PR #1468. The implementation remains bounded to recursive_server_configured_directory_text_table_policy_v1 and should not be extended through same-family polish unless current-main evidence names a concrete recursive-ingestion defect, failed check, stale sync, unresolved review item, or operator-flow blocker."
   }
 }
