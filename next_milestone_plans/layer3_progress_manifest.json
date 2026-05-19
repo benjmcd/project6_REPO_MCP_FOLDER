@@ -35992,5 +35992,37 @@
     },
     "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
     "summary": "Current main now includes the recursive source-directory runtime implementation from PR #1468. The implementation remains bounded to recursive_server_configured_directory_text_table_policy_v1 and should not be extended through same-family polish unless current-main evidence names a concrete recursive-ingestion defect, failed check, stale sync, unresolved review item, or operator-flow blocker."
+  },
+  "downstream_analysis_environment_authority_gap_selection": {
+    "status": "downstream_analysis_environment_authority_gap_selected_no_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+    "branch": "codex/l3-analysis-environment-gap-selection",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_selection": "8e099ce8fd36ef3f9020c874a31b2bc2d48c978e",
+    "selected_gap": "downstream_analysis_environment_authority_projection",
+    "runtime_behavior_change": false,
+    "implementation_entry_allowed_next": false,
+    "evidence_surfaces": [
+      "backend/app/review_ui/static/layer3.js",
+      "backend/app/services/layer3_sublayer_state.py",
+      "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md"
+    ],
+    "blocked_scope": {
+      "route_api_dto_model_migration_service_change": false,
+      "rendered_control_change": false,
+      "frontend_only_durable_authority": false,
+      "package_mutation_or_reconstruction": false,
+      "handoff_export_or_delivery_rerun": false,
+      "source_authority_promotion": false,
+      "connector_dispatch_or_destination_write": false,
+      "provider_urls": false,
+      "credentials_or_network": false,
+      "semantic_vector_rag_widening": false,
+      "prompt_model_provider_qualitative_generation": false,
+      "optional_tool_runtime": false,
+      "broad_auth_security_behavior": false
+    },
+    "next_posture": "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+    "summary": "Doc 860 selects downstream Analysis Environment authority projection as the next no-runtime Layer 3 gap. Current evidence separates rendered Sublayer 3C Analysis Execution Environment planes from server-owned read-only sublayer_visualization state, so a later freeze must define the exact authority projection before any runtime or rendered behavior changes."
   }
 }

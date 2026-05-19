@@ -206,9 +206,9 @@ As of `2026-05-06`:
 
 ## Program State Summary
 
-- Done now on `main`: current `project6-origin/main` is synced through the bounded recursive source-directory runtime current-main sync in doc `859`, plus the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
-- Current focus: no new runtime implementation lane is admitted by default. The active current-main posture is `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`; recursive source-ingestion polish remains blocked unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
-- Candidate next consumers: future work must start from current-main evidence for a named Layer 3 gap, or from exact product/use-case authority for a deferred lane such as optional-tool fixture/query-set selection. Candidate history below remains boundary evidence, not a current implementation recommendation.
+- Done now on `main`: current `project6-origin/main` is synced through the bounded recursive source-directory runtime current-main sync in doc `859`, the downstream Analysis Environment authority gap selection in doc `860`, plus the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
+- Current focus: no new runtime implementation lane is admitted by default. The active current-main posture is `freeze_downstream_analysis_environment_authority_projection_before_runtime`; recursive source-ingestion polish remains blocked unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
+- Candidate next consumers: future work must start from current-main evidence for a named Layer 3 gap. The selected next gap is downstream Analysis Environment authority projection; optional-tool fixture/query-set selection still requires exact product/use-case authority. Candidate history below remains boundary evidence, not a current implementation recommendation.
 - Deferred but not active: deferred platform lanes remain out until later freezes or authority packets admit them; see the activation-criteria section below for candidate-next and current-focus gates.
 - Current theme synthesis reference pack: `next_milestone_plans/Layer3_planning_docs/238_LAYER3_THEME_TO_FULL_PIPELINE_SYNTHESIS.md` consolidates the live `/review/layer3` admitted themes with the static Claude prototype boundary and the deferred category ladder; it is planning/reference-only and does not admit runtime behavior by itself
 - Current `main` also includes the merged planning-only `24_L3_WB_FREEZE.md` and `25_L3_QUAL1_FREEZE.md` docs from PR `#165`, plus the post-PR165 docs/progress/front-door sync from PR `#166`; those landed docs prepare deferred-scope work and align artifact/front-door surfaces only, without changing the 29 merged milestone count or reopening the settled packet
@@ -476,9 +476,9 @@ flowchart LR
 
 ## Current Focus
 
-Current `main` is synced through `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md` and the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
+Current `main` is synced through `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md`, `860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md`, and the later docs/control posture corrections in the current board, prompt, and refresh-spec authority surfaces.
 
-Current focus is a selection posture, not an implementation lane: `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`.
+Current focus is a freeze-prep posture, not an implementation lane: `freeze_downstream_analysis_environment_authority_projection_before_runtime`.
 
 Current-main recursive source-directory ingestion is live only under `recursive_server_configured_directory_text_table_policy_v1`: server-configured `LAYER3_SOURCE_INGESTION_DIR`, `.csv`/`.json`/`.txt`/`.md`, maximum recursion depth `2`, maximum normalized relative path segments `3` including filename, maximum file count `100`, deterministic normalized relative path ordering, no caller-selected recursive flag, redacted relative path authority, and existing source-directory material-preview/text-index compatibility.
 
@@ -488,12 +488,13 @@ Optional-tool fixture/query-set authority remains a local blocked posture under 
 
 Hard rule:
 - do not continue recursive source-ingestion polish or create a new runtime implementation lane unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, named downstream operator-flow blocker, or exact product/use-case authority for a deferred lane.
+- do not implement downstream Analysis Environment projection runtime until a later freeze names exact route/API, service, rendered, proof, and no-go surfaces.
 
 ## Candidate Next Consumers
 
-Near-term direction after doc `859` and the current docs/control posture corrections:
+Near-term direction after docs `859`/`860` and the current docs/control posture corrections:
 
-- select the next major Layer 3 gap only from current-main evidence; do not infer a new implementation lane from adjacency alone
+- freeze downstream Analysis Environment authority projection before runtime; do not infer implementation from the gap-selection doc alone
 - optional-tool progression remains blocked until product authority selects exact fixture/query-set authority
 - recursive source-ingestion runtime is already current-main synced and should not be extended without a named defect, failed check, stale sync, unresolved review item, or operator-flow blocker
 - historical candidate/deferred entries below remain useful boundary records, not near-term implementation recommendations
@@ -515,8 +516,8 @@ The textual section above remains primary if Mermaid rendering is unavailable.
 
 ```mermaid
 flowchart LR
-    A["Current main after doc 859 and current posture corrections"] --> B["Selection posture only: no runtime lane admitted"]
-    B -.-> C["Select next major gap only from current-main evidence"]
+    A["Current main after docs 859/860 and current posture corrections"] --> B["Freeze-prep posture only: no runtime lane admitted"]
+    B -.-> C["Freeze downstream Analysis Environment authority projection"]
 
     classDef merged fill:#d8f5d0,stroke:#2f6b2f,color:#111;
     classDef future fill:#e8e8e8,stroke:#666,color:#111;
@@ -7181,3 +7182,11 @@ Current main now implements recursive server-configured directory text/table ing
 Still blocked: caller-provided paths/URLs/globs/file bytes/recursive flags, rendered controls, source authority promotion, package/handoff/export/download behavior changes, connector dispatch changes, provider URL behavior, credentials or network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs/OCR/Office/images/archives/arbitrary binaries, browser uploads, web connectors, and database connectors.
 
 Next exact posture: `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`. Do not continue recursive source-ingestion polish unless current-main evidence names a concrete defect, failed check, stale sync, unresolved review item, or operator-flow blocker.
+
+## Downstream Analysis Environment Authority Gap Selection
+
+Gap selection: `860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md` records the no-runtime current-main selection of `downstream_analysis_environment_authority_projection` as the next major Layer 3 gap after recursive source ingestion current-main sync. Current evidence separates rendered Sublayer 3C Analysis Execution Environment planes in `backend/app/review_ui/static/layer3.js` from the server-owned read-only `layer3.sublayer_visualization_state.v1` projection in `backend/app/services/layer3_sublayer_state.py`; a later freeze must define how those surfaces become an explicit downstream Analysis Environment authority projection.
+
+This selection admits no runtime behavior, route/API/DTO/model/migration/service change, rendered control change, package/source/provider/connector/auth/security widening, optional-tool runtime, or frontend-only durable authority.
+
+Next exact posture: `freeze_downstream_analysis_environment_authority_projection_before_runtime`. Do not implement Analysis Environment projection runtime until that freeze is current-main selected, review-cleared, and checker-backed.

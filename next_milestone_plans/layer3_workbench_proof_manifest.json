@@ -33666,5 +33666,36 @@
     ],
     "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
     "summary": "Doc 859 syncs PR #1468 to current main as the bounded recursive source-directory runtime implementation. The sync introduces no behavior and pivots the next posture away from recursive ingestion polish unless current-main evidence names a concrete defect or blocker."
+  },
+  "downstream_analysis_environment_authority_gap_selection_proof": {
+    "proof_kind": "downstream_analysis_environment_authority_gap_selected_no_runtime",
+    "status": "downstream_analysis_environment_authority_gap_selected_no_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+    "branch": "codex/l3-analysis-environment-gap-selection",
+    "runtime_behavior_change": false,
+    "selected_gap": "downstream_analysis_environment_authority_projection",
+    "implementation_entry_allowed_next": false,
+    "proof_terms": [
+      "no-runtime current-main gap-selection control",
+      "downstream_analysis_environment_authority_projection",
+      "rendered Sublayer 3C Analysis Execution Environment planes",
+      "layer3.sublayer_visualization_state.v1",
+      "read_only_persisted_layer3_rows",
+      "no_side_effects True",
+      "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+      "no route API DTO model migration or service behavior change",
+      "no rendered control change",
+      "no package source provider connector auth security widening",
+      "no optional-tool runtime",
+      "no frontend-only durable authority"
+    ],
+    "proof_commands": [
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "python .\\tools\\l3-fixture-validate.py --expect pending",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint"
+    ],
+    "next_posture": "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+    "summary": "Doc 860 selects the downstream Analysis Environment authority projection gap from current-main evidence without admitting runtime. A later freeze must define exact server, rendered, proof, leakage, and no-go authority before implementation."
   }
 }

@@ -2357,6 +2357,9 @@ LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF = (
 LAYER3_RECURSIVE_SOURCE_INGESTION_RUNTIME_SYNC = (
     PLANNING_DOCS / "859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION = (
+    PLANNING_DOCS / "860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -74478,6 +74481,142 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in runtime_sync_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} recursive_source_ingestion_runtime_current_main_sync.proof_terms missing {term}"
+                        )
+
+    analysis_environment_gap_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime current-main gap-selection control for `downstream_analysis_environment_authority_projection`.",
+        "860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+        "Predecessor current-main sync doc: `859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this selection: `8e099ce8fd36ef3f9020c874a31b2bc2d48c978e`.",
+        "Selected gap: `downstream_analysis_environment_authority_projection`.",
+        "Selected next posture: `freeze_downstream_analysis_environment_authority_projection_before_runtime`.",
+        "Runtime behavior introduced by this selection: `false`.",
+        "Implementation-entry allowed next: false",
+        "rendered Sublayer 3C target-state/operator surface",
+        "server-owned read-only state projection",
+        "schema `layer3.sublayer_visualization_state.v1`",
+        "authority source `read_only_persisted_layer3_rows`",
+        "`no_side_effects: True`",
+        "This selection admits no runtime behavior.",
+        "Do not implement Analysis Environment projection runtime",
+    ):
+        if term not in analysis_environment_gap_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION)} "
+                f"missing downstream Analysis Environment gap-selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Authority Gap Selection",
+            "860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+            "downstream_analysis_environment_authority_projection",
+            "layer3.sublayer_visualization_state.v1",
+            "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+            "This selection admits no runtime behavior",
+        ),
+        PROGRESS_PROMPT: (
+            "860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+            "downstream_analysis_environment_authority_projection",
+            "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+            "not runtime implementation",
+        ),
+        REFRESH_SPEC: (
+            "860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+            "no-runtime current-main gap selection only",
+            "downstream_analysis_environment_authority_projection",
+            "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_authority_gap_selection"',
+            '"status": "downstream_analysis_environment_authority_gap_selected_no_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md"',
+            '"selected_gap": "downstream_analysis_environment_authority_projection"',
+            '"implementation_entry_allowed_next": false',
+            '"next_posture": "freeze_downstream_analysis_environment_authority_projection_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_authority_gap_selection_proof"',
+            '"proof_kind": "downstream_analysis_environment_authority_gap_selected_no_runtime"',
+            '"selected_gap": "downstream_analysis_environment_authority_projection"',
+            '"layer3.sublayer_visualization_state.v1"',
+            '"read_only_persisted_layer3_rows"',
+            '"next_posture": "freeze_downstream_analysis_environment_authority_projection_before_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing downstream Analysis Environment gap-selection term: {term}")
+
+    if isinstance(manifest_data, dict):
+        gap = manifest_data.get("downstream_analysis_environment_authority_gap_selection")
+        if not isinstance(gap, dict):
+            errors.append(f"{_rel(MANIFEST)} missing downstream_analysis_environment_authority_gap_selection object")
+        else:
+            expected_gap_scalars = {
+                "status": "downstream_analysis_environment_authority_gap_selected_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+                "branch": "codex/l3-analysis-environment-gap-selection",
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/859_RECURSIVE_SOURCE_INGESTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint_before_selection": "8e099ce8fd36ef3f9020c874a31b2bc2d48c978e",
+                "selected_gap": "downstream_analysis_environment_authority_projection",
+                "runtime_behavior_change": False,
+                "implementation_entry_allowed_next": False,
+                "next_posture": "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+            }
+            for key, value in expected_gap_scalars.items():
+                if gap.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_authority_gap_selection.{key} must be {value!r}"
+                    )
+
+    if isinstance(proof_data, dict):
+        gap_proof = proof_data.get("downstream_analysis_environment_authority_gap_selection_proof")
+        if not isinstance(gap_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_authority_gap_selection_proof object"
+            )
+        else:
+            expected_gap_proof_scalars = {
+                "proof_kind": "downstream_analysis_environment_authority_gap_selected_no_runtime",
+                "status": "downstream_analysis_environment_authority_gap_selected_no_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/860_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_GAP_SELECTION.md",
+                "branch": "codex/l3-analysis-environment-gap-selection",
+                "runtime_behavior_change": False,
+                "selected_gap": "downstream_analysis_environment_authority_projection",
+                "implementation_entry_allowed_next": False,
+                "next_posture": "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+            }
+            for key, value in expected_gap_proof_scalars.items():
+                if gap_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_gap_selection_proof.{key} must be {value!r}"
+                    )
+            proof_terms = gap_proof.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_gap_selection_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "no-runtime current-main gap-selection control",
+                    "downstream_analysis_environment_authority_projection",
+                    "rendered Sublayer 3C Analysis Execution Environment planes",
+                    "layer3.sublayer_visualization_state.v1",
+                    "read_only_persisted_layer3_rows",
+                    "no_side_effects True",
+                    "freeze_downstream_analysis_environment_authority_projection_before_runtime",
+                    "no route API DTO model migration or service behavior change",
+                    "no rendered control change",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_authority_gap_selection_proof.proof_terms missing {term}"
                         )
 
 
