@@ -32669,7 +32669,7 @@
   "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_proof": {
     "proof_kind": "runtime_entry_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery",
     "status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_implemented_branch_local",
-    "branch": "codex/l3-source-directory-mixed-files-ingestion",
+    "branch": "codex/l3-hybrid-export-download-delivery",
     "doc": "next_milestone_plans/Layer3_planning_docs/838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md",
     "predecessor": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
     "proof_commands": [
@@ -32716,9 +32716,39 @@
     ],
     "next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime"
   },
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_branch": "codex/l3-source-directory-mixed-files-ingestion",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_branch": "codex/l3-hybrid-export-download-delivery",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_implemented_branch_local",
   "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_next_posture_after_merge": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
-  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_summary": "Doc 838 proof records same-origin source-directory hybrid external export/download package delivery over existing prepare authority."
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime_entry_summary": "Doc 838 proof records same-origin source-directory hybrid external export/download package delivery over existing prepare authority.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+    "status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/839_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CURRENT_MAIN_SYNC.md",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md",
+    "runtime_pr": "#1444",
+    "runtime_branch": "codex/l3-hybrid-export-download-delivery",
+    "runtime_branch_commit": "f20f402a",
+    "runtime_merge_commit": "de5acc1a979dfa8707ca4f66542cdfeec0f0e4f1",
+    "proof_terms": [
+      "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+      "backend-layer3-api SUCCESS 3m29s",
+      "test SUCCESS 3m33s",
+      "PR #1444 reviewThreads totalCount 0",
+      "unresolved reviewThreads totalCount 0",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver",
+      "delivery_streaming_performed: False",
+      "current-main sync introduces no additional runtime behavior",
+      "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync"
+    ],
+    "next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_branch": "codex/l3-838-delivery-current-main-sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/839_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CURRENT_MAIN_SYNC.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_pr": "#1444",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_merge_commit": "de5acc1a979dfa8707ca4f66542cdfeec0f0e4f1",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_status": "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_current_main_sync_summary": "Doc 839 proof records current-main sync for PR #1444 merge commit de5acc1a979dfa8707ca4f66542cdfeec0f0e4f1 with green backend-layer3-api and test checks, zero reviewThreads, post-merge progress and target-selection validation, and next posture select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync."
 }
