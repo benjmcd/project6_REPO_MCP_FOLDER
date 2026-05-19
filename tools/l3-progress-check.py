@@ -2335,6 +2335,9 @@ LAYER3_SUBLAYER3C_OPTIONAL_TOOL_FIXTURE_CHECKPOINT = (
 LAYER3_INTERNAL_WEBHOOK_CONNECTOR_FREEZE = (
     PLANNING_DOCS / "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md"
 )
+LAYER3_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_SYNC = (
+    PLANNING_DOCS / "853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -73243,30 +73246,72 @@ def _check_internal_webhook_connector_freeze(errors: list[str]) -> None:
                 f"missing internal webhook connector freeze term: {term}"
             )
 
+    sync_text = _read_required_text(
+        LAYER3_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `server_configured_internal_webhook_destination_dispatch`.",
+        "853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+        "Runtime PR: `#1462`.",
+        "Runtime merge commit: `08ca4ba3cc0a855eb4c75063b279dec5958d0b60`.",
+        "Synced result: `current_main_synced_internal_webhook_connector_runtime_implementation`.",
+        "Runtime behavior introduced by implementation PR: `true`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "server_configured_internal_webhook_destination",
+        "server_configured_allowlisted_internal_webhook_post",
+        "backend/app/services/layer3_internal_webhook_connector.py",
+        "POST /api/v1/layer3/handoff/export/internal-webhook/dispatch",
+        "GET /api/v1/layer3/handoff/export/internal-webhook/status/{internal_webhook_dispatch_receipt_id}",
+        "L3InternalWebhookDispatchReceipt",
+        "L3InternalWebhookDispatchAuditEvent",
+        "no additional runtime behavior. It records current-main adoption",
+        "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_SYNC)} "
+                f"missing internal webhook connector runtime sync term: {term}"
+            )
+
     for path, terms in {
         BOARD: (
             "## Internal Webhook Connector Freeze",
+            "## Internal Webhook Connector Runtime Current-Main Sync",
             "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+            "853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1462`",
+            "08ca4ba3cc0a855eb4c75063b279dec5958d0b60",
+            "current_main_synced_internal_webhook_connector_runtime_implementation",
             "server_configured_internal_webhook_destination",
             "server_configured_allowlisted_internal_webhook_post",
             "Runtime behavior introduced by this freeze: `false`.",
             "implement_server_configured_internal_webhook_destination_dispatch",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
         ),
         MANIFEST: (
             '"internal_webhook_connector_freeze"',
+            '"internal_webhook_connector_runtime_implementation"',
+            '"latest_internal_webhook_connector_runtime_current_main_sync_doc"',
             '"latest_internal_webhook_connector_freeze_doc"',
             '"status": "internal_webhook_connector_implementation_entry_freeze_no_runtime"',
+            '"status": "current_main_synced_internal_webhook_connector_runtime_implementation"',
             '"runtime_behavior_change": false',
+            '"current_main_sync_behavior_change": false',
             '"implementation_entry_allowed_next": true',
             '"target_identity": "server_configured_internal_webhook_destination"',
             '"target_class": "real_connector_invocation"',
             '"dispatch_mode": "server_configured_allowlisted_internal_webhook_post"',
             '"credential_model": "no_credentials"',
             '"next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation"',
+            '"next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"',
         ),
         PROOF_MANIFEST: (
             '"internal_webhook_connector_freeze_proof"',
+            '"internal_webhook_connector_runtime_implementation_proof"',
             '"implementation_entry_freeze_internal_webhook_connector_no_runtime"',
+            '"current_main_synced_internal_webhook_connector_runtime_implementation"',
             '"server_configured_internal_webhook_destination"',
             '"server_configured_allowlisted_internal_webhook_post"',
             "redacted handoff/export delivery envelope only",
@@ -73274,18 +73319,23 @@ def _check_internal_webhook_connector_freeze(errors: list[str]) -> None:
             "no ConnectorRun or ConnectorRunTarget",
             "no vector/RAG widening",
             "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
+            "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
         ),
         PROGRESS_PROMPT: (
             "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+            "853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1462` implements",
             "server_configured_internal_webhook_destination",
             "implement_server_configured_internal_webhook_destination_dispatch",
             "it admits no runtime behavior by itself",
+            "durable receipt/audit state",
         ),
         REFRESH_SPEC: (
             "852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
+            "PR `#1462`",
             "server_configured_internal_webhook_destination",
-            "Do not treat it as live runtime until GitHub and current `main` confirm the freeze",
-            "server-configured fake/internal webhook receiver proof",
+            "classify only the exact `server_configured_internal_webhook_destination` dispatch as live bounded behavior",
+            "Do not treat PR `#1462` as arbitrary connector dispatch",
         ),
     }.items():
         text = _read_required_text(path, errors)
@@ -73315,6 +73365,20 @@ def _check_internal_webhook_connector_freeze(errors: list[str]) -> None:
                 "latest_internal_webhook_connector_freeze_next_posture": (
                     "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation"
                 ),
+                "latest_internal_webhook_connector_runtime_current_main_sync_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md"
+                ),
+                "latest_internal_webhook_connector_runtime_current_main_sync_status": (
+                    "current_main_synced_internal_webhook_connector_runtime_implementation"
+                ),
+                "latest_internal_webhook_connector_runtime_current_main_sync_runtime_behavior_change": False,
+                "latest_internal_webhook_connector_runtime_current_main_sync_pr": "#1462",
+                "latest_internal_webhook_connector_runtime_current_main_sync_merge_commit": (
+                    "08ca4ba3cc0a855eb4c75063b279dec5958d0b60"
+                ),
+                "latest_internal_webhook_connector_runtime_current_main_sync_next_posture": (
+                    "select_next_major_layer3_end_to_end_gap_from_current_main_evidence"
+                ),
             }
             for key, value in expected.items():
                 if current_status.get(key) != value:
@@ -73341,6 +73405,35 @@ def _check_internal_webhook_connector_freeze(errors: list[str]) -> None:
                 if freeze.get(key) != value:
                     errors.append(
                         f"{_rel(MANIFEST)} internal_webhook_connector_freeze.{key} must be {value!r}"
+                    )
+
+        runtime = manifest_data.get("internal_webhook_connector_runtime_implementation")
+        if not isinstance(runtime, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing internal_webhook_connector_runtime_implementation object"
+            )
+        else:
+            expected_runtime_scalars = {
+                "status": "current_main_synced_internal_webhook_connector_runtime_implementation",
+                "branch": "codex/l3-internal-webhook-runtime",
+                "runtime_pr": "#1462",
+                "runtime_merge_commit": "08ca4ba3cc0a855eb4c75063b279dec5958d0b60",
+                "current_main_sync_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md"
+                ),
+                "runtime_behavior_change": True,
+                "current_main_sync_behavior_change": False,
+                "selected_implementation_action": "implement_server_configured_internal_webhook_destination_dispatch",
+                "target_identity": "server_configured_internal_webhook_destination",
+                "target_class": "real_connector_invocation",
+                "dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+                "credential_model": "no_credentials",
+                "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+            }
+            for key, value in expected_runtime_scalars.items():
+                if runtime.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} internal_webhook_connector_runtime_implementation.{key} must be {value!r}"
                     )
 
     proof_data = _load_json(PROOF_MANIFEST, errors)
@@ -73382,6 +73475,34 @@ def _check_internal_webhook_connector_freeze(errors: list[str]) -> None:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} internal_webhook_connector_freeze_proof.proof_terms missing {term}"
                         )
+
+        runtime_proof = proof_data.get("internal_webhook_connector_runtime_implementation_proof")
+        if not isinstance(runtime_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing internal_webhook_connector_runtime_implementation_proof object"
+            )
+        else:
+            expected_runtime_proof_scalars = {
+                "proof_kind": "current_main_synced_internal_webhook_connector_runtime_implementation",
+                "status": "current_main_synced_targeted_tests_passed",
+                "branch": "codex/l3-internal-webhook-runtime",
+                "runtime_pr": "#1462",
+                "runtime_merge_commit": "08ca4ba3cc0a855eb4c75063b279dec5958d0b60",
+                "current_main_sync_doc": (
+                    "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md"
+                ),
+                "runtime_behavior_change": True,
+                "current_main_sync_behavior_change": False,
+                "target_identity": "server_configured_internal_webhook_destination",
+                "target_class": "real_connector_invocation",
+                "selected_dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+                "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+            }
+            for key, value in expected_runtime_proof_scalars.items():
+                if runtime_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} internal_webhook_connector_runtime_implementation_proof.{key} must be {value!r}"
+                    )
 
 
 def main() -> int:

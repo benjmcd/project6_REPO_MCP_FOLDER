@@ -7182,7 +7182,15 @@
     "latest_internal_webhook_connector_freeze_runtime_behavior_change": false,
     "latest_internal_webhook_connector_freeze_selected_target_identity": "server_configured_internal_webhook_destination",
     "latest_internal_webhook_connector_freeze_next_posture": "current_main_sync_server_configured_internal_webhook_destination_freeze_then_implementation",
-    "latest_internal_webhook_connector_freeze_summary": "Doc 852 records the first real connector/destination target as server_configured_internal_webhook_destination and freezes only the future internal webhook dispatch slice. It admits no runtime behavior by itself and keeps arbitrary destinations, public/provider URLs, credentials, ConnectorRun/ConnectorRunTarget, package mutation, source expansion, vector/RAG widening, optional-tool runtime, rendered write controls, and broad auth/security behavior blocked."
+    "latest_internal_webhook_connector_freeze_summary": "Doc 852 records the first real connector/destination target as server_configured_internal_webhook_destination and freezes only the future internal webhook dispatch slice. It admits no runtime behavior by itself and keeps arbitrary destinations, public/provider URLs, credentials, ConnectorRun/ConnectorRunTarget, package mutation, source expansion, vector/RAG widening, optional-tool runtime, rendered write controls, and broad auth/security behavior blocked.",
+    "latest_internal_webhook_connector_runtime_current_main_sync_branch": "codex/l3-internal-webhook-runtime-sync",
+    "latest_internal_webhook_connector_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "latest_internal_webhook_connector_runtime_current_main_sync_status": "current_main_synced_internal_webhook_connector_runtime_implementation",
+    "latest_internal_webhook_connector_runtime_current_main_sync_runtime_behavior_change": false,
+    "latest_internal_webhook_connector_runtime_current_main_sync_pr": "#1462",
+    "latest_internal_webhook_connector_runtime_current_main_sync_merge_commit": "08ca4ba3cc0a855eb4c75063b279dec5958d0b60",
+    "latest_internal_webhook_connector_runtime_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    "latest_internal_webhook_connector_runtime_current_main_sync_summary": "Doc 853 syncs PR #1462 to current main as the exact server-configured internal webhook connector runtime implementation. It records durable receipt/audit/status state, redacted envelope POST, idempotency, fake/internal receiver proof, and continued blocking for arbitrary destinations, public/provider URLs, credentials, ConnectorRun/ConnectorRunTarget, package mutation, source expansion, vector/RAG widening, optional-tool runtime, rendered write controls, and broad auth/security behavior."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -35500,10 +35508,16 @@
     "summary": "Doc 852 freezes the first real connector/destination target as a server-configured allowlisted internal webhook dispatch of one redacted handoff/export envelope. Runtime remains blocked until the freeze is synced and an implementation pass proves authority binding, idempotency, redaction, fake/internal receiver behavior, and forbidden-adjacent-surface guards."
   },
   "internal_webhook_connector_runtime_implementation": {
-    "status": "branch_local_internal_webhook_connector_runtime_implemented_targeted_tests_passed",
+    "status": "current_main_synced_internal_webhook_connector_runtime_implementation",
     "branch": "codex/l3-internal-webhook-runtime",
+    "runtime_pr": "#1462",
+    "runtime_branch_commit": "d42be534",
+    "runtime_merge_commit": "08ca4ba3cc0a855eb4c75063b279dec5958d0b60",
+    "current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_sync_branch": "codex/l3-internal-webhook-runtime-sync",
     "governing_freeze_doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
     "runtime_behavior_change": true,
+    "current_main_sync_behavior_change": false,
     "selected_implementation_action": "implement_server_configured_internal_webhook_destination_dispatch",
     "target_identity": "server_configured_internal_webhook_destination",
     "target_class": "real_connector_invocation",
@@ -35533,6 +35547,13 @@
       "python -m py_compile .\\backend\\alembic\\versions\\0035_layer3_internal_webhook_connector.py PASS",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"internal_webhook or provider_private_signed_url_openapi_prepare_status_schema\" PASS"
     ],
+    "current_main_sync_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"internal_webhook or provider_private_signed_url_openapi_prepare_status_schema\" PASS"
+    ],
     "blocked_scope": {
       "arbitrary_connector_dispatch": false,
       "arbitrary_destination_url": false,
@@ -35552,7 +35573,7 @@
       "rendered_write_submit_control": false,
       "broad_auth_security_behavior": false
     },
-    "next_posture": "open_review_pr_then_sync_current_main_or_fix_review_ci_defects",
-    "summary": "Branch-local runtime implementation adds the exact server-configured internal webhook dispatch selected by doc 852: durable receipt/audit/status state, redacted envelope POST to one configured internal destination, idempotency and conflict handling, stale-authority and forbidden-input rejection, fake/internal receiver proof, and no new ConnectorRun or ConnectorRunTarget rows."
+    "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    "summary": "Current main includes the exact server-configured internal webhook dispatch selected by doc 852 via PR #1462: durable receipt/audit/status state, redacted envelope POST to one configured internal destination, idempotency and conflict handling, stale-authority and forbidden-input rejection, fake/internal receiver proof, and no new ConnectorRun or ConnectorRunTarget rows."
   }
 }
