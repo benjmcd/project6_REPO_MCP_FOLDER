@@ -6,7 +6,7 @@ Status: branch-local runtime entry freeze and implementation for `source_directo
 
 Runtime doc: `838_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RUNTIME_ENTRY_FREEZE.md`.
 
-Branch: `codex/l3-source-directory-mixed-files-ingestion`.
+Branch: `codex/l3-hybrid-export-download-delivery`.
 
 Current-main predecessor: `837_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC.md`.
 

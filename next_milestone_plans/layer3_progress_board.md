@@ -6717,3 +6717,30 @@ Provider-public delivery/use, provider-private signed URL behavior, signed-refer
 Validation: `python -m py_compile .\backend\app\services\layer3_source_directory_hybrid_analysis.py .\backend\app\api\layer3.py .\backend\tests\test_layer3_source_directory_vector_retrieval.py .\tools\l3-progress-check.py` passed; targeted delivery pytest passed with `1 passed`, `3 warnings`; focused Layer 3 source-directory/readiness suite passed with `19 passed`, `3 warnings`; JSON manifest validation passed; `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed.
 
 The next required action after merge is `current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime`; after that sync, select the next named Layer 3 end-to-end gap rather than continuing same-family source-directory package/export loops without a named defect or downstream reader.
+
+## Source Directory Hybrid Context Qualitative Analysis External Export Download Delivery Runtime Current-Main Sync
+
+Current-main proof/control sync: `839_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_CURRENT_MAIN_SYNC.md` syncs runtime PR `#1444` for `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime`.
+
+Runtime branch `codex/l3-hybrid-export-download-delivery` landed branch commit `f20f402a` into current main at merge commit `de5acc1a979dfa8707ca4f66542cdfeec0f0e4f1`.
+
+Synced result: `current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_runtime`.
+
+Current main now includes the source-directory hybrid context-packet qualitative-analysis external export/download delivery routes:
+
+- `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status`
+- `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver`
+
+Current main validates existing source-directory hybrid qualitative-analysis authority, package-review preview hash, package construction basis, package-review submit state, handoff/export prepare authority, external export/download prepare state, selected package id/kind/hash, and server-owned artifact-storage containment before streaming a same-origin attachment. The delivery-status reader uses the same authority reader and reports `delivery_streaming_performed: False`.
+
+PR `#1444` had green `backend-layer3-api` (`3m29s`) and `test` (`3m33s`) checks, comments totalCount `0`, reviews totalCount `0`, latestReviews totalCount `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN` before merge.
+
+Runtime behavior introduced by implementation PR: `true`.
+
+Runtime behavior introduced by this sync: `false`.
+
+The synced runtime keeps `same_origin_delivery_enabled: True`, `browser_managed_same_origin_attachment_enabled: True`, `delivery_status_reader_enabled: True`, `provider_public_delivery_enabled: False`, `provider_private_signed_url_enabled: False`, `connector_dispatch_enabled: False`, `network_egress_enabled: False`, `frontend_durable_authority_enabled: False`, `frontend_rendered_controls_enabled: False`, `durable_delivery_rows_enabled: False`, `package_payload_rewrite_enabled: False`, `package_mutation_reconstruction_enabled: False`, `source_package_row_mutation_enabled: False`, `new_source_family_enabled: False`, and `raw_vector_exposure_enabled: False`.
+
+No provider-public delivery/use, provider-private signed URL behavior, signed-reference use, connector/destination dispatch, real connector invocation, credentials, destination writes, receipts, network egress, frontend-durable authority, frontend-rendered controls, durable delivery rows, delivery audit rows, package mutation, package payload rewrite, source package row mutation, replacement package row creation, new source family, arbitrary source ingestion, vector indexing expansion, embedding generation expansion, persistent vector store, prompt/model/provider runtime, qualitative generation runtime, raw local path exposure, raw payload ref exposure, raw package payload path exposure, full segment text exposure, raw vector exposure, or full mockup activation is admitted by this sync.
+
+The next exact current-main posture is `select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_delivery_sync`.
