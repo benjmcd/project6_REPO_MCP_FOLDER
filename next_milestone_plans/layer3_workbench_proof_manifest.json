@@ -33356,11 +33356,17 @@
     "summary": "Doc 852 records the selected server-configured internal webhook target and freezes the next exact runtime slice without implementing it. It prepares the implementation pass while keeping arbitrary destinations, public/provider URL behavior, credentials, ConnectorRun/ConnectorRunTarget, package mutation, source expansion, vector/RAG widening, optional-tool runtime, rendered write controls, and broad auth/security behavior blocked."
   },
   "internal_webhook_connector_runtime_implementation_proof": {
-    "proof_kind": "branch_local_internal_webhook_connector_runtime_implementation",
-    "status": "targeted_tests_passed",
+    "proof_kind": "current_main_synced_internal_webhook_connector_runtime_implementation",
+    "status": "current_main_synced_targeted_tests_passed",
     "branch": "codex/l3-internal-webhook-runtime",
+    "runtime_pr": "#1462",
+    "runtime_branch_commit": "d42be534",
+    "runtime_merge_commit": "08ca4ba3cc0a855eb4c75063b279dec5958d0b60",
+    "current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_sync_branch": "codex/l3-internal-webhook-runtime-sync",
     "governing_freeze_doc": "next_milestone_plans/Layer3_planning_docs/852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md",
     "runtime_behavior_change": true,
+    "current_main_sync_behavior_change": false,
     "target_identity": "server_configured_internal_webhook_destination",
     "target_class": "real_connector_invocation",
     "selected_dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
@@ -33396,7 +33402,14 @@
       "python -m py_compile .\\backend\\alembic\\versions\\0035_layer3_internal_webhook_connector.py PASS",
       "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"internal_webhook or provider_private_signed_url_openapi_prepare_status_schema\" PASS"
     ],
-    "next_posture": "open_review_pr_then_sync_current_main_or_fix_review_ci_defects",
-    "summary": "Branch-local proof covers the exact doc 852 runtime slice and keeps adjacent connector, provider URL, credential, package mutation, source expansion, vector/RAG, optional-tool, rendered-control, and broad auth/security surfaces blocked."
+    "current_main_sync_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"internal_webhook or provider_private_signed_url_openapi_prepare_status_schema\" PASS"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+    "summary": "Current-main proof covers the exact doc 852 runtime slice from PR #1462 and keeps adjacent connector, provider URL, credential, package mutation, source expansion, vector/RAG, optional-tool, rendered-control, and broad auth/security surfaces blocked."
   }
 }

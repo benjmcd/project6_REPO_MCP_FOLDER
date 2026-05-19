@@ -7069,7 +7069,7 @@ The next exact posture after this freeze is current-main sync for `server_config
 
 ## Internal Webhook Connector Runtime Implementation
 
-Branch-local implementation: `codex/l3-internal-webhook-runtime` implements only the selected `server_configured_internal_webhook_destination` slice from doc `852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md`.
+Current-main runtime implementation: PR `#1462` from `codex/l3-internal-webhook-runtime` implements only the selected `server_configured_internal_webhook_destination` slice from doc `852_INTERNAL_WEBHOOK_CONNECTOR_FREEZE.md`.
 
 Runtime behavior introduced by this implementation: `true`, limited to `POST /api/v1/layer3/handoff/export/internal-webhook/dispatch` sending exactly one redacted handoff/export delivery envelope to a server-configured allowlisted internal webhook URL after package-review submit, handoff/export prepare, export/download readiness, and server-owned local outbox receipt authority are verified.
 
@@ -7077,8 +7077,20 @@ Read-only status endpoint: `GET /api/v1/layer3/handoff/export/internal-webhook/s
 
 Durable state: `L3InternalWebhookDispatchReceipt` and `L3InternalWebhookDispatchAuditEvent`.
 
-Proof status: targeted branch-local API proof passes for OpenAPI schema, happy path fake/internal receiver dispatch, same-key replay, same-package/new-key replay, same-key/different-basis conflict, caller-supplied destination URL rejection, wrong target rejection, stale handoff/export authority rejection, redaction, and no new `ConnectorRun` or `ConnectorRunTarget` rows.
+Proof status: targeted API proof passes for OpenAPI schema, happy path fake/internal receiver dispatch, same-key replay, same-package/new-key replay, same-key/different-basis conflict, caller-supplied destination URL rejection, wrong target rejection, stale handoff/export authority rejection, redaction, and no new `ConnectorRun` or `ConnectorRunTarget` rows.
 
 Still blocked: arbitrary connector dispatch, arbitrary/operator-supplied destination URL, public/provider URLs, cloud object-store write, OAuth/provider credentials, package mutation, source expansion, vector/RAG widening, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, rendered write/submit control, and broad auth/security behavior.
 
-Next exact posture: open review PR for `server_configured_internal_webhook_destination_dispatch`; after merge, sync current main and pivot away from connector/destination repetition unless checks or review identify a defect.
+## Internal Webhook Connector Runtime Current-Main Sync
+
+Current-main proof/control sync: PR `#1462` merged at merge commit `08ca4ba3cc0a855eb4c75063b279dec5958d0b60`.
+
+Sync doc: `853_INTERNAL_WEBHOOK_CONNECTOR_RUNTIME_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` and `test` succeeded, PR comments/reviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, pending/checkpoint fixture validation, and the targeted internal-webhook API pytest selection.
+
+The server-configured internal webhook connector runtime is now current-main synced as `current_main_synced_internal_webhook_connector_runtime_implementation`.
+
+Next exact posture: `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`. Do not continue connector/destination repetition unless current-main evidence shows a concrete unresolved defect, failed check, review item, or named downstream operator-flow blocker.
