@@ -6950,3 +6950,23 @@ Current-main comparison surfaces are limited to `source_directory_material_previ
 no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, OpenAI embedding provider, OpenAI/Claude generation provider, external embeddings dataset load, new Layer 3 retrieval endpoint, rendered retrieval controls, source-authority promotion, quantitative method-selection influence, package/handoff/export/download use, agent tool-call runtime, provider credential, network egress, hidden model call, embedding call, vector-store startup, corpus download, or auth/security behavior is admitted by this ADR.
 
 The next exact posture is `select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority`.
+
+## Sublayer 3C Optional Tool Static Benchmark Plan
+
+No-runtime static benchmark-planning freeze: `848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md` follows the TabPFN and NRC RAG evaluation-only ADRs and satisfies `select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority`.
+
+Decision: `plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this plan: `false`.
+
+The shared benchmark plan schema is `layer3.sublayer3c_optional_tool_static_benchmark_plan.v1`. It records candidate tool, current-main use-site, source authority, fixture kind, baseline family, metric family, no-adopt threshold, runtime isolation, default dependency denial, provider/network denial, package/handoff/export/download denial, and the requirement for a later readiness or runtime gate before execution.
+
+TabPFN planning is limited to `quantitative_single_item_dataset_version`, `quantitative_associated_cohort_dataset_version`, and `wrapped_quantitative_analysis`, with current baselines `cross_correlation`, `descriptive_summary`, `decomposition`, `structural_break`, plus simple deterministic supervised baselines when a later authorized fixture declares target columns, feature columns, train/test split, and leakage checks.
+
+NRC RAG planning is limited to `source_directory_material_preview`, `source_directory_vector_retrieval`, `source_directory_hybrid_context_packet`, `source_directory_qualitative_hybrid_analysis`, and `source_directory_hybrid_context_packet_qualitative_analysis`, with source-grounding metrics over fixed query-set authority, expected source identifiers, source spans, citation rubric, and unsupported-query refusal behavior.
+
+No runtime behavior, benchmark execution, fixture data creation, fixture materialization, backend route, API DTO, response model, database model, migration, dependency, package installation, provider credential, network egress, rendered optional-tool controls, agent tool-call runtime, Gate C/pass-entry admission, source-authority promotion, quantitative method-selection behavior, hidden model call, cloud/API inference, embedding call, vector-store startup, corpus download, Chroma runtime, OpenAI/Claude/provider runtime, TabPFN runtime, TabPFN dependency, TabPFN fit/predict execution, TabPFN checkpoint loading, nrc-licensing-rag dependency, NRC RAG runtime, package/handoff/export/download integration, or auth/security behavior is admitted by this plan.
+
+The next exact posture is `select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority`.

@@ -33120,5 +33120,50 @@
   "latest_nrc_rag_sublayer3c_optional_tool_adr_status": "nrc_rag_sublayer3c_optional_tool_adr_evaluation_only",
   "latest_nrc_rag_sublayer3c_optional_tool_adr_decision": "evaluate_nrc_rag_static_benchmark_planning_only",
   "latest_nrc_rag_sublayer3c_optional_tool_adr_next_posture": "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
-  "latest_nrc_rag_sublayer3c_optional_tool_adr_summary": "Doc 847 records an evaluation-only NRC RAG ADR. It selects static benchmark planning as a possible future lane while admitting no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, external embeddings load, new retrieval endpoint, rendered controls, source-authority promotion, package/handoff/export/download use, or agent tool-call runtime."
+  "latest_nrc_rag_sublayer3c_optional_tool_adr_summary": "Doc 847 records an evaluation-only NRC RAG ADR. It selects static benchmark planning as a possible future lane while admitting no NRC RAG runtime, nrc-licensing-rag dependency, Chroma/vector provider runtime, external embeddings load, new retrieval endpoint, rendered controls, source-authority promotion, package/handoff/export/download use, or agent tool-call runtime.",
+  "sublayer3c_optional_tool_static_benchmark_plan_proof": {
+    "proof_kind": "planning_control_sublayer3c_optional_tool_static_benchmark_plan",
+    "status": "sublayer3c_optional_tool_static_benchmark_plan_selected_no_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md",
+    "branch": "codex/l3-optional-tool-static-benchmark-plan",
+    "current_main_preflight_checkpoint": "c01bed789b4ba4f83fa1bc7899dd85ba3348085f",
+    "proof_terms": [
+      "sublayer3c_optional_tool_static_benchmark_plan",
+      "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime",
+      "runtime_behavior_change false",
+      "benchmark execution forbidden",
+      "fixture materialization forbidden",
+      "layer3.sublayer3c_optional_tool_static_benchmark_plan.v1",
+      "dataset_version_supervised_tabular_micro_fixture",
+      "regulatory_context_grounding_query_set",
+      "quantitative_single_item_dataset_version",
+      "quantitative_associated_cohort_dataset_version",
+      "source_directory_vector_retrieval",
+      "source_directory_hybrid_context_packet",
+      "source_directory_qualitative_hybrid_analysis",
+      "no TabPFN runtime",
+      "no NRC RAG runtime",
+      "no benchmark execution",
+      "no fixture data creation",
+      "no package installation",
+      "no package/handoff/export/download integration",
+      "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+    "summary": "Doc 848 records a combined no-runtime static benchmark plan for TabPFN and NRC RAG. It defines use-sites, fixture metadata, baselines, metrics, no-adopt thresholds, and execution-gate requirements while admitting no runtime behavior, benchmark execution, fixture materialization, dependencies, provider calls, endpoints, rendered controls, package/handoff/export/download integration, or Gate C/pass-entry admission."
+  },
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_branch": "codex/l3-optional-tool-static-benchmark-plan",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_doc": "next_milestone_plans/Layer3_planning_docs/848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_status": "sublayer3c_optional_tool_static_benchmark_plan_selected_no_runtime",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_decision": "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_next_posture": "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+  "latest_sublayer3c_optional_tool_static_benchmark_plan_summary": "Doc 848 records a combined no-runtime static benchmark plan for TabPFN and NRC RAG. It defines use-sites, fixture metadata, baselines, metrics, no-adopt thresholds, and execution-gate requirements while admitting no runtime behavior, benchmark execution, fixture materialization, dependencies, provider calls, endpoints, rendered controls, package/handoff/export/download integration, or Gate C/pass-entry admission."
 }

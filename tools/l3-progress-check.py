@@ -2318,6 +2318,10 @@ LAYER3_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR = (
     PLANNING_DOCS
     / "847_NRC_RAG_SUBLAYER3C_OPTIONAL_TOOL_ADR.md"
 )
+LAYER3_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN = (
+    PLANNING_DOCS
+    / "848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72579,6 +72583,110 @@ def _check_nrc_rag_sublayer3c_optional_tool_adr(
                 )
 
 
+def _check_sublayer3c_optional_tool_static_benchmark_plan(
+    errors: list[str],
+) -> None:
+    plan_text = _read_required_text(
+        LAYER3_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime static benchmark-planning freeze for `sublayer3c_optional_tool_static_benchmark_plan`.",
+        "848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md",
+        "codex/l3-optional-tool-static-benchmark-plan",
+        "c01bed789b4ba4f83fa1bc7899dd85ba3348085f",
+        "select_sublayer3c_optional_tool_static_benchmark_plan_or_stop_for_product_authority",
+        "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime",
+        "Runtime behavior introduced by this plan: `false`.",
+        "layer3.sublayer3c_optional_tool_static_benchmark_plan.v1",
+        "dataset_version_supervised_tabular_micro_fixture",
+        "regulatory_context_grounding_query_set",
+        "quantitative_single_item_dataset_version",
+        "quantitative_associated_cohort_dataset_version",
+        "wrapped_quantitative_analysis",
+        "source_directory_material_preview",
+        "source_directory_vector_retrieval",
+        "source_directory_hybrid_context_packet",
+        "source_directory_qualitative_hybrid_analysis",
+        "source_directory_hybrid_context_packet_qualitative_analysis",
+        "no_adopt_tabpfn_for_absent_supervised_fixture_authority",
+        "no_adopt_tabpfn_for_sublayer3c_optional_predictive_method",
+        "no_adopt_nrc_rag_for_absent_query_set_authority",
+        "no_adopt_nrc_rag_for_sublayer3c_optional_tool_use",
+        "A later benchmark-execution freeze is required before any candidate tool can run.",
+        "no runtime behavior",
+        "benchmark execution",
+        "fixture data creation",
+        "fixture materialization",
+        "no TabPFN runtime",
+        "no NRC RAG runtime",
+        "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+    ):
+        if term not in plan_text:
+            errors.append(
+                f"{_rel(LAYER3_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN)} "
+                f"missing Sublayer 3C optional-tool static benchmark plan term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Sublayer 3C Optional Tool Static Benchmark Plan",
+            "848_SUBLAYER3C_OPTIONAL_TOOL_STATIC_BENCHMARK_PLAN.md",
+            "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime",
+            "Runtime behavior introduced by this plan: `false`.",
+            "layer3.sublayer3c_optional_tool_static_benchmark_plan.v1",
+            "quantitative_single_item_dataset_version",
+            "quantitative_associated_cohort_dataset_version",
+            "source_directory_vector_retrieval",
+            "source_directory_hybrid_context_packet",
+            "source_directory_qualitative_hybrid_analysis",
+            "No runtime behavior, benchmark execution, fixture data creation, fixture materialization",
+            "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+        ),
+        MANIFEST: (
+            '"sublayer3c_optional_tool_static_benchmark_plan"',
+            '"latest_sublayer3c_optional_tool_static_benchmark_plan_doc"',
+            '"decision": "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime"',
+            '"runtime_behavior_change": false',
+            '"benchmark_execution_change": false',
+            '"fixture_materialization_change": false',
+            '"benchmark_plan_schema_id": "layer3.sublayer3c_optional_tool_static_benchmark_plan.v1"',
+            '"fixture_kind": "dataset_version_supervised_tabular_micro_fixture"',
+            '"fixture_kind": "regulatory_context_grounding_query_set"',
+            '"execution_gate_required_before_any_benchmark_run": true',
+            '"benchmark_execution": false',
+            '"fixture_materialization": false',
+            '"tabpfn_runtime": false',
+            '"nrc_rag_runtime": false',
+            '"next_posture": "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority"',
+        ),
+        PROOF_MANIFEST: (
+            '"sublayer3c_optional_tool_static_benchmark_plan_proof"',
+            '"planning_control_sublayer3c_optional_tool_static_benchmark_plan"',
+            "plan_combined_tabpfn_and_nrc_rag_static_benchmarks_no_runtime",
+            "runtime_behavior_change false",
+            "benchmark execution forbidden",
+            "fixture materialization forbidden",
+            "layer3.sublayer3c_optional_tool_static_benchmark_plan.v1",
+            "dataset_version_supervised_tabular_micro_fixture",
+            "regulatory_context_grounding_query_set",
+            "no TabPFN runtime",
+            "no NRC RAG runtime",
+            "no benchmark execution",
+            "no fixture data creation",
+            "no package installation",
+            "no package/handoff/export/download integration",
+            "select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing Sublayer 3C optional-tool static benchmark plan artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -73303,6 +73411,7 @@ def main() -> int:
     _check_sublayer3c_optional_tool_planning_index_adr_gate(errors)
     _check_tabpfn_sublayer3c_optional_predictive_method_adr(errors)
     _check_nrc_rag_sublayer3c_optional_tool_adr(errors)
+    _check_sublayer3c_optional_tool_static_benchmark_plan(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
