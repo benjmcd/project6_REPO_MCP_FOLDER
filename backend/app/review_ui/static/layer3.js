@@ -38,6 +38,79 @@ const QUAL_APS_SOURCE_SHAPE = 'aps_content_document';
 const SOURCE_INTAKE_PASS_SCOPE = 'qualitative_single_item_operator_uploaded_source';
 const SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1';
 const SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_intake_external_export_download_delivery.v1';
+const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1';
+const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID = 'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1';
+const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1';
+const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET = 'source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference';
+const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status';
+const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver';
+const SOURCE_DIRECTORY_HYBRID_DELIVERY_PAYLOAD_FIELDS = Object.freeze([
+    'material_snapshot_id',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'content_sha256',
+    'file_identity_hash',
+    'authority_basis_hash',
+    'payload_hash',
+    'index_authority_hash',
+    'embedding_index_authority_hash',
+    'query_text',
+    'top_k',
+    'limit',
+    'offset',
+    'analysis_question',
+    'analysis_focus',
+    'qualitative_analysis_hash',
+    'source_directory_hybrid_package_review_preview_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'handoff_target',
+    'export_mode',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'handoff_export_envelope_ref',
+    'external_export_download_record_ref',
+    'export_download_descriptor_ref',
+    'output_package_id',
+    'package_kind',
+    'package_payload_hash',
+]);
+const SOURCE_DIRECTORY_HYBRID_DELIVERY_REQUIRED_FIELDS = Object.freeze([
+    'material_snapshot_id',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'content_sha256',
+    'file_identity_hash',
+    'authority_basis_hash',
+    'payload_hash',
+    'index_authority_hash',
+    'embedding_index_authority_hash',
+    'query_text',
+    'analysis_question',
+    'analysis_focus',
+    'qualitative_analysis_hash',
+    'source_directory_hybrid_package_review_preview_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+    'prepare_record_ref',
+    'handoff_export_state',
+    'handoff_export_envelope_ref',
+    'external_export_download_record_ref',
+    'export_download_descriptor_ref',
+    'output_package_id',
+    'package_kind',
+    'package_payload_hash',
+]);
 const RAW_MIXED_MATERIALIZE_REQUEST_SCHEMA_ID = 'layer3.raw_mixed_corpus_materialize_request.v1';
 const RAW_MIXED_MATERIALIZE_MODE = 'raw_mixed_existing_source_materialization_entry';
 const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version', 'aps_content_document']);
@@ -160,6 +233,12 @@ const State = {
     externalExportDownloadDelivery: null,
     externalExportDownloadDeliveryError: null,
     externalExportDownloadDeliveryPending: false,
+    sourceDirectoryHybridExternalExportDownloadDeliveryStatus: null,
+    sourceDirectoryHybridExternalExportDownloadDeliveryStatusError: null,
+    sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending: false,
+    sourceDirectoryHybridExternalExportDownloadDelivery: null,
+    sourceDirectoryHybridExternalExportDownloadDeliveryError: null,
+    sourceDirectoryHybridExternalExportDownloadDeliveryPending: false,
     externalExportDownloadSignedReference: null,
     externalExportDownloadSignedReferenceError: null,
     externalExportDownloadSignedReferencePending: false,
@@ -267,6 +346,11 @@ const elements = {
     externalExportDownloadDeliveryForm: document.getElementById('external-export-download-delivery-form'),
     externalExportDownloadDeliveryPanel: document.getElementById('external-export-download-delivery-panel'),
     externalExportDownloadDeliverySubmit: document.getElementById('external-export-download-delivery-submit'),
+    sourceDirectoryHybridExternalExportDownloadDeliveryForm: document.getElementById('source-directory-hybrid-external-export-download-delivery-form'),
+    sourceDirectoryHybridExternalExportDownloadDeliveryPanel: document.getElementById('source-directory-hybrid-external-export-download-delivery-panel'),
+    sourceDirectoryHybridExternalExportDownloadDeliveryAuthority: document.getElementById('source-directory-hybrid-external-export-download-delivery-authority'),
+    sourceDirectoryHybridExternalExportDownloadDeliveryStatus: document.getElementById('source-directory-hybrid-external-export-download-delivery-status'),
+    sourceDirectoryHybridExternalExportDownloadDeliverySubmit: document.getElementById('source-directory-hybrid-external-export-download-delivery-submit'),
     externalExportDownloadSignedReferenceForm: document.getElementById('external-export-download-signed-reference-form'),
     externalExportDownloadSignedReferencePanel: document.getElementById('external-export-download-signed-reference-panel'),
     externalExportDownloadSignedReferenceGenerate: document.getElementById('external-export-download-signed-reference-generate'),
@@ -7895,6 +7979,8 @@ function setGateControls() {
     elements.apsHandoffDispatchSubmit.disabled = !apsHandoffControlsEnabled || !canSubmitApsHandoffDispatch();
     elements.externalExportDownloadPrepareSubmit.disabled = !externalExportDownloadControlsEnabled || !canSubmitExternalExportDownloadPrepare();
     elements.externalExportDownloadDeliverySubmit.disabled = !externalExportDownloadDeliveryControlsEnabled || !canSubmitExternalExportDownloadDelivery();
+    elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus.disabled = !canInspectSourceDirectoryHybridExternalExportDownloadDelivery();
+    elements.sourceDirectoryHybridExternalExportDownloadDeliverySubmit.disabled = !canSubmitSourceDirectoryHybridExternalExportDownloadDelivery();
     elements.externalExportDownloadSignedReferenceGenerate.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canGenerateExternalExportDownloadSignedReference();
     elements.externalExportDownloadSignedReferenceUse.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canUseExternalExportDownloadSignedReference();
     elements.providerPrivateSignedUrlPrepare.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canPrepareProviderPrivateSignedUrl();
@@ -7938,6 +8024,7 @@ function renderAll() {
     renderApsHandoffDispatchPanel();
     renderExternalExportDownloadPreparePanel();
     renderExternalExportDownloadDeliveryPanel();
+    renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel();
     renderExternalExportDownloadSignedReferencePanel();
     renderConnectorLocalDestinationReceiptStatusPanel();
     renderServerOwnedLocalOutboxTargetStatusPanel();
@@ -8713,6 +8800,220 @@ async function refreshSessionSummary() {
     }
 }
 
+function sourceDirectoryHybridExternalExportDownloadAuthorityPacket() {
+    const text = elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value.trim();
+    if (!text) {
+        throw new Error('Source-directory hybrid delivery authority JSON is required.');
+    }
+    const packet = JSON.parse(text);
+    if (!packet || typeof packet !== 'object' || Array.isArray(packet)) {
+        throw new Error('Source-directory hybrid delivery authority must be a JSON object.');
+    }
+    return packet.delivery_payload && typeof packet.delivery_payload === 'object'
+        ? packet.delivery_payload
+        : packet;
+}
+
+function sourceDirectoryHybridExternalExportDownloadSelectedPackage(packet) {
+    if (packet.output_package_id && packet.package_kind && packet.package_payload_hash) {
+        return {
+            output_package_id: packet.output_package_id,
+            package_kind: packet.package_kind,
+            package_payload_hash: packet.package_payload_hash,
+        };
+    }
+    const packages = Array.isArray(packet.output_packages) ? packet.output_packages : [];
+    const selected = packages.find((row) => row.package_kind === 'user_facing') || packages[0] || {};
+    return {
+        output_package_id: selected.output_package_id,
+        package_kind: selected.package_kind,
+        package_payload_hash: selected.package_payload_hash || selected.payload_hash,
+    };
+}
+
+function sourceDirectoryHybridExternalExportDownloadDeliveryPayload() {
+    const packet = sourceDirectoryHybridExternalExportDownloadAuthorityPacket();
+    const selectedPackage = sourceDirectoryHybridExternalExportDownloadSelectedPackage(packet);
+    const payload = {
+        client_request_id: requestId(),
+        operator_decision: 'deliver_source_directory_hybrid_external_export_download',
+        external_export_download_target: SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+        download_mode: 'reference_only_prepare',
+        external_export_download_state: 'external_export_download_prepared',
+        delivery_mode: 'same_origin_artifact_stream',
+        output_package_id: selectedPackage.output_package_id,
+        package_kind: selectedPackage.package_kind,
+        package_payload_hash: selectedPackage.package_payload_hash,
+    };
+    SOURCE_DIRECTORY_HYBRID_DELIVERY_PAYLOAD_FIELDS.forEach((field) => {
+        if (packet[field] != null && payload[field] == null) {
+            payload[field] = packet[field];
+        }
+    });
+    if (!payload.prepare_record_ref && packet.handoff_export_prepare_record_ref) {
+        payload.prepare_record_ref = packet.handoff_export_prepare_record_ref;
+    }
+    payload.handoff_target = payload.handoff_target || 'internal_export_envelope';
+    payload.export_mode = payload.export_mode || 'prepare_only';
+    const missing = SOURCE_DIRECTORY_HYBRID_DELIVERY_REQUIRED_FIELDS.filter((field) => {
+        const value = payload[field];
+        return value == null || value === '' || (Array.isArray(value) && !value.length);
+    });
+    if (missing.length) {
+        throw new Error(`Source-directory hybrid delivery authority is missing: ${missing.join(', ')}`);
+    }
+    return payload;
+}
+
+function sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull() {
+    try {
+        return sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches(payload) {
+    const status = State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus || {};
+    return Boolean(
+        status.delivery_available === true
+        && status.schema_id === SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID
+        && status.external_export_download_record_ref === payload.external_export_download_record_ref
+        && status.export_download_descriptor_ref === payload.export_download_descriptor_ref
+        && status.output_package_id === payload.output_package_id
+        && status.package_kind === payload.package_kind
+        && status.package_payload_hash === payload.package_payload_hash
+        && status.same_origin_delivery_enabled === true
+        && status.browser_managed_same_origin_attachment_enabled === true
+        && status.provider_public_delivery_enabled === false
+        && status.provider_private_signed_url_enabled === false
+        && status.connector_dispatch_enabled === false
+        && status.network_egress_enabled === false
+        && status.frontend_durable_authority_enabled === false
+        && status.package_payload_rewrite_enabled === false
+        && status.source_package_row_mutation_enabled === false
+        && status.raw_local_path_exposed === false
+    );
+}
+
+function canInspectSourceDirectoryHybridExternalExportDownloadDelivery() {
+    return Boolean(
+        sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull()
+        && !State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending
+        && !State.sourceDirectoryHybridExternalExportDownloadDeliveryPending
+    );
+}
+
+function canSubmitSourceDirectoryHybridExternalExportDownloadDelivery() {
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull();
+    return Boolean(
+        payload
+        && sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches(payload)
+        && !State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending
+        && !State.sourceDirectoryHybridExternalExportDownloadDeliveryPending
+        && !State.sourceDirectoryHybridExternalExportDownloadDelivery
+    );
+}
+
+function sourceDirectoryHybridExternalExportDownloadDeliveryPanelState() {
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryPending) {
+        return { label: 'source_directory_hybrid_delivery_submitting', pill: 'preview', message: 'Submitting one source-directory hybrid same-origin attachment request.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDelivery) {
+        return { label: State.sourceDirectoryHybridExternalExportDownloadDelivery.state, pill: 'ok', message: 'The browser submitted the source-directory hybrid same-origin delivery request.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryError) {
+        return { label: State.sourceDirectoryHybridExternalExportDownloadDeliveryError.error_code || 'source_directory_hybrid_delivery_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the source-directory hybrid delivery request.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending) {
+        return { label: 'source_directory_hybrid_delivery_status_inspecting', pill: 'preview', message: 'Validating source-directory hybrid delivery authority with the server.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError) {
+        return { label: State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError.error_code || 'source_directory_hybrid_delivery_status_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the source-directory hybrid delivery status request.' };
+    }
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull();
+    if (payload && sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches(payload)) {
+        return { label: 'source_directory_hybrid_delivery_ui_ready', pill: 'ok', message: 'Server status admits one same-origin source-directory hybrid package delivery.' };
+    }
+    if (payload) {
+        return { label: 'source_directory_hybrid_delivery_status_required', pill: 'preview', message: 'Inspect source-directory hybrid delivery status before submitting the attachment request.' };
+    }
+    return { label: 'source_directory_hybrid_delivery_authority_missing', pill: 'blocked', message: 'Provide a server-derived source-directory hybrid delivery authority payload.' };
+}
+
+function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {
+    const status = State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus || {};
+    const delivery = State.sourceDirectoryHybridExternalExportDownloadDelivery || {};
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull() || {};
+    const panelState = sourceDirectoryHybridExternalExportDownloadDeliveryPanelState();
+    const downstream = [
+        'provider_public_delivery',
+        'provider_private_signed_url',
+        'connector_dispatch',
+        'destination_write',
+        'network_egress',
+        'frontend_durable_authority',
+        'package_payload_rewrite',
+        'source_package_row_mutation',
+    ];
+    elements.sourceDirectoryHybridExternalExportDownloadDeliveryPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Hybrid Delivery Gate</strong>
+                <ul>
+                    ${fieldItem('prepare schema', SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID)}
+                    ${fieldItem('status schema', status.schema_id)}
+                    ${fieldItem('readiness state', payload.external_export_download_state)}
+                    ${fieldItem('readiness ref', payload.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('descriptor ref', payload.export_download_descriptor_ref, { code: true })}
+                    ${fieldItem('target', payload.external_export_download_target || SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET)}
+                    ${fieldItem('delivery mode', payload.delivery_mode || 'same_origin_artifact_stream')}
+                    ${fieldItem('decision', payload.operator_decision || 'deliver_source_directory_hybrid_external_export_download')}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Selected Package</strong>
+                <ul>
+                    ${fieldItem('package id', payload.output_package_id || status.output_package_id, { code: true })}
+                    ${fieldItem('package kind', payload.package_kind || status.package_kind)}
+                    ${fieldItem('payload hash', payload.package_payload_hash || status.package_payload_hash, { code: true })}
+                    ${fieldItem('raw path exposed', status.raw_local_path_exposed === false ? 'blocked' : status.raw_local_path_exposed)}
+                    ${fieldItem('payload ref redacted', status.payload_ref_redacted)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Status Authority</strong>
+                <ul>
+                    ${fieldItem('available', status.delivery_available)}
+                    ${fieldItem('delivery status', status.delivery_status)}
+                    ${fieldItem('streaming performed', status.delivery_streaming_performed)}
+                    ${fieldItem('source gate', status.source_gate)}
+                    ${fieldItem('validated source gate', status.validated_delivery_source_gate)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Submitted Attempt</strong>
+                <ul>
+                    ${fieldItem('state', delivery.state)}
+                    ${fieldItem('schema', delivery.schemaId)}
+                    ${fieldItem('record ref', delivery.externalExportDownloadRecordRef, { code: true })}
+                    ${fieldItem('package id', delivery.outputPackageId, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Runtime</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError)}
+            ${renderErrorCard(State.sourceDirectoryHybridExternalExportDownloadDeliveryError)}
+        </div>
+    `;
+}
+
 async function inspectResultStatus() {
     if (!canInspectResultStatus()) return;
     setBusy(elements.resultStatusInspect, true, 'Inspect Result Status');
@@ -9222,6 +9523,78 @@ async function submitExternalExportDownloadDelivery(event) {
     } finally {
         State.externalExportDownloadDeliveryPending = false;
         setBusy(elements.externalExportDownloadDeliverySubmit, false, 'Deliver External Bundle');
+        renderAll();
+    }
+}
+
+async function inspectSourceDirectoryHybridExternalExportDownloadDelivery(event) {
+    event.preventDefault();
+    if (!canInspectSourceDirectoryHybridExternalExportDownloadDelivery()) return;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending = true;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+    renderAll();
+    setBusy(elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus, true, 'Inspect Hybrid Delivery');
+    try {
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = await postJson(
+            SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH,
+            sourceDirectoryHybridExternalExportDownloadDeliveryPayload(),
+        );
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
+        addEvent('Source-directory hybrid external export/download delivery status admitted.');
+        renderAll();
+    } catch (error) {
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = null;
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'source_directory_hybrid_external_export_download_delivery_status_request_failed',
+            message: error.message,
+        };
+        addEvent(`Source-directory hybrid delivery status blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending = false;
+        setBusy(elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus, false, 'Inspect Hybrid Delivery');
+        renderAll();
+    }
+}
+
+async function submitSourceDirectoryHybridExternalExportDownloadDelivery(event) {
+    event.preventDefault();
+    if (!canSubmitSourceDirectoryHybridExternalExportDownloadDelivery()) return;
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryPending = true;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+    renderAll();
+    setBusy(elements.sourceDirectoryHybridExternalExportDownloadDeliverySubmit, true, 'Deliver Hybrid Package');
+    try {
+        const delivery = await submitAttachmentForm(
+            SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH,
+            payload,
+        );
+        State.sourceDirectoryHybridExternalExportDownloadDelivery = {
+            state: delivery.state || 'external_export_download_delivery_submitted',
+            schemaId: SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID,
+            externalExportDownloadRecordRef: payload.external_export_download_record_ref,
+            outputPackageId: payload.output_package_id,
+            packagePayloadHash: payload.package_payload_hash,
+        };
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+        addEvent('Source-directory hybrid package submitted as browser-managed same-origin attachment.');
+        renderAll();
+    } catch (error) {
+        State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'source_directory_hybrid_external_export_download_delivery_request_failed',
+            message: error.message,
+        };
+        addEvent(`Source-directory hybrid delivery blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.sourceDirectoryHybridExternalExportDownloadDeliveryPending = false;
+        setBusy(elements.sourceDirectoryHybridExternalExportDownloadDeliverySubmit, false, 'Deliver Hybrid Package');
         renderAll();
     }
 }
@@ -9885,6 +10258,15 @@ elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExport
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);
 elements.externalExportDownloadDeliveryForm.addEventListener('submit', submitExternalExportDownloadDelivery);
+elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus.addEventListener('click', inspectSourceDirectoryHybridExternalExportDownloadDelivery);
+elements.sourceDirectoryHybridExternalExportDownloadDeliveryForm.addEventListener('submit', submitSourceDirectoryHybridExternalExportDownloadDelivery);
+elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.addEventListener('input', () => {
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+    renderAll();
+});
 elements.externalExportDownloadSignedReferenceForm.addEventListener('submit', submitExternalExportDownloadSignedReference);
 elements.externalExportDownloadSignedReferenceUse.addEventListener('click', useExternalExportDownloadSignedReference);
 elements.providerPrivateSignedUrlForm.addEventListener('submit', submitProviderPrivateSignedUrlPrepare);
