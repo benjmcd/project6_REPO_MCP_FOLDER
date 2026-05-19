@@ -742,7 +742,7 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_package_com
     assert body["package_rows_written"] is True
     assert body["package_payloads_written"] is True
     assert body["payload_refs_redacted"] is True
-    assert body["package_review_submit_enabled"] is False
+    assert body["package_review_submit_enabled"] is True
     assert body["handoff_enabled"] is False
     assert body["external_export_download_enabled"] is False
     assert body["connector_dispatch_enabled"] is False
@@ -750,7 +750,7 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_package_com
     assert body["network_egress_enabled"] is False
     assert body["frontend_durable_authority_enabled"] is False
     assert body["prompt_model_provider_runtime_enabled"] is False
-    assert body["negative_invariants"]["package_review_submit_enabled"] is False
+    assert body["negative_invariants"]["package_review_submit_enabled"] is True
 
     db = client.layer3_session_factory()
     try:
@@ -761,7 +761,7 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_package_com
         assert commit_summary["schema_id"] == (
             "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_commit_summary.v1"
         )
-        assert commit_summary["package_review_submit_enabled"] is False
+        assert commit_summary["package_review_submit_enabled"] is True
         assert commit_summary["handoff_enabled"] is False
         assert commit_summary["external_export_download_enabled"] is False
         assert commit_summary["connector_dispatch_enabled"] is False
@@ -862,6 +862,250 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_package_com
     try:
         _assert_no_downstream_side_effects(db)
         assert db.query(L3ReconciliationRecord).count() == 0
+    finally:
+        db.close()
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit_records_bounded_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    analysis_payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "BETA alpha alpha",
+        ),
+        "client_request_id": "source-directory-hybrid-package-submit-analysis",
+        "analysis_question": "What does the alpha beta evidence support?",
+        "analysis_focus": "deterministic hybrid package submit evidence",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+    analysis = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis"
+        ),
+        json=analysis_payload,
+    )
+    assert analysis.status_code == 200, analysis.text
+    analysis_body = analysis.json()
+
+    commit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/commit"
+        ),
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+            "source_directory_hybrid_package_review_preview_hash": (
+                analysis_body["source_directory_hybrid_package_review_preview_hash"]
+            ),
+            "operator_decision": "commit_source_directory_hybrid_context_packet_qualitative_analysis_package",
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    commit_body = commit.json()
+
+    submit_payload = {
+        **analysis_payload,
+        "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+        "source_directory_hybrid_package_review_preview_hash": (
+            analysis_body["source_directory_hybrid_package_review_preview_hash"]
+        ),
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": commit_body["output_package_ids"],
+        "package_kinds": commit_body["package_kinds"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+    }
+    submit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/review/submit"
+        ),
+        json=submit_payload,
+    )
+    assert submit.status_code == 200, submit.text
+    body = submit.json()
+    assert body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit.v1"
+    )
+    assert body["status"] == "submitted"
+    assert body["mode"] == (
+        "source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit_authority"
+    )
+    assert body["operator_decision"] == "approved"
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["submit_record_ref"].startswith("l3-source-directory-hybrid-package-review-submit-")
+    assert body["source_gate"] == (
+        "830_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE"
+    )
+    assert body["package_construction_source_gate"] == (
+        "828_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
+    )
+    assert body["hybrid_context_packet_hash"] == analysis_body["hybrid_context_packet_hash"]
+    assert body["embedding_index_authority_hash"] == embedding_index_authority_hash
+    assert body["construction_basis_hash"] == commit_body["construction_basis_hash"]
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["export_enabled"] is False
+    assert body["external_export_download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_delivery_enabled"] is False
+    assert body["network_egress_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["prompt_model_provider_runtime_enabled"] is False
+    assert body["downstream_unavailable"] == [
+        "handoff",
+        "export",
+        "external_export_download",
+        "connector_dispatch",
+        "provider_delivery",
+    ]
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_forbidden_package_commit_downstream(db)
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        submit_state = reconciliation.summary_json["package_review_submit"]
+        assert submit_state["schema_id"] == "layer3.package_review_submit_state.v1"
+        assert submit_state["package_review_submit_schema_id"] == body["schema_id"]
+        assert submit_state["submit_record_ref"] == body["submit_record_ref"]
+        assert submit_state["package_review_state"] == "package_review_approved"
+        assert submit_state["authority_basis"]["hybrid_context_packet_hash"] == (
+            analysis_body["hybrid_context_packet_hash"]
+        )
+        assert submit_state["authority_basis"]["embedding_index_authority_hash"] == (
+            embedding_index_authority_hash
+        )
+        assert (
+            reconciliation.summary_json["source_directory_hybrid_context_qualitative_package_commit"][
+                "package_review_submit_enabled"
+            ]
+            is False
+        )
+    finally:
+        db.close()
+
+    replay = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/review/submit"
+        ),
+        json=submit_payload,
+    )
+    assert replay.status_code == 200
+    assert replay.json()["status"] == "already_submitted"
+    assert replay.json()["submit_record_ref"] == body["submit_record_ref"]
+
+    conflict = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/review/submit"
+        ),
+        json={
+            **submit_payload,
+            "operator_decision": "rejected",
+            "decision_notes": "not approved",
+        },
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["error"]["code"] == "source_directory_hybrid_package_review_submit_already_recorded"
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit_rejects_stale_construction(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    analysis_payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "BETA alpha alpha",
+        ),
+        "client_request_id": "source-directory-hybrid-package-submit-stale-analysis",
+        "analysis_question": "What does the alpha beta evidence support?",
+        "analysis_focus": "deterministic hybrid package submit stale evidence",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+    analysis = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis"
+        ),
+        json=analysis_payload,
+    )
+    assert analysis.status_code == 200, analysis.text
+    analysis_body = analysis.json()
+
+    commit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/commit"
+        ),
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+            "source_directory_hybrid_package_review_preview_hash": (
+                analysis_body["source_directory_hybrid_package_review_preview_hash"]
+            ),
+            "operator_decision": "commit_source_directory_hybrid_context_packet_qualitative_analysis_package",
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    commit_body = commit.json()
+
+    stale = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/review/submit"
+        ),
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+            "source_directory_hybrid_package_review_preview_hash": (
+                analysis_body["source_directory_hybrid_package_review_preview_hash"]
+            ),
+            "construction_basis_hash": "0" * 64,
+            "reconciliation_record_id": commit_body["reconciliation_record_id"],
+            "output_package_ids": commit_body["output_package_ids"],
+            "package_kinds": commit_body["package_kinds"],
+            "payload_hashes": commit_body["payload_hashes"],
+            "operator_decision": "approved",
+        },
+    )
+    assert stale.status_code == 409
+    assert stale.json()["error"]["code"] == (
+        "source_directory_hybrid_package_review_submit_construction_mismatch"
+    )
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        assert "package_review_submit" not in reconciliation.summary_json
+        _assert_no_forbidden_package_commit_downstream(db)
     finally:
         db.close()
 

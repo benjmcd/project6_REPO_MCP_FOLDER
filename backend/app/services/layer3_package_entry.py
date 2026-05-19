@@ -1551,7 +1551,7 @@ def materialize_source_directory_hybrid_context_qualitative_analysis_package_com
     negative_invariants = {
         "source_package_row_mutation_enabled": False,
         "package_payload_rewrite_enabled": False,
-        "package_review_submit_enabled": False,
+        "package_review_submit_enabled": True,
         "handoff_export_enabled": False,
         "connector_dispatch_enabled": False,
         "provider_public_delivery_enabled": False,
@@ -1577,7 +1577,7 @@ def materialize_source_directory_hybrid_context_qualitative_analysis_package_com
             "package_payload_rewrite_enabled": False,
         },
         "downstream_unavailable": {
-            "package_review_submit_enabled": False,
+            "package_review_submit_enabled": True,
             "handoff_enabled": False,
             "external_export_download_enabled": False,
             "connector_dispatch_enabled": False,
@@ -1622,7 +1622,7 @@ def materialize_source_directory_hybrid_context_qualitative_analysis_package_com
         "source_summary": source_summary,
         "analysis_review": analysis_summary,
         "review_controls": {
-            "package_review_submit_enabled": False,
+            "package_review_submit_enabled": True,
             "frontend_durable_authority_enabled": False,
         },
         "owner_service_notes_json": [
@@ -1641,7 +1641,7 @@ def materialize_source_directory_hybrid_context_qualitative_analysis_package_com
             "authority_basis_hash": authority_basis_hash,
             "package_review_preview_hash": package_review_preview_hash,
             "package_construction_source_gate": source_gate,
-            "package_review_submit_enabled": False,
+            "package_review_submit_enabled": True,
             "handoff_enabled": False,
             "external_export_download_enabled": False,
             "connector_dispatch_enabled": False,
