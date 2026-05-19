@@ -7110,3 +7110,19 @@ Current direct-child server-configured source-directory ingestion remains unchan
 Still blocked: recursive traversal in the live API, request-schema changes, rendered control changes, source authority promotion, package/handoff/export/download integration, connector dispatch, provider URLs, credentials, network behavior, semantic/vector RAG widening, prompt/model/provider qualitative generation, TabPFN/NRC RAG runtime, optional-tool Gate C/pass-entry admission, broad auth/security behavior, PDFs, OCR, Office documents, images, archives, arbitrary binaries, browser uploads, web connectors, database connectors, arbitrary caller-provided paths, and local upload behavior.
 
 Next exact posture: `current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze`, then `select_recursive_source_ingestion_runtime_policy_before_implementation`.
+
+## Recursive Source Ingestion Family Selection Freeze Current-Main Sync
+
+Current-main proof/control sync: PR `#1464` merged at merge commit `cd7cd385710102724c572615b33105956a22d52b`.
+
+Sync doc: `855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+The merge gate passed: `backend-layer3-api` and `test` succeeded, PR comments/reviews were empty, reviewThreads totalCount was `0`, unresolved reviewThreads totalCount was `0`, and merge state before merge was `CLEAN`.
+
+Post-merge validation passed for `python .\tools\l3-progress-check.py`, `python .\tools\l3-target-selection-validate.py --expect frozen`, pending fixture validation, and checkpoint fixture validation.
+
+The recursive source-ingestion family selection is now current-main synced as `current_main_synced_recursive_source_ingestion_family_selection_freeze`.
+
+Current main still does not implement recursive traversal. Direct-child `LAYER3_SOURCE_INGESTION_DIR` ingestion remains unchanged with `direct_child_only: True` and `recursive_traversal_admitted: False`.
+
+Next exact posture: `select_recursive_source_ingestion_runtime_policy_before_implementation`. Do not implement recursive traversal until a later runtime-entry freeze selects exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope.
