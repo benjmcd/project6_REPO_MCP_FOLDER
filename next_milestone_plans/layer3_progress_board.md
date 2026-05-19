@@ -6998,3 +6998,27 @@ Current-main source-directory tests prove deterministic local retrieval/context/
 This gate admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, fixture selection, dependency, provider credential, network egress, rendered optional-tool controls, agent tool-call runtime, Gate C/pass-entry admission, source-authority promotion, TabPFN runtime, NRC RAG runtime, package/handoff/export/download integration, or auth/security behavior.
 
 The next exact posture is `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
+
+## Sublayer 3C Fixture Authority Validate-Only Contract
+
+Validate-only fixture-authority record contract: `850_FIXTURE_VALIDATE_ONLY.md` follows the no-runtime fixture-authority stop and keeps the active posture at `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this validator: `false`.
+
+Benchmark execution introduced by this validator: `false`.
+
+Fixture materialization introduced by this validator: `false`.
+
+Fixture authority selection introduced by this validator: `false`.
+
+The pending structured record uses schema `layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1` and candidate tools `tabpfn,nrc_licensing_rag`.
+
+`tools/l3-fixture-validate.py --expect pending` proves the current no-selection state. Later `selected` and `frozen` validator states require every TabPFN and NRC RAG fixture-authority field to be filled while keeping runtime, benchmark execution, fixture materialization, dependencies, provider/network calls, and package/handoff/export/download integration blocked.
+
+The validator fail-closes selected and frozen records unless TabPFN uses `dataset_version_supervised_tabular_micro_fixture`, a `classification` or `regression` task with the matching metric family, and NRC RAG uses `regulatory_context_grounding_query_set`.
+
+This pass admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, fixture selection, dependency, provider credential, network egress, rendered optional-tool controls, agent tool-call runtime, Gate C/pass-entry admission, source-authority promotion, TabPFN runtime, NRC RAG runtime, package/handoff/export/download integration, or auth/security behavior.
+
+The next exact posture remains `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
