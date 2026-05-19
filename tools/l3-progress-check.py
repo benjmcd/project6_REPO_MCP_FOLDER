@@ -2274,6 +2274,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPO
     PLANNING_DOCS
     / "836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "837_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71598,6 +71602,83 @@ def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_
                 )
 
 
+def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime`.",
+        "837_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC.md",
+        "836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+        "PR `#1442`",
+        "397e2b77267943ef777c48dd732e215e7055c795",
+        "41f1657c73b02541dc2dd2694d614630fc02b4a1",
+        "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+        "Runtime behavior introduced by this sync: `false`.",
+        "source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference",
+        "external_export_download_prepared",
+        "`backend-layer3-api`: `SUCCESS`, `3m6s`",
+        "`test`: `SUCCESS`, `3m33s`",
+        "reviewThreads totalCount: `0`",
+        "Additional same-family package/export/active-authority proof loops without a named defect or downstream reader.",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory hybrid external export/download prepare sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Hybrid Context Qualitative Analysis External Export Download Prepare Runtime Current-Main Sync",
+            "837_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_CURRENT_MAIN_SYNC.md",
+            "PR `#1442`",
+            "41f1657c73b02541dc2dd2694d614630fc02b4a1",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+            "Runtime behavior introduced by this sync: `false`.",
+            "reviewThreads totalCount `0`",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync",
+        ),
+        MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+            '"runtime_pr": "#1442"',
+            "41f1657c73b02541dc2dd2694d614630fc02b4a1",
+            '"runtime_behavior_in_this_sync": false',
+            '"pr_1442_backend_layer3_api": "SUCCESS"',
+            '"pr_1442_test": "SUCCESS"',
+            '"pr_1442_reviewThreads": 0',
+            '"status_surface_reports_readiness": true',
+            '"same_origin_delivery_enabled": false',
+            '"browser_download_enabled": false',
+            '"connector_dispatch_enabled": false',
+            '"frontend_rendered_controls_enabled": false',
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync_proof",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+            '"runtime_pr": "#1442"',
+            "41f1657c73b02541dc2dd2694d614630fc02b4a1",
+            "backend-layer3-api SUCCESS for PR #1442",
+            "PR #1442 reviewThreads totalCount 0",
+            "current-main sync introduces no additional runtime behavior",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_external_export_download_prepare_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory hybrid external export/download prepare sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72295,6 +72376,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_current_main_sync(
         errors
     )
 
