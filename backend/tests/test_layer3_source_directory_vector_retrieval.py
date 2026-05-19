@@ -1360,6 +1360,7 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_status_repo
             "package_kinds",
             "payload_hashes",
             "operator_decision",
+            "client_request_id",
         }
     }
     status = client.post(
@@ -1414,6 +1415,23 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_status_repo
     assert body["next_allowed_actions"] == []
     assert "source_directory_hybrid_package_review_preview" not in body
     assert "supporting_segments" not in body
+
+    polling_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
+        ),
+        json={
+            **status_payload,
+            "client_request_id": "source-directory-hybrid-status-polling-read",
+        },
+    )
+    assert polling_status.status_code == 200, polling_status.text
+    polling_body = polling_status.json()
+    assert polling_body["qualitative_analysis_hash"] == analysis_body["qualitative_analysis_hash"]
+    assert polling_body["source_directory_hybrid_package_commit_available"] is True
+    assert polling_body["source_directory_hybrid_package_review_submit_available"] is True
+    assert polling_body["source_directory_hybrid_handoff_export_prepare_available"] is True
 
     db = client.layer3_session_factory()
     try:

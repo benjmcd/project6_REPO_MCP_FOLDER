@@ -41,6 +41,9 @@ ANALYSIS_STATUS_MODE = (
 ANALYSIS_STATUS_SOURCE_GATE = (
     "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE"
 )
+ANALYSIS_STATUS_DEFAULT_CLIENT_REQUEST_ID = (
+    "source-directory-hybrid-context-qualitative-analysis-status-read"
+)
 PACKAGE_REVIEW_PREVIEW_SCHEMA_ID = (
     "layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_review_preview.v1"
 )
@@ -453,7 +456,10 @@ def source_directory_hybrid_context_packet_qualitative_analysis_status(
     db: Session,
     payload: Mapping[str, Any],
 ) -> dict[str, Any]:
-    analysis = source_directory_hybrid_context_packet_qualitative_analysis(db, payload)
+    analysis = source_directory_hybrid_context_packet_qualitative_analysis(
+        db,
+        _status_analysis_payload(payload),
+    )
     status_state = _hybrid_qualitative_analysis_status_state(db, analysis=analysis)
     negative_invariants = {
         **dict(analysis["negative_invariants"]),
@@ -1390,6 +1396,13 @@ def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     return fields
 
 
+def _status_analysis_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    if not str(fields.get("client_request_id") or "").strip():
+        fields["client_request_id"] = ANALYSIS_STATUS_DEFAULT_CLIENT_REQUEST_ID
+    return fields
+
+
 def _normalise_package_commit_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
     forbidden = sorted(set(fields) & _FORBIDDEN_FIELDS)
@@ -1547,7 +1560,6 @@ def _package_review_preview(
             "schema_version": 1,
             "mode": PACKAGE_REVIEW_PREVIEW_MODE,
             "source_gate": PACKAGE_REVIEW_PREVIEW_SOURCE_GATE,
-            "request_id": request_id,
             "analysis_question": str(fields.get("analysis_question") or ""),
             "analysis_focus": str(fields.get("analysis_focus") or ""),
             "query_text": str(fields.get("query_text") or ""),
@@ -1735,7 +1747,7 @@ def _qualitative_analysis_hash(
             "source_gate": SOURCE_GATE,
             "request_contract": {
                 field: str(fields.get(field) or "")
-                for field in sorted(_REQUIRED_FIELDS)
+                for field in sorted(_REQUIRED_FIELDS - {"client_request_id"})
             },
             "hybrid_context_packet_hash": hybrid_context["hybrid_context_packet_hash"],
             "hybrid_context_contract_id": hybrid_context["hybrid_context_contract_id"],
@@ -2042,18 +2054,40 @@ def _matching_hybrid_package_reconciliation(
         authority_basis = commit_summary.get("authority_basis")
         if not isinstance(authority_basis, dict):
             authority_basis = {}
+        source_authority = authority_basis.get("source_authority")
+        if not isinstance(source_authority, dict):
+            source_authority = {}
         expected = {
-            "package_review_preview_hash": analysis[
-                "source_directory_hybrid_package_review_preview_hash"
-            ],
-            "qualitative_analysis_hash": analysis["qualitative_analysis_hash"],
             "hybrid_context_packet_hash": analysis["hybrid_context_packet_hash"],
+            "lexical_context_packet_hash": analysis["lexical_context_packet_hash"],
+            "index_authority_hash": analysis["index_authority_hash"],
             "embedding_index_authority_hash": analysis["embedding_index_authority_hash"],
+            "source_ingestion_batch_id": analysis["source_ingestion_batch_id"],
+            "source_ingestion_file_id": analysis["source_ingestion_file_id"],
+            "material_snapshot_id": analysis["material_snapshot_id"],
+            "content_sha256": analysis["content_sha256"],
+            "file_identity_hash": analysis["file_identity_hash"],
+            "payload_hash": analysis["payload_hash"],
         }
-        if all(
-            str(commit_summary.get(field) or authority_basis.get(field) or "") == str(value)
+        actual_fields = {
+            field: str(
+                commit_summary.get(field)
+                or authority_basis.get(field)
+                or source_authority.get(field)
+                or ""
+            )
+            for field in expected
+        }
+        matched_fields = {
+            field for field, value in expected.items() if actual_fields[field] == str(value)
+        }
+        mismatched_fields = {
+            field
             for field, value in expected.items()
-        ):
+            if actual_fields[field] and actual_fields[field] != str(value)
+        }
+        required_matches = {"hybrid_context_packet_hash", "embedding_index_authority_hash"}
+        if not mismatched_fields and required_matches <= matched_fields:
             return record
     return None
 
