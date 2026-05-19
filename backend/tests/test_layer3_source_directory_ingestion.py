@@ -81,6 +81,15 @@ def _write_source_dir(root: Path) -> None:
     (root / "delta.md").write_text("# Markdown source\n", encoding="utf-8")
 
 
+def _write_recursive_source_dir(root: Path) -> None:
+    _write_source_dir(root)
+    nested = root / "nested"
+    deeper = nested / "reports"
+    deeper.mkdir(parents=True)
+    (nested / "echo.txt").write_text("nested text source\n", encoding="utf-8")
+    (deeper / "foxtrot.md").write_text("# Two-level markdown source\n", encoding="utf-8")
+
+
 def _material_preview_payload(scan_body: dict, relative_name: str = "alpha.csv") -> dict[str, str]:
     file_record = next(item for item in scan_body["files"] if item["relative_name"] == relative_name)
     return {
@@ -100,7 +109,7 @@ def _approve_source_directory_file(client: TestClient, scan_body: dict, relative
     assert preview.status_code == 200
     preview_body = preview.json()
     candidate = preview_body["material_candidate"]
-    request_suffix = relative_name.replace(".", "-")
+    request_suffix = relative_name.replace("/", "-").replace(".", "-")
     gate_b = client.post(
         "/api/v1/layer3/gate-b/decision",
         json={
@@ -220,7 +229,12 @@ def test_layer3_source_directory_ingestion_records_redacted_durable_authority(
     assert body["config_authority"] == "LAYER3_SOURCE_INGESTION_DIR"
     assert body["source_root_ref"] == "server-configured://LAYER3_SOURCE_INGESTION_DIR"
     assert body["source_root_absolute_path_exposed"] is False
-    assert body["direct_child_only"] is True
+    assert body["runtime_policy_id"] == "recursive_server_configured_directory_text_table_policy_v1"
+    assert body["direct_child_only"] is False
+    assert body["recursive_traversal_admitted"] is True
+    assert body["max_recursion_depth"] == 2
+    assert body["max_relative_path_segments"] == 3
+    assert body["caller_selected_recursive_flag_allowed"] is False
     assert body["allowed_extensions"] == [".csv", ".json", ".txt", ".md"]
     assert body["eligible_file_count"] == 4
     assert [item["relative_name"] for item in body["files"]] == [
@@ -231,7 +245,8 @@ def test_layer3_source_directory_ingestion_records_redacted_durable_authority(
     ]
     assert all(item["absolute_path_exposed"] is False for item in body["files"])
     assert str(source_dir) not in str(body)
-    assert body["negative_invariants"]["recursive_traversal_enabled"] is False
+    assert body["negative_invariants"]["recursive_traversal_enabled"] is True
+    assert body["negative_invariants"]["caller_selected_recursive_flag_enabled"] is False
     assert body["negative_invariants"]["rag_vector_index_enabled"] is False
     assert body["negative_invariants"]["package_construction_enabled"] is False
     assert body["negative_invariants"]["connector_dispatch_enabled"] is False
@@ -266,6 +281,68 @@ def test_layer3_source_directory_ingestion_records_redacted_durable_authority(
     try:
         assert db.query(L3SourceDirectoryIngestionBatch).count() == 1
         assert db.query(L3SourceDirectoryIngestionFile).count() == 4
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_ingestion_records_recursive_relative_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_recursive_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-recursive"),
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["runtime_policy_id"] == "recursive_server_configured_directory_text_table_policy_v1"
+    assert body["direct_child_only"] is False
+    assert body["recursive_traversal_admitted"] is True
+    assert body["eligible_file_count"] == 6
+    assert [item["relative_name"] for item in body["files"]] == [
+        "alpha.csv",
+        "bravo.json",
+        "charlie.txt",
+        "delta.md",
+        "nested/echo.txt",
+        "nested/reports/foxtrot.md",
+    ]
+    assert all("\\" not in item["relative_name"] for item in body["files"])
+    assert all(item["absolute_path_exposed"] is False for item in body["files"])
+    assert str(source_dir) not in str(body)
+    assert body["authority_snapshot"]["runtime_policy_id"] == (
+        "recursive_server_configured_directory_text_table_policy_v1"
+    )
+    assert body["authority_snapshot"]["max_recursion_depth"] == 2
+    assert body["authority_snapshot"]["max_relative_path_segments"] == 3
+
+    preview = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=_material_preview_payload(body, "nested/reports/foxtrot.md"),
+    )
+    assert preview.status_code == 200
+    preview_body = preview.json()
+    assert "# Two-level markdown source" in preview_body["material_candidate"]["preview_text"]
+    assert preview_body["source_gate"]["direct_child_only"] is False
+    assert preview_body["source_gate"]["recursive_traversal_admitted"] is True
+    assert str(source_dir) not in str(preview_body)
+
+    snapshot_info = _approve_source_directory_file(client, body, "nested/echo.txt")
+    db = client.layer3_session_factory()
+    try:
+        indexed = source_directory_material_text_index(db, _text_index_payload(snapshot_info))
+        assert indexed["status"] == "available"
+        assert indexed["source_shape"] == "server_configured_directory_file"
+        assert "nested text source" in "".join(segment["text"] for segment in indexed["segments"])
         assert db.query(ConnectorRun).count() == 0
         assert db.query(ConnectorRunTarget).count() == 0
         assert db.query(L3OutputPackage).count() == 0
@@ -619,6 +696,79 @@ def test_layer3_source_directory_ingestion_rejects_forbidden_or_unsupported_scop
     body = unsupported.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "source_directory_ingestion_extension_not_admitted"
+
+
+def test_layer3_source_directory_ingestion_fails_closed_on_recursive_policy_violations(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    cases: list[tuple[str, tuple[str, ...], str, bytes]] = [
+        (
+            "too-deep",
+            ("one", "two", "three", "too-deep.txt"),
+            "source_directory_ingestion_recursion_depth_exceeded",
+            b"too deep\n",
+        ),
+        (
+            "hidden-segment",
+            (".hidden", "secret.txt"),
+            "source_directory_ingestion_hidden_path_not_admitted",
+            b"secret\n",
+        ),
+        (
+            "nested-unsupported",
+            ("nested", "blocked.pdf"),
+            "source_directory_ingestion_extension_not_admitted",
+            b"%PDF-1.4",
+        ),
+    ]
+    for case_name, parts, expected_code, payload in cases:
+        source_dir = tmp_path / f"operator-source-dir-{case_name}"
+        source_dir.mkdir()
+        target = source_dir.joinpath(*parts)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
+        monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+        response = client.post(
+            "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+            json=_scan_payload(f"source-directory-scan-{case_name}"),
+        )
+
+        assert response.status_code == 400
+        body = response.json()
+        assert body["status"] == "blocked"
+        assert body["error"]["code"] == expected_code
+
+
+def test_layer3_source_directory_ingestion_fails_closed_on_nested_symlink(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir-symlink"
+    source_dir.mkdir()
+    nested = source_dir / "nested"
+    nested.mkdir()
+    target = source_dir / "target.txt"
+    target.write_text("target\n", encoding="utf-8")
+    symlink = nested / "link.txt"
+    try:
+        symlink.symlink_to(target)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation is not available in this environment")
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-symlink"),
+    )
+
+    assert response.status_code == 400
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "source_directory_ingestion_reparse_or_device_not_admitted"
 
 
 def test_layer3_source_directory_ingestion_rejects_app_owned_storage_root(

@@ -33591,5 +33591,42 @@
     ],
     "next_posture": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
     "summary": "Doc 857 records current-main adoption of the no-runtime recursive source-ingestion runtime policy selection from PR #1466. Recursive traversal remains unimplemented, and the next exact posture is the bounded implementation of recursive_server_configured_directory_text_table_policy_v1."
+  },
+  "recursive_source_ingestion_runtime_proof": {
+    "proof_kind": "recursive_source_ingestion_runtime_implementation_proof",
+    "status": "recursive_source_ingestion_runtime_implementation_proof",
+    "doc": "next_milestone_plans/Layer3_planning_docs/858_RECURSIVE_SOURCE_INGESTION_RUNTIME_PROOF.md",
+    "branch": "codex/l3-recursive-source-ingestion-runtime",
+    "runtime_behavior_change": true,
+    "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+    "implemented_action": "implement_recursive_server_configured_operator_directory_text_table_ingestion",
+    "proof_terms": [
+      "recursive happy path records normalized relative path authority",
+      "maximum recursion depth 2",
+      "maximum normalized relative path segments 3 including filename",
+      "maximum file count 100",
+      "deterministic lexical normalized relative path order",
+      "no caller-selected recursive flag",
+      "redact configured root and raw local nested paths",
+      "nested material preview reaches Gate B",
+      "nested deterministic text indexing",
+      "same request id same authority basis replays existing batch",
+      "same authority basis new request returns existing batch",
+      "same request id different basis fails closed",
+      "fail closed on traversal beyond selected depth",
+      "fail closed on hidden path segment",
+      "fail closed on nested unsupported extension",
+      "fail closed on nested symlink when symlink creation is available",
+      "no ConnectorRun rows",
+      "no ConnectorRunTarget rows",
+      "no L3OutputPackage rows",
+      "current_main_sync_recursive_server_configured_directory_text_table_policy_v1"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_ingestion.py .\\backend\\app\\services\\layer3_source_directory_material_admission.py .\\backend\\app\\services\\layer3_source_directory_text_index.py .\\backend\\app\\api\\layer3.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_ingestion.py -q PASS 15 passed 1 skipped"
+    ],
+    "next_posture": "current_main_sync_recursive_server_configured_directory_text_table_policy_v1",
+    "summary": "Doc 858 proves the exact recursive source-directory runtime implementation admitted by docs 856 and 857. The proof covers normalized nested relative authority, downstream material preview/text index compatibility, fail-closed traversal boundaries, redaction, idempotency, and no forbidden adjacent rows or behavior."
   }
 }
