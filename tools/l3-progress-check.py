@@ -2394,6 +2394,9 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_SYNC = (
     PLANNING_DOCS
     / "869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION = (
+    PLANNING_DOCS / "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -76249,6 +76252,192 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in rendered_runtime_sync_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_runtime_current_main_sync_proof.proof_terms missing {term}"
+                        )
+
+    optional_tool_authority_revalidation_text = _read_required_text(
+        LAYER3_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime current-main selection control for `sublayer3c_optional_tool_fixture_authority_revalidation_after_analysis_environment_sync`.",
+        "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+        "869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "cbf084839573b70880a478eea43705770170ef8a",
+        "Decision: `keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority`.",
+        "Runtime behavior introduced by this selection: `false`.",
+        "Benchmark execution introduced by this selection: `false`.",
+        "Fixture materialization introduced by this selection: `false`.",
+        "Fixture authority selection introduced by this selection: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "850_FIXTURE_VALIDATE_ONLY.md",
+        "851_FIXTURE_CHECKPOINT.md",
+        "tools/l3-fixture-validate.py",
+        "backend/tests/test_layer3_fixture_validate.py",
+        "The current `850` record still validates only as `pending`.",
+        "The current `851` checkpoint still validates as `checkpoint`.",
+        "TabPFN remains candidate-supported but not selected",
+        "NRC RAG remains deferred for absent query-set authority",
+        "`--expect selected`",
+        "`--expect frozen`",
+        "python .\\tools\\l3-fixture-validate.py --expect pending",
+        "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint",
+        "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+    ):
+        if term not in optional_tool_authority_revalidation_text:
+            errors.append(
+                f"{_rel(LAYER3_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION)} "
+                f"missing optional-tool authority revalidation selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Optional Tool Authority Revalidation Selection",
+            "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+            "sublayer3c_optional_tool_fixture_authority_revalidation_after_analysis_environment_sync",
+            "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+            "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 optional-tool authority revalidation selection to preserve when present",
+            "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+            "preserve `850` as `pending` and `851` as `checkpoint`",
+            "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+            "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+        ),
+        REFRESH_SPEC: (
+            "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+            "Preserve `850_FIXTURE_VALIDATE_ONLY.md` as pending",
+            "Do not render doc `870` as runtime behavior",
+            "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+        ),
+        MANIFEST: (
+            '"sublayer3c_optional_tool_authority_revalidation_selection"',
+            '"status": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md"',
+            '"decision": "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority"',
+            '"fixture_authority_selection_change": false',
+            '"gate_c_pass_entry_admission": false',
+            '"latest_sublayer3c_optional_tool_authority_revalidation_selection_status"',
+            '"next_posture": "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation"',
+        ),
+        PROOF_MANIFEST: (
+            '"sublayer3c_optional_tool_authority_revalidation_selection_proof"',
+            '"proof_kind": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked"',
+            '"fixture_authority_selection_change": false',
+            '"keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority"',
+            '"no TabPFN supervised micro-fixture selected"',
+            '"no NRC RAG regulatory query set selected"',
+            '"no Gate C/pass-entry admission"',
+            '"select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing optional-tool authority revalidation selection term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        revalidation = manifest.get("sublayer3c_optional_tool_authority_revalidation_selection")
+        if not isinstance(revalidation, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing sublayer3c_optional_tool_authority_revalidation_selection object"
+            )
+        else:
+            expected_revalidation_scalars = {
+                "status": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+                "doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+                "branch": "codex/l3-optional-tool-authority-selection",
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint": "cbf084839573b70880a478eea43705770170ef8a",
+                "selected_gap": "sublayer3c_optional_tool_fixture_authority_revalidation_after_analysis_environment_sync",
+                "decision": "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+                "pending_record_validation": "python .\\tools\\l3-fixture-validate.py --expect pending",
+                "checkpoint_record_validation": "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint",
+                "runtime_behavior_change": False,
+                "benchmark_execution_change": False,
+                "fixture_materialization_change": False,
+                "fixture_authority_selection_change": False,
+                "dependency_provider_network_admission": False,
+                "rendered_optional_tool_controls": False,
+                "package_handoff_export_download_integration": False,
+                "gate_c_pass_entry_admission": False,
+                "implementation_entry_allowed_next": False,
+                "next_posture": "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+            }
+            for key, value in expected_revalidation_scalars.items():
+                if revalidation.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} sublayer3c_optional_tool_authority_revalidation_selection.{key} must be {value!r}"
+                    )
+            if revalidation.get("required_future_validator_states") != ["selected", "frozen"]:
+                errors.append(
+                    f"{_rel(MANIFEST)} sublayer3c_optional_tool_authority_revalidation_selection.required_future_validator_states must be ['selected', 'frozen']"
+                )
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_sublayer3c_optional_tool_authority_revalidation_selection_status": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+                    "latest_sublayer3c_optional_tool_authority_revalidation_selection_decision": "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+                    "latest_sublayer3c_optional_tool_authority_revalidation_selection_runtime_behavior_change": False,
+                    "latest_sublayer3c_optional_tool_authority_revalidation_selection_next_posture": "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(
+            "sublayer3c_optional_tool_authority_revalidation_selection_proof"
+        )
+        if not isinstance(proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing sublayer3c_optional_tool_authority_revalidation_selection_proof object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+                "status": "selected_optional_tool_fixture_authority_revalidation_no_runtime_blocked",
+                "doc": "next_milestone_plans/Layer3_planning_docs/870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+                "branch": "codex/l3-optional-tool-authority-selection",
+                "runtime_behavior_change": False,
+                "benchmark_execution_change": False,
+                "fixture_materialization_change": False,
+                "fixture_authority_selection_change": False,
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/869_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint": "cbf084839573b70880a478eea43705770170ef8a",
+                "decision": "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+                "next_posture": "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_authority_revalidation_selection_proof.{key} must be {value!r}"
+                    )
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_authority_revalidation_selection_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md",
+                    "850_FIXTURE_VALIDATE_ONLY.md remains pending",
+                    "851_FIXTURE_CHECKPOINT.md remains checkpoint",
+                    "keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority",
+                    "no TabPFN supervised micro-fixture selected",
+                    "no NRC RAG regulatory query set selected",
+                    "no runtime behavior",
+                    "no benchmark execution",
+                    "no fixture authority selection",
+                    "no Gate C/pass-entry admission",
+                    "select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} sublayer3c_optional_tool_authority_revalidation_selection_proof.proof_terms missing {term}"
                         )
 
 

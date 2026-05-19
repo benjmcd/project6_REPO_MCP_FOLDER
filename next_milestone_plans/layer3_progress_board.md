@@ -7327,3 +7327,15 @@ Current main now renders the bounded read-only `/review/layer3` Analysis Environ
 Rendered behavior introduced by this sync: `false`. Backend runtime behavior introduced by this sync: `false`.
 
 Next exact posture: `select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_rendered_projection_runtime_sync`.
+
+## Optional Tool Authority Revalidation Selection
+
+Gap selection: `870_OPTIONAL_TOOL_AUTHORITY_REVALIDATION_SELECTION.md` records a no-runtime current-main selection for `sublayer3c_optional_tool_fixture_authority_revalidation_after_analysis_environment_sync`.
+
+Canonical optional-tool authority remains `850_FIXTURE_VALIDATE_ONLY.md`, `851_FIXTURE_CHECKPOINT.md`, `tools/l3-fixture-validate.py`, and `backend/tests/test_layer3_fixture_validate.py`. The pending record still validates as pending, the checkpoint still validates as checkpoint, and neither record selects a TabPFN supervised micro-fixture or NRC RAG regulatory query set.
+
+Decision: `keep_optional_tool_benchmark_runtime_blocked_until_product_fixture_authority`.
+
+This selection admits no runtime behavior, no benchmark execution, no fixture materialization, no fixture authority selection, no dependency/provider/network admission, no rendered optional-tool controls, no package/handoff/export/download integration, and no Gate C/pass-entry admission.
+
+Next exact posture: `select_next_non_optional_tool_layer3_end_to_end_gap_after_optional_tool_authority_revalidation`.
