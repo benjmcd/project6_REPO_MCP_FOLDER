@@ -34353,5 +34353,60 @@
       "no frontend-only durable authority",
       "current_main_sync_internal_webhook_rendered_status_runtime"
     ]
+  },
+  "internal_webhook_rendered_status_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_synced_internal_webhook_rendered_status_runtime",
+    "status": "current_main_synced_internal_webhook_rendered_status_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-internal-webhook-rendered-status-runtime-sync",
+    "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+    "runtime_pr": "#1490",
+    "runtime_branch": "codex/l3-internal-webhook-rendered-status-runtime",
+    "runtime_branch_commit": "572f147781433ffe920410f5c77ba7ea5ba9ecd4",
+    "runtime_merge_commit": "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+    "synced_result": "current_main_synced_internal_webhook_rendered_status_runtime",
+    "selected_implementation_action": "implement_internal_webhook_rendered_read_only_status_projection",
+    "runtime_behavior_introduced_by_runtime": true,
+    "rendered_behavior_introduced_by_runtime": true,
+    "dispatch_behavior_introduced_by_runtime": false,
+    "runtime_behavior_introduced_by_sync": false,
+    "rendered_behavior_introduced_by_sync": false,
+    "dispatch_behavior_introduced_by_sync": false,
+    "session_summary_field": "internal_webhook_dispatch: dict[str, Any]",
+    "response_authority": "State.sessionSummary.internal_webhook_dispatch",
+    "rendered_panel": "#internal-webhook-dispatch-panel",
+    "rendered_route": "/review/layer3",
+    "checks": {
+      "backend-layer3-api": "SUCCESS 3m24s",
+      "test": "SUCCESS 3m30s",
+      "reviewThreads_totalCount": 0,
+      "comments": 0,
+      "latest_reviews": 0
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py::test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted .\\backend\\tests\\test_layer3_page.py::test_layer3_page_route_serves_workbench_shell .\\backend\\tests\\test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS 3 passed"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+    "summary": "Doc 875 syncs PR #1490 merge commit 61bb8338176e704877b1883dfaa1b0ee04874ffc to current main. The internal webhook rendered status runtime is current-main synced with live behavior limited to the read-only internal_webhook_dispatch session-summary projection and /review/layer3 status rendering over State.sessionSummary.internal_webhook_dispatch.",
+    "proof_terms": [
+      "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+      "874_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_PROOF.md",
+      "PR #1490 merged",
+      "61bb8338176e704877b1883dfaa1b0ee04874ffc",
+      "backend-layer3-api SUCCESS 3m24s",
+      "test SUCCESS 3m30s",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "current_main_synced_internal_webhook_rendered_status_runtime",
+      "internal_webhook_dispatch: dict[str, Any]",
+      "State.sessionSummary.internal_webhook_dispatch",
+      "#internal-webhook-dispatch-panel",
+      "rendered_internal_webhook_dispatch_read_only_status_surface",
+      "no runtime behavior introduced by sync",
+      "no rendered behavior introduced by sync",
+      "no dispatch behavior introduced by sync",
+      "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync"
+    ]
   }
 }
