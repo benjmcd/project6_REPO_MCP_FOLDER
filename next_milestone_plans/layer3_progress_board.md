@@ -7265,3 +7265,13 @@ Current-main evidence separates the server-owned `State.sessionSummary.analysis_
 This selection admits no runtime behavior, no rendered behavior, no route/API/DTO/model/migration/service behavior change, no package/source/provider/connector/auth/security widening, no optional-tool runtime, and no frontend-only durable authority.
 
 Next exact posture: `freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime`. Do not implement rendered Analysis Environment projection behavior until that freeze is current-main selected, review-cleared, and checker-backed.
+
+## Downstream Analysis Environment Rendered Projection Freeze
+
+Implementation-entry freeze: `866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md` selects only `implement_downstream_analysis_environment_rendered_projection_read_only_panel`.
+
+Canonical rendered authority is `State.sessionSummary.analysis_environment_projection` from the existing session-summary response. The only future rendered surface is existing `/review/layer3` code in `backend/app/review_ui/static/layer3.js`, limited to `State.sessionSummary`, `currentSublayerVisualizationModel()`, `renderSublayerMap()`, `renderAnalysisPlane()`, and the existing `.analysis-plane` / `.analysis-planes` Sublayer 3C lane.
+
+This freeze admits no runtime behavior, no rendered behavior now, no route/API/DTO/model/migration/backend-service behavior change, no new submit control or operation step, no package/source/provider/connector/auth/security widening, and no frontend-only durable authority.
+
+Next exact posture: `current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation`. After that sync, the only admitted implementation action is `implement_downstream_analysis_environment_rendered_projection_read_only_panel`.

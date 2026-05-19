@@ -2378,6 +2378,10 @@ LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION = (
     PLANNING_DOCS
     / "865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md"
 )
+LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE = (
+    PLANNING_DOCS
+    / "866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -75504,6 +75508,180 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                     if term not in rendered_gap_terms:
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_gap_selection_proof.proof_terms missing {term}"
+                        )
+
+    rendered_projection_freeze_text = _read_required_text(
+        LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime implementation-entry freeze for `downstream_analysis_environment_rendered_projection_read_only`.",
+        "866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+        "Predecessor gap-selection doc: `865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md`.",
+        "Current-main checkpoint before this freeze: `9f68fe8b56f6d268cc0dbb2cce167b596c5ee4ca`.",
+        "Selected implementation action: `implement_downstream_analysis_environment_rendered_projection_read_only_panel`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed next: true only after current-main sync for this freeze",
+        "`State.sessionSummary.analysis_environment_projection`",
+        "`currentAnalysisEnvironmentProjection()`",
+        "`currentSublayerVisualizationModel()`",
+        "`renderSublayerMap()`",
+        "`renderAnalysisPlane()`",
+        "headed Chromium proof",
+        "headless Chromium proof",
+        "The next exact posture is `current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation`.",
+    ):
+        if term not in rendered_projection_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE)} "
+                f"missing downstream Analysis Environment rendered projection freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Downstream Analysis Environment Rendered Projection Freeze",
+            "866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+            "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+            "State.sessionSummary.analysis_environment_projection",
+            "renderSublayerMap()",
+            "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
+        ),
+        PROGRESS_PROMPT: (
+            "866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+            "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+            "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
+        ),
+        REFRESH_SPEC: (
+            "866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+            "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+            "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
+        ),
+        MANIFEST: (
+            '"downstream_analysis_environment_rendered_projection_freeze"',
+            '"status": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md"',
+            '"selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel"',
+            '"next_posture": "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation"',
+        ),
+        PROOF_MANIFEST: (
+            '"downstream_analysis_environment_rendered_projection_freeze_proof"',
+            '"proof_kind": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md"',
+            '"selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel"',
+            '"next_posture": "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing downstream Analysis Environment rendered projection freeze term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        rendered_freeze = manifest.get("downstream_analysis_environment_rendered_projection_freeze")
+        if not isinstance(rendered_freeze, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing downstream_analysis_environment_rendered_projection_freeze object"
+            )
+        else:
+            expected_rendered_freeze_scalars = {
+                "status": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+                "branch": "codex/l3-analysis-environment-rendered-freeze",
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+                "current_main_checkpoint": "9f68fe8b56f6d268cc0dbb2cce167b596c5ee4ca",
+                "selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next": True,
+                "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+                "server_owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+                "api_surface": "GET /api/v1/layer3/session/{session_id}",
+                "response_field": "analysis_environment_projection: dict[str, Any]",
+                "schema_id": "layer3.analysis_environment_projection.v1",
+                "authority_source": "read_only_session_summary_projection",
+                "rendered_surface": "backend/app/review_ui/static/layer3.js",
+                "rendered_route": "/review/layer3",
+                "proof_requires_headed_chromium": True,
+                "proof_requires_headless_chromium": True,
+                "next_posture": "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
+            }
+            for key, value in expected_rendered_freeze_scalars.items():
+                if rendered_freeze.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} downstream_analysis_environment_rendered_projection_freeze.{key} must be {value!r}"
+                    )
+            if rendered_freeze.get("rendered_functions") != [
+                "State.sessionSummary",
+                "currentAnalysisEnvironmentProjection()",
+                "currentSublayerVisualizationModel()",
+                "renderSublayerMap()",
+                "renderAnalysisPlane()",
+            ]:
+                errors.append(
+                    f"{_rel(MANIFEST)} downstream_analysis_environment_rendered_projection_freeze.rendered_functions must name the selected read-only rendered path"
+                )
+
+    if isinstance(proof_manifest, dict):
+        rendered_freeze_proof = proof_manifest.get(
+            "downstream_analysis_environment_rendered_projection_freeze_proof"
+        )
+        if not isinstance(rendered_freeze_proof, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing downstream_analysis_environment_rendered_projection_freeze_proof object"
+            )
+        else:
+            expected_rendered_freeze_proof_scalars = {
+                "proof_kind": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+                "status": "freeze_downstream_analysis_environment_rendered_projection_read_only_before_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+                "branch": "codex/l3-analysis-environment-rendered-freeze",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/865_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_GAP_SELECTION.md",
+                "current_main_checkpoint": "9f68fe8b56f6d268cc0dbb2cce167b596c5ee4ca",
+                "selected_implementation_action": "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+                "implementation_entry_allowed_next": True,
+                "canonical_source_of_truth": "State.sessionSummary.analysis_environment_projection",
+                "rendered_surface": "backend/app/review_ui/static/layer3.js",
+                "next_posture": "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
+            }
+            for key, value in expected_rendered_freeze_proof_scalars.items():
+                if rendered_freeze_proof.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_freeze_proof.{key} must be {value!r}"
+                    )
+            rendered_freeze_terms = rendered_freeze_proof.get("proof_terms")
+            if not isinstance(rendered_freeze_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_freeze_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "no-runtime implementation-entry freeze",
+                    "866_DOWNSTREAM_ANALYSIS_ENVIRONMENT_RENDERED_PROJECTION_FREEZE.md",
+                    "implement_downstream_analysis_environment_rendered_projection_read_only_panel",
+                    "9f68fe8b56f6d268cc0dbb2cce167b596c5ee4ca",
+                    "State.sessionSummary.analysis_environment_projection",
+                    "backend/app/services/layer3_analysis_environment_projection.py",
+                    "analysis_environment_projection: dict[str, Any]",
+                    "layer3.analysis_environment_projection.v1",
+                    "read_only_session_summary_projection",
+                    "backend/app/review_ui/static/layer3.js",
+                    "/review/layer3",
+                    "currentAnalysisEnvironmentProjection()",
+                    "currentSublayerVisualizationModel()",
+                    "renderSublayerMap()",
+                    "renderAnalysisPlane()",
+                    "headed Chromium proof",
+                    "headless Chromium proof",
+                    "current_main_sync_downstream_analysis_environment_rendered_projection_freeze_then_implementation",
+                ):
+                    if term not in rendered_freeze_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} downstream_analysis_environment_rendered_projection_freeze_proof.proof_terms missing {term}"
                         )
 
 
