@@ -6970,3 +6970,31 @@ NRC RAG planning is limited to `source_directory_material_preview`, `source_dire
 No runtime behavior, benchmark execution, fixture data creation, fixture materialization, backend route, API DTO, response model, database model, migration, dependency, package installation, provider credential, network egress, rendered optional-tool controls, agent tool-call runtime, Gate C/pass-entry admission, source-authority promotion, quantitative method-selection behavior, hidden model call, cloud/API inference, embedding call, vector-store startup, corpus download, Chroma runtime, OpenAI/Claude/provider runtime, TabPFN runtime, TabPFN dependency, TabPFN fit/predict execution, TabPFN checkpoint loading, nrc-licensing-rag dependency, NRC RAG runtime, package/handoff/export/download integration, or auth/security behavior is admitted by this plan.
 
 The next exact posture is `select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority`.
+
+## Sublayer 3C Optional Tool Benchmark Fixture Authority Gate
+
+No-runtime fixture-authority gate: `849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md` follows the combined static benchmark plan and satisfies `select_optional_tool_benchmark_fixture_authority_or_stop_for_product_authority`.
+
+Decision: `stop_optional_tool_benchmark_progression_until_fixture_authority_selected`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this gate: `false`.
+
+Benchmark execution introduced by this gate: `false`.
+
+Fixture materialization introduced by this gate: `false`.
+
+Fixture authority status: `absent_current_main_authority`.
+
+Selected TabPFN benchmark fixture authority: `none`.
+
+Selected NRC RAG benchmark fixture authority: `none`.
+
+Current-main quantitative pass-entry and execution tests prove dataset-version and associated-cohort wrapped quantitative behavior, but they do not declare the supervised predictive fixture authority required by Doc 848: target column, feature columns, train/test split, leakage checks, classification/regression task, and concrete no-adopt threshold.
+
+Current-main source-directory tests prove deterministic local retrieval/context/qualitative behavior over controlled text fixtures, and the repo contains NRC APS fixture/replay assets, but current main does not select a regulatory grounding query-set authority with fixed query ids/text, answerability labels, expected source identifiers, expected source spans, unsupported-query refusal behavior, citation rubric, and baseline surface set.
+
+This gate admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, fixture selection, dependency, provider credential, network egress, rendered optional-tool controls, agent tool-call runtime, Gate C/pass-entry admission, source-authority promotion, TabPFN runtime, NRC RAG runtime, package/handoff/export/download integration, or auth/security behavior.
+
+The next exact posture is `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
