@@ -32953,5 +32953,47 @@
   "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_merge_commit": "d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42",
   "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_status": "current_main_synced_server_configured_source_directory_ingestion_rendered_control_runtime",
   "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
-  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_summary": "Doc 843 proof records current-main sync for PR #1448 merge commit d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42 with green backend-layer3-api and test checks, zero reviewThreads, and next posture select_next_major_layer3_end_to_end_gap_from_current_main_evidence."
+  "latest_server_configured_source_directory_ingestion_rendered_control_current_main_sync_summary": "Doc 843 proof records current-main sync for PR #1448 merge commit d27b0e1282e95b1ab3b85e232aa0e0d8c34b5d42 with green backend-layer3-api and test checks, zero reviewThreads, and next posture select_next_major_layer3_end_to_end_gap_from_current_main_evidence.",
+  "public_url_delivery_sublayer3c_prerequisite_closeout_proof": {
+    "proof_kind": "planning_control_public_url_delivery_sublayer3c_prerequisite_closeout",
+    "status": "public_url_delivery_prerequisite_satisfied_for_sublayer3c_optional_tool_planning",
+    "doc": "next_milestone_plans/Layer3_planning_docs/844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md",
+    "branch": "codex/l3-public-url-sublayer3c-prereq",
+    "current_main_preflight_checkpoint": "d6d0b119e570e87af5d59b544df603f3425177c7",
+    "proof_terms": [
+      "public_url_delivery_prerequisite_satisfied_for_sublayer3c_optional_tool_planning",
+      "current_main_synced_provider_public_delivery_use_fake_provider_redacted_runtime_implementation",
+      "POST /handoff/export/download/provider-public-url/use",
+      "layer3.provider_public_url.delivery_use.v1",
+      "fake_provider_only_contract_runtime",
+      "raw_public_url_exposed false",
+      "public_url_enabled false",
+      "provider_network_enabled false",
+      "provider_object_write_enabled false",
+      "sublayer3c_optional_tool_planning_index_adr_gate",
+      "planning context only",
+      "no TabPFN runtime",
+      "no NRC RAG runtime",
+      "no Chroma/vector provider runtime",
+      "no optional-tool package/handoff/export/download integration",
+      "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout"
+    ],
+    "proof_commands": [
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_public_url_delivery_use.py -q PASS 9 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_provider_public_url_state.py .\\backend\\tests\\test_layer3_provider_public_url_delivery_use.py -q PASS 15 passed",
+      "python -m py_compile .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json PASS",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout",
+    "summary": "Doc 844 records that current-main fake-provider redacted provider-public delivery/use plus current bounded same-origin source-directory delivery is sufficient public URL delivery posture for Sublayer 3C optional-tool planning. It introduces no runtime behavior and pivots to a Sublayer 3C optional-tool planning index or ADR gate."
+  },
+  "latest_public_url_delivery_sublayer3c_prerequisite_closeout_branch": "codex/l3-public-url-sublayer3c-prereq",
+  "latest_public_url_delivery_sublayer3c_prerequisite_closeout_doc": "next_milestone_plans/Layer3_planning_docs/844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md",
+  "latest_public_url_delivery_sublayer3c_prerequisite_closeout_status": "public_url_delivery_prerequisite_satisfied_for_sublayer3c_optional_tool_planning",
+  "latest_public_url_delivery_sublayer3c_prerequisite_closeout_next_posture": "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout",
+  "latest_public_url_delivery_sublayer3c_prerequisite_closeout_summary": "Doc 844 records that current-main fake-provider redacted provider-public delivery/use plus current bounded same-origin source-directory delivery is sufficient public URL delivery posture for Sublayer 3C optional-tool planning. It introduces no runtime behavior and pivots to a Sublayer 3C optional-tool planning index or ADR gate."
 }

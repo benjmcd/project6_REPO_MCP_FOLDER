@@ -2302,6 +2302,10 @@ LAYER3_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAI
     PLANNING_DOCS
     / "843_SERVER_CONFIGURED_SOURCE_DIRECTORY_INGESTION_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT = (
+    PLANNING_DOCS
+    / "844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -72216,6 +72220,72 @@ def _check_server_configured_source_directory_ingestion_rendered_control_current
                 )
 
 
+def _check_public_url_delivery_sublayer3c_prerequisite_closeout(
+    errors: list[str],
+) -> None:
+    closeout_text = _read_required_text(
+        LAYER3_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT,
+        errors,
+    )
+    for term in (
+        "Status: planning/control closeout and next-lane selection for `public_url_delivery_sublayer3c_prerequisite_closeout`.",
+        "844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md",
+        "codex/l3-public-url-sublayer3c-prereq",
+        "d6d0b119e570e87af5d59b544df603f3425177c7",
+        "select_next_major_layer3_end_to_end_gap_from_current_main_evidence",
+        "public_url_delivery_prerequisite_satisfied_for_sublayer3c_optional_tool_planning",
+        "planning_control_closeout_and_next_lane_selection",
+        "Runtime behavior introduced by this closeout: `false`.",
+        "POST /handoff/export/download/provider-public-url/use",
+        "layer3.provider_public_url.delivery_use.v1",
+        "fake_provider_only_contract_runtime",
+        "sublayer3c_optional_tool_planning_index_adr_gate",
+        "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout",
+        "l3_tabpfn_sublayer3c_tool_planning_pack",
+        "l3_nrc_rag_sublayer3c_tool_planning_pack",
+        "no TabPFN runtime",
+        "no NRC RAG runtime",
+    ):
+        if term not in closeout_text:
+            errors.append(
+                f"{_rel(LAYER3_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT)} "
+                f"missing public URL delivery Sublayer 3C prerequisite closeout term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Public URL Delivery Sublayer 3C Prerequisite Closeout",
+            "844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md",
+            "public_url_delivery_prerequisite_satisfied_for_sublayer3c_optional_tool_planning",
+            "sublayer3c_optional_tool_planning_index_adr_gate",
+            "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout",
+        ),
+        MANIFEST: (
+            '"public_url_delivery_sublayer3c_prerequisite_closeout"',
+            '"latest_public_url_delivery_sublayer3c_prerequisite_closeout_doc"',
+            '"runtime_behavior_change": false',
+            '"selected_next_major_lane": "sublayer3c_optional_tool_planning_index_adr_gate"',
+            '"next_posture": "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout"',
+            '"tabpfn_runtime": false',
+            '"nrc_rag_runtime": false',
+        ),
+        PROOF_MANIFEST: (
+            '"public_url_delivery_sublayer3c_prerequisite_closeout_proof"',
+            '"planning_control_public_url_delivery_sublayer3c_prerequisite_closeout"',
+            "raw_public_url_exposed false",
+            "no TabPFN runtime",
+            "no NRC RAG runtime",
+            "select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing public URL delivery Sublayer 3C prerequisite artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72936,6 +73006,7 @@ def main() -> int:
     _check_server_configured_source_directory_ingestion_rendered_control_current_main_sync(
         errors
     )
+    _check_public_url_delivery_sublayer3c_prerequisite_closeout(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

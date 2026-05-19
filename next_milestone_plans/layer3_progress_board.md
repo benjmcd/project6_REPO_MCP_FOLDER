@@ -6868,3 +6868,29 @@ This sync introduces no runtime behavior and does not admit additional source in
 Post-merge validation: `python .\tools\l3-progress-check.py` passed; `python .\tools\l3-target-selection-validate.py --expect frozen` passed.
 
 The next exact current-main posture is `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`.
+
+## Public URL Delivery Sublayer 3C Prerequisite Closeout
+
+Planning/control closeout and next-lane selection: `844_PUBLIC_URL_DELIVERY_SUBLAYER3C_PREREQUISITE_CLOSEOUT.md` follows the current-main-synced server-configured source-directory ingestion rendered control and satisfies `select_next_major_layer3_end_to_end_gap_from_current_main_evidence`.
+
+Closeout result: `public_url_delivery_prerequisite_satisfied_for_sublayer3c_optional_tool_planning`.
+
+Entry decision: `planning_control_closeout_and_next_lane_selection`.
+
+Runtime status: `not_implemented`.
+
+Runtime behavior introduced by this closeout: `false`.
+
+Current main already includes the bounded fake-provider redacted provider-public delivery/use runtime from `795_PROVIDER_PUBLIC_DELIVERY_USE_FAKE_PROVIDER_RUNTIME_CURRENT_MAIN_SYNC.md`: `POST /handoff/export/download/provider-public-url/use`, schema `layer3.provider_public_url.delivery_use.v1`, provider mode `fake_provider_only_contract_runtime`, and response-safe decision state with raw public URL exposure, public redirects, byte streaming, provider network, provider object writes, durable use rows, audit rows, connector dispatch, package mutation, source expansion, RAG/vector widening, and frontend durable authority all blocked.
+
+This is sufficient public URL delivery posture for Sublayer 3C optional-tool planning because the next Sublayer 3C step is an ADR/evaluation gate, not optional-tool runtime and not external delivery runtime.
+
+The selected next major lane is `sublayer3c_optional_tool_planning_index_adr_gate`.
+
+The selected next posture is `select_sublayer3c_optional_tool_planning_index_or_adr_gate_after_public_url_delivery_prerequisite_closeout`.
+
+The accepted planning packs remain planning context only: `C:\Users\benny\Downloads\Planning_packs\accepted\l3_tabpfn_sublayer3c_tool_planning_pack` and `C:\Users\benny\Downloads\Planning_packs\accepted\l3_nrc_rag_sublayer3c_tool_planning_pack`. The first valid Sublayer 3C action is an ADR/evaluation decision for TabPFN and/or nrc-licensing-rag, or one narrow planning index that records both ADR gates and their no-runtime boundaries.
+
+No raw provider-public URL exposure, real provider adapter, provider credential, provider object write, provider ACL change, public proxy, public anonymous access, public redirect, byte streaming, rendered provider-public controls, frontend durable authority, connector dispatch, destination write, network egress, package mutation, source expansion, semantic/vector RAG widening, prompt/model/provider runtime, hidden model call, TabPFN runtime, NRC RAG runtime, Chroma/vector provider integration, optional-tool rendered control, agent tool-call runtime, Gate C/pass-entry admission, package/handoff/export/download integration for optional tools, or auth/security behavior is admitted by this closeout.
+
+If a later Sublayer 3C lane requires an external/public/credentialed surface, the provider-public/provider-private URL, connector/network, and auth/security gates must be reopened with exact product authority before implementation.
