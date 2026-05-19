@@ -28,7 +28,7 @@ Doc 849 correctly stops optional-tool benchmark progression because current main
 
 This validate-only pass makes the future fixture-authority selection record executable and fail-closed before any later freeze can claim that product authority exists. The record now supports per-tool fixture authority status so one candidate tool can be selected, deferred for absent fixture authority, or no-adopted for absent fixture authority without inventing data for another candidate tool. It does not fill fixture authority, choose benchmark cases, generate fixture data, run benchmarks, install optional dependencies, or admit runtime behavior.
 
-The validator is `tools/l3-fixture-validate.py`. The focused tests are `backend/tests/test_layer3_fixture_validate.py`.
+The validator is `tools/l3-fixture-validate.py`. The focused tests are `backend/tests/test_layer3_fixture_validate.py`. A later no-runtime checkpoint record may use the same validator to record deferred absent fixture authority without changing this default pending record.
 
 ## Canonical Source Of Truth
 
@@ -101,6 +101,8 @@ implementation_entry_freeze_written: false
 - `selection_complete` is false; and
 - `implementation_entry_freeze_written` is false.
 
+`--expect checkpoint` is reserved for a no-runtime, non-selected authority checkpoint. It requires at least one per-tool status to be `deferred_absent_fixture_authority` or `no_adopt_absent_fixture_authority`, rejects any `selected` tool status, keeps every fixture/query-set authority field `null`, keeps `selection_complete: false`, and keeps `implementation_entry_freeze_written: false`.
+
 `--expect selected` is reserved for a later product-authority record. It accepts per-tool statuses of `pending`, `selected`, `deferred_absent_fixture_authority`, or `no_adopt_absent_fixture_authority`. Any tool with status `selected` must fill every required field for that tool. Any tool without status `selected` must keep that tool's fixture fields `null`. The selected record requires at least one selected tool, keeps runtime/execution/materialization flags false, keeps `implementation_entry_freeze_written: false`, and keeps `selection_complete: false` until no tool remains `pending`.
 
 `--expect frozen` is reserved for a later current-main implementation-entry freeze. It requires at least one selected tool, no `pending` tool status, all required fields for every selected tool, `null` fields for deferred or no-adopted tools, runtime/execution/materialization flags false, `selection_complete: true`, and `implementation_entry_freeze_written: true`.
@@ -171,6 +173,7 @@ This validate-only pass admits no runtime behavior, benchmark execution, fixture
 Required validation for this pass:
 
 - `python .\tools\l3-fixture-validate.py --expect pending`;
+- `python .\tools\l3-fixture-validate.py .\next_milestone_plans\Layer3_planning_docs\851_FIXTURE_CHECKPOINT.md --expect checkpoint`;
 - `python -m pytest .\backend\tests\test_layer3_fixture_validate.py -q`;
 - `python .\tools\l3-progress-check.py`;
 - `python .\tools\l3-target-selection-validate.py --expect frozen`;
@@ -180,6 +183,6 @@ Required validation for this pass:
 
 ## Next Posture
 
-The next exact posture remains `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
+The default pending record remains at `await_product_authority_for_optional_tool_benchmark_fixture_selection`. The separate doc 851 checkpoint records the current no-runtime deferred-authority posture and moves the operational next posture to `await_product_authority_for_tabpfn_micro_fixture_or_nrc_query_set_selection`.
 
 A later lane may fill this record only when product authority gives at least one tool exact selected fixture authority and records a terminal per-tool status for every other candidate tool. Without exact authority for a selected tool, optional-tool benchmark progression remains blocked.

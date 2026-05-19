@@ -13,6 +13,12 @@ RECORD_PATH = (
     / "Layer3_planning_docs"
     / "850_FIXTURE_VALIDATE_ONLY.md"
 )
+CHECKPOINT_RECORD_PATH = (
+    ROOT
+    / "next_milestone_plans"
+    / "Layer3_planning_docs"
+    / "851_FIXTURE_CHECKPOINT.md"
+)
 
 
 def _load_validator():
@@ -52,6 +58,13 @@ def _pending_values(module) -> dict[str, str]:
     values.update({field: "null" for field in module.SELECTION_FIELDS})
     values["selection_complete"] = "false"
     values["implementation_entry_freeze_written"] = "false"
+    return values
+
+
+def _checkpoint_values(module) -> dict[str, str]:
+    values = _pending_values(module)
+    values["tabpfn_fixture_authority_status"] = "deferred_absent_fixture_authority"
+    values["nrc_rag_fixture_authority_status"] = "deferred_absent_fixture_authority"
     return values
 
 
@@ -151,6 +164,9 @@ def test_current_fixture_authority_record_validates_as_pending() -> None:
     text = RECORD_PATH.read_text(encoding="utf-8")
 
     assert module.validate_text(text, "pending") == []
+    assert "checkpoint_record_requires_nonpending_tool_status" in _issue_codes(
+        module.validate_text(text, "checkpoint")
+    )
     assert "selected_record_requires_selected_tool" in _issue_codes(
         module.validate_text(text, "selected")
     )
@@ -174,6 +190,51 @@ def test_selected_and_frozen_fixture_records_have_distinct_freeze_expectations()
     frozen_values = dict(selected_values)
     frozen_values["implementation_entry_freeze_written"] = "true"
     assert module.validate_text(_record_text(module, frozen_values), "frozen") == []
+
+
+def test_checkpoint_record_validates_as_no_runtime_nonselection() -> None:
+    module = _load_validator()
+    values = _checkpoint_values(module)
+
+    assert values["selection_complete"] == "false"
+    assert values["implementation_entry_freeze_written"] == "false"
+    assert module.validate_text(_record_text(module, values), "checkpoint") == []
+    assert "pending_tool_status_must_be_pending" in _issue_codes(
+        module.validate_text(_record_text(module, values), "pending")
+    )
+    assert "selected_record_requires_selected_tool" in _issue_codes(
+        module.validate_text(_record_text(module, values), "selected")
+    )
+    assert "frozen_record_requires_selected_tool" in _issue_codes(
+        module.validate_text(_record_text(module, values), "frozen")
+    )
+
+
+def test_checkpoint_record_rejects_selected_tools_and_fixture_fields() -> None:
+    module = _load_validator()
+    values = _checkpoint_values(module)
+    values["tabpfn_fixture_authority_status"] = "selected"
+    values["tabpfn_target_column"] = "comb08"
+
+    issue_codes = _issue_codes(module.validate_text(_record_text(module, values), "checkpoint"))
+    assert "checkpoint_record_must_not_select_tool" in issue_codes
+    assert "checkpoint_field_must_be_null" in issue_codes
+
+
+def test_candidate_checkpoint_file_validates_only_as_checkpoint() -> None:
+    module = _load_validator()
+    text = CHECKPOINT_RECORD_PATH.read_text(encoding="utf-8")
+
+    assert module.validate_text(text, "checkpoint") == []
+    assert "pending_tool_status_must_be_pending" in _issue_codes(
+        module.validate_text(text, "pending")
+    )
+    assert "selected_record_requires_selected_tool" in _issue_codes(
+        module.validate_text(text, "selected")
+    )
+    assert "frozen_record_requires_selected_tool" in _issue_codes(
+        module.validate_text(text, "frozen")
+    )
 
 
 def test_per_tool_selected_tabpfn_with_nrc_deferred_stays_pre_freeze() -> None:
