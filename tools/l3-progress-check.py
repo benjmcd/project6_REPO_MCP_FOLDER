@@ -2266,6 +2266,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_RUNTIM
     PLANNING_DOCS
     / "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71454,6 +71458,68 @@ def _check_source_directory_hybrid_context_packet_qualitative_analysis_status_ru
                 )
 
 
+def _check_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync(
+    errors: list[str],
+) -> None:
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `source_directory_hybrid_context_packet_qualitative_analysis_status_runtime`.",
+        "835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
+        "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
+        "PR `#1439`",
+        "65b75842f17b888ae533cc22d21d30c88500971b",
+        "8323cab6638a74b6a73f30fc9c35c878219f06e3",
+        "PR `#1440`",
+        "f4e71f88ca4a5f25d1b7a7cd8d2956ec2641c5c5",
+        "6b14c93f53ddbf9acfa7dae356107d6f9a13b36e",
+        "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Status reads no longer require `client_request_id`",
+        "Status package matching no longer depends on request-scoped `qualitative_analysis_hash`",
+        "PRRT_kwDORzuv8M6DAzOt",
+        "PRRT_kwDORzuv8M6DAzOu",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory hybrid qualitative-analysis status sync term: {term}"
+            )
+
+    for path, terms in {
+        MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+            '"runtime_pr": "#1439"',
+            '"review_fix_pr": "#1440"',
+            "6b14c93f53ddbf9acfa7dae356107d6f9a13b36e",
+            '"client_request_id_required": false',
+            '"request_scoped_hash_matching_enabled": false',
+            '"runtime_behavior_in_this_sync": false',
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync_proof",
+            "current_main_sync_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+            "current_main_synced_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+            '"review_fix_pr": "#1440"',
+            "PR #1439 review threads resolved after PR #1440 merge",
+            "status accepts omitted client_request_id",
+            "current-main sync introduces no additional runtime behavior",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory hybrid qualitative-analysis status sync artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72145,6 +72211,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync(
         errors
     )
 
