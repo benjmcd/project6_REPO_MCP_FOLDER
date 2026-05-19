@@ -7015,9 +7015,11 @@ Fixture authority selection introduced by this validator: `false`.
 
 The pending structured record uses schema `layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1` and candidate tools `tabpfn,nrc_licensing_rag`.
 
-`tools/l3-fixture-validate.py --expect pending` proves the current no-selection state. Later `selected` and `frozen` validator states require every TabPFN and NRC RAG fixture-authority field to be filled while keeping runtime, benchmark execution, fixture materialization, dependencies, provider/network calls, and package/handoff/export/download integration blocked.
+`tools/l3-fixture-validate.py --expect pending` proves the current no-selection state. Later `selected` and `frozen` validator states now validate per-tool fixture authority statuses: selected tools must fill every required field, deferred/no-adopted tools must keep their fields null, and runtime, benchmark execution, fixture materialization, dependencies, provider/network calls, and package/handoff/export/download integration remain blocked.
 
 The validator fail-closes selected and frozen records unless TabPFN uses `dataset_version_supervised_tabular_micro_fixture`, a `classification` or `regression` task with the matching metric family, and NRC RAG uses `regulatory_context_grounding_query_set`.
+
+The inspected package `layer3_ingress_to_insight_example_final_audited` provides TabPFN candidate support only, not selected authority: `ING-0022__epa_fueleconomy_vehicles.csv` has candidate target `comb08` and candidate features `year`, `cylinders`, `displ`, `drive`, `trany`, `VClass`, `fuelType1`, and `phevBlended`, but no exact static micro-fixture row basis, train/test row basis, or duplicate-cross-split rule. The same package does not provide NRC Licensing RAG query-set authority.
 
 This pass admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, fixture selection, dependency, provider credential, network egress, rendered optional-tool controls, agent tool-call runtime, Gate C/pass-entry admission, source-authority promotion, TabPFN runtime, NRC RAG runtime, package/handoff/export/download integration, or auth/security behavior.
 
