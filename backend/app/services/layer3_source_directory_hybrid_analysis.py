@@ -128,6 +128,32 @@ HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE = (
     "provider_private_signed_url",
     "network_egress",
 )
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = (
+    "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1"
+)
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_MODE = (
+    "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_authority"
+)
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID = "layer3.external_export_download_prepare_state.v1"
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE = (
+    "836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE"
+)
+EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION = (
+    "prepare_source_directory_hybrid_external_export_download"
+)
+EXTERNAL_EXPORT_DOWNLOAD_TARGET = (
+    "source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference"
+)
+EXTERNAL_EXPORT_DOWNLOAD_MODE = "reference_only_prepare"
+EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE = "external_export_download_prepared"
+EXTERNAL_EXPORT_DOWNLOAD_PREPARE_DOWNSTREAM_UNAVAILABLE = (
+    "same_origin_delivery",
+    "browser_download",
+    "connector_dispatch",
+    "provider_public_delivery",
+    "provider_private_signed_url",
+    "network_egress",
+)
 
 _REQUIRED_FIELDS = {
     "client_request_id",
@@ -169,6 +195,14 @@ _HANDOFF_EXPORT_PREPARE_REQUIRED_FIELDS = _PACKAGE_REVIEW_SUBMIT_REQUIRED_FIELDS
     "package_review_state",
     "handoff_target",
     "export_mode",
+}
+
+_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUIRED_FIELDS = _HANDOFF_EXPORT_PREPARE_REQUIRED_FIELDS | {
+    "prepare_record_ref",
+    "handoff_export_state",
+    "handoff_export_envelope_ref",
+    "external_export_download_target",
+    "download_mode",
 }
 
 _HYBRID_CONTEXT_FIELDS = (
@@ -225,6 +259,23 @@ _HANDOFF_EXPORT_PREPARE_FORBIDDEN_FIELDS = _FORBIDDEN_FIELDS | {
     "external_export",
     "provider_private_signed_url",
     "provider_public_url",
+    "send",
+    "signed_url",
+}
+
+_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS = _FORBIDDEN_FIELDS | {
+    "aps_handoff",
+    "browser_download",
+    "connector_dispatch",
+    "connector_payload",
+    "delivery",
+    "download",
+    "download_token",
+    "download_url",
+    "payload_path",
+    "provider_private_signed_url",
+    "provider_public_url",
+    "raw_payload_path",
     "send",
     "signed_url",
 }
@@ -333,6 +384,33 @@ class SourceDirectoryHybridHandoffExportPrepareError(Exception):
             "request_id": "source-directory-hybrid-handoff-export-prepare-error",
             "server_time": _server_time(),
             "mode": HANDOFF_EXPORT_PREPARE_MODE,
+            "status": "blocked",
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class SourceDirectoryHybridExternalExportDownloadPrepareError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = details or {}
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-hybrid-external-export-download-prepare-error",
+            "server_time": _server_time(),
+            "mode": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_MODE,
             "status": "blocked",
             "error": {"code": self.code, "message": self.message, "details": self.details},
         }
@@ -1375,6 +1453,340 @@ def source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_p
     )
 
 
+def source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare(
+    db: Session,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = _normalise_external_export_download_prepare_payload(payload)
+    request_id = _require_external_export_download_prepare_field(fields, "client_request_id")
+    if str(fields.get("operator_decision") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_decision_not_admitted",
+            "operator_decision must be prepare_source_directory_hybrid_external_export_download.",
+            http_status=409,
+            details={"field": "operator_decision"},
+        )
+    if str(fields.get("external_export_download_target") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_TARGET:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_target_not_admitted",
+            "external_export_download_target must be source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference.",
+            http_status=409,
+            details={"blocked_fields": ["external_export_download_target"]},
+        )
+    if str(fields.get("download_mode") or "").strip() != EXTERNAL_EXPORT_DOWNLOAD_MODE:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_mode_not_admitted",
+            "download_mode must be reference_only_prepare for this tranche.",
+            http_status=409,
+            details={"blocked_fields": ["download_mode"]},
+        )
+    if str(fields.get("handoff_export_state") or "").strip() != HANDOFF_EXPORT_PREPARED_STATE:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_requires_prepared_handoff",
+            "External export/download readiness requires handoff_export_state to be handoff_export_prepared.",
+            http_status=409,
+            details={"blocked_fields": ["handoff_export_state"]},
+        )
+
+    qualitative_analysis = source_directory_hybrid_context_packet_qualitative_analysis(
+        db,
+        _qualitative_analysis_payload(fields),
+    )
+    expected_analysis_hash = str(qualitative_analysis["qualitative_analysis_hash"])
+    if str(fields.get("qualitative_analysis_hash") or "") != expected_analysis_hash:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_qualitative_analysis_hash_mismatch",
+            "External export/download prepare must reference the current server-recomputed hybrid qualitative-analysis hash.",
+            http_status=409,
+            details={"blocked_fields": ["qualitative_analysis_hash"]},
+        )
+    preview = qualitative_analysis["source_directory_hybrid_package_review_preview"]
+    expected_preview_hash = str(preview["package_review_preview_hash"])
+    if str(fields.get("source_directory_hybrid_package_review_preview_hash") or "") != expected_preview_hash:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_preview_hash_mismatch",
+            "External export/download prepare must reference the current server-recomputed hybrid package-review preview hash.",
+            http_status=409,
+            details={"blocked_fields": ["source_directory_hybrid_package_review_preview_hash"]},
+        )
+
+    material_snapshot = _load_material_snapshot_for_external_export_download_prepare(
+        db,
+        material_snapshot_id=str(qualitative_analysis["material_snapshot_id"]),
+        source_authority=preview["source_authority"],
+    )
+    session = _load_external_export_download_prepare_session(db, material_snapshot=material_snapshot)
+    reconciliation_record_id = _require_external_export_download_prepare_field(
+        fields,
+        "reconciliation_record_id",
+    )
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(
+            L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            L3ReconciliationRecord.session_id == session.session_id,
+        )
+        .with_for_update()
+        .one_or_none()
+    )
+    if reconciliation is None:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_reconciliation_not_found",
+            "No source-directory hybrid package reconciliation record exists for the supplied authority.",
+            http_status=404,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    prepare_state = reconciliation_summary.get("handoff_export_prepare")
+    if not isinstance(prepare_state, dict):
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_requires_handoff_prepare",
+            "External export/download readiness requires existing source-directory hybrid handoff/export prepare authority.",
+            http_status=409,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+    supplied_prepare_ref = _require_external_export_download_prepare_field(fields, "prepare_record_ref")
+    supplied_envelope_ref = _require_external_export_download_prepare_field(
+        fields,
+        "handoff_export_envelope_ref",
+    )
+    if str(prepare_state.get("schema_id") or "") != HANDOFF_EXPORT_PREPARE_STATE_SCHEMA_ID:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_state_schema_mismatch",
+            "Stored handoff/export prepare state does not match the admitted state schema.",
+            http_status=409,
+            details={"blocked_fields": ["prepare_record_ref"]},
+        )
+    if str(prepare_state.get("handoff_export_prepare_schema_id") or "") != HANDOFF_EXPORT_PREPARE_SCHEMA_ID:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_contract_mismatch",
+            "Stored handoff/export prepare state does not match the source-directory hybrid prepare contract.",
+            http_status=409,
+            details={"blocked_fields": ["prepare_record_ref"]},
+        )
+    envelope = prepare_state.get("handoff_export_envelope")
+    if not isinstance(envelope, dict):
+        envelope = {}
+    prepare_authority_basis = prepare_state.get("authority_basis")
+    if not isinstance(prepare_authority_basis, dict):
+        prepare_authority_basis = {}
+    mismatches = [
+        field
+        for field, expected in {
+            "prepare_record_ref": supplied_prepare_ref,
+            "package_review_submit_record_ref": str(fields.get("package_review_submit_record_ref") or ""),
+            "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+            "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+            "handoff_target": "internal_export_envelope",
+            "export_mode": "prepare_only",
+            "package_review_preview_hash": expected_preview_hash,
+            "construction_basis_hash": str(fields.get("construction_basis_hash") or ""),
+            "hybrid_context_packet_hash": qualitative_analysis["hybrid_context_packet_hash"],
+            "embedding_index_authority_hash": qualitative_analysis["embedding_index_authority_hash"],
+        }.items()
+        if str(prepare_state.get(field) or prepare_authority_basis.get(field) or "") != str(expected)
+    ]
+    if str(envelope.get("envelope_ref") or "") != supplied_envelope_ref:
+        mismatches.append("handoff_export_envelope_ref")
+    if mismatches:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_authority_mismatch",
+            "Stored source-directory hybrid handoff/export prepare authority does not match the supplied readiness basis.",
+            http_status=409,
+            details={"blocked_fields": sorted(set(mismatches))},
+        )
+
+    packages = _source_directory_hybrid_review_packages_for_external_export_download_prepare(
+        db,
+        session_id=session.session_id,
+        reconciliation_record_id=reconciliation_record_id,
+    )
+    supplied_package_ids = _external_export_download_prepare_string_list(
+        fields.get("output_package_ids"),
+        field="output_package_ids",
+    )
+    supplied_package_kinds = _external_export_download_prepare_string_list(
+        fields.get("package_kinds"),
+        field="package_kinds",
+    )
+    supplied_payload_hashes = _external_export_download_prepare_string_list(
+        fields.get("payload_hashes"),
+        field="payload_hashes",
+    )
+    expected_package_ids = [package.output_package_id for package in packages]
+    expected_package_kinds = [package.package_kind for package in packages]
+    expected_payload_hashes = [package.payload_hash for package in packages]
+    list_mismatches = []
+    if supplied_package_ids != expected_package_ids:
+        list_mismatches.append("output_package_ids")
+    if supplied_package_kinds != expected_package_kinds:
+        list_mismatches.append("package_kinds")
+    if supplied_payload_hashes != expected_payload_hashes:
+        list_mismatches.append("payload_hashes")
+    if list_mismatches:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_package_authority_mismatch",
+            "Supplied package identity does not match the constructed source-directory hybrid package set.",
+            http_status=409,
+            details={"blocked_fields": list_mismatches},
+        )
+
+    readiness_basis = {
+        "schema_id": "layer3.source_directory_hybrid_context_packet_external_export_download_prepare_authority_basis.v1",
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_ingestion_batch_id": qualitative_analysis["source_ingestion_batch_id"],
+        "source_ingestion_file_id": qualitative_analysis["source_ingestion_file_id"],
+        "content_sha256": qualitative_analysis["content_sha256"],
+        "file_identity_hash": qualitative_analysis["file_identity_hash"],
+        "authority_basis_hash": qualitative_analysis["authority_basis_hash"],
+        "payload_hash": qualitative_analysis["payload_hash"],
+        "index_authority_hash": qualitative_analysis["index_authority_hash"],
+        "embedding_index_authority_hash": qualitative_analysis["embedding_index_authority_hash"],
+        "lexical_context_packet_hash": qualitative_analysis["lexical_context_packet_hash"],
+        "hybrid_context_packet_hash": qualitative_analysis["hybrid_context_packet_hash"],
+        "qualitative_analysis_hash": expected_analysis_hash,
+        "package_review_preview_hash": expected_preview_hash,
+        "construction_basis_hash": str(fields.get("construction_basis_hash") or ""),
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_hashes": expected_payload_hashes,
+        "package_review_submit_record_ref": str(fields.get("package_review_submit_record_ref") or ""),
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_envelope_ref": supplied_envelope_ref,
+        "external_export_download_target": EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+        "download_mode": EXTERNAL_EXPORT_DOWNLOAD_MODE,
+        "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
+        "source_gate": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE,
+    }
+    record_ref = _stable_id("l3-source-directory-hybrid-external-export-download-prepare", readiness_basis)
+    existing_readiness = reconciliation_summary.get("external_export_download_prepare")
+    if isinstance(existing_readiness, dict):
+        if str(existing_readiness.get("external_export_download_record_ref") or "") == record_ref:
+            return _external_export_download_prepare_response(
+                request_id=request_id,
+                status="already_prepared",
+                session=session,
+                material_snapshot=material_snapshot,
+                qualitative_analysis=qualitative_analysis,
+                reconciliation=reconciliation,
+                packages=packages,
+                readiness_state=existing_readiness,
+            )
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_already_recorded",
+            "This source-directory hybrid package set already has external export/download readiness.",
+            http_status=409,
+            details={"blocked_fields": ["external_export_download_record_ref"]},
+        )
+
+    descriptor_ref = _stable_id(
+        "l3-source-directory-hybrid-external-export-download-descriptor",
+        {
+            **readiness_basis,
+            "schema_id": "layer3.source_directory_hybrid_external_export_download_descriptor_authority.v1",
+        },
+    )
+    descriptor = {
+        "schema_id": "layer3.source_directory_hybrid_external_export_download_descriptor.v1",
+        "descriptor_ref": descriptor_ref,
+        "session_id": session.session_id,
+        "reconciliation_record_id": reconciliation_record_id,
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_envelope_ref": supplied_envelope_ref,
+        "external_export_download_target": EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+        "download_mode": EXTERNAL_EXPORT_DOWNLOAD_MODE,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_hashes": expected_payload_hashes,
+        "payload_refs": None,
+        "payload_refs_redacted": True,
+        "browser_download_enabled": False,
+        "same_origin_delivery_enabled": False,
+        "provider_public_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_DOWNSTREAM_UNAVAILABLE),
+    }
+    readiness_state = {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+        "external_export_download_prepare_schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+        "client_request_id": request_id,
+        "external_export_download_record_ref": record_ref,
+        "export_download_descriptor_ref": descriptor_ref,
+        "external_export_download_descriptor": descriptor,
+        "authority_basis": readiness_basis,
+        "external_export_download_state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+        "external_export_download_target": EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+        "download_mode": EXTERNAL_EXPORT_DOWNLOAD_MODE,
+        "operator_decision": EXTERNAL_EXPORT_DOWNLOAD_OPERATOR_DECISION,
+        "decision_notes": str(fields.get("decision_notes") or "").strip() or None,
+        "reconciliation_record_id": reconciliation_record_id,
+        "package_review_submit_record_ref": str(fields.get("package_review_submit_record_ref") or ""),
+        "package_review_state": PACKAGE_REVIEW_APPROVED_STATE,
+        "package_review_preview_hash": expected_preview_hash,
+        "construction_basis_hash": str(fields.get("construction_basis_hash") or ""),
+        "prepare_record_ref": supplied_prepare_ref,
+        "handoff_export_state": HANDOFF_EXPORT_PREPARED_STATE,
+        "handoff_export_envelope_ref": supplied_envelope_ref,
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_hashes": expected_payload_hashes,
+        "payload_refs": None,
+        "payload_refs_redacted": True,
+        "source_gate": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE,
+        "package_review_submit_source_gate": PACKAGE_REVIEW_SUBMIT_SOURCE_GATE,
+        "package_construction_source_gate": SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_shape": material_snapshot.source_shape,
+        "recorded_at": _server_time(),
+        "same_origin_delivery_enabled": False,
+        "browser_download_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_DOWNSTREAM_UNAVAILABLE),
+    }
+    reconciliation.summary_json = {
+        **reconciliation_summary,
+        "external_export_download_prepare": readiness_state,
+    }
+    session.summary_json = {
+        **_json_clone(session.summary_json or {}),
+        "external_export_download_prepare": {
+            "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID,
+            "external_export_download_prepare_schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+            "external_export_download_record_ref": record_ref,
+            "export_download_descriptor_ref": descriptor_ref,
+            "external_export_download_state": EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE,
+            "reconciliation_record_id": reconciliation_record_id,
+            "prepare_record_ref": supplied_prepare_ref,
+            "payload_refs": None,
+            "payload_refs_redacted": True,
+            "source_gate": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE,
+            "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        },
+    }
+    db.commit()
+
+    return _external_export_download_prepare_response(
+        request_id=request_id,
+        status="prepared",
+        session=session,
+        material_snapshot=material_snapshot,
+        qualitative_analysis=qualitative_analysis,
+        reconciliation=reconciliation,
+        packages=packages,
+        readiness_state=readiness_state,
+    )
+
+
 def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
     forbidden = sorted(set(fields) & _FORBIDDEN_FIELDS)
@@ -1473,6 +1885,32 @@ def _normalise_handoff_export_prepare_payload(payload: Mapping[str, Any]) -> dic
         )
     for field in sorted(_HANDOFF_EXPORT_PREPARE_REQUIRED_FIELDS):
         _require_handoff_field(fields, field)
+    return fields
+
+
+def _normalise_external_export_download_prepare_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _EXTERNAL_EXPORT_DOWNLOAD_PREPARE_FORBIDDEN_FIELDS)
+    if forbidden:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_forbidden_field_not_admitted",
+            "The source-directory hybrid external export/download prepare request includes deferred or forbidden fields.",
+            details={"forbidden_fields": forbidden},
+        )
+    unknown = sorted(
+        set(fields)
+        - _EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUIRED_FIELDS
+        - _OPTIONAL_FIELDS
+        - {"decision_notes"}
+    )
+    if unknown:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_unknown_field",
+            "The source-directory hybrid external export/download prepare request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    for field in sorted(_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_REQUIRED_FIELDS):
+        _require_external_export_download_prepare_field(fields, field)
     return fields
 
 
@@ -1844,6 +2282,7 @@ def _hybrid_qualitative_analysis_status_state(
         "source_directory_hybrid_package_commit_available": False,
         "source_directory_hybrid_package_review_submit_available": False,
         "source_directory_hybrid_handoff_export_prepare_available": False,
+        "source_directory_hybrid_external_export_download_prepare_available": False,
         "reconciliation_record_id": None,
         "construction_basis_hash": None,
         "output_packages": [],
@@ -1857,6 +2296,11 @@ def _hybrid_qualitative_analysis_status_state(
         "handoff_export_prepare_record_ref": None,
         "handoff_target": None,
         "export_mode": None,
+        "external_export_download_record_ref": None,
+        "external_export_download_state": None,
+        "external_export_download_target": None,
+        "export_download_descriptor_ref": None,
+        "download_mode": None,
         "package_review_submit_enabled": False,
         "handoff_enabled": False,
         "export_enabled": False,
@@ -2014,7 +2458,7 @@ def _hybrid_qualitative_analysis_status_state(
             "next_allowed_actions": [],
             "status_defects": ["handoff_export_prepare_state_invalid"],
         }
-    return {
+    handoff_state = {
         **review_state,
         "source_directory_hybrid_handoff_export_prepare_available": True,
         "handoff_export_state": prepare_state.get("handoff_export_state"),
@@ -2024,6 +2468,32 @@ def _hybrid_qualitative_analysis_status_state(
         "handoff_enabled": False,
         "export_enabled": False,
         "downstream_unavailable": list(HANDOFF_EXPORT_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        "next_allowed_actions": [],
+    }
+    readiness_state = summary.get("external_export_download_prepare")
+    if not isinstance(readiness_state, dict):
+        return handoff_state
+
+    readiness_available = (
+        str(readiness_state.get("schema_id") or "") == EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID
+        and str(readiness_state.get("external_export_download_prepare_schema_id") or "")
+        == EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+    )
+    if not readiness_available:
+        return {
+            **handoff_state,
+            "next_allowed_actions": [],
+            "status_defects": ["external_export_download_prepare_state_invalid"],
+        }
+    return {
+        **handoff_state,
+        "source_directory_hybrid_external_export_download_prepare_available": True,
+        "external_export_download_record_ref": readiness_state.get("external_export_download_record_ref"),
+        "external_export_download_state": readiness_state.get("external_export_download_state"),
+        "external_export_download_target": readiness_state.get("external_export_download_target"),
+        "export_download_descriptor_ref": readiness_state.get("export_download_descriptor_ref"),
+        "download_mode": readiness_state.get("download_mode"),
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_DOWNSTREAM_UNAVAILABLE),
         "next_allowed_actions": [],
     }
 
@@ -2218,6 +2688,27 @@ def _load_material_snapshot_for_handoff_export_prepare(
         ) from exc
 
 
+def _load_material_snapshot_for_external_export_download_prepare(
+    db: Session,
+    *,
+    material_snapshot_id: str,
+    source_authority: Mapping[str, Any],
+) -> L3MaterialSnapshot:
+    try:
+        return _load_material_snapshot_for_commit(
+            db,
+            material_snapshot_id=material_snapshot_id,
+            source_authority=source_authority,
+        )
+    except SourceDirectoryHybridPackageCommitError as exc:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            exc.code.replace("package_commit", "external_export_download_prepare"),
+            exc.message.replace("package commit", "external export/download prepare"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
 def _load_handoff_export_prepare_session(db: Session, *, material_snapshot: L3MaterialSnapshot) -> L3Session:
     try:
         return _load_package_commit_session(db, material_snapshot=material_snapshot)
@@ -2225,6 +2716,22 @@ def _load_handoff_export_prepare_session(db: Session, *, material_snapshot: L3Ma
         raise SourceDirectoryHybridHandoffExportPrepareError(
             exc.code.replace("package_commit", "handoff_export_prepare"),
             exc.message.replace("package construction", "handoff/export prepare"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
+def _load_external_export_download_prepare_session(
+    db: Session,
+    *,
+    material_snapshot: L3MaterialSnapshot,
+) -> L3Session:
+    try:
+        return _load_package_commit_session(db, material_snapshot=material_snapshot)
+    except SourceDirectoryHybridPackageCommitError as exc:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            exc.code.replace("package_commit", "external_export_download_prepare"),
+            exc.message.replace("package construction", "external export/download prepare"),
             http_status=exc.http_status,
             details=exc.details,
         ) from exc
@@ -2280,6 +2787,27 @@ def _source_directory_hybrid_review_packages_for_handoff_export_prepare(
         ) from exc
 
 
+def _source_directory_hybrid_review_packages_for_external_export_download_prepare(
+    db: Session,
+    *,
+    session_id: str,
+    reconciliation_record_id: str,
+) -> list[L3OutputPackage]:
+    try:
+        return _source_directory_hybrid_review_packages(
+            db,
+            session_id=session_id,
+            reconciliation_record_id=reconciliation_record_id,
+        )
+    except SourceDirectoryHybridPackageReviewSubmitError as exc:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            exc.code.replace("package_review_submit", "external_export_download_prepare"),
+            exc.message.replace("Package-review submit", "External export/download prepare"),
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
 def _submit_string_list(value: Any, *, field: str) -> list[str]:
     if not isinstance(value, list):
         raise SourceDirectoryHybridPackageReviewSubmitError(
@@ -2309,6 +2837,23 @@ def _handoff_string_list(value: Any, *, field: str) -> list[str]:
         raise SourceDirectoryHybridHandoffExportPrepareError(
             "source_directory_hybrid_handoff_export_prepare_list_field_invalid",
             "Handoff/export prepare list fields must be supplied as non-empty string lists.",
+            details={"field": field},
+        )
+    return normalized
+
+
+def _external_export_download_prepare_string_list(value: Any, *, field: str) -> list[str]:
+    if not isinstance(value, list):
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_list_field_invalid",
+            "External export/download prepare list fields must be supplied as non-empty string lists.",
+            details={"field": field},
+        )
+    normalized = [str(item or "").strip() for item in value]
+    if not normalized or any(not item for item in normalized):
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_list_field_invalid",
+            "External export/download prepare list fields must be supplied as non-empty string lists.",
             details={"field": field},
         )
     return normalized
@@ -2485,6 +3030,101 @@ def _handoff_export_prepare_response(
     }
 
 
+def _external_export_download_prepare_response(
+    *,
+    request_id: str,
+    status: str,
+    session: L3Session,
+    material_snapshot: L3MaterialSnapshot,
+    qualitative_analysis: Mapping[str, Any],
+    reconciliation: L3ReconciliationRecord,
+    packages: list[L3OutputPackage],
+    readiness_state: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema_id": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "mode": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_MODE,
+        "status": status,
+        "operator_decision": readiness_state["operator_decision"],
+        "decision_notes": readiness_state.get("decision_notes"),
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_ingestion_batch_id": qualitative_analysis["source_ingestion_batch_id"],
+        "source_ingestion_file_id": qualitative_analysis["source_ingestion_file_id"],
+        "content_sha256": qualitative_analysis["content_sha256"],
+        "file_identity_hash": qualitative_analysis["file_identity_hash"],
+        "authority_basis_hash": qualitative_analysis["authority_basis_hash"],
+        "payload_hash": qualitative_analysis["payload_hash"],
+        "index_authority_hash": qualitative_analysis["index_authority_hash"],
+        "embedding_index_authority_hash": qualitative_analysis["embedding_index_authority_hash"],
+        "lexical_context_packet_hash": qualitative_analysis["lexical_context_packet_hash"],
+        "hybrid_context_packet_hash": qualitative_analysis["hybrid_context_packet_hash"],
+        "qualitative_analysis_hash": qualitative_analysis["qualitative_analysis_hash"],
+        "source_directory_hybrid_package_review_preview_hash": readiness_state["package_review_preview_hash"],
+        "construction_basis_hash": readiness_state["construction_basis_hash"],
+        "reconciliation_record_id": reconciliation.reconciliation_record_id,
+        "output_packages": [
+            {
+                "output_package_id": package.output_package_id,
+                "package_kind": package.package_kind,
+                "status": package.status,
+                "payload_hash": package.payload_hash,
+                "payload_ref_redacted": True,
+            }
+            for package in packages
+        ],
+        "output_package_ids": [package.output_package_id for package in packages],
+        "package_kinds": [package.package_kind for package in packages],
+        "payload_hashes": [package.payload_hash for package in packages],
+        "payload_refs_redacted": True,
+        "package_review_state": readiness_state["package_review_state"],
+        "package_review_submit_record_ref": readiness_state["package_review_submit_record_ref"],
+        "handoff_export_state": readiness_state["handoff_export_state"],
+        "prepare_record_ref": readiness_state["prepare_record_ref"],
+        "handoff_export_envelope_ref": readiness_state["handoff_export_envelope_ref"],
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+        "external_export_download_state": readiness_state["external_export_download_state"],
+        "external_export_download_record_ref": readiness_state["external_export_download_record_ref"],
+        "export_download_descriptor_ref": readiness_state["export_download_descriptor_ref"],
+        "external_export_download_target": EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+        "download_mode": EXTERNAL_EXPORT_DOWNLOAD_MODE,
+        "external_export_download_descriptor": _json_clone(
+            readiness_state["external_export_download_descriptor"]
+        ),
+        "same_origin_delivery_enabled": False,
+        "browser_download_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "prompt_model_provider_runtime_enabled": False,
+        "package_review_submit_source_gate": PACKAGE_REVIEW_SUBMIT_SOURCE_GATE,
+        "package_construction_source_gate": SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        "source_gate": EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_GATE,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_PREPARE_DOWNSTREAM_UNAVAILABLE),
+        "next_state": readiness_state["external_export_download_state"],
+        "next_allowed_actions": [],
+        "negative_invariants": {
+            "same_origin_delivery_enabled": False,
+            "browser_download_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "provider_private_signed_url_enabled": False,
+            "connector_dispatch_enabled": False,
+            "network_egress_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "prompt_model_provider_runtime_enabled": False,
+            "package_payload_rewrite_enabled": False,
+            "source_package_row_mutation_enabled": False,
+        },
+    }
+
+
 def _required(fields: Mapping[str, Any], key: str) -> str:
     value = str(fields.get(key) or "").strip()
     if not value:
@@ -2524,6 +3164,17 @@ def _require_handoff_field(fields: Mapping[str, Any], key: str) -> str:
         raise SourceDirectoryHybridHandoffExportPrepareError(
             "source_directory_hybrid_handoff_export_prepare_required_field_missing",
             "A required source-directory hybrid handoff/export prepare field is missing or empty.",
+            details={"field": key},
+        )
+    return value
+
+
+def _require_external_export_download_prepare_field(fields: Mapping[str, Any], key: str) -> str:
+    value = str(fields.get(key) or "").strip()
+    if not value:
+        raise SourceDirectoryHybridExternalExportDownloadPrepareError(
+            "source_directory_hybrid_external_export_download_prepare_required_field_missing",
+            "A required source-directory hybrid external export/download prepare field is missing or empty.",
             details={"field": key},
         )
     return value

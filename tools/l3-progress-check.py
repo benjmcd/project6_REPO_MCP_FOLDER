@@ -2270,6 +2270,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_STATUS_CURREN
     PLANNING_DOCS
     / "835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY = (
+    PLANNING_DOCS
+    / "836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -71520,6 +71524,80 @@ def _check_source_directory_hybrid_context_packet_qualitative_analysis_status_cu
                 )
 
 
+def _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry(
+    errors: list[str],
+) -> None:
+    runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY,
+        errors,
+    )
+    for term in (
+        "Base authority: `project6-origin/main` at `7d341da135a0`.",
+        "835_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_CURRENT_MAIN_SYNC.md",
+        "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare",
+        "prepare_source_directory_hybrid_external_export_download",
+        "source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference",
+        "reference_only_prepare",
+        "external_export_download_prepared",
+        "already_prepared",
+        "The read-only status route reports existing external export/download prepare readiness without enabling download or delivery.",
+        "No browser download, same-origin delivery, provider URL, signed URL, connector dispatch, destination write, credential use, network egress, or frontend durable authority is activated.",
+        "await a narrow sync pass for this runtime",
+    ):
+        if term not in runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY)} "
+                f"missing source-directory hybrid external export/download prepare runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Hybrid Context Qualitative Analysis External Export Download Prepare Runtime Entry Freeze",
+            "836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "codex/l3-next-gap-after-835",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_implemented_branch_local",
+            "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_authority",
+            "status route to report existing external export/download prepare readiness without enabling delivery",
+            "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+        ),
+        MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_implemented_branch_local",
+            "codex/l3-next-gap-after-835",
+            "836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_status_review_fix_sync",
+            "implement_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_after_status_sync",
+            "layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_authority",
+            '"status_surface_reports_readiness": true',
+            '"same_origin_delivery_enabled": false',
+            '"browser_download_enabled": false',
+            '"connector_dispatch_enabled": false',
+            '"frontend_rendered_controls_enabled": false',
+            "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime",
+        ),
+        PROOF_MANIFEST: (
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry_proof",
+            "branch_local_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry",
+            "source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_implemented_branch_local",
+            "836_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE.md",
+            "prepare records external_export_download_prepared readiness with payload refs redacted",
+            "prepare supports idempotent replay as already_prepared",
+            "prepare rejects stale package payload authority",
+            "status reports existing external export/download prepare readiness without enabling delivery",
+            "same-origin delivery browser download provider delivery connector dispatch network egress frontend durable authority package mutation package rewrite source package row mutation and new source families remain blocked",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory hybrid external export/download prepare runtime artifact term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -72214,6 +72292,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_qualitative_analysis_status_current_main_sync(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare_runtime_entry(
         errors
     )
 
