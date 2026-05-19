@@ -2630,12 +2630,17 @@ class Layer3SourceIntakeRecordResponse(Layer3BaseResponse):
 
 class Layer3SourceDirectoryIngestionResponse(Layer3BaseResponse):
     source_ingestion_batch_id: str
+    runtime_policy_id: str | None = None
     source_family: str
     ingestion_mode: str
     config_authority: str
     source_root_ref: str
     source_root_absolute_path_exposed: bool
     direct_child_only: bool
+    recursive_traversal_admitted: bool | None = None
+    max_recursion_depth: int | None = None
+    max_relative_path_segments: int | None = None
+    caller_selected_recursive_flag_allowed: bool | None = None
     allowed_extensions: list[str]
     eligible_file_count: int
     total_size_bytes: int
