@@ -32489,5 +32489,50 @@
   "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/813_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_CURRENT_MAIN_SYNC.md",
   "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_status": "current_main_synced_source_directory_external_export_download_prepare_runtime",
   "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_next_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_external_export_download_prepare_sync",
-  "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_summary": "Doc 813 proof syncs the source-directory external export/download prepare runtime after PR #1417 and pivots to the next named Layer 3 end-to-end gap selection."
+  "latest_source_directory_external_export_download_prepare_runtime_current_main_sync_summary": "Doc 813 proof syncs the source-directory external export/download prepare runtime after PR #1417 and pivots to the next named Layer 3 end-to-end gap selection.",
+  "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_proof": {
+    "proof_kind": "branch_local_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry",
+    "status": "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_implemented_branch_local",
+    "runtime_branch": "codex/l3-hybrid-analysis-status-surface",
+    "runtime_doc": "next_milestone_plans/Layer3_planning_docs/834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
+    "current_main_preflight_checkpoint": "8a177fe960824216e4b2554f10f928e4c1e45b7f",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/833_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_CURRENT_MAIN_SYNC.md",
+    "selected_from_posture": "select_next_named_layer3_end_to_end_gap_after_source_directory_hybrid_context_qualitative_analysis_handoff_export_prepare_sync",
+    "runtime_behavior_change": true,
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_source_directory_hybrid_analysis.py .\\backend\\app\\api\\layer3.py .\\backend\\app\\services\\layer3_bootstrap_contract.py .\\backend\\app\\services\\layer3_readiness_contract.py .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_status_is_read_only_before_package_commit .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_status_reports_existing_review_and_handoff_state -q",
+      "python -m pytest .\\backend\\tests\\test_layer3_source_directory_vector_retrieval.py .\\backend\\tests\\test_layer3_bootstrap_contract.py .\\backend\\tests\\test_layer3_readiness_contract.py -q",
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json",
+      "python .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen",
+      "git diff --check"
+    ],
+    "proof_results": [
+      "PASS",
+      "PASS 2 passed 3 warnings",
+      "PASS 17 passed 3 warnings",
+      "PASS",
+      "PASS",
+      "PASS",
+      "PASS frozen",
+      "PASS with CRLF normalization warnings only"
+    ],
+    "proof_coverage": [
+      "source-directory hybrid context-packet qualitative-analysis status route is POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/status",
+      "response schema is layer3.source_directory_hybrid_context_packet_qualitative_analysis_status.v1",
+      "runtime mode is source_directory_hybrid_context_packet_qualitative_analysis_status_authority",
+      "source gate is 834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE",
+      "status before package commit reports analysis and preview availability without package or reconciliation rows",
+      "status after handoff/export prepare reports existing package commit package-review submit and handoff/export prepare state without creating rows",
+      "supporting segments analysis result package-review preview payload and package payload refs remain redacted"
+    ],
+    "next_posture_after_merge": "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime"
+  },
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_branch": "codex/l3-hybrid-analysis-status-surface",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_doc": "next_milestone_plans/Layer3_planning_docs/834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE.md",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_status": "source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_implemented_branch_local",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_next_posture_after_merge": "await_current_main_sync_for_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime",
+  "latest_source_directory_hybrid_context_packet_qualitative_analysis_status_runtime_entry_summary": "Doc 834 proof records the read-only source-directory hybrid context-packet qualitative-analysis status surface over existing package-review and handoff/export state."
 }

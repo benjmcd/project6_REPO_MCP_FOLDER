@@ -755,6 +755,89 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_uses_hybrid
         db.close()
 
 
+def test_source_directory_hybrid_context_packet_qualitative_analysis_status_is_read_only_before_package_commit(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    payload = {
+        **_vector_retrieval_payload(
+            snapshot_info,
+            index_authority_hash,
+            embedding_index_authority_hash,
+            "BETA alpha alpha",
+        ),
+        "client_request_id": "source-directory-hybrid-analysis-status",
+        "analysis_question": "What does the alpha beta evidence support?",
+        "analysis_focus": "deterministic hybrid status evidence",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+
+    response = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
+        ),
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_status.v1"
+    )
+    assert body["mode"] == (
+        "source_directory_hybrid_context_packet_qualitative_analysis_status_authority"
+    )
+    assert body["source_gate"] == (
+        "834_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_STATUS_RUNTIME_ENTRY_FREEZE"
+    )
+    assert body["status"] == "available"
+    assert body["analysis_status"] == (
+        "source_directory_hybrid_context_packet_qualitative_analysis_available"
+    )
+    assert body["source_directory_package_review_preview_available"] is True
+    assert body["source_directory_hybrid_package_commit_available"] is False
+    assert body["source_directory_hybrid_package_review_submit_available"] is False
+    assert body["source_directory_hybrid_handoff_export_prepare_available"] is False
+    assert body["output_package_ids"] == []
+    assert body["reconciliation_record_id"] is None
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["export_enabled"] is False
+    assert body["external_export_download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_delivery_enabled"] is False
+    assert body["provider_private_signed_url_enabled"] is False
+    assert body["network_egress_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["prompt_model_provider_runtime_enabled"] is False
+    assert body["supporting_segments_redacted"] is True
+    assert body["analysis_result_redacted"] is True
+    assert body["status_defects"] == []
+    assert body["next_allowed_actions"] == [
+        "commit_source_directory_hybrid_context_packet_qualitative_analysis_package"
+    ]
+    assert "supporting_segments" not in body
+    assert "source_directory_hybrid_package_review_preview" not in body
+    assert str(source_dir) not in response.text
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_downstream_side_effects(db)
+        assert db.query(L3ReconciliationRecord).count() == 0
+        assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
 def test_source_directory_hybrid_context_packet_qualitative_analysis_package_commit_writes_bounded_packages(
     client: TestClient,
     tmp_path,
@@ -1224,6 +1307,121 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_handoff_exp
     )
     assert conflict.status_code == 409
     assert conflict.json()["error"]["code"] == "source_directory_hybrid_handoff_export_prepare_already_recorded"
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_status_reports_existing_review_and_handoff_state(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    analysis_body, commit_body, submit_body, submit_payload, embedding_index_authority_hash = (
+        _hybrid_package_review_submit_authority(
+            client,
+            tmp_path,
+            monkeypatch,
+            client_request_id="source-directory-hybrid-status-existing-state-analysis",
+        )
+    )
+    handoff_payload = {
+        **submit_payload,
+        "operator_decision": "authorize_prepare",
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": "package_review_approved",
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+    }
+    handoff = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/prepare"
+        ),
+        json=handoff_payload,
+    )
+    assert handoff.status_code == 200, handoff.text
+    handoff_body = handoff.json()
+
+    db = client.layer3_session_factory()
+    try:
+        package_count = db.query(L3OutputPackage).count()
+        reconciliation_count = db.query(L3ReconciliationRecord).count()
+    finally:
+        db.close()
+
+    status_payload = {
+        key: value
+        for key, value in submit_payload.items()
+        if key
+        not in {
+            "qualitative_analysis_hash",
+            "source_directory_hybrid_package_review_preview_hash",
+            "construction_basis_hash",
+            "reconciliation_record_id",
+            "output_package_ids",
+            "package_kinds",
+            "payload_hashes",
+            "operator_decision",
+        }
+    }
+    status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
+        ),
+        json=status_payload,
+    )
+
+    assert status.status_code == 200, status.text
+    body = status.json()
+    assert body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_status.v1"
+    )
+    assert body["qualitative_analysis_hash"] == analysis_body["qualitative_analysis_hash"]
+    assert body["hybrid_context_packet_hash"] == analysis_body["hybrid_context_packet_hash"]
+    assert body["embedding_index_authority_hash"] == embedding_index_authority_hash
+    assert body["source_directory_hybrid_package_commit_available"] is True
+    assert body["source_directory_hybrid_package_review_submit_available"] is True
+    assert body["source_directory_hybrid_handoff_export_prepare_available"] is True
+    assert body["reconciliation_record_id"] == commit_body["reconciliation_record_id"]
+    assert body["construction_basis_hash"] == commit_body["construction_basis_hash"]
+    assert body["output_package_ids"] == commit_body["output_package_ids"]
+    assert body["package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert body["payload_hashes"] == commit_body["payload_hashes"]
+    assert body["payload_refs_redacted"] is True
+    assert body["package_review_state"] == "package_review_approved"
+    assert body["package_review_submit_record_ref"] == submit_body["submit_record_ref"]
+    assert body["handoff_export_state"] == "handoff_export_prepared"
+    assert body["handoff_export_prepare_record_ref"] == handoff_body["prepare_record_ref"]
+    assert body["handoff_target"] == "internal_export_envelope"
+    assert body["export_mode"] == "prepare_only"
+    assert body["package_review_submit_enabled"] is False
+    assert body["handoff_enabled"] is False
+    assert body["export_enabled"] is False
+    assert body["external_export_download_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["provider_public_delivery_enabled"] is False
+    assert body["provider_private_signed_url_enabled"] is False
+    assert body["network_egress_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["prompt_model_provider_runtime_enabled"] is False
+    assert body["downstream_unavailable"] == [
+        "external_export_download",
+        "connector_dispatch",
+        "provider_public_delivery",
+        "provider_private_signed_url",
+        "network_egress",
+    ]
+    assert body["status_defects"] == []
+    assert body["next_allowed_actions"] == []
+    assert "source_directory_hybrid_package_review_preview" not in body
+    assert "supporting_segments" not in body
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == package_count
+        assert db.query(L3ReconciliationRecord).count() == reconciliation_count
+        _assert_no_forbidden_package_commit_downstream(db)
+    finally:
+        db.close()
 
 
 def test_source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare_requires_approved_submit(
