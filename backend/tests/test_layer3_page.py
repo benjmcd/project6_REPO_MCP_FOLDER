@@ -71,6 +71,17 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="source-intake-inventory-list"' in response.text
     assert 'id="source-intake-preview-panel"' in response.text
     assert 'id="source-intake-gate-b-status"' in response.text
+    assert 'id="source-directory-ingestion-rendered-controls"' in response.text
+    assert (
+        'data-rendered-mode="rendered_server_configured_source_directory_ingestion_control"'
+        in response.text
+    )
+    assert 'id="source-directory-ingestion-scan-form"' in response.text
+    assert 'id="source-directory-ingestion-client-request-id"' in response.text
+    assert 'id="source-directory-ingestion-batch-id"' in response.text
+    assert 'id="source-directory-ingestion-status"' in response.text
+    assert 'id="source-directory-ingestion-scan-submit"' in response.text
+    assert 'id="source-directory-ingestion-panel"' in response.text
     assert 'id="raw-mixed-corpus-batch-id"' in response.text
     assert 'id="raw-mixed-manifest-ref"' in response.text
     assert 'id="raw-mixed-manifest-hash"' in response.text
@@ -202,6 +213,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert css.status_code == 200
     assert js.status_code == 200
     assert claude.status_code == 200
+    js_text = js.text.replace("\r\n", "\n")
     assert "mockup spec §8A plus one bounded APS content document trace sample" in claude.text
     assert "APS content document<br>selection" in claude.text
     assert "aps-doc-operator-evidence-001" in claude.text
@@ -528,6 +540,14 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function isSourceIntakeExternalExportDownloadState" in js.text
     assert "function sourceIntakeDeliveryUiState" in js.text
     assert "source_intake_external_export_download_delivery_ui_ready" in js.text
+    assert "sourceDirectoryIngestionRenderedControls" in js.text
+    assert "SOURCE_DIRECTORY_INGESTION_SCAN_PATH" in js.text
+    assert "SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX" in js.text
+    assert "scan_server_configured_operator_directory" in js.text
+    assert "server_configured_operator_directory_text_table_ingestion" in js.text
+    assert "server_configured_operator_directory_text_table_source_family" in js.text
+    assert "postJson(SOURCE_DIRECTORY_INGESTION_SCAN_PATH" in js.text
+    assert "getJson(`${SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX}" in js.text
     signed_reference_start = js.text.find("function canGenerateExternalExportDownloadSignedReference")
     provider_signed_url_start = js.text.find("function canPrepareProviderPrivateSignedUrl")
     assert signed_reference_start != -1
@@ -567,11 +587,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "deliver_source_directory_hybrid_external_export_download" in js.text
     assert (
         "postJson(\n            SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH"
-        in js.text
+        in js_text
     )
     assert (
         "submitAttachmentForm(\n            SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH"
-        in js.text
+        in js_text
     )
     assert "operator_view_mode: 'status_only'" in js.text
     assert "operator_decision: elements.resultReviewDecision.value" in js.text
@@ -846,6 +866,61 @@ def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
         "package_payload_rewrite:",
         "source_package_row_mutation:",
         "raw_vector",
+    ):
+        assert forbidden not in payload_slice
+
+
+def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    payload_start = js.text.find("function sourceDirectoryIngestionPayload")
+    forbidden_start = js.text.find("function sourceDirectoryIngestionForbiddenPayloadTerms")
+    render_start = js.text.find("function renderDirectoryPanel")
+    scan_start = js.text.find("async function scanSourceDirectory")
+    status_start = js.text.find("async function inspectSourceDirectoryBatch")
+    bind_start = js.text.find("function bindSourceDirectoryIngestionControls")
+    assert payload_start != -1
+    assert forbidden_start != -1
+    assert render_start != -1
+    assert scan_start != -1
+    assert status_start != -1
+    assert bind_start != -1
+
+    payload_slice = js.text[payload_start:forbidden_start]
+    render_slice = js.text[render_start:scan_start]
+    scan_slice = js.text[scan_start:status_start]
+    status_slice = js.text[status_start:bind_start]
+    assert "operator_decision: SOURCE_DIRECTORY_INGESTION_OPERATOR_DECISION" in payload_slice
+    assert "source_family: SOURCE_DIRECTORY_INGESTION_SOURCE_FAMILY" in payload_slice
+    assert "ingestion_mode: SOURCE_DIRECTORY_INGESTION_MODE" in payload_slice
+    assert "postJson(SOURCE_DIRECTORY_INGESTION_SCAN_PATH" in scan_slice
+    assert "getJson(`${SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX}" in status_slice
+    assert "source_root_absolute_path_exposed === false ? 'blocked'" in render_slice
+    assert "'caller_supplied_path'" in render_slice
+    assert "'recursive_ingestion'" in render_slice
+    assert "'browser_file_bytes'" in render_slice
+    assert "'web_connector'" in render_slice
+    assert "'rag_vector_index'" in render_slice
+    assert "'frontend_durable_authority'" in render_slice
+    for forbidden in (
+        "path:",
+        "paths:",
+        "directory:",
+        "local_path:",
+        "url:",
+        "urls:",
+        "glob:",
+        "recursive:",
+        "file:",
+        "files:",
+        "file_bytes:",
+        "rag_vector_index:",
+        "web_connector:",
+        "connector_run_id:",
+        "provider_credentials:",
+        "raw_vector:",
+        "package_payload_rewrite:",
     ):
         assert forbidden not in payload_slice
 
