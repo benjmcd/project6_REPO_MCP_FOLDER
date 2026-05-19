@@ -6,9 +6,9 @@ Status: validate-only fixture-authority record contract for `sublayer3c_optional
 
 Doc: `850_FIXTURE_VALIDATE_ONLY.md`.
 
-Branch: `codex/l3-fixture-authority-validator`.
+Branch: `codex/l3-per-tool-fixture-authority-status`.
 
-Current-main preflight checkpoint: `ccad39c85ec3257027a3706558a04f49f51ae13d`.
+Current-main preflight checkpoint: `6a5a1d04a7d818aab9951815ee52ba2cea2253fd`.
 
 Prior gate: `849_SUBLAYER3C_OPTIONAL_TOOL_BENCHMARK_FIXTURE_AUTHORITY_GATE.md`.
 
@@ -26,7 +26,7 @@ Fixture authority selection introduced by this validator: `false`.
 
 Doc 849 correctly stops optional-tool benchmark progression because current main does not yet select supervised TabPFN fixture authority or NRC RAG regulatory grounding query-set authority.
 
-This validate-only pass makes the future fixture-authority selection record executable and fail-closed before any later freeze can claim that product authority exists. It does not fill fixture authority, choose benchmark cases, generate fixture data, run benchmarks, install optional dependencies, or admit runtime behavior.
+This validate-only pass makes the future fixture-authority selection record executable and fail-closed before any later freeze can claim that product authority exists. The record now supports per-tool fixture authority status so one candidate tool can be selected, deferred for absent fixture authority, or no-adopted for absent fixture authority without inventing data for another candidate tool. It does not fill fixture authority, choose benchmark cases, generate fixture data, run benchmarks, install optional dependencies, or admit runtime behavior.
 
 The validator is `tools/l3-fixture-validate.py`. The focused tests are `backend/tests/test_layer3_fixture_validate.py`.
 
@@ -45,7 +45,7 @@ The governing current-main context is:
 
 ## Structured Fixture Authority Record
 
-The current record is pending. Selection fields remain `null`; control fields remain fail-closed.
+The current record is pending. Per-tool status fields remain `pending`; selection fields remain `null`; control fields remain fail-closed.
 
 ```yaml
 benchmark_fixture_authority_schema_id: layer3.sublayer3c_optional_tool_benchmark_fixture_authority.v1
@@ -57,6 +57,8 @@ package_handoff_export_download_allowed: false
 runtime_behavior_change: false
 benchmark_execution_change: false
 fixture_materialization_change: false
+tabpfn_fixture_authority_status: pending
+nrc_rag_fixture_authority_status: pending
 tabpfn_fixture_authority: null
 tabpfn_source_authority: null
 tabpfn_fixture_kind: null
@@ -94,17 +96,25 @@ implementation_entry_freeze_written: false
 - fixed schema and tool set are present;
 - runtime isolation remains required;
 - default dependency, provider/network, package/handoff/export/download, runtime behavior, benchmark execution, and fixture materialization remain false;
+- both per-tool fixture authority statuses remain `pending`;
 - all TabPFN and NRC RAG selection fields remain `null`;
 - `selection_complete` is false; and
 - `implementation_entry_freeze_written` is false.
 
-`--expect selected` is reserved for a later product-authority record. It requires every TabPFN and NRC RAG selection field to be filled, keeps runtime/execution/materialization flags false, requires `selection_complete: true`, and requires `implementation_entry_freeze_written: false`.
+`--expect selected` is reserved for a later product-authority record. It accepts per-tool statuses of `pending`, `selected`, `deferred_absent_fixture_authority`, or `no_adopt_absent_fixture_authority`. Any tool with status `selected` must fill every required field for that tool. Any tool without status `selected` must keep that tool's fixture fields `null`. The selected record requires at least one selected tool, keeps runtime/execution/materialization flags false, keeps `implementation_entry_freeze_written: false`, and keeps `selection_complete: false` until no tool remains `pending`.
 
-`--expect frozen` is reserved for a later current-main implementation-entry freeze. It requires the same selected fixture authority fields, keeps runtime/execution/materialization flags false, requires `selection_complete: true`, and requires `implementation_entry_freeze_written: true`.
+`--expect frozen` is reserved for a later current-main implementation-entry freeze. It requires at least one selected tool, no `pending` tool status, all required fields for every selected tool, `null` fields for deferred or no-adopted tools, runtime/execution/materialization flags false, `selection_complete: true`, and `implementation_entry_freeze_written: true`.
+
+Per-tool fixture authority statuses:
+
+- `pending`: no fixture authority decision has been recorded for this tool;
+- `selected`: exact fixture/query-set authority is selected for this tool;
+- `deferred_absent_fixture_authority`: useful candidate context may exist, but exact fixture/query-set authority is absent; and
+- `no_adopt_absent_fixture_authority`: the tool is no-adopted for this benchmark lane because exact fixture/query-set authority is absent.
 
 ## Required Future Selection Fields
 
-The later product-authority fill must include every TabPFN field:
+The later product-authority fill must include every TabPFN field when `tabpfn_fixture_authority_status: selected`:
 
 - `tabpfn_fixture_authority`;
 - `tabpfn_source_authority`;
@@ -120,7 +130,7 @@ The later product-authority fill must include every TabPFN field:
 - `tabpfn_no_adopt_threshold`; and
 - `tabpfn_license_dependency_runtime_constraints`.
 
-The later product-authority fill must include every NRC RAG field:
+The later product-authority fill must include every NRC RAG field when `nrc_rag_fixture_authority_status: selected`:
 
 - `nrc_rag_fixture_authority`;
 - `nrc_rag_query_set_authority`;
@@ -144,6 +154,14 @@ The validator additionally fail-closes selected and frozen records unless:
 - regression fixtures use `tabpfn_metric_family: mae_or_rmse`; and
 - `nrc_rag_fixture_kind` is exactly `regulatory_context_grounding_query_set`.
 
+## Candidate Package Context
+
+The package `layer3_ingress_to_insight_example_final_audited` may be used only as candidate fixture/source material, not as runtime authority, benchmark oracle, output schema, fixture materialization authority, or source-authority promotion.
+
+The package contains a credible TabPFN candidate source at `01_initial_received_ingress_objects/ING-0022__epa_fueleconomy_vehicles.csv`. The candidate target is `comb08`; candidate non-leaky feature columns present in the file are `year`, `cylinders`, `displ`, `drive`, `trany`, `VClass`, `fuelType1`, and `phevBlended`; the candidate task would be regression with `mae_or_rmse` and mean/median baseline policy. This is candidate-supported but not selected because the package does not define an exact static micro-fixture row basis, train/test row basis, or reviewed duplicate-cross-split rule.
+
+The package does not provide NRC Licensing RAG query-set authority. It lacks stable NRC RAG query ids, fixed NRC/regulatory query texts, answerability labels, expected source identifiers, expected source spans, unsupported-query refusal behavior tied to query ids, and a citation rubric tied to the package corpus. Regulatory-looking package material is not NRC Licensing RAG authority.
+
 ## Non-Admission Boundary
 
 This validate-only pass admits no runtime behavior, benchmark execution, fixture data creation, fixture materialization, fixture selection, backend route, API DTO, response model, database model, migration, dependency, package installation, provider adapter, provider credential, network egress, rendered optional-tool controls, frontend durable authority, connector dispatch, agent tool-call runtime, package mutation, handoff/export/download integration, signed-reference integration, Gate C/pass-entry admission, source-authority promotion, quantitative method-selection behavior, hidden model call, cloud/API inference, embedding call, vector-store startup, corpus download, Chroma runtime, OpenAI/Claude/provider runtime, TabPFN runtime, TabPFN dependency, TabPFN fit/predict execution, TabPFN checkpoint loading, nrc-licensing-rag dependency, NRC RAG runtime, or auth/security behavior change.
@@ -164,4 +182,4 @@ Required validation for this pass:
 
 The next exact posture remains `await_product_authority_for_optional_tool_benchmark_fixture_selection`.
 
-A later lane may fill this record only when product authority selects exact fixture authority for both TabPFN and NRC RAG. Without that authority, optional-tool benchmark progression remains blocked.
+A later lane may fill this record only when product authority gives at least one tool exact selected fixture authority and records a terminal per-tool status for every other candidate tool. Without exact authority for a selected tool, optional-tool benchmark progression remains blocked.

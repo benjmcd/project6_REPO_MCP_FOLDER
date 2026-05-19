@@ -48,6 +48,7 @@ def _record_text(module, values: dict[str, str]) -> str:
 
 def _pending_values(module) -> dict[str, str]:
     values = dict(module.FIXED_FIELDS)
+    values.update({field: "pending" for field in module.TOOL_STATUS_FIELDS})
     values.update({field: "null" for field in module.SELECTION_FIELDS})
     values["selection_complete"] = "false"
     values["implementation_entry_freeze_written"] = "false"
@@ -56,6 +57,12 @@ def _pending_values(module) -> dict[str, str]:
 
 def _selected_values(module) -> dict[str, str]:
     values = dict(module.FIXED_FIELDS)
+    values.update(
+        {
+            "tabpfn_fixture_authority_status": "selected",
+            "nrc_rag_fixture_authority_status": "selected",
+        }
+    )
     values.update(
         {
             "tabpfn_fixture_authority": "tests/fixtures/layer3/tabpfn_micro_fixture.json",
@@ -91,6 +98,50 @@ def _selected_values(module) -> dict[str, str]:
     return values
 
 
+def _defer_tabpfn(values: dict[str, str]) -> dict[str, str]:
+    deferred = dict(values)
+    deferred["tabpfn_fixture_authority_status"] = "deferred_absent_fixture_authority"
+    for field in (
+        "tabpfn_fixture_authority",
+        "tabpfn_source_authority",
+        "tabpfn_fixture_kind",
+        "tabpfn_target_column",
+        "tabpfn_feature_columns",
+        "tabpfn_task_type",
+        "tabpfn_train_test_split",
+        "tabpfn_leakage_checks",
+        "tabpfn_row_count_band",
+        "tabpfn_metric_family",
+        "tabpfn_baseline_family",
+        "tabpfn_no_adopt_threshold",
+        "tabpfn_license_dependency_runtime_constraints",
+    ):
+        deferred[field] = "null"
+    return deferred
+
+
+def _defer_nrc_rag(values: dict[str, str]) -> dict[str, str]:
+    deferred = dict(values)
+    deferred["nrc_rag_fixture_authority_status"] = "deferred_absent_fixture_authority"
+    for field in (
+        "nrc_rag_fixture_authority",
+        "nrc_rag_query_set_authority",
+        "nrc_rag_fixture_kind",
+        "nrc_rag_query_ids",
+        "nrc_rag_query_texts",
+        "nrc_rag_answerability_labels",
+        "nrc_rag_expected_source_identifiers",
+        "nrc_rag_expected_source_spans",
+        "nrc_rag_expected_refusal_behavior",
+        "nrc_rag_citation_rubric",
+        "nrc_rag_baseline_surface_set",
+        "nrc_rag_no_adopt_threshold",
+        "nrc_rag_dependency_provider_network_runtime_constraints",
+    ):
+        deferred[field] = "null"
+    return deferred
+
+
 def _issue_codes(issues) -> set[str]:
     return {issue.code for issue in issues}
 
@@ -100,10 +151,10 @@ def test_current_fixture_authority_record_validates_as_pending() -> None:
     text = RECORD_PATH.read_text(encoding="utf-8")
 
     assert module.validate_text(text, "pending") == []
-    assert "selected_field_must_be_filled" in _issue_codes(
+    assert "selected_record_requires_selected_tool" in _issue_codes(
         module.validate_text(text, "selected")
     )
-    assert "frozen_field_must_be_filled" in _issue_codes(
+    assert "frozen_record_requires_selected_tool" in _issue_codes(
         module.validate_text(text, "frozen")
     )
 
@@ -125,6 +176,30 @@ def test_selected_and_frozen_fixture_records_have_distinct_freeze_expectations()
     assert module.validate_text(_record_text(module, frozen_values), "frozen") == []
 
 
+def test_per_tool_selected_tabpfn_with_nrc_deferred_stays_pre_freeze() -> None:
+    module = _load_validator()
+    values = _defer_nrc_rag(_selected_values(module))
+
+    assert values["selection_complete"] == "true"
+    assert values["implementation_entry_freeze_written"] == "false"
+    assert module.validate_text(_record_text(module, values), "selected") == []
+    assert "frozen_freeze_written_must_be_true" in _issue_codes(
+        module.validate_text(_record_text(module, values), "frozen")
+    )
+
+
+def test_per_tool_selected_nrc_with_tabpfn_deferred_stays_pre_freeze() -> None:
+    module = _load_validator()
+    values = _defer_tabpfn(_selected_values(module))
+
+    assert values["selection_complete"] == "true"
+    assert values["implementation_entry_freeze_written"] == "false"
+    assert module.validate_text(_record_text(module, values), "selected") == []
+    assert "frozen_freeze_written_must_be_true" in _issue_codes(
+        module.validate_text(_record_text(module, values), "frozen")
+    )
+
+
 def test_fixture_record_rejects_runtime_or_network_admission() -> None:
     module = _load_validator()
     values = _selected_values(module)
@@ -136,7 +211,27 @@ def test_fixture_record_rejects_runtime_or_network_admission() -> None:
     )
 
 
-def test_fixture_record_rejects_invalid_tool_fixture_fields() -> None:
+def test_selected_tool_must_fill_all_required_fields() -> None:
+    module = _load_validator()
+    values = _defer_nrc_rag(_selected_values(module))
+    values["tabpfn_target_column"] = "null"
+
+    assert "selected_field_must_be_filled" in _issue_codes(
+        module.validate_text(_record_text(module, values), "selected")
+    )
+
+
+def test_nonselected_tool_fields_must_remain_null() -> None:
+    module = _load_validator()
+    values = _defer_nrc_rag(_selected_values(module))
+    values["nrc_rag_query_ids"] = "q1,q2"
+
+    assert "nonselected_tool_field_must_be_null" in _issue_codes(
+        module.validate_text(_record_text(module, values), "selected")
+    )
+
+
+def test_fixture_record_rejects_invalid_selected_tool_fixture_fields() -> None:
     module = _load_validator()
     values = _selected_values(module)
     values["tabpfn_fixture_kind"] = "generic_table"

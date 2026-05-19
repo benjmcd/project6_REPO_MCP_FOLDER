@@ -33220,8 +33220,8 @@
     "proof_kind": "validate_only_sublayer3c_optional_tool_fixture_authority_record_contract",
     "status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending",
     "doc": "next_milestone_plans/Layer3_planning_docs/850_FIXTURE_VALIDATE_ONLY.md",
-    "branch": "codex/l3-fixture-authority-validator",
-    "current_main_preflight_checkpoint": "ccad39c85ec3257027a3706558a04f49f51ae13d",
+    "branch": "codex/l3-per-tool-fixture-authority-status",
+    "current_main_preflight_checkpoint": "6a5a1d04a7d818aab9951815ee52ba2cea2253fd",
     "validator": "tools/l3-fixture-validate.py",
     "validator_test": "backend/tests/test_layer3_fixture_validate.py",
     "proof_terms": [
@@ -33236,9 +33236,14 @@
       "fixture materialization forbidden",
       "fixture selection false",
       "tools/l3-fixture-validate.py --expect pending",
-      "selected and frozen states require TabPFN and NRC RAG fields",
+      "per-tool fixture authority statuses pending selected deferred_absent_fixture_authority no_adopt_absent_fixture_authority",
+      "selected tools require all fields",
+      "nonselected tool fields remain null",
+      "frozen state requires implementation_entry_freeze_written true",
       "dataset_version_supervised_tabular_micro_fixture",
       "regulatory_context_grounding_query_set",
+      "TabPFN candidate source ING-0022__epa_fueleconomy_vehicles.csv not selected",
+      "NRC RAG query-set authority absent",
       "no dependency/provider/network admission",
       "no package/handoff/export/download integration",
       "await_product_authority_for_optional_tool_benchmark_fixture_selection"
@@ -33254,11 +33259,11 @@
       "git diff --check PASS"
     ],
     "next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection",
-    "summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority and no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
+    "summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed per-tool status validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority; package evidence supports only TabPFN candidate context, not a selected micro-fixture, and does not support NRC RAG query-set authority. This admits no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
   },
-  "latest_sublayer3c_optional_tool_fixture_validate_branch": "codex/l3-fixture-authority-validator",
+  "latest_sublayer3c_optional_tool_fixture_validate_branch": "codex/l3-per-tool-fixture-authority-status",
   "latest_sublayer3c_optional_tool_fixture_validate_doc": "next_milestone_plans/Layer3_planning_docs/850_FIXTURE_VALIDATE_ONLY.md",
   "latest_sublayer3c_optional_tool_fixture_validate_status": "sublayer3c_optional_tool_fixture_authority_validate_only_pending",
   "latest_sublayer3c_optional_tool_fixture_validate_next_posture": "await_product_authority_for_optional_tool_benchmark_fixture_selection",
-  "latest_sublayer3c_optional_tool_fixture_validate_summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority and no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
+  "latest_sublayer3c_optional_tool_fixture_validate_summary": "Doc 850 adds a validate-only pending fixture-authority record contract and fail-closed per-tool status validator for future TabPFN and NRC RAG benchmark fixture selections. The current record remains pending with no selected fixture authority; package evidence supports only TabPFN candidate context, not a selected micro-fixture, and does not support NRC RAG query-set authority. This admits no runtime behavior, benchmark execution, fixture materialization, dependency/provider/network admission, package/handoff/export/download integration, or Gate C/pass-entry admission."
 }
