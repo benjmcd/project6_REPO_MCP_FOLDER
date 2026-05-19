@@ -139,6 +139,8 @@ Hard rule:
 
 ## Current Snapshot
 
+This section is an append-only snapshot/addendum ledger. Earlier dated bullets remain historical; current authority is summarized in `Program State Summary` and `Current Focus`.
+
 As of `2026-05-06`:
 - seed local checkout used to prepare this local-only progress/proof sync: `C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\worktrees\l3-synth-ref`
 - valid local authority rule: use a clean checkout whose contents match the artifact state being refreshed; prefer current `main` for merged repo truth and the active branch checkout only when an open or branch-only milestone is explicitly declared
