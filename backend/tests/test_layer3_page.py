@@ -870,6 +870,68 @@ def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
         assert forbidden not in payload_slice
 
 
+def test_layer3_analysis_environment_projection_rendered_reader_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    css = client.get("/review/layer3/static/layer3.css")
+
+    assert js.status_code == 200
+    assert css.status_code == 200
+    helper_start = js.text.find("function currentAnalysisEnvironmentProjection")
+    status_start = js.text.find("function analysisEnvironmentProjectionStatus")
+    readiness_start = js.text.find("function analysisEnvironmentPlaneReadiness")
+    model_start = js.text.find("function currentSublayerVisualizationModel")
+    render_start = js.text.find("function renderAnalysisEnvironmentProjectionStatus")
+    plane_start = js.text.find("function renderAnalysisPlane")
+    source_family_start = js.text.find("function renderSourceFamilySummary")
+    assert helper_start != -1
+    assert status_start != -1
+    assert readiness_start != -1
+    assert model_start != -1
+    assert render_start != -1
+    assert plane_start != -1
+    assert source_family_start != -1
+
+    helper_slice = js.text[helper_start:status_start]
+    status_slice = js.text[status_start:readiness_start]
+    model_slice = js.text[model_start:render_start]
+    render_slice = js.text[render_start:source_family_start]
+    assert "State.sessionSummary?.analysis_environment_projection" in helper_slice
+    assert "layer3.analysis_environment_projection.v1" in status_slice
+    assert "analysis_environment_projection_missing" in status_slice
+    assert "analysis_environment_projection_schema_invalid" in status_slice
+    assert "analysis_environment_projection_not_read_only" in status_slice
+    assert "analysisEnvironmentPlaneReadiness(" in model_slice
+    assert "analysisEnvironmentProjectionStatus:" in model_slice
+    assert 'class="analysis-environment-projection"' in render_slice
+    assert "data-projection-available" in render_slice
+    assert "forbidden_runtime_authority" in status_slice
+    assert "projection_state" in status_slice
+    assert "available_for_downstream_analysis" in status_slice
+    assert "plane_readiness" in js.text
+    assert "package_authority" not in helper_slice
+    for forbidden in (
+        "postJson(",
+        "submitAttachmentForm(",
+        "localStorage",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "network_egress:",
+        "package_mutation:",
+        "source_promotion:",
+        "vector_store:",
+        "optional_tool:",
+    ):
+        assert forbidden not in render_slice
+
+    assert ".analysis-environment-projection" in css.text
+    assert ".analysis-environment-projection-head" in css.text
+    assert 'data-projection-available="true"' in css.text
+
+
 def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None:
     js = client.get("/review/layer3/static/layer3.js")
 
