@@ -16,7 +16,7 @@ DEFAULT_RECORD = (
     / "850_FIXTURE_VALIDATE_ONLY.md"
 )
 STRUCTURED_RECORD_HEADING = "## Structured Fixture Authority Record"
-EXPECTED_STATES = ("pending", "selected", "frozen")
+EXPECTED_STATES = ("pending", "checkpoint", "selected", "frozen")
 NULL_VALUES = {"null", "none"}
 TRUE_VALUE = "true"
 FALSE_VALUE = "false"
@@ -397,6 +397,43 @@ def validate_record(values: dict[str, str], expected_state: str) -> list[Validat
                     "pending fixture authority record must keep implementation_entry_freeze_written false",
                 )
             )
+    elif expected_state == "checkpoint":
+        if selected_tool_count != 0:
+            issues.append(
+                ValidationIssue(
+                    "checkpoint_record_must_not_select_tool",
+                    "checkpoint fixture authority record must not select a tool",
+                )
+            )
+        if not any(status != "pending" for status in (tabpfn_status, nrc_rag_status)):
+            issues.append(
+                ValidationIssue(
+                    "checkpoint_record_requires_nonpending_tool_status",
+                    "checkpoint fixture authority record must defer or no-adopt at least one tool",
+                )
+            )
+        for field in SELECTION_FIELDS:
+            if not _is_nullish(values[field]):
+                issues.append(
+                    ValidationIssue(
+                        "checkpoint_field_must_be_null",
+                        f"checkpoint fixture authority field {field!r} must remain null",
+                    )
+                )
+        if selection_complete != FALSE_VALUE:
+            issues.append(
+                ValidationIssue(
+                    "checkpoint_selection_complete_must_be_false",
+                    "checkpoint fixture authority record must keep selection_complete false",
+                )
+            )
+        if freeze_written != FALSE_VALUE:
+            issues.append(
+                ValidationIssue(
+                    "checkpoint_freeze_written_must_be_false",
+                    "checkpoint fixture authority record must keep implementation_entry_freeze_written false",
+                )
+            )
     elif expected_state == "selected":
         if selected_tool_count == 0:
             issues.append(
@@ -443,7 +480,7 @@ def validate_record(values: dict[str, str], expected_state: str) -> list[Validat
             issues.extend(_validate_tabpfn_selected_values(values))
         if nrc_rag_status == "selected":
             issues.extend(_validate_nrc_rag_selected_values(values))
-    else:
+    elif expected_state == "frozen":
         if selected_tool_count == 0:
             issues.append(
                 ValidationIssue(
@@ -533,7 +570,7 @@ def main(argv: list[str] | None = None) -> int:
         "--expect",
         choices=EXPECTED_STATES,
         default="pending",
-        help="Expected record state: pending, selected, or frozen.",
+        help="Expected record state: pending, checkpoint, selected, or frozen.",
     )
     parser.add_argument(
         "--json",
