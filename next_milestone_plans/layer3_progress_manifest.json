@@ -7198,7 +7198,15 @@
     "latest_recursive_source_ingestion_family_selection_freeze_selected_family": "recursive_server_configured_operator_directory_text_table_source_family",
     "latest_recursive_source_ingestion_family_selection_freeze_implementation_entry_allowed_next": false,
     "latest_recursive_source_ingestion_family_selection_freeze_next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
-    "latest_recursive_source_ingestion_family_selection_freeze_summary": "Doc 854 selects recursive_server_configured_operator_directory_text_table_source_family as the next broader source-ingestion family without admitting runtime. Direct-child source-directory ingestion remains unchanged with recursive traversal blocked until a later runtime-entry freeze selects exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope."
+    "latest_recursive_source_ingestion_family_selection_freeze_summary": "Doc 854 selects recursive_server_configured_operator_directory_text_table_source_family as the next broader source-ingestion family without admitting runtime. Direct-child source-directory ingestion remains unchanged with recursive traversal blocked until a later runtime-entry freeze selects exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope.",
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_branch": "codex/l3-recursive-source-ingestion-freeze-sync",
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_status": "current_main_synced_recursive_source_ingestion_family_selection_freeze",
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_runtime_behavior_change": false,
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_pr": "#1464",
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_merge_commit": "cd7cd385710102724c572615b33105956a22d52b",
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_next_posture": "select_recursive_source_ingestion_runtime_policy_before_implementation",
+    "latest_recursive_source_ingestion_family_selection_freeze_current_main_sync_summary": "Doc 855 syncs PR #1464 to current main as the no-runtime recursive source-ingestion family selection. Recursive traversal remains unimplemented and blocked until a later runtime-entry freeze selects exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope."
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -35640,5 +35648,61 @@
     },
     "next_posture": "current_main_sync_recursive_server_configured_operator_directory_text_table_source_family_freeze_then_select_runtime_policy",
     "summary": "Doc 854 selects the next broader source-ingestion family as recursive server-configured local directory text/table ingestion while keeping runtime blocked. The existing direct-child source-directory scan/status behavior remains unchanged and recursive traversal requires a later runtime-entry freeze with exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope."
+  },
+  "recursive_source_ingestion_family_selection_freeze_current_main_sync": {
+    "status": "current_main_synced_recursive_source_ingestion_family_selection_freeze",
+    "doc": "next_milestone_plans/Layer3_planning_docs/855_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-recursive-source-ingestion-freeze-sync",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/854_RECURSIVE_SOURCE_INGESTION_FAMILY_SELECTION_FREEZE.md",
+    "freeze_pr": "#1464",
+    "freeze_branch": "codex/l3-recursive-source-ingestion-freeze",
+    "freeze_branch_commit": "070a50ffade4c3d0d255c836e41b754152692ecb",
+    "freeze_merge_commit": "cd7cd385710102724c572615b33105956a22d52b",
+    "runtime_behavior_change": false,
+    "selected_source_family": "recursive_server_configured_operator_directory_text_table_source_family",
+    "selected_source_family_class": "recursive_server_configured_local_directory_text_table_ingestion",
+    "implementation_entry_allowed_next": false,
+    "current_direct_child_ingestion_unchanged": true,
+    "current_recursive_traversal_admitted": false,
+    "checks": [
+      "backend-layer3-api SUCCESS 3m26s",
+      "test SUCCESS 4m30s"
+    ],
+    "review_surface": {
+      "comments": 0,
+      "reviews": 0,
+      "latestReviews": 0,
+      "reviewThreads_totalCount": 0,
+      "unresolved_reviewThreads_totalCount": 0,
+      "merge_state_before_merge": "CLEAN"
+    },
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS"
+    ],
+    "blocked_scope": {
+      "runtime_behavior": false,
+      "recursive_traversal_live_api": false,
+      "request_schema_change": false,
+      "rendered_control_change": false,
+      "source_authority_promotion": false,
+      "package_handoff_export_download_integration": false,
+      "connector_dispatch": false,
+      "provider_urls": false,
+      "credentials_or_network": false,
+      "semantic_vector_rag_widening": false,
+      "prompt_model_provider_qualitative_generation": false,
+      "tabpfn_runtime": false,
+      "nrc_rag_runtime": false,
+      "optional_tool_gate_c_or_pass_entry_admission": false,
+      "broad_auth_security_behavior": false,
+      "pdf_ocr_office_image_or_binary_ingestion": false,
+      "browser_upload_web_or_database_connector": false,
+      "caller_provided_paths": false
+    },
+    "next_posture": "select_recursive_source_ingestion_runtime_policy_before_implementation",
+    "summary": "Current main now includes the no-runtime recursive source-ingestion family selection from doc 854 via PR #1464. The live direct-child server-configured source-directory ingestion behavior remains unchanged and recursive traversal is still blocked until a later runtime-entry freeze selects exact traversal limits, exclusion policy, stale-authority behavior, status/readiness projection, downstream material authority compatibility, and proof scope."
   }
 }
