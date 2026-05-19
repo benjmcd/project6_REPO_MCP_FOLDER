@@ -33828,5 +33828,53 @@
     ],
     "next_posture": "current_main_sync_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
     "summary": "Read-only session-summary projection is implemented through analysis_environment_projection with schema layer3.analysis_environment_projection.v1, authority source read_only_session_summary_projection, fail-closed blocked upstream handling, no input mutation, and no rendered/write/model/package/source/provider/connector/auth/security widening."
+  },
+  "downstream_analysis_environment_authority_projection_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "status": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/864_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-analysis-environment-projection-sync",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "runtime_proof_doc": "next_milestone_plans/Layer3_planning_docs/863_DOWNSTREAM_ANALYSIS_ENVIRONMENT_AUTHORITY_PROJECTION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1479",
+    "runtime_branch_commit": "be62382228425559a7437ea47cfbf2ffc45d18f0",
+    "runtime_merge_commit": "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34",
+    "synced_result": "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+    "selected_implementation_action": "implement_downstream_analysis_environment_authority_projection_read_only_session_summary",
+    "owner_service": "backend/app/services/layer3_analysis_environment_projection.py",
+    "api_surface": "GET /api/v1/layer3/session/{session_id}",
+    "response_field_type": "analysis_environment_projection: dict[str, Any]",
+    "schema_id": "layer3.analysis_environment_projection.v1",
+    "authority_source": "read_only_session_summary_projection",
+    "proof_terms": [
+      "current-main proof/control sync",
+      "PR #1479 merged",
+      "3d4fff8c56986be3bc1e7f5e9f69d823cfc97d34",
+      "current_main_synced_downstream_analysis_environment_authority_projection_read_only_session_summary_runtime",
+      "backend-layer3-api SUCCESS 3m14s",
+      "test SUCCESS 3m52s",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "backend/app/services/layer3_analysis_environment_projection.py",
+      "analysis_environment_projection: dict[str, Any]",
+      "layer3.analysis_environment_projection.v1",
+      "read_only_session_summary_projection",
+      "no runtime behavior introduced by sync",
+      "no rendered control change",
+      "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync"
+    ],
+    "proof_commands": [
+      "python -m py_compile .\\backend\\app\\services\\layer3_analysis_environment_projection.py .\\backend\\app\\services\\layer3_workbench.py .\\backend\\app\\api\\layer3.py .\\tools\\l3-progress-check.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_analysis_environment_projection.py -q PASS 3 passed",
+      "python -m pytest .\\backend\\tests\\test_layer3_api.py -q -k \"test_layer3_special_route_openapi_contracts or test_layer3_api_plan_preview_success_is_read_only_for_seeded_admissible_session or test_layer3_api_analysis_execution_start_runs_selected_pass_once\" PASS 3 passed 186 deselected",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python .\\tools\\l3-target-selection-validate.py --expect frozen PASS",
+      "python .\\tools\\l3-fixture-validate.py --expect pending PASS",
+      "python .\\tools\\l3-fixture-validate.py .\\next_milestone_plans\\Layer3_planning_docs\\851_FIXTURE_CHECKPOINT.md --expect checkpoint PASS",
+      "git diff --check PASS"
+    ],
+    "next_posture": "select_next_major_layer3_end_to_end_gap_after_downstream_analysis_environment_projection_runtime_sync",
+    "summary": "Doc 864 syncs the read-only Analysis Environment projection runtime to current main after PR #1479, records green checks and empty review surfaces, preserves no-new-runtime sync boundaries, and selects the next posture as a fresh exact Layer 3 end-to-end gap selection."
   }
 }
