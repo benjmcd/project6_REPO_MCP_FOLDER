@@ -11042,7 +11042,7 @@ init();
 
     function renderDirectoryFiles(files) {
         if (!Array.isArray(files) || !files.length) {
-            return '<li>No admitted direct child files returned.</li>';
+            return '<li>No admitted server-configured files returned.</li>';
         }
         return files.map((file) => `
             <li>
@@ -11053,6 +11053,17 @@ init();
                 <code>${escapeDirectoryText(file.file_identity_hash || '')}</code>
             </li>
         `).join('');
+    }
+
+    function directoryAuthorityStatus(payload) {
+        const status = payload.status || 'status unavailable';
+        if (status === 'already_recorded') {
+            return 'already_recorded: idempotent replay of existing server authority';
+        }
+        if (status === 'recorded') {
+            return 'recorded: server authority captured';
+        }
+        return status;
     }
 
     function renderDirectoryPanel(payload = state.latestBatch) {
@@ -11070,20 +11081,32 @@ init();
             return;
         }
         const invariants = payload.negative_invariants || {};
+        const schemaId = payload.schema_id
+            || (payload.mode === `${SOURCE_DIRECTORY_INGESTION_MODE}_status`
+                ? SOURCE_DIRECTORY_INGESTION_STATUS_SCHEMA_ID
+                : SOURCE_DIRECTORY_INGESTION_SCHEMA_ID);
         panel.innerHTML = `
             <h3>Directory authority</h3>
             <div class="source-intake-meta">
-                <span>${escapeDirectoryText(payload.schema_id || (payload.mode === `${SOURCE_DIRECTORY_INGESTION_MODE}_status` ? SOURCE_DIRECTORY_INGESTION_STATUS_SCHEMA_ID : SOURCE_DIRECTORY_INGESTION_SCHEMA_ID))}</span>
-                <span>${escapeDirectoryText(payload.status || 'status unavailable')}</span>
+                <span>${escapeDirectoryText(schemaId)}</span>
+                <span>${escapeDirectoryText(directoryAuthorityStatus(payload))}</span>
                 <span>${escapeDirectoryText(payload.source_ingestion_batch_id || 'batch unavailable')}</span>
             </div>
             <ul class="source-intake-proof-list">
+                <li><strong>response schema:</strong> ${escapeDirectoryText(schemaId)}</li>
+                <li><strong>response status:</strong> ${escapeDirectoryText(payload.status || 'status unavailable')}</li>
+                <li><strong>idempotency:</strong> ${escapeDirectoryText(payload.status === 'already_recorded' ? 'server replay accepted' : 'server authority basis recorded')}</li>
                 <li><strong>source family:</strong> ${escapeDirectoryText(payload.source_family || SOURCE_DIRECTORY_INGESTION_SOURCE_FAMILY)}</li>
                 <li><strong>mode:</strong> ${escapeDirectoryText(payload.ingestion_mode || SOURCE_DIRECTORY_INGESTION_MODE)}</li>
+                <li><strong>runtime policy:</strong> ${escapeDirectoryText(payload.runtime_policy_id || 'policy unavailable')}</li>
                 <li><strong>config authority:</strong> ${escapeDirectoryText(payload.config_authority || SOURCE_DIRECTORY_INGESTION_CONFIG_AUTHORITY)}</li>
                 <li><strong>root ref:</strong> ${escapeDirectoryText(payload.source_root_ref || 'redacted')}</li>
                 <li><strong>raw path exposed:</strong> ${escapeDirectoryText(payload.source_root_absolute_path_exposed === false ? 'blocked' : payload.source_root_absolute_path_exposed)}</li>
                 <li><strong>direct child only:</strong> ${escapeDirectoryText(payload.direct_child_only)}</li>
+                <li><strong>recursive traversal admitted:</strong> ${escapeDirectoryText(payload.recursive_traversal_admitted)}</li>
+                <li><strong>max recursion depth:</strong> ${escapeDirectoryText(payload.max_recursion_depth ?? 'unavailable')}</li>
+                <li><strong>max relative path segments:</strong> ${escapeDirectoryText(payload.max_relative_path_segments ?? 'unavailable')}</li>
+                <li><strong>caller recursive flag:</strong> ${escapeDirectoryText(payload.caller_selected_recursive_flag_allowed === false ? 'blocked' : payload.caller_selected_recursive_flag_allowed)}</li>
                 <li><strong>allowed extensions:</strong> ${escapeDirectoryText((payload.allowed_extensions || []).join(', '))}</li>
                 <li><strong>eligible files:</strong> ${escapeDirectoryText(payload.eligible_file_count ?? 0)}</li>
             </ul>
@@ -11092,7 +11115,7 @@ init();
             <h4>Blocked Runtime</h4>
             <div class="downstream-locks">${renderDownstreamLocks([
                 'caller_supplied_path',
-                'recursive_ingestion',
+                'caller_selected_recursive_flag',
                 'browser_file_bytes',
                 'web_connector',
                 'rag_vector_index',
@@ -11103,6 +11126,7 @@ init();
             ])}</div>
             <ul class="source-intake-proof-list">
                 <li><strong>recursive traversal:</strong> ${escapeDirectoryText(invariants.recursive_traversal_enabled === false ? 'blocked' : invariants.recursive_traversal_enabled)}</li>
+                <li><strong>caller recursive flag:</strong> ${escapeDirectoryText(invariants.caller_selected_recursive_flag_enabled === false ? 'blocked' : invariants.caller_selected_recursive_flag_enabled)}</li>
                 <li><strong>RAG/vector index:</strong> ${escapeDirectoryText(invariants.rag_vector_index_enabled === false ? 'blocked' : invariants.rag_vector_index_enabled)}</li>
                 <li><strong>package construction:</strong> ${escapeDirectoryText(invariants.package_construction_enabled === false ? 'blocked' : invariants.package_construction_enabled)}</li>
                 <li><strong>connector dispatch:</strong> ${escapeDirectoryText(invariants.connector_dispatch_enabled === false ? 'blocked' : invariants.connector_dispatch_enabled)}</li>

@@ -379,3 +379,29 @@ Current Layer 3 internal webhook rendered status runtime current-main sync to pr
 - preserve the live behavior as only the bounded read-only `internal_webhook_dispatch: dict[str, Any]` session-summary projection and `/review/layer3` `#internal-webhook-dispatch-panel` rendered status surface from `State.sessionSummary.internal_webhook_dispatch`
 - do not treat the sync as dispatch rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selection, operator-supplied destination URL authority, raw URL/token/header/local-path/package exposure, ConnectorRun/ConnectorRunTarget creation, provider URL behavior, optional-tool runtime, frontend-only durable authority, or any runtime beyond PR `#1490`
 - preserve next posture as `select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync`
+
+Current Layer 3 mockup mapping selection to preserve when present:
+- `876_MOCKUP_MAPPING_SELECTION.md` records a no-runtime mapping/inventory selection for `full_mockup_activation_mapping_inventory`
+- classify the selected activation mode as `mockup_to_live_mapping_inventory_only`
+- preserve the first later runtime slice as `single_existing_rendered_control_extension`
+- preserve the preferred first target as `source_directory_ingestion_scan_status_rendered_control` over the existing server-configured scan/status route family and `/review/layer3` `#source-directory-ingestion-rendered-controls`
+- keep `internal_webhook_rendered_status_panel_read_only` and `downstream_analysis_environment_projection_read_only` as alternate read-only targets only
+- do not treat this selection as runtime behavior, rendered behavior, route/API/DTO/model/migration/service behavior change, UI control change, test behavior change, full mockup program activation, single mockup screen activation, browser-storage authority, frontend-only durable authority, caller-supplied path/file/URL/glob/recursive flag support, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, or auth/security behavior
+- preserve next posture as `freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime`
+
+Current Layer 3 source-directory extension freeze to preserve when present:
+- `877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md` records a no-runtime/no-rendered implementation-entry freeze for `extend_source_directory_ingestion_scan_status_rendered_control`
+- classify the selected activation mode as `single_existing_rendered_control_extension`
+- preserve the selected target as `source_directory_ingestion_scan_status_rendered_control`
+- preserve the future implementation as only existing `/review/layer3` `#source-directory-ingestion-rendered-controls` enrichment from current scan/status response authority fields such as `runtime_policy_id`, recursive traversal status, max recursion depth, max relative path segments, caller-selected recursive flag blocking, schema/status distinction, idempotency/replay status, and fail-closed server states
+- do not treat this freeze as runtime behavior, rendered behavior now, backend behavior change, route/API/DTO/model/migration/service change, caller path support, browser file-byte support, URL/glob support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_extension_freeze_then_implementation`
+
+Current Layer 3 source-directory extension runtime proof to preserve when present:
+- `878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md` records branch-local proof for `extend_source_directory_ingestion_scan_status_rendered_control`
+- classify the change as rendered behavior only over the existing `/review/layer3` source-directory scan/status control
+- preserve backend runtime behavior change as `false` and route/API/DTO/model/migration/service behavior change as `false`
+- preserve the rendered fields as existing scan/status response authority: `runtime_policy_id`, `recursive_traversal_admitted`, `max_recursion_depth`, `max_relative_path_segments`, `caller_selected_recursive_flag_allowed`, response schema/status, and idempotency/replay state
+- preserve headed Chromium and headless Chromium proof as passed for the focused source-directory rendered-control test
+- do not treat this proof as caller path support, browser file-byte support, URL/glob support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_extension_runtime`

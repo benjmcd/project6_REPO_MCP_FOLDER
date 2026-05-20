@@ -7284,7 +7284,28 @@
     "latest_internal_webhook_rendered_status_runtime_current_main_sync_runtime_behavior_change": false,
     "latest_internal_webhook_rendered_status_runtime_current_main_sync_rendered_behavior_change": false,
     "latest_internal_webhook_rendered_status_runtime_current_main_sync_dispatch_behavior_change": false,
-    "latest_internal_webhook_rendered_status_runtime_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync"
+    "latest_internal_webhook_rendered_status_runtime_current_main_sync_next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
+    "latest_mockup_mapping_selection_branch": "codex/l3-internal-webhook-rendered-status-runtime-sync",
+    "latest_mockup_mapping_selection_doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+    "latest_mockup_mapping_selection_status": "full_mockup_activation_mapping_inventory_selected",
+    "latest_mockup_mapping_selection_runtime_behavior_change": false,
+    "latest_mockup_mapping_selection_rendered_behavior_change": false,
+    "latest_mockup_mapping_selection_first_runtime_mode": "single_existing_rendered_control_extension",
+    "latest_mockup_mapping_selection_preferred_first_target": "source_directory_ingestion_scan_status_rendered_control",
+    "latest_mockup_mapping_selection_next_posture": "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+    "latest_source_directory_extension_freeze_branch": "codex/l3-internal-webhook-rendered-status-runtime-sync",
+    "latest_source_directory_extension_freeze_doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+    "latest_source_directory_extension_freeze_status": "source_directory_ingestion_scan_status_rendered_control_extension_frozen",
+    "latest_source_directory_extension_freeze_runtime_behavior_change": false,
+    "latest_source_directory_extension_freeze_rendered_behavior_change": false,
+    "latest_source_directory_extension_freeze_selected_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+    "latest_source_directory_extension_freeze_next_posture": "current_main_sync_source_directory_extension_freeze_then_implementation",
+    "latest_source_directory_extension_runtime_branch": "codex/l3-internal-webhook-rendered-status-runtime-sync",
+    "latest_source_directory_extension_runtime_doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+    "latest_source_directory_extension_runtime_status": "source_directory_ingestion_scan_status_rendered_control_extension_proved",
+    "latest_source_directory_extension_runtime_backend_behavior_change": false,
+    "latest_source_directory_extension_runtime_rendered_behavior_change": true,
+    "latest_source_directory_extension_runtime_next_posture": "current_main_sync_source_directory_extension_runtime"
   },
   "latest_live_theme_parity_proof_branch": "codex/l3-theme-parity-proof",
   "latest_live_theme_parity_proof_live_behavior_change": false,
@@ -36734,5 +36755,67 @@
     ],
     "next_posture": "select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync",
     "summary": "Doc 875 syncs PR #1490 merge commit 61bb8338176e704877b1883dfaa1b0ee04874ffc to current main. The internal webhook rendered status runtime is current-main synced with live behavior limited to the read-only internal_webhook_dispatch session-summary projection and /review/layer3 status rendering over State.sessionSummary.internal_webhook_dispatch."
+  },
+  "mockup_mapping_selection": {
+    "status": "full_mockup_activation_mapping_inventory_selected",
+    "doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+    "branch": "codex/l3-source-directory-rendered-authority-extension",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_selection": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+    "selected_activation_mode": "mockup_to_live_mapping_inventory_only",
+    "selected_first_runtime_slice": "single_existing_rendered_control_extension",
+    "preferred_first_target": "source_directory_ingestion_scan_status_rendered_control",
+    "alternate_safe_targets": [
+      "internal_webhook_rendered_status_panel_read_only",
+      "downstream_analysis_environment_projection_read_only"
+    ],
+    "full_mockup_program_activation_selected": false,
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "implementation_entry_allowed_next": false,
+    "next_posture": "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+    "summary": "Doc 876 selects the no-runtime mockup-to-live mapping inventory mode, rejects full mockup program activation for now, and selects the existing source-directory ingestion scan/status rendered control as the preferred first later single_existing_rendered_control_extension target."
+  },
+  "source_directory_extension_freeze": {
+    "status": "source_directory_ingestion_scan_status_rendered_control_extension_frozen",
+    "doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+    "branch": "codex/l3-source-directory-rendered-authority-extension",
+    "predecessor_selection_doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+    "current_main_checkpoint_before_freeze": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+    "selected_activation_mode": "single_existing_rendered_control_extension",
+    "selected_target": "source_directory_ingestion_scan_status_rendered_control",
+    "selected_implementation_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "implementation_entry_allowed_next": false,
+    "next_posture": "current_main_sync_source_directory_extension_freeze_then_implementation",
+    "summary": "Doc 877 freezes the exact first rendered-control extension scope: enrich the existing source-directory scan/status /review/layer3 control from existing server responses only, without backend behavior change, source expansion, browser-storage authority, full mockup program activation, or mockup-screen promotion."
+  },
+  "source_directory_extension_runtime_proof": {
+    "status": "source_directory_ingestion_scan_status_rendered_control_extension_proved",
+    "doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+    "branch": "codex/l3-source-directory-rendered-authority-extension",
+    "predecessor_freeze_doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+    "current_main_checkpoint_before_implementation": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+    "implemented_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+    "selected_activation_mode": "single_existing_rendered_control_extension",
+    "selected_target": "source_directory_ingestion_scan_status_rendered_control",
+    "backend_runtime_behavior_change": false,
+    "rendered_behavior_change": true,
+    "route_api_dto_model_migration_service_behavior_change": false,
+    "full_mockup_program_activation": false,
+    "changed_files": [
+      "backend/app/review_ui/static/layer3.js",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "validation": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py::test_layer3_source_directory_ingestion_rendered_control_is_bounded -q PASS 1 passed",
+      "PLAYWRIGHT_PYTHON=python npx playwright test --project=chromium -g \"Layer 3 workbench renders source-directory scan and status authority fields\" PASS 1 passed",
+      "PLAYWRIGHT_PYTHON=python npx playwright test --project=chromium --headed -g \"Layer 3 workbench renders source-directory scan and status authority fields\" PASS 1 passed"
+    ],
+    "next_posture": "current_main_sync_source_directory_extension_runtime",
+    "summary": "Doc 878 proves the branch-local source-directory rendered-control extension: the existing /review/layer3 source-directory scan/status panel now renders current server authority fields including runtime policy, recursive limits, caller recursive-flag blocking, response schema/status, and idempotency/replay status, with headed and headless Chromium proof and no backend behavior change."
   }
 }

@@ -7583,3 +7583,135 @@ test('Layer 3 workbench drives rendered source-intake upload inventory and previ
     'execution/start',
   ]);
 });
+
+test('Layer 3 workbench renders source-directory scan and status authority fields', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+  });
+
+  const scanBody = {
+    schema_id: 'layer3.source_directory_ingestion_batch.v1',
+    schema_version: 1,
+    request_id: 'source-directory-rendered-control-proof',
+    server_time: '2026-05-20T00:00:00Z',
+    source_ingestion_batch_id: 'source-dir-batch-rendered-proof',
+    runtime_policy_id: 'recursive_server_configured_directory_text_table_policy_v1',
+    source_family: 'server_configured_operator_directory_text_table_source_family',
+    ingestion_mode: 'server_configured_operator_directory_text_table_ingestion',
+    config_authority: 'LAYER3_SOURCE_INGESTION_DIR',
+    source_root_ref: 'server-configured://LAYER3_SOURCE_INGESTION_DIR',
+    source_root_absolute_path_exposed: false,
+    direct_child_only: false,
+    recursive_traversal_admitted: true,
+    max_recursion_depth: 2,
+    max_relative_path_segments: 3,
+    caller_selected_recursive_flag_allowed: false,
+    allowed_extensions: ['.csv', '.json', '.txt', '.md'],
+    eligible_file_count: 1,
+    total_size_bytes: 28,
+    status: 'recorded',
+    files: [{
+      source_ingestion_file_id: 'source-dir-file-rendered-proof',
+      relative_name: 'nested/report.md',
+      extension: '.md',
+      media_type: 'text/markdown',
+      content_size_bytes: 28,
+      content_sha256: 'a'.repeat(64),
+      file_identity_hash: 'b'.repeat(64),
+      authority_basis_hash: 'c'.repeat(64),
+      absolute_path_exposed: false,
+    }],
+    negative_invariants: {
+      recursive_traversal_enabled: true,
+      caller_selected_recursive_flag_enabled: false,
+      rag_vector_index_enabled: false,
+      package_construction_enabled: false,
+      connector_dispatch_enabled: false,
+    },
+  };
+  const statusBody = {
+    ...scanBody,
+    schema_id: 'layer3.source_directory_ingestion_status.v1',
+    request_id: 'source-directory-rendered-status-proof',
+    status: 'already_recorded',
+  };
+  let capturedScanPayload = null;
+
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/scan', async (route) => {
+    capturedScanPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify(scanBody),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/status/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(statusBody),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#source-directory-ingestion-rendered-controls');
+  await panel.scrollIntoViewIfNeeded();
+  await expect(panel).toBeVisible();
+  await page.locator('#source-directory-ingestion-client-request-id').fill('source-directory-rendered-control-proof');
+  await page.locator('#source-directory-ingestion-scan-submit').click();
+
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('runtime policy:');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText(
+    'recursive_server_configured_directory_text_table_policy_v1',
+  );
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('recursive traversal admitted: true');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('max recursion depth: 2');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('max relative path segments: 3');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('caller recursive flag: blocked');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('response schema:');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText(
+    'layer3.source_directory_ingestion_batch.v1',
+  );
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('idempotency: server authority basis recorded');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('nested/report.md');
+  await expect(page.locator('#source-directory-ingestion-panel')).not.toContainText('C:\\');
+  await expect(page.locator('#source-directory-ingestion-panel')).not.toContainText('/Users/');
+
+  expectOnlyPayloadKeys(capturedScanPayload, [
+    'client_request_id',
+    'operator_decision',
+    'source_family',
+    'ingestion_mode',
+  ]);
+  expect(capturedScanPayload).not.toHaveProperty('path');
+  expect(capturedScanPayload).not.toHaveProperty('directory');
+  expect(capturedScanPayload).not.toHaveProperty('recursive');
+  expect(capturedScanPayload).not.toHaveProperty('file_bytes');
+
+  await expect(page.locator('#source-directory-ingestion-status')).toBeEnabled();
+  await page.locator('#source-directory-ingestion-status').click();
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText(
+    'layer3.source_directory_ingestion_status.v1',
+  );
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('server replay accepted');
+
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/mixed-corpus/materialize',
+    'package/mutation',
+    'handoff/connector',
+    'provider-private-signed-url/prepare',
+    'execution/start',
+  ]);
+});
