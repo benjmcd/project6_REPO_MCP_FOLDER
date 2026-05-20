@@ -2506,6 +2506,10 @@ LAYER3_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC =
     PLANNING_DOCS
     / "901_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC = (
+    PLANNING_DOCS
+    / "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -82772,6 +82776,239 @@ def _check_mockup_query_source_setup_live_state_projection_proof_current_main_sy
             )
 
 
+def _check_mockup_to_live_mapping_inventory_after_query_source_setup_projection_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime mockup-to-live mapping inventory after `current_main_synced_mockup_query_source_setup_live_state_projection_proof`.",
+        "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+        "Predecessor current-main sync doc: `901_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this inventory: `323ff9f1872a678da142412d0008e607a20d01b0`.",
+        "Selected activation mode for this pass: `mockup_to_live_mapping_inventory_after_query_source_setup_live_state_projection_sync`.",
+        "Already current-main synced server-authoritative mockup-screen activation: `source_directory_ingestion_scan_status_mockup_screen_activation`.",
+        "Already current-main synced read-only mockup-screen projections: `mockup_pdf_location_available_state`, `downstream_analysis_environment_projection`, `mockup_sublayers_ab_live_state_projection`, `mockup_sublayer3c_execution_lanes_live_state_projection`, and `mockup_query_source_setup_live_state_projection`.",
+        "Selected next activation mode after this inventory: `single_mockup_screen_read_only_projection`.",
+        "Selected next target after this inventory: `mockup_output_review_package_handoff_live_state_projection`.",
+        "Selected next freeze: `freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime`.",
+        "Runtime behavior introduced by this inventory: `false`.",
+        "Rendered behavior introduced by this inventory: `false`.",
+        "Backend behavior introduced by this inventory: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`.",
+        "Executable test behavior introduced by this inventory: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "The next exact posture is `freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC)} missing post-query/source mapping inventory term: {term}"
+            )
+
+    expected_target_authority = [
+        '/review/layer3 #mockup-userflow-board .mockup-userflow-node[data-stage="output-review"]',
+        "/review/layer3 .mockup-flow-card.mockup-3c",
+        "/review/layer3 .mockup-output-grid",
+        "/review/layer3 .mockup-output-card",
+        "/review/layer3 #result-review-band",
+        "/review/layer3 #package-review-band",
+        "/review/layer3 #package-review-preview-panel",
+        "/review/layer3 #package-lifecycle-dashboard-panel",
+        "/review/layer3 #handoff-export-band",
+        "/review/layer3 #aps-handoff-band",
+        "/review/layer3 #external-export-download-band",
+        "/review/layer3 #downstream-access-lifecycle-dashboard-panel",
+        "POST /api/v1/layer3/execution/result/status",
+        "POST /api/v1/layer3/execution/result/review",
+        "POST /api/v1/layer3/package/review/preview",
+        "POST /api/v1/layer3/package/review/commit",
+        "POST /api/v1/layer3/package/review/submit",
+        "POST /api/v1/layer3/package/mutation/preview",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "POST /api/v1/layer3/handoff/aps/dispatch",
+        "POST /api/v1/layer3/handoff/export/download/prepare",
+        "POST /api/v1/layer3/handoff/export/download/deliver",
+        "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+        "GET /api/v1/layer3/session/{session_id}",
+        "State.resultStatus",
+        "State.resultReview",
+        "State.packageReviewPreview",
+        "State.packageConstruction",
+        "State.packageReviewSubmit",
+        "State.packageSupersessionPreview",
+        "State.replacementPackageSetAuthority",
+        "State.packageSupersessionCommit",
+        "State.replacementPackageArtifactManifest",
+        "State.replacementPackageNamespace",
+        "State.handoffExportPrepare",
+        "State.apsHandoffDispatch",
+        "State.externalExportDownloadPrepare",
+        "State.externalExportDownloadDelivery",
+        "State.externalExportDownloadSignedReference",
+        "State.sessionSummary",
+        "L3PassRun",
+        "L3OutputPackage",
+        "L3ReconciliationRecord",
+        "L3ExternalExportDownloadRecord",
+        "L3ExternalExportSignedReferenceToken",
+        "existing package/handoff/export session-summary state",
+    ]
+    for term in expected_target_authority:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC)} missing target authority term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup-To-Live Mapping Inventory After Query Source Setup Projection Sync",
+            "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+            "post_query_source_projection_mockup_to_live_mapping_inventory_selected",
+            "mockup_output_review_package_handoff_live_state_projection",
+            "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 post-query/source mockup-to-live mapping inventory to preserve when present",
+            "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+            "post_query_source_projection_mockup_to_live_mapping_inventory_selected",
+            "mockup_output_review_package_handoff_live_state_projection",
+            "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+        ),
+        REFRESH_SPEC: (
+            "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+            "post_query_source_projection_mockup_to_live_mapping_inventory_selected",
+            "mockup_output_review_package_handoff_live_state_projection",
+            "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+        ),
+        MANIFEST: (
+            '"mockup_to_live_mapping_after_query_source_setup_projection_sync"',
+            '"status": "post_query_source_projection_mockup_to_live_mapping_inventory_selected"',
+            '"selected_next_target": "mockup_output_review_package_handoff_live_state_projection"',
+            '"next_posture": "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_to_live_mapping_after_query_source_setup_projection_sync"',
+            '"902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md"',
+            '"mockup_output_review_package_handoff_live_state_projection"',
+            '"no package/handoff/export buttons inside the mockup frame"',
+            '"no full mockup program activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing post-query/source mapping inventory term: {term}"
+                )
+
+    summary = (
+        "Doc 902 records no-runtime inventory after the current-main synced "
+        "query/source setup projection. The selected next target is "
+        "mockup_output_review_package_handoff_live_state_projection, a single "
+        "mockup-screen read-only projection over existing result-review, "
+        "package-review, package lifecycle, handoff/export, APS handoff, "
+        "external export/download, downstream-access, and session-summary "
+        "authority without duplicating package/handoff/export actions inside "
+        "the mockup frame or admitting full mockup activation."
+    )
+    expected_entry = {
+        "status": "post_query_source_projection_mockup_to_live_mapping_inventory_selected",
+        "inventory_doc": "next_milestone_plans/Layer3_planning_docs/902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+        "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/901_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md",
+        "current_main_checkpoint_before_inventory": "323ff9f1872a678da142412d0008e607a20d01b0",
+        "selected_activation_mode_for_this_pass": "mockup_to_live_mapping_inventory_after_query_source_setup_live_state_projection_sync",
+        "already_synced_server_authoritative_mockup_screen_activation": "source_directory_ingestion_scan_status_mockup_screen_activation",
+        "already_synced_read_only_mockup_screen_projections": [
+            "mockup_pdf_location_available_state",
+            "downstream_analysis_environment_projection",
+            "mockup_sublayers_ab_live_state_projection",
+            "mockup_sublayer3c_execution_lanes_live_state_projection",
+            "mockup_query_source_setup_live_state_projection",
+        ],
+        "selected_next_activation_mode": "single_mockup_screen_read_only_projection",
+        "selected_next_target": "mockup_output_review_package_handoff_live_state_projection",
+        "selected_next_freeze": "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+        "target_authority": expected_target_authority,
+        "runtime_behavior_change_introduced_by_inventory": False,
+        "rendered_behavior_change_introduced_by_inventory": False,
+        "backend_behavior_change_introduced_by_inventory": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_inventory": False,
+        "executable_test_behavior_change_introduced_by_inventory": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+        "summary": summary,
+    }
+    expected_latest = {
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_doc": "next_milestone_plans/Layer3_planning_docs/902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_status": "post_query_source_projection_mockup_to_live_mapping_inventory_selected",
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_selected_next_target": "mockup_output_review_package_handoff_live_state_projection",
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_selected_next_freeze": "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_runtime_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_rendered_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_backend_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_route_api_dto_model_migration_service_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_executable_test_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_full_mockup_program_activation_selected": False,
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_implementation_entry_allowed_next": False,
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_next_posture": "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+        "latest_mockup_to_live_mapping_after_query_source_setup_projection_sync_summary": summary,
+    }
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_to_live_mapping_after_query_source_setup_projection_sync")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_to_live_mapping_after_query_source_setup_projection_sync object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_query_source_setup_projection_sync.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_to_live_mapping_after_query_source_setup_projection_sync":
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_query_source_setup_projection_sync.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_query_source_setup_projection_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+                    "901_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md",
+                    "post_query_source_projection_mockup_to_live_mapping_inventory_selected",
+                    "mockup_output_review_package_handoff_live_state_projection",
+                    "freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime",
+                    "/review/layer3 #package-review-band",
+                    "/review/layer3 #handoff-export-band",
+                    "POST /api/v1/layer3/package/review/preview",
+                    "POST /api/v1/layer3/handoff/export/prepare",
+                    "State.packageReviewPreview",
+                    "State.handoffExportPrepare",
+                    "no package/handoff/export buttons inside the mockup frame",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(path)} mockup_to_live_mapping_after_query_source_setup_projection_sync.proof_terms missing {term!r}"
+                        )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -83529,6 +83766,9 @@ def main() -> int:
     _check_mockup_query_source_setup_live_state_projection_freeze(errors)
     _check_mockup_query_source_setup_live_state_projection_proof(errors)
     _check_mockup_query_source_setup_live_state_projection_proof_current_main_sync(
+        errors
+    )
+    _check_mockup_to_live_mapping_inventory_after_query_source_setup_projection_sync(
         errors
     )
 
