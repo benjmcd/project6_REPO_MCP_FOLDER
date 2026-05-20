@@ -472,3 +472,14 @@ Current Layer 3 source-directory activation freeze to preserve when present:
 - preserve the future proof boundary as route/state/durable/idempotency/fail-closed/browser proof only, with scan payload fields limited to `client_request_id`, `operator_decision`, optional `source_family`, and optional `ingestion_mode`
 - do not treat this freeze as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, UI control change, executable test behavior change, actual single mockup screen server-authoritative activation, full mockup program activation, caller path/directory/file-byte/URL/glob/recursive-flag support, source upload or adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `current_main_sync_source_directory_activation_freeze_then_activation_proof`
+
+Current Layer 3 source-directory activation proof to preserve when present:
+- `887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md` records a branch-local server-authoritative activation proof for `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`
+- classify the implemented activation mode as `single_mockup_screen_server_authoritative_activation_proof`
+- preserve the implemented target as `source_directory_ingestion_scan_status_mockup_screen_activation`
+- preserve the proved live activation surface as existing `/review/layer3` `#source-directory-ingestion-rendered-controls` and the rendered surface decision as `reuse_existing_source_directory_ingestion_rendered_controls`
+- preserve the proof file as `e2e/layer3-workbench.spec.js`, including the positive scan/status authority proof and the fail-closed proof for HTTP 409 `source_directory_ingestion_dir_unset` and HTTP 404 `source_directory_ingestion_batch_not_found`
+- classify executable browser proof introduced as `true` and single mockup screen server-authoritative activation proved as `true`
+- preserve runtime/rendered/backend/route/API/DTO/model/migration/service behavior change as `false`
+- do not treat this proof as production UI behavior change, caller path/directory/file-byte/URL/glob/recursive-flag support, source upload or adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, any other mockup control activation, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_activation_proof`
