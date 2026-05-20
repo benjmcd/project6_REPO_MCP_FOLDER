@@ -492,3 +492,15 @@ Current Layer 3 source-directory activation proof current-main sync to preserve 
 - preserve runtime/rendered/backend/route/API/DTO/model/migration/service behavior change introduced by sync as `false`
 - do not treat this sync as new runtime behavior, new rendered behavior, production UI behavior change, caller path/directory/file-byte/URL/glob/recursive-flag support, source upload or adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, any other mockup control activation, or full mockup program activation
 - preserve next posture as `rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync`
+
+Current Layer 3 mockup-to-live mapping inventory after source-directory activation sync to preserve when present:
+- `889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md` records a no-runtime inventory after `888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md`
+- classify it as `post_source_directory_activation_mockup_to_live_mapping_inventory_selected`
+- preserve selected mode `mockup_to_live_mapping_inventory_after_source_directory_activation_proof_sync`
+- preserve source-directory scan/status as the only current-main synced server-authoritative mockup-screen activation proof
+- preserve selected next activation mode `single_mockup_screen_read_only_projection`
+- preserve selected next target `mockup_sublayers_ab_live_state_projection`
+- preserve canonical next freeze `freeze_mockup_sublayers_ab_live_state_projection_before_runtime`
+- preserve the selected target authority as `/review/layer3` `#mockup-sublayers-ab-board`, live `#gate-b-band`, live `#gate-c-band`, `GET /api/v1/layer3/session/{session_id}`, `POST /api/v1/layer3/material-preview`, `POST /api/v1/layer3/gate-b/decision`, `POST /api/v1/layer3/gate-c/preview`, blocked `POST /api/v1/layer3/gate-c/override`, `L3SelectionManifest`, `L3MaterialSnapshot`, `L3TypingRecord`, `L3AnalysisUnit`, `L3AnalysisGroup`, and `L3AnalysisSet`
+- do not treat this inventory as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior change, production UI behavior change, full mockup program activation, new write control, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `freeze_mockup_sublayers_ab_live_state_projection_before_runtime`

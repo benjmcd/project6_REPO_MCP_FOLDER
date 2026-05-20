@@ -2456,6 +2456,10 @@ LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF = (
 LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC = (
+    PLANNING_DOCS
+    / "889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -79772,6 +79776,200 @@ def _check_source_directory_activation_proof_current_main_sync(
                 errors.append(f"{_rel(path)} {key} must be {value!r}")
 
 
+def _check_mockup_to_live_mapping_inventory_after_source_directory_activation_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime mockup-to-live mapping inventory after `current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof`.",
+        "889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+        "Predecessor current-main sync doc: `888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this inventory: `296d50b120ebe9f3b503b743c90110f4f6209cfe`.",
+        "Selected activation mode for this pass: `mockup_to_live_mapping_inventory_after_source_directory_activation_proof_sync`.",
+        "Selected next activation mode after this inventory: `single_mockup_screen_read_only_projection`.",
+        "Selected next target after this inventory: `mockup_sublayers_ab_live_state_projection`.",
+        "Selected next freeze: `freeze_mockup_sublayers_ab_live_state_projection_before_runtime`.",
+        "Runtime behavior introduced by this inventory: `false`.",
+        "Rendered behavior introduced by this inventory: `false`.",
+        "Backend behavior introduced by this inventory: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "/review/layer3` `#mockup-sublayers-ab-board",
+        "L3SelectionManifest",
+        "L3MaterialSnapshot",
+        "L3TypingRecord",
+        "L3AnalysisUnit",
+        "L3AnalysisGroup",
+        "L3AnalysisSet",
+        "The next exact posture is `freeze_mockup_sublayers_ab_live_state_projection_before_runtime`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC)} missing mockup-to-live inventory term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup-To-Live Mapping Inventory After Source Directory Activation Sync",
+            "889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+            "post_source_directory_activation_mockup_to_live_mapping_inventory_selected",
+            "mockup_sublayers_ab_live_state_projection",
+            "freeze_mockup_sublayers_ab_live_state_projection_before_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup-to-live mapping inventory after source-directory activation sync to preserve when present",
+            "889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+            "mockup_to_live_mapping_inventory_after_source_directory_activation_proof_sync",
+            "single_mockup_screen_read_only_projection",
+            "mockup_sublayers_ab_live_state_projection",
+            "freeze_mockup_sublayers_ab_live_state_projection_before_runtime",
+        ),
+        REFRESH_SPEC: (
+            "889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+            "post_source_directory_activation_mockup_to_live_mapping_inventory_selected",
+            "mockup_to_live_mapping_inventory_after_source_directory_activation_proof_sync",
+            "single_mockup_screen_read_only_projection",
+            "mockup_sublayers_ab_live_state_projection",
+            "freeze_mockup_sublayers_ab_live_state_projection_before_runtime",
+        ),
+        MANIFEST: (
+            '"mockup_to_live_mapping_inventory_after_source_directory_activation_sync"',
+            '"status": "post_source_directory_activation_mockup_to_live_mapping_inventory_selected"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md"',
+            '"selected_next_target": "mockup_sublayers_ab_live_state_projection"',
+            '"next_posture": "freeze_mockup_sublayers_ab_live_state_projection_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_to_live_mapping_inventory_after_source_directory_activation_sync"',
+            '"889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md"',
+            '"mockup_sublayers_ab_live_state_projection"',
+            '"freeze_mockup_sublayers_ab_live_state_projection_before_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup-to-live inventory term: {term}")
+
+    expected_entry = {
+        "status": "post_source_directory_activation_mockup_to_live_mapping_inventory_selected",
+        "doc": "next_milestone_plans/Layer3_planning_docs/889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+        "branch": "codex/l3-mockup-live-mapping",
+        "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+        "current_main_checkpoint_before_inventory": "296d50b120ebe9f3b503b743c90110f4f6209cfe",
+        "selected_activation_mode_for_this_pass": "mockup_to_live_mapping_inventory_after_source_directory_activation_proof_sync",
+        "source_directory_scan_status_activation_status": "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+        "selected_next_activation_mode": "single_mockup_screen_read_only_projection",
+        "selected_next_target": "mockup_sublayers_ab_live_state_projection",
+        "selected_next_freeze": "freeze_mockup_sublayers_ab_live_state_projection_before_runtime",
+        "runtime_behavior_change": False,
+        "rendered_behavior_change": False,
+        "backend_behavior_change": False,
+        "route_api_dto_model_migration_service_behavior_change": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "freeze_mockup_sublayers_ab_live_state_projection_before_runtime",
+    }
+    expected_latest = {
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_branch": "codex/l3-mockup-live-mapping",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_doc": "next_milestone_plans/Layer3_planning_docs/889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_status": "post_source_directory_activation_mockup_to_live_mapping_inventory_selected",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_next_target": "mockup_sublayers_ab_live_state_projection",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_next_posture": "freeze_mockup_sublayers_ab_live_state_projection_before_runtime",
+    }
+    expected_false_latest = (
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_runtime_behavior_change",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_rendered_behavior_change",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_backend_behavior_change",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_route_api_dto_model_migration_service_behavior_change",
+        "latest_mockup_to_live_mapping_inventory_after_source_directory_activation_sync_full_mockup_program_activation_selected",
+    )
+    required_list_terms = (
+        ("canonical_next_target_authority", "/review/layer3 #mockup-sublayers-ab-board"),
+        ("canonical_next_target_authority", "/review/layer3 #gate-b-band"),
+        ("canonical_next_target_authority", "/review/layer3 #gate-c-band"),
+        ("canonical_next_target_authority", "GET /api/v1/layer3/session/{session_id}"),
+        ("canonical_next_target_authority", "POST /api/v1/layer3/material-preview"),
+        ("canonical_next_target_authority", "POST /api/v1/layer3/gate-b/decision"),
+        ("canonical_next_target_authority", "POST /api/v1/layer3/gate-c/preview"),
+        ("canonical_next_target_authority", "blocked POST /api/v1/layer3/gate-c/override"),
+        ("canonical_next_target_authority", "L3SelectionManifest"),
+        ("canonical_next_target_authority", "L3MaterialSnapshot"),
+        ("canonical_next_target_authority", "L3TypingRecord"),
+        ("canonical_next_target_authority", "L3AnalysisUnit"),
+        ("canonical_next_target_authority", "L3AnalysisGroup"),
+        ("canonical_next_target_authority", "L3AnalysisSet"),
+        ("ranked_next_targets", "mockup_sublayer3c_execution_lanes_live_state_projection"),
+        ("required_future_passes", "run_full_program_readiness_audit"),
+        ("blocked_surfaces", "frontend-only durable authority"),
+    )
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_to_live_mapping_inventory_after_source_directory_activation_sync")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_to_live_mapping_inventory_after_source_directory_activation_sync object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_inventory_after_source_directory_activation_sync.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_to_live_mapping_inventory_after_source_directory_activation_sync":
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_inventory_after_source_directory_activation_sync.proof_kind must be 'mockup_to_live_mapping_inventory_after_source_directory_activation_sync'"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_inventory_after_source_directory_activation_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+                    "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+                    "post_source_directory_activation_mockup_to_live_mapping_inventory_selected",
+                    "mockup_sublayers_ab_live_state_projection",
+                    "freeze_mockup_sublayers_ab_live_state_projection_before_runtime",
+                    "no full mockup program activation",
+                    "frontend-only durable authority blocked",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(path)} mockup-to-live proof_terms missing {term}")
+        for key, term in required_list_terms:
+            values = entry.get(key)
+            if not isinstance(values, list) or term not in values:
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_inventory_after_source_directory_activation_sync.{key} missing {term!r}"
+                )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        for key in expected_false_latest:
+            if loaded.get(key) is not False:
+                errors.append(f"{_rel(path)} {key} must be false")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+            for key in expected_false_latest:
+                if current_status.get(key) is not False:
+                    errors.append(f"{_rel(path)} current_status.{key} must be false")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -80510,6 +80708,9 @@ def main() -> int:
     _check_source_directory_activation_freeze(errors)
     _check_source_directory_activation_proof(errors)
     _check_source_directory_activation_proof_current_main_sync(errors)
+    _check_mockup_to_live_mapping_inventory_after_source_directory_activation_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")

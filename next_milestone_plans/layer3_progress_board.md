@@ -7659,3 +7659,29 @@ Single mockup screen server-authoritative activation current-main synced by this
 Still blocked: every other unproved mockup control, caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source upload/adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, cloud object-store writes, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync`.
+
+## Mockup-To-Live Mapping Inventory After Source Directory Activation Sync
+
+No-runtime inventory: `889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md`.
+
+Inventory status: `post_source_directory_activation_mockup_to_live_mapping_inventory_selected`.
+
+Predecessor sync: `888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before this inventory: `296d50b120ebe9f3b503b743c90110f4f6209cfe`.
+
+Source-directory scan/status remains the only current-main synced server-authoritative mockup-screen activation proof.
+
+Selected next activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected next target: `mockup_sublayers_ab_live_state_projection`.
+
+Selected next freeze: `freeze_mockup_sublayers_ab_live_state_projection_before_runtime`.
+
+Why this target: the remaining mockup `#mockup-sublayers-ab-board` can map to existing Gate B/Gate C route and durable state without adding actions, while source-directory scan/status, PDF-location, internal webhook, and analysis-environment projections are already proved or synced in narrower forms.
+
+Runtime behavior introduced by this inventory: `false`. Rendered behavior introduced by this inventory: `false`. Backend behavior introduced by this inventory: `false`. Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`.
+
+Still blocked: implementation before a freeze, full mockup program activation, new write controls, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `freeze_mockup_sublayers_ab_live_state_projection_before_runtime`.
