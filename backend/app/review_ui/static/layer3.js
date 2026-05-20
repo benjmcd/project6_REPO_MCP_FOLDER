@@ -384,6 +384,8 @@ const elements = {
     mockupThemeShell: document.getElementById('mockup-theme-shell'),
     mockupThemeFrameList: document.getElementById('mockup-frame-list'),
     mockupFixtureScenario: document.getElementById('mockup-fixture-scenario'),
+    mockupExecutionLanes: document.getElementById('mockup-execution-lanes'),
+    mockupExecutionLanesProjection: document.getElementById('mockup-execution-lanes-projection'),
     mockupSublayersAbBoard: document.getElementById('mockup-sublayers-ab-board'),
     mockupSublayersAbProjection: document.getElementById('mockup-sublayers-ab-projection'),
     mockupPdfLocationProjection: document.getElementById('mockup-pdf-location-projection'),
@@ -543,6 +545,7 @@ function renderMockupThemeShell() {
     }
     renderMockupPdfLocationProjection(active);
     renderMockupSublayersAbLiveProjection(active);
+    renderMockupExecutionLanesLiveProjection(active);
 }
 
 function mockupPdfLocationHighlightSpanCount(item) {
@@ -692,6 +695,169 @@ function renderMockupSublayersAbLiveProjection(active = State.themePreference ==
             ${sourceList}
         </div>
         ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only server state projection pending</span>'}
+    `;
+}
+
+function mockupProjectionObjectLoaded(value) {
+    return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function mockupExecutionLanesServerSources() {
+    const sources = [];
+    const summary = State.sessionSummary || {};
+    const add = (condition, label) => {
+        if (condition && !sources.includes(label)) sources.push(label);
+    };
+
+    add(mockupProjectionObjectLoaded(summary.sublayer_visualization), 'State.sessionSummary.sublayer_visualization');
+    add(mockupProjectionObjectLoaded(summary.analysis_environment_projection), 'State.sessionSummary.analysis_environment_projection');
+    add(mockupProjectionObjectLoaded(summary.plan_preview), 'State.sessionSummary.plan_preview');
+    add(mockupProjectionObjectLoaded(summary.plan_approval), 'State.sessionSummary.plan_approval');
+    add(mockupProjectionObjectLoaded(summary.execution_selection), 'State.sessionSummary.execution_selection');
+    add(mockupProjectionObjectLoaded(summary.analysis_execution_start), 'State.sessionSummary.analysis_execution_start');
+    add(mockupProjectionObjectLoaded(summary.execution_result_review), 'State.sessionSummary.execution_result_review');
+    add(mockupProjectionObjectLoaded(State.planPreview), 'State.planPreview');
+    add(mockupProjectionObjectLoaded(State.planApproval), 'State.planApproval');
+    add(mockupProjectionObjectLoaded(State.executionSelection), 'State.executionSelection');
+    add(mockupProjectionObjectLoaded(State.executionStart), 'State.executionStart');
+    add(mockupProjectionObjectLoaded(State.resultStatus), 'State.resultStatus');
+    add(mockupProjectionObjectLoaded(State.resultReview), 'State.resultReview');
+    return sources;
+}
+
+function mockupCountLabel(count, singular, plural = `${singular}s`) {
+    return `${count} ${count === 1 ? singular : plural}`;
+}
+
+function mockupExecutionLanesStatus(model, counts, sources) {
+    if (!sources.length) {
+        return 'Server Sublayer 3C execution-lanes projection unavailable: session, plan, execution, result, and analysis-environment state are not loaded.';
+    }
+    if (!counts.inputCount && !counts.passCount && !counts.processCount && !counts.outputCount && !counts.analysisProjectionLoaded) {
+        return 'Server Sublayer 3C execution-lanes projection unavailable: loaded state contains no 3C input, plan, process, output, or analysis-environment readiness.';
+    }
+    return [
+        mockupCountLabel(counts.inputCount, 'live input object'),
+        mockupCountLabel(counts.passCount, 'plan/pass shell'),
+        mockupCountLabel(counts.processCount, 'process state'),
+        `${mockupCountLabel(counts.outputCount, 'output/result field')} available from server-owned 3C state.`,
+    ].join(', ');
+}
+
+function mockupExecutionLanesSafeState(model) {
+    const plan = currentPlanBody() || {};
+    const resultReview = recordedResultReview() || State.resultReview || {};
+    const selection = State.executionSelection || State.sessionSummary?.execution_selection || {};
+    const start = State.executionStart || State.sessionSummary?.analysis_execution_start || {};
+    const status = State.resultStatus || {};
+    return {
+        planStatus: humanizeToken(
+            State.sessionSummary?.plan_approval?.plan_status
+            || State.sessionSummary?.plan_approval?.state
+            || State.sessionSummary?.plan_preview?.state
+            || plan.plan_status
+            || plan.status
+            || model.threeC.state
+        ),
+        executionStatus: humanizeToken(
+            selection.state
+            || start.state
+            || start.pass_run_status
+            || status.pass_run_status
+            || model.threeC.executionPipeline.state
+        ),
+        resultStatus: humanizeToken(
+            resultReview.review_state
+            || resultReview.operator_decision
+            || status.pass_run_status
+            || status.status
+            || 'not reported'
+        ),
+    };
+}
+
+function renderMockupExecutionLanesLiveProjection(active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME) {
+    const lanes = elements.mockupExecutionLanes;
+    const panel = elements.mockupExecutionLanesProjection;
+    if (!lanes || !panel) return;
+    if (!active) {
+        lanes.dataset.liveProjectionState = 'inactive';
+        panel.dataset.projectionState = 'inactive';
+        panel.innerHTML = '';
+        return;
+    }
+
+    const model = currentSublayerVisualizationModel();
+    const planeStats = model.threeC.planes.map((plane) => ({
+        modality: plane.modality,
+        label: plane.meta.plane,
+        inputCount: plane.inputs.length,
+        passCount: plane.passes.length,
+        processCount: plane.processCards.length,
+        outputCount: plane.outputs.length,
+        readinessState: plane.analysisEnvironmentPlaneReadiness?.state || 'not reported',
+    }));
+    const counts = {
+        inputCount: planeStats.reduce((total, plane) => total + plane.inputCount, 0),
+        passCount: planeStats.reduce((total, plane) => total + plane.passCount, 0),
+        processCount: model.threeC.executionPipeline.cards.length,
+        outputCount: model.threeC.executionPipeline.outputs.length,
+        analysisProjectionLoaded: mockupProjectionObjectLoaded(State.sessionSummary?.analysis_environment_projection),
+    };
+    const sources = mockupExecutionLanesServerSources();
+    const safeState = mockupExecutionLanesSafeState(model);
+    const available = sources.length > 0
+        && (counts.inputCount > 0 || counts.passCount > 0 || counts.processCount > 0 || counts.outputCount > 0 || counts.analysisProjectionLoaded);
+    const sourceList = sources.length
+        ? sources.map((source) => `<span>${escapeHtml(source)}</span>`).join('')
+        : '<span>server 3C state unavailable</span>';
+    const planeRows = planeStats.map((plane) => `
+        <li data-modality="${escapeHtml(plane.modality)}">
+            <span>${escapeHtml(plane.label)}</span>
+            <strong>${escapeHtml(`${plane.inputCount} inputs / ${plane.passCount} plans / ${plane.processCount} process / ${plane.outputCount} outputs`)}</strong>
+            <em>${escapeHtml(humanizeToken(plane.readinessState))}</em>
+        </li>
+    `).join('');
+
+    lanes.dataset.liveProjectionState = available ? 'available' : 'unavailable';
+    lanes.dataset.liveProjectionReadOnly = 'true';
+    panel.dataset.projectionState = available ? 'available' : 'unavailable';
+    panel.dataset.readOnly = 'true';
+    panel.innerHTML = `
+        <div class="mockup-execution-lanes-projection-head">
+            <span class="mockup-frame-label">Server-owned Sublayer 3C execution-lanes projection</span>
+            <strong>${escapeHtml(available ? 'Live read-only' : 'Read-only unavailable')}</strong>
+            <p>${escapeHtml(mockupExecutionLanesStatus(model, counts, sources))}</p>
+        </div>
+        <div class="mockup-execution-lanes-live-grid" aria-label="Read-only Sublayer 3C execution-lane state counts">
+            <article>
+                <span>Input object banks</span>
+                <strong>${escapeHtml(counts.inputCount)}</strong>
+                <p>${escapeHtml(model.threeC.stateLabel)}</p>
+            </article>
+            <article>
+                <span>Plan/pass shells</span>
+                <strong>${escapeHtml(counts.passCount)}</strong>
+                <p>${escapeHtml(safeState.planStatus)}</p>
+            </article>
+            <article>
+                <span>Process state</span>
+                <strong>${escapeHtml(counts.processCount)}</strong>
+                <p>${escapeHtml(safeState.executionStatus)}</p>
+            </article>
+            <article>
+                <span>Output/result fields</span>
+                <strong>${escapeHtml(counts.outputCount)}</strong>
+                <p>${escapeHtml(safeState.resultStatus)}</p>
+            </article>
+        </div>
+        <ul class="mockup-execution-lane-plane-counts" aria-label="Read-only per-plane 3C state counts">
+            ${planeRows}
+        </ul>
+        <div class="mockup-execution-lanes-source-list" aria-label="Server state sources used by this read-only 3C projection">
+            ${sourceList}
+        </div>
+        ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only 3C server state projection pending</span>'}
     `;
 }
 

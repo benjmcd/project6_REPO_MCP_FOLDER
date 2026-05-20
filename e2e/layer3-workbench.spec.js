@@ -7775,6 +7775,319 @@ test('Layer 3 mockup Sublayers AB projection renders read-only server state with
   expect(pageErrors).toEqual([]);
 });
 
+test('Layer 3 mockup Sublayer 3C execution lanes projection renders read-only server state without runtime widening', async ({ page }, testInfo) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.setViewportSize({ width: 1360, height: 960 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
+
+  await page.evaluate(() => {
+    const sessionId = 'mockup-sublayer3c-live-session';
+    const authorityRail = {
+      schema_id: 'layer3.authority_rail.v1',
+      session_id: sessionId,
+      current_gate: 'execution',
+      approved_material_count: 2,
+      denied_material_count: 0,
+      typing_status: 'committed',
+    };
+    State.planApproval = {
+      analysis_plan_id: 'analysis-plan-id',
+      approved_plan: {
+        plan_status: 'approved',
+        approved_sets: [
+          {
+            analysis_set_id: 'set-quant',
+            analysis_set_label: 'Quant set',
+            analysis_modality: 'quantitative',
+            status: 'approved',
+          },
+          {
+            analysis_set_id: 'set-qual',
+            analysis_set_label: 'Qual set',
+            analysis_modality: 'qualitative',
+            status: 'approved',
+          },
+        ],
+        planned_passes: [
+          {
+            pass_type: 'associated_cohort',
+            analysis_modality: 'quantitative',
+            selected_method_name: 'descriptive_summary',
+            status: 'planned',
+          },
+          {
+            pass_type: 'single_aps_doc_qualitative_pass',
+            analysis_modality: 'qualitative',
+            selected_method_name: 'qualitative_review',
+            status: 'planned',
+          },
+        ],
+      },
+    };
+    State.sessionSummary = {
+      schema_id: 'layer3.session_summary.v1',
+      session_id: sessionId,
+      authority_rail: authorityRail,
+      plan_preview: {
+        state: 'plan_preview_ready',
+      },
+      plan_approval: {
+        approved: true,
+        plan_status: 'approved',
+        pass_run_count: 2,
+      },
+      execution_selection: {
+        selected: true,
+        state: 'execution_selection_selected',
+        pass_run_count: 2,
+        pass_run_ids: ['pass-run-quant', 'pass-run-qual'],
+        execution_started: true,
+      },
+      analysis_execution_start: {
+        state: 'execution_pass_completed',
+        pass_run_status: 'completed',
+        analysis_run_id: 'analysis-run-id',
+        output_payload_ref: 'C:\\raw\\forbidden-output.json',
+      },
+      execution_result_review: {
+        review_state: 'execution_result_review_approved',
+        operator_decision: 'approved',
+        review_record_ref: 'review-ref',
+        reviewed_output_items: [{
+          item_type: 'finding',
+          status: 'approved',
+          item_ref: 'https://provider.example/raw-finding',
+        }],
+      },
+      sublayer_visualization: {
+        schema_id: 'layer3.sublayer_visualization_state.v1',
+        authority_source: 'read_only_persisted_layer3_rows',
+        material_objects: [],
+        typing_records: [],
+        analysis_units: [],
+        analysis_sets: [
+          {
+            analysis_set_id: 'set-quant',
+            analysis_modality: 'quantitative',
+            unit_count: 2,
+            state: 'formed',
+          },
+          {
+            analysis_set_id: 'set-qual',
+            analysis_modality: 'qualitative',
+            unit_count: 1,
+            state: 'formed',
+          },
+        ],
+        pass_runs: [
+          {
+            pass_run_id: 'pass-run-quant',
+            engine_family: 'quantitative',
+            status: 'completed',
+            selected_method_name: 'descriptive_summary',
+            output_payload_available: true,
+            input_payload_available: true,
+          },
+          {
+            pass_run_id: 'pass-run-qual',
+            engine_family: 'qualitative',
+            status: 'completed',
+            selected_method_name: 'qualitative_review',
+            output_payload_available: true,
+            input_payload_available: true,
+          },
+        ],
+        latest_plan: null,
+        no_side_effects: true,
+      },
+      analysis_environment_projection: {
+        schema_id: 'layer3.analysis_environment_projection.v1',
+        no_side_effects: true,
+        available_for_downstream_analysis: true,
+        projection_state: 'available',
+        authority_source: 'read_only_session_summary_projection',
+        plane_readiness: [
+          {
+            plane: 'quantitative',
+            state: 'ready',
+            typing_record_count: 2,
+            analysis_set_count: 1,
+            pass_run_count: 1,
+            output_payload_count: 1,
+          },
+          {
+            plane: 'qualitative',
+            state: 'ready',
+            typing_record_count: 1,
+            analysis_set_count: 1,
+            pass_run_count: 1,
+            output_payload_count: 1,
+          },
+          {
+            plane: 'hybrid',
+            state: 'blocked',
+            typing_record_count: 0,
+            analysis_set_count: 0,
+            pass_run_count: 0,
+            output_payload_count: 0,
+          },
+        ],
+        forbidden_runtime_authority: {
+          package_mutation: false,
+          connector_dispatch: false,
+          provider_url: false,
+        },
+        downstream_unavailable: ['package', 'handoff'],
+      },
+    };
+    State.resultStatus = {
+      result_status_available: true,
+      pass_run_id: 'pass-run-quant',
+      pass_run_status: 'completed',
+      engine_family: 'quantitative',
+      output_payload_ref: 's3://forbidden-output-ref',
+      output_metadata_summary: {
+        readable: true,
+        artifact_count: 2,
+        source_gate: '78_COHORT_FREEZE',
+      },
+    };
+    State.resultReview = State.sessionSummary.execution_result_review;
+    renderAll();
+  });
+
+  const lanes = page.locator('#mockup-execution-lanes');
+  const panel = page.locator('#mockup-execution-lanes-projection');
+  await expect(lanes).toHaveAttribute('data-live-projection-state', 'available');
+  await expect(lanes).toHaveAttribute('data-live-projection-read-only', 'true');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-projection-state', 'available');
+  await expect(panel).toHaveAttribute('data-read-only', 'true');
+  await expect(panel).toContainText('Server-owned Sublayer 3C execution-lanes projection');
+  await expect(panel).toContainText('Input object banks');
+  await expect(panel).toContainText('Plan/pass shells');
+  await expect(panel).toContainText('Process state');
+  await expect(panel).toContainText('Output/result fields');
+  await expect(panel).toContainText('State.sessionSummary.sublayer_visualization');
+  await expect(panel).toContainText('State.sessionSummary.analysis_environment_projection');
+  await expect(panel).toContainText('State.planApproval');
+  await expect(panel).toContainText('State.resultStatus');
+  await expect(panel).toContainText('Quantitative / Deterministic Environment');
+  await expect(panel).toContainText('Qualitative Data Analysis Environment');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+  await expect(lanes.locator('#mockup-execution-lanes-projection button,#mockup-execution-lanes-projection input,#mockup-execution-lanes-projection select,#mockup-execution-lanes-projection textarea,#mockup-execution-lanes-projection a[href]')).toHaveCount(0);
+
+  const projectionProof = await panel.evaluate((element) => ({
+    text: element.textContent || '',
+    html: element.innerHTML,
+    counts: Array.from(element.querySelectorAll('.mockup-execution-lane-plane-counts li')).map((item) => ({
+      modality: item.getAttribute('data-modality'),
+      text: item.textContent.replace(/\s+/g, ' ').trim(),
+    })),
+    sourceCount: element.querySelectorAll('.mockup-execution-lanes-source-list span').length,
+    localStorageKeys: Object.keys(window.localStorage).filter((key) => key.toLowerCase().includes('mockup-execution')),
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+  }));
+  expect(projectionProof.counts).toEqual([
+    {
+      modality: 'quantitative',
+      text: 'Quantitative / Deterministic Environment 1 inputs / 1 plans / 6 process / 4 outputs ready',
+    },
+    {
+      modality: 'qualitative',
+      text: 'Qualitative Data Analysis Environment 1 inputs / 1 plans / 0 process / 0 outputs ready',
+    },
+    {
+      modality: 'hybrid',
+      text: 'Hybrid / Mixed Environment 0 inputs / 0 plans / 0 process / 0 outputs blocked',
+    },
+  ]);
+  expect(projectionProof.sourceCount).toBe(10);
+  expect(projectionProof.localStorageKeys).toEqual([]);
+  expect(projectionProof.horizontalOverflow).toBe(false);
+  for (const forbidden of [
+    'C:\\raw\\forbidden-output.json',
+    'https://provider.example/raw-finding',
+    's3://forbidden-output-ref',
+    'output_payload_ref',
+    'provider_url',
+    'connector_run_id',
+    'destination_id',
+    'provider_credentials',
+    'frontend_only_durable_authority',
+    'browser_file',
+  ]) {
+    expect(projectionProof.text).not.toContain(forbidden);
+    expect(projectionProof.html).not.toContain(forbidden);
+  }
+
+  await testInfo.attach('layer3-mockup-sublayer3c-execution-lanes-projection.png', {
+    body: await panel.screenshot(),
+    contentType: 'image/png',
+  });
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(panel).toBeVisible();
+  const mobileFit = await panel.evaluate(() => ({
+    fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+    liveGridColumns: window.getComputedStyle(document.querySelector('.mockup-execution-lanes-live-grid')).gridTemplateColumns.split(' ').filter(Boolean).length,
+    planeColumns: window.getComputedStyle(document.querySelector('.mockup-execution-lane-plane-counts')).gridTemplateColumns.split(' ').filter(Boolean).length,
+  }));
+  expect(mobileFit).toEqual({
+    fitsViewport: true,
+    liveGridColumns: 1,
+    planeColumns: 1,
+  });
+
+  await page.evaluate(() => {
+    State.planPreview = null;
+    State.planApproval = null;
+    State.executionSelection = null;
+    State.executionStart = null;
+    State.resultStatus = null;
+    State.resultReview = null;
+    State.sessionSummary = {
+      session_id: 'mockup-sublayer3c-unavailable-session',
+      sublayer_visualization: null,
+      analysis_environment_projection: null,
+    };
+    renderAll();
+  });
+  await expect(lanes).toHaveAttribute('data-live-projection-state', 'unavailable');
+  await expect(panel).toHaveAttribute('data-projection-state', 'unavailable');
+  await expect(panel).toContainText('Server Sublayer 3C execution-lanes projection unavailable');
+  await expect(panel).toContainText('Read-only 3C server state projection pending');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'plan/',
+    'execution/',
+    'package/',
+    'handoff/',
+    'connector',
+    'provider',
+    'source/ingestion',
+    'source/mixed-corpus/materialize',
+    'gate-b/decision',
+    'gate-c/preview',
+  ]);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+});
+
 test('Layer 3 mockup workbench visual diff harness compares repo-local frames', async ({ page }, testInfo) => {
   const frames = loadMockupFrameManifest();
   const apiRequests = trackLayer3ApiRequests(page);
