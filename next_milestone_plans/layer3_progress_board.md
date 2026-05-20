@@ -8331,3 +8331,37 @@ Single existing rendered control extension selected next: `true`. Single mockup 
 Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, broad source picker, caller path/directory/file-byte/URL/glob/recursive controls, real connector/destination dispatch, provider/public URL runtime, broad RAG/vector/hidden LLM/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and package mutation/reconstruction expansion.
 
 Next exact posture: `freeze_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_before_runtime`.
+
+## Source-Directory Hybrid Context Packet To Output-Handoff Rendered Status Extension Freeze
+
+Freeze doc: `911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md`.
+
+Status: `source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_frozen`.
+
+Predecessor audit doc: `910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md`.
+
+Current-main checkpoint before freeze: `f870d00a089b8c7f976a611eb1f4b44476a1c621`.
+
+Freeze branch: `codex/l3-source-handoff-rendered-status-freeze`.
+
+Selected freeze mode: `single_existing_rendered_control_extension_freeze`.
+
+Selected target: `source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension`.
+
+Selected implementation action after freeze sync: `implement_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_after_freeze_sync`.
+
+Why this target: current main already has the representative source-to-output-to-handoff API proof and an existing rendered source-directory hybrid delivery control. Full mockup program activation still lacks complete per-control route/state/durable/headed/headless/security proof, so the adequate next slice is a bounded rendered status extension over the existing source-directory hybrid route/state chain.
+
+Canonical authority: existing source-directory scan/status, material-preview, hybrid context-packet qualitative-analysis/status, package commit, package-review submit, handoff export prepare, external export/download prepare, delivery status, and delivery routes; `LAYER3_SOURCE_INGESTION_DIR`; `L3SourceDirectoryIngestionBatch`; `L3SourceDirectoryIngestionFile`; `L3MaterialSnapshot`; `L3OutputPackage`; and `L3ReconciliationRecord.summary_json`.
+
+Rendered surface allowed after this freeze: `/review/layer3 #source-directory-ingestion-rendered-controls`, `/review/layer3 #source-directory-hybrid-external-export-download-delivery-form`, `/review/layer3 #source-directory-hybrid-external-export-download-delivery-panel`, `/review/layer3 #source-directory-hybrid-external-export-download-delivery-authority`, `/review/layer3 #source-directory-hybrid-external-export-download-delivery-status`, `/review/layer3 #source-directory-hybrid-external-export-download-delivery-submit`, and read-only mockup references only if backed by the same server authority.
+
+Future proof required: page-level bounded-control proof, focused page status-extension proof, focused headless Chromium proof, focused headed Chromium proof, no console/page errors, mobile no-overflow, no raw path/payload/provider URL/signed URL/connector/destination/credential/browser-byte leakage, no browser-storage authority, and no frontend-only durable authority.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`.
+
+Full mockup program activation selected: `false`. Implementation-entry allowed by this freeze: `false`.
+
+Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, broad source picker, caller path/directory/file-byte/URL/glob/recursive controls, real connector/destination dispatch, provider/public URL runtime, broad RAG/vector/hidden LLM/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and package mutation/reconstruction expansion.
+
+Next exact posture: `current_main_sync_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_then_implement_rendered_extension`.
