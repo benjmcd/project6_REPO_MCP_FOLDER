@@ -2538,6 +2538,10 @@ LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF = (
     PLANNING_DOCS
     / "909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md"
 )
+LAYER3_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF = (
+    PLANNING_DOCS
+    / "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -84693,6 +84697,223 @@ def _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof(
             )
 
 
+def _check_final_full_mockup_program_readiness_audit_after_representative_scenario_proof(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF,
+        errors,
+    )
+    mockup_boundary_text = _read_required_text(MOCKUP_BOUNDARY_SERVICE, errors)
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    representative_test_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST, errors
+    )
+    entry_key = "final_full_mockup_program_readiness_audit_after_representative_scenario_proof"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md"
+    )
+    next_target = (
+        "source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension"
+    )
+    next_posture = (
+        "freeze_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_"
+        "before_runtime"
+    )
+    summary = (
+        "Doc 910 records the final full mockup program readiness audit after the current-main synced representative "
+        "source-to-output-handoff proof. Full mockup program activation remains not ready; the selected next target is "
+        "source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension as one single-existing-rendered-control "
+        "freeze before any runtime implementation."
+    )
+
+    for term in (
+        "Status: final readiness audit completed for `final_full_mockup_program_readiness_audit_after_representative_scenario_proof`.",
+        "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md",
+        "909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md",
+        "Current-main checkpoint before this audit: `45cc165b319fc85d84199f2118fdabee9b42f8ee`.",
+        "Audit branch: `codex/l3-final-mockup-readiness-audit`.",
+        "Audit mode: `final_full_mockup_program_readiness_audit_after_representative_scenario_proof`.",
+        "Representative source-to-output-to-handoff proof is current-main synced: `true`.",
+        "Critical mockup frame/control classification complete for current main: `true`.",
+        "Full mockup program activation ready: `false`.",
+        "Selected next activation mode: `single_existing_rendered_control_extension_freeze`.",
+        f"Selected next target: `{next_target}`.",
+        f"Selected next pass: `{next_posture}`.",
+        "Runtime behavior introduced by this audit: `false`.",
+        "Rendered behavior introduced by this audit: `false`.",
+        "Backend behavior introduced by this audit: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this audit: `false`.",
+        "Executable test behavior introduced by this audit: `false`.",
+        "Single existing rendered control extension selected next: `true`.",
+        "Single mockup screen server-authoritative activation selected next: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        f"The next exact posture is `{next_posture}`.",
+        "Full mockup program activation now: rejected.",
+        "Single existing rendered control extension: selected.",
+        "Blocker-retirement lanes first: deferred but required.",
+        "Program readiness re-audit:",
+        "Full mockup activation freeze:",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF)} missing final readiness audit term: {term}"
+            )
+
+    for term in (
+        "MOCKUP_REQUIRED_ACTIVATION_EVIDENCE",
+        "full_mockup_activation_enabled",
+        "frontend_only_durable_state_enabled",
+        "headed_browser_proof",
+        "headless_browser_proof",
+        "frontend_only_durable_state",
+    ):
+        if term not in mockup_boundary_text:
+            errors.append(f"{_rel(MOCKUP_BOUNDARY_SERVICE)} missing final readiness audit authority term: {term}")
+
+    for term in (
+        'id="source-directory-ingestion-rendered-controls"',
+        'id="mockup-query-source-setup-projection"',
+        'id="mockup-output-review-package-handoff-projection"',
+        "test_layer3_source_directory_ingestion_rendered_control_is_bounded",
+        "test_layer3_mockup_output_review_package_handoff_projection_reader_is_bounded",
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing final readiness audit UI/test term: {term}")
+
+    for term in (
+        "test_representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+        "db.query(ConnectorRun).count() == 0",
+        "db.query(ConnectorRunTarget).count() == 0",
+        "full_mockup_activation_enabled",
+        "frontend_only_durable_state_enabled",
+    ):
+        if term not in representative_test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST)} missing final readiness audit representative proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Final Full Mockup Program Readiness Audit After Representative Scenario Proof",
+            "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md",
+            "final_full_mockup_program_readiness_audit_after_representative_scenario_proof_completed",
+            next_target,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 final full mockup program readiness audit after representative scenario proof to preserve when present",
+            "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md",
+            "final_full_mockup_program_readiness_audit_after_representative_scenario_proof_completed",
+            next_target,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md",
+            "final_full_mockup_program_readiness_audit_after_representative_scenario_proof_completed",
+            next_target,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            '"status": "final_full_mockup_program_readiness_audit_after_representative_scenario_proof_completed"',
+            f'"selected_next_target": "{next_target}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"proof_kind": "{entry_key}"',
+            "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md",
+            "full mockup program activation ready false",
+            next_target,
+            next_posture,
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing final readiness audit term: {term}")
+
+    expected_latest = {
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_doc": doc_path,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_status": "final_full_mockup_program_readiness_audit_after_representative_scenario_proof_completed",
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_current_main_checkpoint_before_audit": "45cc165b319fc85d84199f2118fdabee9b42f8ee",
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_audit_branch": "codex/l3-final-mockup-readiness-audit",
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_audit_mode": entry_key,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_representative_source_to_output_handoff_proof_current_main_synced": True,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_critical_mockup_frame_control_classification_complete_current_main": True,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_full_mockup_program_activation_ready": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_selected_next_activation_mode": "single_existing_rendered_control_extension_freeze",
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_selected_next_target": next_target,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_selected_next_pass": next_posture,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_runtime_behavior_change_introduced_by_audit": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_rendered_behavior_change_introduced_by_audit": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_backend_behavior_change_introduced_by_audit": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_route_api_dto_model_migration_service_behavior_change_introduced_by_audit": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_executable_test_behavior_change_introduced_by_audit": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_single_existing_rendered_control_extension_selected_next": True,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_single_mockup_screen_server_authoritative_activation_selected_next": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_full_mockup_program_activation_selected": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_implementation_entry_allowed_next": False,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_next_posture": next_posture,
+        "latest_final_full_mockup_program_readiness_audit_after_representative_scenario_proof_summary": summary,
+    }
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {entry_key} object")
+            continue
+        for key, value in (
+            ("status", "final_full_mockup_program_readiness_audit_after_representative_scenario_proof_completed"),
+            ("audit_doc", doc_path),
+            ("predecessor_proof_doc", "next_milestone_plans/Layer3_planning_docs/909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md"),
+            ("current_main_checkpoint_before_audit", "45cc165b319fc85d84199f2118fdabee9b42f8ee"),
+            ("audit_branch", "codex/l3-final-mockup-readiness-audit"),
+            ("audit_mode", entry_key),
+            ("representative_source_to_output_handoff_proof_current_main_synced", True),
+            ("critical_mockup_frame_control_classification_complete_current_main", True),
+            ("full_mockup_program_activation_ready", False),
+            ("selected_next_activation_mode", "single_existing_rendered_control_extension_freeze"),
+            ("selected_next_target", next_target),
+            ("selected_next_pass", next_posture),
+            ("runtime_behavior_change_introduced_by_audit", False),
+            ("rendered_behavior_change_introduced_by_audit", False),
+            ("backend_behavior_change_introduced_by_audit", False),
+            ("route_api_dto_model_migration_service_behavior_change_introduced_by_audit", False),
+            ("executable_test_behavior_change_introduced_by_audit", False),
+            ("single_existing_rendered_control_extension_selected_next", True),
+            ("single_mockup_screen_server_authoritative_activation_selected_next", False),
+            ("full_mockup_program_activation_selected", False),
+            ("implementation_entry_allowed_next", False),
+            ("next_posture", next_posture),
+            ("summary", summary),
+        ):
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {entry_key}.{key} must be {value!r}")
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(path)} {entry_key}.proof_kind mismatch")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif scope_status.get(entry_key) != "final_full_mockup_program_readiness_audit_after_representative_scenario_proof_completed":
+            errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -85474,6 +85695,9 @@ def main() -> int:
         errors
     )
     _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof(
+        errors
+    )
+    _check_final_full_mockup_program_readiness_audit_after_representative_scenario_proof(
         errors
     )
 
