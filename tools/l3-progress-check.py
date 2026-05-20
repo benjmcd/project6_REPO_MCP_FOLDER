@@ -2550,8 +2550,18 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_
     PLANNING_DOCS
     / "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md"
 )
+LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE = (
+    PLANNING_DOCS
+    / "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
+)
+LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_delivery_use.py"
+)
+LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_provider_public_url_delivery_use.py"
 )
 LAYER3_SOURCE_DIRECTORY_MATERIAL_ADMISSION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_material_admission.py"
@@ -85444,6 +85454,277 @@ def _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_sta
             errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
 
 
+def _check_provider_public_url_delivery_use_rendered_control_extension_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE,
+        errors,
+    )
+    api_text = _read_required_text(LAYER3_API, errors)
+    service_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_SERVICE,
+        errors,
+    )
+    test_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_TEST,
+        errors,
+    )
+    html_text = _read_required_text(LAYER3_HTML, errors)
+    js_text = _read_required_text(LAYER3_JS, errors)
+    entry_key = "provider_public_url_delivery_use_rendered_control_extension_freeze"
+    status = "provider_public_url_delivery_use_rendered_control_extension_frozen"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md"
+    )
+    checkpoint = "6db5e44cbcc1c3e9a5c3b6c5a6ebf701de373efc"
+    branch = "codex/l3-provider-public-use-rendered-freeze"
+    freeze_mode = "single_existing_provider_public_use_rendered_control_extension_freeze"
+    target = "provider_public_url_delivery_use_rendered_control_extension"
+    action = "implement_provider_public_url_delivery_use_rendered_control_extension_after_freeze_sync"
+    next_posture = (
+        "current_main_sync_provider_public_url_delivery_use_rendered_control_extension_"
+        "freeze_then_implement_rendered_extension"
+    )
+    summary = (
+        "Doc 913 freezes provider_public_url_delivery_use_rendered_control_extension as one "
+        "single-existing provider-public use rendered control extension over the current-main redacted "
+        "provider-public prepare/status/revoke/use route and receipt authority chain. The freeze introduces "
+        "no runtime, rendered, backend, route/API/DTO/model/migration/service, production UI, or executable "
+        "test behavior; full mockup program activation, raw provider-public URL delivery, public proxy runtime, "
+        "connector dispatch, package mutation, source expansion, browser-storage authority, and frontend-only "
+        "durable authority remain blocked."
+    )
+
+    for term in (
+        f"Status: provider-public URL delivery/use rendered control extension frozen for `{entry_key}`.",
+        "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md",
+        "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md",
+        f"Current-main checkpoint before this freeze: `{checkpoint}`.",
+        f"Freeze branch: `{branch}`.",
+        f"Selected freeze mode: `{freeze_mode}`.",
+        f"Selected target: `{target}`.",
+        f"Selected implementation action after freeze sync: `{action}`.",
+        "Grill-me challenge outcome:",
+        "Canonical source of truth remains current repo route/state behavior, not the mockup asset and not browser-local state:",
+        "POST /api/v1/layer3/handoff/export/download/provider-public-url/use",
+        "Layer3ProviderPublicUrlDeliveryUseRequest",
+        "Layer3ProviderPublicUrlDeliveryUseResponse",
+        "PROVIDER_PUBLIC_URL_DELIVERY_USE_SCHEMA_ID",
+        "PROVIDER_PUBLIC_URL_DELIVERY_USE_MODE",
+        "PROVIDER_PUBLIC_URL_DELIVERY_USE_OPERATOR_DECISION",
+        "PROVIDER_PUBLIC_URL_REDACTED_MARKER",
+        "future `/review/layer3 #provider-public-url-use`",
+        "does not add `#provider-public-url-deliver`",
+        "Focused headless Chromium proof",
+        "Focused headed Chromium proof",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Executable test behavior introduced by this freeze: `false`.",
+        "Production UI behavior introduced by this freeze: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed by this freeze: `false`.",
+        "Full activation freeze:",
+        "Post-activation audit:",
+        f"The next exact posture is `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE)} missing provider-public use rendered freeze term: {term}"
+            )
+
+    for term in (
+        "PROVIDER_PUBLIC_URL_DELIVERY_USE_REQUEST_SCHEMA",
+        '"/handoff/export/download/provider-public-url/use"',
+        "Layer3ProviderPublicUrlDeliveryUseResponse",
+        "def post_provider_public_url_delivery_use",
+        "layer3_provider_public_url_delivery_use.provider_public_url_delivery_use",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing provider-public use route authority term: {term}")
+
+    for term in (
+        'PROVIDER_PUBLIC_URL_DELIVERY_USE_SCHEMA_ID = "layer3.provider_public_url.delivery_use.v1"',
+        'PROVIDER_PUBLIC_URL_DELIVERY_USE_MODE = "fake_provider_redacted_use_decision"',
+        'PROVIDER_PUBLIC_URL_DELIVERY_USE_OPERATOR_DECISION = "use_provider_public_url_redacted_fake_provider"',
+        "PROVIDER_PUBLIC_URL_DELIVERY_USE_ALLOWED_FIELDS",
+        "PROVIDER_PUBLIC_URL_DELIVERY_USE_REQUIRED_FIELDS",
+        "def provider_public_url_delivery_use",
+        '"raw_public_url_exposed": False',
+        '"public_url_enabled": False',
+        '"provider_network_enabled": False',
+        '"provider_object_write_enabled": False',
+        '"public_redirect_enabled": False',
+        '"byte_streaming_enabled": False',
+        '"durable_use_row_created": False',
+        '"audit_row_created": False',
+        '"connector_dispatch_enabled": False',
+        '"package_mutation_enabled": False',
+        '"source_expansion_enabled": False',
+        '"frontend_durable_authority_enabled": False',
+    ):
+        if term not in service_text:
+            errors.append(f"{_rel(LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_SERVICE)} missing provider-public use service term: {term}")
+
+    for term in (
+        "test_provider_public_delivery_use_api_route_is_redacted_and_openapi_guarded",
+        '"/api/v1/layer3/handoff/export/download/provider-public-url/use"',
+        'body["raw_public_url_exposed"] is False',
+        'body["public_url_enabled"] is False',
+        'assert "provider_public_url" not in body',
+        'request_schema["additionalProperties"] is False',
+        'request_schema["properties"]["provider_secret"]["not"] == {}',
+        'request_schema["properties"]["public_url"]["not"] == {}',
+    ):
+        if term not in test_text:
+            errors.append(f"{_rel(LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_TEST)} missing provider-public use test term: {term}")
+
+    for term in (
+        'id="provider-public-url-form"',
+        'id="provider-public-url-panel"',
+        'id="provider-public-url-prepare"',
+        'id="provider-public-url-status"',
+        'id="provider-public-url-revoke"',
+    ):
+        if term not in html_text:
+            errors.append(f"{_rel(LAYER3_HTML)} missing provider-public rendered freeze HTML term: {term}")
+
+    for term in (
+        "providerPublicUrlPreparePayload",
+        "providerPublicUrlRevokePayload",
+        "inspectProviderPublicUrlStatus",
+        "revokeProviderPublicUrl",
+        "State.providerPublicUrlPrepare",
+        "State.providerPublicUrlStatus",
+        "State.providerPublicUrlRevoke",
+        "'/handoff/export/download/provider-public-url/prepare'",
+        "'/handoff/export/download/provider-public-url/revoke'",
+        "`/handoff/export/download/provider-public-url/status/${encodeURIComponent(receiptId)}`",
+    ):
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing provider-public rendered freeze JS term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public URL Delivery/Use Rendered Control Extension Freeze",
+            "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md",
+            status,
+            target,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 provider-public URL delivery/use rendered control extension freeze to preserve when present",
+            "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md",
+            status,
+            target,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md",
+            status,
+            target,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"freeze_doc": "{doc_path}"',
+            f'"selected_target": "{target}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"proof_kind": "{entry_key}"',
+            "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md",
+            "headless Chromium proof",
+            "headed Chromium proof",
+            "no provider-public deliver control",
+            "no public proxy",
+            "no frontend-only durable authority",
+            "no full mockup activation",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing provider-public use rendered freeze term: {term}")
+
+    expected_latest = {
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_doc": doc_path,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_status": status,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_current_main_checkpoint_before_freeze": checkpoint,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_branch": branch,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_selected_freeze_mode": freeze_mode,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_selected_target": target,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_selected_implementation_action_after_freeze_sync": action,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_runtime_behavior_change_introduced_by_freeze": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_rendered_behavior_change_introduced_by_freeze": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_backend_behavior_change_introduced_by_freeze": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_executable_test_behavior_change_introduced_by_freeze": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_production_ui_behavior_change_introduced_by_freeze": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_full_mockup_program_activation_selected": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_implementation_entry_allowed_by_freeze": False,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_next_posture": next_posture,
+        "latest_provider_public_url_delivery_use_rendered_control_extension_freeze_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("freeze_doc", doc_path),
+        ("predecessor_proof_doc", predecessor_doc),
+        ("current_main_checkpoint_before_freeze", checkpoint),
+        ("freeze_branch", branch),
+        ("selected_freeze_mode", freeze_mode),
+        ("selected_target", target),
+        ("selected_implementation_action_after_freeze_sync", action),
+        ("runtime_behavior_change_introduced_by_freeze", False),
+        ("rendered_behavior_change_introduced_by_freeze", False),
+        ("backend_behavior_change_introduced_by_freeze", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+        ("executable_test_behavior_change_introduced_by_freeze", False),
+        ("production_ui_behavior_change_introduced_by_freeze", False),
+        ("full_mockup_program_activation_selected", False),
+        ("implementation_entry_allowed_by_freeze", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {entry_key} object")
+            continue
+        for key, value in expected_entry_values:
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {entry_key}.{key} must be {value!r}")
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(path)} {entry_key}.proof_kind mismatch")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif scope_status.get(entry_key) != status:
+            errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -86236,6 +86517,7 @@ def main() -> int:
     _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension(
         errors
     )
+    _check_provider_public_url_delivery_use_rendered_control_extension_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

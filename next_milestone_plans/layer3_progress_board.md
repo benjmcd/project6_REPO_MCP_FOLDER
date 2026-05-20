@@ -8397,3 +8397,33 @@ Full mockup program activation selected: `false`. Implementation-entry allowed f
 Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, broad source picker, caller path/directory/file-byte/URL/glob/recursive controls, real connector/destination dispatch, provider/public URL runtime, broad RAG/vector/hidden LLM/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and package mutation/reconstruction expansion.
 
 Next exact posture: `current_main_sync_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_then_select_next_blocker_retirement_lane`.
+
+## Provider-Public URL Delivery/Use Rendered Control Extension Freeze
+
+Freeze doc: `913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md`.
+
+Status: `provider_public_url_delivery_use_rendered_control_extension_frozen`.
+
+Predecessor proof doc: `912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md`.
+
+Current-main checkpoint before freeze: `6db5e44cbcc1c3e9a5c3b6c5a6ebf701de373efc`.
+
+Freeze branch: `codex/l3-provider-public-use-rendered-freeze`.
+
+Selected freeze mode: `single_existing_provider_public_use_rendered_control_extension_freeze`.
+
+Selected target: `provider_public_url_delivery_use_rendered_control_extension`.
+
+Selected implementation action after freeze sync: `implement_provider_public_url_delivery_use_rendered_control_extension_after_freeze_sync`.
+
+Why this target: current main already exposes the bounded redacted provider-public URL delivery/use decision route and service proof, while the rendered workbench still explicitly blocks `#provider-public-url-use` and `#provider-public-url-deliver`. The adequate next blocker-retirement slice is one rendered use-decision control over the existing route/state chain, not raw provider-public URL delivery, public proxy behavior, or full mockup program activation.
+
+Canonical authority: existing provider-public prepare/status/revoke/use routes, `Layer3ProviderPublicUrlDeliveryUseRequest`, `Layer3ProviderPublicUrlDeliveryUseResponse`, `PROVIDER_PUBLIC_URL_DELIVERY_USE_SCHEMA_ID`, `PROVIDER_PUBLIC_URL_DELIVERY_USE_MODE`, `PROVIDER_PUBLIC_URL_DELIVERY_USE_OPERATOR_DECISION`, `provider_public_url_delivery_use`, `PROVIDER_PUBLIC_URL_REDACTED_MARKER`, `L3ProviderPublicUrlReceipt`, `L3ProviderPublicUrlObjectAuthority`, and `L3ProviderPublicUrlRevocation`.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`.
+
+Full mockup program activation selected: `false`. Implementation-entry allowed by this freeze: `false`.
+
+Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, raw provider-public URL display/copy, provider-public deliver route, public proxy runtime, byte streaming, public redirects, provider network/object writes, real connector/destination dispatch, package mutation/reconstruction expansion, broad source picker, broad RAG/vector/hidden LLM/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `current_main_sync_provider_public_url_delivery_use_rendered_control_extension_freeze_then_implement_rendered_extension`.
