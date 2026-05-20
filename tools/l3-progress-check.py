@@ -2429,6 +2429,9 @@ LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC = (
 LAYER3_MOCKUP_SCREEN_PROJECTION_SELECTION = (
     PLANNING_DOCS / "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md"
 )
+LAYER3_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE = (
+    PLANNING_DOCS / "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -78259,6 +78262,167 @@ def _check_mockup_screen_projection_selection(errors: list[str]) -> None:
                         errors.append(f"{_rel(PROOF_MANIFEST)} mockup_screen_projection_selection_proof.proof_terms missing {term}")
 
 
+def _check_mockup_pdf_location_projection_freeze(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    freeze_text = _read_required_text(
+        LAYER3_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime/no-rendered implementation-entry freeze for `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.",
+        "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+        "Predecessor selection doc: `880_MOCKUP_SCREEN_PROJECTION_SELECTION.md`.",
+        "Current-main checkpoint before this freeze: `1447f12a5566eddad52583937c5bce99d1ffff7c`.",
+        "Selected activation mode: `single_mockup_screen_read_only_projection_proof_hardening`.",
+        "Selected target: `mockup_pdf_location_projection_read_only`.",
+        "Selected proof action: `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.",
+        "Selected route contract: `GET /api/v1/layer3/session/{session_id}`.",
+        "Selected response/state contract: `State.sessionSummary.pdf_location_projection`.",
+        "Selected rendered surface: `/review/layer3` `#mockup-pdf-location-projection`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Single mockup screen server-authoritative activation selected: `false`.",
+        "backend/app/services/layer3_pdf_location.py",
+        "renderMockupPdfLocationProjection()",
+        "available-state browser proof",
+        "raw output payload ref exposure",
+        "The next exact posture is `current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof`.",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE)} missing mockup PDF-location freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup PDF Location Projection Freeze",
+            "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+            "single_mockup_screen_read_only_projection_proof_hardening",
+            "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+            "available-state browser proof and leakage proof",
+            "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup PDF-location projection freeze to preserve when present",
+            "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+            "mockup_pdf_location_projection_read_only",
+            "State.sessionSummary.pdf_location_projection",
+            "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
+        ),
+        REFRESH_SPEC: (
+            "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+            "single_mockup_screen_read_only_projection_proof_hardening",
+            "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+            "available-state browser proof and leakage proof",
+            "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
+        ),
+        MANIFEST: (
+            '"mockup_pdf_location_projection_freeze"',
+            '"status": "mockup_pdf_location_projection_read_only_freeze_recorded"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md"',
+            '"selected_proof_action": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening"',
+            '"next_posture": "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof"',
+        ),
+        PROOF_MANIFEST: (
+            '"mockup_pdf_location_projection_freeze_proof"',
+            '"proof_kind": "mockup_pdf_location_projection_read_only_freeze"',
+            '"881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md"',
+            '"prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening"',
+            '"current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup PDF-location freeze term: {term}")
+
+    expected_scalars = {
+        "status": "mockup_pdf_location_projection_read_only_freeze_recorded",
+        "doc": "next_milestone_plans/Layer3_planning_docs/881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+        "branch": "codex/l3-mockup-pdf-freeze",
+        "predecessor_selection_doc": "next_milestone_plans/Layer3_planning_docs/880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+        "current_main_checkpoint_before_freeze": "1447f12a5566eddad52583937c5bce99d1ffff7c",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection_proof_hardening",
+        "selected_target": "mockup_pdf_location_projection_read_only",
+        "selected_proof_action": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+        "route_contract": "GET /api/v1/layer3/session/{session_id}",
+        "state_contract": "State.sessionSummary.pdf_location_projection",
+        "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+        "backend_authority": "backend/app/services/layer3_pdf_location.py",
+        "schema_id": "layer3.pdf_location_projection.v1",
+        "named_runtime_use_case": "pdf_location_from_aps_content_document_citation",
+        "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+        "runtime_behavior_change": False,
+        "rendered_behavior_change": False,
+        "backend_behavior_change": False,
+        "route_api_dto_model_migration_service_behavior_change": False,
+        "implementation_entry_allowed_next": False,
+        "full_mockup_program_activation_selected": False,
+        "single_mockup_screen_server_authoritative_activation_selected": False,
+        "residual_gap": "available_state_browser_proof_and_leakage_proof",
+        "next_posture": "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
+    }
+    if isinstance(manifest, dict):
+        entry = manifest.get("mockup_pdf_location_projection_freeze")
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing mockup_pdf_location_projection_freeze object")
+        else:
+            for key, value in expected_scalars.items():
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} mockup_pdf_location_projection_freeze.{key} must be {value!r}")
+        current_status = manifest.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+        else:
+            for key, value in {
+                "latest_mockup_pdf_location_projection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+                "latest_mockup_pdf_location_projection_freeze_status": "mockup_pdf_location_projection_read_only_freeze_recorded",
+                "latest_mockup_pdf_location_projection_freeze_selected_action": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+                "latest_mockup_pdf_location_projection_freeze_next_posture": "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
+            }.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("mockup_pdf_location_projection_freeze_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_pdf_location_projection_freeze_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "mockup_pdf_location_projection_read_only_freeze",
+                **expected_scalars,
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_projection_freeze_proof.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_projection_freeze_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+                    "single_mockup_screen_read_only_projection_proof_hardening",
+                    "mockup_pdf_location_projection_read_only",
+                    "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+                    "GET /api/v1/layer3/session/{session_id}",
+                    "State.sessionSummary.pdf_location_projection",
+                    "#mockup-pdf-location-projection",
+                    "renderMockupPdfLocationProjection()",
+                    "backend/app/services/layer3_pdf_location.py",
+                    "available_state_browser_proof_and_leakage_proof",
+                    "no runtime behavior",
+                    "no rendered behavior",
+                    "no backend behavior",
+                    "no single mockup screen server-authoritative activation",
+                    "no full mockup program activation",
+                    "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_projection_freeze_proof.proof_terms missing {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -78989,6 +79153,7 @@ def main() -> int:
     _check_internal_webhook_connector_freeze(errors)
     _check_recursive_source_ingestion_family_selection_freeze(errors)
     _check_mockup_screen_projection_selection(errors)
+    _check_mockup_pdf_location_projection_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
