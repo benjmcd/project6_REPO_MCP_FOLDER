@@ -966,8 +966,19 @@ def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None
     assert "postJson(SOURCE_DIRECTORY_INGESTION_SCAN_PATH" in scan_slice
     assert "getJson(`${SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX}" in status_slice
     assert "source_root_absolute_path_exposed === false ? 'blocked'" in render_slice
+    assert "function directoryAuthorityStatus" in js.text
+    assert "already_recorded: idempotent replay of existing server authority" in js.text
+    assert "response schema:" in render_slice
+    assert "response status:" in render_slice
+    assert "idempotency:" in render_slice
+    assert "payload.runtime_policy_id" in render_slice
+    assert "payload.recursive_traversal_admitted" in render_slice
+    assert "payload.max_recursion_depth" in render_slice
+    assert "payload.max_relative_path_segments" in render_slice
+    assert "payload.caller_selected_recursive_flag_allowed === false ? 'blocked'" in render_slice
+    assert "invariants.caller_selected_recursive_flag_enabled === false ? 'blocked'" in render_slice
     assert "'caller_supplied_path'" in render_slice
-    assert "'recursive_ingestion'" in render_slice
+    assert "'caller_selected_recursive_flag'" in render_slice
     assert "'browser_file_bytes'" in render_slice
     assert "'web_connector'" in render_slice
     assert "'rag_vector_index'" in render_slice

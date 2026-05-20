@@ -7403,3 +7403,53 @@ Checks: `backend-layer3-api` passed in `3m24s`, `test` passed in `3m30s`, review
 Still blocked: dispatch rerun/retry/cancel/queue/background-worker behavior, rendered dispatch/submit controls, URL/credential inputs, destination selection, operator-supplied destination URL authority, raw URL/token/header/local-path/package exposure, `ConnectorRun`/`ConnectorRunTarget` creation, provider URL behavior, optional-tool runtime, frontend-only durable authority, and any runtime beyond PR `#1490`.
 
 Next exact posture: `select_next_major_layer3_end_to_end_gap_after_internal_webhook_rendered_status_runtime_sync`.
+
+## Mockup Mapping Selection
+
+No-runtime mapping/inventory selection: `876_MOCKUP_MAPPING_SELECTION.md`.
+
+Selected activation mode: `mockup_to_live_mapping_inventory_only`.
+
+Selected first runtime slice after inventory: `single_existing_rendered_control_extension`.
+
+Preferred first target: `source_directory_ingestion_scan_status_rendered_control`, backed by existing server-configured source-directory scan/status authority and `/review/layer3` `#source-directory-ingestion-rendered-controls`.
+
+Alternate safe targets remain read-only only: `internal_webhook_rendered_status_panel_read_only` and `downstream_analysis_environment_projection_read_only`.
+
+Full mockup program activation remains rejected for now. This selection admits no runtime behavior, no rendered behavior, no route/API/DTO/model/migration/service behavior change, no UI control change, no test behavior change, no frontend-only durable authority, no browser-storage authority, no caller-supplied path/file/URL/glob/recursive flag, no source expansion, no package mutation, no connector/destination dispatch, no provider URL behavior, no RAG/vector widening, no hidden LLM planning, and no auth/security behavior.
+
+Next exact posture: `freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime`.
+
+## Source Directory Extension Freeze
+
+No-runtime/no-rendered implementation-entry freeze: `877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md`.
+
+Selected activation mode: `single_existing_rendered_control_extension`.
+
+Selected target: `source_directory_ingestion_scan_status_rendered_control`.
+
+Selected implementation action after current-main sync: `extend_source_directory_ingestion_scan_status_rendered_control`.
+
+The future implementation may only enrich the existing `/review/layer3` `#source-directory-ingestion-rendered-controls` display from current scan/status response authority: `runtime_policy_id`, recursive traversal status, max recursion depth, max relative path segments, caller-selected recursive flag blocking, schema/status distinction, idempotency/replay status, and fail-closed server states.
+
+Still blocked: backend behavior change, route/API/DTO/model/migration/service change, caller paths, browser file bytes, URL/glob input, caller-selected recursive flags, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, and full mockup program activation.
+
+Milestone ladder now recorded: current-main sync and source-directory rendered extension; runtime proof/sync; one read-only mockup-screen projection; one server-authoritative mockup-screen activation; repeated bounded activations; blocker retirement across source/package/connector/provider/RAG/browser/auth surfaces; final full mockup readiness audit; full mockup program activation only after proof coverage is complete.
+
+Next exact posture: `current_main_sync_source_directory_extension_freeze_then_implementation`.
+
+## Source Directory Extension Runtime Proof
+
+Branch-local rendered proof: `878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md`.
+
+Implemented action: `extend_source_directory_ingestion_scan_status_rendered_control`.
+
+The existing `/review/layer3` source-directory scan/status panel now renders server authority fields from existing scan/status responses: `runtime_policy_id`, `recursive_traversal_admitted`, `max_recursion_depth`, `max_relative_path_segments`, `caller_selected_recursive_flag_allowed`, response schema/status, and idempotency/replay state.
+
+Backend runtime behavior change: `false`. Route/API/DTO/model/migration/service behavior change: `false`. Rendered behavior change: `true`.
+
+Proof passed: static page contract test, headed Chromium focused proof, and headless Chromium focused proof. The browser proof also verifies no raw local path exposure, no forbidden scan payload fields, no horizontal overflow, no console/page errors, and no package/source-mixed/connector/provider/execution side-effect requests.
+
+Still blocked: backend behavior changes, caller path/file/URL/glob/recursive flag support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, and full mockup program activation.
+
+Next exact posture: `current_main_sync_source_directory_extension_runtime`.
