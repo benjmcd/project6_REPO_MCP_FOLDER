@@ -36861,5 +36861,29 @@
     ],
     "next_posture": "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
     "summary": "Doc 879 syncs PR #1492 merge commit 7281432b976f434b94a5ee034a9210dccb88bcc0 to current main. The source-directory rendered-control extension is current-main synced with live behavior limited to existing /review/layer3 source-directory scan/status rendering over existing scan/status response authority fields."
+  },
+  "mockup_screen_projection_selection": {
+    "status": "mockup_pdf_location_projection_read_only_selected",
+    "doc": "next_milestone_plans/Layer3_planning_docs/880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+    "branch": "codex/l3-mockup-projection-selection",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_selection": "d523bf37fc7b0a582995d8522066f343cce4fdd5",
+    "selected_activation_mode": "single_mockup_screen_read_only_projection",
+    "selected_target": "mockup_pdf_location_projection_read_only",
+    "route_contract": "GET /api/v1/layer3/session/{session_id}",
+    "state_contract": "State.sessionSummary.pdf_location_projection",
+    "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+    "backend_authority": "backend/app/services/layer3_pdf_location.py",
+    "schema_id": "layer3.pdf_location_projection.v1",
+    "named_runtime_use_case": "pdf_location_from_aps_content_document_citation",
+    "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "backend_behavior_change": false,
+    "route_api_dto_model_migration_service_behavior_change": false,
+    "full_mockup_program_activation_selected": false,
+    "implementation_entry_allowed_next": false,
+    "next_posture": "freeze_mockup_pdf_location_projection_read_only_before_runtime",
+    "summary": "Doc 880 selects the first read-only mockup-screen projection as the existing PDF-location server projection rendered into /review/layer3 #mockup-pdf-location-projection from State.sessionSummary.pdf_location_projection, with no runtime or rendered behavior change."
   }
 }

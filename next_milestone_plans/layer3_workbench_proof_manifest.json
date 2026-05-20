@@ -34566,5 +34566,46 @@
       "no full mockup program activation introduced by sync",
       "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync"
     ]
+  },
+  "mockup_screen_projection_selection_proof": {
+    "proof_kind": "mockup_pdf_location_projection_read_only_selection",
+    "status": "mockup_pdf_location_projection_read_only_selected",
+    "doc": "next_milestone_plans/Layer3_planning_docs/880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+    "branch": "codex/l3-mockup-projection-selection",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_selection": "d523bf37fc7b0a582995d8522066f343cce4fdd5",
+    "selected_activation_mode": "single_mockup_screen_read_only_projection",
+    "selected_target": "mockup_pdf_location_projection_read_only",
+    "route_contract": "GET /api/v1/layer3/session/{session_id}",
+    "state_contract": "State.sessionSummary.pdf_location_projection",
+    "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+    "backend_authority": "backend/app/services/layer3_pdf_location.py",
+    "schema_id": "layer3.pdf_location_projection.v1",
+    "named_runtime_use_case": "pdf_location_from_aps_content_document_citation",
+    "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "backend_behavior_change": false,
+    "route_api_dto_model_migration_service_behavior_change": false,
+    "full_mockup_program_activation_selected": false,
+    "implementation_entry_allowed_next": false,
+    "next_posture": "freeze_mockup_pdf_location_projection_read_only_before_runtime",
+    "summary": "Doc 880 records the first read-only mockup-screen projection selection over the existing PDF-location session-summary projection and rendered mockup panel.",
+    "proof_terms": [
+      "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+      "single_mockup_screen_read_only_projection",
+      "mockup_pdf_location_projection_read_only",
+      "GET /api/v1/layer3/session/{session_id}",
+      "State.sessionSummary.pdf_location_projection",
+      "#mockup-pdf-location-projection",
+      "backend/app/services/layer3_pdf_location.py",
+      "layer3.pdf_location_projection.v1",
+      "pdf_location_from_aps_content_document_citation",
+      "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+      "no runtime behavior",
+      "no rendered behavior",
+      "no full mockup program activation",
+      "freeze_mockup_pdf_location_projection_read_only_before_runtime"
+    ]
   }
 }
