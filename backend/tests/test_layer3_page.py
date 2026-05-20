@@ -35,6 +35,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="mockup-execution-lanes-projection"' in response.text
     assert 'aria-label="Read-only Sublayer 3C execution lanes live state projection"' in response.text
     assert "Read-only 3C server state projection pending" in response.text
+    assert 'id="mockup-output-review-package-handoff-projection"' in response.text
+    assert 'aria-label="Read-only output review package handoff live state projection"' in response.text
+    assert "Read-only output review package handoff projection pending" in response.text
     assert 'id="mockup-userflow-board"' in response.text
     assert 'id="mockup-pdf-location-card"' in response.text
     assert 'id="mockup-pdf-location-projection"' in response.text
@@ -246,6 +249,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".mockup-execution-lanes-live-grid" in css.text
     assert ".mockup-execution-lane-plane-counts" in css.text
     assert ".mockup-execution-lanes-source-list" in css.text
+    assert ".mockup-output-review-package-handoff-projection" in css.text
+    assert ".mockup-output-review-live-grid" in css.text
+    assert ".mockup-output-review-source-list" in css.text
     assert ".mockup-userflow-board" in css.text
     assert ".mockup-sublayers-ab-board" in css.text
     assert ".mockup-sublayers-ab-projection" in css.text
@@ -1051,6 +1057,88 @@ def test_layer3_mockup_execution_lanes_projection_reader_is_bounded() -> None:
     assert ".mockup-execution-lanes-live-grid" in css.text
     assert ".mockup-execution-lane-plane-counts" in css.text
     assert ".mockup-execution-lanes-source-list" in css.text
+
+
+def test_layer3_mockup_output_review_package_handoff_projection_reader_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    css = client.get("/review/layer3/static/layer3.css")
+
+    assert js.status_code == 200
+    assert css.status_code == 200
+    source_start = js.text.find("function mockupOutputReviewPackageHandoffServerSources")
+    state_start = js.text.find("function mockupOutputReviewPackageHandoffState")
+    render_start = js.text.find("function renderMockupOutputReviewPackageHandoffProjection")
+    parse_start = js.text.find("async function parseResponse")
+    assert source_start != -1
+    assert state_start != -1
+    assert render_start != -1
+    assert parse_start != -1
+
+    source_slice = js.text[source_start:state_start]
+    render_slice = js.text[source_start:parse_start]
+    for required in (
+        "State.resultStatus",
+        "State.resultReview",
+        "State.packageReviewPreview",
+        "State.packageConstruction",
+        "State.packageReviewSubmit",
+        "State.packageSupersessionPreview",
+        "State.replacementPackageSetAuthority",
+        "State.packageSupersessionCommit",
+        "State.replacementPackageArtifactManifest",
+        "State.replacementPackageNamespace",
+        "State.handoffExportPrepare",
+        "State.apsHandoffDispatch",
+        "State.externalExportDownloadPrepare",
+        "State.externalExportDownloadDelivery",
+        "State.externalExportDownloadSignedReference",
+        "State.sessionSummary",
+    ):
+        assert required in source_slice
+    for required in (
+        "mockup-output-review-projection-head",
+        "mockup-output-review-live-grid",
+        "mockup-output-review-source-list",
+        "dataset.outputReviewPackageHandoffProjectionState",
+        "dataset.outputReviewPackageHandoffProjectionReadOnly = 'true'",
+        "dataset.readOnly = 'true'",
+        "Read-only output review package handoff projection pending",
+        "Server output review package handoff projection unavailable",
+    ):
+        assert required in render_slice
+    for forbidden in (
+        "postJson(",
+        "getJson(",
+        "fetch(",
+        "submitAttachmentForm(",
+        "localStorage",
+        "sessionStorage",
+        "execution/result/status",
+        "execution/result/review",
+        "package/review",
+        "package/mutation",
+        "handoff/",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "public_url",
+        "signed_url",
+        "raw_payload_path",
+        "local_file_path",
+        "browser_file",
+        "file_bytes",
+        "package_payload",
+        "payload_ref",
+        "download_url",
+        "provider_url",
+        "vector_store",
+        "optional_tool",
+    ):
+        assert forbidden not in render_slice
+
+    assert ".mockup-output-review-package-handoff-projection" in css.text
+    assert ".mockup-output-review-live-grid" in css.text
+    assert ".mockup-output-review-source-list" in css.text
 
 
 def test_layer3_mockup_query_source_setup_projection_reader_is_bounded() -> None:

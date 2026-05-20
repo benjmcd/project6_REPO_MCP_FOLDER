@@ -387,6 +387,7 @@ const elements = {
     mockupQuerySourceSetupProjection: document.getElementById('mockup-query-source-setup-projection'),
     mockupExecutionLanes: document.getElementById('mockup-execution-lanes'),
     mockupExecutionLanesProjection: document.getElementById('mockup-execution-lanes-projection'),
+    mockupOutputReviewPackageHandoffProjection: document.getElementById('mockup-output-review-package-handoff-projection'),
     mockupSublayersAbBoard: document.getElementById('mockup-sublayers-ab-board'),
     mockupSublayersAbProjection: document.getElementById('mockup-sublayers-ab-projection'),
     mockupPdfLocationProjection: document.getElementById('mockup-pdf-location-projection'),
@@ -548,6 +549,7 @@ function renderMockupThemeShell() {
     renderMockupQuerySourceSetupProjection(active);
     renderMockupSublayersAbLiveProjection(active);
     renderMockupExecutionLanesLiveProjection(active);
+    renderMockupOutputReviewPackageHandoffProjection(active);
 }
 
 function mockupPdfLocationHighlightSpanCount(item) {
@@ -1003,6 +1005,200 @@ function renderMockupExecutionLanesLiveProjection(active = State.themePreference
             ${sourceList}
         </div>
         ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only 3C server state projection pending</span>'}
+    `;
+}
+
+function mockupOutputReviewPackageHandoffServerSources() {
+    const sources = [];
+    const summary = State.sessionSummary || {};
+    const add = (condition, label) => {
+        if (condition && !sources.includes(label)) sources.push(label);
+    };
+
+    add(mockupProjectionObjectLoaded(State.resultStatus), 'State.resultStatus');
+    add(mockupProjectionObjectLoaded(State.resultReview), 'State.resultReview');
+    add(mockupProjectionObjectLoaded(summary.execution_result_review), 'State.sessionSummary.execution_result_review');
+    add(mockupProjectionObjectLoaded(State.packageReviewPreview), 'State.packageReviewPreview');
+    add(mockupProjectionObjectLoaded(summary.package_review_preview), 'State.sessionSummary.package_review_preview');
+    add(mockupProjectionObjectLoaded(packageConstructionState()), 'State.packageConstruction');
+    add(mockupProjectionObjectLoaded(summary.package_construction), 'State.sessionSummary.package_construction');
+    add(mockupProjectionObjectLoaded(packageReviewSubmitState()), 'State.packageReviewSubmit');
+    add(mockupProjectionObjectLoaded(summary.package_review_submit), 'State.sessionSummary.package_review_submit');
+    add(mockupProjectionObjectLoaded(State.packageSupersessionPreview), 'State.packageSupersessionPreview');
+    add(mockupProjectionObjectLoaded(State.replacementPackageSetAuthority), 'State.replacementPackageSetAuthority');
+    add(mockupProjectionObjectLoaded(State.packageSupersessionCommit), 'State.packageSupersessionCommit');
+    add(mockupProjectionObjectLoaded(State.replacementPackageArtifactManifest), 'State.replacementPackageArtifactManifest');
+    add(mockupProjectionObjectLoaded(State.replacementPackageNamespace), 'State.replacementPackageNamespace');
+    add(mockupProjectionObjectLoaded(handoffExportPrepareState()), 'State.handoffExportPrepare');
+    add(mockupProjectionObjectLoaded(summary.handoff_export_prepare), 'State.sessionSummary.handoff_export_prepare');
+    add(mockupProjectionObjectLoaded(apsHandoffDispatchState()), 'State.apsHandoffDispatch');
+    add(mockupProjectionObjectLoaded(summary.aps_handoff_dispatch), 'State.sessionSummary.aps_handoff_dispatch');
+    add(mockupProjectionObjectLoaded(externalExportDownloadPrepareState()), 'State.externalExportDownloadPrepare');
+    add(mockupProjectionObjectLoaded(summary.external_export_download), 'State.sessionSummary.external_export_download');
+    add(mockupProjectionObjectLoaded(State.externalExportDownloadDelivery), 'State.externalExportDownloadDelivery');
+    add(mockupProjectionObjectLoaded(State.externalExportDownloadSignedReference), 'State.externalExportDownloadSignedReference');
+    add(sources.some((source) => source.startsWith('State.sessionSummary.')), 'State.sessionSummary');
+    return sources;
+}
+
+function mockupOutputReviewStateLabel(value, fallback = 'not loaded') {
+    const text = String(value ?? '').trim();
+    if (!text) return fallback;
+    if (/([a-z][a-z0-9+.-]*:\/\/|[A-Za-z]:\\|\\\\)/i.test(text)) {
+        return 'redacted unsafe label';
+    }
+    return humanizeToken(text.slice(0, 80));
+}
+
+function mockupOutputReviewPackageHandoffState() {
+    const status = State.resultStatus || {};
+    const review = recordedResultReview() || {};
+    const preview = State.packageReviewPreview || State.sessionSummary?.package_review_preview || {};
+    const construction = packageConstructionState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const handoff = handoffExportPrepareState() || {};
+    const aps = apsHandoffDispatchState() || {};
+    const external = externalExportDownloadPrepareState() || {};
+    const signed = State.externalExportDownloadSignedReference || {};
+    const packageKinds = packageKindsFromState().filter(Boolean);
+    const packageRows = packageLifecycleOutputRows();
+    const downstream = new Set([
+        ...arrayFromServer(review.downstream_unavailable),
+        ...arrayFromServer(preview.downstream_unavailable),
+        ...arrayFromServer(construction.downstream_unavailable),
+        ...arrayFromServer(submit.downstream_unavailable),
+        ...arrayFromServer(handoff.downstream_unavailable),
+        ...arrayFromServer(aps.downstream_unavailable),
+        ...arrayFromServer(external.downstream_unavailable),
+        ...currentDownstreamUnavailable(),
+    ]);
+
+    return {
+        resultStatusLabel: mockupOutputReviewStateLabel(status.pass_run_status || status.status),
+        resultReviewLabel: mockupOutputReviewStateLabel(review.review_state || review.state || review.operator_decision),
+        packagePreviewLabel: mockupOutputReviewStateLabel(
+            preview.next_state
+            || preview.state
+            || (preview.package_review_preview_enabled === true ? 'package_review_preview_available' : null),
+        ),
+        packageConstructionLabel: mockupOutputReviewStateLabel(
+            construction.next_state
+            || construction.state
+            || (construction.package_commit_enabled === true ? 'package_construction_ready' : null),
+        ),
+        packageSubmitLabel: mockupOutputReviewStateLabel(
+            submit.package_review_state
+            || submit.next_state
+            || submit.state
+            || (submit.package_review_submit_enabled === true ? 'package_review_submit_ready' : null),
+        ),
+        handoffPrepareLabel: mockupOutputReviewStateLabel(
+            handoff.handoff_export_state
+            || handoff.next_state
+            || handoff.state
+            || (handoff.handoff_export_prepare_enabled === true ? 'handoff_export_prepare_ready' : null),
+        ),
+        apsHandoffLabel: mockupOutputReviewStateLabel(apsHandoffStateName(aps)),
+        externalDownloadLabel: mockupOutputReviewStateLabel(externalExportDownloadStateName(external)),
+        signedReferenceLabel: mockupOutputReviewStateLabel(signed.signed_reference_state),
+        candidateKindCount: Array.isArray(preview.candidate_package_kinds) ? preview.candidate_package_kinds.length : 0,
+        packageKindCount: packageKinds.length,
+        outputPackageCount: Math.max(packageRows.length, packageOutputPackageIds().length),
+        payloadHashCount: packagePayloadHashes().length,
+        downstreamBlockedCount: downstream.size,
+    };
+}
+
+function mockupOutputReviewPackageHandoffStatus(model, sources) {
+    if (!sources.length) {
+        return 'Server output review package handoff projection unavailable: result, package, handoff, external export, and session-summary state are not loaded.';
+    }
+    return [
+        `${mockupCountLabel(model.packageKindCount, 'package kind')} and ${mockupCountLabel(model.outputPackageCount, 'output package')} visible as response-safe counts.`,
+        `${mockupCountLabel(model.payloadHashCount, 'payload hash', 'payload hashes')} and ${mockupCountLabel(model.downstreamBlockedCount, 'blocked downstream state')} available from existing server-owned state.`,
+    ].join(' ');
+}
+
+function renderMockupOutputReviewPackageHandoffProjection(active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME) {
+    const lanes = elements.mockupExecutionLanes;
+    const panel = elements.mockupOutputReviewPackageHandoffProjection;
+    const outputCard = document.querySelector('.mockup-flow-card.mockup-3c');
+    if (!panel) return;
+    if (!active) {
+        if (lanes) lanes.dataset.outputReviewPackageHandoffProjectionState = 'inactive';
+        if (outputCard) outputCard.dataset.outputReviewPackageHandoffProjectionState = 'inactive';
+        panel.dataset.projectionState = 'inactive';
+        panel.innerHTML = '';
+        return;
+    }
+
+    const sources = mockupOutputReviewPackageHandoffServerSources();
+    const model = mockupOutputReviewPackageHandoffState();
+    const available = sources.length > 0
+        && (
+            model.resultStatusLabel !== 'not loaded'
+            || model.resultReviewLabel !== 'not loaded'
+            || model.packagePreviewLabel !== 'not loaded'
+            || model.packageConstructionLabel !== 'not loaded'
+            || model.packageSubmitLabel !== 'not loaded'
+            || model.handoffPrepareLabel !== 'not loaded'
+            || model.apsHandoffLabel !== 'not loaded'
+            || model.externalDownloadLabel !== 'not loaded'
+            || model.signedReferenceLabel !== 'not loaded'
+            || model.packageKindCount > 0
+            || model.outputPackageCount > 0
+        );
+    const sourceList = sources.length
+        ? sources.map((source) => `<span>${escapeHtml(source)}</span>`).join('')
+        : '<span>server output review package handoff state unavailable</span>';
+
+    if (lanes) {
+        lanes.dataset.outputReviewPackageHandoffProjectionState = available ? 'available' : 'unavailable';
+        lanes.dataset.outputReviewPackageHandoffProjectionReadOnly = 'true';
+    }
+    if (outputCard) {
+        outputCard.dataset.outputReviewPackageHandoffProjectionState = available ? 'available' : 'unavailable';
+        outputCard.dataset.outputReviewPackageHandoffProjectionReadOnly = 'true';
+    }
+    panel.dataset.projectionState = available ? 'available' : 'unavailable';
+    panel.dataset.readOnly = 'true';
+    panel.innerHTML = `
+        <div class="mockup-output-review-projection-head">
+            <span class="mockup-frame-label">Server-owned output review package handoff projection</span>
+            <strong>${escapeHtml(available ? 'Live read-only' : 'Read-only unavailable')}</strong>
+            <p>${escapeHtml(mockupOutputReviewPackageHandoffStatus(model, sources))}</p>
+        </div>
+        <div class="mockup-output-review-live-grid" aria-label="Read-only output review package handoff state counts">
+            <article>
+                <span>Result review</span>
+                <strong>${escapeHtml(model.resultReviewLabel)}</strong>
+                <p>${escapeHtml(model.resultStatusLabel)}</p>
+            </article>
+            <article>
+                <span>Package preview</span>
+                <strong>${escapeHtml(model.packagePreviewLabel)}</strong>
+                <p>${escapeHtml(mockupCountLabel(model.candidateKindCount, 'candidate kind'))}</p>
+            </article>
+            <article>
+                <span>Package lifecycle</span>
+                <strong>${escapeHtml(model.packageConstructionLabel)}</strong>
+                <p>${escapeHtml(`${mockupCountLabel(model.outputPackageCount, 'package row')} / ${mockupCountLabel(model.payloadHashCount, 'payload hash', 'payload hashes')}`)}</p>
+            </article>
+            <article>
+                <span>Package review</span>
+                <strong>${escapeHtml(model.packageSubmitLabel)}</strong>
+                <p>${escapeHtml(mockupCountLabel(model.downstreamBlockedCount, 'blocked downstream state'))}</p>
+            </article>
+            <article>
+                <span>Handoff/export</span>
+                <strong>${escapeHtml(model.handoffPrepareLabel)}</strong>
+                <p>${escapeHtml(`${model.apsHandoffLabel} / ${model.externalDownloadLabel} / ${model.signedReferenceLabel}`)}</p>
+            </article>
+        </div>
+        <div class="mockup-output-review-source-list" aria-label="Server state sources used by this read-only output review package handoff projection">
+            ${sourceList}
+        </div>
+        ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only output review package handoff projection pending</span>'}
     `;
 }
 
