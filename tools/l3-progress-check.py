@@ -2450,6 +2450,9 @@ LAYER3_SOURCE_DIRECTORY_ACTIVATION_SELECTION = (
 LAYER3_SOURCE_DIRECTORY_ACTIVATION_FREEZE = (
     PLANNING_DOCS / "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF = (
+    PLANNING_DOCS / "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -79311,6 +79314,256 @@ def _check_source_directory_activation_freeze(errors: list[str]) -> None:
                         errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_freeze.proof_terms missing {term}")
 
 
+def _check_source_directory_activation_proof(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    proof_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF,
+        errors,
+    )
+    e2e_text = _read_required_text(ROOT / "e2e" / "layer3-workbench.spec.js", errors)
+    for term in (
+        "Status: branch-local server-authoritative activation proof for `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`.",
+        "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+        "Predecessor freeze doc: `886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md`.",
+        "Current-main checkpoint before this proof: `d1db95e0b0db9b06ddb1eeda4e2f6a10616c8b95`.",
+        "Implemented activation mode: `single_mockup_screen_server_authoritative_activation_proof`.",
+        "Implemented target: `source_directory_ingestion_scan_status_mockup_screen_activation`.",
+        "Implemented proof action: `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`.",
+        "Live activation surface proved: `/review/layer3` `#source-directory-ingestion-rendered-controls`.",
+        "Rendered surface decision: `reuse_existing_source_directory_ingestion_rendered_controls`.",
+        "Runtime behavior introduced by this proof: `false`.",
+        "Rendered behavior introduced by this proof: `false`.",
+        "Backend behavior introduced by this proof: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this proof: `false`.",
+        "Executable browser proof introduced by this proof: `true`.",
+        "Single mockup screen server-authoritative activation proved by this proof: `true`.",
+        "Full mockup program activation selected: `false`.",
+        "The next exact posture is `current_main_sync_source_directory_activation_proof`.",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF)} missing source-directory activation proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Activation Proof",
+            "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+            "single_mockup_screen_server_authoritative_activation_proof",
+            "source_directory_ingestion_scan_status_mockup_screen_activation",
+            "HTTP 409 blocked scan",
+            "HTTP 404 missing batch",
+            "headed Chromium proof",
+            "headless Chromium proof",
+            "current_main_sync_source_directory_activation_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory activation proof to preserve when present",
+            "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+            "single_mockup_screen_server_authoritative_activation_proof",
+            "source_directory_ingestion_scan_status_mockup_screen_activation",
+            "source_directory_ingestion_dir_unset",
+            "source_directory_ingestion_batch_not_found",
+            "current_main_sync_source_directory_activation_proof",
+        ),
+        REFRESH_SPEC: (
+            "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+            "branch-local server-authoritative activation proof",
+            "single_mockup_screen_server_authoritative_activation_proof",
+            "source_directory_ingestion_scan_status_mockup_screen_activation",
+            "executable browser proof introduced as true",
+            "current_main_sync_source_directory_activation_proof",
+        ),
+        MANIFEST: (
+            '"source_directory_activation_proof"',
+            '"status": "branch_local_source_directory_ingestion_scan_status_mockup_screen_activation_proved"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md"',
+            '"live_activation_surface_proved": "/review/layer3 #source-directory-ingestion-rendered-controls"',
+            '"single_mockup_screen_server_authoritative_activation_proved": true',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "source_directory_ingestion_scan_status_mockup_screen_activation_proof"',
+            '"887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md"',
+            '"source_directory_ingestion_dir_unset"',
+            '"source_directory_ingestion_batch_not_found"',
+            '"no full mockup program activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory activation proof term: {term}"
+                )
+
+    for term in (
+        "Layer 3 source-directory activation proof renders blocked scan and missing batch states",
+        "source_directory_ingestion_dir_unset",
+        "source_directory_ingestion_batch_not_found",
+        "Failed to load resource: the server responded with a status of 409 (Conflict)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "expectOnlyPayloadKeys(capturedScanPayload",
+        "rag_vector_index",
+        "web_connector",
+        "source/mixed-corpus/materialize",
+        "source/ingestion/server-configured-directory/material-preview",
+        "provider-private-signed-url/prepare",
+        "execution/start",
+    ):
+        if term not in e2e_text:
+            errors.append(f"e2e/layer3-workbench.spec.js missing source-directory activation proof term: {term}")
+
+    expected_scalars = {
+        "status": "branch_local_source_directory_ingestion_scan_status_mockup_screen_activation_proved",
+        "doc": "next_milestone_plans/Layer3_planning_docs/887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+        "branch": "codex/l3-source-activation",
+        "predecessor_freeze_doc": "next_milestone_plans/Layer3_planning_docs/886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+        "current_main_checkpoint_before_proof": "d1db95e0b0db9b06ddb1eeda4e2f6a10616c8b95",
+        "implemented_activation_mode": "single_mockup_screen_server_authoritative_activation_proof",
+        "implemented_target": "source_directory_ingestion_scan_status_mockup_screen_activation",
+        "implemented_proof_action": "prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening",
+        "live_activation_surface_proved": "/review/layer3 #source-directory-ingestion-rendered-controls",
+        "rendered_surface_decision": "reuse_existing_source_directory_ingestion_rendered_controls",
+        "proof_file": "e2e/layer3-workbench.spec.js",
+        "next_posture": "current_main_sync_source_directory_activation_proof",
+    }
+    if isinstance(manifest, dict):
+        entry = manifest.get("source_directory_activation_proof")
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing source_directory_activation_proof object")
+        else:
+            for key, value in {
+                **expected_scalars,
+                "scan_route_contract": "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+                "status_route_contract": "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+                "request_dto": "Layer3SourceDirectoryIngestionScanRequest",
+                "service_authority": "backend/app/services/layer3_source_directory_ingestion.py",
+            }.items():
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_activation_proof.{key} must be {value!r}")
+            for key, term in (
+                ("durable_authority", "L3SourceDirectoryIngestionBatch"),
+                ("proof_coverage", "HTTP 409 source_directory_ingestion_dir_unset"),
+                ("proof_coverage", "HTTP 404 source_directory_ingestion_batch_not_found"),
+                ("validation", "--headed PASS"),
+                ("blocked_surfaces", "frontend-only durable authority"),
+            ):
+                values = entry.get(key)
+                if not isinstance(values, list) or not any(term in str(value) for value in values):
+                    errors.append(f"{_rel(MANIFEST)} source_directory_activation_proof.{key} missing {term!r}")
+            for key in (
+                "runtime_behavior_change",
+                "rendered_behavior_change",
+                "backend_behavior_change",
+                "route_api_dto_model_migration_service_behavior_change",
+                "full_mockup_program_activation_selected",
+            ):
+                if entry.get(key) is not False:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_activation_proof.{key} must be false")
+            for key in (
+                "executable_browser_proof_introduced",
+                "single_mockup_screen_server_authoritative_activation_proved",
+            ):
+                if entry.get(key) is not True:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_activation_proof.{key} must be true")
+        current_status = manifest.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+        else:
+            for key, value in {
+                "latest_source_directory_activation_proof_branch": "codex/l3-source-activation",
+                "latest_source_directory_activation_proof_doc": "next_milestone_plans/Layer3_planning_docs/887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+                "latest_source_directory_activation_proof_status": "branch_local_source_directory_ingestion_scan_status_mockup_screen_activation_proved",
+                "latest_source_directory_activation_proof_implemented_target": "source_directory_ingestion_scan_status_mockup_screen_activation",
+                "latest_source_directory_activation_proof_implemented_action": "prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening",
+                "latest_source_directory_activation_proof_live_surface": "/review/layer3 #source-directory-ingestion-rendered-controls",
+                "latest_source_directory_activation_proof_next_posture": "current_main_sync_source_directory_activation_proof",
+            }.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+            for key in (
+                "latest_source_directory_activation_proof_runtime_behavior_change",
+                "latest_source_directory_activation_proof_rendered_behavior_change",
+                "latest_source_directory_activation_proof_backend_behavior_change",
+                "latest_source_directory_activation_proof_route_api_dto_model_migration_service_behavior_change",
+                "latest_source_directory_activation_proof_full_mockup_program_activation_selected",
+            ):
+                if current_status.get(key) is not False:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be false")
+            for key in (
+                "latest_source_directory_activation_proof_executable_browser_proof_introduced",
+                "latest_source_directory_activation_proof_single_mockup_screen_server_authoritative_activation_proved",
+            ):
+                if current_status.get(key) is not True:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be true")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("source_directory_activation_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing source_directory_activation_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+                **expected_scalars,
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_proof.{key} must be {value!r}")
+            for key in (
+                "runtime_behavior_change",
+                "rendered_behavior_change",
+                "backend_behavior_change",
+                "route_api_dto_model_migration_service_behavior_change",
+                "full_mockup_program_activation_selected",
+            ):
+                if proof_entry.get(key) is not False:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_proof.{key} must be false")
+            for key in (
+                "executable_browser_proof_introduced",
+                "single_mockup_screen_server_authoritative_activation_proved",
+            ):
+                if proof_entry.get(key) is not True:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_proof.{key} must be true")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+                    "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+                    "single_mockup_screen_server_authoritative_activation_proof",
+                    "source_directory_ingestion_scan_status_mockup_screen_activation",
+                    "source_directory_ingestion_dir_unset",
+                    "source_directory_ingestion_batch_not_found",
+                    "headed Chromium proof",
+                    "headless Chromium proof",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_proof.proof_terms missing {term}")
+        current_status = proof_manifest.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} current_status must be an object")
+        else:
+            for key, value in {
+                "latest_source_directory_activation_proof_branch": "codex/l3-source-activation",
+                "latest_source_directory_activation_proof_doc": "next_milestone_plans/Layer3_planning_docs/887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+                "latest_source_directory_activation_proof_status": "branch_local_source_directory_ingestion_scan_status_mockup_screen_activation_proved",
+                "latest_source_directory_activation_proof_next_posture": "current_main_sync_source_directory_activation_proof",
+            }.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} current_status.{key} must be {value!r}")
+        for key, value in {
+            "latest_source_directory_activation_proof_branch": "codex/l3-source-activation",
+            "latest_source_directory_activation_proof_doc": "next_milestone_plans/Layer3_planning_docs/887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+            "latest_source_directory_activation_proof_status": "branch_local_source_directory_ingestion_scan_status_mockup_screen_activation_proved",
+            "latest_source_directory_activation_proof_next_posture": "current_main_sync_source_directory_activation_proof",
+        }.items():
+            if proof_manifest.get(key) != value:
+                errors.append(f"{_rel(PROOF_MANIFEST)} {key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -80047,6 +80300,7 @@ def main() -> int:
     _check_mockup_pdf_location_available_state_browser_proof_current_main_sync(errors)
     _check_source_directory_activation_selection(errors)
     _check_source_directory_activation_freeze(errors)
+    _check_source_directory_activation_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
