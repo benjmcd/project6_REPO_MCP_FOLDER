@@ -256,6 +256,7 @@ const State = {
     providerPrivateSignedUrlPending: false,
     providerPublicUrlPrepare: null,
     providerPublicUrlStatus: null,
+    providerPublicUrlUse: null,
     providerPublicUrlRevoke: null,
     providerPublicUrlPrepareClientRequestId: null,
     providerPublicUrlError: null,
@@ -374,6 +375,7 @@ const elements = {
     providerPublicUrlPanel: document.getElementById('provider-public-url-panel'),
     providerPublicUrlPrepare: document.getElementById('provider-public-url-prepare'),
     providerPublicUrlStatus: document.getElementById('provider-public-url-status'),
+    providerPublicUrlUse: document.getElementById('provider-public-url-use'),
     providerPublicUrlRevoke: document.getElementById('provider-public-url-revoke'),
     contextList: document.getElementById('context-list'),
     eventList: document.getElementById('event-list'),
@@ -2067,6 +2069,7 @@ function clearProviderPrivateSignedUrlState() {
 function clearProviderPublicUrlState() {
     State.providerPublicUrlPrepare = null;
     State.providerPublicUrlStatus = null;
+    State.providerPublicUrlUse = null;
     State.providerPublicUrlRevoke = null;
     State.providerPublicUrlPrepareClientRequestId = null;
     State.providerPublicUrlError = null;
@@ -3194,6 +3197,7 @@ function canRevokeProviderPrivateSignedUrl() {
 
 function providerPublicUrlReceiptId() {
     return State.providerPublicUrlRevoke?.provider_public_url_receipt_id
+        || State.providerPublicUrlUse?.provider_public_url_receipt_id
         || State.providerPublicUrlStatus?.provider_public_url_receipt_id
         || State.providerPublicUrlPrepare?.provider_public_url_receipt_id
         || null;
@@ -3201,9 +3205,18 @@ function providerPublicUrlReceiptId() {
 
 function providerPublicUrlLatestState() {
     return State.providerPublicUrlRevoke?.provider_public_url_state
+        || State.providerPublicUrlUse?.provider_public_url_state
         || State.providerPublicUrlStatus?.provider_public_url_state
         || State.providerPublicUrlPrepare?.provider_public_url_state
         || null;
+}
+
+function providerPublicUrlAuthorityState() {
+    return State.providerPublicUrlStatus
+        || State.providerPublicUrlPrepare
+        || State.providerPublicUrlUse
+        || State.providerPublicUrlRevoke
+        || {};
 }
 
 function providerPublicUrlBlocksPrepare() {
@@ -3239,6 +3252,15 @@ function canRevokeProviderPublicUrl() {
     );
 }
 
+function canUseProviderPublicUrl() {
+    return Boolean(
+        providerPublicUrlReceiptId()
+        && providerPublicUrlLatestState() === 'provider_public_url_prepared'
+        && !State.providerPublicUrlUse
+        && !State.providerPublicUrlPending
+    );
+}
+
 function downstreamAccessLifecycleRows() {
     const handoff = handoffExportPrepareState() || {};
     const aps = apsHandoffDispatchState() || {};
@@ -3246,7 +3268,7 @@ function downstreamAccessLifecycleRows() {
     const delivery = State.externalExportDownloadDelivery || {};
     const signedReference = State.externalExportDownloadSignedReferenceUse || State.externalExportDownloadSignedReference || {};
     const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
-    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlUse || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
     const rows = [
         {
             stage: 'handoff/export prepare',
@@ -3409,7 +3431,7 @@ function layer3E2EGovernanceLifecycleRows() {
     const downstreamState = downstreamAccessLifecycleDashboardState(downstreamRows);
     const latestDownstreamRow = [...downstreamRows].reverse().find((row) => row.state || row.record_ref || row.access_mode) || {};
     const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
-    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlUse || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
     return [
         {
             key: 'source_intake_gate_b',
@@ -8788,8 +8810,15 @@ function providerPublicUrlPanelState() {
     if (stateName === 'provider_public_url_expired') {
         return { label: stateName, pill: 'ready', message: 'Provider-public URL receipt has expired; a replacement can be prepared from provider-private authority.' };
     }
+    if (State.providerPublicUrlUse?.delivery_use_decision === 'allowed') {
+        return { label: 'provider_public_url_use_allowed', pill: 'ready', message: 'Server allowed the redacted provider-public use decision; raw URL delivery remains blocked.' };
+    }
+    if (State.providerPublicUrlUse?.delivery_use_decision === 'denied') {
+        const reason = State.providerPublicUrlUse.delivery_use_denied_reason || 'provider_public_url_use_denied';
+        return { label: 'provider_public_url_use_denied', pill: 'blocked', message: `Server denied the redacted provider-public use decision: ${reason}.` };
+    }
     if (stateName === 'provider_public_url_prepared') {
-        return { label: stateName, pill: 'ready', message: 'Provider-public URL receipt is prepared; delivery/use and raw public URL exposure remain closed.' };
+        return { label: stateName, pill: 'ready', message: 'Provider-public URL receipt is prepared; the redacted use-decision control is available while raw public URL exposure remains closed.' };
     }
     if (providerPrivateSignedUrlReceiptId() && providerPrivateSignedUrlLatestState() === 'provider_private_signed_url_prepared') {
         return { label: 'provider_public_url_ui_ready', pill: 'ready', message: 'Ready to prepare a server-redacted provider-public URL receipt.' };
@@ -8805,7 +8834,7 @@ function providerPublicUrlDisplayValue(value) {
 }
 
 function renderProviderPublicUrlPanel() {
-    const provider = State.providerPublicUrlRevoke || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    const provider = State.providerPublicUrlRevoke || State.providerPublicUrlUse || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
     const panelState = providerPublicUrlPanelState();
     const audit = provider.audit_receipt || {};
     const rows = {
@@ -8813,6 +8842,9 @@ function renderProviderPublicUrlPanel() {
         provider_public_state: provider.provider_public_url_state,
         provider_private_receipt_id: provider.provider_private_signed_url_receipt_id || providerPrivateSignedUrlReceiptId(),
         delivery_mode: provider.delivery_mode || 'provider_public_url',
+        delivery_use_mode: provider.delivery_use_mode,
+        delivery_use_decision: provider.delivery_use_decision,
+        delivery_use_denied_reason: provider.delivery_use_denied_reason,
         provider_public_url_redacted: provider.provider_public_url_redacted,
         expires_at: provider.provider_public_url_expires_at,
         replay_policy: provider.provider_public_url_replay_policy,
@@ -8820,13 +8852,25 @@ function renderProviderPublicUrlPanel() {
         revoked: provider.provider_public_url_revoked,
         raw_public_url_exposed: provider.raw_public_url_exposed === true ? true : false,
         public_url_enabled: provider.public_url_enabled === true ? true : false,
+        provider_network_enabled: provider.provider_network_enabled === true ? true : false,
+        provider_object_write_enabled: provider.provider_object_write_enabled === true ? true : false,
+        public_redirect_enabled: provider.public_redirect_enabled === true ? true : false,
+        byte_streaming_enabled: provider.byte_streaming_enabled === true ? true : false,
+        durable_use_row_created: provider.durable_use_row_created === true ? true : false,
+        audit_row_created: provider.audit_row_created === true ? true : false,
+        provider_credentials_enabled: provider.provider_credentials_enabled === true ? true : false,
+        connector_dispatch_enabled: provider.connector_dispatch_enabled === true ? true : false,
+        package_mutation_enabled: provider.package_mutation_enabled === true ? true : false,
+        source_expansion_enabled: provider.source_expansion_enabled === true ? true : false,
+        rag_vector_indexing_enabled: provider.rag_vector_indexing_enabled === true ? true : false,
+        frontend_durable_authority_enabled: provider.frontend_durable_authority_enabled === true ? true : false,
         source_artifact_hash: provider.source_artifact_hash,
         source_artifact_size_bytes: provider.source_artifact_size_bytes,
         audit_receipt_id: audit.audit_event_id || audit.provider_public_url_audit_event_id,
         audit_reason_code: audit.reason_code,
         next_allowed_actions: provider.next_allowed_actions,
         delivery_route: 'closed_not_implemented',
-        use_route: 'closed_not_implemented',
+        use_route: '/handoff/export/download/provider-public-url/use redacted_decision_only',
         raw_public_url_display: 'blocked_not_rendered',
         browser_durable_authority: 'blocked_not_persisted',
     };
@@ -8846,6 +8890,7 @@ function renderProviderPublicUrlPanel() {
     `;
     elements.providerPublicUrlPrepare.disabled = !canPrepareProviderPublicUrl();
     elements.providerPublicUrlStatus.disabled = !canInspectProviderPublicUrl();
+    elements.providerPublicUrlUse.disabled = !canUseProviderPublicUrl();
     elements.providerPublicUrlRevoke.disabled = !canRevokeProviderPublicUrl();
 }
 
@@ -8963,6 +9008,7 @@ function setGateControls() {
     elements.providerPrivateSignedUrlRevoke.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canRevokeProviderPrivateSignedUrl();
     elements.providerPublicUrlPrepare.disabled = !canPrepareProviderPublicUrl();
     elements.providerPublicUrlStatus.disabled = !canInspectProviderPublicUrl();
+    elements.providerPublicUrlUse.disabled = !canUseProviderPublicUrl();
     elements.providerPublicUrlRevoke.disabled = !canRevokeProviderPublicUrl();
     setStepChip(elements.planStep, canPlanPreview());
     setStepChip(elements.executionStep, Boolean(State.executionSelection || State.sessionSummary?.execution_selection?.selected));
@@ -9610,8 +9656,29 @@ function providerPublicUrlPreparePayload() {
         requested_ttl_seconds: 300,
         delivery_mode: 'provider_public_url',
         operator_decision: 'prepare_provider_public_url',
-        decision_notes: 'Rendered workbench prepare/status/revoke lane; provider-public delivery/use and raw URL exposure remain closed.',
+        decision_notes: 'Rendered workbench prepare/status/revoke lane; provider-public raw URL exposure remains closed.',
     };
+}
+
+function providerPublicUrlUsePayload() {
+    const provider = providerPublicUrlAuthorityState();
+    const authorityHash = provider.authority_hash || provider.audit_receipt?.authority_hash;
+    const payload = {
+        client_request_id: requestId(),
+        provider_public_url_receipt_id: providerPublicUrlReceiptId(),
+        delivery_use_mode: 'fake_provider_redacted_use_decision',
+        operator_decision: 'use_provider_public_url_redacted_fake_provider',
+    };
+    if (authorityHash) {
+        payload.expected_authority_hash = authorityHash;
+    }
+    if (provider.source_artifact_hash) {
+        payload.expected_source_artifact_hash = provider.source_artifact_hash;
+    }
+    if (provider.source_artifact_size_bytes !== undefined && provider.source_artifact_size_bytes !== null) {
+        payload.expected_source_artifact_size_bytes = provider.source_artifact_size_bytes;
+    }
+    return payload;
 }
 
 function providerPublicUrlRevokePayload() {
@@ -9623,7 +9690,7 @@ function providerPublicUrlRevokePayload() {
         revoked_by: 'layer3-rendered-workbench',
         revocation_reason: 'operator revoked provider-public URL from rendered workbench',
         operator_decision: 'revoke_provider_public_url',
-        decision_notes: 'Rendered workbench revoke lane; provider-public delivery/use and raw URL exposure remain closed.',
+        decision_notes: 'Rendered workbench revoke lane; provider-public raw URL exposure remains closed.',
     };
 }
 
@@ -11142,6 +11209,7 @@ async function submitProviderPublicUrlPrepare(event) {
     State.providerPublicUrlPending = true;
     State.providerPublicUrlError = null;
     State.providerPublicUrlStatus = null;
+    State.providerPublicUrlUse = null;
     State.providerPublicUrlRevoke = null;
     renderAll();
     setBusy(elements.providerPublicUrlPrepare, true, 'Prepare Provider-Public Receipt');
@@ -11184,6 +11252,30 @@ async function inspectProviderPublicUrlStatus() {
     } finally {
         State.providerPublicUrlPending = false;
         setBusy(elements.providerPublicUrlStatus, false, 'Inspect Provider-Public Status');
+        setGateControls();
+    }
+}
+
+async function useProviderPublicUrlDecision() {
+    if (!canUseProviderPublicUrl()) return;
+    State.providerPublicUrlPending = true;
+    State.providerPublicUrlError = null;
+    renderAll();
+    setBusy(elements.providerPublicUrlUse, true, 'Use Redacted Decision');
+    try {
+        State.providerPublicUrlUse = await postJson(
+            '/handoff/export/download/provider-public-url/use',
+            providerPublicUrlUsePayload(),
+        );
+        addEvent('Provider-public URL redacted use decision recorded without raw URL exposure.');
+        renderAll();
+    } catch (error) {
+        State.providerPublicUrlError = error.payload || { error_code: 'provider_public_url_use_failed', message: error.message };
+        addEvent(`Provider-public URL use decision blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.providerPublicUrlPending = false;
+        setBusy(elements.providerPublicUrlUse, false, 'Use Redacted Decision');
         setGateControls();
     }
 }
@@ -11338,6 +11430,7 @@ elements.providerPrivateSignedUrlStatus.addEventListener('click', inspectProvide
 elements.providerPrivateSignedUrlRevoke.addEventListener('click', revokeProviderPrivateSignedUrl);
 elements.providerPublicUrlForm.addEventListener('submit', submitProviderPublicUrlPrepare);
 elements.providerPublicUrlStatus.addEventListener('click', inspectProviderPublicUrlStatus);
+elements.providerPublicUrlUse.addEventListener('click', useProviderPublicUrlDecision);
 elements.providerPublicUrlRevoke.addEventListener('click', revokeProviderPublicUrl);
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);

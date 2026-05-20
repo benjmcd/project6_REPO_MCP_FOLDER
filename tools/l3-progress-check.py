@@ -2554,6 +2554,10 @@ LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE = (
     PLANNING_DOCS
     / "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md"
 )
+LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION = (
+    PLANNING_DOCS
+    / "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -85725,6 +85729,305 @@ def _check_provider_public_url_delivery_use_rendered_control_extension_freeze(
             errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
 
 
+def _check_provider_public_url_delivery_use_rendered_control_extension(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION,
+        errors,
+    )
+    html_text = _read_required_text(LAYER3_HTML, errors)
+    js_text = _read_required_text(LAYER3_JS, errors)
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    entry_key = "provider_public_url_delivery_use_rendered_control_extension"
+    status = "provider_public_url_delivery_use_rendered_control_extension_implemented"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md"
+    )
+    checkpoint = "afe7bf8b513179736b7fe595002ecc710570403e"
+    branch = "codex/l3-provider-public-use-rendered-control"
+    rendered_node = "/review/layer3 #provider-public-url-use"
+    static_proof = (
+        "backend/tests/test_layer3_page.py::"
+        "test_layer3_provider_public_url_use_rendered_control_is_bounded"
+    )
+    browser_proof = (
+        "e2e/layer3-workbench.spec.js::"
+        "Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke "
+        "and provider-public URL prepare status use revoke"
+    )
+    next_posture = (
+        "current_main_sync_provider_public_url_delivery_use_rendered_control_extension_"
+        "then_select_next_blocker_retirement_lane"
+    )
+    summary = (
+        "Doc 914 implements provider_public_url_delivery_use_rendered_control_extension as one bounded rendered "
+        "use-decision control over the existing provider-public prepare/status/revoke/use route and receipt authority chain. "
+        "It introduces rendered and production UI behavior plus executable proof coverage only; it introduces no runtime, "
+        "backend, route/API/DTO/model/migration/service behavior, raw provider-public URL delivery, public proxy runtime, "
+        "connector dispatch, package mutation, source expansion, browser-storage authority, frontend-only durable authority, "
+        "or full mockup program activation."
+    )
+
+    for term in (
+        "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md",
+        f"Status: provider-public URL delivery/use rendered control extension implemented for `{entry_key}`.",
+        "913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md",
+        f"Current-main checkpoint before this implementation: `{checkpoint}`.",
+        f"Implementation branch: `{branch}`.",
+        f"Selected rendered target: `{entry_key}`.",
+        f"Selected rendered node: `{rendered_node}`.",
+        f"Selected static proof: `{static_proof}`.",
+        "Selected browser proof: `e2e/layer3-workbench.spec.js` test `Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke and provider-public URL prepare status use revoke`.",
+        'data-rendered-extension="provider_public_url_delivery_use_rendered_control_extension"',
+        "/review/layer3 #provider-public-url-use",
+        "State.providerPublicUrlUse",
+        "canUseProviderPublicUrl",
+        "providerPublicUrlUsePayload",
+        "useProviderPublicUrlDecision",
+        "audit_receipt.authority_hash",
+        "disabled after the successful redacted use decision",
+        "POST /api/v1/layer3/handoff/export/download/provider-public-url/use",
+        "Static page proof verifies:",
+        "Browser proof verifies:",
+        "Headless/headed comparison result: no behavioral divergence observed",
+        "Focused headless Chromium proof",
+        "focused headed Chromium proof",
+        "Runtime behavior introduced by this implementation: `false`.",
+        "Rendered behavior introduced by this implementation: `true`.",
+        "Backend behavior introduced by this implementation: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this implementation: `false`.",
+        "Executable test behavior introduced by this implementation: `true`.",
+        "Production UI behavior introduced by this implementation: `true`.",
+        "Server-authoritative full mockup activation introduced by this implementation: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed for full mockup activation by this implementation alone: `false`.",
+        f"The next exact posture is `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION)} missing provider-public use rendered implementation term: {term}"
+            )
+
+    for term in (
+        'id="provider-public-url-form"',
+        'data-rendered-extension="provider_public_url_delivery_use_rendered_control_extension"',
+        'id="provider-public-url-use"',
+    ):
+        if term not in html_text:
+            errors.append(f"{_rel(LAYER3_HTML)} missing provider-public rendered use HTML term: {term}")
+    if 'id="provider-public-url-deliver"' in html_text:
+        errors.append(f"{_rel(LAYER3_HTML)} must not add provider-public deliver control")
+
+    for term in (
+        "providerPublicUrlUse: null",
+        "providerPublicUrlUse: document.getElementById('provider-public-url-use')",
+        "State.providerPublicUrlUse = null",
+        "function providerPublicUrlAuthorityState()",
+        "function canUseProviderPublicUrl()",
+        "&& !State.providerPublicUrlUse",
+        "function providerPublicUrlUsePayload()",
+        "const authorityHash = provider.authority_hash || provider.audit_receipt?.authority_hash",
+        "delivery_use_mode: 'fake_provider_redacted_use_decision'",
+        "operator_decision: 'use_provider_public_url_redacted_fake_provider'",
+        "async function useProviderPublicUrlDecision()",
+        "'/handoff/export/download/provider-public-url/use'",
+        "State.providerPublicUrlUse = await postJson",
+        "provider_public_url_use_allowed",
+        "provider_network_enabled: provider.provider_network_enabled === true ? true : false",
+        "provider_object_write_enabled: provider.provider_object_write_enabled === true ? true : false",
+        "public_redirect_enabled: provider.public_redirect_enabled === true ? true : false",
+        "byte_streaming_enabled: provider.byte_streaming_enabled === true ? true : false",
+        "frontend_durable_authority_enabled: provider.frontend_durable_authority_enabled === true ? true : false",
+        "use_route: '/handoff/export/download/provider-public-url/use redacted_decision_only'",
+        "elements.providerPublicUrlUse.addEventListener('click', useProviderPublicUrlDecision)",
+    ):
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing provider-public rendered use JS term: {term}")
+    if "/handoff/export/download/provider-public-url/deliver" in js_text:
+        errors.append(f"{_rel(LAYER3_JS)} must not add provider-public deliver route")
+
+    for term in (
+        "test_layer3_provider_public_url_use_rendered_control_is_bounded",
+        'data-rendered-extension="provider_public_url_delivery_use_rendered_control_extension"',
+        'id="provider-public-url-use"',
+        'id="provider-public-url-deliver"',
+        "function providerPublicUrlUsePayload",
+        "client_request_id: requestId()",
+        "provider_public_url_receipt_id: providerPublicUrlReceiptId()",
+        "delivery_use_mode: 'fake_provider_redacted_use_decision'",
+        "operator_decision: 'use_provider_public_url_redacted_fake_provider'",
+        "expected_authority_hash",
+        "expected_source_artifact_hash",
+        "expected_source_artifact_size_bytes",
+        "&& !State.providerPublicUrlUse",
+        "async function useProviderPublicUrlDecision",
+        "'/handoff/export/download/provider-public-url/use'",
+        "localStorage",
+        "sessionStorage",
+        "provider-public-url/deliver",
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing provider-public rendered use page-test term: {term}")
+
+    for term in (
+        "Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke and provider-public URL prepare status use revoke",
+        "#provider-public-url-use",
+        "/api/v1/layer3/handoff/export/download/provider-public-url/use",
+        "fake_provider_redacted_use_decision",
+        "use_provider_public_url_redacted_fake_provider",
+        "expected_authority_hash",
+        "publicStatus.audit_receipt.authority_hash",
+        "layer3.provider_public_url.delivery_use.v1",
+        "delivery_use_decision",
+        "provider_network_enabled",
+        "provider_object_write_enabled",
+        "public_redirect_enabled",
+        "byte_streaming_enabled",
+        "durable_use_row_created",
+        "frontend_durable_authority_enabled",
+        "provider-public-url-deliver",
+        "await expect(page.locator('#provider-public-url-use')).toBeDisabled();",
+        "providerPublicStorageKeys",
+        "expect(providerPublicStorageKeys).toEqual([])",
+        "/handoff/export/download/provider-public-url/use'))).toHaveLength(1)",
+        "/handoff/export/download/provider-public-url/deliver",
+    ):
+        if term not in e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing provider-public rendered use e2e term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public URL Delivery/Use Rendered Control Extension",
+            "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md",
+            status,
+            rendered_node,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 provider-public URL delivery/use rendered control extension proof to preserve when present",
+            "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md",
+            status,
+            rendered_node,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md",
+            status,
+            rendered_node,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"proof_doc": "{doc_path}"',
+            f'"selected_rendered_node": "{rendered_node}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"proof_kind": "{entry_key}"',
+            "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md",
+            "headless Chromium proof",
+            "headed Chromium proof",
+            "no provider-public deliver control",
+            "no browser-storage authority",
+            "no frontend-only durable authority",
+            "no full mockup activation",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing provider-public rendered use implementation term: {term}")
+
+    expected_latest = {
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_current_main_checkpoint_before_implementation": checkpoint,
+        f"latest_{entry_key}_implementation_branch": branch,
+        f"latest_{entry_key}_selected_rendered_target": entry_key,
+        f"latest_{entry_key}_selected_rendered_node": rendered_node,
+        f"latest_{entry_key}_selected_static_proof": static_proof,
+        f"latest_{entry_key}_selected_browser_proof": browser_proof,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_server_authoritative_full_mockup_activation_introduced_by_implementation": False,
+        f"latest_{entry_key}_full_mockup_program_activation_selected": False,
+        f"latest_{entry_key}_implementation_entry_allowed_for_full_mockup_activation_by_implementation_alone": False,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("proof_doc", doc_path),
+        ("predecessor_freeze_doc", predecessor_doc),
+        ("current_main_checkpoint_before_implementation", checkpoint),
+        ("implementation_branch", branch),
+        ("selected_rendered_target", entry_key),
+        ("selected_rendered_node", rendered_node),
+        ("selected_static_proof", static_proof),
+        ("selected_browser_proof", browser_proof),
+        ("rendered_mode", entry_key),
+        ("server_authority", "provider_public_url_delivery_use_route"),
+        ("use_route", "/handoff/export/download/provider-public-url/use"),
+        ("deliver_route_added", False),
+        ("raw_public_url_exposed", False),
+        ("browser_storage_authority_enabled", False),
+        ("frontend_durable_authority_enabled", False),
+        ("headless_headed_browser_divergence_observed", False),
+        ("runtime_behavior_change_introduced_by_implementation", False),
+        ("rendered_behavior_change_introduced_by_implementation", True),
+        ("backend_behavior_change_introduced_by_implementation", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_implementation", False),
+        ("executable_test_behavior_change_introduced_by_implementation", True),
+        ("production_ui_behavior_change_introduced_by_implementation", True),
+        ("server_authoritative_full_mockup_activation_introduced_by_implementation", False),
+        ("full_mockup_program_activation_selected", False),
+        ("implementation_entry_allowed_for_full_mockup_activation_by_implementation_alone", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {entry_key} object")
+            continue
+        for key, value in expected_entry_values:
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {entry_key}.{key} must be {value!r}")
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(path)} {entry_key}.proof_kind mismatch")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif scope_status.get(entry_key) != status:
+            errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -86518,6 +86821,7 @@ def main() -> int:
         errors
     )
     _check_provider_public_url_delivery_use_rendered_control_extension_freeze(errors)
+    _check_provider_public_url_delivery_use_rendered_control_extension(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
