@@ -2440,6 +2440,10 @@ LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF = (
     PLANNING_DOCS
     / "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md"
 )
+LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -78763,6 +78767,206 @@ def _check_mockup_pdf_location_available_state_browser_proof(errors: list[str]) 
                         errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof.proof_terms missing {term}")
 
 
+def _check_mockup_pdf_location_available_state_browser_proof_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    sync_text = _read_required_text(
+        LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.",
+        "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+        "Proof doc: `883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md`.",
+        "Proof PR: `#1497`.",
+        "Proof branch commit: `2db04d7277cceb443a53dc18b9d110a984c04996`.",
+        "Proof merge commit: `dbbd021e4229f9bbcc033f8470b59825c96329fd`.",
+        "Synced result: `current_main_synced_mockup_pdf_location_available_state_browser_proof`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Backend behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m24s`",
+        "`test`: `SUCCESS`, `3m44s`",
+        "reviewThreads totalCount: `0`;",
+        "The next exact posture is `select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC)} missing mockup PDF-location available-state current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup PDF Location Available-State Browser Proof Current-Main Sync",
+            "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+            "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup PDF-location available-state browser proof current-main sync to preserve when present",
+            "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+            "PR `#1497`",
+            "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+        ),
+        REFRESH_SPEC: (
+            "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+            "current-main sync",
+            "PR `#1497`",
+            "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+        ),
+        MANIFEST: (
+            '"mockup_pdf_location_available_state_browser_proof_current_main_sync"',
+            '"status": "current_main_synced_mockup_pdf_location_available_state_browser_proof"',
+            '"sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md"',
+            '"proof_pr": "#1497"',
+            '"next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "current_main_sync_mockup_pdf_location_available_state_browser_proof"',
+            '"884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md"',
+            '"883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md"',
+            '"#1497"',
+            '"select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing mockup PDF-location available-state current-main sync term: {term}"
+                )
+
+    expected_scalars = {
+        "status": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+        "sync_branch": "codex/l3-pdf-proof-sync",
+        "sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+        "proof_doc": "next_milestone_plans/Layer3_planning_docs/883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+        "proof_pr": "#1497",
+        "proof_branch": "codex/l3-pdf-proof",
+        "proof_branch_commit": "2db04d7277cceb443a53dc18b9d110a984c04996",
+        "proof_merge_commit": "dbbd021e4229f9bbcc033f8470b59825c96329fd",
+        "current_main_checkpoint_after_merge": "dbbd021e4229f9bbcc033f8470b59825c96329fd",
+        "synced_result": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+        "route_contract": "GET /api/v1/layer3/session/{session_id}",
+        "state_contract": "State.sessionSummary.pdf_location_projection",
+        "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+        "backend_authority": "backend/app/services/layer3_pdf_location.py",
+        "runtime_behavior_change": False,
+        "backend_behavior_change": False,
+        "route_api_dto_model_migration_service_behavior_change": False,
+        "rendered_behavior_change": False,
+        "single_mockup_screen_server_authoritative_activation_introduced": False,
+        "full_mockup_program_activation_introduced": False,
+        "next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+    }
+    if isinstance(manifest, dict):
+        entry = manifest.get(
+            "mockup_pdf_location_available_state_browser_proof_current_main_sync"
+        )
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(MANIFEST)} missing mockup_pdf_location_available_state_browser_proof_current_main_sync object"
+            )
+        else:
+            for key, value in expected_scalars.items():
+                if entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(MANIFEST)} mockup_pdf_location_available_state_browser_proof_current_main_sync.{key} must be {value!r}"
+                    )
+            for key, term in {
+                "checks": "backend-layer3-api passed 3m24s",
+                "review_gate": "reviewThreads totalCount 0",
+                "post_merge_validation": "python ./tools/l3-progress-check.py PASS",
+            }.items():
+                values = entry.get(key)
+                if not isinstance(values, list) or term not in values:
+                    errors.append(
+                        f"{_rel(MANIFEST)} mockup_pdf_location_available_state_browser_proof_current_main_sync.{key} missing {term!r}"
+                    )
+            for key, term in {
+                "checks": "test passed 3m44s",
+                "post_merge_validation": "focused pytest PASS",
+                "post_merge_validation_browser": "focused headless Chromium proof PASS",
+            }.items():
+                list_key = "post_merge_validation" if key.startswith("post_merge") else key
+                values = entry.get(list_key)
+                if not isinstance(values, list) or term not in values:
+                    errors.append(
+                        f"{_rel(MANIFEST)} mockup_pdf_location_available_state_browser_proof_current_main_sync.{list_key} missing {term!r}"
+                    )
+        current_status = manifest.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+        else:
+            for key, value in {
+                "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+                "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_status": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+                "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+            }.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(
+            "mockup_pdf_location_available_state_browser_proof_current_main_sync"
+        )
+        if not isinstance(proof_entry, dict):
+            errors.append(
+                f"{_rel(PROOF_MANIFEST)} missing mockup_pdf_location_available_state_browser_proof_current_main_sync object"
+            )
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+                **expected_scalars,
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof_current_main_sync.{key} must be {value!r}"
+                    )
+            for key, term in {
+                "checks": "backend-layer3-api passed 3m24s",
+                "review_gate": "reviewThreads totalCount 0",
+                "post_merge_validation": "python ./tools/l3-progress-check.py PASS",
+            }.items():
+                values = proof_entry.get(key)
+                if not isinstance(values, list) or term not in values:
+                    errors.append(
+                        f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof_current_main_sync.{key} missing {term!r}"
+                    )
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof_current_main_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+                    "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+                    "#1497",
+                    "2db04d7277cceb443a53dc18b9d110a984c04996",
+                    "dbbd021e4229f9bbcc033f8470b59825c96329fd",
+                    "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+                    "backend-layer3-api passed 3m24s",
+                    "test passed 3m44s",
+                    "reviewThreads totalCount 0",
+                    "focused headless Chromium proof PASS",
+                    "no runtime behavior",
+                    "no backend behavior",
+                    "no rendered behavior introduced by sync",
+                    "no single mockup screen server-authoritative activation",
+                    "no full mockup program activation",
+                    "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof_current_main_sync.proof_terms missing {term}"
+                        )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -79496,6 +79700,7 @@ def main() -> int:
     _check_mockup_pdf_location_projection_freeze(errors)
     _check_mockup_pdf_location_projection_freeze_current_main_sync(errors)
     _check_mockup_pdf_location_available_state_browser_proof(errors)
+    _check_mockup_pdf_location_available_state_browser_proof_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
