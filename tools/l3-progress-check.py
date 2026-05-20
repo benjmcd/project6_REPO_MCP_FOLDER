@@ -2447,6 +2447,9 @@ LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC = (
 LAYER3_SOURCE_DIRECTORY_ACTIVATION_SELECTION = (
     PLANNING_DOCS / "885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md"
 )
+LAYER3_SOURCE_DIRECTORY_ACTIVATION_FREEZE = (
+    PLANNING_DOCS / "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -79130,6 +79133,184 @@ def _check_source_directory_activation_selection(errors: list[str]) -> None:
                         errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_selection.proof_terms missing {term}")
 
 
+def _check_source_directory_activation_freeze(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    freeze_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_ACTIVATION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime/no-rendered implementation-entry freeze for `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`.",
+        "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+        "Predecessor selection doc: `885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md`.",
+        "Current-main checkpoint before this freeze: `16b9fa74479bbadf641ac8f78c3af409e48fd2b9`.",
+        "Selected activation mode: `single_mockup_screen_server_authoritative_activation_freeze`.",
+        "Selected target: `source_directory_ingestion_scan_status_mockup_screen_activation`.",
+        "Selected activation action: `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`.",
+        "Selected live activation surface: `/review/layer3` `#source-directory-ingestion-rendered-controls`.",
+        "Rendered surface decision: `reuse_existing_source_directory_ingestion_rendered_controls`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Single mockup screen server-authoritative activation introduced by this freeze: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "The next exact posture is `current_main_sync_source_directory_activation_freeze_then_activation_proof`.",
+    ):
+        if term not in freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_ACTIVATION_FREEZE)} missing source-directory activation freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Activation Freeze",
+            "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+            "single_mockup_screen_server_authoritative_activation_freeze",
+            "prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening",
+            "reuse_existing_source_directory_ingestion_rendered_controls",
+            "current_main_sync_source_directory_activation_freeze_then_activation_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory activation freeze to preserve when present",
+            "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+            "single_mockup_screen_server_authoritative_activation_freeze",
+            "source_directory_ingestion_scan_status_mockup_screen_activation",
+            "reuse_existing_source_directory_ingestion_rendered_controls",
+        ),
+        REFRESH_SPEC: (
+            "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+            "no-runtime/no-rendered implementation-entry freeze",
+            "prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening",
+            "current_main_sync_source_directory_activation_freeze_then_activation_proof",
+        ),
+        MANIFEST: (
+            '"source_directory_activation_freeze"',
+            '"status": "source_directory_ingestion_scan_status_mockup_screen_activation_frozen"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md"',
+            '"rendered_surface_decision": "reuse_existing_source_directory_ingestion_rendered_controls"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "source_directory_ingestion_scan_status_mockup_screen_activation_freeze"',
+            '"886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md"',
+            '"prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening"',
+            '"no actual single mockup screen server-authoritative activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory activation freeze cross-reference: {term}"
+                )
+
+    expected_scalars = {
+        "status": "source_directory_ingestion_scan_status_mockup_screen_activation_frozen",
+        "doc": "next_milestone_plans/Layer3_planning_docs/886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+        "branch": "codex/l3-source-freeze",
+        "predecessor_selection_doc": "next_milestone_plans/Layer3_planning_docs/885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md",
+        "current_main_checkpoint_before_freeze": "16b9fa74479bbadf641ac8f78c3af409e48fd2b9",
+        "selected_activation_mode": "single_mockup_screen_server_authoritative_activation_freeze",
+        "selected_target": "source_directory_ingestion_scan_status_mockup_screen_activation",
+        "selected_activation_action": "prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening",
+        "selected_live_activation_surface": "/review/layer3 #source-directory-ingestion-rendered-controls",
+        "rendered_surface_decision": "reuse_existing_source_directory_ingestion_rendered_controls",
+        "scan_route_contract": "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "status_route_contract": "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "request_dto": "Layer3SourceDirectoryIngestionScanRequest",
+        "service_authority": "backend/app/services/layer3_source_directory_ingestion.py",
+        "runtime_policy_id": "recursive_server_configured_directory_text_table_policy_v1",
+        "config_authority": "LAYER3_SOURCE_INGESTION_DIR",
+        "rendered_js_owner": "sourceDirectoryIngestionRenderedControls()",
+        "next_posture": "current_main_sync_source_directory_activation_freeze_then_activation_proof",
+    }
+    if isinstance(manifest, dict):
+        entry = manifest.get("source_directory_activation_freeze")
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing source_directory_activation_freeze object")
+        else:
+            for key, value in expected_scalars.items():
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_activation_freeze.{key} must be {value!r}")
+            for key, term in {
+                "durable_authority": "L3SourceDirectoryIngestionBatch",
+                "allowed_scan_request_fields": "client_request_id",
+                "required_future_proof": "headed Chromium proof",
+                "blocked_surfaces": "frontend-only durable authority",
+            }.items():
+                values = entry.get(key)
+                if not isinstance(values, list) or term not in values:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_activation_freeze.{key} missing {term!r}")
+            for key in (
+                "runtime_behavior_change",
+                "rendered_behavior_change",
+                "backend_behavior_change",
+                "route_api_dto_model_migration_service_behavior_change",
+                "single_mockup_screen_server_authoritative_activation_introduced",
+                "full_mockup_program_activation_selected",
+            ):
+                if entry.get(key) is not False:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_activation_freeze.{key} must be false")
+        current_status = manifest.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+        else:
+            for key, value in {
+                "latest_source_directory_activation_freeze_doc": "next_milestone_plans/Layer3_planning_docs/886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+                "latest_source_directory_activation_freeze_status": "source_directory_ingestion_scan_status_mockup_screen_activation_frozen",
+                "latest_source_directory_activation_freeze_selected_target": "source_directory_ingestion_scan_status_mockup_screen_activation",
+                "latest_source_directory_activation_freeze_next_posture": "current_main_sync_source_directory_activation_freeze_then_activation_proof",
+            }.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("source_directory_activation_freeze")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing source_directory_activation_freeze object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "source_directory_ingestion_scan_status_mockup_screen_activation_freeze",
+                **expected_scalars,
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_freeze.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_freeze.proof_terms must be a list")
+            else:
+                for term in (
+                    "886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md",
+                    "single_mockup_screen_server_authoritative_activation_freeze",
+                    "source_directory_ingestion_scan_status_mockup_screen_activation",
+                    "prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening",
+                    "reuse_existing_source_directory_ingestion_rendered_controls",
+                    "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+                    "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+                    "Layer3SourceDirectoryIngestionScanRequest",
+                    "backend/app/services/layer3_source_directory_ingestion.py",
+                    "L3SourceDirectoryIngestionBatch",
+                    "L3SourceDirectoryIngestionFile",
+                    "#source-directory-ingestion-rendered-controls",
+                    "sourceDirectoryIngestionRenderedControls()",
+                    "client_request_id",
+                    "operator_decision",
+                    "409 blocked scan proof",
+                    "404 missing batch proof",
+                    "headed Chromium proof",
+                    "headless Chromium proof",
+                    "no runtime behavior",
+                    "no rendered behavior",
+                    "no backend behavior",
+                    "no actual single mockup screen server-authoritative activation",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_activation_freeze.proof_terms missing {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -79865,6 +80046,7 @@ def main() -> int:
     _check_mockup_pdf_location_available_state_browser_proof(errors)
     _check_mockup_pdf_location_available_state_browser_proof_current_main_sync(errors)
     _check_source_directory_activation_selection(errors)
+    _check_source_directory_activation_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

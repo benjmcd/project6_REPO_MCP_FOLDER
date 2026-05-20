@@ -7587,3 +7587,29 @@ Single mockup screen server-authoritative activation introduced by this selectio
 Still blocked: caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, actual single-screen server-authoritative activation, and full mockup program activation.
 
 Next exact posture: `freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime`.
+
+## Source Directory Activation Freeze
+
+No-runtime/no-rendered implementation-entry freeze: `886_SOURCE_DIRECTORY_ACTIVATION_FREEZE.md`.
+
+Selected activation mode: `single_mockup_screen_server_authoritative_activation_freeze`.
+
+Selected target: `source_directory_ingestion_scan_status_mockup_screen_activation`.
+
+Selected activation action: `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`.
+
+Selected live activation surface: `/review/layer3` `#source-directory-ingestion-rendered-controls`.
+
+Rendered surface decision: `reuse_existing_source_directory_ingestion_rendered_controls`.
+
+Canonical authority remains the existing source-directory scan/status route family, `Layer3SourceDirectoryIngestionScanRequest`, `backend/app/services/layer3_source_directory_ingestion.py`, durable `L3SourceDirectoryIngestionBatch` / `L3SourceDirectoryIngestionFile` state, and `sourceDirectoryIngestionRenderedControls()` in `backend/app/review_ui/static/layer3.js`.
+
+The future activation proof is limited to proving the existing rendered control as the live activation surface. It must prove scan and status route/state contracts, durable authority, idempotency/replay, 409 blocked scan, 404 missing batch, no forbidden payload keys, no raw path/file-byte/provider leakage, no package/source-mixed/connector/provider/execution side-effect requests, headed Chromium, headless Chromium, no console/page errors, and no horizontal overflow.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.
+
+Single mockup screen server-authoritative activation introduced by this freeze: `false`. Full mockup program activation selected: `false`.
+
+Still blocked: caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source upload/adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, cloud object-store writes, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, actual single-screen activation until proof, and full mockup program activation.
+
+Next exact posture: `current_main_sync_source_directory_activation_freeze_then_activation_proof`.
