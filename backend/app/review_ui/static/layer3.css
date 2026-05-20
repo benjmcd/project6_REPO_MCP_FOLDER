@@ -4691,6 +4691,90 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     overflow-wrap: anywhere;
 }
 
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-package-handoff-projection {
+    display: grid;
+    gap: 10px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid rgba(248, 248, 248, 0.22);
+    background: rgba(12, 12, 12, 0.76);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-package-handoff-projection[data-projection-state="available"] {
+    border-color: rgba(159, 223, 109, 0.72);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-projection-head,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-source-list {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-projection-head strong,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-projection-head p,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid p {
+    margin: 0;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-projection-head strong {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-projection-head p {
+    flex-basis: 100%;
+    color: rgba(248, 248, 248, 0.78);
+    font-size: 0.72rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid article {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+    padding: 9px;
+    border: 1px solid rgba(248, 248, 248, 0.18);
+    background: rgba(248, 248, 248, 0.08);
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid span,
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid p {
+    color: rgba(248, 248, 248, 0.72);
+    font-size: 0.62rem;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+    text-transform: uppercase;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid strong {
+    color: #f8f8f8;
+    font-size: 0.84rem;
+    overflow-wrap: anywhere;
+}
+
+html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-source-list span {
+    min-width: 0;
+    padding: 4px 7px;
+    border: 1px solid rgba(248, 248, 248, 0.16);
+    background: rgba(0, 0, 0, 0.42);
+    color: rgba(248, 248, 248, 0.78);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.62rem;
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
 html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-sublayers-ab-board {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 56px minmax(0, 0.92fr);
@@ -5281,6 +5365,7 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-location-window,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-query-source-live-grid,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-live-grid,
+    html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lane-plane-counts,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-sublayers-ab-live-grid,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-sublayers-ab-modality-counts {
@@ -5307,6 +5392,7 @@ html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mocku
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-pdf-location-window,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-query-source-live-grid,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lanes-live-grid,
+    html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-output-review-live-grid,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-execution-lane-plane-counts,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-sublayers-ab-live-grid,
     html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-sublayers-ab-modality-counts,
