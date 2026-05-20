@@ -542,6 +542,13 @@ function renderMockupThemeShell() {
     renderMockupPdfLocationProjection(active);
 }
 
+function mockupPdfLocationHighlightSpanCount(item) {
+    const spans = Array.isArray(item?.highlight_spans) ? item.highlight_spans : [];
+    if (spans.length > 0) return spans.length;
+    const count = Number(item?.highlight_span_count);
+    return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
 function renderMockupPdfLocationProjection(active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME) {
     const panel = elements.mockupPdfLocationProjection;
     if (!panel) return;
@@ -559,13 +566,18 @@ function renderMockupPdfLocationProjection(active = State.themePreference === LA
         ? `${locationItems.length} server-authoritative PDF location item${locationItems.length === 1 ? '' : 's'} available.`
         : `Server PDF-location projection unavailable: ${blockedReason}.`;
     const body = locationItems.length
-        ? locationItems.map((item) => `
+        ? locationItems.map((item) => {
+            const highlightSpanCount = mockupPdfLocationHighlightSpanCount(item);
+            const highlightSpanLabel = `${highlightSpanCount} citation highlight span${highlightSpanCount === 1 ? '' : 's'}`;
+            return `
             <article class="mockup-pdf-location-item">
                 <strong>${escapeHtml(item.page_label || item.page || 'Located page')}</strong>
                 <span>${escapeHtml(item.chunk_id || item.content_id || 'chunk unavailable')}</span>
+                <span class="mockup-pdf-location-highlight">${escapeHtml(highlightSpanLabel)}</span>
                 <p>${escapeHtml(item.bounded_text_preview || item.preview || 'No bounded preview supplied.')}</p>
             </article>
-        `).join('')
+        `;
+        }).join('')
         : '<span class="mockup-disabled-control" aria-disabled="true">Read-only server projection pending</span>';
 
     panel.dataset.projectionState = available ? 'available' : 'unavailable';

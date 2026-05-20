@@ -7525,3 +7525,27 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Still blocked: runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, UI control change, executable test behavior change, single mockup screen server-authoritative activation, full mockup program activation, raw PDF blob streaming, PDF byte download, raw output payload ref exposure, diagnostics ref exposure, provider/object-store URL exposure, local path exposure, browser-owned PDF authority, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.
+
+## Mockup PDF Location Available-State Browser Proof
+
+Branch-local proof: `883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md`.
+
+Implemented proof action: `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.
+
+Implemented branch: `codex/l3-pdf-proof`.
+
+Rendered surface: `/review/layer3` `#mockup-pdf-location-projection`.
+
+Canonical route/state contract remains existing `GET /api/v1/layer3/session/{session_id}` and `State.sessionSummary.pdf_location_projection`.
+
+Canonical backend authority remains `backend/app/services/layer3_pdf_location.py` with schema `layer3.pdf_location_projection.v1`, named use case `pdf_location_from_aps_content_document_citation`, and server authority contract `aps_content_document_chunk_page_refs_and_citation_highlight_spans`.
+
+Implemented behavior: the existing read-only mockup PDF-location panel now renders server-owned available projection fields: page labels, chunk ids, bounded text preview, and citation highlight-span counts.
+
+Runtime behavior introduced by this proof: `false`. Backend behavior introduced by this proof: `false`. Route/API/DTO/model/migration/service behavior introduced by this proof: `false`. Rendered behavior introduced by this proof: `true`.
+
+Focused proof passed headless before this board update and must pass headed before merge. The proof verifies available-state rendering, unavailable-state fail-closed behavior, no PDF/output/diagnostics/provider/local-path leakage, no new controls, no durable browser PDF authority, and no package/source/connector/provider/execution side-effect requests.
+
+Still blocked: new routes, new DTO fields beyond `pdf_location_projection`, models, migrations, backend service behavior changes, raw PDF blobs, PDF byte download, raw output payload refs, diagnostics refs, provider/object-store URLs, local paths, browser-owned PDF authority, new write controls, write requests, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector behavior, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
+
+Next exact posture: `current_main_sync_mockup_pdf_location_available_state_browser_proof`.

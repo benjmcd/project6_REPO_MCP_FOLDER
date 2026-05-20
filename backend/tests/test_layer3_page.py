@@ -287,7 +287,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "const LAYER3_MOCKUP_THEME_FIRST_SLICE = 'mockup_theme_shell_and_fixture_projection';" in js.text
     assert "function renderMockupThemeShell" in js.text
     assert "function renderMockupPdfLocationProjection" in js.text
+    assert "function mockupPdfLocationHighlightSpanCount" in js.text
     assert "State.sessionSummary?.pdf_location_projection" in js.text
+    assert "mockup-pdf-location-highlight" in js.text
     assert "Read-only server projection pending" in js.text
     assert "dataset.themeVariant = LAYER3_MOCKUP_WORKBENCH_THEME" in js.text
     assert "userflow/layer3_user-flow-overview1.png" in js.text
