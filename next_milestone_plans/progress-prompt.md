@@ -483,3 +483,12 @@ Current Layer 3 source-directory activation proof to preserve when present:
 - preserve runtime/rendered/backend/route/API/DTO/model/migration/service behavior change as `false`
 - do not treat this proof as production UI behavior change, caller path/directory/file-byte/URL/glob/recursive-flag support, source upload or adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, any other mockup control activation, or full mockup program activation
 - preserve next posture as `current_main_sync_source_directory_activation_proof`
+
+Current Layer 3 source-directory activation proof current-main sync to preserve when present:
+- `888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md` records PR `#1501` merge commit `39b5618b77591feeb4c7a1f405c01cbedadac166`
+- classify current main as `current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof`
+- preserve the live behavior as the existing `/review/layer3` `#source-directory-ingestion-rendered-controls` source-directory scan/status panel with successful authority proof and fail-closed HTTP 409/404 proof
+- classify single mockup screen server-authoritative activation current-main synced as `true`
+- preserve runtime/rendered/backend/route/API/DTO/model/migration/service behavior change introduced by sync as `false`
+- do not treat this sync as new runtime behavior, new rendered behavior, production UI behavior change, caller path/directory/file-byte/URL/glob/recursive-flag support, source upload or adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, any other mockup control activation, or full mockup program activation
+- preserve next posture as `rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync`
