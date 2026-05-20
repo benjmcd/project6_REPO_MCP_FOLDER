@@ -7509,3 +7509,19 @@ The future proof pass may only prove an available server-owned projection render
 Still blocked: new routes, new DTO fields beyond `pdf_location_projection`, models, migrations, production service behavior changes, raw PDF blobs, PDF byte download, raw output payload refs, diagnostics refs, provider/object-store URLs, local paths, browser-owned PDF authority, new buttons/submit controls, write requests, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector behavior, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
 
 Next exact posture: `current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof`.
+
+## Mockup PDF Location Projection Freeze Current-Main Sync
+
+Current-main sync: `882_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md` records PR `#1495` merge commit `e6959479a785a60a20783edc37454f8f740390d5`.
+
+Synced result: `current_main_synced_mockup_pdf_location_projection_freeze`.
+
+Synced behavior: current `main` now includes only the no-runtime/no-rendered implementation-entry freeze for `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening` over the existing PDF-location session-summary projection.
+
+Checks: `backend-layer3-api` passed in `3m13s`, `test` passed in `3m35s`, reviewThreads totalCount was `0`, PR comments were `0`, latest reviews were `0`, and post-merge local progress plus focused pytest validation passed at `e6959479a785a60a20783edc37454f8f740390d5`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.
+
+Still blocked: runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, UI control change, executable test behavior change, single mockup screen server-authoritative activation, full mockup program activation, raw PDF blob streaming, PDF byte download, raw output payload ref exposure, diagnostics ref exposure, provider/object-store URL exposure, local path exposure, browser-owned PDF authority, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.
