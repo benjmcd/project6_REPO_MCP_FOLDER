@@ -7565,3 +7565,25 @@ Runtime behavior introduced by this sync: `false`. Backend behavior introduced b
 Still blocked: new routes, new DTO fields beyond `pdf_location_projection`, models, migrations, backend service behavior changes, raw PDF blobs, PDF byte download, raw output payload refs, diagnostics refs, provider/object-store URLs, local paths, browser-owned PDF authority, new write controls, write requests, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector behavior, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
 
 Next exact posture: `select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync`.
+
+## Source Directory Activation Selection
+
+No-runtime/no-rendered server-authoritative mockup-screen activation target selection: `885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md`.
+
+Selected activation mode: `single_mockup_screen_server_authoritative_activation_target_selection`.
+
+Selected target: `source_directory_ingestion_scan_status_mockup_screen_activation`.
+
+Selected future freeze: `freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime`.
+
+Current-main authority for the selected target is the existing server-configured source-directory scan/status route family, durable `L3SourceDirectoryIngestionBatch` / `L3SourceDirectoryIngestionFile` state, and `/review/layer3` `#source-directory-ingestion-rendered-controls`.
+
+This target is selected over `internal_webhook_rendered_status_panel_read_only` and `downstream_analysis_environment_projection_read_only` because it is the only candidate that is both action-capable and already server-authoritative on current main.
+
+Runtime behavior introduced by this selection: `false`. Rendered behavior introduced by this selection: `false`. Backend behavior introduced by this selection: `false`. Route/API/DTO/model/migration/service behavior introduced by this selection: `false`.
+
+Single mockup screen server-authoritative activation introduced by this selection: `false`. Full mockup program activation selected: `false`.
+
+Still blocked: caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, actual single-screen server-authoritative activation, and full mockup program activation.
+
+Next exact posture: `freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime`.
