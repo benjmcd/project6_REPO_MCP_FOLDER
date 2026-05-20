@@ -8135,3 +8135,37 @@ Validation: `node --check ./backend/app/review_ui/static/layer3.js`, `python -m 
 Still blocked: package/handoff/export buttons inside the mockup frame, package/handoff/export action activation from the mockup frame, package mutation/reconstruction expansion, provider URL behavior expansion, connector/destination dispatch, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `current_main_sync_mockup_output_review_package_handoff_live_state_projection_proof`.
+
+## Mockup Output Review Package Handoff Live State Projection Proof Current-Main Sync
+
+Sync doc: `905_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Status: `current_main_synced_mockup_output_review_package_handoff_live_state_projection_proof`.
+
+Proof doc: `904_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF.md`.
+
+Predecessor freeze doc: `903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md`.
+
+Proof PR: `#1518`.
+
+Proof branch commit: `9edbd1908726463ec5bae16797ca4b04e5ebe152`.
+
+Proof merge commit/current-main authority: `aa990dfc829206bba1a943e8b77f47b1de140527`.
+
+Selected activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected target remains: `mockup_output_review_package_handoff_live_state_projection`.
+
+Rendered projection node: `/review/layer3 #mockup-output-review-package-handoff-projection`.
+
+Current-main read-only projection synced: `true`. Single mockup screen server-authoritative activation synced: `false`. Full mockup program activation synced: `false`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`.
+
+Merge gate: `backend-layer3-api` passed, `test` passed, PR comments/reviews/latestReviews were `0`, reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and PR state after merge is `MERGED`.
+
+Post-merge validation: JSON manifests, checker py_compile, `python ./tools/l3-progress-check.py`, `node --check ./backend/app/review_ui/static/layer3.js`, page pytest `9 passed`, focused headless Chromium, focused headed Chromium, and `git diff --check` passed on `project6-origin/main` at `aa990dfc829206bba1a943e8b77f47b1de140527`.
+
+Still blocked: package/handoff/export buttons inside the mockup frame, package/handoff/export action activation from the mockup frame, package mutation/reconstruction expansion, provider URL behavior expansion, connector/destination dispatch, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
+
+Next exact posture: `rerun_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync`.

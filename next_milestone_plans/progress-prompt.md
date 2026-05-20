@@ -691,3 +691,19 @@ Current Layer 3 mockup output/review/package/handoff live-state projection proof
 - treat this proof as rendered behavior and executable test behavior only; do not treat it as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, server-authoritative activation, full mockup program activation, package/handoff/export buttons inside the mockup frame, package/handoff/export action activation from the mockup frame, package mutation/reconstruction expansion, provider URL behavior expansion, connector/destination dispatch, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve proof guards: no write controls, no projection route calls, no raw path/package payload/payload ref/provider URL/public URL/signed URL/connector/destination/credential/signed-token/browser-byte leakage, no browser-storage authority, mobile no-overflow proof, headed/headless browser proof, no console/page errors, and unavailable-state fail-closed behavior
 - preserve next posture as `current_main_sync_mockup_output_review_package_handoff_live_state_projection_proof`
+
+Current Layer 3 mockup output/review/package/handoff live-state projection proof current-main sync to preserve when present:
+- `905_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md` records current-main sync for PR `#1518`
+- classify current main as `current_main_synced_mockup_output_review_package_handoff_live_state_projection_proof`
+- preserve proof branch commit `9edbd1908726463ec5bae16797ca4b04e5ebe152`
+- preserve proof merge commit/current-main authority `aa990dfc829206bba1a943e8b77f47b1de140527`
+- preserve selected activation mode `single_mockup_screen_read_only_projection`
+- preserve selected target `mockup_output_review_package_handoff_live_state_projection`
+- preserve rendered projection node `/review/layer3 #mockup-output-review-package-handoff-projection`
+- preserve current-main read-only projection synced as true
+- preserve server-authoritative activation synced as false
+- preserve full mockup program activation synced as false
+- preserve merge evidence: `backend-layer3-api` passed, `test` passed, PR comments/reviews/latestReviews were `0`, reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and PR state after merge is `MERGED`
+- preserve post-merge validation: JSON manifests, checker py_compile, `python ./tools/l3-progress-check.py`, `node --check`, page pytest, focused headless Chromium, focused headed Chromium, and `git diff --check`
+- do not render this sync as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior introduced by sync, server-authoritative activation, full mockup program activation, package/handoff/export buttons inside the mockup frame, package/handoff/export action activation from the mockup frame, package mutation/reconstruction expansion, provider URL behavior expansion, connector/destination dispatch, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `rerun_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync`
