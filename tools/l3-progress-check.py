@@ -2494,6 +2494,10 @@ LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC = (
     PLANNING_DOCS
     / "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md"
 )
+LAYER3_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE = (
+    PLANNING_DOCS
+    / "899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -82011,6 +82015,243 @@ def _check_mockup_to_live_mapping_inventory_after_sublayer3c_projection_sync(
             )
 
 
+def _check_mockup_query_source_setup_live_state_projection_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime/no-rendered implementation-entry freeze for `prove_mockup_query_source_setup_live_state_projection_without_runtime_widening`.",
+        "Freeze doc: `899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md`.",
+        "Predecessor inventory doc: `898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md`.",
+        "Current-main checkpoint before this freeze: `e0f644a4f5ea5a4844bd168e752cac126c4e493a`.",
+        "Selected activation mode: `single_mockup_screen_read_only_projection_freeze`.",
+        "Selected target: `mockup_query_source_setup_live_state_projection`.",
+        "Selected proof action: `prove_mockup_query_source_setup_live_state_projection_without_runtime_widening`.",
+        "Rendered surface decision: `extend_existing_mockup_query_source_frame_as_read_only_projection`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Executable test behavior introduced by this freeze: `false`.",
+        "Single mockup screen read-only projection introduced by this freeze: `false`.",
+        "Single mockup screen server-authoritative activation introduced by this freeze: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false` until this freeze is current-main synced.",
+        "The future projection must not add route calls.",
+        "No production backend route, DTO, model, migration, service, durable-state write path, source traversal, package, connector, provider, RAG/vector, auth/security, or browser-storage behavior may change under this freeze.",
+        "Next exact posture: `current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE)} missing query/source setup freeze term: {term}"
+            )
+
+    selected_mockup_surfaces = [
+        "/review/layer3 #mockup-fixture-scenario .mockup-fixture-query",
+        "/review/layer3 #mockup-userflow-board .mockup-userflow-prompt",
+        "/review/layer3 .mockup-pre3a",
+    ]
+    selected_live_state_control_sources = [
+        "/review/layer3 #intent-band",
+        "/review/layer3 #intent-form",
+        "/review/layer3 #source-fieldset",
+        "/review/layer3 #source-intake-rendered-controls",
+        "/review/layer3 #source-directory-ingestion-rendered-controls",
+        "State.preflight",
+        "State.sourcePreview",
+        "State.materialPreview",
+        "source-intake rendered control state",
+        "source-directory rendered control state",
+        "State.sessionSummary",
+    ]
+    authority_terms = [
+        "POST /api/v1/layer3/preflight",
+        "POST /api/v1/layer3/source-preview",
+        "POST /api/v1/layer3/material-preview",
+        "POST /api/v1/layer3/source/intake/upload",
+        "GET /api/v1/layer3/source/intake/inventory",
+        "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "GET /api/v1/layer3/session/{session_id}",
+        "L3SourceIntakeRecord",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "L3SelectionManifest",
+        "L3MaterialSnapshot",
+    ]
+    for term in selected_mockup_surfaces + selected_live_state_control_sources + authority_terms:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE)} missing query/source setup authority term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Query Source Setup Live State Projection Freeze",
+            "899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md",
+            "mockup_query_source_setup_live_state_projection_frozen",
+            "prove_mockup_query_source_setup_live_state_projection_without_runtime_widening",
+            "new preflight/source-preview/material-preview/source-intake/source-directory/Gate B controls in the mockup frame",
+            "current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup query/source setup live-state projection freeze to preserve when present",
+            "899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md",
+            "mockup_query_source_setup_live_state_projection_frozen",
+            "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+            "GET /api/v1/layer3/session/{session_id}",
+            "current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof",
+        ),
+        REFRESH_SPEC: (
+            "899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md",
+            "mockup_query_source_setup_live_state_projection_frozen",
+            "single_mockup_screen_read_only_projection_freeze",
+            "prove_mockup_query_source_setup_live_state_projection_without_runtime_widening",
+            "actual read-only projection proof",
+            "current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof",
+        ),
+        MANIFEST: (
+            '"mockup_query_source_setup_live_state_projection_freeze"',
+            '"status": "mockup_query_source_setup_live_state_projection_frozen"',
+            '"selected_target": "mockup_query_source_setup_live_state_projection"',
+            '"selected_proof_action": "prove_mockup_query_source_setup_live_state_projection_without_runtime_widening"',
+            '"runtime_behavior_change_introduced_by_freeze": false',
+            '"next_posture": "current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_query_source_setup_live_state_projection_freeze"',
+            '"899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md"',
+            '"mockup_query_source_setup_live_state_projection_frozen"',
+            '"POST /api/v1/layer3/preflight"',
+            '"no broad source picker"',
+            '"no full mockup program activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing query/source setup freeze term: {term}"
+                )
+
+    summary = (
+        "Doc 899 freezes mockup_query_source_setup_live_state_projection as the next "
+        "no-runtime/no-rendered single mockup-screen read-only projection target over "
+        "existing intent/preflight/source/material/source-intake/source-directory/session "
+        "state, while keeping all action-capable source expansion, package/handoff/export, "
+        "connector/provider, RAG/vector, auth/security, browser-storage, frontend durable "
+        "authority, and full mockup activation blocked."
+    )
+    expected_entry = {
+        "status": "mockup_query_source_setup_live_state_projection_frozen",
+        "freeze_doc": "next_milestone_plans/Layer3_planning_docs/899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md",
+        "predecessor_inventory_doc": "next_milestone_plans/Layer3_planning_docs/898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+        "current_main_checkpoint_before_freeze": "e0f644a4f5ea5a4844bd168e752cac126c4e493a",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection_freeze",
+        "selected_target": "mockup_query_source_setup_live_state_projection",
+        "selected_proof_action": "prove_mockup_query_source_setup_live_state_projection_without_runtime_widening",
+        "selected_mockup_surfaces": selected_mockup_surfaces,
+        "selected_live_state_control_sources": selected_live_state_control_sources,
+        "rendered_surface_decision": "extend_existing_mockup_query_source_frame_as_read_only_projection",
+        "runtime_behavior_change_introduced_by_freeze": False,
+        "rendered_behavior_change_introduced_by_freeze": False,
+        "backend_behavior_change_introduced_by_freeze": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "executable_test_behavior_change_introduced_by_freeze": False,
+        "single_mockup_screen_read_only_projection_introduced_by_freeze": False,
+        "single_mockup_screen_server_authoritative_activation_introduced_by_freeze": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof",
+        "summary": summary,
+    }
+    expected_latest = {
+        "latest_mockup_query_source_setup_live_state_projection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md",
+        "latest_mockup_query_source_setup_live_state_projection_freeze_status": "mockup_query_source_setup_live_state_projection_frozen",
+        "latest_mockup_query_source_setup_live_state_projection_freeze_selected_target": "mockup_query_source_setup_live_state_projection",
+        "latest_mockup_query_source_setup_live_state_projection_freeze_selected_proof_action": "prove_mockup_query_source_setup_live_state_projection_without_runtime_widening",
+        "latest_mockup_query_source_setup_live_state_projection_freeze_runtime_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_rendered_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_backend_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_executable_test_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_single_mockup_screen_read_only_projection_introduced_by_freeze": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_single_mockup_screen_server_authoritative_activation_introduced_by_freeze": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_full_mockup_program_activation_selected": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_implementation_entry_allowed_next": False,
+        "latest_mockup_query_source_setup_live_state_projection_freeze_next_posture": "current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof",
+        "latest_mockup_query_source_setup_live_state_projection_freeze_summary": summary,
+    }
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_query_source_setup_live_state_projection_freeze")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_query_source_setup_live_state_projection_freeze object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_query_source_setup_live_state_projection_freeze.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_query_source_setup_live_state_projection_freeze":
+                errors.append(
+                    f"{_rel(path)} mockup_query_source_setup_live_state_projection_freeze.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_query_source_setup_live_state_projection_freeze.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md",
+                    "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+                    "mockup_query_source_setup_live_state_projection_frozen",
+                    "mockup_query_source_setup_live_state_projection",
+                    "prove_mockup_query_source_setup_live_state_projection_without_runtime_widening",
+                    "/review/layer3 #mockup-fixture-scenario .mockup-fixture-query",
+                    "POST /api/v1/layer3/preflight",
+                    "State.preflight",
+                    "no broad source picker",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(path)} query/source setup freeze proof_terms missing {term}"
+                        )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif (
+            scope_status.get("mockup_query_source_setup_live_state_projection_freeze")
+            != "mockup_query_source_setup_live_state_projection_frozen"
+        ):
+            errors.append(
+                f"{_rel(path)} scope_status.mockup_query_source_setup_live_state_projection_freeze mismatch"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -82765,6 +83006,7 @@ def main() -> int:
         errors
     )
     _check_mockup_to_live_mapping_inventory_after_sublayer3c_projection_sync(errors)
+    _check_mockup_query_source_setup_live_state_projection_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
