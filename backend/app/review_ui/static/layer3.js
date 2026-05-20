@@ -350,6 +350,7 @@ const elements = {
     externalExportDownloadDeliveryPanel: document.getElementById('external-export-download-delivery-panel'),
     externalExportDownloadDeliverySubmit: document.getElementById('external-export-download-delivery-submit'),
     sourceDirectoryHybridExternalExportDownloadDeliveryForm: document.getElementById('source-directory-hybrid-external-export-download-delivery-form'),
+    sourceDirectoryHybridRenderedStatusExtension: document.getElementById('source-directory-hybrid-rendered-status-extension'),
     sourceDirectoryHybridExternalExportDownloadDeliveryPanel: document.getElementById('source-directory-hybrid-external-export-download-delivery-panel'),
     sourceDirectoryHybridExternalExportDownloadDeliveryAuthority: document.getElementById('source-directory-hybrid-external-export-download-delivery-authority'),
     sourceDirectoryHybridExternalExportDownloadDeliveryStatus: document.getElementById('source-directory-hybrid-external-export-download-delivery-status'),
@@ -8998,6 +8999,7 @@ function renderAll() {
     renderApsHandoffDispatchPanel();
     renderExternalExportDownloadPreparePanel();
     renderExternalExportDownloadDeliveryPanel();
+    renderSourceDirectoryHybridRenderedStatusExtension();
     renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel();
     renderExternalExportDownloadSignedReferencePanel();
     renderConnectorLocalDestinationReceiptStatusPanel();
@@ -9914,6 +9916,93 @@ function sourceDirectoryHybridExternalExportDownloadDeliveryPanelState() {
         return { label: 'source_directory_hybrid_delivery_status_required', pill: 'preview', message: 'Inspect source-directory hybrid delivery status before submitting the attachment request.' };
     }
     return { label: 'source_directory_hybrid_delivery_authority_missing', pill: 'blocked', message: 'Provide a server-derived source-directory hybrid delivery authority payload.' };
+}
+
+function sourceDirectoryHybridRenderedStatusExtensionState(payload) {
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryPending) {
+        return { state: 'delivery_submitting', label: 'source_directory_hybrid_delivery_submitting', pill: 'preview', message: 'Delivery submission is in progress; rendered status remains a transient server-authority projection.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDelivery) {
+        return { state: 'delivery_submitted', label: 'source_directory_hybrid_delivery_submitted', pill: 'ok', message: 'A browser-managed same-origin attachment request was submitted from server authority.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryError) {
+        return { state: 'delivery_blocked', label: State.sourceDirectoryHybridExternalExportDownloadDeliveryError.error_code || 'source_directory_hybrid_delivery_blocked', pill: 'blocked', message: 'Delivery remains blocked by server authority.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending) {
+        return { state: 'status_inspecting', label: 'source_directory_hybrid_status_inspecting', pill: 'preview', message: 'The status extension is waiting for server-side delivery status authority.' };
+    }
+    if (State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError) {
+        return { state: 'status_blocked', label: State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError.error_code || 'source_directory_hybrid_status_blocked', pill: 'blocked', message: 'Status authority was rejected or blocked by the server.' };
+    }
+    if (payload && sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches(payload)) {
+        return { state: 'status_ready', label: 'source_directory_hybrid_status_ready', pill: 'ok', message: 'Server status admits one same-origin source-directory hybrid delivery path.' };
+    }
+    if (payload) {
+        return { state: 'status_required', label: 'source_directory_hybrid_status_required', pill: 'preview', message: 'A server-derived authority payload is present; delivery status inspection is still required.' };
+    }
+    return { state: 'unavailable', label: 'source_directory_hybrid_status_unavailable', pill: 'blocked', message: 'Fail-closed until a server-derived source-directory hybrid authority payload is provided.' };
+}
+
+function renderSourceDirectoryHybridRenderedStatusExtension() {
+    if (!elements.sourceDirectoryHybridRenderedStatusExtension) return;
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull();
+    const status = State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus || {};
+    const delivery = State.sourceDirectoryHybridExternalExportDownloadDelivery || {};
+    const extensionState = sourceDirectoryHybridRenderedStatusExtensionState(payload);
+    const statusMatches = Boolean(payload && sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches(payload));
+    elements.sourceDirectoryHybridRenderedStatusExtension.dataset.extensionState = extensionState.state;
+    elements.sourceDirectoryHybridRenderedStatusExtension.dataset.readOnly = 'true';
+    elements.sourceDirectoryHybridRenderedStatusExtension.dataset.frontendDurableAuthority = 'false';
+    elements.sourceDirectoryHybridRenderedStatusExtension.dataset.serverAuthority = 'source_directory_hybrid_external_export_download_delivery_status_route';
+    elements.sourceDirectoryHybridRenderedStatusExtension.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(extensionState.pill)}">${escapeHtml(extensionState.label)}</span>
+            <span class="rail-label">${escapeHtml(extensionState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Rendered Status Extension</strong>
+                <ul>
+                    ${fieldItem('extension state', extensionState.state)}
+                    ${fieldItem('read only', 'true')}
+                    ${fieldItem('frontend durable authority', 'blocked')}
+                    ${fieldItem('route authority', `POST /api/v1/layer3${SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH}`)}
+                    ${fieldItem('delivery route', `POST /api/v1/layer3${SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH}`)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>State Sources</strong>
+                <ul>
+                    ${fieldItem('status source', 'State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus')}
+                    ${fieldItem('delivery source', 'State.sourceDirectoryHybridExternalExportDownloadDelivery')}
+                    ${fieldItem('payload source', 'sourceDirectoryHybridExternalExportDownloadDeliveryPayload')}
+                    ${fieldItem('status matcher', 'sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches')}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Server Status</strong>
+                <ul>
+                    ${fieldItem('schema', status.schema_id)}
+                    ${fieldItem('available', status.delivery_available)}
+                    ${fieldItem('status matches payload', statusMatches)}
+                    ${fieldItem('same-origin delivery', status.same_origin_delivery_enabled)}
+                    ${fieldItem('attachment managed by browser', status.browser_managed_same_origin_attachment_enabled)}
+                    ${fieldItem('delivery state', delivery.state)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Fail-Closed Guards</strong>
+                <ul>
+                    ${fieldItem('provider public delivery', status.provider_public_delivery_enabled === false ? 'blocked' : status.provider_public_delivery_enabled)}
+                    ${fieldItem('provider private signed URL', status.provider_private_signed_url_enabled === false ? 'blocked' : status.provider_private_signed_url_enabled)}
+                    ${fieldItem('connector dispatch', status.connector_dispatch_enabled === false ? 'blocked' : status.connector_dispatch_enabled)}
+                    ${fieldItem('network egress', status.network_egress_enabled === false ? 'blocked' : status.network_egress_enabled)}
+                    ${fieldItem('browser storage authority', 'blocked')}
+                    ${fieldItem('full mockup activation', 'blocked')}
+                </ul>
+            </section>
+        </div>
+    `;
 }
 
 function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {

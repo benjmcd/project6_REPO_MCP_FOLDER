@@ -925,6 +925,61 @@ def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
         assert forbidden not in payload_slice
 
 
+def test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded() -> None:
+    response = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert response.status_code == 200
+    assert js.status_code == 200
+    assert 'id="source-directory-hybrid-rendered-status-extension"' in response.text
+    assert (
+        'data-rendered-mode="source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension"'
+        in response.text
+    )
+    assert 'data-read-only="true"' in response.text
+    assert 'data-frontend-durable-authority="false"' in response.text
+
+    state_start = js.text.find("function sourceDirectoryHybridRenderedStatusExtensionState")
+    render_start = js.text.find("function renderSourceDirectoryHybridRenderedStatusExtension")
+    panel_start = js.text.find("function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel")
+    assert state_start != -1
+    assert render_start != -1
+    assert panel_start != -1
+    assert state_start < render_start < panel_start
+    extension_slice = js.text[state_start:panel_start]
+
+    assert "source_directory_hybrid_status_unavailable" in extension_slice
+    assert "source_directory_hybrid_status_ready" in extension_slice
+    assert "source_directory_hybrid_delivery_submitted" in extension_slice
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH" in extension_slice
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH" in extension_slice
+    assert "State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus" in extension_slice
+    assert "State.sourceDirectoryHybridExternalExportDownloadDelivery" in extension_slice
+    assert "sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches" in extension_slice
+    assert "frontendDurableAuthority = 'false'" in extension_slice
+    assert "full mockup activation" in extension_slice
+    assert "blocked" in extension_slice
+    assert "postJson(" not in extension_slice
+    assert "submitAttachmentForm(" not in extension_slice
+    assert "localStorage" not in extension_slice
+    assert "sessionStorage" not in extension_slice
+    for forbidden in (
+        "payload_refs",
+        "raw_payload_path",
+        "local_file_path",
+        "file_bytes",
+        "download_url:",
+        "public_url:",
+        "signed_url:",
+        "connector_run_id:",
+        "destination_id:",
+        "provider_credentials",
+        "runtime_db_write:",
+        "schema_migration:",
+    ):
+        assert forbidden not in extension_slice
+
+
 def test_layer3_analysis_environment_projection_rendered_reader_is_bounded() -> None:
     js = client.get("/review/layer3/static/layer3.js")
     css = client.get("/review/layer3/static/layer3.css")
