@@ -2490,6 +2490,10 @@ LAYER3_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAI
     PLANNING_DOCS
     / "897_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC = (
+    PLANNING_DOCS
+    / "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -81786,6 +81790,227 @@ def _check_mockup_sublayer3c_execution_lanes_live_state_projection_proof_current
             )
 
 
+def _check_mockup_to_live_mapping_inventory_after_sublayer3c_projection_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime mockup-to-live mapping inventory after `current_main_synced_mockup_sublayer3c_execution_lanes_live_state_projection_proof`.",
+        "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+        "Predecessor current-main sync doc: `897_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this inventory: `f36d592c04f7ac245dae99c0dc0dd0d4916fb080`.",
+        "Selected activation mode for this pass: `mockup_to_live_mapping_inventory_after_sublayer3c_execution_lanes_live_state_projection_sync`.",
+        "Already current-main synced server-authoritative mockup-screen activation: `source_directory_ingestion_scan_status_mockup_screen_activation`.",
+        "Already current-main synced read-only mockup-screen projections: `mockup_pdf_location_available_state`, `downstream_analysis_environment_projection`, `mockup_sublayers_ab_live_state_projection`, and `mockup_sublayer3c_execution_lanes_live_state_projection`.",
+        "Selected next activation mode after this inventory: `single_mockup_screen_read_only_projection`.",
+        "Selected next target after this inventory: `mockup_query_source_setup_live_state_projection`.",
+        "Selected next freeze: `freeze_mockup_query_source_setup_live_state_projection_before_runtime`.",
+        "Runtime behavior introduced by this inventory: `false`.",
+        "Rendered behavior introduced by this inventory: `false`.",
+        "Backend behavior introduced by this inventory: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`.",
+        "Executable test behavior introduced by this inventory: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "The next exact posture is `freeze_mockup_query_source_setup_live_state_projection_before_runtime`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC)} missing post-Sublayer 3C mapping inventory term: {term}"
+            )
+
+    expected_target_authority = [
+        "/review/layer3 #mockup-fixture-scenario .mockup-fixture-query",
+        "/review/layer3 #mockup-userflow-board .mockup-userflow-prompt",
+        "/review/layer3 .mockup-pre3a",
+        "/review/layer3 #intent-band",
+        "/review/layer3 #intent-form",
+        "/review/layer3 #source-fieldset",
+        "/review/layer3 #source-intake-rendered-controls",
+        "/review/layer3 #source-directory-ingestion-rendered-controls",
+        "POST /api/v1/layer3/preflight",
+        "POST /api/v1/layer3/source-preview",
+        "POST /api/v1/layer3/material-preview",
+        "POST /api/v1/layer3/source/intake/upload",
+        "GET /api/v1/layer3/source/intake/inventory",
+        "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "State.preflight",
+        "State.sourcePreview",
+        "State.materialPreview",
+        "source-intake rendered control state",
+        "source-directory rendered control state",
+        "State.sessionSummary",
+    ]
+    for term in expected_target_authority:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC)} missing target authority term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup-To-Live Mapping Inventory After Sublayer 3C Projection Sync",
+            "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+            "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected",
+            "mockup_query_source_setup_live_state_projection",
+            "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 post-Sublayer-3C mockup-to-live mapping inventory to preserve when present",
+            "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+            "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected",
+            "mockup_query_source_setup_live_state_projection",
+            "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+        ),
+        REFRESH_SPEC: (
+            "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+            "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected",
+            "mockup_query_source_setup_live_state_projection",
+            "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+        ),
+        MANIFEST: (
+            '"mockup_to_live_mapping_after_sublayer3c_projection_sync"',
+            '"status": "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected"',
+            '"selected_next_target": "mockup_query_source_setup_live_state_projection"',
+            '"next_posture": "freeze_mockup_query_source_setup_live_state_projection_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_to_live_mapping_after_sublayer3c_projection_sync"',
+            '"898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md"',
+            '"mockup_query_source_setup_live_state_projection"',
+            '"no hidden LLM planning"',
+            '"no full mockup program activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing post-Sublayer 3C mapping inventory term: {term}"
+                )
+
+    summary = (
+        "Doc 898 records no-runtime inventory after the current-main synced "
+        "Sublayer 3C execution-lanes projection. The selected next target is "
+        "mockup_query_source_setup_live_state_projection, a single mockup-screen "
+        "read-only projection over existing intent/preflight/source/material/"
+        "source-intake/source-directory authority without broad source picker, "
+        "hidden LLM planning, caller path/file/URL/glob support, or full mockup "
+        "activation."
+    )
+    expected_entry = {
+        "status": "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected",
+        "inventory_doc": "next_milestone_plans/Layer3_planning_docs/898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+        "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/897_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md",
+        "current_main_checkpoint_before_inventory": "f36d592c04f7ac245dae99c0dc0dd0d4916fb080",
+        "selected_activation_mode_for_this_pass": "mockup_to_live_mapping_inventory_after_sublayer3c_execution_lanes_live_state_projection_sync",
+        "already_synced_server_authoritative_mockup_screen_activation": "source_directory_ingestion_scan_status_mockup_screen_activation",
+        "already_synced_read_only_mockup_screen_projections": [
+            "mockup_pdf_location_available_state",
+            "downstream_analysis_environment_projection",
+            "mockup_sublayers_ab_live_state_projection",
+            "mockup_sublayer3c_execution_lanes_live_state_projection",
+        ],
+        "selected_next_activation_mode": "single_mockup_screen_read_only_projection",
+        "selected_next_target": "mockup_query_source_setup_live_state_projection",
+        "selected_next_freeze": "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+        "target_authority": expected_target_authority,
+        "runtime_behavior_change_introduced_by_inventory": False,
+        "rendered_behavior_change_introduced_by_inventory": False,
+        "backend_behavior_change_introduced_by_inventory": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_inventory": False,
+        "executable_test_behavior_change_introduced_by_inventory": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+        "summary": summary,
+    }
+    expected_latest = {
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_doc": "next_milestone_plans/Layer3_planning_docs/898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_status": "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected",
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_selected_next_target": "mockup_query_source_setup_live_state_projection",
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_selected_next_freeze": "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_runtime_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_rendered_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_backend_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_route_api_dto_model_migration_service_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_executable_test_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_full_mockup_program_activation_selected": False,
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_implementation_entry_allowed_next": False,
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_next_posture": "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+        "latest_mockup_to_live_mapping_after_sublayer3c_projection_sync_summary": summary,
+    }
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_to_live_mapping_after_sublayer3c_projection_sync")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_to_live_mapping_after_sublayer3c_projection_sync object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_sublayer3c_projection_sync.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_to_live_mapping_after_sublayer3c_projection_sync":
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_sublayer3c_projection_sync.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_sublayer3c_projection_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+                    "897_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md",
+                    "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected",
+                    "mockup_query_source_setup_live_state_projection",
+                    "freeze_mockup_query_source_setup_live_state_projection_before_runtime",
+                    "/review/layer3 #intent-band",
+                    "POST /api/v1/layer3/preflight",
+                    "State.preflight",
+                    "no hidden LLM planning",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(path)} post-Sublayer 3C mapping inventory proof_terms missing {term}"
+                        )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif (
+            scope_status.get("mockup_to_live_mapping_after_sublayer3c_projection_sync")
+            != "post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected"
+        ):
+            errors.append(
+                f"{_rel(path)} scope_status.mockup_to_live_mapping_after_sublayer3c_projection_sync mismatch"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -82539,6 +82764,7 @@ def main() -> int:
     _check_mockup_sublayer3c_execution_lanes_live_state_projection_proof_current_main_sync(
         errors
     )
+    _check_mockup_to_live_mapping_inventory_after_sublayer3c_projection_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
