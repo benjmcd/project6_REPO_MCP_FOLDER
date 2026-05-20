@@ -2522,6 +2522,10 @@ LAYER3_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_
     PLANNING_DOCS
     / "905_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC = (
+    PLANNING_DOCS
+    / "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -83707,6 +83711,257 @@ def _check_mockup_output_review_package_handoff_live_state_projection_proof_curr
             )
 
 
+def _check_mockup_to_live_mapping_inventory_after_output_review_package_handoff_projection_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime mockup-to-live mapping inventory after `current_main_synced_mockup_output_review_package_handoff_live_state_projection_proof`.",
+        "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "Predecessor current-main sync doc: `905_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this inventory: `79717bb1f89fc5f791f1934015cce9d154eb43db`.",
+        "Selected activation mode for this pass: `mockup_to_live_mapping_inventory_after_output_review_package_handoff_projection_sync`.",
+        "Already current-main synced server-authoritative mockup-screen activation: `source_directory_ingestion_scan_status_mockup_screen_activation`.",
+        "Already current-main synced read-only mockup-screen projections: `mockup_pdf_location_available_state`, `downstream_analysis_environment_projection`, `mockup_sublayers_ab_live_state_projection`, `mockup_sublayer3c_execution_lanes_live_state_projection`, `mockup_query_source_setup_live_state_projection`, and `mockup_output_review_package_handoff_live_state_projection`.",
+        "Selected next activation mode after this inventory: `full_mockup_to_live_coverage_readiness_audit`.",
+        "Selected next target after this inventory: `full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync`.",
+        "Selected next pass: `run_full_mockup_to_live_coverage_readiness_audit_before_new_activation`.",
+        "Runtime behavior introduced by this inventory: `false`.",
+        "Rendered behavior introduced by this inventory: `false`.",
+        "Backend behavior introduced by this inventory: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`.",
+        "Executable test behavior introduced by this inventory: `false`.",
+        "Single mockup screen server-authoritative activation selected next: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "The next exact posture is `run_full_mockup_to_live_coverage_readiness_audit_before_new_activation`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC)} missing post-output mapping inventory term: {term}"
+            )
+
+    expected_target_authority = [
+        "/review/layer3 #mockup-theme-shell",
+        "/review/layer3 #mockup-query-source-setup-projection",
+        "/review/layer3 #mockup-pdf-location-projection",
+        "/review/layer3 #mockup-sublayers-ab-projection",
+        "/review/layer3 #mockup-execution-lanes-projection",
+        "/review/layer3 #mockup-output-review-package-handoff-projection",
+        "/review/layer3 existing rendered action controls outside the mockup frame",
+        "GET /api/v1/layer3/session/{session_id}",
+        "existing /api/v1/layer3 source, Gate B, Gate C, plan, execution, result, package, handoff, export, provider, connector, and status routes",
+        "State.sessionSummary",
+        "State.preflight",
+        "State.sourcePreview",
+        "State.materialPreview",
+        "State.gateB",
+        "State.gateC",
+        "State.executionSelection",
+        "State.executionStart",
+        "State.executionResultStatus",
+        "State.executionResultReview",
+        "State.resultStatus",
+        "State.resultReview",
+        "State.packageReviewPreview",
+        "State.packageConstruction",
+        "State.packageReviewSubmit",
+        "State.handoffExportPrepare",
+        "State.apsHandoffDispatch",
+        "State.externalExportDownloadPrepare",
+        "State.externalExportDownloadDelivery",
+        "State.externalExportDownloadSignedReference",
+        "source_directory_ingestion_scan_status_mockup_screen_activation",
+        "source expansion blockers",
+        "connector/destination blockers",
+        "provider URL blockers",
+        "RAG/vector blockers",
+        "auth/security blockers",
+        "browser-storage and frontend-only durable authority blockers",
+    ]
+    for term in expected_target_authority:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC)} missing coverage authority term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup-To-Live Mapping Inventory After Output Review Package Handoff Projection Sync",
+            "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+            "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected",
+            "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync",
+            "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 post-output/review/package/handoff mockup-to-live mapping inventory to preserve when present",
+            "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+            "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected",
+            "full_mockup_to_live_coverage_readiness_audit",
+            "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+        ),
+        REFRESH_SPEC: (
+            "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+            "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected",
+            "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync",
+            "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+        ),
+        MANIFEST: (
+            '"mockup_to_live_mapping_after_output_review_package_handoff_projection_sync"',
+            '"status": "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected"',
+            '"selected_next_activation_mode": "full_mockup_to_live_coverage_readiness_audit"',
+            '"selected_next_target": "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync"',
+            '"next_posture": "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_to_live_mapping_after_output_review_package_handoff_projection_sync"',
+            '"906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md"',
+            '"classify every critical mockup frame/control"',
+            '"no new rendered control extension before coverage audit"',
+            '"no full mockup program activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing post-output mapping inventory term: {term}"
+                )
+
+    summary = (
+        "Doc 906 records no-runtime inventory after the current-main synced "
+        "output/review/package/handoff projection. The selected next target is "
+        "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync, "
+        "a coverage/readiness audit that must classify every critical mockup "
+        "frame/control as live action, read-only projection, static visual "
+        "context, excluded, or blocked before another rendered-control extension, "
+        "server-authoritative mockup-screen activation, or full mockup activation "
+        "is selected."
+    )
+    expected_entry = {
+        "status": "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected",
+        "inventory_doc": "next_milestone_plans/Layer3_planning_docs/906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/905_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md",
+        "current_main_checkpoint_before_inventory": "79717bb1f89fc5f791f1934015cce9d154eb43db",
+        "selected_activation_mode_for_this_pass": "mockup_to_live_mapping_inventory_after_output_review_package_handoff_projection_sync",
+        "already_synced_server_authoritative_mockup_screen_activation": "source_directory_ingestion_scan_status_mockup_screen_activation",
+        "already_synced_read_only_mockup_screen_projections": [
+            "mockup_pdf_location_available_state",
+            "downstream_analysis_environment_projection",
+            "mockup_sublayers_ab_live_state_projection",
+            "mockup_sublayer3c_execution_lanes_live_state_projection",
+            "mockup_query_source_setup_live_state_projection",
+            "mockup_output_review_package_handoff_live_state_projection",
+        ],
+        "selected_next_activation_mode": "full_mockup_to_live_coverage_readiness_audit",
+        "selected_next_target": "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync",
+        "selected_next_pass": "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+        "target_authority": expected_target_authority,
+        "runtime_behavior_change_introduced_by_inventory": False,
+        "rendered_behavior_change_introduced_by_inventory": False,
+        "backend_behavior_change_introduced_by_inventory": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_inventory": False,
+        "executable_test_behavior_change_introduced_by_inventory": False,
+        "single_mockup_screen_server_authoritative_activation_selected_next": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+        "summary": summary,
+    }
+    expected_latest = {
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_doc": "next_milestone_plans/Layer3_planning_docs/906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_status": "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected",
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_selected_next_activation_mode": "full_mockup_to_live_coverage_readiness_audit",
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_selected_next_target": "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync",
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_selected_next_pass": "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_runtime_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_rendered_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_backend_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_route_api_dto_model_migration_service_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_executable_test_behavior_change_introduced_by_inventory": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_single_mockup_screen_server_authoritative_activation_selected_next": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_full_mockup_program_activation_selected": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_implementation_entry_allowed_next": False,
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_next_posture": "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+        "latest_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync_summary": summary,
+    }
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(
+            "mockup_to_live_mapping_after_output_review_package_handoff_projection_sync"
+        )
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_to_live_mapping_after_output_review_package_handoff_projection_sync object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_output_review_package_handoff_projection_sync.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if (
+                entry.get("proof_kind")
+                != "mockup_to_live_mapping_after_output_review_package_handoff_projection_sync"
+            ):
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_output_review_package_handoff_projection_sync.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_to_live_mapping_after_output_review_package_handoff_projection_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+                    "905_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md",
+                    "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected",
+                    "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync",
+                    "run_full_mockup_to_live_coverage_readiness_audit_before_new_activation",
+                    "source_directory_ingestion_scan_status_mockup_screen_activation",
+                    "mockup_output_review_package_handoff_live_state_projection",
+                    "classify every critical mockup frame/control",
+                    "no new rendered control extension before coverage audit",
+                    "no single mockup screen server-authoritative activation before coverage audit",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(path)} mockup_to_live_mapping_after_output_review_package_handoff_projection_sync.proof_terms missing {term!r}"
+                        )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif (
+            scope_status.get(
+                "mockup_to_live_mapping_after_output_review_package_handoff_projection_sync"
+            )
+            != "post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected"
+        ):
+            errors.append(
+                f"{_rel(path)} scope_status.mockup_to_live_mapping_after_output_review_package_handoff_projection_sync mismatch"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -84476,6 +84731,9 @@ def main() -> int:
         errors
     )
     _check_mockup_output_review_package_handoff_live_state_projection_proof_current_main_sync(
+        errors
+    )
+    _check_mockup_to_live_mapping_inventory_after_output_review_package_handoff_projection_sync(
         errors
     )
 
