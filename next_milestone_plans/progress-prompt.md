@@ -843,3 +843,14 @@ Current Layer 3 provider-public URL delivery/use rendered control status-freshne
 - treat this remediation as rendered behavior and executable test behavior only
 - do not treat this remediation as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, full mockup program activation, raw provider-public URL delivery, public proxy behavior, byte streaming, provider network/object writes, connector/destination dispatch, package mutation, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `current_main_sync_provider_public_url_delivery_use_rendered_control_status_freshness_review_remediation_then_select_next_blocker_retirement_lane`
+
+Current Layer 3 source-directory material-preview Gate B rendered control current-main sync to preserve when present:
+- `916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md` records current-main sync for PR `#1530`
+- classify it as `current_main_synced_source_directory_material_preview_gate_b_rendered_control`
+- preserve source branch `codex/l3-mockup-activation-inventory`, implementation commit `4d59536808122914a2286afeb4586f6a22ee929e`, merge commit `7b5322a93b83762f656db79fe79acd4b320e1efb`, and sync branch `codex/l3-source-dir-gateb-sync`
+- preserve selected rendered target `source_directory_material_preview_gate_b_rendered_control_extension`
+- preserve rendered surface `/review/layer3 #source-directory-ingestion-rendered-controls`
+- preserve server authority as existing source-directory scan/status, material-preview, and Gate B decision route/state chain
+- preserve validation evidence: `node --check`, focused page pytest, focused source-directory material-preview/Gate-B pytest, focused headless Chromium proof, focused headed Chromium proof, `python ./tools/l3-progress-check.py`, `git diff --check`, and green GitHub `backend-layer3-api` plus `test` checks
+- treat this sync as progress/control metadata only; do not treat it as new runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, full mockup program activation, source expansion beyond server-configured ingestion, caller path/directory/file-byte/URL/glob/recursive controls, connector/destination dispatch, provider/public URL runtime, package mutation/reconstruction expansion, RAG/vector/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `select_next_blocker_retirement_lane_after_source_directory_material_preview_gate_b_rendered_control_current_main_sync`

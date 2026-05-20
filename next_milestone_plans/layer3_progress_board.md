@@ -8487,3 +8487,35 @@ Validation: `node --check`, focused page pytest, focused headless Chromium proof
 Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, raw provider-public URL delivery, public proxy runtime, byte streaming, provider network/object writes, real connector/destination dispatch, package mutation/reconstruction expansion, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `current_main_sync_provider_public_url_delivery_use_rendered_control_status_freshness_review_remediation_then_select_next_blocker_retirement_lane`.
+
+## Source-Directory Material Preview Gate B Rendered Control Current-Main Sync
+
+Doc: `916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.
+
+Status: `current_main_synced_source_directory_material_preview_gate_b_rendered_control`.
+
+Merged PR: `#1530`.
+
+Source branch: `codex/l3-mockup-activation-inventory`.
+
+Implementation commit: `4d59536808122914a2286afeb4586f6a22ee929e`.
+
+Merge commit: `7b5322a93b83762f656db79fe79acd4b320e1efb`.
+
+Sync branch: `codex/l3-source-dir-gateb-sync`.
+
+Base authority: `project6-origin/main` at `7b5322a93b83762f656db79fe79acd4b320e1efb`.
+
+Selected rendered target: `source_directory_material_preview_gate_b_rendered_control_extension`.
+
+Rendered surface: `/review/layer3 #source-directory-ingestion-rendered-controls`.
+
+Server authority: existing source-directory scan/status, material-preview, and Gate B decision route/state chain.
+
+Validation preserved: `node --check`, focused page pytest, focused source-directory material-preview/Gate-B pytest, focused headless Chromium proof, focused headed Chromium proof, `python ./tools/l3-progress-check.py`, and `git diff --check` passed before merge. GitHub `backend-layer3-api` and `test` checks passed, and PR comments/reviews/reviewThreads were empty before merge.
+
+Behavior classification: current-main sync only. Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`. Full mockup program activation introduced by this sync: `false`.
+
+Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, source expansion beyond server-configured ingestion, caller path/directory/file-byte/URL/glob/recursive controls, connector/destination dispatch, provider/public URL runtime, package mutation/reconstruction expansion, RAG/vector/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `select_next_blocker_retirement_lane_after_source_directory_material_preview_gate_b_rendered_control_current_main_sync`.
