@@ -2562,6 +2562,10 @@ LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REMEDI
     PLANNING_DOCS
     / "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md"
 )
+LAYER3_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -86288,6 +86292,197 @@ def _check_provider_public_url_delivery_use_rendered_control_status_freshness_re
             errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
 
 
+def _check_source_directory_material_preview_gate_b_rendered_control_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    entry_key = "source_directory_material_preview_gate_b_rendered_control_current_main_sync"
+    status = "current_main_synced_source_directory_material_preview_gate_b_rendered_control"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md"
+    )
+    source_branch = "codex/l3-mockup-activation-inventory"
+    implementation_commit = "4d59536808122914a2286afeb4586f6a22ee929e"
+    merge_commit = "7b5322a93b83762f656db79fe79acd4b320e1efb"
+    sync_branch = "codex/l3-source-dir-gateb-sync"
+    selected_target = "source_directory_material_preview_gate_b_rendered_control_extension"
+    rendered_surface = "/review/layer3 #source-directory-ingestion-rendered-controls"
+    static_proof = (
+        "backend/tests/test_layer3_page.py::"
+        "test_layer3_source_directory_ingestion_rendered_control_is_bounded"
+    )
+    server_proof = (
+        "backend/tests/test_layer3_source_directory_ingestion.py::"
+        "test_layer3_source_directory_material_preview_reaches_gate_b_without_broad_outputs"
+    )
+    browser_proof = (
+        "e2e/layer3-workbench.spec.js::"
+        "Layer 3 workbench renders source-directory scan and status authority fields"
+    )
+    next_posture = (
+        "select_next_blocker_retirement_lane_after_source_directory_material_preview_gate_b_"
+        "rendered_control_current_main_sync"
+    )
+    summary = (
+        "Doc 916 syncs PR #1530 to current main as the bounded source-directory material-preview "
+        "and Gate B rendered control extension over existing source-directory scan/status, material-preview, "
+        "and Gate B route/state authority. This sync introduces no runtime, rendered, backend, route/API/DTO/model/"
+        "migration/service, executable test, production UI, full mockup activation, or frontend-only durable authority."
+    )
+
+    for term in (
+        "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+        "Status: current-main sync for `source_directory_material_preview_gate_b_rendered_control_current_main_sync`.",
+        "Merged PR: `#1530`.",
+        f"Source branch: `{source_branch}`.",
+        f"Implementation commit: `{implementation_commit}`.",
+        f"Merge commit: `{merge_commit}`.",
+        f"Sync branch: `{sync_branch}`.",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        "POST /api/v1/layer3/gate-b/decision",
+        static_proof,
+        server_proof,
+        "Layer 3 workbench renders source-directory scan and status authority fields",
+        "`backend-layer3-api` success",
+        "`test` success",
+        "This sync introduces no runtime behavior",
+        "full mockup program activation",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory rendered current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Material Preview Gate B Rendered Control Current-Main Sync",
+            "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            status,
+            "#1530",
+            merge_commit,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory material-preview Gate B rendered control current-main sync to preserve when present",
+            "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            status,
+            selected_target,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            status,
+            "#1530",
+            selected_target,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"proof_kind": "{entry_key}"',
+            "source-directory scan/status, material-preview, and Gate B decision",
+            "no frontend-only durable authority",
+            "no full mockup activation",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-directory rendered sync term: {term}")
+
+    expected_latest = {
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_source_pr": "#1530",
+        f"latest_{entry_key}_source_branch": source_branch,
+        f"latest_{entry_key}_implementation_commit": implementation_commit,
+        f"latest_{entry_key}_merge_commit": merge_commit,
+        f"latest_{entry_key}_sync_branch": sync_branch,
+        f"latest_{entry_key}_selected_target": selected_target,
+        f"latest_{entry_key}_rendered_surface": rendered_surface,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_server_authoritative_full_mockup_activation_introduced_by_sync": False,
+        f"latest_{entry_key}_frontend_durable_authority_enabled": False,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("sync_doc", doc_path),
+        ("predecessor_control_doc", predecessor_doc),
+        ("source_pr", "#1530"),
+        ("source_branch", source_branch),
+        ("implementation_commit", implementation_commit),
+        ("merge_commit", merge_commit),
+        ("sync_branch", sync_branch),
+        ("base_authority", f"project6-origin/main at {merge_commit}"),
+        ("selected_target", selected_target),
+        ("rendered_surface", rendered_surface),
+        ("selected_static_proof", static_proof),
+        ("selected_server_proof", server_proof),
+        ("selected_browser_proof", browser_proof),
+        ("runtime_behavior_change_introduced_by_sync", False),
+        ("rendered_behavior_change_introduced_by_sync", False),
+        ("backend_behavior_change_introduced_by_sync", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+        ("executable_test_behavior_change_introduced_by_sync", False),
+        ("production_ui_behavior_change_introduced_by_sync", False),
+        ("server_authoritative_full_mockup_activation_introduced_by_sync", False),
+        ("frontend_durable_authority_enabled", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {entry_key} object")
+            continue
+        for key, value in expected_entry_values:
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {entry_key}.{key} must be {value!r}")
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(path)} {entry_key}.proof_kind mismatch")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif scope_status.get(entry_key) != status:
+            errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -87083,6 +87278,7 @@ def main() -> int:
     _check_provider_public_url_delivery_use_rendered_control_extension_freeze(errors)
     _check_provider_public_url_delivery_use_rendered_control_extension(errors)
     _check_provider_public_url_delivery_use_rendered_control_status_freshness_remediation(errors)
+    _check_source_directory_material_preview_gate_b_rendered_control_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
