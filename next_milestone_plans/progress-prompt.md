@@ -537,3 +537,16 @@ Current Layer 3 mockup Sublayers 3A/3B live-state projection proof to preserve w
 - preserve validation: `node --check`, `python -m pytest .\backend\tests\test_layer3_page.py -q`, focused headless Chromium `Sublayers AB projection`, focused headed Chromium `Sublayers AB projection`, and existing headless Chromium `mockup workbench theme exposes`
 - treat this proof as rendered behavior and executable test behavior only; do not treat it as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, server-authoritative activation, full mockup program activation, new write control, duplicate Gate B/Gate C action, material mutation, typing mutation, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `current_main_sync_mockup_sublayers_ab_live_state_projection_proof`
+
+Current Layer 3 mockup Sublayers 3A/3B live-state projection proof current-main sync to preserve when present:
+- `893_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md` records PR `#1506` merge commit `904ef68e16bef68f9c7050fa0cc1f0242af70755`
+- classify current main as `current_main_synced_mockup_sublayers_ab_live_state_projection_proof`
+- preserve proof branch commit `490a24f61c4795f76fca5b437d278769b4aa6d9a`
+- preserve rendered projection node `/review/layer3` `#mockup-sublayers-ab-projection`
+- preserve current-main read-only projection synced as `true`
+- preserve single mockup screen server-authoritative activation synced as `false`
+- preserve full mockup program activation synced as `false`
+- preserve merge gate evidence: `backend-layer3-api` passed, `test` passed, PR comments/reviews/latestReviews were `0`, reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and PR state was `MERGED`
+- preserve post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, progress check, `node --check`, page pytest, focused headless Chromium `Sublayers AB projection`, focused headed Chromium `Sublayers AB projection`, existing headless Chromium `mockup workbench theme exposes`, and `git diff --check` all passed
+- do not treat this sync as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior change, server-authoritative activation, full mockup program activation, new write control, duplicate Gate B/Gate C action, material mutation, typing mutation, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `rerun_mockup_to_live_mapping_after_sublayers_ab_live_state_projection_sync`

@@ -7769,3 +7769,31 @@ Validation: `node --check .\backend\app\review_ui\static\layer3.js`, `python -m 
 Still blocked: server-authoritative activation, write controls, duplicate Gate B/Gate C actions, material/typing mutation, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `current_main_sync_mockup_sublayers_ab_live_state_projection_proof`.
+
+## Mockup Sublayers AB Live State Projection Proof Current-Main Sync
+
+Current-main sync: `893_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Synced result: `current_main_synced_mockup_sublayers_ab_live_state_projection_proof`.
+
+Proof doc: `892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md`.
+
+Proof PR: `#1506`.
+
+Proof branch commit: `490a24f61c4795f76fca5b437d278769b4aa6d9a`.
+
+Proof merge commit/current-main authority: `904ef68e16bef68f9c7050fa0cc1f0242af70755`.
+
+Selected target remains: `mockup_sublayers_ab_live_state_projection`.
+
+Rendered projection node: `/review/layer3` `#mockup-sublayers-ab-projection`.
+
+Current-main read-only projection synced: `true`. Single mockup screen server-authoritative activation synced: `false`. Full mockup program activation synced: `false`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`.
+
+Post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, `python .\tools\l3-progress-check.py`, `node --check .\backend\app\review_ui\static\layer3.js`, `python -m pytest .\backend\tests\test_layer3_page.py -q`, focused headless Chromium `Sublayers AB projection`, focused headed Chromium `Sublayers AB projection`, existing headless Chromium `mockup workbench theme exposes`, and `git diff --check` all passed on `project6-origin/main` at `904ef68e16bef68f9c7050fa0cc1f0242af70755`.
+
+Still blocked: server-authoritative activation, write controls, duplicate Gate B/Gate C actions, material/typing mutation, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `rerun_mockup_to_live_mapping_after_sublayers_ab_live_state_projection_sync`.
