@@ -8306,6 +8306,270 @@ test('Layer 3 mockup query/source setup projection renders read-only server stat
   expect(pageErrors).toEqual([]);
 });
 
+test('Layer 3 mockup output review package handoff projection renders read-only live state without runtime widening', async ({ page }, testInfo) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.setViewportSize({ width: 1360, height: 980 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
+
+  await page.evaluate(() => {
+    State.resultStatus = {
+      schema_id: 'layer3.execution_result_status.v1',
+      status: 'completed',
+      pass_run_status: 'completed',
+      output_payload_ref: 'C:\\raw\\forbidden-output-payload.json',
+    };
+    State.resultReview = {
+      schema_id: 'layer3.execution_result_review.v1',
+      review_state: 'execution_result_review_approved',
+      operator_decision: 'approved',
+      review_record_ref: 'review-record-ref-must-not-render',
+      raw_payload_path: 'C:\\raw\\forbidden-result-review.json',
+    };
+    State.packageReviewPreview = {
+      schema_id: 'layer3.package_review_preview.v1',
+      state: 'package_review_preview_available',
+      package_review_preview_enabled: true,
+      candidate_package_kinds: [
+        { package_kind: 'canonical_internal', payload_ref: 's3://forbidden-canonical' },
+        { package_kind: 'user_facing', payload_ref: 's3://forbidden-user-facing' },
+        { package_kind: 'review_facing', payload_ref: 's3://forbidden-review-facing' },
+      ],
+      provider_url: 'https://provider.example/forbidden-package-preview',
+    };
+    State.packageConstruction = {
+      schema_id: 'layer3.package_construction.v1',
+      state: 'package_constructed',
+      package_commit_enabled: true,
+      output_package_ids: ['pkg-canonical-forbidden', 'pkg-user-forbidden', 'pkg-review-forbidden'],
+      package_kinds: ['canonical_internal', 'user_facing', 'review_facing'],
+      payload_hashes: ['hash-canonical', 'hash-user-facing', 'hash-review-facing'],
+      payload_refs: ['s3://forbidden-package-payload'],
+    };
+    State.packageReviewSubmit = {
+      schema_id: 'layer3.package_review_submit.v1',
+      package_review_state: 'package_review_approved',
+      package_review_submit_enabled: true,
+      handoff_enabled: true,
+      downstream_unavailable: ['provider_public_delivery_use_blocked'],
+      package_payload: 'forbidden-package-payload-body',
+    };
+    State.handoffExportPrepare = {
+      schema_id: 'layer3.handoff_export_prepare.v1',
+      handoff_export_state: 'handoff_export_prepared',
+      handoff_export_prepare_enabled: true,
+      output_package_ids: ['pkg-canonical-forbidden', 'pkg-user-forbidden', 'pkg-review-forbidden'],
+      payload_hashes: ['hash-canonical', 'hash-user-facing', 'hash-review-facing'],
+      payload_refs: ['s3://forbidden-handoff-payload'],
+      destination_id: 'forbidden-destination',
+    };
+    State.apsHandoffDispatch = {
+      schema_id: 'layer3.aps_handoff_dispatch.v1',
+      aps_handoff_state: 'aps_handoff_dispatched',
+      aps_bundle_ref: 's3://forbidden-aps-bundle',
+      connector_run_id: 'forbidden-connector-run',
+    };
+    State.externalExportDownloadPrepare = {
+      schema_id: 'layer3.external_export_download_prepare.v1',
+      external_export_download_state: 'external_export_download_prepared',
+      downstream_unavailable: ['browser_download_blocked'],
+      source_artifact_ref: 's3://forbidden-external-artifact',
+      public_url: 'https://provider.example/forbidden-public-url',
+    };
+    State.externalExportDownloadDelivery = {
+      schema_id: 'layer3.external_export_download_delivery.v1',
+      state: 'external_export_download_delivery_ready',
+      download_url: 'https://provider.example/forbidden-download-url',
+    };
+    State.externalExportDownloadSignedReference = {
+      schema_id: 'layer3.external_export_download_signed_reference.v1',
+      signed_reference_state: 'external_export_download_signed_reference_ready',
+      signed_reference_token: 'forbidden-signed-reference-token',
+      signed_url: 'https://provider.example/forbidden-signed-url',
+    };
+    State.sessionSummary = {
+      schema_id: 'layer3.session_summary.v1',
+      session_id: 'mockup-output-review-session',
+      execution_result_review: { state: 'execution_result_review_approved' },
+      package_review_preview: { state: 'package_review_preview_available' },
+      package_construction: { state: 'package_constructed' },
+      package_review_submit: { package_review_state: 'package_review_approved' },
+      handoff_export_prepare: { handoff_export_state: 'handoff_export_prepared' },
+      aps_handoff_dispatch: { aps_handoff_state: 'aps_handoff_dispatched' },
+      external_export_download: { external_export_download_state: 'external_export_download_prepared' },
+      provider_credentials: 'forbidden-provider-credentials',
+    };
+    renderAll();
+  });
+
+  const lanes = page.locator('#mockup-execution-lanes');
+  const flowCard = page.locator('.mockup-flow-card.mockup-3c');
+  const panel = page.locator('#mockup-output-review-package-handoff-projection');
+  await expect(lanes).toHaveAttribute('data-output-review-package-handoff-projection-state', 'available');
+  await expect(lanes).toHaveAttribute('data-output-review-package-handoff-projection-read-only', 'true');
+  await expect(flowCard).toHaveAttribute('data-output-review-package-handoff-projection-state', 'available');
+  await expect(flowCard).toHaveAttribute('data-output-review-package-handoff-projection-read-only', 'true');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-projection-state', 'available');
+  await expect(panel).toHaveAttribute('data-read-only', 'true');
+  await expect(panel).toContainText('Server-owned output review package handoff projection');
+  await expect(panel).toContainText('Result review');
+  await expect(panel).toContainText('Package preview');
+  await expect(panel).toContainText('Package lifecycle');
+  await expect(panel).toContainText('Package review');
+  await expect(panel).toContainText('Handoff/export');
+  await expect(panel).toContainText('State.resultStatus');
+  await expect(panel).toContainText('State.packageReviewPreview');
+  await expect(panel).toContainText('State.handoffExportPrepare');
+  await expect(panel).toContainText('State.externalExportDownloadSignedReference');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  const projectionProof = await panel.evaluate((element) => ({
+    text: element.textContent || '',
+    html: element.innerHTML,
+    counts: Array.from(element.querySelectorAll('.mockup-output-review-live-grid article')).map((item) => ({
+      label: item.querySelector('span')?.textContent?.trim(),
+      value: item.querySelector('strong')?.textContent?.trim(),
+      detail: item.querySelector('p')?.textContent?.trim(),
+    })),
+    sourceCount: element.querySelectorAll('.mockup-output-review-source-list span').length,
+    localStorageKeys: Object.keys(window.localStorage).filter((key) => key.toLowerCase().includes('mockup-output')),
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+  }));
+  expect(projectionProof.counts.map((item) => item.label)).toEqual([
+    'Result review',
+    'Package preview',
+    'Package lifecycle',
+    'Package review',
+    'Handoff/export',
+  ]);
+  expect(projectionProof.counts[0]).toEqual({
+    label: 'Result review',
+    value: 'execution result review approved',
+    detail: 'completed',
+  });
+  expect(projectionProof.counts[1]).toEqual({
+    label: 'Package preview',
+    value: 'package review preview available',
+    detail: '3 candidate kinds',
+  });
+  expect(projectionProof.counts[2]).toEqual({
+    label: 'Package lifecycle',
+    value: 'package constructed',
+    detail: '3 package rows / 3 payload hashes',
+  });
+  expect(projectionProof.sourceCount).toBeGreaterThanOrEqual(16);
+  expect(projectionProof.localStorageKeys).toEqual([]);
+  expect(projectionProof.horizontalOverflow).toBe(false);
+  for (const forbidden of [
+    'C:\\raw\\forbidden-output-payload.json',
+    'review-record-ref-must-not-render',
+    'C:\\raw\\forbidden-result-review.json',
+    's3://forbidden-canonical',
+    's3://forbidden-user-facing',
+    's3://forbidden-review-facing',
+    'https://provider.example/forbidden-package-preview',
+    'pkg-canonical-forbidden',
+    'pkg-user-forbidden',
+    'pkg-review-forbidden',
+    's3://forbidden-package-payload',
+    'forbidden-package-payload-body',
+    's3://forbidden-handoff-payload',
+    'forbidden-destination',
+    's3://forbidden-aps-bundle',
+    'forbidden-connector-run',
+    's3://forbidden-external-artifact',
+    'https://provider.example/forbidden-public-url',
+    'https://provider.example/forbidden-download-url',
+    'forbidden-signed-reference-token',
+    'https://provider.example/forbidden-signed-url',
+    'forbidden-provider-credentials',
+    'raw_payload_path',
+    'provider_url',
+    'public_url',
+    'signed_url',
+    'connector_run_id',
+    'destination_id',
+    'package_payload',
+    'payload_ref',
+    'browser_file',
+    'file_bytes',
+  ]) {
+    expect(projectionProof.text).not.toContain(forbidden);
+    expect(projectionProof.html).not.toContain(forbidden);
+  }
+
+  await testInfo.attach('layer3-mockup-output-review-package-handoff-projection.png', {
+    body: await panel.screenshot(),
+    contentType: 'image/png',
+  });
+
+  await page.setViewportSize({ width: 390, height: 920 });
+  await expect(panel).toBeVisible();
+  const mobileFit = await panel.evaluate(() => ({
+    fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+    liveGridColumns: window.getComputedStyle(document.querySelector('.mockup-output-review-live-grid')).gridTemplateColumns.split(' ').filter(Boolean).length,
+  }));
+  expect(mobileFit).toEqual({
+    fitsViewport: true,
+    liveGridColumns: 1,
+  });
+
+  await page.evaluate(() => {
+    State.resultStatus = null;
+    State.resultReview = null;
+    State.packageReviewPreview = null;
+    State.packageConstruction = null;
+    State.packageReviewSubmit = null;
+    State.packageSupersessionPreview = null;
+    State.replacementPackageSetAuthority = null;
+    State.packageSupersessionCommit = null;
+    State.replacementPackageArtifactManifest = null;
+    State.replacementPackageNamespace = null;
+    State.handoffExportPrepare = null;
+    State.apsHandoffDispatch = null;
+    State.externalExportDownloadPrepare = null;
+    State.externalExportDownloadDelivery = null;
+    State.externalExportDownloadSignedReference = null;
+    State.sessionSummary = null;
+    renderAll();
+  });
+  await expect(lanes).toHaveAttribute('data-output-review-package-handoff-projection-state', 'unavailable');
+  await expect(panel).toHaveAttribute('data-projection-state', 'unavailable');
+  await expect(panel).toContainText('Server output review package handoff projection unavailable');
+  await expect(panel).toContainText('Read-only output review package handoff projection pending');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'execution/result/status',
+    'execution/result/review',
+    'package/review',
+    'package/mutation',
+    'handoff/',
+    'connector',
+    'provider',
+    'source/ingestion',
+    'source/mixed-corpus/materialize',
+    'rag',
+    'vector',
+    'auth',
+  ]);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+});
+
 test('Layer 3 mockup workbench visual diff harness compares repo-local frames', async ({ page }, testInfo) => {
   const frames = loadMockupFrameManifest();
   const apiRequests = trackLayer3ApiRequests(page);
