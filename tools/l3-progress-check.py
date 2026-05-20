@@ -2542,6 +2542,10 @@ LAYER3_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_P
     PLANNING_DOCS
     / "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE = (
+    PLANNING_DOCS
+    / "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -84914,6 +84918,240 @@ def _check_final_full_mockup_program_readiness_audit_after_representative_scenar
             errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
 
 
+def _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE,
+        errors,
+    )
+    api_text = _read_required_text(LAYER3_API, errors)
+    html_text = _read_required_text(LAYER3_HTML, errors)
+    js_text = _read_required_text(LAYER3_JS, errors)
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    entry_key = "source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze"
+    status = "source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_frozen"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md"
+    )
+    checkpoint = "f870d00a089b8c7f976a611eb1f4b44476a1c621"
+    branch = "codex/l3-source-handoff-rendered-status-freeze"
+    freeze_mode = "single_existing_rendered_control_extension_freeze"
+    target = "source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension"
+    action = (
+        "implement_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_"
+        "after_freeze_sync"
+    )
+    next_posture = (
+        "current_main_sync_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_"
+        "freeze_then_implement_rendered_extension"
+    )
+    summary = (
+        "Doc 911 freezes source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension as one "
+        "single-existing-rendered-control status extension over the current-main source-directory hybrid context-packet "
+        "qualitative-analysis route/state chain. The freeze introduces no runtime, rendered, backend, route/API/DTO/model/"
+        "migration/service, production UI, or executable test behavior; full mockup program activation remains blocked until "
+        "the rendered extension, headed/headless browser proof, blocker-retirement lanes, and a whole-program readiness audit pass."
+    )
+
+    for term in (
+        f"Status: source-directory hybrid context packet-to-output-handoff rendered status extension frozen for `{entry_key}`.",
+        "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md",
+        "910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md",
+        f"Current-main checkpoint before this freeze: `{checkpoint}`.",
+        f"Freeze branch: `{branch}`.",
+        f"Selected freeze mode: `{freeze_mode}`.",
+        f"Selected target: `{target}`.",
+        f"Selected implementation action after freeze sync: `{action}`.",
+        "Grill-me challenge outcome:",
+        "Canonical source of truth remains current repo runtime behavior, not the mockup asset:",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver",
+        "/review/layer3 #source-directory-hybrid-external-export-download-delivery-form",
+        "State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus",
+        "Focused headless Chromium proof",
+        "Focused headed Chromium proof",
+        "No frontend-only durable authority is introduced",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Executable test behavior introduced by this freeze: `false`.",
+        "Production UI behavior introduced by this freeze: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed by this freeze: `false`.",
+        f"The next exact posture is `{next_posture}`.",
+        "Full activation freeze:",
+        "Post-activation audit:",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE)} missing rendered status freeze term: {term}"
+            )
+
+    for term in (
+        "post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status",
+        "post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver",
+        "Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliverRequest",
+        "FileResponse(",
+    ):
+        if term not in api_text:
+            errors.append(f"{_rel(LAYER3_API)} missing rendered status freeze API authority term: {term}")
+
+    for term in (
+        'id="source-directory-ingestion-rendered-controls"',
+        'id="source-directory-hybrid-external-export-download-delivery-form"',
+        'id="source-directory-hybrid-external-export-download-delivery-panel"',
+        'id="source-directory-hybrid-external-export-download-delivery-authority"',
+        'id="source-directory-hybrid-external-export-download-delivery-status"',
+        'id="source-directory-hybrid-external-export-download-delivery-submit"',
+        'id="mockup-output-review-package-handoff-projection"',
+        'id="mockup-execution-lanes"',
+        'id="mockup-fixture-scenario"',
+    ):
+        if term not in html_text:
+            errors.append(f"{_rel(LAYER3_HTML)} missing rendered status freeze HTML term: {term}")
+
+    for term in (
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+        "function sourceDirectoryHybridExternalExportDownloadDeliveryPayload",
+        "function sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches",
+        "function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel",
+        "async function inspectSourceDirectoryHybridExternalExportDownloadDelivery",
+        "async function submitSourceDirectoryHybridExternalExportDownloadDelivery",
+        "State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus",
+        "State.sourceDirectoryHybridExternalExportDownloadDelivery",
+        "frontend_durable_authority_enabled === false",
+        "raw_local_path_exposed === false",
+    ):
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing rendered status freeze JS term: {term}")
+
+    for term in (
+        "test_layer3_source_directory_hybrid_delivery_control_is_bounded",
+        "sourceDirectoryHybridExternalExportDownloadDeliveryPayload",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+        "status.provider_public_delivery_enabled === false",
+        "status.frontend_durable_authority_enabled === false",
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing rendered status freeze page-test term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Hybrid Context Packet To Output-Handoff Rendered Status Extension Freeze",
+            "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md",
+            status,
+            target,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory hybrid context packet-to-output-handoff rendered status extension freeze to preserve when present",
+            "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md",
+            status,
+            target,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md",
+            status,
+            target,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"freeze_doc": "{doc_path}"',
+            f'"selected_target": "{target}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"proof_kind": "{entry_key}"',
+            "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md",
+            "headless Chromium proof",
+            "headed Chromium proof",
+            "no frontend-only durable authority",
+            "no full mockup activation",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered status freeze term: {term}")
+
+    expected_latest = {
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_doc": doc_path,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_status": status,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_current_main_checkpoint_before_freeze": checkpoint,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_branch": branch,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_selected_freeze_mode": freeze_mode,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_selected_target": target,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_selected_implementation_action_after_freeze_sync": action,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_runtime_behavior_change_introduced_by_freeze": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_rendered_behavior_change_introduced_by_freeze": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_backend_behavior_change_introduced_by_freeze": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_executable_test_behavior_change_introduced_by_freeze": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_production_ui_behavior_change_introduced_by_freeze": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_full_mockup_program_activation_selected": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_implementation_entry_allowed_by_freeze": False,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_next_posture": next_posture,
+        "latest_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("freeze_doc", doc_path),
+        ("predecessor_audit_doc", "next_milestone_plans/Layer3_planning_docs/910_FINAL_FULL_MOCKUP_PROGRAM_READINESS_AUDIT_AFTER_REPRESENTATIVE_SCENARIO_PROOF.md"),
+        ("current_main_checkpoint_before_freeze", checkpoint),
+        ("freeze_branch", branch),
+        ("selected_freeze_mode", freeze_mode),
+        ("selected_target", target),
+        ("selected_implementation_action_after_freeze_sync", action),
+        ("runtime_behavior_change_introduced_by_freeze", False),
+        ("rendered_behavior_change_introduced_by_freeze", False),
+        ("backend_behavior_change_introduced_by_freeze", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+        ("executable_test_behavior_change_introduced_by_freeze", False),
+        ("production_ui_behavior_change_introduced_by_freeze", False),
+        ("full_mockup_program_activation_selected", False),
+        ("implementation_entry_allowed_by_freeze", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {entry_key} object")
+            continue
+        for key, value in expected_entry_values:
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {entry_key}.{key} must be {value!r}")
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(path)} {entry_key}.proof_kind mismatch")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif scope_status.get(entry_key) != status:
+            errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -85698,6 +85936,9 @@ def main() -> int:
         errors
     )
     _check_final_full_mockup_program_readiness_audit_after_representative_scenario_proof(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze(
         errors
     )
 
