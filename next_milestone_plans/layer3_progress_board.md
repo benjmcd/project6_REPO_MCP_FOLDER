@@ -7715,3 +7715,31 @@ Runtime behavior introduced by this freeze: `false`. Rendered behavior introduce
 Still blocked: implementation before current-main sync, single mockup screen read-only projection proof, single mockup screen server-authoritative activation, full mockup program activation, new write controls, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `current_main_sync_mockup_sublayers_ab_live_state_projection_freeze_then_projection_proof`.
+
+## Mockup Sublayers AB Live State Projection Freeze Current-Main Sync
+
+Current-main sync: `891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Synced result: `current_main_synced_mockup_sublayers_ab_live_state_projection_freeze`.
+
+Freeze doc: `890_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE.md`.
+
+Freeze PR: `#1504`.
+
+Freeze branch commit: `34e2a3c88f974f029b93ecc220880a9cb6c7263d`.
+
+Freeze merge commit: `a891be77aef79334155d954f6a468e0e0c968ed2`.
+
+Selected target remains: `mockup_sublayers_ab_live_state_projection`.
+
+Selected proof action after sync: `prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening`.
+
+Implementation-entry allowed next: `true` only for the Sublayer 3A/3B read-only projection proof.
+
+Merge gate: `backend-layer3-api` passed in `3m24s`, `test` passed in `3m41s`, PR comments/reviews/latestReviews were `0`, reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and PR state is `MERGED`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`.
+
+Still blocked: actual read-only projection proof until the next implementation pass, single mockup screen server-authoritative activation, full mockup program activation, new write controls, duplicate Gate B/Gate C actions, material mutation, typing mutation, typing override, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening`.
