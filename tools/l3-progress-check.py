@@ -2530,6 +2530,10 @@ LAYER3_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_
     PLANNING_DOCS
     / "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md"
 )
+LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE = (
+    PLANNING_DOCS
+    / "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -84248,6 +84252,253 @@ def _check_full_mockup_to_live_coverage_readiness_audit_after_output_review_pack
             )
 
 
+def _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: planning/control freeze for `freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation`.",
+        "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+        "Predecessor audit doc: `907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md`.",
+        "Current-main checkpoint before this freeze: `ca195b117ece8704eba04c242aa69ba90b7f61a6`.",
+        "Selected freeze mode: `representative_mockup_scenario_e2e_proof_freeze`.",
+        "Selected scenario identity: `representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff`.",
+        "Selected proof target: `representative_mockup_scenario_source_to_output_handoff_e2e_proof`.",
+        "Selected proof action after freeze sync: `implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Executable test behavior introduced by this freeze: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed by this freeze: `false`.",
+        "The next exact posture is `current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_then_implement_proof`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE)} missing representative scenario freeze term: {term}"
+            )
+
+    expected_target_authority = [
+        "LAYER3_SOURCE_INGESTION_DIR",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "L3MaterialSnapshot",
+        "deterministic local source-directory text/vector/hybrid context authority",
+        "L3OutputPackage",
+        "L3ReconciliationRecord.summary_json",
+        "/review/layer3 projection-only mockup surfaces",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        "POST /api/v1/layer3/gate-b/decision",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/status",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/package/commit",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/package/review/submit",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/prepare",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver",
+        "full_mockup_activation_enabled false",
+        "frontend durable authority false",
+    ]
+    for term in expected_target_authority:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE)} missing representative scenario authority term: {term}"
+            )
+
+    expected_required_steps = [
+        "isolated runtime database and isolated source directory fixture",
+        "server-configured source-directory scan/status",
+        "material-preview and Gate B decision",
+        "deterministic local text/vector/hybrid context authority",
+        "hybrid context-packet qualitative-analysis/status",
+        "package commit",
+        "package-review submit",
+        "handoff export prepare",
+        "external export download prepare",
+        "delivery status and delivery",
+        "persisted L3OutputPackage verification",
+        "persisted L3ReconciliationRecord.summary_json verification",
+        "negative ConnectorRun and ConnectorRunTarget verification",
+        "negative provider/public URL, network egress, browser-storage, frontend durable authority, raw path, raw payload ref, browser bytes, URL/glob/recursive source expansion verification",
+    ]
+    for term in expected_required_steps:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE)} missing representative scenario proof-step term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Representative Mockup Scenario Source-To-Output-Handoff E2E Proof Freeze",
+            "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen",
+            "representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff",
+            "implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync",
+            "current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_then_implement_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 representative mockup scenario source-to-output-handoff E2E proof freeze to preserve when present",
+            "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen",
+            "representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff",
+            "implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync",
+        ),
+        REFRESH_SPEC: (
+            "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen",
+            "representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff",
+            "current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_then_implement_proof",
+        ),
+        MANIFEST: (
+            '"representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze"',
+            '"status": "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen"',
+            '"selected_freeze_mode": "representative_mockup_scenario_e2e_proof_freeze"',
+            '"selected_proof_action_after_freeze_sync": "implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync"',
+            '"next_posture": "current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_then_implement_proof"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze"',
+            '"908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md"',
+            '"representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen"',
+            '"no full mockup activation"',
+            '"no frontend-only durable authority"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing representative scenario freeze term: {term}"
+                )
+
+    summary = (
+        "Doc 908 freezes the representative mockup scenario source-to-output-handoff E2E proof "
+        "as a planning/control contract over the current-main source-directory hybrid context-packet "
+        "qualitative-analysis route family. The follow-up proof must run one isolated deterministic "
+        "source-directory scenario through scan/status, material preview, Gate B, hybrid qualitative "
+        "analysis/status, package commit, package-review submit, handoff export prepare, external "
+        "export download prepare, delivery status, and delivery while proving no connector/destination, "
+        "provider/public URL, browser-storage, frontend-only durable authority, source expansion, "
+        "package mutation, or full mockup activation is admitted."
+    )
+    expected_entry = {
+        "status": "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen",
+        "freeze_doc": "next_milestone_plans/Layer3_planning_docs/908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+        "predecessor_audit_doc": "next_milestone_plans/Layer3_planning_docs/907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "current_main_checkpoint_before_freeze": "ca195b117ece8704eba04c242aa69ba90b7f61a6",
+        "selected_freeze_mode": "representative_mockup_scenario_e2e_proof_freeze",
+        "selected_scenario_identity": "representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff",
+        "selected_proof_target": "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+        "selected_proof_action_after_freeze_sync": "implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync",
+        "target_authority": expected_target_authority,
+        "required_scenario_steps": expected_required_steps,
+        "runtime_behavior_change_introduced_by_freeze": False,
+        "rendered_behavior_change_introduced_by_freeze": False,
+        "backend_behavior_change_introduced_by_freeze": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "executable_test_behavior_change_introduced_by_freeze": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_by_freeze": False,
+        "next_posture": "current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_then_implement_proof",
+        "summary": summary,
+    }
+    expected_latest = {
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_doc": "next_milestone_plans/Layer3_planning_docs/908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_status": "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_selected_freeze_mode": "representative_mockup_scenario_e2e_proof_freeze",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_selected_scenario_identity": "representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_selected_proof_target": "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_selected_proof_action_after_freeze_sync": "implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_runtime_behavior_change_introduced_by_freeze": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_rendered_behavior_change_introduced_by_freeze": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_backend_behavior_change_introduced_by_freeze": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_executable_test_behavior_change_introduced_by_freeze": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_full_mockup_program_activation_selected": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_implementation_entry_allowed_by_freeze": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_next_posture": "current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_then_implement_proof",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_summary": summary,
+    }
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze":
+                errors.append(
+                    f"{_rel(path)} representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+                    "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+                    "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen",
+                    "representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff",
+                    "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+                    "implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync",
+                    "server-configured source-directory scan/status",
+                    "hybrid context-packet qualitative-analysis/status",
+                    "package commit",
+                    "package-review submit",
+                    "handoff export prepare",
+                    "external export download prepare",
+                    "delivery status and delivery",
+                    "no full mockup activation",
+                    "no frontend-only durable authority",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(path)} representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze.proof_terms missing {term!r}"
+                        )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif (
+            scope_status.get(
+                "representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze"
+            )
+            != "representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen"
+        ):
+            errors.append(
+                f"{_rel(path)} scope_status.representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze mismatch"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -85023,6 +85274,9 @@ def main() -> int:
         errors
     )
     _check_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync(
+        errors
+    )
+    _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze(
         errors
     )
 
