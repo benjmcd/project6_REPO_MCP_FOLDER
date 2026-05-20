@@ -11777,16 +11777,24 @@ init();
 (function sourceDirectoryIngestionRenderedControls() {
     const SOURCE_DIRECTORY_INGESTION_SCAN_PATH = '/source/ingestion/server-configured-directory/scan';
     const SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX = '/source/ingestion/server-configured-directory/status/';
+    const SOURCE_DIRECTORY_MATERIAL_PREVIEW_PATH = '/source/ingestion/server-configured-directory/material-preview';
     const SOURCE_DIRECTORY_INGESTION_SCHEMA_ID = 'layer3.source_directory_ingestion_batch.v1';
     const SOURCE_DIRECTORY_INGESTION_STATUS_SCHEMA_ID = 'layer3.source_directory_ingestion_status.v1';
+    const SOURCE_DIRECTORY_MATERIAL_PREVIEW_SCHEMA_ID = 'layer3.source_directory_material_preview.v1';
+    const SOURCE_DIRECTORY_MATERIAL_PREVIEW_MODE = 'source_directory_ingestion_gate_b_material_admission';
     const SOURCE_DIRECTORY_INGESTION_MODE = 'server_configured_operator_directory_text_table_ingestion';
     const SOURCE_DIRECTORY_INGESTION_SOURCE_FAMILY = 'server_configured_operator_directory_text_table_source_family';
     const SOURCE_DIRECTORY_INGESTION_CONFIG_AUTHORITY = 'LAYER3_SOURCE_INGESTION_DIR';
     const SOURCE_DIRECTORY_INGESTION_OPERATOR_DECISION = 'scan_server_configured_operator_directory';
     const state = {
         latestBatch: null,
+        latestPreview: null,
         latestError: null,
+        gateBClientRequestId: null,
+        committedPreviewId: null,
         pending: false,
+        pendingPreview: false,
+        pendingGateB: false,
     };
     const byId = (id) => document.getElementById(id);
     const escapeDirectoryText = (value) => String(value ?? '').replace(/[&<>"]/g, (char) => ({
@@ -11811,8 +11819,14 @@ init();
     function setDirectoryControls() {
         const scan = byId('source-directory-ingestion-scan-submit');
         const status = byId('source-directory-ingestion-status');
-        if (scan) scan.disabled = state.pending;
-        if (status) status.disabled = state.pending || !directoryBatchId();
+        const busy = state.pending || state.pendingPreview || state.pendingGateB;
+        if (scan) scan.disabled = busy;
+        if (status) status.disabled = busy || !directoryBatchId();
+        document.querySelectorAll('.source-directory-material-preview-button').forEach((button) => {
+            button.disabled = busy;
+        });
+        const gateB = byId('source-directory-gate-b-submit');
+        if (gateB) gateB.disabled = busy || !state.latestPreview;
     }
 
     function sourceDirectoryIngestionPayload() {
@@ -11844,6 +11858,9 @@ init();
             'file_bytes',
             'rag_vector_index',
             'web_connector',
+            'package_payload',
+            'provider_url',
+            'public_url',
         ];
     }
 
@@ -11873,8 +11890,100 @@ init();
                 <span>${escapeDirectoryText(file.media_type || '')}</span>
                 <span>${escapeDirectoryText(file.content_size_bytes ?? 'unknown')} bytes</span>
                 <code>${escapeDirectoryText(file.file_identity_hash || '')}</code>
+                <button
+                    class="secondary-btn source-directory-material-preview-button"
+                    type="button"
+                    data-source-ingestion-batch-id="${escapeDirectoryText(file.source_ingestion_batch_id || state.latestBatch?.source_ingestion_batch_id || '')}"
+                    data-source-ingestion-file-id="${escapeDirectoryText(file.source_ingestion_file_id || '')}"
+                    data-file-identity-hash="${escapeDirectoryText(file.file_identity_hash || '')}"
+                    data-authority-basis-hash="${escapeDirectoryText(file.authority_basis_hash || '')}"
+                >Preview For Gate B</button>
             </li>
         `).join('');
+    }
+
+    function sourceDirectoryMaterialPreviewPayload(file) {
+        const batchId = file.source_ingestion_batch_id || state.latestBatch?.source_ingestion_batch_id || directoryBatchId();
+        const fileId = file.source_ingestion_file_id;
+        const fileIdentityHash = file.file_identity_hash;
+        const authorityBasisHash = file.authority_basis_hash;
+        if (!batchId || !fileId || !fileIdentityHash || !authorityBasisHash) {
+            throw new Error('Source-directory material preview requires persisted file id and authority hashes.');
+        }
+        return {
+            client_request_id: `source-directory-material-ui-${requestId()}`,
+            source_ingestion_batch_id: batchId,
+            source_ingestion_file_id: fileId,
+            file_identity_hash: fileIdentityHash,
+            authority_basis_hash: authorityBasisHash,
+            max_chars: 1000,
+        };
+    }
+
+    function sourceDirectoryGateBDecisionBasis(candidate) {
+        return {
+            source_ref: candidate.source_ref,
+            query_basis: candidate.query_basis,
+            provenance_ref: candidate.provenance_ref,
+            source_identity: candidate.source_identity,
+            source_provenance: candidate.source_provenance,
+            payload: candidate.payload,
+            load_summary: candidate.load_summary,
+        };
+    }
+
+    function sourceDirectoryGateBPayload(preview) {
+        const candidate = preview?.material_candidate;
+        if (!candidate?.candidate_id || !preview?.material_preview_id || !preview?.material_preview_hash) {
+            throw new Error('Source-directory Gate B admission requires a complete server material preview.');
+        }
+        if (!state.gateBClientRequestId) {
+            state.gateBClientRequestId = `source-directory-gate-b-ui-${requestId()}`;
+        }
+        return {
+            schema_id: 'layer3.gate_b_decision_request.v1',
+            client_request_id: state.gateBClientRequestId,
+            preflight_id: `source-directory-rendered-${preview.source_ingestion_batch_id || 'batch'}`,
+            source_set_id: preview.source_ingestion_batch_id,
+            material_preview_id: preview.material_preview_id,
+            material_preview_hash: preview.material_preview_hash,
+            actor: 'operator',
+            candidate_decisions: [
+                {
+                    candidate_id: candidate.candidate_id,
+                    decision: 'approved',
+                    operator_reason: 'Rendered source-directory Gate B admission from server material preview.',
+                    decision_basis: sourceDirectoryGateBDecisionBasis(candidate),
+                },
+            ],
+            commit_reason: 'source_directory_gate_b_rendered_admission',
+        };
+    }
+
+    function renderDirectoryMaterialPreview(preview = state.latestPreview) {
+        if (!preview) return '';
+        const candidate = preview.material_candidate || {};
+        return `
+            <section class="source-intake-card source-directory-material-preview">
+                <h4>Gate B Material Preview</h4>
+                <div class="source-intake-meta">
+                    <span>${escapeDirectoryText(preview.schema_id || SOURCE_DIRECTORY_MATERIAL_PREVIEW_SCHEMA_ID)}</span>
+                    <span>${escapeDirectoryText(preview.mode || SOURCE_DIRECTORY_MATERIAL_PREVIEW_MODE)}</span>
+                    <span>${escapeDirectoryText(preview.status || 'status unavailable')}</span>
+                </div>
+                <pre class="source-intake-preview-text">${escapeDirectoryText(candidate.preview_text || 'No preview text returned.')}</pre>
+                <ul class="source-intake-proof-list">
+                    <li><strong>candidate:</strong> ${escapeDirectoryText(candidate.candidate_id || 'missing')}</li>
+                    <li><strong>preview:</strong> ${escapeDirectoryText(preview.material_preview_id || 'missing')}</li>
+                    <li><strong>hash:</strong> ${escapeDirectoryText(preview.material_preview_hash || 'missing')}</li>
+                    <li><strong>source class:</strong> ${escapeDirectoryText(candidate.source_class || 'missing')}</li>
+                    <li><strong>raw path exposed:</strong> ${escapeDirectoryText(preview.source_gate?.absolute_path_exposed === false ? 'blocked' : preview.source_gate?.absolute_path_exposed)}</li>
+                    <li><strong>RAG/vector:</strong> ${escapeDirectoryText(preview.source_gate?.rag_vector_index_enabled === false ? 'blocked' : preview.source_gate?.rag_vector_index_enabled)}</li>
+                    <li><strong>package construction:</strong> ${escapeDirectoryText(preview.source_gate?.package_construction_enabled === false ? 'blocked' : preview.source_gate?.package_construction_enabled)}</li>
+                </ul>
+                <button class="primary-btn" id="source-directory-gate-b-submit" type="button">Commit Directory File To Gate B</button>
+            </section>
+        `;
     }
 
     function directoryAuthorityStatus(payload) {
@@ -11936,6 +12045,7 @@ init();
             </ul>
             <h4>Admitted Files</h4>
             <ul class="source-intake-proof-list">${renderDirectoryFiles(payload.files)}</ul>
+            ${renderDirectoryMaterialPreview()}
             <h4>Blocked Runtime</h4>
             <div class="downstream-locks">${renderDownstreamLocks([
                 'caller_supplied_path',
@@ -11957,6 +12067,83 @@ init();
             </ul>
         `;
         renderMockupQuerySourceSetupProjection();
+        setDirectoryControls();
+    }
+
+    async function previewSourceDirectoryFile(file) {
+        if (state.pendingPreview || state.pendingGateB) return;
+        state.pendingPreview = true;
+        state.latestError = null;
+        state.latestPreview = null;
+        state.gateBClientRequestId = null;
+        setDirectoryControls();
+        setDirectoryMessage('Requesting bounded source-directory material preview...', 'busy');
+        try {
+            const payload = await postJson(SOURCE_DIRECTORY_MATERIAL_PREVIEW_PATH, sourceDirectoryMaterialPreviewPayload(file));
+            state.latestPreview = payload;
+            renderDirectoryPanel();
+            setDirectoryMessage('Source-directory material preview returned by server authority.', 'ok');
+            addEvent('Source-directory material preview loaded for Gate B admission.');
+        } catch (error) {
+            state.latestError = error.payload || {
+                error_code: 'source_directory_material_preview_request_failed',
+                message: error.message,
+            };
+            renderDirectoryPanel();
+            setDirectoryMessage(`Directory material preview blocked: ${error.message}`, 'error');
+            addEvent(`Source-directory material preview blocked: ${error.message}`);
+        } finally {
+            state.pendingPreview = false;
+            setDirectoryControls();
+        }
+    }
+
+    async function submitSourceDirectoryGateB() {
+        const preview = state.latestPreview;
+        if (!preview || state.pendingGateB) return;
+        if (State.gateB?.session_id && state.committedPreviewId === preview.material_preview_id) {
+            setDirectoryMessage(`Gate B already committed session ${State.gateB.session_id} for this source-directory preview.`, 'ok');
+            return;
+        }
+        const button = byId('source-directory-gate-b-submit');
+        try {
+            state.pendingGateB = true;
+            if (button) setBusy(button, true, 'Commit Directory File To Gate B');
+            setDirectoryControls();
+            setDirectoryMessage('Committing source-directory material preview to Gate B...', 'busy');
+            State.gateB = await postJson('/gate-b/decision', sourceDirectoryGateBPayload(preview));
+            State.materialPreview = {
+                schema_id: preview.schema_id,
+                material_preview_id: preview.material_preview_id,
+                material_preview_hash: preview.material_preview_hash,
+                source_ingestion_batch_id: preview.source_ingestion_batch_id,
+                source_ingestion_file_id: preview.source_ingestion_file_id,
+                material_candidates: [preview.material_candidate],
+                partial_retrieval: preview.partial_retrieval || false,
+            };
+            State.gateC = null;
+            State.planPreview = null;
+            State.planApproval = null;
+            State.planRevision = null;
+            clearResultReviewState();
+            persistSessionRecoveryAnchor('source_directory_gate_b_commit');
+            state.committedPreviewId = preview.material_preview_id;
+            addEvent(`Source-directory Gate B committed session ${State.gateB.session_id}.`);
+            setDirectoryMessage(`Gate B committed session ${State.gateB.session_id} from source-directory material preview.`, 'ok');
+            renderAll();
+            setGateControls();
+        } catch (error) {
+            const detail = error.payload?.detail;
+            const errorMessage = typeof detail === 'string' ? detail : detail?.message || error.message;
+            const errorCodeValue = error.payload?.error_code || detail?.error_code || detail?.code;
+            const errorCode = errorCodeValue ? ` (${errorCodeValue})` : '';
+            setDirectoryMessage(`Directory Gate B admission blocked: ${errorMessage}${errorCode}`, 'error');
+            addEvent(`Source-directory Gate B blocked: ${errorMessage}${errorCode}`);
+        } finally {
+            state.pendingGateB = false;
+            if (button) setBusy(button, false, 'Commit Directory File To Gate B');
+            setDirectoryControls();
+        }
     }
 
     async function scanSourceDirectory(event) {
@@ -11964,6 +12151,8 @@ init();
         if (state.pending) return;
         state.pending = true;
         state.latestError = null;
+        state.latestPreview = null;
+        state.gateBClientRequestId = null;
         setDirectoryControls();
         setDirectoryMessage('Scanning server-configured source directory...', 'busy');
         try {
@@ -11996,6 +12185,8 @@ init();
         if (!batchId || state.pending) return;
         state.pending = true;
         state.latestError = null;
+        state.latestPreview = null;
+        state.gateBClientRequestId = null;
         setDirectoryControls();
         setDirectoryMessage('Inspecting server-recorded source-directory batch...', 'busy');
         try {
@@ -12022,6 +12213,7 @@ init();
         const form = byId('source-directory-ingestion-scan-form');
         const status = byId('source-directory-ingestion-status');
         const batchId = byId('source-directory-ingestion-batch-id');
+        const panel = byId('source-directory-ingestion-panel');
         if (!form) return;
         form.addEventListener('submit', (event) => {
             scanSourceDirectory(event);
@@ -12030,6 +12222,21 @@ init();
             inspectSourceDirectoryBatch();
         });
         batchId?.addEventListener('input', setDirectoryControls);
+        panel?.addEventListener('click', (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+            const previewButton = target?.closest('.source-directory-material-preview-button');
+            if (previewButton) {
+                previewSourceDirectoryFile({
+                    source_ingestion_batch_id: previewButton.getAttribute('data-source-ingestion-batch-id'),
+                    source_ingestion_file_id: previewButton.getAttribute('data-source-ingestion-file-id'),
+                    file_identity_hash: previewButton.getAttribute('data-file-identity-hash'),
+                    authority_basis_hash: previewButton.getAttribute('data-authority-basis-hash'),
+                });
+            }
+            if (target?.closest('#source-directory-gate-b-submit')) {
+                submitSourceDirectoryGateB();
+            }
+        });
         setDirectoryControls();
         sourceDirectoryIngestionForbiddenPayloadTerms();
     }

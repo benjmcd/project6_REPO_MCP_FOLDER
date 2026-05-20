@@ -1337,18 +1337,26 @@ def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None
     assert js.status_code == 200
     payload_start = js.text.find("function sourceDirectoryIngestionPayload")
     forbidden_start = js.text.find("function sourceDirectoryIngestionForbiddenPayloadTerms")
+    material_payload_start = js.text.find("function sourceDirectoryMaterialPreviewPayload")
+    gate_b_basis_start = js.text.find("function sourceDirectoryGateBDecisionBasis")
+    gate_b_payload_start = js.text.find("function sourceDirectoryGateBPayload")
     render_start = js.text.find("function renderDirectoryPanel")
     scan_start = js.text.find("async function scanSourceDirectory")
     status_start = js.text.find("async function inspectSourceDirectoryBatch")
     bind_start = js.text.find("function bindSourceDirectoryIngestionControls")
     assert payload_start != -1
     assert forbidden_start != -1
+    assert material_payload_start != -1
+    assert gate_b_basis_start != -1
+    assert gate_b_payload_start != -1
     assert render_start != -1
     assert scan_start != -1
     assert status_start != -1
     assert bind_start != -1
 
     payload_slice = js.text[payload_start:forbidden_start]
+    material_payload_slice = js.text[material_payload_start:gate_b_basis_start]
+    gate_b_payload_slice = js.text[gate_b_payload_start:render_start]
     render_slice = js.text[render_start:scan_start]
     scan_slice = js.text[scan_start:status_start]
     status_slice = js.text[status_start:bind_start]
@@ -1357,7 +1365,19 @@ def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None
     assert "ingestion_mode: SOURCE_DIRECTORY_INGESTION_MODE" in payload_slice
     assert "postJson(SOURCE_DIRECTORY_INGESTION_SCAN_PATH" in scan_slice
     assert "getJson(`${SOURCE_DIRECTORY_INGESTION_STATUS_PATH_PREFIX}" in status_slice
+    assert "SOURCE_DIRECTORY_MATERIAL_PREVIEW_PATH" in js.text
+    assert "'/source/ingestion/server-configured-directory/material-preview'" in js.text
+    assert "source_directory_ingestion_gate_b_material_admission" in js.text
+    assert "source-directory-material-preview-button" in js.text
+    assert "source-directory-gate-b-submit" in js.text
+    assert "postJson(SOURCE_DIRECTORY_MATERIAL_PREVIEW_PATH" in js.text
+    assert "postJson('/gate-b/decision'" in js.text
+    assert "source_directory_gate_b_rendered_admission" in gate_b_payload_slice
+    assert "persistSessionRecoveryAnchor('source_directory_gate_b_commit')" in js.text
     assert "source_root_absolute_path_exposed === false ? 'blocked'" in render_slice
+    assert "preview.source_gate?.absolute_path_exposed === false ? 'blocked'" in js.text
+    assert "preview.source_gate?.rag_vector_index_enabled === false ? 'blocked'" in js.text
+    assert "preview.source_gate?.package_construction_enabled === false ? 'blocked'" in js.text
     assert "function directoryAuthorityStatus" in js.text
     assert "already_recorded: idempotent replay of existing server authority" in js.text
     assert "response schema:" in render_slice
@@ -1395,6 +1415,7 @@ def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None
         "package_payload_rewrite:",
     ):
         assert forbidden not in payload_slice
+        assert forbidden not in material_payload_slice
 
 
 def test_layer3_shell_does_not_remove_adjacent_review_pages() -> None:
