@@ -2463,6 +2463,10 @@ LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC =
 LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE = (
     PLANNING_DOCS / "890_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE.md"
 )
+LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -80183,6 +80187,206 @@ def _check_mockup_sublayers_ab_live_state_projection_freeze(errors: list[str]) -
                     errors.append(f"{_rel(path)} current_status.{key} must be false")
 
 
+def _check_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main sync for `mockup_sublayers_ab_live_state_projection_frozen`.",
+        "891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Freeze doc: `890_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE.md`.",
+        "Freeze PR: `#1504`.",
+        "Freeze branch commit: `34e2a3c88f974f029b93ecc220880a9cb6c7263d`.",
+        "Freeze merge commit: `a891be77aef79334155d954f6a468e0e0c968ed2`.",
+        "Synced result: `current_main_synced_mockup_sublayers_ab_live_state_projection_freeze`.",
+        "Selected proof action after sync: `prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening`.",
+        "Implementation-entry allowed next: `true` only for `prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening`.",
+        "`backend-layer3-api` passed in `3m24s`",
+        "`test` passed in `3m41s`",
+        "PR reviewThreads totalCount: `0`",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Backend behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Executable test behavior introduced by this sync: `false`.",
+        "Single mockup screen read-only projection introduced by this sync: `false`.",
+        "Single mockup screen server-authoritative activation introduced by this sync: `false`.",
+        "Full mockup program activation introduced by this sync: `false`.",
+        "The next exact posture is `prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC)} missing Sublayers AB sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Sublayers AB Live State Projection Freeze Current-Main Sync",
+            "891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze",
+            "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup Sublayers 3A/3B live-state projection freeze current-main sync to preserve when present",
+            "891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze",
+            "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+        ),
+        REFRESH_SPEC: (
+            "891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze",
+            "implementation-entry allowed next as true only for the Sublayer 3A/3B read-only projection proof",
+            "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+        ),
+        MANIFEST: (
+            '"mockup_sublayers_ab_live_state_projection_freeze_current_main_sync"',
+            '"status": "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze"',
+            '"sync_doc": "next_milestone_plans/Layer3_planning_docs/891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"',
+            '"implementation_entry_allowed_next": true',
+            '"next_posture": "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_sublayers_ab_live_state_projection_freeze_current_main_sync"',
+            '"891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"',
+            '"implementation-entry allowed only for Sublayer 3A/3B read-only projection proof"',
+            '"no actual read-only projection proof in sync"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing Sublayers AB sync term: {term}")
+
+    expected_entry = {
+        "status": "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze",
+        "sync_branch": "codex/l3-sublayers-ab-freeze-sync",
+        "sync_doc": "next_milestone_plans/Layer3_planning_docs/891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "freeze_doc": "next_milestone_plans/Layer3_planning_docs/890_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE.md",
+        "predecessor_inventory_doc": "next_milestone_plans/Layer3_planning_docs/889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md",
+        "freeze_pr": "#1504",
+        "freeze_branch": "codex/l3-sublayers-ab-freeze",
+        "freeze_branch_commit": "34e2a3c88f974f029b93ecc220880a9cb6c7263d",
+        "freeze_merge_commit": "a891be77aef79334155d954f6a468e0e0c968ed2",
+        "current_main_checkpoint_after_freeze_merge": "a891be77aef79334155d954f6a468e0e0c968ed2",
+        "synced_result": "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection_freeze",
+        "selected_target": "mockup_sublayers_ab_live_state_projection",
+        "selected_proof_action_after_sync": "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+        "selected_mockup_surface": "/review/layer3 #mockup-sublayers-ab-board",
+        "runtime_behavior_change_introduced_by_sync": False,
+        "rendered_behavior_change_introduced_by_sync": False,
+        "backend_behavior_change_introduced_by_sync": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_sync": False,
+        "executable_test_behavior_change_introduced_by_sync": False,
+        "single_mockup_screen_read_only_projection_introduced_by_sync": False,
+        "single_mockup_screen_server_authoritative_activation_introduced_by_sync": False,
+        "full_mockup_program_activation_introduced_by_sync": False,
+        "implementation_entry_allowed_next": True,
+        "next_posture": "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+    }
+    expected_latest = {
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_branch": "codex/l3-sublayers-ab-freeze-sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_status": "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_pr": "#1504",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_merge_commit": "a891be77aef79334155d954f6a468e0e0c968ed2",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_selected_target": "mockup_sublayers_ab_live_state_projection",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_selected_proof_action_after_sync": "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_implementation_entry_allowed_next": True,
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_next_posture": "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+    }
+    expected_false_latest = (
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_runtime_behavior_change_introduced_by_sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_rendered_behavior_change_introduced_by_sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_backend_behavior_change_introduced_by_sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_route_api_dto_model_migration_service_behavior_change_introduced_by_sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_executable_test_behavior_change_introduced_by_sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_single_mockup_screen_read_only_projection_introduced_by_sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_single_mockup_screen_server_authoritative_activation_introduced_by_sync",
+        "latest_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync_full_mockup_program_activation_introduced_by_sync",
+    )
+    required_list_terms = (
+        ("selected_live_state_sources", "/review/layer3 #gate-b-band"),
+        ("selected_live_state_sources", "/review/layer3 #gate-c-band"),
+        ("selected_live_state_sources", "/review/layer3 #sublayer-map-panel"),
+        ("checks", "backend-layer3-api passed 3m24s"),
+        ("checks", "test passed 3m41s"),
+        ("review_gate", "reviewThreads totalCount 0"),
+        ("review_gate", "PR state MERGED"),
+        ("post_merge_validation", "python ./tools/l3-progress-check.py PASS"),
+        ("allowed_next_write_scope", "backend/app/review_ui/static/layer3.js"),
+        ("blocked_surfaces", "frontend-only durable authority"),
+        ("blocked_surfaces", "actual read-only projection proof"),
+        ("blocked_surfaces", "full mockup program activation"),
+    )
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_sublayers_ab_live_state_projection_freeze_current_main_sync")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_sublayers_ab_live_state_projection_freeze_current_main_sync object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_freeze_current_main_sync.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_sublayers_ab_live_state_projection_freeze_current_main_sync":
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_freeze_current_main_sync.proof_kind must be 'mockup_sublayers_ab_live_state_projection_freeze_current_main_sync'"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_freeze_current_main_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+                    "890_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE.md",
+                    "PR #1504 merged",
+                    "current_main_synced_mockup_sublayers_ab_live_state_projection_freeze",
+                    "prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening",
+                    "implementation-entry allowed only for Sublayer 3A/3B read-only projection proof",
+                    "no actual read-only projection proof in sync",
+                    "no full mockup program activation",
+                    "frontend-only durable authority blocked",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(path)} Sublayers AB sync proof_terms missing {term}")
+        for key, term in required_list_terms:
+            values = entry.get(key)
+            if not isinstance(values, list) or term not in values:
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_freeze_current_main_sync.{key} missing {term!r}"
+                )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        for key in expected_false_latest:
+            if loaded.get(key) is not False:
+                errors.append(f"{_rel(path)} {key} must be false")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+            for key in expected_false_latest:
+                if current_status.get(key) is not False:
+                    errors.append(f"{_rel(path)} current_status.{key} must be false")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -80925,6 +81129,7 @@ def main() -> int:
         errors
     )
     _check_mockup_sublayers_ab_live_state_projection_freeze(errors)
+    _check_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
