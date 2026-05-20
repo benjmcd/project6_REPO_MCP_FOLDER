@@ -8519,3 +8519,31 @@ Behavior classification: current-main sync only. Runtime behavior introduced by 
 Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, source expansion beyond server-configured ingestion, caller path/directory/file-byte/URL/glob/recursive controls, connector/destination dispatch, provider/public URL runtime, package mutation/reconstruction expansion, RAG/vector/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `select_next_blocker_retirement_lane_after_source_directory_material_preview_gate_b_rendered_control_current_main_sync`.
+
+## Full Mockup Activation Next Blocker Selection
+
+Doc: `917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md`.
+
+Status: `full_mockup_activation_next_blocker_selection_completed`.
+
+Predecessor sync doc: `916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before selection: `b54dfc7cbb8a71b6fad25a852d88877e2190b658`.
+
+Selection branch: `codex/l3-next-blocker-selection`.
+
+Selected immediate next pass: `freeze_one_named_full_mockup_activation_target_from_current_main_evidence`.
+
+Selected activation target class: `single_named_server_authoritative_control_or_read_only_projection`.
+
+Selected full-program posture: `blocked_until_all_critical_mockup_operator_journeys_are_live_read_only_excluded_or_blocked`.
+
+Why this target: current main already contains the first rendered source-directory and provider-public control extensions plus the representative scenario/readiness audits. The next adequate step is therefore a no-runtime freeze for one named server-authoritative control or read-only projection, not full mockup activation, another inventory-only pass, or a broad source/package/connector/provider/RAG/browser/auth lane.
+
+Runtime behavior introduced by this selection: `false`. Rendered behavior introduced by this selection: `false`. Backend behavior introduced by this selection: `false`. Route/API/DTO/model/migration/service behavior introduced by this selection: `false`. Executable test behavior introduced by this selection: `false`. Production UI behavior introduced by this selection: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed next: `false`.
+
+Still required before full mockup activation: every action-capable mockup control needs route/state/durable-authority/headed/headless/security proof; every read-only panel needs server-owned state and redaction/stale-state policy; every excluded or blocked control needs explicit classification; source/package/connector/provider/RAG/browser/auth behavior must remain separately frozen and proven if selected.
+
+Next exact posture: `freeze_one_named_full_mockup_activation_target_from_current_main_evidence`.
