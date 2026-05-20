@@ -8427,3 +8427,35 @@ Full mockup program activation selected: `false`. Implementation-entry allowed b
 Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, raw provider-public URL display/copy, provider-public deliver route, public proxy runtime, byte streaming, public redirects, provider network/object writes, real connector/destination dispatch, package mutation/reconstruction expansion, broad source picker, broad RAG/vector/hidden LLM/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `current_main_sync_provider_public_url_delivery_use_rendered_control_extension_freeze_then_implement_rendered_extension`.
+
+## Provider-Public URL Delivery/Use Rendered Control Extension
+
+Proof doc: `914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md`.
+
+Status: `provider_public_url_delivery_use_rendered_control_extension_implemented`.
+
+Predecessor freeze doc: `913_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION_FREEZE.md`.
+
+Current-main checkpoint before implementation: `afe7bf8b513179736b7fe595002ecc710570403e`.
+
+Implementation branch: `codex/l3-provider-public-use-rendered-control`.
+
+Selected rendered target: `provider_public_url_delivery_use_rendered_control_extension`.
+
+Selected rendered node: `/review/layer3 #provider-public-url-use`.
+
+Selected static proof: `backend/tests/test_layer3_page.py::test_layer3_provider_public_url_use_rendered_control_is_bounded`.
+
+Selected browser proof: `e2e/layer3-workbench.spec.js` test `Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke and provider-public URL prepare status use revoke`.
+
+Why this target: Doc 913 admitted exactly one rendered use-decision control over current-main provider-public prepare/status/revoke/use route authority. This pass implements that control without backend behavior, route/API/DTO/model/migration/service behavior, raw public URL delivery, public proxy behavior, provider network/object writes, connector dispatch, package mutation, source expansion, browser-storage authority, frontend-only durable authority, or full mockup program activation.
+
+Rendered behavior introduced by this implementation: `true`. Runtime behavior introduced by this implementation: `false`. Backend behavior introduced by this implementation: `false`. Route/API/DTO/model/migration/service behavior introduced by this implementation: `false`. Executable test behavior introduced by this implementation: `true`. Production UI behavior introduced by this implementation: `true`.
+
+Validation: `node --check`, focused page pytest, provider-public use backend/API pytest, focused headless Chromium proof, and focused headed Chromium proof all passed. Headless/headed comparison found no behavioral divergence.
+
+Full mockup program activation selected: `false`. Implementation-entry allowed for full mockup activation by this implementation alone: `false`.
+
+Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, raw provider-public URL display/copy, provider-public deliver route, public proxy runtime, byte streaming, public redirects, provider network/object writes, real connector/destination dispatch, package mutation/reconstruction expansion, broad source picker, broad RAG/vector/hidden LLM/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `current_main_sync_provider_public_url_delivery_use_rendered_control_extension_then_select_next_blocker_retirement_lane`.
