@@ -2558,6 +2558,10 @@ LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION = (
     PLANNING_DOCS
     / "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md"
 )
+LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REMEDIATION = (
+    PLANNING_DOCS
+    / "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -86028,6 +86032,262 @@ def _check_provider_public_url_delivery_use_rendered_control_extension(
             errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
 
 
+def _check_provider_public_url_delivery_use_rendered_control_status_freshness_remediation(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REMEDIATION,
+        errors,
+    )
+    js_text = _read_required_text(LAYER3_JS, errors)
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    entry_key = "provider_public_url_delivery_use_rendered_control_status_freshness_review_remediation"
+    status = "provider_public_url_delivery_use_rendered_control_status_freshness_review_remediated"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md"
+    )
+    checkpoint = "77ce23e85edcfdea601b51488adeac3f83a10ab6"
+    branch = "codex/l3-provider-use-review-remediation"
+    static_proof = (
+        "backend/tests/test_layer3_page.py::"
+        "test_layer3_provider_public_url_use_rendered_control_is_bounded"
+    )
+    browser_proof = (
+        "e2e/layer3-workbench.spec.js::"
+        "Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke "
+        "and provider-public URL prepare status use revoke"
+    )
+    next_posture = (
+        "current_main_sync_provider_public_url_delivery_use_rendered_control_status_freshness_"
+        "review_remediation_then_select_next_blocker_retirement_lane"
+    )
+    summary = (
+        "Doc 915 remediates PR #1528 provider-public rendered status freshness by making status snapshots "
+        "override cached use snapshots for provider-public lifecycle state, panel rows, and lifecycle dashboards "
+        "while preserving the immediate redacted use result until the next status refresh. It introduces rendered "
+        "and executable proof behavior only; it introduces no runtime, backend, route/API/DTO/model/migration/service "
+        "behavior, raw provider-public URL delivery, public proxy runtime, connector dispatch, package mutation, "
+        "source expansion, browser-storage authority, frontend-only durable authority, or full mockup program activation."
+    )
+
+    for term in (
+        "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md",
+        "Status: review-remediation implementation for `remediate_provider_public_url_delivery_use_rendered_control_status_freshness_review_threads`.",
+        "914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md",
+        f"Current-main preflight commit: `{checkpoint}`.",
+        f"Branch: `{branch}`.",
+        "discussion_r3273964977",
+        "discussion_r3273964981",
+        "discussion_r3273964990",
+        "The findings are valid against the merged PR `#1528`",
+        "providerPublicUrlLatestSnapshot()",
+        "computes the use payload before clearing stale status",
+        "status-derived rows instead of stale use-derived rows",
+        "It admits no runtime behavior",
+        "full mockup program activation",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REMEDIATION)} missing status-freshness remediation term: {term}"
+            )
+
+    for term in (
+        "function providerPublicUrlLatestSnapshot()",
+        "const providerPublic = providerPublicUrlLatestSnapshot();",
+        "const provider = providerPublicUrlLatestSnapshot();",
+        "const payload = providerPublicUrlUsePayload();",
+        "State.providerPublicUrlStatus = null;",
+        "payload,",
+    ):
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing provider-public status-freshness JS term: {term}")
+    for start, end, label in (
+        (
+            "function providerPublicUrlLatestState()",
+            "function providerPublicUrlLatestSnapshot()",
+            "providerPublicUrlLatestState",
+        ),
+        (
+            "function providerPublicUrlLatestSnapshot()",
+            "function providerPublicUrlAuthorityState()",
+            "providerPublicUrlLatestSnapshot",
+        ),
+    ):
+        try:
+            source = js_text[js_text.index(start) : js_text.index(end)]
+        except ValueError:
+            errors.append(f"{_rel(LAYER3_JS)} missing {label} slice")
+            continue
+        if "State.providerPublicUrlStatus" not in source or "State.providerPublicUrlUse" not in source:
+            errors.append(f"{_rel(LAYER3_JS)} {label} must include status and use sources")
+        elif source.index("State.providerPublicUrlStatus") > source.index("State.providerPublicUrlUse"):
+            errors.append(f"{_rel(LAYER3_JS)} {label} must prefer status before cached use")
+    try:
+        use_source = js_text[
+            js_text.index("async function useProviderPublicUrlDecision")
+            : js_text.index("async function revokeProviderPublicUrl")
+        ]
+        if use_source.index("const payload = providerPublicUrlUsePayload();") > use_source.index(
+            "State.providerPublicUrlStatus = null;"
+        ):
+            errors.append(f"{_rel(LAYER3_JS)} must compute use payload before clearing status")
+    except ValueError:
+        errors.append(f"{_rel(LAYER3_JS)} missing useProviderPublicUrlDecision remediation slice")
+
+    for term in (
+        "function providerPublicUrlLatestSnapshot",
+        "State.providerPublicUrlStatus?.provider_public_url_state",
+        "State.providerPublicUrlUse?.provider_public_url_state",
+        "const payload = providerPublicUrlUsePayload()",
+        "State.providerPublicUrlStatus = null",
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing status-freshness page-test term: {term}")
+
+    for term in (
+        "publicPostUseStatus",
+        "delivery use decision",
+        "layer3.provider_public_url.status.v1",
+        "postUseStatus",
+        "/handoff/export/download/provider-public-url/status'))).toHaveLength(3)",
+    ):
+        if term not in e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing status-freshness e2e term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Provider-Public URL Delivery/Use Rendered Control Status-Freshness Review Remediation",
+            "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md",
+            status,
+            "valid findings remediated",
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 provider-public URL delivery/use rendered control status-freshness review remediation to preserve when present",
+            "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md",
+            status,
+            "providerPublicUrlLatestSnapshot()",
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md",
+            status,
+            "discussion_r3273964977",
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"review_result": "valid_findings_remediated"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"proof_kind": "{entry_key}"',
+            "providerPublicUrlLatestSnapshot",
+            "post-use status refresh renders status-derived rows",
+            "no full mockup activation",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing status-freshness remediation term: {term}")
+
+    expected_latest = {
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_current_main_preflight_commit": checkpoint,
+        f"latest_{entry_key}_remediation_branch": branch,
+        f"latest_{entry_key}_source_pr": "#1528",
+        f"latest_{entry_key}_review_result": "valid_findings_remediated",
+        f"latest_{entry_key}_selected_static_proof": static_proof,
+        f"latest_{entry_key}_selected_browser_proof": browser_proof,
+        f"latest_{entry_key}_rendered_state_freshness_remediated": True,
+        f"latest_{entry_key}_status_snapshot_precedes_use_snapshot": True,
+        f"latest_{entry_key}_use_payload_computed_before_status_clear": True,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_remediation": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_remediation": True,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_remediation": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_remediation": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_remediation": True,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_remediation": True,
+        f"latest_{entry_key}_server_authoritative_full_mockup_activation_introduced_by_remediation": False,
+        f"latest_{entry_key}_full_mockup_program_activation_selected": False,
+        f"latest_{entry_key}_implementation_entry_allowed_for_full_mockup_activation_by_remediation_alone": False,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("doc", doc_path),
+        ("predecessor_proof_doc", predecessor_doc),
+        ("current_main_preflight_commit", checkpoint),
+        ("remediation_branch", branch),
+        ("source_pr", "#1528"),
+        ("review_result", "valid_findings_remediated"),
+        ("selected_static_proof", static_proof),
+        ("selected_browser_proof", browser_proof),
+        ("rendered_state_freshness_remediated", True),
+        ("status_snapshot_precedes_use_snapshot", True),
+        ("use_payload_computed_before_status_clear", True),
+        ("provider_public_deliver_route_added", False),
+        ("raw_public_url_exposed", False),
+        ("browser_storage_authority_enabled", False),
+        ("frontend_durable_authority_enabled", False),
+        ("runtime_behavior_change_introduced_by_remediation", False),
+        ("rendered_behavior_change_introduced_by_remediation", True),
+        ("backend_behavior_change_introduced_by_remediation", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_remediation", False),
+        ("executable_test_behavior_change_introduced_by_remediation", True),
+        ("production_ui_behavior_change_introduced_by_remediation", True),
+        ("server_authoritative_full_mockup_activation_introduced_by_remediation", False),
+        ("full_mockup_program_activation_selected", False),
+        ("implementation_entry_allowed_for_full_mockup_activation_by_remediation_alone", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {entry_key} object")
+            continue
+        for key, value in expected_entry_values:
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {entry_key}.{key} must be {value!r}")
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(path)} {entry_key}.proof_kind mismatch")
+        for thread_id in ("discussion_r3273964977", "discussion_r3273964981", "discussion_r3273964990"):
+            if thread_id not in json.dumps(entry):
+                errors.append(f"{_rel(path)} {entry_key} missing {thread_id}")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif scope_status.get(entry_key) != status:
+            errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -86822,6 +87082,7 @@ def main() -> int:
     )
     _check_provider_public_url_delivery_use_rendered_control_extension_freeze(errors)
     _check_provider_public_url_delivery_use_rendered_control_extension(errors)
+    _check_provider_public_url_delivery_use_rendered_control_status_freshness_remediation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

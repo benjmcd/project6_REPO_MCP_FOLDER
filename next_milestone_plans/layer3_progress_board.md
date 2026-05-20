@@ -8459,3 +8459,31 @@ Full mockup program activation selected: `false`. Implementation-entry allowed f
 Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, raw provider-public URL display/copy, provider-public deliver route, public proxy runtime, byte streaming, public redirects, provider network/object writes, real connector/destination dispatch, package mutation/reconstruction expansion, broad source picker, broad RAG/vector/hidden LLM/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `current_main_sync_provider_public_url_delivery_use_rendered_control_extension_then_select_next_blocker_retirement_lane`.
+
+## Provider-Public URL Delivery/Use Rendered Control Status-Freshness Review Remediation
+
+Doc: `915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md`.
+
+Status: `provider_public_url_delivery_use_rendered_control_status_freshness_review_remediated`.
+
+Predecessor proof doc: `914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md`.
+
+Current-main preflight commit: `77ce23e85edcfdea601b51488adeac3f83a10ab6`.
+
+Remediation branch: `codex/l3-provider-use-review-remediation`.
+
+Source review threads: PR `#1528` comments `discussion_r3273964977`, `discussion_r3273964981`, and `discussion_r3273964990`.
+
+Review result: valid findings remediated.
+
+Why this remediation: after the Doc 914 rendered use-decision control landed, a later operator status refresh needed to override the cached `State.providerPublicUrlUse` snapshot for lifecycle state, panel rows, and lifecycle dashboards. Without that, the rendered workbench could keep presenting stale use-time provider-public state after the server returned a newer status.
+
+Remediation scope: `backend/app/review_ui/static/layer3.js`, `backend/tests/test_layer3_page.py`, `e2e/layer3-workbench.spec.js`, and proof/control metadata only.
+
+Behavior classification: rendered behavior and executable test behavior change only. Runtime behavior introduced by this remediation: `false`. Backend behavior introduced by this remediation: `false`. Route/API/DTO/model/migration/service behavior introduced by this remediation: `false`. Full mockup program activation introduced by this remediation: `false`.
+
+Validation: `node --check`, focused page pytest, focused headless Chromium proof, and focused headed Chromium proof passed.
+
+Still blocked: full mockup program activation, mockup-frame write controls without complete route/state/proof contracts, raw provider-public URL delivery, public proxy runtime, byte streaming, provider network/object writes, real connector/destination dispatch, package mutation/reconstruction expansion, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `current_main_sync_provider_public_url_delivery_use_rendered_control_status_freshness_review_remediation_then_select_next_blocker_retirement_lane`.
