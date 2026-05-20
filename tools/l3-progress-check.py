@@ -2413,6 +2413,15 @@ LAYER3_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_SYNC = (
     PLANNING_DOCS
     / "875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_MAPPING_SELECTION = (
+    PLANNING_DOCS / "876_MOCKUP_MAPPING_SELECTION.md"
+)
+LAYER3_SOURCE_DIRECTORY_EXTENSION_FREEZE = (
+    PLANNING_DOCS / "877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md"
+)
+LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF = (
+    PLANNING_DOCS / "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -77408,6 +77417,507 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                         errors.append(
                             f"{_rel(PROOF_MANIFEST)} internal_webhook_rendered_status_runtime_current_main_sync_proof.proof_terms missing {term}"
                         )
+
+    mockup_mapping_selection_text = _read_required_text(
+        LAYER3_MOCKUP_MAPPING_SELECTION,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime mapping/inventory selection for `full_mockup_activation_mapping_inventory`.",
+        "876_MOCKUP_MAPPING_SELECTION.md",
+        "Predecessor current-main sync doc: `875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this selection: `4a715e4c57206a0b3c30adbde9a27f9c94863bb9`.",
+        "Selected activation mode: `mockup_to_live_mapping_inventory_only`.",
+        "Selected first runtime slice after this inventory: `single_existing_rendered_control_extension`.",
+        "Preferred first target after this inventory: `source_directory_ingestion_scan_status_rendered_control`.",
+        "Runtime behavior introduced by this selection: `false`.",
+        "Rendered behavior introduced by this selection: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "`MOCKUP_TRUTH_STATE_MODE = \"mockups_target_state_only\"`",
+        "#source-directory-ingestion-rendered-controls",
+        "sourceDirectoryIngestionRenderedControls()",
+        "The next exact posture is `freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime`.",
+    ):
+        if term not in mockup_mapping_selection_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_MAPPING_SELECTION)} missing mockup mapping selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Mapping Selection",
+            "876_MOCKUP_MAPPING_SELECTION.md",
+            "mockup_to_live_mapping_inventory_only",
+            "single_existing_rendered_control_extension",
+            "source_directory_ingestion_scan_status_rendered_control",
+            "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup mapping selection to preserve when present",
+            "876_MOCKUP_MAPPING_SELECTION.md",
+            "full_mockup_activation_mapping_inventory",
+            "mockup_to_live_mapping_inventory_only",
+            "source_directory_ingestion_scan_status_rendered_control",
+            "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+        ),
+        REFRESH_SPEC: (
+            "876_MOCKUP_MAPPING_SELECTION.md",
+            "full_mockup_activation_mapping_inventory",
+            "mockup_to_live_mapping_inventory_only",
+            "single_existing_rendered_control_extension",
+            "source_directory_ingestion_scan_status_rendered_control",
+            "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+        ),
+        MANIFEST: (
+            '"mockup_mapping_selection"',
+            '"status": "full_mockup_activation_mapping_inventory_selected"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md"',
+            '"selected_activation_mode": "mockup_to_live_mapping_inventory_only"',
+            '"selected_first_runtime_slice": "single_existing_rendered_control_extension"',
+            '"preferred_first_target": "source_directory_ingestion_scan_status_rendered_control"',
+            '"full_mockup_program_activation_selected": false',
+            '"runtime_behavior_change": false',
+            '"rendered_behavior_change": false',
+            '"next_posture": "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"mockup_mapping_selection_proof"',
+            '"proof_kind": "full_mockup_activation_mapping_inventory_selection"',
+            '"876_MOCKUP_MAPPING_SELECTION.md"',
+            '"mockup_to_live_mapping_inventory_only"',
+            '"source_directory_ingestion_scan_status_rendered_control"',
+            '"freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup mapping selection term: {term}")
+
+    if isinstance(manifest, dict):
+        selection_entry = manifest.get("mockup_mapping_selection")
+        if not isinstance(selection_entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing mockup_mapping_selection object")
+        else:
+            expected_selection_scalars = {
+                "status": "full_mockup_activation_mapping_inventory_selected",
+                "doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+                "branch": "codex/l3-source-directory-rendered-authority-extension",
+                "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint_before_selection": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+                "selected_activation_mode": "mockup_to_live_mapping_inventory_only",
+                "selected_first_runtime_slice": "single_existing_rendered_control_extension",
+                "preferred_first_target": "source_directory_ingestion_scan_status_rendered_control",
+                "full_mockup_program_activation_selected": False,
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next": False,
+                "next_posture": "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+            }
+            for key, value in expected_selection_scalars.items():
+                if selection_entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} mockup_mapping_selection.{key} must be {value!r}")
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_mockup_mapping_selection_doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+                    "latest_mockup_mapping_selection_status": "full_mockup_activation_mapping_inventory_selected",
+                    "latest_mockup_mapping_selection_runtime_behavior_change": False,
+                    "latest_mockup_mapping_selection_rendered_behavior_change": False,
+                    "latest_mockup_mapping_selection_first_runtime_mode": "single_existing_rendered_control_extension",
+                    "latest_mockup_mapping_selection_preferred_first_target": "source_directory_ingestion_scan_status_rendered_control",
+                    "latest_mockup_mapping_selection_next_posture": "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("mockup_mapping_selection_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_mapping_selection_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "full_mockup_activation_mapping_inventory_selection",
+                "status": "full_mockup_activation_mapping_inventory_selected",
+                "doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+                "branch": "codex/l3-source-directory-rendered-authority-extension",
+                "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/875_INTERNAL_WEBHOOK_RENDERED_STATUS_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "current_main_checkpoint_before_selection": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+                "selected_activation_mode": "mockup_to_live_mapping_inventory_only",
+                "selected_first_runtime_slice": "single_existing_rendered_control_extension",
+                "preferred_first_target": "source_directory_ingestion_scan_status_rendered_control",
+                "full_mockup_program_activation_selected": False,
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next": False,
+                "next_posture": "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} mockup_mapping_selection_proof.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup_mapping_selection_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "876_MOCKUP_MAPPING_SELECTION.md",
+                    "full_mockup_activation_mapping_inventory",
+                    "mockup_to_live_mapping_inventory_only",
+                    "single_existing_rendered_control_extension",
+                    "source_directory_ingestion_scan_status_rendered_control",
+                    "internal_webhook_rendered_status_panel_read_only",
+                    "downstream_analysis_environment_projection_read_only",
+                    "MOCKUP_TRUTH_STATE_MODE = \"mockups_target_state_only\"",
+                    "#source-directory-ingestion-rendered-controls",
+                    "sourceDirectoryIngestionRenderedControls()",
+                    "no runtime behavior",
+                    "no rendered behavior",
+                    "full mockup program activation selected: `false`",
+                    "freeze_source_directory_ingestion_scan_status_rendered_control_extension_before_runtime",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} mockup_mapping_selection_proof.proof_terms missing {term}")
+
+    source_directory_extension_freeze_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_EXTENSION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime/no-rendered implementation-entry freeze for `extend_source_directory_ingestion_scan_status_rendered_control`.",
+        "877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+        "Predecessor selection doc: `876_MOCKUP_MAPPING_SELECTION.md`.",
+        "Current-main checkpoint before this freeze: `4a715e4c57206a0b3c30adbde9a27f9c94863bb9`.",
+        "Selected activation mode: `single_existing_rendered_control_extension`.",
+        "Selected target: `source_directory_ingestion_scan_status_rendered_control`.",
+        "Selected implementation action: `extend_source_directory_ingestion_scan_status_rendered_control`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed next: `false` until this freeze is current-main synced.",
+        "#source-directory-ingestion-rendered-controls",
+        "sourceDirectoryIngestionRenderedControls()",
+        "runtime_policy_id",
+        "max_recursion_depth",
+        "caller_selected_recursive_flag_allowed",
+        "Milestone 10: admit `full_mockup_program_activation` only after the readiness audit proves full route/state/test/browser/security coverage and no frontend-only durable authority.",
+        "The next exact posture is `current_main_sync_source_directory_extension_freeze_then_implementation`.",
+    ):
+        if term not in source_directory_extension_freeze_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_EXTENSION_FREEZE)} missing source-directory extension freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Extension Freeze",
+            "877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+            "single_existing_rendered_control_extension",
+            "extend_source_directory_ingestion_scan_status_rendered_control",
+            "current_main_sync_source_directory_extension_freeze_then_implementation",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory extension freeze to preserve when present",
+            "877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+            "extend_source_directory_ingestion_scan_status_rendered_control",
+            "runtime_policy_id",
+            "current_main_sync_source_directory_extension_freeze_then_implementation",
+        ),
+        REFRESH_SPEC: (
+            "877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+            "extend_source_directory_ingestion_scan_status_rendered_control",
+            "single_existing_rendered_control_extension",
+            "current_main_sync_source_directory_extension_freeze_then_implementation",
+        ),
+        MANIFEST: (
+            '"source_directory_extension_freeze"',
+            '"status": "source_directory_ingestion_scan_status_rendered_control_extension_frozen"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md"',
+            '"selected_implementation_action": "extend_source_directory_ingestion_scan_status_rendered_control"',
+            '"runtime_behavior_change": false',
+            '"rendered_behavior_change": false',
+            '"next_posture": "current_main_sync_source_directory_extension_freeze_then_implementation"',
+        ),
+        PROOF_MANIFEST: (
+            '"source_directory_extension_freeze_proof"',
+            '"proof_kind": "source_directory_ingestion_scan_status_rendered_control_extension_freeze"',
+            '"877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md"',
+            '"extend_source_directory_ingestion_scan_status_rendered_control"',
+            '"current_main_sync_source_directory_extension_freeze_then_implementation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-directory extension freeze term: {term}")
+
+    if isinstance(manifest, dict):
+        freeze_entry = manifest.get("source_directory_extension_freeze")
+        if not isinstance(freeze_entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing source_directory_extension_freeze object")
+        else:
+            expected_freeze_scalars = {
+                "status": "source_directory_ingestion_scan_status_rendered_control_extension_frozen",
+                "doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+                "branch": "codex/l3-source-directory-rendered-authority-extension",
+                "predecessor_selection_doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+                "current_main_checkpoint_before_freeze": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+                "selected_activation_mode": "single_existing_rendered_control_extension",
+                "selected_target": "source_directory_ingestion_scan_status_rendered_control",
+                "selected_implementation_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next": False,
+                "next_posture": "current_main_sync_source_directory_extension_freeze_then_implementation",
+            }
+            for key, value in expected_freeze_scalars.items():
+                if freeze_entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_extension_freeze.{key} must be {value!r}")
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_source_directory_extension_freeze_doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+                    "latest_source_directory_extension_freeze_status": "source_directory_ingestion_scan_status_rendered_control_extension_frozen",
+                    "latest_source_directory_extension_freeze_runtime_behavior_change": False,
+                    "latest_source_directory_extension_freeze_rendered_behavior_change": False,
+                    "latest_source_directory_extension_freeze_selected_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+                    "latest_source_directory_extension_freeze_next_posture": "current_main_sync_source_directory_extension_freeze_then_implementation",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("source_directory_extension_freeze_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing source_directory_extension_freeze_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "source_directory_ingestion_scan_status_rendered_control_extension_freeze",
+                "status": "source_directory_ingestion_scan_status_rendered_control_extension_frozen",
+                "doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+                "branch": "codex/l3-source-directory-rendered-authority-extension",
+                "predecessor_selection_doc": "next_milestone_plans/Layer3_planning_docs/876_MOCKUP_MAPPING_SELECTION.md",
+                "current_main_checkpoint_before_freeze": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+                "selected_activation_mode": "single_existing_rendered_control_extension",
+                "selected_target": "source_directory_ingestion_scan_status_rendered_control",
+                "selected_implementation_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+                "runtime_behavior_change": False,
+                "rendered_behavior_change": False,
+                "implementation_entry_allowed_next": False,
+                "next_posture": "current_main_sync_source_directory_extension_freeze_then_implementation",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_freeze_proof.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_freeze_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+                    "extend_source_directory_ingestion_scan_status_rendered_control",
+                    "single_existing_rendered_control_extension",
+                    "source_directory_ingestion_scan_status_rendered_control",
+                    "#source-directory-ingestion-rendered-controls",
+                    "sourceDirectoryIngestionRenderedControls()",
+                    "runtime_policy_id",
+                    "max_recursion_depth",
+                    "caller_selected_recursive_flag_allowed",
+                    "no backend behavior change",
+                    "no caller-supplied paths",
+                    "no frontend-only durable state",
+                    "Milestone 10",
+                    "current_main_sync_source_directory_extension_freeze_then_implementation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_freeze_proof.proof_terms missing {term}")
+
+    source_directory_extension_runtime_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local runtime/rendered proof for `extend_source_directory_ingestion_scan_status_rendered_control`.",
+        "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+        "Predecessor freeze doc: `877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md`.",
+        "Current-main checkpoint before implementation: `4a715e4c57206a0b3c30adbde9a27f9c94863bb9`.",
+        "Backend runtime behavior change: `false`.",
+        "Rendered behavior change: `true`.",
+        "Route/API/DTO/model/migration/service behavior change: `false`.",
+        "`runtime_policy_id`",
+        "`recursive_traversal_admitted`",
+        "`max_recursion_depth`",
+        "`max_relative_path_segments`",
+        "`caller_selected_recursive_flag_allowed`",
+        "Headless Chromium result: passed.",
+        "Headed Chromium result: passed.",
+        "The next exact posture is `current_main_sync_source_directory_extension_runtime`.",
+    ):
+        if term not in source_directory_extension_runtime_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF)} missing source-directory extension runtime term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Extension Runtime Proof",
+            "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+            "extend_source_directory_ingestion_scan_status_rendered_control",
+            "Backend runtime behavior change: `false`",
+            "Rendered behavior change: `true`",
+            "current_main_sync_source_directory_extension_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory extension runtime proof to preserve when present",
+            "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+            "extend_source_directory_ingestion_scan_status_rendered_control",
+            "headless Chromium proof",
+            "current_main_sync_source_directory_extension_runtime",
+        ),
+        REFRESH_SPEC: (
+            "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+            "branch-local rendered behavior proof",
+            "extend_source_directory_ingestion_scan_status_rendered_control",
+            "current_main_sync_source_directory_extension_runtime",
+        ),
+        MANIFEST: (
+            '"source_directory_extension_runtime_proof"',
+            '"status": "source_directory_ingestion_scan_status_rendered_control_extension_proved"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md"',
+            '"backend_runtime_behavior_change": false',
+            '"rendered_behavior_change": true',
+            '"next_posture": "current_main_sync_source_directory_extension_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"source_directory_extension_runtime_proof"',
+            '"proof_kind": "source_directory_ingestion_scan_status_rendered_control_extension_runtime_proof"',
+            '"878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md"',
+            '"headless Chromium result: passed"',
+            '"headed Chromium result: passed"',
+            '"current_main_sync_source_directory_extension_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-directory extension runtime term: {term}")
+
+    review_ui_js = _read_required_text(ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js", errors)
+    for term in (
+        "function directoryAuthorityStatus",
+        "already_recorded: idempotent replay of existing server authority",
+        "payload.runtime_policy_id",
+        "payload.recursive_traversal_admitted",
+        "payload.max_recursion_depth",
+        "payload.max_relative_path_segments",
+        "payload.caller_selected_recursive_flag_allowed === false ? 'blocked'",
+        "'caller_selected_recursive_flag'",
+    ):
+        if term not in review_ui_js:
+            errors.append(f"backend/app/review_ui/static/layer3.js missing source-directory rendered extension term: {term}")
+
+    e2e_text = _read_required_text(ROOT / "e2e" / "layer3-workbench.spec.js", errors)
+    for term in (
+        "Layer 3 workbench renders source-directory scan and status authority fields",
+        "source-directory-rendered-control-proof",
+        "recursive_server_configured_directory_text_table_policy_v1",
+        "expectOnlyPayloadKeys(capturedScanPayload",
+        "expect(consoleErrors).toEqual([])",
+        "expect(pageErrors).toEqual([])",
+    ):
+        if term not in e2e_text:
+            errors.append(f"e2e/layer3-workbench.spec.js missing source-directory extension proof term: {term}")
+
+    if isinstance(manifest, dict):
+        runtime_entry = manifest.get("source_directory_extension_runtime_proof")
+        if not isinstance(runtime_entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing source_directory_extension_runtime_proof object")
+        else:
+            expected_runtime_scalars = {
+                "status": "source_directory_ingestion_scan_status_rendered_control_extension_proved",
+                "doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+                "branch": "codex/l3-source-directory-rendered-authority-extension",
+                "predecessor_freeze_doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+                "current_main_checkpoint_before_implementation": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+                "implemented_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+                "selected_activation_mode": "single_existing_rendered_control_extension",
+                "selected_target": "source_directory_ingestion_scan_status_rendered_control",
+                "backend_runtime_behavior_change": False,
+                "rendered_behavior_change": True,
+                "route_api_dto_model_migration_service_behavior_change": False,
+                "full_mockup_program_activation": False,
+                "next_posture": "current_main_sync_source_directory_extension_runtime",
+            }
+            for key, value in expected_runtime_scalars.items():
+                if runtime_entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_extension_runtime_proof.{key} must be {value!r}")
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_source_directory_extension_runtime_doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+                    "latest_source_directory_extension_runtime_status": "source_directory_ingestion_scan_status_rendered_control_extension_proved",
+                    "latest_source_directory_extension_runtime_backend_behavior_change": False,
+                    "latest_source_directory_extension_runtime_rendered_behavior_change": True,
+                    "latest_source_directory_extension_runtime_next_posture": "current_main_sync_source_directory_extension_runtime",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("source_directory_extension_runtime_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing source_directory_extension_runtime_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "source_directory_ingestion_scan_status_rendered_control_extension_runtime_proof",
+                "status": "source_directory_ingestion_scan_status_rendered_control_extension_proved",
+                "doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+                "branch": "codex/l3-source-directory-rendered-authority-extension",
+                "predecessor_freeze_doc": "next_milestone_plans/Layer3_planning_docs/877_SOURCE_DIRECTORY_EXTENSION_FREEZE.md",
+                "current_main_checkpoint_before_implementation": "4a715e4c57206a0b3c30adbde9a27f9c94863bb9",
+                "implemented_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+                "selected_activation_mode": "single_existing_rendered_control_extension",
+                "selected_target": "source_directory_ingestion_scan_status_rendered_control",
+                "backend_runtime_behavior_change": False,
+                "rendered_behavior_change": True,
+                "route_api_dto_model_migration_service_behavior_change": False,
+                "full_mockup_program_activation": False,
+                "headless_chromium_proof": "PASS 1 passed",
+                "headed_chromium_proof": "PASS 1 passed",
+                "next_posture": "current_main_sync_source_directory_extension_runtime",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_proof.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+                    "extend_source_directory_ingestion_scan_status_rendered_control",
+                    "runtime_policy_id",
+                    "recursive_traversal_admitted",
+                    "max_recursion_depth",
+                    "max_relative_path_segments",
+                    "caller_selected_recursive_flag_allowed",
+                    "response schema",
+                    "idempotency/replay status",
+                    "headless Chromium result: passed",
+                    "headed Chromium result: passed",
+                    "no backend runtime behavior",
+                    "no route/API/DTO/model/migration/service behavior change",
+                    "no caller path",
+                    "no full mockup program activation",
+                    "current_main_sync_source_directory_extension_runtime",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_proof.proof_terms missing {term}")
 
 
 def main() -> int:
