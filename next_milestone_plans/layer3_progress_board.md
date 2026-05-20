@@ -7469,3 +7469,21 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Still blocked: backend behavior changes, caller path/file/URL/glob/recursive flag support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, and full mockup program activation.
 
 Next exact posture: `select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync`.
+
+## Mockup Screen Projection Selection
+
+No-runtime first mockup-screen projection selection: `880_MOCKUP_SCREEN_PROJECTION_SELECTION.md`.
+
+Selected activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected target: `mockup_pdf_location_projection_read_only`.
+
+Canonical route/state/rendered contract: existing `GET /api/v1/layer3/session/{session_id}`, `State.sessionSummary.pdf_location_projection`, and `/review/layer3` `#mockup-pdf-location-projection`.
+
+Canonical backend authority: `backend/app/services/layer3_pdf_location.py` with schema `layer3.pdf_location_projection.v1`, named use case `pdf_location_from_aps_content_document_citation`, and server authority contract `aps_content_document_chunk_page_refs_and_citation_highlight_spans`.
+
+This selection admits no runtime behavior, no rendered behavior, no backend behavior, no route/API/DTO/model/migration/service behavior change, no UI control change, no single mockup screen server-authoritative activation, and no full mockup program activation.
+
+Still blocked: new buttons/submit controls, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, server-authoritative mockup-screen activation, and full-program scope.
+
+Next exact posture: `freeze_mockup_pdf_location_projection_read_only_before_runtime`.

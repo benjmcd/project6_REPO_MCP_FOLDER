@@ -2426,6 +2426,9 @@ LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_SCREEN_PROJECTION_SELECTION = (
+    PLANNING_DOCS / "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -78113,6 +78116,149 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                         errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_current_main_sync_proof.proof_terms missing {term}")
 
 
+def _check_mockup_screen_projection_selection(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    selection_text = _read_required_text(
+        LAYER3_MOCKUP_SCREEN_PROJECTION_SELECTION,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime first read-only mockup-screen projection selection after `current_main_synced_source_directory_extension_runtime`.",
+        "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+        "Predecessor current-main sync doc: `879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md`.",
+        "Current-main checkpoint before this selection: `d523bf37fc7b0a582995d8522066f343cce4fdd5`.",
+        "Selected activation mode: `single_mockup_screen_read_only_projection`.",
+        "Selected target: `mockup_pdf_location_projection_read_only`.",
+        "Selected route contract: `GET /api/v1/layer3/session/{session_id}`.",
+        "Selected response/state contract: `State.sessionSummary.pdf_location_projection`.",
+        "Selected rendered surface: `/review/layer3` `#mockup-pdf-location-projection`.",
+        "Runtime behavior introduced by this selection: `false`.",
+        "Rendered behavior introduced by this selection: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "backend/app/services/layer3_pdf_location.py",
+        "layer3.pdf_location_projection.v1",
+        "pdf_location_from_aps_content_document_citation",
+        "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+        "renderMockupPdfLocationProjection()",
+        "The next exact posture is `freeze_mockup_pdf_location_projection_read_only_before_runtime`.",
+    ):
+        if term not in selection_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_SCREEN_PROJECTION_SELECTION)} missing mockup screen projection selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Screen Projection Selection",
+            "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+            "single_mockup_screen_read_only_projection",
+            "mockup_pdf_location_projection_read_only",
+            "State.sessionSummary.pdf_location_projection",
+            "freeze_mockup_pdf_location_projection_read_only_before_runtime",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup screen projection selection to preserve when present",
+            "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+            "mockup_pdf_location_projection_read_only",
+            "State.sessionSummary.pdf_location_projection",
+            "freeze_mockup_pdf_location_projection_read_only_before_runtime",
+        ),
+        REFRESH_SPEC: (
+            "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+            "single_mockup_screen_read_only_projection",
+            "mockup_pdf_location_projection_read_only",
+            "backend/app/services/layer3_pdf_location.py",
+            "freeze_mockup_pdf_location_projection_read_only_before_runtime",
+        ),
+        MANIFEST: (
+            '"mockup_screen_projection_selection"',
+            '"status": "mockup_pdf_location_projection_read_only_selected"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/880_MOCKUP_SCREEN_PROJECTION_SELECTION.md"',
+            '"state_contract": "State.sessionSummary.pdf_location_projection"',
+            '"next_posture": "freeze_mockup_pdf_location_projection_read_only_before_runtime"',
+        ),
+        PROOF_MANIFEST: (
+            '"mockup_screen_projection_selection_proof"',
+            '"proof_kind": "mockup_pdf_location_projection_read_only_selection"',
+            '"880_MOCKUP_SCREEN_PROJECTION_SELECTION.md"',
+            '"mockup_pdf_location_projection_read_only"',
+            '"freeze_mockup_pdf_location_projection_read_only_before_runtime"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup screen projection selection term: {term}")
+
+    expected_scalars = {
+        "status": "mockup_pdf_location_projection_read_only_selected",
+        "doc": "next_milestone_plans/Layer3_planning_docs/880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+        "branch": "codex/l3-mockup-projection-selection",
+        "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "current_main_checkpoint_before_selection": "d523bf37fc7b0a582995d8522066f343cce4fdd5",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection",
+        "selected_target": "mockup_pdf_location_projection_read_only",
+        "route_contract": "GET /api/v1/layer3/session/{session_id}",
+        "state_contract": "State.sessionSummary.pdf_location_projection",
+        "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+        "backend_authority": "backend/app/services/layer3_pdf_location.py",
+        "schema_id": "layer3.pdf_location_projection.v1",
+        "named_runtime_use_case": "pdf_location_from_aps_content_document_citation",
+        "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+        "runtime_behavior_change": False,
+        "rendered_behavior_change": False,
+        "backend_behavior_change": False,
+        "route_api_dto_model_migration_service_behavior_change": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "freeze_mockup_pdf_location_projection_read_only_before_runtime",
+    }
+    if isinstance(manifest, dict):
+        entry = manifest.get("mockup_screen_projection_selection")
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing mockup_screen_projection_selection object")
+        else:
+            for key, value in expected_scalars.items():
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} mockup_screen_projection_selection.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("mockup_screen_projection_selection_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_screen_projection_selection_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "mockup_pdf_location_projection_read_only_selection",
+                **expected_scalars,
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} mockup_screen_projection_selection_proof.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup_screen_projection_selection_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "880_MOCKUP_SCREEN_PROJECTION_SELECTION.md",
+                    "single_mockup_screen_read_only_projection",
+                    "mockup_pdf_location_projection_read_only",
+                    "GET /api/v1/layer3/session/{session_id}",
+                    "State.sessionSummary.pdf_location_projection",
+                    "#mockup-pdf-location-projection",
+                    "backend/app/services/layer3_pdf_location.py",
+                    "layer3.pdf_location_projection.v1",
+                    "pdf_location_from_aps_content_document_citation",
+                    "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+                    "no runtime behavior",
+                    "no rendered behavior",
+                    "no full mockup program activation",
+                    "freeze_mockup_pdf_location_projection_read_only_before_runtime",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} mockup_screen_projection_selection_proof.proof_terms missing {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -78842,6 +78988,7 @@ def main() -> int:
     _check_sublayer3c_optional_tool_fixture_validate(errors)
     _check_internal_webhook_connector_freeze(errors)
     _check_recursive_source_ingestion_family_selection_freeze(errors)
+    _check_mockup_screen_projection_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
