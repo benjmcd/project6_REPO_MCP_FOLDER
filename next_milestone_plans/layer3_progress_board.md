@@ -8037,3 +8037,37 @@ Post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, `py
 Still blocked: server-authoritative activation, query/source write controls in the mockup frame, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `rerun_mockup_to_live_mapping_after_query_source_setup_projection_sync`.
+
+## Mockup-To-Live Mapping Inventory After Query Source Setup Projection Sync
+
+Inventory doc: `902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md`.
+
+Status: `post_query_source_projection_mockup_to_live_mapping_inventory_selected`.
+
+Predecessor current-main sync doc: `901_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before inventory: `323ff9f1872a678da142412d0008e607a20d01b0`.
+
+Selected activation mode for this pass: `mockup_to_live_mapping_inventory_after_query_source_setup_live_state_projection_sync`.
+
+Already current-main synced server-authoritative mockup-screen activation: `source_directory_ingestion_scan_status_mockup_screen_activation`.
+
+Already current-main synced read-only mockup-screen projections: `mockup_pdf_location_available_state`, `downstream_analysis_environment_projection`, `mockup_sublayers_ab_live_state_projection`, `mockup_sublayer3c_execution_lanes_live_state_projection`, and `mockup_query_source_setup_live_state_projection`.
+
+Selected next activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected next target: `mockup_output_review_package_handoff_live_state_projection`.
+
+Selected next freeze: `freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime`.
+
+Why this target: static mockup output/review cards and the traceable-output review node still exist as target-state UI while live server-owned result review, package review, package lifecycle, handoff/export, APS handoff, external export/download, and downstream-access controls already exist outside the mockup frame. A read-only projection can close that visible mapping gap without duplicating package/handoff/export actions inside the mockup frame.
+
+Target authority includes `/review/layer3 #mockup-userflow-board .mockup-userflow-node[data-stage="output-review"]`, `/review/layer3 .mockup-flow-card.mockup-3c`, `/review/layer3 .mockup-output-grid`, `/review/layer3 #result-review-band`, `/review/layer3 #package-review-band`, `/review/layer3 #package-lifecycle-dashboard-panel`, `/review/layer3 #handoff-export-band`, `/review/layer3 #aps-handoff-band`, `/review/layer3 #external-export-download-band`, `/review/layer3 #downstream-access-lifecycle-dashboard-panel`, result/review/package/handoff/export `State.*` objects, existing package/handoff/export routes, `L3OutputPackage`, `L3ReconciliationRecord`, `L3ExternalExportDownloadRecord`, and existing session-summary package/handoff/export state.
+
+Runtime behavior introduced by this inventory: `false`. Rendered behavior introduced by this inventory: `false`. Backend behavior introduced by this inventory: `false`. Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`. Executable test behavior introduced by this inventory: `false`.
+
+Full mockup program activation selected: `false`. Implementation-entry allowed next: `false`.
+
+Still blocked: implementation before a freeze, full mockup program activation, package/handoff/export buttons inside the mockup frame, package/handoff/export action activation from the mockup frame, package mutation/reconstruction beyond already-existing governed preview/control surfaces, provider URL behavior expansion, connector/destination dispatch, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `freeze_mockup_output_review_package_handoff_live_state_projection_before_runtime`.
