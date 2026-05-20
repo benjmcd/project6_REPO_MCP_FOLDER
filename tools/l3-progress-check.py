@@ -2534,6 +2534,10 @@ LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE 
     PLANNING_DOCS
     / "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md"
 )
+LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF = (
+    PLANNING_DOCS
+    / "909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -84499,6 +84503,196 @@ def _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof_fre
             )
 
 
+def _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF,
+        errors,
+    )
+    test_text = _read_required_text(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST, errors)
+    proof_test = (
+        "backend/tests/test_layer3_source_directory_vector_retrieval.py::"
+        "test_representative_mockup_scenario_source_to_output_handoff_e2e_proof"
+    )
+    next_posture = (
+        "current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_"
+        "then_final_full_mockup_program_readiness_audit"
+    )
+    summary = (
+        "Doc 909 implements the representative mockup scenario source-to-output-handoff E2E proof as one API-only "
+        "executable test over the existing source-directory hybrid context-packet qualitative-analysis route family. "
+        "The proof runs an isolated deterministic source-directory scenario through scan/status, material preview, Gate B, "
+        "hybrid qualitative analysis/status, package commit, package-review submit, handoff export prepare, external export "
+        "download prepare, delivery status, and delivery while proving no connector/destination, provider/public URL, "
+        "browser-storage, frontend-only durable authority, source expansion, package mutation, or full mockup activation is admitted."
+    )
+
+    for term in (
+        "Status: executable proof implemented for `representative_mockup_scenario_source_to_output_handoff_e2e_proof`.",
+        "909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md",
+        "908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md",
+        "Current-main checkpoint before this proof: `df6c2128ba3dfcde757fb5ec53fa7634e3a7b1a3`.",
+        "Implementation branch: `codex/l3-representative-scenario-proof`.",
+        f"Selected executable proof test: `{proof_test}`.",
+        "Runtime behavior introduced by this proof: `false`.",
+        "Rendered behavior introduced by this proof: `false`.",
+        "Backend behavior introduced by this proof: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this proof: `false`.",
+        "Executable test behavior introduced by this proof: `true`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed for full mockup activation by this proof alone: `false`.",
+        f"The next exact posture is `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF)} missing representative scenario proof term: {term}"
+            )
+
+    for term in (
+        "test_representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+        "mockup_truth_state_contract",
+        "full_mockup_activation_enabled",
+        "frontend_only_durable_state_enabled",
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "/api/v1/layer3/source/ingestion/server-configured-directory/status/",
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        "/api/v1/layer3/gate-b/decision",
+        "hybrid-context-packet/qualitative-analysis/package/commit",
+        "hybrid-context-packet/qualitative-analysis/package/review/submit",
+        "hybrid-context-packet/qualitative-analysis/handoff/export/prepare",
+        "hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare",
+        "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status",
+        "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver",
+        "db.query(L3OutputPackage).count() == 3",
+        "db.query(ConnectorRun).count() == 0",
+        "db.query(ConnectorRunTarget).count() == 0",
+        "_assert_disabled_authority_flags",
+    ):
+        if term not in test_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_VECTOR_RETRIEVAL_TEST)} missing representative scenario proof test term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Representative Mockup Scenario Source-To-Output-Handoff E2E Proof",
+            "909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented",
+            "codex/l3-representative-scenario-proof",
+            proof_test,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 representative mockup scenario source-to-output-handoff E2E proof to preserve when present",
+            "909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented",
+            proof_test,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented",
+            proof_test,
+            next_posture,
+        ),
+        MANIFEST: (
+            '"representative_mockup_scenario_source_to_output_handoff_e2e_proof"',
+            '"status": "representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented"',
+            '"implementation_branch": "codex/l3-representative-scenario-proof"',
+            f'"selected_executable_proof_test": "{proof_test}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "representative_mockup_scenario_source_to_output_handoff_e2e_proof"',
+            '"909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md"',
+            '"representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented"',
+            f'"selected_executable_proof_test": "{proof_test}"',
+            '"no full mockup activation"',
+            '"no frontend-only durable authority"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing representative scenario proof term: {term}")
+
+    expected_latest = {
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_doc": "next_milestone_plans/Layer3_planning_docs/909_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF.md",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_status": "representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_current_main_checkpoint_before_proof": "df6c2128ba3dfcde757fb5ec53fa7634e3a7b1a3",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_implementation_branch": "codex/l3-representative-scenario-proof",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_selected_scenario_identity": "representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_selected_proof_target": "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_selected_executable_proof_test": proof_test,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_runtime_behavior_change_introduced_by_proof": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_rendered_behavior_change_introduced_by_proof": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_backend_behavior_change_introduced_by_proof": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_route_api_dto_model_migration_service_behavior_change_introduced_by_proof": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_executable_test_behavior_change_introduced_by_proof": True,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_full_mockup_program_activation_selected": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_implementation_entry_allowed_for_full_mockup_activation_by_proof_alone": False,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_next_posture": next_posture,
+        "latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_summary": summary,
+    }
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("representative_mockup_scenario_source_to_output_handoff_e2e_proof")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing representative_mockup_scenario_source_to_output_handoff_e2e_proof object"
+            )
+            continue
+        for key, value in (
+            ("status", "representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented"),
+            ("proof_doc", expected_latest["latest_representative_mockup_scenario_source_to_output_handoff_e2e_proof_doc"]),
+            ("predecessor_freeze_doc", "next_milestone_plans/Layer3_planning_docs/908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md"),
+            ("current_main_checkpoint_before_proof", "df6c2128ba3dfcde757fb5ec53fa7634e3a7b1a3"),
+            ("implementation_branch", "codex/l3-representative-scenario-proof"),
+            ("selected_executable_proof_test", proof_test),
+            ("runtime_behavior_change_introduced_by_proof", False),
+            ("rendered_behavior_change_introduced_by_proof", False),
+            ("backend_behavior_change_introduced_by_proof", False),
+            ("route_api_dto_model_migration_service_behavior_change_introduced_by_proof", False),
+            ("executable_test_behavior_change_introduced_by_proof", True),
+            ("full_mockup_program_activation_selected", False),
+            ("implementation_entry_allowed_for_full_mockup_activation_by_proof_alone", False),
+            ("next_posture", next_posture),
+            ("summary", summary),
+        ):
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} representative_mockup_scenario_source_to_output_handoff_e2e_proof.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != "representative_mockup_scenario_source_to_output_handoff_e2e_proof":
+            errors.append(
+                f"{_rel(path)} representative_mockup_scenario_source_to_output_handoff_e2e_proof.proof_kind mismatch"
+            )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif (
+            scope_status.get("representative_mockup_scenario_source_to_output_handoff_e2e_proof")
+            != "representative_mockup_scenario_source_to_output_handoff_e2e_proof_implemented"
+        ):
+            errors.append(
+                f"{_rel(path)} scope_status.representative_mockup_scenario_source_to_output_handoff_e2e_proof mismatch"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -85277,6 +85471,9 @@ def main() -> int:
         errors
     )
     _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze(
+        errors
+    )
+    _check_representative_mockup_scenario_source_to_output_handoff_e2e_proof(
         errors
     )
 
