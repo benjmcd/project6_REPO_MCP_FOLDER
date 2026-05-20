@@ -969,7 +969,12 @@
     "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
     "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_status": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
     "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
-    "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_summary": "Doc 884 records current-main sync for PR #1497 merge commit dbbd021e4229f9bbcc033f8470b59825c96329fd."
+    "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_summary": "Doc 884 records current-main sync for PR #1497 merge commit dbbd021e4229f9bbcc033f8470b59825c96329fd.",
+    "latest_source_directory_activation_selection_branch": "codex/l3-next-mockup-target",
+    "latest_source_directory_activation_selection_doc": "next_milestone_plans/Layer3_planning_docs/885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md",
+    "latest_source_directory_activation_selection_status": "source_directory_ingestion_scan_status_mockup_screen_activation_selected",
+    "latest_source_directory_activation_selection_next_posture": "freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime",
+    "latest_source_directory_activation_selection_summary": "Doc 885 selects source-directory scan/status as the next server-authoritative mockup-screen activation target without introducing behavior."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -34877,5 +34882,56 @@
   "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
   "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_status": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
   "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
-  "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_summary": "Doc 884 records current-main sync for PR #1497 merge commit dbbd021e4229f9bbcc033f8470b59825c96329fd."
+  "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_summary": "Doc 884 records current-main sync for PR #1497 merge commit dbbd021e4229f9bbcc033f8470b59825c96329fd.",
+  "source_directory_activation_selection": {
+    "proof_kind": "source_directory_ingestion_scan_status_mockup_screen_activation_selection",
+    "status": "source_directory_ingestion_scan_status_mockup_screen_activation_selected",
+    "doc": "next_milestone_plans/Layer3_planning_docs/885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md",
+    "branch": "codex/l3-next-mockup-target",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+    "current_main_checkpoint_before_selection": "49cfd61a2fe4c8b958b08303e9396e566a4399d4",
+    "selected_activation_mode": "single_mockup_screen_server_authoritative_activation_target_selection",
+    "selected_target": "source_directory_ingestion_scan_status_mockup_screen_activation",
+    "selected_future_freeze": "freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime",
+    "scan_route_contract": "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+    "status_route_contract": "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+    "service_authority": "backend/app/services/layer3_source_directory_ingestion.py",
+    "durable_authority": [
+      "L3SourceDirectoryIngestionBatch",
+      "L3SourceDirectoryIngestionFile"
+    ],
+    "rendered_surface": "/review/layer3 #source-directory-ingestion-rendered-controls",
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "backend_behavior_change": false,
+    "route_api_dto_model_migration_service_behavior_change": false,
+    "single_mockup_screen_server_authoritative_activation_introduced": false,
+    "full_mockup_program_activation_selected": false,
+    "proof_terms": [
+      "885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md",
+      "single_mockup_screen_server_authoritative_activation_target_selection",
+      "source_directory_ingestion_scan_status_mockup_screen_activation",
+      "freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+      "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+      "backend/app/services/layer3_source_directory_ingestion.py",
+      "L3SourceDirectoryIngestionBatch",
+      "L3SourceDirectoryIngestionFile",
+      "#source-directory-ingestion-rendered-controls",
+      "internal_webhook_rendered_status_panel_read_only",
+      "downstream_analysis_environment_projection_read_only",
+      "no runtime behavior",
+      "no rendered behavior",
+      "no backend behavior",
+      "no actual single mockup screen server-authoritative activation",
+      "no full mockup program activation"
+    ],
+    "next_posture": "freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime",
+    "summary": "Doc 885 selects source-directory scan/status as the next server-authoritative mockup-screen activation target without introducing behavior."
+  },
+  "latest_source_directory_activation_selection_branch": "codex/l3-next-mockup-target",
+  "latest_source_directory_activation_selection_doc": "next_milestone_plans/Layer3_planning_docs/885_SOURCE_DIRECTORY_ACTIVATION_SELECTION.md",
+  "latest_source_directory_activation_selection_status": "source_directory_ingestion_scan_status_mockup_screen_activation_selected",
+  "latest_source_directory_activation_selection_next_posture": "freeze_source_directory_ingestion_scan_status_mockup_screen_activation_before_runtime",
+  "latest_source_directory_activation_selection_summary": "Doc 885 selects source-directory scan/status as the next server-authoritative mockup-screen activation target without introducing behavior."
 }
