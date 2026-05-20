@@ -7613,3 +7613,31 @@ Single mockup screen server-authoritative activation introduced by this freeze: 
 Still blocked: caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source upload/adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, cloud object-store writes, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, actual single-screen activation until proof, and full mockup program activation.
 
 Next exact posture: `current_main_sync_source_directory_activation_freeze_then_activation_proof`.
+
+## Source Directory Activation Proof
+
+Branch-local server-authoritative activation proof: `887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md`.
+
+Implemented activation mode: `single_mockup_screen_server_authoritative_activation_proof`.
+
+Implemented target: `source_directory_ingestion_scan_status_mockup_screen_activation`.
+
+Implemented proof action: `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`.
+
+Live activation surface proved: `/review/layer3` `#source-directory-ingestion-rendered-controls`.
+
+Rendered surface decision: `reuse_existing_source_directory_ingestion_rendered_controls`.
+
+Implemented proof file: `e2e/layer3-workbench.spec.js`.
+
+Proof coverage: successful scan/status authority fields, exact scan payload-key restriction, status schema/replay rendering, HTTP 409 blocked scan, HTTP 404 missing batch, no raw path/file-byte/provider URL rendering, no package/source-mixed/connector/provider/execution side-effect requests, no horizontal overflow, headed Chromium proof, and headless Chromium proof.
+
+Runtime behavior introduced by this proof: `false`. Rendered behavior introduced by this proof: `false`. Backend behavior introduced by this proof: `false`. Route/API/DTO/model/migration/service behavior introduced by this proof: `false`.
+
+Executable browser proof introduced by this proof: `true`. Single mockup screen server-authoritative activation proved by this proof: `true`. Full mockup program activation selected: `false`.
+
+Branch-local validation: focused headless activation proof PASS, focused headed activation proof PASS, and broader `source-directory` headless proof PASS.
+
+Still blocked: caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source upload/adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, cloud object-store writes, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, every other unproved mockup control, and full mockup program activation.
+
+Next exact posture: `current_main_sync_source_directory_activation_proof`.
