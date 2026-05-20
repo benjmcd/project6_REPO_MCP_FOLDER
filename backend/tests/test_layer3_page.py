@@ -34,6 +34,8 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="mockup-pdf-location-projection"' in response.text
     assert 'data-projection-state="unavailable"' in response.text
     assert 'id="mockup-sublayers-ab-board"' in response.text
+    assert 'id="mockup-sublayers-ab-projection"' in response.text
+    assert 'data-read-only="true"' in response.text
     assert 'data-visual-source="userflow/layer3_user-flow-overview1.png"' in response.text
     assert 'data-usecase-source="clear-screenshots/userflow_slide1_specific_usecase-example_zoomed-in.png"' in response.text
     assert 'data-pdf-location-source="example-use-case-location-in-pdf.png"' in response.text
@@ -236,6 +238,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".mockup-execution-lanes" in css.text
     assert ".mockup-userflow-board" in css.text
     assert ".mockup-sublayers-ab-board" in css.text
+    assert ".mockup-sublayers-ab-projection" in css.text
+    assert ".mockup-sublayers-ab-live-grid" in css.text
+    assert ".mockup-sublayers-ab-modality-counts" in css.text
+    assert ".mockup-sublayers-ab-source-list" in css.text
     assert ".mockup-ab-ledger" in css.text
     assert ".mockup-ab-group" in css.text
     assert ".mockup-pdf-location-card" in css.text
@@ -287,8 +293,18 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "const LAYER3_MOCKUP_THEME_FIRST_SLICE = 'mockup_theme_shell_and_fixture_projection';" in js.text
     assert "function renderMockupThemeShell" in js.text
     assert "function renderMockupPdfLocationProjection" in js.text
+    assert "function renderMockupSublayersAbLiveProjection" in js.text
+    assert "function mockupSublayersAbServerSources" in js.text
+    assert "function mockupSublayersAbGateLabel" in js.text
     assert "function mockupPdfLocationHighlightSpanCount" in js.text
     assert "State.sessionSummary?.pdf_location_projection" in js.text
+    assert "State.sessionSummary?.sublayer_visualization" in js.text
+    assert "State.materialPreview" in js.text
+    assert "State.gateB" in js.text
+    assert "State.gateC" in js.text
+    assert "Server Sublayers 3A/3B projection unavailable" in js.text
+    assert "Server-owned Sublayers 3A/3B projection" in js.text
+    assert "dataset.liveProjectionReadOnly = 'true'" in js.text
     assert "mockup-pdf-location-highlight" in js.text
     assert "Read-only server projection pending" in js.text
     assert "dataset.themeVariant = LAYER3_MOCKUP_WORKBENCH_THEME" in js.text

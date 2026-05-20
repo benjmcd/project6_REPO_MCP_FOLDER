@@ -7743,3 +7743,29 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Still blocked: actual read-only projection proof until the next implementation pass, single mockup screen server-authoritative activation, full mockup program activation, new write controls, duplicate Gate B/Gate C actions, material mutation, typing mutation, typing override, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening`.
+
+## Mockup Sublayers AB Live State Projection Proof
+
+Proof doc: `892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md`.
+
+Status: `mockup_sublayers_ab_live_state_projection_proven_branch_local`.
+
+Proof branch: `codex/l3-sublayers-ab-projection-proof`.
+
+Selected activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected target: `mockup_sublayers_ab_live_state_projection`.
+
+Rendered surface: `/review/layer3` `#mockup-sublayers-ab-projection` inside `#mockup-sublayers-ab-board`.
+
+State sources: `State.materialPreview`, `State.gateB`, `State.gateC`, `State.sessionSummary.authority_rail`, and `State.sessionSummary.sublayer_visualization`.
+
+Runtime behavior introduced by this proof: `false`. Rendered behavior introduced by this proof: `true`. Backend behavior introduced by this proof: `false`. Route/API/DTO/model/migration/service behavior introduced by this proof: `false`. Executable test behavior introduced by this proof: `true`.
+
+Single mockup screen read-only projection introduced by this proof: `true`. Single mockup screen server-authoritative activation introduced by this proof: `false`. Full mockup program activation introduced by this proof: `false`.
+
+Validation: `node --check .\backend\app\review_ui\static\layer3.js`, `python -m pytest .\backend\tests\test_layer3_page.py -q`, focused headless Chromium `Sublayers AB projection`, focused headed Chromium `Sublayers AB projection`, and existing headless Chromium `mockup workbench theme exposes` all passed.
+
+Still blocked: server-authoritative activation, write controls, duplicate Gate B/Gate C actions, material/typing mutation, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `current_main_sync_mockup_sublayers_ab_live_state_projection_proof`.
