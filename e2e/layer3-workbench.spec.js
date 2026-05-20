@@ -9012,3 +9012,157 @@ test('Layer 3 source-directory activation proof renders blocked scan and missing
   ]);
   expect(pageErrors).toEqual([]);
 });
+
+test('Layer 3 source-directory hybrid rendered status extension stays server-authoritative', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+  });
+
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.setViewportSize({ width: 1360, height: 980 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const extension = page.locator('#source-directory-hybrid-rendered-status-extension');
+  await extension.scrollIntoViewIfNeeded();
+  await expect(extension).toBeVisible();
+  await expect(extension).toHaveAttribute('data-rendered-mode', 'source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension');
+  await expect(extension).toHaveAttribute('data-read-only', 'true');
+  await expect(extension).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(extension).toHaveAttribute('data-extension-state', 'unavailable');
+  await expect(extension).toContainText('source_directory_hybrid_status_unavailable');
+  await expect(extension.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  const authorityPayload = {
+    material_snapshot_id: 'snapshot-source-hybrid-rendered-status',
+    source_ingestion_batch_id: 'batch-source-hybrid-rendered-status',
+    source_ingestion_file_id: 'file-source-hybrid-rendered-status',
+    content_sha256: 'content-sha-source-hybrid-rendered-status',
+    file_identity_hash: 'file-identity-source-hybrid-rendered-status',
+    authority_basis_hash: 'authority-source-hybrid-rendered-status',
+    payload_hash: 'payload-source-hybrid-rendered-status',
+    index_authority_hash: 'text-index-source-hybrid-rendered-status',
+    embedding_index_authority_hash: 'embedding-index-source-hybrid-rendered-status',
+    query_text: 'alpha beta evidence',
+    analysis_question: 'What does the evidence support?',
+    analysis_focus: 'rendered source-directory hybrid status extension proof',
+    qualitative_analysis_hash: 'analysis-hash-source-hybrid-rendered-status',
+    source_directory_hybrid_package_review_preview_hash: 'preview-hash-source-hybrid-rendered-status',
+    construction_basis_hash: 'construction-basis-source-hybrid-rendered-status',
+    reconciliation_record_id: 'reconciliation-source-hybrid-rendered-status',
+    output_package_ids: ['pkg-canonical-source-hybrid-status', 'pkg-user-source-hybrid-status'],
+    package_kinds: ['canonical_internal', 'user_facing'],
+    payload_hashes: ['hash-canonical-source-hybrid-status', 'hash-user-source-hybrid-status'],
+    package_review_submit_record_ref: 'submit-ref-source-hybrid-rendered-status',
+    package_review_state: 'package_review_approved',
+    handoff_target: 'internal_export_envelope',
+    export_mode: 'prepare_only',
+    prepare_record_ref: 'prepare-ref-source-hybrid-rendered-status',
+    handoff_export_state: 'handoff_export_prepared',
+    handoff_export_envelope_ref: 'envelope-ref-source-hybrid-rendered-status',
+    external_export_download_record_ref: 'download-record-source-hybrid-rendered-status',
+    export_download_descriptor_ref: 'download-descriptor-source-hybrid-rendered-status',
+    output_package_id: 'pkg-user-source-hybrid-status',
+    package_kind: 'user_facing',
+    package_payload_hash: 'hash-user-source-hybrid-status',
+  };
+
+  await page.evaluate((payload) => {
+    const authority = document.getElementById('source-directory-hybrid-external-export-download-delivery-authority');
+    authority.value = JSON.stringify(payload);
+    authority.dispatchEvent(new Event('input', { bubbles: true }));
+    renderAll();
+  }, authorityPayload);
+  await expect(extension).toHaveAttribute('data-extension-state', 'status_required');
+  await expect(extension).toContainText('source_directory_hybrid_status_required');
+  await expect(extension).toContainText('State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus');
+  await expect(extension).toContainText('POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status');
+
+  await page.evaluate((payload) => {
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = {
+      schema_id: 'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1',
+      delivery_available: true,
+      delivery_status: 'server_authority_ready',
+      delivery_state: 'external_export_download_delivered',
+      delivery_streaming_performed: false,
+      external_export_download_record_ref: payload.external_export_download_record_ref,
+      export_download_descriptor_ref: payload.export_download_descriptor_ref,
+      output_package_id: payload.output_package_id,
+      package_kind: payload.package_kind,
+      package_payload_hash: payload.package_payload_hash,
+      same_origin_delivery_enabled: true,
+      browser_managed_same_origin_attachment_enabled: true,
+      provider_public_delivery_enabled: false,
+      provider_private_signed_url_enabled: false,
+      connector_dispatch_enabled: false,
+      network_egress_enabled: false,
+      frontend_durable_authority_enabled: false,
+      package_payload_rewrite_enabled: false,
+      source_package_row_mutation_enabled: false,
+      payload_ref_redacted: true,
+      raw_local_path_exposed: false,
+      source_gate: 'source_directory_hybrid_context_packet_qualitative_analysis',
+      validated_delivery_source_gate: 'source_directory_hybrid_context_packet_qualitative_analysis',
+    };
+    renderAll();
+  }, authorityPayload);
+  await expect(extension).toHaveAttribute('data-extension-state', 'status_ready');
+  await expect(extension).toContainText('source_directory_hybrid_status_ready');
+  await expect(extension).toContainText('status matches payload: true');
+  await expect(extension).toContainText('provider public delivery: blocked');
+  await expect(extension).toContainText('browser storage authority: blocked');
+  await expect(extension).toContainText('full mockup activation: blocked');
+
+  await page.evaluate((payload) => {
+    State.sourceDirectoryHybridExternalExportDownloadDelivery = {
+      state: 'external_export_download_delivery_submitted',
+      schemaId: 'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1',
+      externalExportDownloadRecordRef: payload.external_export_download_record_ref,
+      outputPackageId: payload.output_package_id,
+      packagePayloadHash: payload.package_payload_hash,
+    };
+    renderAll();
+  }, authorityPayload);
+  await expect(extension).toHaveAttribute('data-extension-state', 'delivery_submitted');
+  await expect(extension).toContainText('source_directory_hybrid_delivery_submitted');
+  await expect(extension.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  const extensionText = await extension.textContent();
+  for (const forbidden of [
+    'C:\\',
+    '/Users/',
+    'payload_refs',
+    'raw_payload_path',
+    'local_file_path',
+    'file_bytes',
+    'http://',
+    'https://',
+    'signed_url',
+    'provider_credentials',
+  ]) {
+    expect(extensionText).not.toContain(forbidden);
+  }
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await extension.scrollIntoViewIfNeeded();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status',
+    'source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver',
+    'handoff/connector',
+    'provider-private-signed-url',
+    'provider-public-url',
+    'package/mutation',
+  ]);
+});
