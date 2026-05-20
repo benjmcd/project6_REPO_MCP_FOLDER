@@ -385,6 +385,18 @@ def test_layer3_source_directory_material_preview_reaches_gate_b_without_broad_o
     assert str(source_dir) not in str(preview_body)
 
     candidate = preview_body["material_candidate"]
+    rendered_decision_basis = {
+        key: candidate[key]
+        for key in (
+            "source_ref",
+            "query_basis",
+            "provenance_ref",
+            "source_identity",
+            "source_provenance",
+            "payload",
+            "load_summary",
+        )
+    }
     gate_b = client.post(
         "/api/v1/layer3/gate-b/decision",
         json={
@@ -397,7 +409,7 @@ def test_layer3_source_directory_material_preview_reaches_gate_b_without_broad_o
                 {
                     "candidate_id": candidate["candidate_id"],
                     "decision": "approved",
-                    "decision_basis": candidate,
+                    "decision_basis": rendered_decision_basis,
                 }
             ],
         },

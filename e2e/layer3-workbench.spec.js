@@ -8912,7 +8912,91 @@ test('Layer 3 workbench renders source-directory scan and status authority field
     request_id: 'source-directory-rendered-status-proof',
     status: 'already_recorded',
   };
+  const materialPreviewBody = {
+    schema_id: 'layer3.source_directory_material_preview.v1',
+    schema_version: 1,
+    mode: 'source_directory_ingestion_gate_b_material_admission',
+    status: 'available',
+    material_preview_id: 'source-dir-material-preview-rendered-proof',
+    material_preview_hash: 'd'.repeat(64),
+    source_ingestion_batch_id: scanBody.source_ingestion_batch_id,
+    source_ingestion_file_id: scanBody.files[0].source_ingestion_file_id,
+    source_gate: {
+      canonical_source_of_truth: 'L3SourceDirectoryIngestionFile',
+      absolute_path_exposed: false,
+      rag_vector_index_enabled: false,
+      package_construction_enabled: false,
+      recursive_traversal_admitted: true,
+    },
+    material_candidate: {
+      candidate_id: `mat-server_configured_directory_file-${scanBody.files[0].source_ingestion_file_id}`,
+      source_class: 'server_configured_directory_file',
+      source_ref: `source_directory_ingestion_file:${scanBody.files[0].source_ingestion_file_id}`,
+      query_basis: 'source_directory_ingestion_gate_b_material_admission',
+      provenance_ref: (
+        `source_directory_ingestion_batch:${scanBody.source_ingestion_batch_id}`
+        + `:file:${scanBody.files[0].source_ingestion_file_id}`
+        + `:authority:${scanBody.files[0].authority_basis_hash}`
+      ),
+      source_identity: {
+        source_ingestion_batch_id: scanBody.source_ingestion_batch_id,
+        source_ingestion_file_id: scanBody.files[0].source_ingestion_file_id,
+        source_family: scanBody.source_family,
+        source_class: 'server_configured_directory_file',
+        relative_name: scanBody.files[0].relative_name,
+        extension: scanBody.files[0].extension,
+        media_type: scanBody.files[0].media_type,
+        content_size_bytes: scanBody.files[0].content_size_bytes,
+        content_sha256: scanBody.files[0].content_sha256,
+        file_identity_hash: scanBody.files[0].file_identity_hash,
+        authority_basis_hash: scanBody.files[0].authority_basis_hash,
+      },
+      source_provenance: {
+        schema_id: 'layer3.source_directory_ingestion_batch.v1',
+        mode: 'source_directory_ingestion_gate_b_material_admission',
+        runtime_policy_id: scanBody.runtime_policy_id,
+        source_ref: `source_directory_ingestion_file:${scanBody.files[0].source_ingestion_file_id}`,
+        config_authority: scanBody.config_authority,
+        source_root_ref: scanBody.source_root_ref,
+        source_root_absolute_path_exposed: false,
+        direct_child_only: scanBody.direct_child_only,
+        recursive_traversal_admitted: scanBody.recursive_traversal_admitted,
+        source_ingestion_batch_id: scanBody.source_ingestion_batch_id,
+        source_ingestion_file_id: scanBody.files[0].source_ingestion_file_id,
+        directory_fingerprint_hash: 'e'.repeat(64),
+        batch_authority_basis_hash: 'f'.repeat(64),
+        file_authority_basis_hash: scanBody.files[0].authority_basis_hash,
+      },
+      payload: {
+        source_ingestion_batch_id: scanBody.source_ingestion_batch_id,
+        source_ingestion_file_id: scanBody.files[0].source_ingestion_file_id,
+        source_class: 'server_configured_directory_file',
+        content_sha256: scanBody.files[0].content_sha256,
+        file_identity_hash: scanBody.files[0].file_identity_hash,
+        authority_basis_hash: scanBody.files[0].authority_basis_hash,
+        bounded_preview_char_count: 48,
+        preview_truncated: false,
+      },
+      load_summary: {
+        loaded_records: 1,
+        failed_records: 0,
+        preview_material: true,
+        bounded_text_preview: true,
+        source_directory_gate_b_material_admission: true,
+      },
+      preview_text: 'Rendered source-directory material preview text.',
+    },
+  };
+  const gateBBody = {
+    schema_id: 'layer3.gate_b_decision_result.v1',
+    status: 'ok',
+    session_id: 'source-dir-rendered-gate-b-session',
+    approved_candidate_ids: [materialPreviewBody.material_candidate.candidate_id],
+    next_state: 'gate_c_preview_ready',
+  };
   let capturedScanPayload = null;
+  let capturedMaterialPreviewPayload = null;
+  let capturedGateBPayload = null;
 
   await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/scan', async (route) => {
     capturedScanPayload = route.request().postDataJSON();
@@ -8927,6 +9011,22 @@ test('Layer 3 workbench renders source-directory scan and status authority field
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(statusBody),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/material-preview', async (route) => {
+    capturedMaterialPreviewPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(materialPreviewBody),
+    });
+  });
+  await page.route('**/api/v1/layer3/gate-b/decision', async (route) => {
+    capturedGateBPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(gateBBody),
     });
   });
 
@@ -8971,6 +9071,78 @@ test('Layer 3 workbench renders source-directory scan and status authority field
     'layer3.source_directory_ingestion_status.v1',
   );
   await expect(page.locator('#source-directory-ingestion-panel')).toContainText('server replay accepted');
+  await expect(page.locator('.source-directory-material-preview-button')).toBeEnabled();
+  await page.locator('.source-directory-material-preview-button').first().click();
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText(
+    'layer3.source_directory_material_preview.v1',
+  );
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText(
+    'source_directory_ingestion_gate_b_material_admission',
+  );
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText(
+    'Rendered source-directory material preview text.',
+  );
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('raw path exposed: blocked');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('RAG/vector: blocked');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('package construction: blocked');
+  expectOnlyPayloadKeys(capturedMaterialPreviewPayload, [
+    'client_request_id',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'file_identity_hash',
+    'authority_basis_hash',
+    'max_chars',
+  ]);
+  expect(capturedMaterialPreviewPayload.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
+  expect(capturedMaterialPreviewPayload.source_ingestion_file_id).toBe(scanBody.files[0].source_ingestion_file_id);
+  for (const forbiddenKey of ['path', 'directory', 'recursive', 'file_bytes', 'url', 'provider_url', 'package_payload']) {
+    expect(capturedMaterialPreviewPayload).not.toHaveProperty(forbiddenKey);
+  }
+  await expect(page.locator('#source-directory-gate-b-submit')).toBeEnabled();
+  await page.locator('#source-directory-gate-b-submit').click();
+  await expect(page.locator('#source-directory-ingestion-message')).toContainText('Gate B committed session');
+  expectOnlyPayloadKeys(capturedGateBPayload, [
+    'schema_id',
+    'client_request_id',
+    'preflight_id',
+    'source_set_id',
+    'material_preview_id',
+    'material_preview_hash',
+    'actor',
+    'candidate_decisions',
+    'commit_reason',
+  ]);
+  expect(capturedGateBPayload.schema_id).toBe('layer3.gate_b_decision_request.v1');
+  expect(capturedGateBPayload.source_set_id).toBe(scanBody.source_ingestion_batch_id);
+  expect(capturedGateBPayload.material_preview_id).toBe(materialPreviewBody.material_preview_id);
+  expect(capturedGateBPayload.material_preview_hash).toBe(materialPreviewBody.material_preview_hash);
+  expect(capturedGateBPayload.actor).toBe('operator');
+  expect(capturedGateBPayload.commit_reason).toBe('source_directory_gate_b_rendered_admission');
+  expect(capturedGateBPayload.candidate_decisions).toHaveLength(1);
+  const directoryDecision = capturedGateBPayload.candidate_decisions[0];
+  expectOnlyPayloadKeys(directoryDecision, [
+    'candidate_id',
+    'decision',
+    'operator_reason',
+    'decision_basis',
+  ]);
+  expect(directoryDecision.candidate_id).toBe(materialPreviewBody.material_candidate.candidate_id);
+  expect(directoryDecision.decision).toBe('approved');
+  expect(directoryDecision.decision_basis).toMatchObject({
+    source_ref: materialPreviewBody.material_candidate.source_ref,
+    query_basis: materialPreviewBody.material_candidate.query_basis,
+    provenance_ref: materialPreviewBody.material_candidate.provenance_ref,
+    source_identity: materialPreviewBody.material_candidate.source_identity,
+    source_provenance: materialPreviewBody.material_candidate.source_provenance,
+    payload: materialPreviewBody.material_candidate.payload,
+    load_summary: materialPreviewBody.material_candidate.load_summary,
+  });
+  for (const forbiddenKey of ['path', 'directory', 'recursive', 'file_bytes', 'url', 'provider_url', 'package_payload']) {
+    expect(capturedGateBPayload).not.toHaveProperty(forbiddenKey);
+    expect(directoryDecision.decision_basis).not.toHaveProperty(forbiddenKey);
+  }
+  expectNoDeferredRawMixedPayloadFields(capturedGateBPayload);
+  await expect(page.locator('#gate-c-preview')).toBeEnabled();
 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
