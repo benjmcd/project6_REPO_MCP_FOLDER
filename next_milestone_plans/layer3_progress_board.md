@@ -7913,3 +7913,35 @@ Post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, `py
 Still blocked: server-authoritative activation, write controls, plan approval controls in the mockup frame, execution controls in the mockup frame, result review controls in the mockup frame, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `rerun_mockup_to_live_mapping_after_sublayer3c_execution_lanes_live_state_projection_sync`.
+
+## Mockup-To-Live Mapping Inventory After Sublayer 3C Projection Sync
+
+Inventory doc: `898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md`.
+
+Status: `post_sublayer3c_projection_mockup_to_live_mapping_inventory_selected`.
+
+Predecessor current-main sync: `897_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before inventory: `f36d592c04f7ac245dae99c0dc0dd0d4916fb080`.
+
+Selected activation mode for this pass: `mockup_to_live_mapping_inventory_after_sublayer3c_execution_lanes_live_state_projection_sync`.
+
+Already current-main synced server-authoritative mockup-screen activation: `source_directory_ingestion_scan_status_mockup_screen_activation`.
+
+Already current-main synced read-only mockup-screen projections: `mockup_pdf_location_available_state`, `downstream_analysis_environment_projection`, `mockup_sublayers_ab_live_state_projection`, and `mockup_sublayer3c_execution_lanes_live_state_projection`.
+
+Selected next activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected next target: `mockup_query_source_setup_live_state_projection`.
+
+Selected next freeze: `freeze_mockup_query_source_setup_live_state_projection_before_runtime`.
+
+Why this target: the static mockup query/source frame still exists as target-state UI while live server-owned intent, preflight, source-preview, material-preview, source-intake, and source-directory controls already exist outside the mockup frame. A read-only projection can close that visible mapping gap without broad source picker, hidden LLM planning, caller path/file/URL/glob support, or new action authority.
+
+Runtime behavior introduced by this inventory: `false`. Rendered behavior introduced by this inventory: `false`. Backend behavior introduced by this inventory: `false`. Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`. Executable test behavior introduced by this inventory: `false`.
+
+Full mockup program activation selected: `false`. Implementation-entry allowed next: `false`.
+
+Still blocked: implementation before a freeze, rendered query/source projection proof, single mockup screen server-authoritative activation, full mockup program activation, new write control, broad source picker, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `freeze_mockup_query_source_setup_live_state_projection_before_runtime`.
