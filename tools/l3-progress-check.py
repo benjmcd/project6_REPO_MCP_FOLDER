@@ -2566,6 +2566,9 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SY
     PLANNING_DOCS
     / "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION = (
+    PLANNING_DOCS / "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -86483,6 +86486,147 @@ def _check_source_directory_material_preview_gate_b_rendered_control_current_mai
             errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
 
 
+def _check_full_mockup_activation_next_blocker_selection(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION,
+        errors,
+    )
+    entry_key = "full_mockup_activation_next_blocker_selection"
+    status = "full_mockup_activation_next_blocker_selection_completed"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+    )
+    checkpoint = "b54dfc7cbb8a71b6fad25a852d88877e2190b658"
+    selection_branch = "codex/l3-next-blocker-selection"
+    next_posture = "freeze_one_named_full_mockup_activation_target_from_current_main_evidence"
+    target_class = "single_named_server_authoritative_control_or_read_only_projection"
+    full_program_posture = (
+        "blocked_until_all_critical_mockup_operator_journeys_are_live_read_only_excluded_or_blocked"
+    )
+    summary = (
+        "Doc 917 selects the next full-mockup activation posture as a no-runtime freeze for exactly "
+        "one named server-authoritative control or read-only projection from current-main evidence. "
+        "It rejects full-program activation, another inventory-only pass, and immediate broad source/"
+        "package/connector/provider/RAG/browser/auth behavior until a named target has a route/state/"
+        "durable-authority/headed/headless/security contract."
+    )
+
+    for term in (
+        "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md",
+        "Status: no-runtime selection/control artifact for `full_mockup_activation_next_blocker_selection_after_source_directory_gate_b_sync`.",
+        f"Predecessor sync doc: `916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.",
+        f"Current-main checkpoint before selection: `{checkpoint}`.",
+        f"Selection branch: `{selection_branch}`.",
+        f"Selected immediate next pass: `{next_posture}`.",
+        f"Selected activation target class: `{target_class}`.",
+        f"Selected full-program posture: `{full_program_posture}`.",
+        "The next adequate pass is not full mockup activation and not another inventory-only pass.",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION)} "
+                f"missing full mockup activation next blocker selection term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Full Mockup Activation Next Blocker Selection",
+            "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md",
+            status,
+            checkpoint,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 full mockup activation next blocker selection to preserve when present",
+            "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md",
+            status,
+            target_class,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md",
+            status,
+            checkpoint,
+            target_class,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing full mockup activation next blocker selection term: {term}"
+                )
+
+    if not isinstance(manifest, dict):
+        return
+    entry = manifest.get(entry_key)
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        return
+    expected_latest = {
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_predecessor_sync_doc": predecessor_doc,
+        f"latest_{entry_key}_current_main_checkpoint_before_selection": checkpoint,
+        f"latest_{entry_key}_selection_branch": selection_branch,
+        f"latest_{entry_key}_selected_immediate_next_pass": next_posture,
+        f"latest_{entry_key}_selected_activation_target_class": target_class,
+        f"latest_{entry_key}_selected_full_program_posture": full_program_posture,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_selection": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_selection": False,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_selection": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_selection": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_selection": False,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_selection": False,
+        f"latest_{entry_key}_full_mockup_program_activation_selected_now": False,
+        f"latest_{entry_key}_implementation_entry_allowed_next": False,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("doc", doc_path),
+        ("predecessor_sync_doc", predecessor_doc),
+        ("current_main_checkpoint_before_selection", checkpoint),
+        ("selection_branch", selection_branch),
+        ("selected_immediate_next_pass", next_posture),
+        ("selected_activation_target_class", target_class),
+        ("selected_full_program_posture", full_program_posture),
+        ("runtime_behavior_change_introduced_by_selection", False),
+        ("rendered_behavior_change_introduced_by_selection", False),
+        ("backend_behavior_change_introduced_by_selection", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_selection", False),
+        ("executable_test_behavior_change_introduced_by_selection", False),
+        ("production_ui_behavior_change_introduced_by_selection", False),
+        ("full_mockup_program_activation_selected_now", False),
+        ("implementation_entry_allowed_next", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for key, value in expected_entry_values:
+        if entry.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+    for key, value in expected_latest.items():
+        if manifest.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -87279,6 +87423,7 @@ def main() -> int:
     _check_provider_public_url_delivery_use_rendered_control_extension(errors)
     _check_provider_public_url_delivery_use_rendered_control_status_freshness_remediation(errors)
     _check_source_directory_material_preview_gate_b_rendered_control_current_main_sync(errors)
+    _check_full_mockup_activation_next_blocker_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

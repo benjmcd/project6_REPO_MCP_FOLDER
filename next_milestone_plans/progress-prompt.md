@@ -854,3 +854,15 @@ Current Layer 3 source-directory material-preview Gate B rendered control curren
 - preserve validation evidence: `node --check`, focused page pytest, focused source-directory material-preview/Gate-B pytest, focused headless Chromium proof, focused headed Chromium proof, `python ./tools/l3-progress-check.py`, `git diff --check`, and green GitHub `backend-layer3-api` plus `test` checks
 - treat this sync as progress/control metadata only; do not treat it as new runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, full mockup program activation, source expansion beyond server-configured ingestion, caller path/directory/file-byte/URL/glob/recursive controls, connector/destination dispatch, provider/public URL runtime, package mutation/reconstruction expansion, RAG/vector/model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `select_next_blocker_retirement_lane_after_source_directory_material_preview_gate_b_rendered_control_current_main_sync`
+
+Current Layer 3 full mockup activation next blocker selection to preserve when present:
+- `917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md` records a no-runtime selection/control artifact after the source-directory Gate B rendered control current-main sync
+- classify it as `full_mockup_activation_next_blocker_selection_completed`
+- preserve predecessor sync doc `916_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`
+- preserve current-main checkpoint before selection `b54dfc7cbb8a71b6fad25a852d88877e2190b658`
+- preserve selection branch `codex/l3-next-blocker-selection`
+- preserve selected immediate next pass `freeze_one_named_full_mockup_activation_target_from_current_main_evidence`
+- preserve selected activation target class `single_named_server_authoritative_control_or_read_only_projection`
+- preserve selected full-program posture `blocked_until_all_critical_mockup_operator_journeys_are_live_read_only_excluded_or_blocked`
+- treat this selection as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior, production UI behavior, implementation-entry admission, full mockup program activation, mockup-frame write control, broad source/package/connector/provider/RAG/browser/auth behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `freeze_one_named_full_mockup_activation_target_from_current_main_evidence`
