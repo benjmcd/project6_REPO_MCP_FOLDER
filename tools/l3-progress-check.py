@@ -2453,6 +2453,9 @@ LAYER3_SOURCE_DIRECTORY_ACTIVATION_FREEZE = (
 LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF = (
     PLANNING_DOCS / "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -79564,6 +79567,211 @@ def _check_source_directory_activation_proof(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} {key} must be {value!r}")
 
 
+def _check_source_directory_activation_proof_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening`.",
+        "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+        "Proof doc: `887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md`.",
+        "Proof PR: `#1501`.",
+        "Proof branch commit: `e351f88f79f5e69f79a2991c8b971844de8b641e`.",
+        "Proof merge commit: `39b5618b77591feeb4c7a1f405c01cbedadac166`.",
+        "Synced result: `current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Backend behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Single mockup screen server-authoritative activation current-main synced by this sync: `true`.",
+        "Full mockup program activation introduced by this sync: `false`.",
+        "The next exact posture is `rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync`.",
+    ):
+        if term not in sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC)} missing source-directory activation proof current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Activation Proof Current-Main Sync",
+            "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+            "PR `#1501` merge commit `39b5618b77591feeb4c7a1f405c01cbedadac166`",
+            "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+            "rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory activation proof current-main sync to preserve when present",
+            "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+            "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+            "HTTP 409/404 proof",
+            "rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync",
+        ),
+        REFRESH_SPEC: (
+            "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+            "PR `#1501`",
+            "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+            "single mockup screen server-authoritative activation current-main synced as true",
+            "rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync",
+        ),
+        MANIFEST: (
+            '"source_directory_activation_proof_current_main_sync"',
+            '"status": "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof"',
+            '"sync_doc": "next_milestone_plans/Layer3_planning_docs/888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md"',
+            '"proof_pr": "#1501"',
+            '"next_posture": "rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "current_main_sync_source_directory_ingestion_scan_status_mockup_screen_activation_proof"',
+            '"888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md"',
+            '"887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md"',
+            '"PR #1501 merged"',
+            '"rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory activation proof current-main sync term: {term}"
+                )
+
+    expected_scalars = {
+        "status": "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+        "sync_branch": "codex/l3-source-activation-sync",
+        "sync_doc": "next_milestone_plans/Layer3_planning_docs/888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+        "proof_doc": "next_milestone_plans/Layer3_planning_docs/887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+        "proof_pr": "#1501",
+        "proof_branch": "codex/l3-source-activation",
+        "proof_branch_commit": "e351f88f79f5e69f79a2991c8b971844de8b641e",
+        "proof_merge_commit": "39b5618b77591feeb4c7a1f405c01cbedadac166",
+        "current_main_checkpoint_after_merge": "39b5618b77591feeb4c7a1f405c01cbedadac166",
+        "synced_result": "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+        "implemented_activation_mode": "single_mockup_screen_server_authoritative_activation_proof",
+        "implemented_target": "source_directory_ingestion_scan_status_mockup_screen_activation",
+        "implemented_proof_action": "prove_source_directory_ingestion_scan_status_mockup_screen_server_authoritative_activation_without_runtime_widening",
+        "live_activation_surface": "/review/layer3 #source-directory-ingestion-rendered-controls",
+        "rendered_surface_decision": "reuse_existing_source_directory_ingestion_rendered_controls",
+        "scan_route_contract": "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "status_route_contract": "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "request_dto": "Layer3SourceDirectoryIngestionScanRequest",
+        "service_authority": "backend/app/services/layer3_source_directory_ingestion.py",
+        "proof_file": "e2e/layer3-workbench.spec.js",
+        "next_posture": "rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync",
+    }
+    expected_booleans_false = (
+        "runtime_behavior_change_introduced_by_sync",
+        "rendered_behavior_change_introduced_by_sync",
+        "backend_behavior_change_introduced_by_sync",
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_sync",
+        "full_mockup_program_activation_introduced_by_sync",
+    )
+    expected_latest = {
+        "latest_source_directory_activation_proof_current_main_sync_branch": "codex/l3-source-activation-sync",
+        "latest_source_directory_activation_proof_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+        "latest_source_directory_activation_proof_current_main_sync_status": "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+        "latest_source_directory_activation_proof_current_main_sync_pr": "#1501",
+        "latest_source_directory_activation_proof_current_main_sync_merge_commit": "39b5618b77591feeb4c7a1f405c01cbedadac166",
+        "latest_source_directory_activation_proof_current_main_sync_next_posture": "rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync",
+    }
+
+    for loaded, path, object_key in (
+        (manifest, MANIFEST, "source_directory_activation_proof_current_main_sync"),
+        (proof_manifest, PROOF_MANIFEST, "source_directory_activation_proof_current_main_sync"),
+    ):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(object_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {object_key} object")
+            continue
+        expected_entry_scalars = dict(expected_scalars)
+        if path == PROOF_MANIFEST:
+            expected_entry_scalars["proof_kind"] = (
+                "current_main_sync_source_directory_ingestion_scan_status_mockup_screen_activation_proof"
+            )
+        for key, value in expected_entry_scalars.items():
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {object_key}.{key} must be {value!r}")
+        for key, term in (
+            ("durable_authority", "L3SourceDirectoryIngestionBatch"),
+            ("checks", "backend-layer3-api passed 3m12s"),
+            ("checks", "test passed 3m41s"),
+            ("review_gate", "reviewThreads totalCount 0"),
+            ("review_gate", "PR state MERGED"),
+            ("post_merge_validation", "python ./tools/l3-progress-check.py PASS"),
+            ("post_merge_validation", "focused headless Chromium proof PASS"),
+            ("post_merge_validation", "focused headed Chromium proof PASS"),
+            ("proof_coverage", "HTTP 409 source_directory_ingestion_dir_unset"),
+            ("proof_coverage", "HTTP 404 source_directory_ingestion_batch_not_found"),
+            ("blocked_surfaces", "frontend-only durable authority"),
+        ):
+            values = entry.get(key)
+            if not isinstance(values, list) or not any(term in str(value) for value in values):
+                errors.append(f"{_rel(path)} {object_key}.{key} missing {term!r}")
+        for key in expected_booleans_false:
+            if entry.get(key) is not False:
+                errors.append(f"{_rel(path)} {object_key}.{key} must be false")
+        if entry.get("single_mockup_screen_server_authoritative_activation_current_main_synced") is not True:
+            errors.append(
+                f"{_rel(path)} {object_key}.single_mockup_screen_server_authoritative_activation_current_main_synced must be true"
+            )
+        if path == PROOF_MANIFEST:
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} {object_key}.proof_terms must be a list")
+            else:
+                for term in (
+                    "888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md",
+                    "887_SOURCE_DIRECTORY_ACTIVATION_PROOF.md",
+                    "PR #1501 merged",
+                    "e351f88f79f5e69f79a2991c8b971844de8b641e",
+                    "39b5618b77591feeb4c7a1f405c01cbedadac166",
+                    "current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof",
+                    "source_directory_ingestion_dir_unset",
+                    "source_directory_ingestion_batch_not_found",
+                    "backend-layer3-api passed 3m12s",
+                    "test passed 3m41s",
+                    "focused headless Chromium proof PASS",
+                    "focused headed Chromium proof PASS",
+                    "single mockup screen server-authoritative activation current-main synced",
+                    "no full mockup program activation",
+                    "rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} {object_key}.proof_terms missing {term}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+            for key in (
+                "latest_source_directory_activation_proof_current_main_sync_runtime_behavior_change",
+                "latest_source_directory_activation_proof_current_main_sync_rendered_behavior_change",
+                "latest_source_directory_activation_proof_current_main_sync_backend_behavior_change",
+                "latest_source_directory_activation_proof_current_main_sync_route_api_dto_model_migration_service_behavior_change",
+                "latest_source_directory_activation_proof_current_main_sync_full_mockup_program_activation_introduced",
+            ):
+                if current_status.get(key) is not False:
+                    errors.append(f"{_rel(path)} current_status.{key} must be false")
+            if current_status.get(
+                "latest_source_directory_activation_proof_current_main_sync_single_mockup_screen_server_authoritative_activation_current_main_synced"
+            ) is not True:
+                errors.append(
+                    f"{_rel(path)} current_status.latest_source_directory_activation_proof_current_main_sync_single_mockup_screen_server_authoritative_activation_current_main_synced must be true"
+                )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -80301,6 +80509,7 @@ def main() -> int:
     _check_source_directory_activation_selection(errors)
     _check_source_directory_activation_freeze(errors)
     _check_source_directory_activation_proof(errors)
+    _check_source_directory_activation_proof_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

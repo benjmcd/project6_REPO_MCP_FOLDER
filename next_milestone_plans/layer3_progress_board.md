@@ -7641,3 +7641,21 @@ Branch-local validation: focused headless activation proof PASS, focused headed 
 Still blocked: caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source upload/adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, cloud object-store writes, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, every other unproved mockup control, and full mockup program activation.
 
 Next exact posture: `current_main_sync_source_directory_activation_proof`.
+
+## Source Directory Activation Proof Current-Main Sync
+
+Current-main sync: `888_SOURCE_DIRECTORY_ACTIVATION_PROOF_CURRENT_MAIN_SYNC.md` records PR `#1501` merge commit `39b5618b77591feeb4c7a1f405c01cbedadac166`.
+
+Synced result: `current_main_synced_source_directory_ingestion_scan_status_mockup_screen_activation_proof`.
+
+Synced authority: current `main` now includes the bounded source-directory scan/status server-authoritative activation proof for existing `/review/layer3` `#source-directory-ingestion-rendered-controls`.
+
+Checks: `backend-layer3-api` passed in `3m12s`, `test` passed in `3m41s`, reviewThreads totalCount was `0`, PR comments were `0`, latest reviews were `0`, and post-merge local progress, static JS, focused headless Chromium proof, and focused headed Chromium proof passed at `39b5618b77591feeb4c7a1f405c01cbedadac166`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.
+
+Single mockup screen server-authoritative activation current-main synced by this sync: `true`. Full mockup program activation introduced by this sync: `false`.
+
+Still blocked: every other unproved mockup control, caller paths, caller directories, browser file bytes, URL/glob input, caller-selected recursive flags, source upload/adapter expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, cloud object-store writes, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `rerun_mockup_to_live_mapping_after_source_directory_activation_proof_sync`.
