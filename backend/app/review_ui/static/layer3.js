@@ -384,6 +384,7 @@ const elements = {
     mockupThemeShell: document.getElementById('mockup-theme-shell'),
     mockupThemeFrameList: document.getElementById('mockup-frame-list'),
     mockupFixtureScenario: document.getElementById('mockup-fixture-scenario'),
+    mockupQuerySourceSetupProjection: document.getElementById('mockup-query-source-setup-projection'),
     mockupExecutionLanes: document.getElementById('mockup-execution-lanes'),
     mockupExecutionLanesProjection: document.getElementById('mockup-execution-lanes-projection'),
     mockupSublayersAbBoard: document.getElementById('mockup-sublayers-ab-board'),
@@ -544,6 +545,7 @@ function renderMockupThemeShell() {
         });
     }
     renderMockupPdfLocationProjection(active);
+    renderMockupQuerySourceSetupProjection(active);
     renderMockupSublayersAbLiveProjection(active);
     renderMockupExecutionLanesLiveProjection(active);
 }
@@ -593,6 +595,149 @@ function renderMockupPdfLocationProjection(active = State.themePreference === LA
         <div class="mockup-pdf-location-items" aria-label="Server-authoritative PDF location items">
             ${body}
         </div>
+    `;
+}
+
+function mockupQuerySourceArrayCount(value) {
+    return Array.isArray(value) ? value.length : 0;
+}
+
+function mockupQuerySourceStatusState(id) {
+    const element = document.getElementById(id);
+    return element?.dataset?.state || 'not loaded';
+}
+
+function mockupQuerySourceRenderedCounts() {
+    return {
+        sourceIntakeInventoryCount: document.querySelectorAll('#source-intake-inventory-list .source-intake-inventory-item').length,
+        sourceIntakePreviewReady: Boolean(document.querySelector('#source-intake-preview-panel .source-intake-gate-b-admission')),
+        sourceDirectoryAuthorityCount: document.querySelectorAll('#source-directory-ingestion-panel .source-intake-proof-list li').length,
+    };
+}
+
+function mockupQuerySourceSetupServerSources(counts) {
+    const sources = [];
+    const add = (condition, label) => {
+        if (condition && !sources.includes(label)) sources.push(label);
+    };
+
+    add(mockupProjectionObjectLoaded(State.preflight), 'State.preflight');
+    add(mockupProjectionObjectLoaded(State.sourcePreview), 'State.sourcePreview');
+    add(mockupProjectionObjectLoaded(State.materialPreview), 'State.materialPreview');
+    add(counts.sourceIntakeInventoryCount > 0 || counts.sourceIntakePreviewReady, 'source-intake rendered control state');
+    add(counts.sourceDirectoryAuthorityCount > 0, 'source-directory rendered control state');
+    add(mockupProjectionObjectLoaded(State.sessionSummary), 'State.sessionSummary');
+    return sources;
+}
+
+function mockupQuerySourceSetupState() {
+    const counts = mockupQuerySourceRenderedCounts();
+    const selectedClasses = selectedSourceClasses();
+    const sourceCandidates = State.sourcePreview?.source_candidates || [];
+    const materialCandidates = State.materialPreview?.material_candidates || [];
+    const sources = mockupQuerySourceSetupServerSources(counts);
+    return {
+        sources,
+        selectedSourceClassCount: selectedClasses.length,
+        selectedSourceClassLabel: selectedClasses.length
+            ? selectedClasses.map((sourceClass) => humanizeToken(sourceClass)).join(', ')
+            : 'no source classes selected',
+        preflightState: State.preflight?.schema_id ? 'loaded' : 'not loaded',
+        preflightLoaded: mockupProjectionObjectLoaded(State.preflight),
+        sourceCandidateCount: mockupQuerySourceArrayCount(sourceCandidates),
+        materialCandidateCount: mockupQuerySourceArrayCount(materialCandidates),
+        sourceIntakeInventoryCount: counts.sourceIntakeInventoryCount,
+        sourceIntakeStatus: mockupQuerySourceStatusState('source-intake-status'),
+        sourceIntakePreviewReady: counts.sourceIntakePreviewReady,
+        sourceDirectoryAuthorityCount: counts.sourceDirectoryAuthorityCount,
+        sourceDirectoryStatus: mockupQuerySourceStatusState('source-directory-ingestion-message'),
+        sessionSummaryLoaded: mockupProjectionObjectLoaded(State.sessionSummary),
+    };
+}
+
+function mockupQuerySourceSetupStatus(model) {
+    if (!model.sources.length) {
+        return 'Server query/source setup projection unavailable: preflight, source-preview, material-preview, source-intake, source-directory, and session-summary state are not loaded.';
+    }
+    return [
+        mockupCountLabel(model.sourceCandidateCount, 'source candidate'),
+        mockupCountLabel(model.materialCandidateCount, 'material candidate'),
+        `${mockupCountLabel(model.sourceIntakeInventoryCount, 'source-intake inventory row')} and ${mockupCountLabel(model.sourceDirectoryAuthorityCount, 'source-directory authority label')} available from read-only server state.`,
+    ].join(', ');
+}
+
+function renderMockupQuerySourceSetupProjection(active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME) {
+    const fixture = elements.mockupFixtureScenario;
+    const panel = elements.mockupQuerySourceSetupProjection;
+    if (!fixture || !panel) return;
+    if (!active) {
+        fixture.dataset.querySourceProjectionState = 'inactive';
+        panel.dataset.projectionState = 'inactive';
+        panel.innerHTML = '';
+        return;
+    }
+
+    const model = mockupQuerySourceSetupState();
+    const available = model.sources.length > 0
+        && (
+            model.preflightLoaded
+            || model.sourceCandidateCount > 0
+            || model.materialCandidateCount > 0
+            || model.sourceIntakeInventoryCount > 0
+            || model.sourceIntakePreviewReady
+            || model.sourceDirectoryAuthorityCount > 0
+            || model.sessionSummaryLoaded
+        );
+    const sourceList = model.sources.length
+        ? model.sources.map((source) => `<span>${escapeHtml(source)}</span>`).join('')
+        : '<span>server query/source setup state unavailable</span>';
+
+    fixture.dataset.querySourceProjectionState = available ? 'available' : 'unavailable';
+    fixture.dataset.querySourceProjectionReadOnly = 'true';
+    panel.dataset.projectionState = available ? 'available' : 'unavailable';
+    panel.dataset.readOnly = 'true';
+    panel.innerHTML = `
+        <div class="mockup-query-source-projection-head">
+            <span class="mockup-frame-label">Server-owned query/source setup projection</span>
+            <strong>${escapeHtml(available ? 'Live read-only' : 'Read-only unavailable')}</strong>
+            <p>${escapeHtml(mockupQuerySourceSetupStatus(model))}</p>
+        </div>
+        <div class="mockup-query-source-live-grid" aria-label="Read-only query and source setup state counts">
+            <article>
+                <span>Preflight</span>
+                <strong>${escapeHtml(model.preflightState)}</strong>
+                <p>${escapeHtml(model.selectedSourceClassLabel)}</p>
+            </article>
+            <article>
+                <span>Source classes</span>
+                <strong>${escapeHtml(model.selectedSourceClassCount)}</strong>
+                <p>operator-selected existing controls</p>
+            </article>
+            <article>
+                <span>Source preview</span>
+                <strong>${escapeHtml(model.sourceCandidateCount)}</strong>
+                <p>response-safe candidates</p>
+            </article>
+            <article>
+                <span>Material preview</span>
+                <strong>${escapeHtml(model.materialCandidateCount)}</strong>
+                <p>response-safe candidates</p>
+            </article>
+            <article>
+                <span>Source intake</span>
+                <strong>${escapeHtml(model.sourceIntakeInventoryCount)}</strong>
+                <p>${escapeHtml(model.sourceIntakePreviewReady ? 'preview ready' : model.sourceIntakeStatus)}</p>
+            </article>
+            <article>
+                <span>Source directory</span>
+                <strong>${escapeHtml(model.sourceDirectoryAuthorityCount)}</strong>
+                <p>${escapeHtml(model.sourceDirectoryStatus)}</p>
+            </article>
+        </div>
+        <div class="mockup-query-source-source-list" aria-label="Server state sources used by this read-only query/source projection">
+            ${sourceList}
+        </div>
+        ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only query/source setup projection pending</span>'}
     `;
 }
 
@@ -10959,6 +11104,7 @@ init();
         if (!status) return;
         status.textContent = message;
         status.dataset.state = state;
+        renderMockupQuerySourceSetupProjection();
     }
 
     function setSourceIntakeGateBStatus(message, state = 'idle') {
@@ -10966,6 +11112,7 @@ init();
         if (!status) return;
         status.textContent = message;
         status.dataset.state = state;
+        renderMockupQuerySourceSetupProjection();
     }
 
     async function sourceIntakeJson(response) {
@@ -11052,6 +11199,7 @@ init();
         const records = Array.isArray(payload?.records) ? payload.records : [];
         if (!records.length) {
             list.textContent = 'No durable source-intake records returned.';
+            renderMockupQuerySourceSetupProjection();
             return;
         }
         list.innerHTML = records.map((record) => {
@@ -11075,6 +11223,7 @@ init();
                 </article>
             `;
         }).join('');
+        renderMockupQuerySourceSetupProjection();
     }
 
     async function refreshSourceIntakeInventory() {
@@ -11151,6 +11300,7 @@ init();
         `;
         setSourceIntakeStatus('Bounded preview returned by existing source-intake API.', 'ok');
         setSourceIntakeGateBStatus('Gate B admission is ready for the server-previewed material candidate.', 'idle');
+        renderMockupQuerySourceSetupProjection();
     }
 
     async function submitSourceIntakeGateB() {
@@ -11263,6 +11413,7 @@ init();
         if (!element) return;
         element.textContent = message;
         element.dataset.state = status;
+        renderMockupQuerySourceSetupProjection();
     }
 
     function directoryBatchId() {
@@ -11354,6 +11505,7 @@ init();
         if (!panel) return;
         if (state.latestError) {
             panel.innerHTML = renderDirectoryError(state.latestError);
+            renderMockupQuerySourceSetupProjection();
             return;
         }
         if (!payload) {
@@ -11361,6 +11513,7 @@ init();
                 <h3>Directory authority</h3>
                 <p class="muted">No server-configured directory batch has been inspected.</p>
             `;
+            renderMockupQuerySourceSetupProjection();
             return;
         }
         const invariants = payload.negative_invariants || {};
@@ -11415,6 +11568,7 @@ init();
                 <li><strong>connector dispatch:</strong> ${escapeDirectoryText(invariants.connector_dispatch_enabled === false ? 'blocked' : invariants.connector_dispatch_enabled)}</li>
             </ul>
         `;
+        renderMockupQuerySourceSetupProjection();
     }
 
     async function scanSourceDirectory(event) {

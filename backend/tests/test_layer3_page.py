@@ -28,6 +28,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'data-theme-target="layer3_mockup_workbench_theme"' in response.text
     assert 'data-first-slice="mockup_theme_shell_and_fixture_projection"' in response.text
     assert 'id="mockup-fixture-scenario"' in response.text
+    assert 'id="mockup-query-source-setup-projection"' in response.text
+    assert 'aria-label="Read-only query/source setup live state projection"' in response.text
+    assert "Read-only query/source setup projection pending" in response.text
     assert 'id="mockup-execution-lanes"' in response.text
     assert 'id="mockup-execution-lanes-projection"' in response.text
     assert 'aria-label="Read-only Sublayer 3C execution lanes live state projection"' in response.text
@@ -257,6 +260,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".mockup-pdf-summary-card" in css.text
     assert '.mockup-pdf-location-projection[data-projection-state="available"]' in css.text
     assert ".mockup-pdf-location-item" in css.text
+    assert ".mockup-query-source-setup-projection" in css.text
+    assert ".mockup-query-source-live-grid" in css.text
+    assert ".mockup-query-source-source-list" in css.text
     assert ".mockup-userflow-stage" in css.text
     assert ".mockup-canvas-title" in css.text
     assert ".mockup-process-note" in css.text
@@ -300,6 +306,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "const LAYER3_MOCKUP_THEME_FIRST_SLICE = 'mockup_theme_shell_and_fixture_projection';" in js.text
     assert "function renderMockupThemeShell" in js.text
     assert "function renderMockupPdfLocationProjection" in js.text
+    assert "function renderMockupQuerySourceSetupProjection" in js.text
+    assert "function mockupQuerySourceSetupServerSources" in js.text
     assert "function renderMockupSublayersAbLiveProjection" in js.text
     assert "function mockupSublayersAbServerSources" in js.text
     assert "function mockupSublayersAbGateLabel" in js.text
@@ -308,6 +316,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function mockupExecutionLanesSafeState" in js.text
     assert "function mockupPdfLocationHighlightSpanCount" in js.text
     assert "State.sessionSummary?.pdf_location_projection" in js.text
+    assert "State.preflight" in js.text
+    assert "State.sourcePreview" in js.text
     assert "State.sessionSummary?.sublayer_visualization" in js.text
     assert "State.materialPreview" in js.text
     assert "State.gateB" in js.text
@@ -1041,6 +1051,79 @@ def test_layer3_mockup_execution_lanes_projection_reader_is_bounded() -> None:
     assert ".mockup-execution-lanes-live-grid" in css.text
     assert ".mockup-execution-lane-plane-counts" in css.text
     assert ".mockup-execution-lanes-source-list" in css.text
+
+
+def test_layer3_mockup_query_source_setup_projection_reader_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    css = client.get("/review/layer3/static/layer3.css")
+
+    assert js.status_code == 200
+    assert css.status_code == 200
+    helper_start = js.text.find("function mockupQuerySourceArrayCount")
+    source_start = js.text.find("function mockupQuerySourceSetupServerSources")
+    state_start = js.text.find("function mockupQuerySourceSetupState")
+    render_start = js.text.find("function renderMockupQuerySourceSetupProjection")
+    next_start = js.text.find("function mockupSublayersAbServerSources")
+    assert helper_start != -1
+    assert source_start != -1
+    assert state_start != -1
+    assert render_start != -1
+    assert next_start != -1
+
+    source_slice = js.text[source_start:state_start]
+    render_slice = js.text[helper_start:next_start]
+    for required in (
+        "State.preflight",
+        "State.sourcePreview",
+        "State.materialPreview",
+        "source-intake rendered control state",
+        "source-directory rendered control state",
+        "State.sessionSummary",
+    ):
+        assert required in source_slice
+    for required in (
+        "selectedSourceClasses()",
+        "mockup-query-source-projection-head",
+        "mockup-query-source-live-grid",
+        "mockup-query-source-source-list",
+        "dataset.querySourceProjectionState",
+        "dataset.querySourceProjectionReadOnly = 'true'",
+        "Read-only query/source setup projection pending",
+        "Server query/source setup projection unavailable",
+    ):
+        assert required in render_slice
+    for forbidden in (
+        "postJson(",
+        "getJson(",
+        "fetch(",
+        "submitAttachmentForm(",
+        "localStorage",
+        "sessionStorage",
+        "source/intake/upload",
+        "source/intake/inventory",
+        "source/ingestion/server-configured-directory/scan",
+        "source/ingestion/server-configured-directory/status",
+        "gate-b/decision",
+        "gate-c/preview",
+        "package/",
+        "handoff/",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "public_url",
+        "signed_url",
+        "raw_payload_path",
+        "local_file_path",
+        "file_bytes",
+        "browser_file",
+        "vector_store",
+        "optional_tool",
+    ):
+        assert forbidden not in render_slice
+
+    assert ".mockup-query-source-setup-projection" in css.text
+    assert ".mockup-query-source-live-grid" in css.text
+    assert ".mockup-query-source-source-list" in css.text
 
 
 def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None:
