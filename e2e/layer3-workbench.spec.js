@@ -7876,3 +7876,118 @@ test('Layer 3 workbench renders source-directory scan and status authority field
     'execution/start',
   ]);
 });
+
+test('Layer 3 source-directory activation proof renders blocked scan and missing batch states', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+  });
+
+  let capturedScanPayload = null;
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/scan', async (route) => {
+    capturedScanPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 409,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.workbench_error.v1',
+        error_code: 'source_directory_ingestion_dir_unset',
+        message: 'LAYER3_SOURCE_INGESTION_DIR must be set before server-configured directory ingestion can run.',
+        details: {
+          config_authority: 'LAYER3_SOURCE_INGESTION_DIR',
+        },
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/status/**', async (route) => {
+    await route.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.workbench_error.v1',
+        error_code: 'source_directory_ingestion_batch_not_found',
+        message: 'No source directory ingestion batch exists for the requested status.',
+        details: {
+          source_ingestion_batch_id: 'missing-source-dir-batch',
+        },
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const controls = page.locator('#source-directory-ingestion-rendered-controls');
+  const panel = page.locator('#source-directory-ingestion-panel');
+  await controls.scrollIntoViewIfNeeded();
+  await expect(controls).toBeVisible();
+  await page.locator('#source-directory-ingestion-client-request-id').fill('source-directory-activation-proof-blocked');
+  await page.locator('#source-directory-ingestion-scan-submit').click();
+
+  await expect(panel).toContainText('Blocked');
+  await expect(panel).toContainText('source_directory_ingestion_dir_unset');
+  await expect(page.locator('#source-directory-ingestion-message')).toContainText('Directory scan blocked');
+  expectOnlyPayloadKeys(capturedScanPayload, [
+    'client_request_id',
+    'operator_decision',
+    'source_family',
+    'ingestion_mode',
+  ]);
+  for (const forbiddenKey of [
+    'path',
+    'paths',
+    'directory',
+    'local_path',
+    'url',
+    'urls',
+    'glob',
+    'recursive',
+    'file',
+    'files',
+    'file_bytes',
+    'rag_vector_index',
+    'web_connector',
+  ]) {
+    expect(capturedScanPayload).not.toHaveProperty(forbiddenKey);
+  }
+
+  await page.locator('#source-directory-ingestion-batch-id').fill('missing-source-dir-batch');
+  await expect(page.locator('#source-directory-ingestion-status')).toBeEnabled();
+  await page.locator('#source-directory-ingestion-status').click();
+  await expect(panel).toContainText('source_directory_ingestion_batch_not_found');
+  await expect(page.locator('#source-directory-ingestion-message')).toContainText('Directory status blocked');
+  await expect(panel).not.toContainText('C:\\');
+  await expect(panel).not.toContainText('/Users/');
+  await expect(panel).not.toContainText('file_bytes');
+  await expect(panel).not.toContainText('https://');
+
+  expect(apiRequests.filter((request) => (
+    request.method === 'POST'
+    && request.path.endsWith('/source/ingestion/server-configured-directory/scan')
+  ))).toHaveLength(1);
+  expect(apiRequests.filter((request) => (
+    request.method === 'GET'
+    && request.path.includes('/source/ingestion/server-configured-directory/status/')
+  ))).toHaveLength(1);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/mixed-corpus/materialize',
+    'source/ingestion/server-configured-directory/material-preview',
+    'package/mutation',
+    'handoff/connector',
+    'provider-private-signed-url/prepare',
+    'provider-public-url',
+    'execution/start',
+  ]);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  expect(consoleErrors).toEqual([
+    'Failed to load resource: the server responded with a status of 409 (Conflict)',
+    'Failed to load resource: the server responded with a status of 404 (Not Found)',
+  ]);
+  expect(pageErrors).toEqual([]);
+});
