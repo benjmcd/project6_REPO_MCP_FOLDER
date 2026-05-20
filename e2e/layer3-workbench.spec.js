@@ -8088,6 +8088,224 @@ test('Layer 3 mockup Sublayer 3C execution lanes projection renders read-only se
   expect(pageErrors).toEqual([]);
 });
 
+test('Layer 3 mockup query/source setup projection renders read-only server state without runtime widening', async ({ page }, testInfo) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.setViewportSize({ width: 1360, height: 960 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
+
+  await page.evaluate(() => {
+    State.preflight = {
+      schema_id: 'layer3.preflight_response.v1',
+      preflight_id: 'preflight-query-source-live',
+      status: 'passed',
+      raw_payload_path: 'C:\\raw\\forbidden-query-source-preflight.json',
+    };
+    State.sourcePreview = {
+      schema_id: 'layer3.source_preview_response.v1',
+      source_set_id: 'source-set-query-source-live',
+      source_candidates: [
+        {
+          source_candidate_id: 'source-candidate-dataset',
+          source_class: 'dataset_version',
+          payload_ref: 's3://forbidden-source-candidate',
+        },
+        {
+          source_candidate_id: 'source-candidate-aps',
+          source_class: 'aps_content_document',
+          provider_url: 'https://provider.example/forbidden-source',
+        },
+      ],
+    };
+    State.materialPreview = {
+      schema_id: 'layer3.material_preview_response.v1',
+      material_preview_id: 'material-preview-query-source-live',
+      material_preview_hash: 'material-preview-hash',
+      material_candidates: [
+        { candidate_id: 'material-dataset', source_class: 'dataset_version', raw_payload_path: 'C:\\raw\\forbidden-material.json' },
+        { candidate_id: 'material-aps', source_class: 'aps_content_document', signed_url: 'https://provider.example/forbidden-signed-url' },
+        { candidate_id: 'material-derived', source_class: 'aps_content_document', connector_run_id: 'forbidden-connector-run' },
+      ],
+    };
+    State.sessionSummary = {
+      schema_id: 'layer3.session_summary.v1',
+      session_id: 'mockup-query-source-live-session',
+      provider_credentials: 'forbidden-provider-credentials',
+    };
+    const inventory = document.getElementById('source-intake-inventory-list');
+    if (inventory) {
+      inventory.innerHTML = `
+        <article class="source-intake-inventory-item"><strong>Rendered source intake A</strong></article>
+        <article class="source-intake-inventory-item"><strong>Rendered source intake B</strong></article>
+      `;
+    }
+    const intakePreview = document.getElementById('source-intake-preview-panel');
+    if (intakePreview) {
+      intakePreview.innerHTML = '<div class="source-intake-gate-b-admission"><strong>preview ready</strong></div>';
+    }
+    const intakeStatus = document.getElementById('source-intake-status');
+    if (intakeStatus) {
+      intakeStatus.dataset.state = 'ok';
+      intakeStatus.textContent = 'Source intake recorded: forbidden-raw-id-that-must-not-render.';
+    }
+    const directoryMessage = document.getElementById('source-directory-ingestion-message');
+    if (directoryMessage) {
+      directoryMessage.dataset.state = 'ok';
+      directoryMessage.textContent = 'Directory batch status loaded: forbidden-batch-id-that-must-not-render.';
+    }
+    const directoryPanel = document.getElementById('source-directory-ingestion-panel');
+    if (directoryPanel) {
+      directoryPanel.innerHTML = `
+        <ul class="source-intake-proof-list">
+          <li><strong>response schema:</strong> layer3.source_directory_ingestion_status.v1</li>
+          <li><strong>response status:</strong> recorded</li>
+          <li><strong>raw path exposed:</strong> blocked</li>
+        </ul>
+      `;
+    }
+    renderAll();
+  });
+
+  const fixture = page.locator('#mockup-fixture-scenario');
+  const panel = page.locator('#mockup-query-source-setup-projection');
+  await expect(fixture).toHaveAttribute('data-query-source-projection-state', 'available');
+  await expect(fixture).toHaveAttribute('data-query-source-projection-read-only', 'true');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-projection-state', 'available');
+  await expect(panel).toHaveAttribute('data-read-only', 'true');
+  await expect(panel).toContainText('Server-owned query/source setup projection');
+  await expect(panel).toContainText('Preflight');
+  await expect(panel).toContainText('Source classes');
+  await expect(panel).toContainText('Source preview');
+  await expect(panel).toContainText('Material preview');
+  await expect(panel).toContainText('Source intake');
+  await expect(panel).toContainText('Source directory');
+  await expect(panel).toContainText('State.preflight');
+  await expect(panel).toContainText('State.sourcePreview');
+  await expect(panel).toContainText('State.materialPreview');
+  await expect(panel).toContainText('source-intake rendered control state');
+  await expect(panel).toContainText('source-directory rendered control state');
+  await expect(panel).toContainText('State.sessionSummary');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  const projectionProof = await panel.evaluate((element) => ({
+    text: element.textContent || '',
+    html: element.innerHTML,
+    counts: Array.from(element.querySelectorAll('.mockup-query-source-live-grid article')).map((item) => ({
+      label: item.querySelector('span')?.textContent?.trim(),
+      value: item.querySelector('strong')?.textContent?.trim(),
+      detail: item.querySelector('p')?.textContent?.trim(),
+    })),
+    sourceCount: element.querySelectorAll('.mockup-query-source-source-list span').length,
+    localStorageKeys: Object.keys(window.localStorage).filter((key) => key.toLowerCase().includes('mockup-query')),
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+  }));
+  expect(projectionProof.counts).toEqual([
+    { label: 'Preflight', value: 'loaded', detail: 'dataset version, aps content document' },
+    { label: 'Source classes', value: '2', detail: 'operator-selected existing controls' },
+    { label: 'Source preview', value: '2', detail: 'response-safe candidates' },
+    { label: 'Material preview', value: '3', detail: 'response-safe candidates' },
+    { label: 'Source intake', value: '2', detail: 'preview ready' },
+    { label: 'Source directory', value: '3', detail: 'ok' },
+  ]);
+  expect(projectionProof.sourceCount).toBe(6);
+  expect(projectionProof.localStorageKeys).toEqual([]);
+  expect(projectionProof.horizontalOverflow).toBe(false);
+  for (const forbidden of [
+    'C:\\raw\\forbidden-query-source-preflight.json',
+    's3://forbidden-source-candidate',
+    'https://provider.example/forbidden-source',
+    'C:\\raw\\forbidden-material.json',
+    'https://provider.example/forbidden-signed-url',
+    'forbidden-connector-run',
+    'forbidden-provider-credentials',
+    'forbidden-raw-id-that-must-not-render',
+    'forbidden-batch-id-that-must-not-render',
+    'raw_payload_path',
+    'provider_url',
+    'signed_url',
+    'connector_run_id',
+    'destination_id',
+    'provider_credentials',
+    'browser_file',
+    'file_bytes',
+  ]) {
+    expect(projectionProof.text).not.toContain(forbidden);
+    expect(projectionProof.html).not.toContain(forbidden);
+  }
+
+  await testInfo.attach('layer3-mockup-query-source-setup-projection.png', {
+    body: await panel.screenshot(),
+    contentType: 'image/png',
+  });
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(panel).toBeVisible();
+  const mobileFit = await panel.evaluate(() => ({
+    fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+    liveGridColumns: window.getComputedStyle(document.querySelector('.mockup-query-source-live-grid')).gridTemplateColumns.split(' ').filter(Boolean).length,
+  }));
+  expect(mobileFit).toEqual({
+    fitsViewport: true,
+    liveGridColumns: 1,
+  });
+
+  await page.evaluate(() => {
+    State.preflight = null;
+    State.sourcePreview = null;
+    State.materialPreview = null;
+    State.sessionSummary = null;
+    const inventory = document.getElementById('source-intake-inventory-list');
+    if (inventory) inventory.textContent = 'Inventory not loaded.';
+    const preview = document.getElementById('source-intake-preview-panel');
+    if (preview) preview.innerHTML = '<h3>Bounded preview</h3><p class="muted">No source-intake preview loaded.</p>';
+    const directoryPanel = document.getElementById('source-directory-ingestion-panel');
+    if (directoryPanel) {
+      directoryPanel.innerHTML = '<h3>Directory authority</h3><p class="muted">No server-configured directory batch has been inspected.</p>';
+    }
+    const sourceIntakeStatus = document.getElementById('source-intake-status');
+    if (sourceIntakeStatus) sourceIntakeStatus.dataset.state = 'idle';
+    const directoryMessage = document.getElementById('source-directory-ingestion-message');
+    if (directoryMessage) directoryMessage.dataset.state = 'idle';
+    renderAll();
+  });
+  await expect(fixture).toHaveAttribute('data-query-source-projection-state', 'unavailable');
+  await expect(panel).toHaveAttribute('data-projection-state', 'unavailable');
+  await expect(panel).toContainText('Server query/source setup projection unavailable');
+  await expect(panel).toContainText('Read-only query/source setup projection pending');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'preflight',
+    'source-preview',
+    'material-preview',
+    'source/intake',
+    'source/ingestion/server-configured-directory',
+    'gate-b/decision',
+    'gate-c/preview',
+    'package/',
+    'handoff/',
+    'connector',
+    'provider',
+    'rag',
+    'vector',
+  ]);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+});
+
 test('Layer 3 mockup workbench visual diff harness compares repo-local frames', async ({ page }, testInfo) => {
   const frames = loadMockupFrameManifest();
   const apiRequests = trackLayer3ApiRequests(page);

@@ -7975,3 +7975,35 @@ Implementation-entry allowed next: `false` until this freeze is current-main syn
 Still blocked: implementation before current-main sync, actual query/source setup read-only projection proof, new preflight/source-preview/material-preview/source-intake/source-directory/Gate B controls in the mockup frame, broad source picker, caller path/directory/file-byte/URL/glob/recursive-flag support, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `current_main_sync_mockup_query_source_setup_live_state_projection_freeze_then_projection_proof`.
+
+## Mockup Query Source Setup Live State Projection Proof
+
+Proof doc: `900_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF.md`.
+
+Status: `mockup_query_source_setup_live_state_projection_proven_branch_local`.
+
+Proof branch: `codex/l3-query-source-projection`.
+
+Predecessor freeze: `899_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_FREEZE.md`.
+
+Current-main checkpoint before proof: `18721e36d78044166db6e50ceb31dff170dfdb86`.
+
+Selected activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected target: `mockup_query_source_setup_live_state_projection`.
+
+Selected mockup surfaces: `/review/layer3 #mockup-fixture-scenario .mockup-fixture-query`, `/review/layer3 #mockup-userflow-board .mockup-userflow-prompt`, and `/review/layer3 .mockup-pre3a`.
+
+Rendered projection node: `/review/layer3 #mockup-query-source-setup-projection`.
+
+State sources: `State.preflight`, `State.sourcePreview`, `State.materialPreview`, source-intake rendered control state, source-directory rendered control state, and `State.sessionSummary`.
+
+Runtime behavior introduced by this proof: `false`. Rendered behavior introduced by this proof: `true`. Backend behavior introduced by this proof: `false`. Route/API/DTO/model/migration/service behavior introduced by this proof: `false`. Executable test behavior introduced by this proof: `true`.
+
+Single mockup screen read-only projection introduced by this proof: `true`. Single mockup screen server-authoritative activation introduced by this proof: `false`. Full mockup program activation introduced by this proof: `false`.
+
+Validation: `node --check .\backend\app\review_ui\static\layer3.js`, `python -m pytest .\backend\tests\test_layer3_page.py -q`, focused headless Chromium `query/source setup projection`, focused headed Chromium `query/source setup projection`, focused headless Chromium `visual diff harness`, and in-app browser Mockup Workbench projection/no-warning check all passed.
+
+Still blocked: server-authoritative activation, write controls in the mockup frame, preflight/source-preview/material-preview/source-intake/source-directory/Gate B controls in the mockup frame, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `current_main_sync_mockup_query_source_setup_live_state_projection_proof`.
