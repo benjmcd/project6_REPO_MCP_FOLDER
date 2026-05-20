@@ -202,11 +202,14 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'data-rendered-mode="rendered_internal_webhook_dispatch_read_only_status_surface"' in response.text
     assert 'id="provider-public-url-form"' in response.text
     assert 'data-rendered-mode="provider_public_url_prepare_status_revoke_controls"' in response.text
+    assert 'data-rendered-extension="provider_public_url_delivery_use_rendered_control_extension"' in response.text
     assert 'id="provider-public-url-panel"' in response.text
     assert 'id="provider-public-url-prepare"' in response.text
     assert 'id="provider-public-url-status"' in response.text
+    assert 'id="provider-public-url-use"' in response.text
     assert 'id="provider-public-url-revoke"' in response.text
-    assert "Provider-public delivery/use, raw public URL display" in response.text
+    assert 'id="provider-public-url-deliver"' not in response.text
+    assert "The use control records only a server-returned redacted allow/deny decision." in response.text
     assert 'href="/review/layer3/static/layer3.css"' in response.text
     assert 'src="/review/layer3/static/layer3.js"' in response.text
     assert "Plan</button>" in response.text
@@ -356,9 +359,17 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "PROVIDER_PUBLIC_URL_REPLACEABLE_STATES" in js.text
     assert "function providerPublicUrlPrepareRequestId" in js.text
     assert "client_request_id: providerPublicUrlPrepareRequestId()" in js.text
+    assert "function providerPublicUrlUsePayload" in js.text
+    assert "function canUseProviderPublicUrl" in js.text
+    assert "&& !State.providerPublicUrlUse" in js.text
+    assert "State.providerPublicUrlUse = await postJson" in js.text
+    assert "delivery_use_mode: 'fake_provider_redacted_use_decision'" in js.text
+    assert "operator_decision: 'use_provider_public_url_redacted_fake_provider'" in js.text
     assert "provider_public_url_redacted" in js.text
     assert "raw_public_url_exposed" in js.text
     assert "public_url_enabled" in js.text
+    assert "provider_network_enabled" in js.text
+    assert "frontend_durable_authority_enabled" in js.text
     assert "browser_durable_authority: 'blocked_not_persisted'" in js.text
     assert "AUTHORITY_MATRIX_REVIEW_RENDERED_MODE = 'rendered_authority_matrix_read_only_review_surface'" in js.text
     assert "AUTHORITY_MATRIX_REVIEW_USE_CASE = 'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch'" in js.text
@@ -453,9 +464,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "/handoff/export/download/provider-public-url/prepare" in js.text
     assert "/handoff/export/download/provider-public-url/status/" in js.text
     assert "/handoff/export/download/provider-public-url/revoke" in js.text
-    assert "provider-public delivery/use and raw URL exposure remain closed" in js.text
-    assert "provider_public_url/deliver" not in js.text
-    assert "provider_public_url/use" not in js.text
+    assert "/handoff/export/download/provider-public-url/use" in js.text
+    assert "redacted use decision recorded without raw URL exposure" in js.text
+    assert "/handoff/export/download/provider-public-url/deliver" not in js.text
+    assert "provider-public-url-deliver" not in js.text
     assert "LAYER3_PROVIDER_PUBLIC" not in js.text
     assert "function stateActionContractSignature" in js.text
     assert "state_action_contract_signature: stateActionContractSignature(State.sessionSummary)" in js.text
@@ -870,6 +882,42 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "destination:" not in signed_slice
     assert "runtime_db_write:" not in signed_slice
     assert "schema_migration:" not in signed_slice
+
+
+def test_layer3_provider_public_url_use_rendered_control_is_bounded() -> None:
+    html = client.get("/review/layer3").text
+    js = client.get("/review/layer3/static/layer3.js").text
+
+    assert 'data-rendered-extension="provider_public_url_delivery_use_rendered_control_extension"' in html
+    assert 'id="provider-public-url-use"' in html
+    assert 'id="provider-public-url-deliver"' not in html
+
+    payload_start = js.index("function providerPublicUrlUsePayload")
+    payload_end = js.index("function providerPublicUrlRevokePayload")
+    payload_source = js[payload_start:payload_end]
+    assert "client_request_id: requestId()" in payload_source
+    assert "provider_public_url_receipt_id: providerPublicUrlReceiptId()" in payload_source
+    assert "delivery_use_mode: 'fake_provider_redacted_use_decision'" in payload_source
+    assert "operator_decision: 'use_provider_public_url_redacted_fake_provider'" in payload_source
+    assert "expected_authority_hash" in payload_source
+    assert "expected_source_artifact_hash" in payload_source
+    assert "expected_source_artifact_size_bytes" in payload_source
+    assert "provider_network_enabled" not in payload_source
+    assert "connector_dispatch_enabled" not in payload_source
+    assert "package_mutation_enabled" not in payload_source
+
+    use_start = js.index("async function useProviderPublicUrlDecision")
+    use_end = js.index("async function revokeProviderPublicUrl")
+    use_source = js[use_start:use_end]
+    gate_start = js.index("function canUseProviderPublicUrl")
+    gate_end = js.index("function downstreamAccessLifecycleRows")
+    gate_source = js[gate_start:gate_end]
+    assert "&& !State.providerPublicUrlUse" in gate_source
+    assert "'/handoff/export/download/provider-public-url/use'" in use_source
+    assert "providerPublicUrlUsePayload()" in use_source
+    assert "localStorage" not in use_source
+    assert "sessionStorage" not in use_source
+    assert "provider-public-url/deliver" not in use_source
 
 
 def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
