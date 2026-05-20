@@ -2482,6 +2482,10 @@ LAYER3_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_FREEZE = (
     PLANNING_DOCS
     / "895_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_FREEZE.md"
 )
+LAYER3_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF = (
+    PLANNING_DOCS
+    / "896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -81282,6 +81286,271 @@ def _check_mockup_sublayer3c_execution_lanes_live_state_projection_freeze(
             )
 
 
+def _check_mockup_sublayer3c_execution_lanes_live_state_projection_proof(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `mockup_sublayer3c_execution_lanes_live_state_projection`.",
+        "Proof doc: `896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md`.",
+        "Predecessor freeze doc: `895_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_FREEZE.md`.",
+        "Proof branch: `codex/l3-3c-exec-lanes-proof`.",
+        "Current-main checkpoint before this proof: `6f127303ae60e9c3a6ab27ca47800cc1a493f1f4`.",
+        "Selected activation mode: `single_mockup_screen_read_only_projection`.",
+        "Rendered projection node: `/review/layer3` `#mockup-execution-lanes-projection`.",
+        "Runtime behavior introduced by this proof: `false`.",
+        "Rendered behavior introduced by this proof: `true`.",
+        "Backend behavior introduced by this proof: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this proof: `false`.",
+        "Executable test behavior introduced by this proof: `true`.",
+        "Single mockup screen read-only projection introduced by this proof: `true`.",
+        "Single mockup screen server-authoritative activation introduced by this proof: `false`.",
+        "Full mockup program activation introduced by this proof: `false`.",
+        "The next exact posture is `current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF)} missing Sublayer 3C proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Sublayer 3C Execution Lanes Live State Projection Proof",
+            "896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md",
+            "mockup_sublayer3c_execution_lanes_live_state_projection_proven_branch_local",
+            "current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup Sublayer 3C execution-lanes live-state projection proof to preserve when present",
+            "896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md",
+            "mockup_sublayer3c_execution_lanes_live_state_projection_proven_branch_local",
+            "focused headed Chromium `Sublayer 3C execution lanes projection`",
+            "current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof",
+        ),
+        REFRESH_SPEC: (
+            "896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md",
+            "branch-local read-only rendered proof",
+            "#mockup-execution-lanes-projection",
+            "current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof",
+        ),
+        LAYER3_HTML: (
+            'id="mockup-execution-lanes-projection"',
+            'data-read-only="true"',
+            "Read-only 3C server state projection pending",
+        ),
+        LAYER3_CSS: (
+            ".mockup-execution-lanes-projection",
+            ".mockup-execution-lanes-live-grid",
+            ".mockup-execution-lane-plane-counts",
+            ".mockup-execution-lanes-source-list",
+        ),
+        LAYER3_JS: (
+            "function renderMockupExecutionLanesLiveProjection",
+            "function mockupExecutionLanesServerSources",
+            "function mockupExecutionLanesSafeState",
+            "currentSublayerVisualizationModel()",
+            "State.sessionSummary?.analysis_environment_projection",
+            "dataset.liveProjectionReadOnly = 'true'",
+            "Server Sublayer 3C execution-lanes projection unavailable",
+        ),
+        LAYER3_PAGE_TEST: (
+            "test_layer3_mockup_execution_lanes_projection_reader_is_bounded",
+            "function renderMockupExecutionLanesLiveProjection",
+            ".mockup-execution-lanes-live-grid",
+            "dataset.projectionState",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 mockup Sublayer 3C execution lanes projection renders read-only server state without runtime widening",
+            "C:\\\\raw\\\\forbidden-output.json",
+            "https://provider.example/raw-finding",
+            "s3://forbidden-output-ref",
+            "State.sessionSummary.analysis_environment_projection",
+            "data-live-projection-read-only",
+            "Sublayer 3C execution lanes projection",
+        ),
+        MANIFEST: (
+            '"mockup_sublayer3c_execution_lanes_live_state_projection_proof"',
+            '"status": "mockup_sublayer3c_execution_lanes_live_state_projection_proven_branch_local"',
+            '"rendered_projection_node": "/review/layer3 #mockup-execution-lanes-projection"',
+            '"single_mockup_screen_read_only_projection_introduced_by_proof": true',
+            '"next_posture": "current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_sublayer3c_execution_lanes_live_state_projection_proof"',
+            '"896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md"',
+            '"focused headed Chromium proof passed"',
+            '"no browser-storage authority"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing Sublayer 3C proof term: {term}")
+
+    js_text = _read_required_text(LAYER3_JS, errors)
+    start = js_text.find("function mockupExecutionLanesServerSources")
+    end = js_text.find("async function parseResponse")
+    if start == -1 or end == -1 or end <= start:
+        errors.append(f"{_rel(LAYER3_JS)} missing bounded Sublayer 3C execution-lanes projection slice")
+    else:
+        projection_slice = js_text[start:end]
+        for forbidden in (
+            "postJson(",
+            "getJson(",
+            "submitAttachmentForm(",
+            "localStorage",
+            "sessionStorage",
+            "/plan/",
+            "/execution/",
+            "/package/",
+            "/handoff/",
+            "/connector",
+            "/provider",
+            "/source/ingestion",
+            "output_payload_ref",
+            "raw_payload_path",
+            "local_file_path",
+            "download_url",
+            "public_url",
+            "signed_url",
+            "connector_run_id",
+            "destination_id",
+            "provider_credentials",
+            "browser_file",
+            "frontend_only_durable_authority",
+        ):
+            if forbidden in projection_slice:
+                errors.append(
+                    f"{_rel(LAYER3_JS)} Sublayer 3C projection slice must not contain {forbidden!r}"
+                )
+
+    expected_entry = {
+        "status": "mockup_sublayer3c_execution_lanes_live_state_projection_proven_branch_local",
+        "proof_branch": "codex/l3-3c-exec-lanes-proof",
+        "proof_doc": "next_milestone_plans/Layer3_planning_docs/896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md",
+        "predecessor_freeze_doc": "next_milestone_plans/Layer3_planning_docs/895_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_FREEZE.md",
+        "current_main_checkpoint_before_proof": "6f127303ae60e9c3a6ab27ca47800cc1a493f1f4",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection",
+        "selected_target": "mockup_sublayer3c_execution_lanes_live_state_projection",
+        "selected_mockup_surface": "/review/layer3 #mockup-execution-lanes",
+        "rendered_projection_node": "/review/layer3 #mockup-execution-lanes-projection",
+        "runtime_behavior_change_introduced_by_proof": False,
+        "rendered_behavior_change_introduced_by_proof": True,
+        "backend_behavior_change_introduced_by_proof": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_proof": False,
+        "executable_test_behavior_change_introduced_by_proof": True,
+        "single_mockup_screen_read_only_projection_introduced_by_proof": True,
+        "single_mockup_screen_server_authoritative_activation_introduced_by_proof": False,
+        "full_mockup_program_activation_introduced_by_proof": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof",
+    }
+    expected_latest = {
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_branch": "codex/l3-3c-exec-lanes-proof",
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_doc": "next_milestone_plans/Layer3_planning_docs/896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md",
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_status": "mockup_sublayer3c_execution_lanes_live_state_projection_proven_branch_local",
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_selected_target": "mockup_sublayer3c_execution_lanes_live_state_projection",
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_rendered_projection_node": "/review/layer3 #mockup-execution-lanes-projection",
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_runtime_behavior_change_introduced_by_proof": False,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_rendered_behavior_change_introduced_by_proof": True,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_backend_behavior_change_introduced_by_proof": False,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_route_api_dto_model_migration_service_behavior_change_introduced_by_proof": False,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_executable_test_behavior_change_introduced_by_proof": True,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_single_mockup_screen_read_only_projection_introduced_by_proof": True,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_single_mockup_screen_server_authoritative_activation_introduced_by_proof": False,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_full_mockup_program_activation_introduced_by_proof": False,
+        "latest_mockup_sublayer3c_execution_lanes_live_state_projection_proof_next_posture": "current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof",
+    }
+    required_list_terms = (
+        ("state_sources", "currentSublayerVisualizationModel()"),
+        ("state_sources", "State.sessionSummary.sublayer_visualization"),
+        ("state_sources", "State.sessionSummary.analysis_environment_projection"),
+        ("state_sources", "State.sessionSummary.execution_result_review"),
+        ("state_sources", "State.resultStatus"),
+        ("validation", "node --check backend/app/review_ui/static/layer3.js PASS"),
+        ("validation", "python -m pytest backend/tests/test_layer3_page.py -q PASS 7 passed"),
+        ("validation", "npx playwright test e2e/layer3-workbench.spec.js --grep Sublayer 3C execution lanes projection --project=chromium PASS"),
+        ("validation", "npx playwright test e2e/layer3-workbench.spec.js --grep Sublayer 3C execution lanes projection --project=chromium --headed PASS"),
+        ("proof_guards", "no buttons inputs selects textareas or links inside projection"),
+        ("proof_guards", "no local path payload ref provider URL object ref or credential leakage"),
+        ("proof_guards", "no mockup-execution browser-storage authority key"),
+        ("proof_guards", "unavailable state fails closed with Read-only 3C server state projection pending"),
+    )
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_sublayer3c_execution_lanes_live_state_projection_proof")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_sublayer3c_execution_lanes_live_state_projection_proof object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_sublayer3c_execution_lanes_live_state_projection_proof.{key} must be {value!r}"
+                )
+        for key, term in required_list_terms:
+            values = entry.get(key)
+            if not isinstance(values, list) or term not in values:
+                errors.append(
+                    f"{_rel(path)} mockup_sublayer3c_execution_lanes_live_state_projection_proof.{key} missing {term!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_sublayer3c_execution_lanes_live_state_projection_proof":
+                errors.append(
+                    f"{_rel(path)} mockup_sublayer3c_execution_lanes_live_state_projection_proof.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_sublayer3c_execution_lanes_live_state_projection_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md",
+                    "focused headless Chromium proof passed",
+                    "focused headed Chromium proof passed",
+                    "no write controls",
+                    "no forbidden route fragments",
+                    "no raw path payload provider or object ref leakage",
+                    "no browser-storage authority",
+                    "unavailable state fails closed",
+                    "no server-authoritative activation",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(path)} Sublayer 3C proof_terms missing {term}")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif (
+            scope_status.get(
+                "mockup_sublayer3c_execution_lanes_live_state_projection_proof"
+            )
+            != "mockup_sublayer3c_execution_lanes_live_state_projection_proven_branch_local"
+        ):
+            errors.append(
+                f"{_rel(path)} scope_status.mockup_sublayer3c_execution_lanes_live_state_projection_proof mismatch"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -82031,6 +82300,7 @@ def main() -> int:
         errors
     )
     _check_mockup_sublayer3c_execution_lanes_live_state_projection_freeze(errors)
+    _check_mockup_sublayer3c_execution_lanes_live_state_projection_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
