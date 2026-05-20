@@ -7549,6 +7549,232 @@ test('Layer 3 mockup PDF-location projection renders available server state with
   ]);
 });
 
+test('Layer 3 mockup Sublayers AB projection renders read-only server state without runtime widening', async ({ page }, testInfo) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+  await page.setViewportSize({ width: 1360, height: 960 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
+
+  await page.evaluate(() => {
+    const sessionId = 'mockup-sublayers-ab-live-session';
+    const authorityRail = {
+      schema_id: 'layer3.authority_rail.v1',
+      session_id: sessionId,
+      current_gate: 'gate_c',
+      approved_material_count: 3,
+      denied_material_count: 1,
+      typing_status: 'previewed',
+    };
+    State.materialPreview = {
+      schema_id: 'layer3.material_preview_result.v1',
+      session_id: sessionId,
+      material_candidates: [
+        {
+          candidate_id: 'candidate-quantitative-1',
+          source_label: 'Dataset Version candidate',
+          source_class: 'dataset_version',
+          owner_service_source_shape: 'aligned_wide_table',
+          query_basis: 'C:\\raw\\forbidden\\payload.json',
+        },
+        {
+          candidate_id: 'candidate-qualitative-1',
+          source_label: 'APS content document candidate',
+          source_class: 'aps_content_document',
+          owner_service_source_shape: 'traceable_aps_content_document',
+          query_basis: 'https://provider.example/private/raw',
+        },
+        {
+          candidate_id: 'candidate-hybrid-1',
+          source_label: 'Hybrid material candidate',
+          source_class: 'mixed_corpus',
+          owner_service_source_shape: 'hybrid_mixed_material',
+          query_basis: 's3://forbidden/raw-object',
+        },
+      ],
+      authority_rail: authorityRail,
+    };
+    State.gateB = {
+      schema_id: 'layer3.gate_b_decision_result.v1',
+      session_id: sessionId,
+      approved_candidate_ids: ['candidate-quantitative-1', 'candidate-qualitative-1', 'candidate-hybrid-1'],
+      denied_candidate_ids: ['candidate-denied-1'],
+      isolated_candidate_ids: [],
+      flagged_candidate_ids: [],
+      authority_rail: authorityRail,
+    };
+    State.gateC = {
+      schema_id: 'layer3.gate_c_preview_result.v1',
+      session_id: sessionId,
+      typing_records: [
+        {
+          material_snapshot_id: 'snapshot-quantitative-1',
+          planning_shape_family: 'aligned_wide_table',
+          owner_service_source_shape: 'dataset_version',
+          chosen_modality: 'quantitative',
+          confidence: 0.91,
+          authoritative: true,
+        },
+        {
+          material_snapshot_id: 'snapshot-qualitative-1',
+          planning_shape_family: 'traceable_aps_content_document',
+          owner_service_source_shape: 'aps_content_document',
+          chosen_modality: 'qualitative',
+          confidence: 0.87,
+          authoritative: true,
+        },
+        {
+          material_snapshot_id: 'snapshot-hybrid-1',
+          planning_shape_family: 'hybrid_mixed_material',
+          owner_service_source_shape: 'mixed_corpus',
+          chosen_modality: 'hybrid',
+          confidence: 0.83,
+          authoritative: true,
+        },
+      ],
+      unsupported_material: [{
+        material_snapshot_id: 'snapshot-held-1',
+        owner_service_source_shape: 'provider_private_url',
+        reason: 'provider URL must not render here',
+      }],
+      authority_rail: authorityRail,
+    };
+    State.sessionSummary = {
+      schema_id: 'layer3.session_summary.v1',
+      session_id: sessionId,
+      authority_rail: authorityRail,
+      sublayer_visualization: {
+        schema_id: 'layer3.sublayer_visualization_state.v1',
+        authority_source: 'read_only_persisted_layer3_rows',
+        material_objects: [],
+        typing_records: [],
+        analysis_units: [],
+        analysis_sets: [],
+        pass_runs: [],
+        latest_plan: null,
+        no_side_effects: true,
+      },
+    };
+    renderAll();
+  });
+
+  const board = page.locator('#mockup-sublayers-ab-board');
+  const panel = page.locator('#mockup-sublayers-ab-projection');
+  await expect(board).toHaveAttribute('data-live-projection-state', 'available');
+  await expect(board).toHaveAttribute('data-live-projection-read-only', 'true');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-projection-state', 'available');
+  await expect(panel).toHaveAttribute('data-read-only', 'true');
+  await expect(panel).toContainText('Server-owned Sublayers 3A/3B projection');
+  await expect(panel).toContainText('3 read-only 3A material objects and 4 read-only 3B typing objects available from server-owned state.');
+  await expect(panel).toContainText('Sublayer 3A material ledger');
+  await expect(panel).toContainText('Sublayer 3B typing banks');
+  await expect(panel).toContainText('Gate rail posture');
+  await expect(panel).toContainText('Gate C');
+  await expect(panel).toContainText('State.sessionSummary.sublayer_visualization');
+  await expect(panel).toContainText('State.materialPreview');
+  await expect(panel).toContainText('State.gateB');
+  await expect(panel).toContainText('State.gateC');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+  await expect(board.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  const projectionProof = await panel.evaluate((element) => ({
+    text: element.textContent || '',
+    html: element.innerHTML,
+    counts: Array.from(element.querySelectorAll('.mockup-sublayers-ab-modality-counts li')).map((item) => ({
+      modality: item.getAttribute('data-modality'),
+      text: item.textContent.replace(/\s+/g, ' ').trim(),
+    })),
+    sourceCount: element.querySelectorAll('.mockup-sublayers-ab-source-list span').length,
+    localStorageKeys: Object.keys(window.localStorage).filter((key) => key.toLowerCase().includes('sublayer')),
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+  }));
+  expect(projectionProof.counts).toEqual([
+    { modality: 'quantitative', text: 'Quantitative Data 1' },
+    { modality: 'qualitative', text: 'Qualitative Data 1' },
+    { modality: 'hybrid', text: 'Hybrid / Mixed Data 1' },
+    { modality: 'unclassified', text: 'Unclassified / Unsupported 1' },
+  ]);
+  expect(projectionProof.sourceCount).toBe(5);
+  expect(projectionProof.localStorageKeys).toEqual([]);
+  expect(projectionProof.horizontalOverflow).toBe(false);
+  for (const forbidden of [
+    'C:\\raw\\forbidden\\payload.json',
+    'https://provider.example/private/raw',
+    's3://forbidden/raw-object',
+    'output_payload_ref',
+    'diagnostics_ref',
+    'provider_private_url',
+    'provider URL must not render here',
+    'frontend_only_durable_authority',
+  ]) {
+    expect(projectionProof.text).not.toContain(forbidden);
+    expect(projectionProof.html).not.toContain(forbidden);
+  }
+
+  await testInfo.attach('layer3-mockup-sublayers-ab-live-projection.png', {
+    body: await panel.screenshot(),
+    contentType: 'image/png',
+  });
+
+  await page.setViewportSize({ width: 390, height: 900 });
+  await expect(panel).toBeVisible();
+  const mobileFit = await panel.evaluate(() => ({
+    fitsViewport: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) <= window.innerWidth + 1,
+    liveGridColumns: window.getComputedStyle(document.querySelector('.mockup-sublayers-ab-live-grid')).gridTemplateColumns.split(' ').filter(Boolean).length,
+    modalityColumns: window.getComputedStyle(document.querySelector('.mockup-sublayers-ab-modality-counts')).gridTemplateColumns.split(' ').filter(Boolean).length,
+  }));
+  expect(mobileFit).toEqual({
+    fitsViewport: true,
+    liveGridColumns: 1,
+    modalityColumns: 1,
+  });
+
+  await page.evaluate(() => {
+    State.materialPreview = null;
+    State.gateB = null;
+    State.gateC = null;
+    State.sessionSummary = {
+      session_id: 'mockup-sublayers-ab-unavailable-session',
+      sublayer_visualization: null,
+    };
+    renderAll();
+  });
+  await expect(board).toHaveAttribute('data-live-projection-state', 'unavailable');
+  await expect(panel).toHaveAttribute('data-projection-state', 'unavailable');
+  await expect(panel).toContainText('Server Sublayers 3A/3B projection unavailable: material, Gate B, Gate C, and session-summary state are not loaded.');
+  await expect(panel).toContainText('Read-only server state projection pending');
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'material-preview',
+    'gate-b/decision',
+    'gate-c/preview',
+    'gate-c/override',
+    'plan/',
+    'execution/',
+    'package/',
+    'handoff/',
+    'connector',
+    'provider',
+    'source/ingestion',
+    'source/mixed-corpus/materialize',
+  ]);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+});
+
 test('Layer 3 mockup workbench visual diff harness compares repo-local frames', async ({ page }, testInfo) => {
   const frames = loadMockupFrameManifest();
   const apiRequests = trackLayer3ApiRequests(page);

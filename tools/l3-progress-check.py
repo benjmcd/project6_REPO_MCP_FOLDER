@@ -2467,6 +2467,9 @@ LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF = (
+    PLANNING_DOCS / "892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -80387,6 +80390,247 @@ def _check_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync(
                     errors.append(f"{_rel(path)} current_status.{key} must be false")
 
 
+def _check_mockup_sublayers_ab_live_state_projection_proof(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local proof for `mockup_sublayers_ab_live_state_projection`.",
+        "892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md",
+        "Predecessor sync doc: `891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md`.",
+        "Proof branch: `codex/l3-sublayers-ab-projection-proof`.",
+        "Current-main checkpoint before this proof: `2605377bf64c935b2db3fd79e700932bacfb3d8f`.",
+        "Selected activation mode: `single_mockup_screen_read_only_projection`.",
+        "Rendered projection node: `/review/layer3` `#mockup-sublayers-ab-projection`.",
+        "Canonical existing state sources: `State.materialPreview`, `State.gateB`, `State.gateC`, `State.sessionSummary.authority_rail`, and `State.sessionSummary.sublayer_visualization`.",
+        "Runtime behavior introduced by this proof: `false`.",
+        "Rendered behavior introduced by this proof: `true`.",
+        "Backend behavior introduced by this proof: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this proof: `false`.",
+        "Executable test behavior introduced by this proof: `true`.",
+        "Single mockup screen read-only projection introduced by this proof: `true`.",
+        "Single mockup screen server-authoritative activation introduced by this proof: `false`.",
+        "Full mockup program activation introduced by this proof: `false`.",
+        "Implementation-entry allowed next: `false` until this proof is current-main synced.",
+        "The next exact posture is `current_main_sync_mockup_sublayers_ab_live_state_projection_proof`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF)} missing Sublayers AB proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Sublayers AB Live State Projection Proof",
+            "892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md",
+            "mockup_sublayers_ab_live_state_projection_proven_branch_local",
+            "current_main_sync_mockup_sublayers_ab_live_state_projection_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup Sublayers 3A/3B live-state projection proof to preserve when present",
+            "892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md",
+            "mockup_sublayers_ab_live_state_projection_proven_branch_local",
+            "current_main_sync_mockup_sublayers_ab_live_state_projection_proof",
+        ),
+        REFRESH_SPEC: (
+            "892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md",
+            "branch-local read-only rendered proof",
+            "#mockup-sublayers-ab-projection",
+            "current_main_sync_mockup_sublayers_ab_live_state_projection_proof",
+        ),
+        LAYER3_HTML: (
+            'id="mockup-sublayers-ab-projection"',
+            'data-read-only="true"',
+            "Read-only server state projection pending",
+        ),
+        LAYER3_CSS: (
+            ".mockup-sublayers-ab-projection",
+            ".mockup-sublayers-ab-live-grid",
+            ".mockup-sublayers-ab-modality-counts",
+            ".mockup-sublayers-ab-source-list",
+        ),
+        LAYER3_JS: (
+            "function renderMockupSublayersAbLiveProjection",
+            "function mockupSublayersAbServerSources",
+            "function mockupSublayersAbGateLabel",
+            "State.sessionSummary?.sublayer_visualization",
+            "State.materialPreview",
+            "State.gateB",
+            "State.gateC",
+            "dataset.liveProjectionReadOnly = 'true'",
+            "Server Sublayers 3A/3B projection unavailable",
+        ),
+        LAYER3_PAGE_TEST: (
+            "function renderMockupSublayersAbLiveProjection",
+            ".mockup-sublayers-ab-live-grid",
+            "dataset.liveProjectionReadOnly = 'true'",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 mockup Sublayers AB projection renders read-only server state without runtime widening",
+            "page.route('**/favicon.ico'",
+            "frontend_only_durable_authority",
+            "provider_private_url",
+            "State.sessionSummary.sublayer_visualization",
+            "data-live-projection-read-only",
+            "Sublayers AB projection",
+        ),
+        MANIFEST: (
+            '"mockup_sublayers_ab_live_state_projection_proof"',
+            '"status": "mockup_sublayers_ab_live_state_projection_proven_branch_local"',
+            '"rendered_projection_node": "/review/layer3 #mockup-sublayers-ab-projection"',
+            '"single_mockup_screen_read_only_projection_introduced_by_proof": true',
+            '"next_posture": "current_main_sync_mockup_sublayers_ab_live_state_projection_proof"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_sublayers_ab_live_state_projection_proof"',
+            '"892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md"',
+            '"focused headed Chromium proof passed"',
+            '"no browser-storage authority"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing Sublayers AB proof term: {term}")
+
+    js_text = _read_required_text(LAYER3_JS, errors)
+    start = js_text.find("function renderMockupSublayersAbLiveProjection")
+    end = js_text.find("async function parseResponse")
+    if start == -1 or end == -1 or end <= start:
+        errors.append(f"{_rel(LAYER3_JS)} missing bounded Sublayers AB projection slice")
+    else:
+        projection_slice = js_text[start:end]
+        for forbidden in (
+            "postJson(",
+            "getJson(",
+            "localStorage",
+            "sessionStorage",
+            "/material-preview",
+            "/gate-b/decision",
+            "/gate-c/preview",
+            "/gate-c/override",
+            "/plan/",
+            "/execution/",
+            "/package/",
+            "/handoff/",
+            "/connector",
+            "/provider",
+        ):
+            if forbidden in projection_slice:
+                errors.append(
+                    f"{_rel(LAYER3_JS)} Sublayers AB projection slice must not contain {forbidden!r}"
+                )
+
+    expected_entry = {
+        "status": "mockup_sublayers_ab_live_state_projection_proven_branch_local",
+        "proof_branch": "codex/l3-sublayers-ab-projection-proof",
+        "proof_doc": "next_milestone_plans/Layer3_planning_docs/892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md",
+        "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/891_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "current_main_checkpoint_before_proof": "2605377bf64c935b2db3fd79e700932bacfb3d8f",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection",
+        "selected_target": "mockup_sublayers_ab_live_state_projection",
+        "selected_mockup_surface": "/review/layer3 #mockup-sublayers-ab-board",
+        "rendered_projection_node": "/review/layer3 #mockup-sublayers-ab-projection",
+        "runtime_behavior_change_introduced_by_proof": False,
+        "rendered_behavior_change_introduced_by_proof": True,
+        "backend_behavior_change_introduced_by_proof": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_proof": False,
+        "executable_test_behavior_change_introduced_by_proof": True,
+        "single_mockup_screen_read_only_projection_introduced_by_proof": True,
+        "single_mockup_screen_server_authoritative_activation_introduced_by_proof": False,
+        "full_mockup_program_activation_introduced_by_proof": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "current_main_sync_mockup_sublayers_ab_live_state_projection_proof",
+    }
+    expected_latest = {
+        "latest_mockup_sublayers_ab_live_state_projection_proof_branch": "codex/l3-sublayers-ab-projection-proof",
+        "latest_mockup_sublayers_ab_live_state_projection_proof_doc": "next_milestone_plans/Layer3_planning_docs/892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md",
+        "latest_mockup_sublayers_ab_live_state_projection_proof_status": "mockup_sublayers_ab_live_state_projection_proven_branch_local",
+        "latest_mockup_sublayers_ab_live_state_projection_proof_selected_target": "mockup_sublayers_ab_live_state_projection",
+        "latest_mockup_sublayers_ab_live_state_projection_proof_rendered_projection_node": "/review/layer3 #mockup-sublayers-ab-projection",
+        "latest_mockup_sublayers_ab_live_state_projection_proof_runtime_behavior_change_introduced_by_proof": False,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_rendered_behavior_change_introduced_by_proof": True,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_backend_behavior_change_introduced_by_proof": False,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_route_api_dto_model_migration_service_behavior_change_introduced_by_proof": False,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_executable_test_behavior_change_introduced_by_proof": True,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_single_mockup_screen_read_only_projection_introduced_by_proof": True,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_single_mockup_screen_server_authoritative_activation_introduced_by_proof": False,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_full_mockup_program_activation_introduced_by_proof": False,
+        "latest_mockup_sublayers_ab_live_state_projection_proof_next_posture": "current_main_sync_mockup_sublayers_ab_live_state_projection_proof",
+    }
+    required_list_terms = (
+        ("state_sources", "State.materialPreview"),
+        ("state_sources", "State.gateB"),
+        ("state_sources", "State.gateC"),
+        ("state_sources", "State.sessionSummary.authority_rail"),
+        ("state_sources", "State.sessionSummary.sublayer_visualization"),
+        ("validation", "node --check backend/app/review_ui/static/layer3.js PASS"),
+        ("validation", "python -m pytest backend/tests/test_layer3_page.py -q PASS 6 passed"),
+        ("validation", "npx playwright test e2e/layer3-workbench.spec.js --grep Sublayers AB projection --project=chromium PASS"),
+        ("validation", "npx playwright test e2e/layer3-workbench.spec.js --grep Sublayers AB projection --project=chromium --headed PASS"),
+        ("proof_guards", "no buttons inputs selects textareas or links inside projection or board"),
+        ("proof_guards", "no local path payload ref provider URL object store URL or provider-private source-shape leakage"),
+        ("proof_guards", "no sublayer browser-storage authority key"),
+        ("proof_guards", "unavailable state fails closed with Read-only server state projection pending"),
+    )
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_sublayers_ab_live_state_projection_proof")
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing mockup_sublayers_ab_live_state_projection_proof object")
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_proof.{key} must be {value!r}"
+                )
+        for key, term in required_list_terms:
+            values = entry.get(key)
+            if not isinstance(values, list) or term not in values:
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_proof.{key} missing {term!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_sublayers_ab_live_state_projection_proof":
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_proof.proof_kind must be 'mockup_sublayers_ab_live_state_projection_proof'"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_sublayers_ab_live_state_projection_proof.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "892_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF.md",
+                    "focused headless Chromium proof passed",
+                    "focused headed Chromium proof passed",
+                    "no write controls",
+                    "no forbidden route fragments",
+                    "no raw path payload provider or object ref leakage",
+                    "no browser-storage authority",
+                    "unavailable state fails closed",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(path)} Sublayers AB proof_terms missing {term}")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -81130,6 +81374,7 @@ def main() -> int:
     )
     _check_mockup_sublayers_ab_live_state_projection_freeze(errors)
     _check_mockup_sublayers_ab_live_state_projection_freeze_current_main_sync(errors)
+    _check_mockup_sublayers_ab_live_state_projection_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
