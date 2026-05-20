@@ -7883,3 +7883,33 @@ Validation: `node --check .\backend\app\review_ui\static\layer3.js`, `python -m 
 Still blocked: server-authoritative activation, write controls, plan approval controls in the mockup frame, execution controls in the mockup frame, result review controls in the mockup frame, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `current_main_sync_mockup_sublayer3c_execution_lanes_live_state_projection_proof`.
+
+## Mockup Sublayer 3C Execution Lanes Live State Projection Proof Current-Main Sync
+
+Current-main sync: `897_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Synced result: `current_main_synced_mockup_sublayer3c_execution_lanes_live_state_projection_proof`.
+
+Proof doc: `896_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_PROOF.md`.
+
+Proof PR: `#1510`.
+
+Proof branch commit: `b23157cb2896be25c49d04c6415cb91fa6563a30`.
+
+Proof merge commit/current-main authority: `5900e2cc84aba0e8358891fd8c594160216dc979`.
+
+Selected target remains: `mockup_sublayer3c_execution_lanes_live_state_projection`.
+
+Rendered projection node: `/review/layer3` `#mockup-execution-lanes-projection`.
+
+Current-main read-only projection synced: `true`. Single mockup screen server-authoritative activation synced: `false`. Full mockup program activation synced: `false`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`.
+
+Merge gate: `backend-layer3-api` passed in `3m21s`, `test` passed in `3m57s`, PR comments/reviews/latestReviews were `0`, reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and PR state is `MERGED`.
+
+Post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, `python .\tools\l3-progress-check.py`, `node --check .\backend\app\review_ui\static\layer3.js`, `python -m pytest .\backend\tests\test_layer3_page.py -q`, focused headless Chromium `Sublayer 3C execution lanes projection`, focused headed Chromium `Sublayer 3C execution lanes projection`, and `git diff --check` all passed on `project6-origin/main` at `5900e2cc84aba0e8358891fd8c594160216dc979`.
+
+Still blocked: server-authoritative activation, write controls, plan approval controls in the mockup frame, execution controls in the mockup frame, result review controls in the mockup frame, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `rerun_mockup_to_live_mapping_after_sublayer3c_execution_lanes_live_state_projection_sync`.
