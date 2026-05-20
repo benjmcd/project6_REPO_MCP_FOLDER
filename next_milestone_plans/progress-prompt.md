@@ -639,3 +639,16 @@ Current Layer 3 mockup query/source setup live-state projection proof to preserv
 - treat this proof as rendered behavior and executable test behavior only; do not treat it as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, server-authoritative activation, full mockup program activation, new preflight/source/material action, source upload inside the mockup frame, source-directory scan/status action inside the mockup frame, Gate B admission action inside the mockup frame, package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve proof guards: no write controls, no forbidden route fragments, no raw path/payload/provider URL/signed URL/connector/destination/credential/browser-byte leakage, no browser-storage authority, mobile no-overflow proof, no console/page errors, visual diff harness stability, and unavailable-state fail-closed behavior
 - preserve next posture as `current_main_sync_mockup_query_source_setup_live_state_projection_proof`
+
+Current Layer 3 mockup query/source setup live-state projection proof current-main sync to preserve when present:
+- `901_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md` records PR `#1514` merge commit `aaee397f008a0620301ef4bca15704909a7d1da9`
+- classify current main as `current_main_synced_mockup_query_source_setup_live_state_projection_proof`
+- preserve proof branch commit `7ca11881c740018678fade0a126e4b3efdfc80c8`
+- preserve rendered projection node `/review/layer3 #mockup-query-source-setup-projection`
+- preserve current-main read-only projection synced as `true`
+- preserve single mockup screen server-authoritative activation synced as `false`
+- preserve full mockup program activation synced as `false`
+- preserve merge gate evidence: `backend-layer3-api` passed, `test` passed, PR comments/reviews/latestReviews were `0`, reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and PR state was `MERGED`
+- preserve post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, progress check, `node --check`, page pytest, focused headless Chromium `query/source setup projection`, focused headed Chromium `query/source setup projection`, focused headless Chromium `visual diff harness`, and `git diff --check` all passed
+- do not treat this sync as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior introduced by sync, server-authoritative activation, full mockup program activation, new preflight/source/material/source-intake/source-directory/Gate B action admission, package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `rerun_mockup_to_live_mapping_after_query_source_setup_projection_sync`

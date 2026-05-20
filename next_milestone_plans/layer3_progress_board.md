@@ -8007,3 +8007,33 @@ Validation: `node --check .\backend\app\review_ui\static\layer3.js`, `python -m 
 Still blocked: server-authoritative activation, write controls in the mockup frame, preflight/source-preview/material-preview/source-intake/source-directory/Gate B controls in the mockup frame, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `current_main_sync_mockup_query_source_setup_live_state_projection_proof`.
+
+## Mockup Query Source Setup Live State Projection Proof Current-Main Sync
+
+Current-main sync: `901_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Synced result: `current_main_synced_mockup_query_source_setup_live_state_projection_proof`.
+
+Proof doc: `900_MOCKUP_QUERY_SOURCE_SETUP_LIVE_STATE_PROJECTION_PROOF.md`.
+
+Proof PR: `#1514`.
+
+Proof branch commit: `7ca11881c740018678fade0a126e4b3efdfc80c8`.
+
+Proof merge commit/current-main authority: `aaee397f008a0620301ef4bca15704909a7d1da9`.
+
+Selected target remains: `mockup_query_source_setup_live_state_projection`.
+
+Rendered projection node: `/review/layer3 #mockup-query-source-setup-projection`.
+
+Current-main read-only projection synced: `true`. Single mockup screen server-authoritative activation synced: `false`. Full mockup program activation synced: `false`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`.
+
+Merge gate: `backend-layer3-api` passed in `3m13s`, `test` passed in `3m43s`, PR comments/reviews/latestReviews were `0`, reviewThreads totalCount was `0`, mergeability was `MERGEABLE`, merge state was `CLEAN`, and PR state is `MERGED`.
+
+Post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, `python .\tools\l3-progress-check.py`, `node --check .\backend\app\review_ui\static\layer3.js`, `python -m pytest .\backend\tests\test_layer3_page.py -q`, focused headless Chromium `query/source setup projection`, focused headed Chromium `query/source setup projection`, focused headless Chromium `visual diff harness`, and `git diff --check` all passed on `project6-origin/main` at `aaee397f008a0620301ef4bca15704909a7d1da9`.
+
+Still blocked: server-authoritative activation, query/source write controls in the mockup frame, package/handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `rerun_mockup_to_live_mapping_after_query_source_setup_projection_sync`.
