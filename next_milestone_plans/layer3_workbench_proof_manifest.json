@@ -953,7 +953,12 @@
     "latest_mockup_pdf_location_projection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
     "latest_mockup_pdf_location_projection_freeze_status": "mockup_pdf_location_projection_read_only_freeze_recorded",
     "latest_mockup_pdf_location_projection_freeze_next_posture": "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
-    "latest_mockup_pdf_location_projection_freeze_summary": "Doc 881 freezes the existing mockup PDF-location read-only projection before proof hardening. The next admitted pass is only available-state browser and leakage proof over the existing session-summary projection, with no runtime, rendered, backend, route/API/DTO/model/migration/service, source, package, connector, provider, RAG/vector, auth/security, browser-storage, frontend-durable, single-screen activation, or full mockup activation admission."
+    "latest_mockup_pdf_location_projection_freeze_summary": "Doc 881 freezes the existing mockup PDF-location read-only projection before proof hardening. The next admitted pass is only available-state browser and leakage proof over the existing session-summary projection, with no runtime, rendered, backend, route/API/DTO/model/migration/service, source, package, connector, provider, RAG/vector, auth/security, browser-storage, frontend-durable, single-screen activation, or full mockup activation admission.",
+    "latest_mockup_pdf_location_projection_freeze_current_main_sync_branch": "codex/l3-mockup-pdf-freeze-sync",
+    "latest_mockup_pdf_location_projection_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/882_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "latest_mockup_pdf_location_projection_freeze_current_main_sync_status": "current_main_synced_mockup_pdf_location_projection_freeze",
+    "latest_mockup_pdf_location_projection_freeze_current_main_sync_next_posture": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+    "latest_mockup_pdf_location_projection_freeze_current_main_sync_summary": "Doc 882 records current-main sync for PR #1495 merge commit e6959479a785a60a20783edc37454f8f740390d5. The PDF-location projection freeze is current-main synced, and the next admitted action is only available-state browser/leakage proof over the existing session-summary projection without runtime widening."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -34666,5 +34671,82 @@
   "latest_mockup_pdf_location_projection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
   "latest_mockup_pdf_location_projection_freeze_status": "mockup_pdf_location_projection_read_only_freeze_recorded",
   "latest_mockup_pdf_location_projection_freeze_next_posture": "current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof",
-  "latest_mockup_pdf_location_projection_freeze_summary": "Doc 881 freezes the existing mockup PDF-location read-only projection before proof hardening. The next admitted pass is only available-state browser and leakage proof over the existing session-summary projection, with no runtime, rendered, backend, route/API/DTO/model/migration/service, source, package, connector, provider, RAG/vector, auth/security, browser-storage, frontend-durable, single-screen activation, or full mockup activation admission."
+  "latest_mockup_pdf_location_projection_freeze_summary": "Doc 881 freezes the existing mockup PDF-location read-only projection before proof hardening. The next admitted pass is only available-state browser and leakage proof over the existing session-summary projection, with no runtime, rendered, backend, route/API/DTO/model/migration/service, source, package, connector, provider, RAG/vector, auth/security, browser-storage, frontend-durable, single-screen activation, or full mockup activation admission.",
+  "mockup_pdf_location_projection_freeze_current_main_sync_proof": {
+    "proof_kind": "current_main_sync_mockup_pdf_location_projection_freeze",
+    "status": "current_main_synced_mockup_pdf_location_projection_freeze",
+    "sync_branch": "codex/l3-mockup-pdf-freeze-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/882_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+    "freeze_pr": "#1495",
+    "freeze_branch": "codex/l3-mockup-pdf-freeze",
+    "freeze_branch_commit": "a81daf632d4f207610a019726df343a1c07c6e0c",
+    "freeze_merge_commit": "e6959479a785a60a20783edc37454f8f740390d5",
+    "current_main_checkpoint_after_merge": "e6959479a785a60a20783edc37454f8f740390d5",
+    "synced_result": "current_main_synced_mockup_pdf_location_projection_freeze",
+    "selected_proof_action_now_synced": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+    "route_contract": "GET /api/v1/layer3/session/{session_id}",
+    "state_contract": "State.sessionSummary.pdf_location_projection",
+    "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+    "backend_authority": "backend/app/services/layer3_pdf_location.py",
+    "checks": [
+      "backend-layer3-api passed 3m13s",
+      "test passed 3m35s"
+    ],
+    "review_gate": [
+      "comments empty",
+      "reviews empty",
+      "reviewThreads totalCount 0",
+      "unresolved reviewThreads 0",
+      "mergeability MERGEABLE",
+      "merge state CLEAN"
+    ],
+    "post_merge_validation": [
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_pdf_location.py .\\backend\\tests\\test_layer3_page.py::test_layer3_page_route_serves_workbench_shell .\\backend\\tests\\test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS"
+    ],
+    "validation": [
+      "python -m json.tool .\\next_milestone_plans\\layer3_progress_manifest.json > $null",
+      "python -m json.tool .\\next_milestone_plans\\layer3_workbench_proof_manifest.json > $null",
+      "python -m py_compile .\\tools\\l3-progress-check.py",
+      "python .\\tools\\l3-progress-check.py",
+      "python -m pytest .\\backend\\tests\\test_layer3_pdf_location.py .\\backend\\tests\\test_layer3_page.py::test_layer3_page_route_serves_workbench_shell .\\backend\\tests\\test_layer3_page.py::test_layer3_static_assets_are_mounted -q",
+      "git diff --check"
+    ],
+    "sync_live_behavior_change": false,
+    "runtime_behavior_change": false,
+    "rendered_behavior_change": false,
+    "backend_behavior_change": false,
+    "route_api_dto_model_migration_service_behavior_change": false,
+    "single_mockup_screen_server_authoritative_activation_introduced": false,
+    "full_mockup_program_activation_introduced": false,
+    "next_posture": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+    "summary": "Doc 882 records current-main sync for PR #1495 merge commit e6959479a785a60a20783edc37454f8f740390d5. The PDF-location projection freeze is current-main synced, and the next admitted action is only available-state browser/leakage proof over the existing session-summary projection without runtime widening.",
+    "proof_terms": [
+      "882_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+      "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+      "#1495",
+      "a81daf632d4f207610a019726df343a1c07c6e0c",
+      "e6959479a785a60a20783edc37454f8f740390d5",
+      "current_main_synced_mockup_pdf_location_projection_freeze",
+      "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+      "GET /api/v1/layer3/session/{session_id}",
+      "State.sessionSummary.pdf_location_projection",
+      "#mockup-pdf-location-projection",
+      "backend/app/services/layer3_pdf_location.py",
+      "backend-layer3-api passed 3m13s",
+      "test passed 3m35s",
+      "reviewThreads totalCount 0",
+      "no runtime behavior",
+      "no rendered behavior",
+      "no backend behavior",
+      "no single mockup screen server-authoritative activation",
+      "no full mockup program activation"
+    ]
+  },
+  "latest_mockup_pdf_location_projection_freeze_current_main_sync_branch": "codex/l3-mockup-pdf-freeze-sync",
+  "latest_mockup_pdf_location_projection_freeze_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/882_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+  "latest_mockup_pdf_location_projection_freeze_current_main_sync_status": "current_main_synced_mockup_pdf_location_projection_freeze",
+  "latest_mockup_pdf_location_projection_freeze_current_main_sync_next_posture": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+  "latest_mockup_pdf_location_projection_freeze_current_main_sync_summary": "Doc 882 records current-main sync for PR #1495 merge commit e6959479a785a60a20783edc37454f8f740390d5. The PDF-location projection freeze is current-main synced, and the next admitted action is only available-state browser/leakage proof over the existing session-summary projection without runtime widening."
 }
