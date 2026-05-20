@@ -3197,18 +3197,26 @@ function canRevokeProviderPrivateSignedUrl() {
 
 function providerPublicUrlReceiptId() {
     return State.providerPublicUrlRevoke?.provider_public_url_receipt_id
-        || State.providerPublicUrlUse?.provider_public_url_receipt_id
         || State.providerPublicUrlStatus?.provider_public_url_receipt_id
+        || State.providerPublicUrlUse?.provider_public_url_receipt_id
         || State.providerPublicUrlPrepare?.provider_public_url_receipt_id
         || null;
 }
 
 function providerPublicUrlLatestState() {
     return State.providerPublicUrlRevoke?.provider_public_url_state
-        || State.providerPublicUrlUse?.provider_public_url_state
         || State.providerPublicUrlStatus?.provider_public_url_state
+        || State.providerPublicUrlUse?.provider_public_url_state
         || State.providerPublicUrlPrepare?.provider_public_url_state
         || null;
+}
+
+function providerPublicUrlLatestSnapshot() {
+    return State.providerPublicUrlRevoke
+        || State.providerPublicUrlStatus
+        || State.providerPublicUrlUse
+        || State.providerPublicUrlPrepare
+        || {};
 }
 
 function providerPublicUrlAuthorityState() {
@@ -3268,7 +3276,7 @@ function downstreamAccessLifecycleRows() {
     const delivery = State.externalExportDownloadDelivery || {};
     const signedReference = State.externalExportDownloadSignedReferenceUse || State.externalExportDownloadSignedReference || {};
     const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
-    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlUse || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    const providerPublic = providerPublicUrlLatestSnapshot();
     const rows = [
         {
             stage: 'handoff/export prepare',
@@ -3431,7 +3439,7 @@ function layer3E2EGovernanceLifecycleRows() {
     const downstreamState = downstreamAccessLifecycleDashboardState(downstreamRows);
     const latestDownstreamRow = [...downstreamRows].reverse().find((row) => row.state || row.record_ref || row.access_mode) || {};
     const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
-    const providerPublic = State.providerPublicUrlRevoke || State.providerPublicUrlUse || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    const providerPublic = providerPublicUrlLatestSnapshot();
     return [
         {
             key: 'source_intake_gate_b',
@@ -8834,7 +8842,7 @@ function providerPublicUrlDisplayValue(value) {
 }
 
 function renderProviderPublicUrlPanel() {
-    const provider = State.providerPublicUrlRevoke || State.providerPublicUrlUse || State.providerPublicUrlStatus || State.providerPublicUrlPrepare || {};
+    const provider = providerPublicUrlLatestSnapshot();
     const panelState = providerPublicUrlPanelState();
     const audit = provider.audit_receipt || {};
     const rows = {
@@ -11258,14 +11266,16 @@ async function inspectProviderPublicUrlStatus() {
 
 async function useProviderPublicUrlDecision() {
     if (!canUseProviderPublicUrl()) return;
+    const payload = providerPublicUrlUsePayload();
     State.providerPublicUrlPending = true;
     State.providerPublicUrlError = null;
+    State.providerPublicUrlStatus = null;
     renderAll();
     setBusy(elements.providerPublicUrlUse, true, 'Use Redacted Decision');
     try {
         State.providerPublicUrlUse = await postJson(
             '/handoff/export/download/provider-public-url/use',
-            providerPublicUrlUsePayload(),
+            payload,
         );
         addEvent('Provider-public URL redacted use decision recorded without raw URL exposure.');
         renderAll();

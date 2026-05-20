@@ -3924,6 +3924,19 @@ async function submitRenderedProviderPrivateSignedUrl(
   expect(JSON.stringify(publicUse)).not.toContain('provider-public.invalid');
   await expect(page.locator('#provider-public-url-panel')).toContainText('provider_public_url_use_allowed');
   await expect(page.locator('#provider-public-url-panel')).toContainText('redacted_decision_only');
+  await expect(page.locator('#provider-public-url-panel .result-review-card').filter({ hasText: 'delivery use decision' }).locator('p')).toHaveText('allowed');
+  await expect(page.locator('#provider-public-url-use')).toBeDisabled();
+  await expect(page.locator('#provider-public-url-revoke')).toBeEnabled();
+
+  const publicPostUseStatusResponsePromise = page.waitForResponse((response) => (
+    response.url().includes(`/api/v1/layer3/handoff/export/download/provider-public-url/status/${publicPrepare.provider_public_url_receipt_id}`)
+  ));
+  await page.locator('#provider-public-url-status').click();
+  const publicPostUseStatus = await expectJson(await publicPostUseStatusResponsePromise);
+  expect(publicPostUseStatus.provider_public_url_receipt_id).toBe(publicPrepare.provider_public_url_receipt_id);
+  expect(publicPostUseStatus.provider_public_url_state).toBe('provider_public_url_prepared');
+  expect(publicPostUseStatus.schema_id).toBe('layer3.provider_public_url.status.v1');
+  await expect(page.locator('#provider-public-url-panel .result-review-card').filter({ hasText: 'delivery use decision' }).locator('p')).toHaveText('none');
   await expect(page.locator('#provider-public-url-use')).toBeDisabled();
   await expect(page.locator('#provider-public-url-revoke')).toBeEnabled();
 
@@ -4043,6 +4056,7 @@ async function submitRenderedProviderPrivateSignedUrl(
       prepare: publicPrepare,
       status: publicStatus,
       use: publicUse,
+      postUseStatus: publicPostUseStatus,
       revoke: publicRevoke,
       revokedStatus: publicRevokedStatus,
       preparePayload: publicPreparePayload,
@@ -5947,6 +5961,7 @@ test('Layer 3 workbench drives raw mixed rendered provider-private signed URL pr
   expect(providerPrivate.providerPublic.prepare.provider_public_url_state).toBe('provider_public_url_prepared');
   expect(providerPrivate.providerPublic.status.provider_public_url_state).toBe('provider_public_url_prepared');
   expect(providerPrivate.providerPublic.use.delivery_use_decision).toBe('allowed');
+  expect(providerPrivate.providerPublic.postUseStatus.provider_public_url_state).toBe('provider_public_url_prepared');
   expect(providerPrivate.providerPublic.revoke.provider_public_url_state).toBe('provider_public_url_revoked');
   expect(providerPrivate.providerPublic.revokedStatus.provider_public_url_state).toBe('provider_public_url_revoked');
   expect(providerPrivate.revoke.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
@@ -5960,7 +5975,7 @@ test('Layer 3 workbench drives raw mixed rendered provider-private signed URL pr
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/status'))).toHaveLength(2);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-private-signed-url/revoke'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/prepare'))).toHaveLength(1);
-  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/status'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/status'))).toHaveLength(3);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/use'))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/handoff/export/download/provider-public-url/revoke'))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
