@@ -828,3 +828,18 @@ Current Layer 3 provider-public URL delivery/use rendered control extension proo
 - treat this implementation as rendered behavior, production UI behavior, and executable test behavior only
 - do not treat this implementation as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, full mockup program activation, raw provider-public URL delivery, public proxy behavior, byte streaming, provider network/object writes, connector/destination dispatch, package mutation, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `current_main_sync_provider_public_url_delivery_use_rendered_control_extension_then_select_next_blocker_retirement_lane`
+
+Current Layer 3 provider-public URL delivery/use rendered control status-freshness review remediation to preserve when present:
+- `915_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_STATUS_FRESHNESS_REVIEW_REMEDIATION.md` records the PR `#1528` post-merge review remediation for provider-public rendered status freshness
+- classify it as `provider_public_url_delivery_use_rendered_control_status_freshness_review_remediated`
+- preserve current-main preflight commit `77ce23e85edcfdea601b51488adeac3f83a10ab6`
+- preserve remediation branch `codex/l3-provider-use-review-remediation`
+- preserve source review threads `discussion_r3273964977`, `discussion_r3273964981`, and `discussion_r3273964990`
+- preserve review result `valid_findings_remediated`
+- preserve changed rendered owner `backend/app/review_ui/static/layer3.js`
+- preserve static proof `backend/tests/test_layer3_page.py::test_layer3_provider_public_url_use_rendered_control_is_bounded`
+- preserve browser proof `e2e/layer3-workbench.spec.js` test `Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke and provider-public URL prepare status use revoke`
+- preserve the stale-state remediation: `providerPublicUrlLatestSnapshot()` and provider-public lifecycle/panel state prefer `State.providerPublicUrlStatus` over `State.providerPublicUrlUse` after revoke, while use payload is computed before clearing stale status
+- treat this remediation as rendered behavior and executable test behavior only
+- do not treat this remediation as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, full mockup program activation, raw provider-public URL delivery, public proxy behavior, byte streaming, provider network/object writes, connector/destination dispatch, package mutation, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `current_main_sync_provider_public_url_delivery_use_rendered_control_status_freshness_review_remediation_then_select_next_blocker_retirement_lane`

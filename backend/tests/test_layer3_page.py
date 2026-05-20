@@ -360,8 +360,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function providerPublicUrlPrepareRequestId" in js.text
     assert "client_request_id: providerPublicUrlPrepareRequestId()" in js.text
     assert "function providerPublicUrlUsePayload" in js.text
+    assert "function providerPublicUrlLatestSnapshot" in js.text
     assert "function canUseProviderPublicUrl" in js.text
     assert "&& !State.providerPublicUrlUse" in js.text
+    assert "State.providerPublicUrlStatus?.provider_public_url_state" in js.text
+    assert "State.providerPublicUrlUse?.provider_public_url_state" in js.text
     assert "State.providerPublicUrlUse = await postJson" in js.text
     assert "delivery_use_mode: 'fake_provider_redacted_use_decision'" in js.text
     assert "operator_decision: 'use_provider_public_url_redacted_fake_provider'" in js.text
@@ -909,12 +912,23 @@ def test_layer3_provider_public_url_use_rendered_control_is_bounded() -> None:
     use_start = js.index("async function useProviderPublicUrlDecision")
     use_end = js.index("async function revokeProviderPublicUrl")
     use_source = js[use_start:use_end]
+    latest_start = js.index("function providerPublicUrlLatestState")
+    latest_end = js.index("function providerPublicUrlLatestSnapshot")
+    latest_source = js[latest_start:latest_end]
+    snapshot_start = js.index("function providerPublicUrlLatestSnapshot")
+    snapshot_end = js.index("function providerPublicUrlAuthorityState")
+    snapshot_source = js[snapshot_start:snapshot_end]
     gate_start = js.index("function canUseProviderPublicUrl")
     gate_end = js.index("function downstreamAccessLifecycleRows")
     gate_source = js[gate_start:gate_end]
+    assert "State.providerPublicUrlStatus?.provider_public_url_state" in latest_source
+    assert latest_source.index("State.providerPublicUrlStatus?.provider_public_url_state") < latest_source.index("State.providerPublicUrlUse?.provider_public_url_state")
+    assert snapshot_source.index("State.providerPublicUrlStatus") < snapshot_source.index("State.providerPublicUrlUse")
     assert "&& !State.providerPublicUrlUse" in gate_source
     assert "'/handoff/export/download/provider-public-url/use'" in use_source
-    assert "providerPublicUrlUsePayload()" in use_source
+    assert "const payload = providerPublicUrlUsePayload()" in use_source
+    assert "State.providerPublicUrlStatus = null" in use_source
+    assert "payload" in use_source
     assert "localStorage" not in use_source
     assert "sessionStorage" not in use_source
     assert "provider-public-url/deliver" not in use_source
