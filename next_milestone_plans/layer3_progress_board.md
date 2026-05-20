@@ -7487,3 +7487,25 @@ This selection admits no runtime behavior, no rendered behavior, no backend beha
 Still blocked: new buttons/submit controls, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, server-authoritative mockup-screen activation, and full-program scope.
 
 Next exact posture: `freeze_mockup_pdf_location_projection_read_only_before_runtime`.
+
+## Mockup PDF Location Projection Freeze
+
+No-runtime/no-rendered implementation-entry freeze: `881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md`.
+
+Selected activation mode: `single_mockup_screen_read_only_projection_proof_hardening`.
+
+Selected target: `mockup_pdf_location_projection_read_only`.
+
+Selected proof action after current-main sync: `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.
+
+Canonical route/state/rendered contract remains existing `GET /api/v1/layer3/session/{session_id}`, `State.sessionSummary.pdf_location_projection`, and `/review/layer3` `#mockup-pdf-location-projection`.
+
+Canonical backend authority remains `backend/app/services/layer3_pdf_location.py` with schema `layer3.pdf_location_projection.v1`, named use case `pdf_location_from_aps_content_document_citation`, and server authority contract `aps_content_document_chunk_page_refs_and_citation_highlight_spans`.
+
+Audit result: current main already has service, route, state, renderer, static tests, service tests, and unavailable-state browser proof. The remaining gap is available-state browser proof and leakage proof, not missing backend runtime.
+
+The future proof pass may only prove an available server-owned projection renders page labels, chunk ids, bounded text previews, and citation highlight-span counts while preserving unavailable-state fail-closed behavior.
+
+Still blocked: new routes, new DTO fields beyond `pdf_location_projection`, models, migrations, production service behavior changes, raw PDF blobs, PDF byte download, raw output payload refs, diagnostics refs, provider/object-store URLs, local paths, browser-owned PDF authority, new buttons/submit controls, write requests, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector behavior, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
+
+Next exact posture: `current_main_sync_mockup_pdf_location_projection_freeze_then_available_state_browser_proof`.
