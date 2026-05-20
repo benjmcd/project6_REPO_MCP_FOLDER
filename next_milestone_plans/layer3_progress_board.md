@@ -7549,3 +7549,19 @@ Focused proof passed headless before this board update and must pass headed befo
 Still blocked: new routes, new DTO fields beyond `pdf_location_projection`, models, migrations, backend service behavior changes, raw PDF blobs, PDF byte download, raw output payload refs, diagnostics refs, provider/object-store URLs, local paths, browser-owned PDF authority, new write controls, write requests, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector behavior, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
 
 Next exact posture: `current_main_sync_mockup_pdf_location_available_state_browser_proof`.
+
+## Mockup PDF Location Available-State Browser Proof Current-Main Sync
+
+Current-main sync: `884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md` records PR `#1497` merge commit `dbbd021e4229f9bbcc033f8470b59825c96329fd`.
+
+Synced result: `current_main_synced_mockup_pdf_location_available_state_browser_proof`.
+
+Synced behavior: current `main` now includes the bounded mockup PDF-location available-state browser proof and read-only rendered count extension over the existing session-summary projection.
+
+Checks: `backend-layer3-api` passed in `3m24s`, `test` passed in `3m44s`, reviewThreads totalCount was `0`, PR comments were `0`, latest reviews were `0`, and post-merge local progress, focused pytest, and focused headless Chromium proof passed at `dbbd021e4229f9bbcc033f8470b59825c96329fd`.
+
+Runtime behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`.
+
+Still blocked: new routes, new DTO fields beyond `pdf_location_projection`, models, migrations, backend service behavior changes, raw PDF blobs, PDF byte download, raw output payload refs, diagnostics refs, provider/object-store URLs, local paths, browser-owned PDF authority, new write controls, write requests, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector behavior, hidden LLM planning, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
+
+Next exact posture: `select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync`.
