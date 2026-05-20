@@ -2422,6 +2422,10 @@ LAYER3_SOURCE_DIRECTORY_EXTENSION_FREEZE = (
 LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF = (
     PLANNING_DOCS / "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md"
 )
+LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -77918,6 +77922,195 @@ def _check_recursive_source_ingestion_family_selection_freeze(errors: list[str])
                 ):
                     if term not in proof_terms:
                         errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_proof.proof_terms missing {term}")
+
+    source_directory_extension_runtime_sync_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: current-main proof/control sync for `extend_source_directory_ingestion_scan_status_rendered_control`.",
+        "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+        "Runtime proof doc: `878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md`.",
+        "Runtime PR: `#1492`.",
+        "Runtime branch: `codex/l3-source-directory-rendered-authority-extension`.",
+        "Runtime merge commit: `7281432b976f434b94a5ee034a9210dccb88bcc0`.",
+        "Synced result: `current_main_synced_source_directory_extension_runtime`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Full mockup program activation introduced by this sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS`, `3m37s`",
+        "`test`: `SUCCESS`, `3m39s`",
+        "reviewThreads totalCount: `0`",
+        "The next exact posture is `select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync`.",
+    ):
+        if term not in source_directory_extension_runtime_sync_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC)} missing source-directory extension runtime sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source Directory Extension Runtime Current-Main Sync",
+            "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1492` merge commit `7281432b976f434b94a5ee034a9210dccb88bcc0`",
+            "current_main_synced_source_directory_extension_runtime",
+            "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory extension runtime current-main sync to preserve when present",
+            "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "PR `#1492` merge commit `7281432b976f434b94a5ee034a9210dccb88bcc0`",
+            "current_main_synced_source_directory_extension_runtime",
+            "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+        ),
+        REFRESH_SPEC: (
+            "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+            "current-main sync for the bounded source-directory rendered-control extension",
+            "current_main_synced_source_directory_extension_runtime",
+            "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+        ),
+        MANIFEST: (
+            '"source_directory_extension_runtime_current_main_sync"',
+            '"status": "current_main_synced_source_directory_extension_runtime"',
+            '"doc": "next_milestone_plans/Layer3_planning_docs/879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md"',
+            '"runtime_pr": "#1492"',
+            '"runtime_merge_commit": "7281432b976f434b94a5ee034a9210dccb88bcc0"',
+            '"runtime_behavior_introduced_by_sync": false',
+            '"rendered_behavior_introduced_by_sync": false',
+            '"next_posture": "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync"',
+        ),
+        PROOF_MANIFEST: (
+            '"source_directory_extension_runtime_current_main_sync_proof"',
+            '"proof_kind": "current_main_synced_source_directory_extension_runtime"',
+            '"879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md"',
+            '"PR #1492 merged"',
+            '"7281432b976f434b94a5ee034a9210dccb88bcc0"',
+            '"select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing source-directory extension runtime sync term: {term}")
+
+    if isinstance(manifest, dict):
+        sync_entry = manifest.get("source_directory_extension_runtime_current_main_sync")
+        if not isinstance(sync_entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing source_directory_extension_runtime_current_main_sync object")
+        else:
+            expected_sync_scalars = {
+                "status": "current_main_synced_source_directory_extension_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-source-directory-current-main-sync",
+                "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+                "runtime_pr": "#1492",
+                "runtime_branch": "codex/l3-source-directory-rendered-authority-extension",
+                "runtime_branch_commit": "108e5e18",
+                "runtime_merge_commit": "7281432b976f434b94a5ee034a9210dccb88bcc0",
+                "synced_result": "current_main_synced_source_directory_extension_runtime",
+                "selected_implementation_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+                "runtime_behavior_introduced_by_runtime": False,
+                "rendered_behavior_introduced_by_runtime": True,
+                "route_api_dto_model_migration_service_behavior_introduced_by_runtime": False,
+                "runtime_behavior_introduced_by_sync": False,
+                "rendered_behavior_introduced_by_sync": False,
+                "route_api_dto_model_migration_service_behavior_introduced_by_sync": False,
+                "full_mockup_program_activation_introduced_by_sync": False,
+                "rendered_panel": "#source-directory-ingestion-rendered-controls",
+                "rendered_route": "/review/layer3",
+                "next_posture": "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+            }
+            for key, value in expected_sync_scalars.items():
+                if sync_entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} source_directory_extension_runtime_current_main_sync.{key} must be {value!r}")
+            checks = sync_entry.get("checks")
+            if not isinstance(checks, dict):
+                errors.append(f"{_rel(MANIFEST)} source_directory_extension_runtime_current_main_sync.checks must be an object")
+            else:
+                for key, value in {
+                    "backend-layer3-api": "SUCCESS 3m37s",
+                    "test": "SUCCESS 3m39s",
+                    "reviewThreads_totalCount": 0,
+                    "comments": 0,
+                    "latest_reviews": 0,
+                }.items():
+                    if checks.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} source_directory_extension_runtime_current_main_sync.checks.{key} must be {value!r}")
+            current_status = manifest.get("current_status")
+            if not isinstance(current_status, dict):
+                errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+            else:
+                for key, value in {
+                    "latest_mockup_mapping_selection_branch": "codex/l3-source-directory-rendered-authority-extension",
+                    "latest_source_directory_extension_freeze_branch": "codex/l3-source-directory-rendered-authority-extension",
+                    "latest_source_directory_extension_runtime_branch": "codex/l3-source-directory-rendered-authority-extension",
+                    "latest_source_directory_extension_runtime_current_main_sync_status": "current_main_synced_source_directory_extension_runtime",
+                    "latest_source_directory_extension_runtime_current_main_sync_pr": "#1492",
+                    "latest_source_directory_extension_runtime_current_main_sync_merge_commit": "7281432b976f434b94a5ee034a9210dccb88bcc0",
+                    "latest_source_directory_extension_runtime_current_main_sync_runtime_behavior_change": False,
+                    "latest_source_directory_extension_runtime_current_main_sync_rendered_behavior_change": False,
+                    "latest_source_directory_extension_runtime_current_main_sync_route_api_dto_model_migration_service_behavior_change": False,
+                    "latest_source_directory_extension_runtime_current_main_sync_next_posture": "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+                }.items():
+                    if current_status.get(key) != value:
+                        errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("source_directory_extension_runtime_current_main_sync_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing source_directory_extension_runtime_current_main_sync_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "current_main_synced_source_directory_extension_runtime",
+                "status": "current_main_synced_source_directory_extension_runtime",
+                "doc": "next_milestone_plans/Layer3_planning_docs/879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                "branch": "codex/l3-source-directory-current-main-sync",
+                "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+                "runtime_pr": "#1492",
+                "runtime_branch": "codex/l3-source-directory-rendered-authority-extension",
+                "runtime_branch_commit": "108e5e18",
+                "runtime_merge_commit": "7281432b976f434b94a5ee034a9210dccb88bcc0",
+                "synced_result": "current_main_synced_source_directory_extension_runtime",
+                "selected_implementation_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+                "runtime_behavior_introduced_by_runtime": False,
+                "rendered_behavior_introduced_by_runtime": True,
+                "route_api_dto_model_migration_service_behavior_introduced_by_runtime": False,
+                "runtime_behavior_introduced_by_sync": False,
+                "rendered_behavior_introduced_by_sync": False,
+                "route_api_dto_model_migration_service_behavior_introduced_by_sync": False,
+                "full_mockup_program_activation_introduced_by_sync": False,
+                "rendered_panel": "#source-directory-ingestion-rendered-controls",
+                "rendered_route": "/review/layer3",
+                "next_posture": "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_current_main_sync_proof.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_current_main_sync_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+                    "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+                    "PR #1492 merged",
+                    "7281432b976f434b94a5ee034a9210dccb88bcc0",
+                    "backend-layer3-api SUCCESS 3m37s",
+                    "test SUCCESS 3m39s",
+                    "reviewThreads totalCount 0",
+                    "post-merge validation passed",
+                    "current_main_synced_source_directory_extension_runtime",
+                    "#source-directory-ingestion-rendered-controls",
+                    "/review/layer3",
+                    "no runtime behavior introduced by sync",
+                    "no rendered behavior introduced by sync",
+                    "no route/API/DTO/model/migration/service behavior introduced by sync",
+                    "no full mockup program activation introduced by sync",
+                    "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} source_directory_extension_runtime_current_main_sync_proof.proof_terms missing {term}")
 
 
 def main() -> int:

@@ -405,3 +405,10 @@ Current Layer 3 source-directory extension runtime proof to preserve when presen
 - preserve headed Chromium and headless Chromium proof as passed for the focused source-directory rendered-control test
 - do not treat this proof as caller path support, browser file-byte support, URL/glob support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, or full mockup program activation
 - preserve next posture as `current_main_sync_source_directory_extension_runtime`
+
+Current Layer 3 source-directory extension runtime current-main sync to preserve when present:
+- `879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1492` merge commit `7281432b976f434b94a5ee034a9210dccb88bcc0`
+- classify current main as `current_main_synced_source_directory_extension_runtime`
+- preserve the live behavior as only the bounded rendered extension over the existing `/review/layer3` source-directory scan/status control from existing scan/status response fields
+- do not treat the sync as backend runtime behavior, rendered behavior introduced by sync, route/API/DTO/model/migration/service behavior change, caller path support, browser file-byte support, URL/glob support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, or full mockup program activation
+- preserve next posture as `select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync`
