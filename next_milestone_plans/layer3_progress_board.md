@@ -7685,3 +7685,33 @@ Runtime behavior introduced by this inventory: `false`. Rendered behavior introd
 Still blocked: implementation before a freeze, full mockup program activation, new write controls, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `freeze_mockup_sublayers_ab_live_state_projection_before_runtime`.
+
+## Mockup Sublayers AB Live State Projection Freeze
+
+No-runtime/no-rendered freeze: `890_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE.md`.
+
+Freeze status: `mockup_sublayers_ab_live_state_projection_frozen`.
+
+Predecessor inventory: `889_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SOURCE_DIRECTORY_ACTIVATION_SYNC.md`.
+
+Current-main checkpoint before this freeze: `bc323f714dba7c1ee960e0758e5a48c4c46c2f2c`.
+
+Selected activation mode: `single_mockup_screen_read_only_projection_freeze`.
+
+Selected target: `mockup_sublayers_ab_live_state_projection`.
+
+Selected proof action: `prove_mockup_sublayers_ab_live_state_projection_without_runtime_widening`.
+
+Selected mockup surface: `/review/layer3` `#mockup-sublayers-ab-board`.
+
+Selected live state sources: `/review/layer3` `#gate-b-band`, `/review/layer3` `#gate-c-band`, and `/review/layer3` `#sublayer-map-panel`.
+
+Canonical authority: existing `GET /api/v1/layer3/session/{session_id}`, `POST /api/v1/layer3/material-preview`, `POST /api/v1/layer3/gate-b/decision`, `POST /api/v1/layer3/gate-c/preview`, blocked `POST /api/v1/layer3/gate-c/override`, durable `L3SelectionManifest`, `L3MaterialSnapshot`, `L3TypingRecord`, `L3AnalysisUnit`, `L3AnalysisGroup`, `L3AnalysisSet`, and read-only `session_sublayer_visualization_state`.
+
+Future proof boundary: read-only projection over `State.materialPreview`, `State.gateB`, `State.gateC`, and `State.sessionSummary.sublayer_visualization`; no new actions, no duplicate Gate B/Gate C controls, no material or typing mutation, no raw paths or payload refs, no browser-storage authority, and no frontend-only durable authority.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.
+
+Still blocked: implementation before current-main sync, single mockup screen read-only projection proof, single mockup screen server-authoritative activation, full mockup program activation, new write controls, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `current_main_sync_mockup_sublayers_ab_live_state_projection_freeze_then_projection_proof`.
