@@ -2510,6 +2510,10 @@ LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC
     PLANNING_DOCS
     / "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md"
 )
+LAYER3_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE = (
+    PLANNING_DOCS
+    / "903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -83009,6 +83013,244 @@ def _check_mockup_to_live_mapping_inventory_after_query_source_setup_projection_
                 errors.append(f"{_rel(path)} {key} must be {value!r}")
 
 
+def _check_mockup_output_review_package_handoff_live_state_projection_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime/no-rendered implementation-entry freeze for `prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening`.",
+        "Freeze doc: `903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md`.",
+        "Predecessor inventory doc: `902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md`.",
+        "Current-main checkpoint before this freeze: `f9aa40a39a0e7cb0b8add5a926c029a890a08083`.",
+        "Selected activation mode: `single_mockup_screen_read_only_projection_freeze`.",
+        "Selected target: `mockup_output_review_package_handoff_live_state_projection`.",
+        "Selected proof action: `prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening`.",
+        "Rendered surface decision: `extend_existing_mockup_output_review_package_handoff_frame_as_read_only_projection`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Executable test behavior introduced by this freeze: `false`.",
+        "Single mockup screen read-only projection introduced by this freeze: `false`.",
+        "Single mockup screen server-authoritative activation introduced by this freeze: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false` until this freeze is current-main synced.",
+        "Next exact posture: `current_main_sync_mockup_output_review_package_handoff_live_state_projection_freeze_then_projection_proof`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE)} missing output/review/package/handoff freeze term: {term}"
+            )
+
+    selected_mockup_surfaces = [
+        '/review/layer3 #mockup-userflow-board .mockup-userflow-node[data-stage="output-review"]',
+        "/review/layer3 .mockup-flow-card.mockup-3c",
+        "/review/layer3 .mockup-output-grid",
+        "/review/layer3 .mockup-output-card",
+    ]
+    selected_live_state_control_sources = [
+        "/review/layer3 #result-review-band",
+        "/review/layer3 #package-review-band",
+        "/review/layer3 #package-review-preview-panel",
+        "/review/layer3 #package-lifecycle-dashboard-panel",
+        "/review/layer3 #handoff-export-band",
+        "/review/layer3 #aps-handoff-band",
+        "/review/layer3 #external-export-download-band",
+        "/review/layer3 #downstream-access-lifecycle-dashboard-panel",
+        "State.resultStatus",
+        "State.resultReview",
+        "State.packageReviewPreview",
+        "State.packageConstruction",
+        "State.packageReviewSubmit",
+        "State.packageSupersessionPreview",
+        "State.replacementPackageSetAuthority",
+        "State.packageSupersessionCommit",
+        "State.replacementPackageArtifactManifest",
+        "State.replacementPackageNamespace",
+        "State.handoffExportPrepare",
+        "State.apsHandoffDispatch",
+        "State.externalExportDownloadPrepare",
+        "State.externalExportDownloadDelivery",
+        "State.externalExportDownloadSignedReference",
+        "State.sessionSummary",
+    ]
+    canonical_authority = [
+        "POST /api/v1/layer3/execution/result/status",
+        "POST /api/v1/layer3/execution/result/review",
+        "POST /api/v1/layer3/package/review/preview",
+        "POST /api/v1/layer3/package/review/commit",
+        "POST /api/v1/layer3/package/review/submit",
+        "POST /api/v1/layer3/package/mutation/preview",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "POST /api/v1/layer3/handoff/aps/dispatch",
+        "POST /api/v1/layer3/handoff/export/download/prepare",
+        "POST /api/v1/layer3/handoff/export/download/deliver",
+        "POST /api/v1/layer3/handoff/export/download/signed-reference/generate",
+        "GET /api/v1/layer3/session/{session_id}",
+        "L3PassRun",
+        "L3OutputPackage",
+        "L3ReconciliationRecord",
+        "L3ExternalExportDownloadRecord",
+        "L3ExternalExportSignedReferenceToken",
+    ]
+    for term in selected_mockup_surfaces + selected_live_state_control_sources + canonical_authority:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE)} missing authority term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup Output Review Package Handoff Live State Projection Freeze",
+            "903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md",
+            "mockup_output_review_package_handoff_live_state_projection_frozen",
+            "prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening",
+            "current_main_sync_mockup_output_review_package_handoff_live_state_projection_freeze_then_projection_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup output/review/package/handoff live-state projection freeze to preserve when present",
+            "903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md",
+            "mockup_output_review_package_handoff_live_state_projection_frozen",
+            "prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening",
+            "current_main_sync_mockup_output_review_package_handoff_live_state_projection_freeze_then_projection_proof",
+        ),
+        REFRESH_SPEC: (
+            "903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md",
+            "mockup_output_review_package_handoff_live_state_projection_frozen",
+            "mockup_output_review_package_handoff_live_state_projection",
+            "current_main_sync_mockup_output_review_package_handoff_live_state_projection_freeze_then_projection_proof",
+        ),
+        MANIFEST: (
+            '"mockup_output_review_package_handoff_live_state_projection_freeze"',
+            '"status": "mockup_output_review_package_handoff_live_state_projection_frozen"',
+            '"selected_target": "mockup_output_review_package_handoff_live_state_projection"',
+            '"selected_proof_action": "prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening"',
+            '"runtime_behavior_change_introduced_by_freeze": false',
+            '"next_posture": "current_main_sync_mockup_output_review_package_handoff_live_state_projection_freeze_then_projection_proof"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_output_review_package_handoff_live_state_projection_freeze"',
+            '"903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md"',
+            '"mockup_output_review_package_handoff_live_state_projection_frozen"',
+            '"POST /api/v1/layer3/package/review/preview"',
+            '"no package/handoff/export buttons inside the mockup frame"',
+            '"no full mockup program activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing output/review/package/handoff freeze term: {term}"
+                )
+
+    summary = (
+        "Doc 903 freezes mockup_output_review_package_handoff_live_state_projection "
+        "as the next no-runtime/no-rendered single mockup-screen read-only "
+        "projection target over existing result-review, package-review, package "
+        "lifecycle, handoff/export, APS handoff, external export/download, "
+        "downstream-access, and session-summary state, while keeping package/"
+        "handoff/export action activation inside the mockup frame, provider/"
+        "connector/source/RAG/auth, browser-storage, frontend durable authority, "
+        "and full mockup activation blocked."
+    )
+    expected_entry = {
+        "status": "mockup_output_review_package_handoff_live_state_projection_frozen",
+        "freeze_doc": "next_milestone_plans/Layer3_planning_docs/903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md",
+        "predecessor_inventory_doc": "next_milestone_plans/Layer3_planning_docs/902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+        "current_main_checkpoint_before_freeze": "f9aa40a39a0e7cb0b8add5a926c029a890a08083",
+        "selected_activation_mode": "single_mockup_screen_read_only_projection_freeze",
+        "selected_target": "mockup_output_review_package_handoff_live_state_projection",
+        "selected_proof_action": "prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening",
+        "selected_mockup_surfaces": selected_mockup_surfaces,
+        "selected_live_state_control_sources": selected_live_state_control_sources,
+        "canonical_authority": canonical_authority,
+        "rendered_surface_decision": "extend_existing_mockup_output_review_package_handoff_frame_as_read_only_projection",
+        "runtime_behavior_change_introduced_by_freeze": False,
+        "rendered_behavior_change_introduced_by_freeze": False,
+        "backend_behavior_change_introduced_by_freeze": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "executable_test_behavior_change_introduced_by_freeze": False,
+        "single_mockup_screen_read_only_projection_introduced_by_freeze": False,
+        "single_mockup_screen_server_authoritative_activation_introduced_by_freeze": False,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "current_main_sync_mockup_output_review_package_handoff_live_state_projection_freeze_then_projection_proof",
+        "summary": summary,
+    }
+    expected_latest = {
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_doc": "next_milestone_plans/Layer3_planning_docs/903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md",
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_status": "mockup_output_review_package_handoff_live_state_projection_frozen",
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_selected_target": "mockup_output_review_package_handoff_live_state_projection",
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_selected_proof_action": "prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening",
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_runtime_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_rendered_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_backend_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_executable_test_behavior_change_introduced_by_freeze": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_single_mockup_screen_read_only_projection_introduced_by_freeze": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_single_mockup_screen_server_authoritative_activation_introduced_by_freeze": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_full_mockup_program_activation_selected": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_implementation_entry_allowed_next": False,
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_next_posture": "current_main_sync_mockup_output_review_package_handoff_live_state_projection_freeze_then_projection_proof",
+        "latest_mockup_output_review_package_handoff_live_state_projection_freeze_summary": summary,
+    }
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get("mockup_output_review_package_handoff_live_state_projection_freeze")
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing mockup_output_review_package_handoff_live_state_projection_freeze object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} mockup_output_review_package_handoff_live_state_projection_freeze.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if entry.get("proof_kind") != "mockup_output_review_package_handoff_live_state_projection_freeze":
+                errors.append(
+                    f"{_rel(path)} mockup_output_review_package_handoff_live_state_projection_freeze.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} mockup_output_review_package_handoff_live_state_projection_freeze.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "903_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_FREEZE.md",
+                    "902_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_QUERY_SOURCE_SETUP_PROJECTION_SYNC.md",
+                    "mockup_output_review_package_handoff_live_state_projection_frozen",
+                    "mockup_output_review_package_handoff_live_state_projection",
+                    "prove_mockup_output_review_package_handoff_live_state_projection_without_runtime_widening",
+                    '/review/layer3 #mockup-userflow-board .mockup-userflow-node[data-stage="output-review"]',
+                    "/review/layer3 #package-review-band",
+                    "/review/layer3 #handoff-export-band",
+                    "POST /api/v1/layer3/package/review/preview",
+                    "POST /api/v1/layer3/handoff/export/prepare",
+                    "State.packageReviewPreview",
+                    "State.handoffExportPrepare",
+                    "no package/handoff/export buttons inside the mockup frame",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(path)} mockup_output_review_package_handoff_live_state_projection_freeze.proof_terms missing {term!r}"
+                        )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -83769,6 +84011,9 @@ def main() -> int:
         errors
     )
     _check_mockup_to_live_mapping_inventory_after_query_source_setup_projection_sync(
+        errors
+    )
+    _check_mockup_output_review_package_handoff_live_state_projection_freeze(
         errors
     )
 
