@@ -719,3 +719,16 @@ Current Layer 3 post-output/review/package/handoff mockup-to-live mapping invent
 - preserve selected next pass `run_full_mockup_to_live_coverage_readiness_audit_before_new_activation`
 - do not treat this inventory as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior change, production UI behavior change, implementation-entry admission, another rendered control extension, another single mockup screen server-authoritative activation, full mockup program activation, package/handoff/export action activation from the mockup frame, source expansion, connector/destination dispatch, provider URL behavior expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `run_full_mockup_to_live_coverage_readiness_audit_before_new_activation`
+
+Current Layer 3 full mockup-to-live coverage/readiness audit to preserve when present:
+- `907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md` records no-runtime coverage/readiness audit after the post-output/review/package/handoff mapping inventory
+- classify it as `full_mockup_to_live_coverage_readiness_audit_completed`
+- preserve audit mode `full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync`
+- preserve critical mockup frame/control classification complete for current main as true
+- preserve full mockup program activation ready as false
+- preserve selected next activation mode `representative_mockup_scenario_e2e_proof_freeze`
+- preserve selected next target `representative_mockup_scenario_source_to_output_handoff_e2e_proof`
+- preserve selected next pass `freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation`
+- preserve that single existing rendered control extension selected next is false, single mockup screen server-authoritative activation selected next is false, representative mockup scenario E2E proof freeze selected next is true, full mockup program activation selected is false, and implementation-entry allowed next is false
+- do not treat this audit as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior change, production UI behavior change, implementation-entry admission, another rendered control extension, another single mockup screen server-authoritative activation, full mockup program activation, package/handoff/export action activation from the mockup frame, source expansion, connector/destination dispatch, provider/public URL runtime, broad RAG/vector/hidden LLM behavior, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation`

@@ -2526,6 +2526,10 @@ LAYER3_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJ
     PLANNING_DOCS
     / "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md"
 )
+LAYER3_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC = (
+    PLANNING_DOCS
+    / "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -83962,6 +83966,288 @@ def _check_mockup_to_live_mapping_inventory_after_output_review_package_handoff_
             )
 
 
+def _check_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC,
+        errors,
+    )
+    for term in (
+        "Status: no-runtime full mockup-to-live coverage/readiness audit after `post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected`.",
+        "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "Predecessor inventory doc: `906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md`.",
+        "Current-main checkpoint before this audit: `15f2998fecf9663f19e023dcfb2ccf5f11df80e9`.",
+        "Audit mode: `full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync`.",
+        "Critical mockup frame/control classification complete for current main: `true`.",
+        "Full mockup program activation ready: `false`.",
+        "Selected next activation mode after this audit: `representative_mockup_scenario_e2e_proof_freeze`.",
+        "Selected next target after this audit: `representative_mockup_scenario_source_to_output_handoff_e2e_proof`.",
+        "Selected next pass: `freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation`.",
+        "Runtime behavior introduced by this audit: `false`.",
+        "Rendered behavior introduced by this audit: `false`.",
+        "Backend behavior introduced by this audit: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this audit: `false`.",
+        "Executable test behavior introduced by this audit: `false`.",
+        "Single existing rendered control extension selected next: `false`.",
+        "Single mockup screen server-authoritative activation selected next: `false`.",
+        "Representative mockup scenario E2E proof freeze selected next: `true`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed next: `false`.",
+        "The next exact posture is `freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC)} missing coverage/readiness audit term: {term}"
+            )
+
+    expected_target_authority = [
+        "/review/layer3 #mockup-theme-shell",
+        "/review/layer3 #mockup-fixture-scenario",
+        "/review/layer3 #mockup-query-source-setup-projection",
+        "/review/layer3 #source-directory-ingestion-rendered-controls",
+        "/review/layer3 #mockup-pdf-location-projection",
+        "/review/layer3 #mockup-sublayers-ab-projection",
+        "/review/layer3 #mockup-execution-lanes-projection",
+        "/review/layer3 #mockup-output-review-package-handoff-projection",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "GET /api/v1/layer3/session/{session_id}",
+        "Layer3SourceDirectoryIngestionScanRequest",
+        "Layer3SourceDirectoryIngestionResponse",
+        "L3SourceDirectoryIngestionBatch",
+        "L3SourceDirectoryIngestionFile",
+        "L3ReconciliationRecord",
+        "L3OutputPackage",
+        "L3ExternalExportDownloadRecord",
+        "State.preflight",
+        "State.sourcePreview",
+        "State.materialPreview",
+        "State.gateB",
+        "State.gateC",
+        "State.executionSelection",
+        "State.executionStart",
+        "State.executionResultStatus",
+        "State.resultStatus",
+        "State.resultReview",
+        "State.packageReviewPreview",
+        "State.packageConstruction",
+        "State.packageReviewSubmit",
+        "State.handoffExportPrepare",
+        "State.apsHandoffDispatch",
+        "State.externalExportDownloadPrepare",
+        "State.externalExportDownloadDelivery",
+        "State.externalExportDownloadSignedReference",
+        "State.sessionSummary",
+        "full_mockup_activation_enabled",
+        "frontend durable authority false",
+        "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+    ]
+    for term in expected_target_authority:
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC)} missing coverage/readiness authority term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Full Mockup-To-Live Coverage Readiness Audit After Output Review Package Handoff Projection Sync",
+            "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+            "full_mockup_to_live_coverage_readiness_audit_completed",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+            "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 full mockup-to-live coverage/readiness audit to preserve when present",
+            "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+            "full_mockup_to_live_coverage_readiness_audit_completed",
+            "representative_mockup_scenario_e2e_proof_freeze",
+            "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation",
+        ),
+        REFRESH_SPEC: (
+            "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+            "full_mockup_to_live_coverage_readiness_audit_completed",
+            "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+            "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation",
+        ),
+        MANIFEST: (
+            '"full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync"',
+            '"status": "full_mockup_to_live_coverage_readiness_audit_completed"',
+            '"selected_next_activation_mode": "representative_mockup_scenario_e2e_proof_freeze"',
+            '"selected_next_target": "representative_mockup_scenario_source_to_output_handoff_e2e_proof"',
+            '"next_posture": "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync"',
+            '"907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md"',
+            '"critical mockup frame/control classification complete"',
+            '"representative mockup scenario E2E proof freeze selected next"',
+            '"no full mockup program activation"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing coverage/readiness audit term: {term}"
+                )
+
+    summary = (
+        "Doc 907 records a no-runtime coverage/readiness audit after the "
+        "post-output/review/package/handoff mapping inventory. Current-main "
+        "mockup frame/control families are classified as live action, read-only "
+        "projection, static visual context, or explicit blocker/exclusion. The "
+        "selected next target is representative_mockup_scenario_source_to_output_handoff_e2e_proof, "
+        "as a freeze/proof lane before any full mockup program activation."
+    )
+    expected_entry = {
+        "status": "full_mockup_to_live_coverage_readiness_audit_completed",
+        "audit_doc": "next_milestone_plans/Layer3_planning_docs/907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "predecessor_inventory_doc": "next_milestone_plans/Layer3_planning_docs/906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "current_main_checkpoint_before_audit": "15f2998fecf9663f19e023dcfb2ccf5f11df80e9",
+        "audit_mode": "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync",
+        "critical_mockup_frame_control_classification_complete": True,
+        "full_mockup_program_activation_ready": False,
+        "classified_server_authoritative_live_actions": [
+            "source_directory_ingestion_scan_status_mockup_screen_activation",
+            "existing_rendered_source_intake_gate_b_action_controls",
+            "existing_rendered_gate_c_plan_execution_result_package_handoff_export_provider_connector_status_route_families",
+        ],
+        "classified_read_only_projections": [
+            "mockup_query_source_setup_live_state_projection",
+            "mockup_pdf_location_available_state",
+            "downstream_analysis_environment_projection",
+            "mockup_sublayers_ab_live_state_projection",
+            "mockup_sublayer3c_execution_lanes_live_state_projection",
+            "mockup_output_review_package_handoff_live_state_projection",
+        ],
+        "classified_static_visual_context": [
+            "mockup_theme_shell_and_fixture_projection",
+            "mockup_userflow_board_static_context",
+            "repo_local_mockup_frame_manifest_visual_context",
+        ],
+        "classified_explicitly_blocked_or_excluded": [
+            "full_mockup_program_activation",
+            "broad_source_picker",
+            "caller_path_directory_file_byte_url_glob_recursive_controls",
+            "real_connector_destination_dispatch",
+            "provider_public_url_runtime",
+            "broad_rag_vector_hidden_llm_behavior",
+            "optional_tool_runtime",
+            "auth_security_behavior",
+            "browser_storage_authority",
+            "frontend_only_durable_authority",
+        ],
+        "selected_next_activation_mode": "representative_mockup_scenario_e2e_proof_freeze",
+        "selected_next_target": "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+        "selected_next_pass": "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation",
+        "target_authority": expected_target_authority,
+        "runtime_behavior_change_introduced_by_audit": False,
+        "rendered_behavior_change_introduced_by_audit": False,
+        "backend_behavior_change_introduced_by_audit": False,
+        "route_api_dto_model_migration_service_behavior_change_introduced_by_audit": False,
+        "executable_test_behavior_change_introduced_by_audit": False,
+        "single_existing_rendered_control_extension_selected_next": False,
+        "single_mockup_screen_server_authoritative_activation_selected_next": False,
+        "representative_mockup_scenario_e2e_proof_freeze_selected_next": True,
+        "full_mockup_program_activation_selected": False,
+        "implementation_entry_allowed_next": False,
+        "next_posture": "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation",
+        "summary": summary,
+    }
+    expected_latest = {
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_doc": "next_milestone_plans/Layer3_planning_docs/907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_status": "full_mockup_to_live_coverage_readiness_audit_completed",
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_selected_next_activation_mode": "representative_mockup_scenario_e2e_proof_freeze",
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_selected_next_target": "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_selected_next_pass": "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation",
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_critical_mockup_frame_control_classification_complete": True,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_full_mockup_program_activation_ready": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_runtime_behavior_change_introduced_by_audit": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_rendered_behavior_change_introduced_by_audit": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_backend_behavior_change_introduced_by_audit": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_route_api_dto_model_migration_service_behavior_change_introduced_by_audit": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_executable_test_behavior_change_introduced_by_audit": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_single_existing_rendered_control_extension_selected_next": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_single_mockup_screen_server_authoritative_activation_selected_next": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_representative_mockup_scenario_e2e_proof_freeze_selected_next": True,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_full_mockup_program_activation_selected": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_implementation_entry_allowed_next": False,
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_next_posture": "freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation",
+        "latest_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync_summary": summary,
+    }
+
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(
+            "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync"
+        )
+        if not isinstance(entry, dict):
+            errors.append(
+                f"{_rel(path)} missing full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync object"
+            )
+            continue
+        for key, value in expected_entry.items():
+            if entry.get(key) != value:
+                errors.append(
+                    f"{_rel(path)} full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync.{key} must be {value!r}"
+                )
+        if path == PROOF_MANIFEST:
+            if (
+                entry.get("proof_kind")
+                != "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync"
+            ):
+                errors.append(
+                    f"{_rel(path)} full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync.proof_kind mismatch"
+                )
+            proof_terms = entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(
+                    f"{_rel(path)} full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync.proof_terms must be a list"
+                )
+            else:
+                for term in (
+                    "907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+                    "906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md",
+                    "full_mockup_to_live_coverage_readiness_audit_completed",
+                    "critical mockup frame/control classification complete",
+                    "representative_mockup_scenario_source_to_output_handoff_e2e_proof",
+                    "representative mockup scenario E2E proof freeze selected next",
+                    "no single existing rendered control extension selected next",
+                    "no single mockup screen server-authoritative activation selected next",
+                    "no full mockup program activation",
+                ):
+                    if term not in proof_terms:
+                        errors.append(
+                            f"{_rel(path)} full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync.proof_terms missing {term!r}"
+                        )
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif (
+            scope_status.get(
+                "full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync"
+            )
+            != "full_mockup_to_live_coverage_readiness_audit_completed"
+        ):
+            errors.append(
+                f"{_rel(path)} scope_status.full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync mismatch"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -84734,6 +85020,9 @@ def main() -> int:
         errors
     )
     _check_mockup_to_live_mapping_inventory_after_output_review_package_handoff_projection_sync(
+        errors
+    )
+    _check_full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync(
         errors
     )
 
