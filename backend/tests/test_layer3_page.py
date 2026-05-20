@@ -29,6 +29,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'data-first-slice="mockup_theme_shell_and_fixture_projection"' in response.text
     assert 'id="mockup-fixture-scenario"' in response.text
     assert 'id="mockup-execution-lanes"' in response.text
+    assert 'id="mockup-execution-lanes-projection"' in response.text
+    assert 'aria-label="Read-only Sublayer 3C execution lanes live state projection"' in response.text
+    assert "Read-only 3C server state projection pending" in response.text
     assert 'id="mockup-userflow-board"' in response.text
     assert 'id="mockup-pdf-location-card"' in response.text
     assert 'id="mockup-pdf-location-projection"' in response.text
@@ -236,6 +239,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert 'html[data-theme-variant="layer3_mockup_workbench_theme"] body.layer3-page .mockup-theme-shell' in css.text
     assert ".mockup-theme-flow" in css.text
     assert ".mockup-execution-lanes" in css.text
+    assert ".mockup-execution-lanes-projection" in css.text
+    assert ".mockup-execution-lanes-live-grid" in css.text
+    assert ".mockup-execution-lane-plane-counts" in css.text
+    assert ".mockup-execution-lanes-source-list" in css.text
     assert ".mockup-userflow-board" in css.text
     assert ".mockup-sublayers-ab-board" in css.text
     assert ".mockup-sublayers-ab-projection" in css.text
@@ -296,6 +303,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function renderMockupSublayersAbLiveProjection" in js.text
     assert "function mockupSublayersAbServerSources" in js.text
     assert "function mockupSublayersAbGateLabel" in js.text
+    assert "function renderMockupExecutionLanesLiveProjection" in js.text
+    assert "function mockupExecutionLanesServerSources" in js.text
+    assert "function mockupExecutionLanesSafeState" in js.text
     assert "function mockupPdfLocationHighlightSpanCount" in js.text
     assert "State.sessionSummary?.pdf_location_projection" in js.text
     assert "State.sessionSummary?.sublayer_visualization" in js.text
@@ -304,6 +314,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "State.gateC" in js.text
     assert "Server Sublayers 3A/3B projection unavailable" in js.text
     assert "Server-owned Sublayers 3A/3B projection" in js.text
+    assert "Server-owned Sublayer 3C execution-lanes projection" in js.text
+    assert "Server Sublayer 3C execution-lanes projection unavailable" in js.text
+    assert "dataset.liveProjectionReadOnly = 'true'" in js.text
+    assert "State.sessionSummary?.analysis_environment_projection" in js.text
     assert "dataset.liveProjectionReadOnly = 'true'" in js.text
     assert "mockup-pdf-location-highlight" in js.text
     assert "Read-only server projection pending" in js.text
@@ -955,6 +969,78 @@ def test_layer3_analysis_environment_projection_rendered_reader_is_bounded() -> 
     assert ".analysis-environment-projection" in css.text
     assert ".analysis-environment-projection-head" in css.text
     assert 'data-projection-available="true"' in css.text
+
+
+def test_layer3_mockup_execution_lanes_projection_reader_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    css = client.get("/review/layer3/static/layer3.css")
+
+    assert js.status_code == 200
+    assert css.status_code == 200
+    source_start = js.text.find("function mockupExecutionLanesServerSources")
+    state_start = js.text.find("function mockupExecutionLanesSafeState")
+    render_start = js.text.find("function renderMockupExecutionLanesLiveProjection")
+    parse_start = js.text.find("async function parseResponse")
+    assert source_start != -1
+    assert state_start != -1
+    assert render_start != -1
+    assert parse_start != -1
+
+    source_slice = js.text[source_start:state_start]
+    render_slice = js.text[render_start:parse_start]
+    for required in (
+        "State.sessionSummary.sublayer_visualization",
+        "State.sessionSummary.analysis_environment_projection",
+        "State.sessionSummary.plan_preview",
+        "State.sessionSummary.plan_approval",
+        "State.sessionSummary.execution_selection",
+        "State.sessionSummary.analysis_execution_start",
+        "State.sessionSummary.execution_result_review",
+        "State.planPreview",
+        "State.planApproval",
+        "State.executionSelection",
+        "State.executionStart",
+        "State.resultStatus",
+        "State.resultReview",
+    ):
+        assert required in source_slice
+    for required in (
+        "currentSublayerVisualizationModel()",
+        "mockup-execution-lanes-projection-head",
+        "mockup-execution-lanes-live-grid",
+        "mockup-execution-lane-plane-counts",
+        "mockup-execution-lanes-source-list",
+        "dataset.projectionState",
+        "dataset.liveProjectionReadOnly = 'true'",
+        "Read-only 3C server state projection pending",
+    ):
+        assert required in render_slice
+    for forbidden in (
+        "postJson(",
+        "getJson(",
+        "submitAttachmentForm(",
+        "localStorage",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "output_payload_ref",
+        "diagnostics_ref",
+        "package_payload",
+        "raw_payload_path",
+        "local_file_path",
+        "source_directory",
+        "vector_store",
+        "optional_tool",
+    ):
+        assert forbidden not in render_slice
+
+    assert ".mockup-execution-lanes-projection" in css.text
+    assert ".mockup-execution-lanes-live-grid" in css.text
+    assert ".mockup-execution-lane-plane-counts" in css.text
+    assert ".mockup-execution-lanes-source-list" in css.text
 
 
 def test_layer3_source_directory_ingestion_rendered_control_is_bounded() -> None:
