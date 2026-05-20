@@ -412,3 +412,12 @@ Current Layer 3 source-directory extension runtime current-main sync to preserve
 - preserve the live behavior as only the bounded rendered extension over the existing `/review/layer3` source-directory scan/status control from existing scan/status response fields
 - do not treat the sync as backend runtime behavior, rendered behavior introduced by sync, route/API/DTO/model/migration/service behavior change, caller path support, browser file-byte support, URL/glob support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, or full mockup program activation
 - preserve next posture as `select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync`
+
+Current Layer 3 mockup screen projection selection to preserve when present:
+- `880_MOCKUP_SCREEN_PROJECTION_SELECTION.md` records a no-runtime first read-only mockup-screen projection selection after the source-directory rendered-control current-main sync
+- classify the selected activation mode as `single_mockup_screen_read_only_projection`
+- preserve the selected target as `mockup_pdf_location_projection_read_only`
+- preserve the route/state/rendered contract as existing `GET /api/v1/layer3/session/{session_id}`, `State.sessionSummary.pdf_location_projection`, and `/review/layer3` `#mockup-pdf-location-projection`
+- preserve canonical backend authority as `backend/app/services/layer3_pdf_location.py`, schema `layer3.pdf_location_projection.v1`, named use case `pdf_location_from_aps_content_document_citation`, and server authority contract `aps_content_document_chunk_page_refs_and_citation_highlight_spans`
+- do not treat this selection as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, UI control change, single mockup screen server-authoritative activation, full mockup program activation, source expansion, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `freeze_mockup_pdf_location_projection_read_only_before_runtime`
