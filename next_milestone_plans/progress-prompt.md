@@ -550,3 +550,16 @@ Current Layer 3 mockup Sublayers 3A/3B live-state projection proof current-main 
 - preserve post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, progress check, `node --check`, page pytest, focused headless Chromium `Sublayers AB projection`, focused headed Chromium `Sublayers AB projection`, existing headless Chromium `mockup workbench theme exposes`, and `git diff --check` all passed
 - do not treat this sync as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior change, server-authoritative activation, full mockup program activation, new write control, duplicate Gate B/Gate C action, material mutation, typing mutation, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `rerun_mockup_to_live_mapping_after_sublayers_ab_live_state_projection_sync`
+
+Current Layer 3 post-Sublayers-AB mockup-to-live mapping inventory to preserve when present:
+- `894_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYERS_AB_PROJECTION_SYNC.md` records no-runtime inventory after current-main synced Sublayers 3A/3B projection
+- classify it as `post_sublayers_ab_projection_mockup_to_live_mapping_inventory_selected`
+- preserve selected activation mode `mockup_to_live_mapping_inventory_after_sublayers_ab_live_state_projection_sync`
+- preserve already synced server-authoritative mockup-screen activation `source_directory_ingestion_scan_status_mockup_screen_activation`
+- preserve already synced read-only mockup-screen projection `mockup_sublayers_ab_live_state_projection`
+- preserve selected next activation mode `single_mockup_screen_read_only_projection`
+- preserve selected next target `mockup_sublayer3c_execution_lanes_live_state_projection`
+- preserve selected next freeze `freeze_mockup_sublayer3c_execution_lanes_live_state_projection_before_runtime`
+- preserve target authority as `/review/layer3` `#mockup-execution-lanes`, `currentSublayerVisualizationModel()`, `/review/layer3` `#sublayer-map-panel`, `State.sessionSummary.sublayer_visualization`, `State.sessionSummary.analysis_environment_projection`, plan state, execution/result state, `L3AnalysisPlan`, `L3PassRun`, `L3TypingRecord`, `L3AnalysisUnit`, `L3AnalysisGroup`, and `L3AnalysisSet`
+- do not treat this inventory as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior change, production UI behavior change, full mockup program activation, new write control, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, package mutation, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `freeze_mockup_sublayer3c_execution_lanes_live_state_projection_before_runtime`
