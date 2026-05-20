@@ -7453,3 +7453,19 @@ Proof passed: static page contract test, headed Chromium focused proof, and head
 Still blocked: backend behavior changes, caller path/file/URL/glob/recursive flag support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, and full mockup program activation.
 
 Next exact posture: `current_main_sync_source_directory_extension_runtime`.
+
+## Source Directory Extension Runtime Current-Main Sync
+
+Current-main sync: `879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md` records PR `#1492` merge commit `7281432b976f434b94a5ee034a9210dccb88bcc0`.
+
+Synced result: `current_main_synced_source_directory_extension_runtime`.
+
+Synced behavior: current `main` now includes only the bounded rendered extension over the existing `/review/layer3` source-directory scan/status control. The panel renders existing server authority fields for runtime policy, recursive traversal admission and limits, caller recursive-flag blocking, response schema/status, and idempotency/replay state.
+
+Checks: `backend-layer3-api` passed in `3m37s`, `test` passed in `3m39s`, reviewThreads totalCount was `0`, PR comments were `0`, latest reviews were `0`, and post-merge local progress plus focused pytest validation passed at `7281432b976f434b94a5ee034a9210dccb88bcc0`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.
+
+Still blocked: backend behavior changes, caller path/file/URL/glob/recursive flag support, source expansion, package mutation/construction, connector/destination dispatch, provider URL behavior, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen activation, and full mockup program activation.
+
+Next exact posture: `select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync`.

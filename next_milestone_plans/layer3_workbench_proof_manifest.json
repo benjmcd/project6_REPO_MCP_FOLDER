@@ -34510,5 +34510,61 @@
       "no full mockup program activation",
       "current_main_sync_source_directory_extension_runtime"
     ]
+  },
+  "source_directory_extension_runtime_current_main_sync_proof": {
+    "proof_kind": "current_main_synced_source_directory_extension_runtime",
+    "status": "current_main_synced_source_directory_extension_runtime",
+    "doc": "next_milestone_plans/Layer3_planning_docs/879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+    "branch": "codex/l3-source-directory-current-main-sync",
+    "synced_runtime_doc": "next_milestone_plans/Layer3_planning_docs/878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+    "runtime_pr": "#1492",
+    "runtime_branch": "codex/l3-source-directory-rendered-authority-extension",
+    "runtime_branch_commit": "108e5e18",
+    "runtime_merge_commit": "7281432b976f434b94a5ee034a9210dccb88bcc0",
+    "synced_result": "current_main_synced_source_directory_extension_runtime",
+    "selected_implementation_action": "extend_source_directory_ingestion_scan_status_rendered_control",
+    "runtime_behavior_introduced_by_runtime": false,
+    "rendered_behavior_introduced_by_runtime": true,
+    "route_api_dto_model_migration_service_behavior_introduced_by_runtime": false,
+    "runtime_behavior_introduced_by_sync": false,
+    "rendered_behavior_introduced_by_sync": false,
+    "route_api_dto_model_migration_service_behavior_introduced_by_sync": false,
+    "full_mockup_program_activation_introduced_by_sync": false,
+    "rendered_panel": "#source-directory-ingestion-rendered-controls",
+    "rendered_route": "/review/layer3",
+    "checks": {
+      "backend-layer3-api": "SUCCESS 3m37s",
+      "test": "SUCCESS 3m39s",
+      "reviewThreads_totalCount": 0,
+      "comments": 0,
+      "latest_reviews": 0
+    },
+    "post_merge_validation": [
+      "node --check .\\backend\\app\\review_ui\\static\\layer3.js PASS",
+      "python .\\tools\\l3-progress-check.py PASS",
+      "python -m pytest .\\backend\\tests\\test_layer3_page.py::test_layer3_source_directory_ingestion_rendered_control_is_bounded -q PASS 1 passed",
+      "PLAYWRIGHT_PYTHON=python npx playwright test --project=chromium -g \"Layer 3 workbench renders source-directory scan and status authority fields\" PASS 1 passed",
+      "PLAYWRIGHT_PYTHON=python npx playwright test --project=chromium --headed -g \"Layer 3 workbench renders source-directory scan and status authority fields\" PASS 1 passed"
+    ],
+    "next_posture": "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync",
+    "summary": "Doc 879 records current-main sync for the bounded source-directory rendered-control extension merged in PR #1492.",
+    "proof_terms": [
+      "879_SOURCE_DIRECTORY_EXTENSION_RUNTIME_CURRENT_MAIN_SYNC.md",
+      "878_SOURCE_DIRECTORY_EXTENSION_RUNTIME_PROOF.md",
+      "PR #1492 merged",
+      "7281432b976f434b94a5ee034a9210dccb88bcc0",
+      "backend-layer3-api SUCCESS 3m37s",
+      "test SUCCESS 3m39s",
+      "reviewThreads totalCount 0",
+      "post-merge validation passed",
+      "current_main_synced_source_directory_extension_runtime",
+      "#source-directory-ingestion-rendered-controls",
+      "/review/layer3",
+      "no runtime behavior introduced by sync",
+      "no rendered behavior introduced by sync",
+      "no route/API/DTO/model/migration/service behavior introduced by sync",
+      "no full mockup program activation introduced by sync",
+      "select_first_read_only_mockup_screen_projection_after_source_directory_extension_runtime_sync"
+    ]
   }
 }
