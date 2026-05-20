@@ -2436,6 +2436,10 @@ LAYER3_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "882_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF = (
+    PLANNING_DOCS
+    / "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -78589,6 +78593,176 @@ def _check_mockup_pdf_location_projection_freeze_current_main_sync(errors: list[
                         errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_projection_freeze_current_main_sync_proof.proof_terms missing {term}")
 
 
+def _check_mockup_pdf_location_available_state_browser_proof(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    proof_text = _read_required_text(
+        LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF,
+        errors,
+    )
+    for term in (
+        "Status: branch-local available-state browser proof and rendered read-only control extension for `prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening`.",
+        "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+        "Implementation branch: `codex/l3-pdf-proof`.",
+        "Current-main checkpoint before proof: `fad74dc39ec686b03ec42e0c768d5c96d7c374d6`.",
+        "Runtime behavior introduced by this proof: `false`.",
+        "Backend behavior introduced by this proof: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this proof: `false`.",
+        "Rendered behavior introduced by this proof: `true`.",
+        "the panel renders `2 citation highlight spans`",
+        "no PDF-location durable browser storage key is created",
+        "The next exact posture is `current_main_sync_mockup_pdf_location_available_state_browser_proof`.",
+    ):
+        if term not in proof_text:
+            errors.append(
+                f"{_rel(LAYER3_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF)} missing mockup PDF-location available-state proof term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Mockup PDF Location Available-State Browser Proof",
+            "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+            "Rendered behavior introduced by this proof: `true`",
+            "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 mockup PDF-location available-state browser proof to preserve when present",
+            "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+            "citation highlight-span counts",
+            "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+        ),
+        REFRESH_SPEC: (
+            "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+            "branch-local available-state browser proof",
+            "rendered behavior change as true",
+            "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+        ),
+        MANIFEST: (
+            '"mockup_pdf_location_available_state_browser_proof"',
+            '"status": "branch_local_mockup_pdf_location_available_state_browser_proof"',
+            '"rendered_behavior_change": true',
+            '"current_main_sync_mockup_pdf_location_available_state_browser_proof"',
+        ),
+        PROOF_MANIFEST: (
+            '"proof_kind": "mockup_pdf_location_available_state_browser_proof"',
+            '"883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md"',
+            '"mockupPdfLocationHighlightSpanCount"',
+            '"current_main_sync_mockup_pdf_location_available_state_browser_proof"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup PDF-location available-state proof term: {term}")
+
+    for path, terms in {
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js": (
+            "function mockupPdfLocationHighlightSpanCount",
+            "item?.highlight_spans",
+            "mockup-pdf-location-highlight",
+            "citation highlight span",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_page.py": (
+            "function mockupPdfLocationHighlightSpanCount",
+            "mockup-pdf-location-highlight",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "Layer 3 mockup PDF-location projection renders available server state without runtime widening",
+            "2 citation highlight spans",
+            "pdf_location_highlight_authority_missing",
+            "output_payload_ref",
+            "diagnostics_ref",
+            "localStorageKeys",
+            "source/ingestion/server-configured-directory/scan",
+            "provider-public-url",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing mockup PDF-location available-state proof source term: {term}")
+
+    expected_scalars = {
+        "status": "branch_local_mockup_pdf_location_available_state_browser_proof",
+        "doc": "next_milestone_plans/Layer3_planning_docs/883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+        "branch": "codex/l3-pdf-proof",
+        "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/882_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE_CURRENT_MAIN_SYNC.md",
+        "current_main_checkpoint_before_proof": "fad74dc39ec686b03ec42e0c768d5c96d7c374d6",
+        "implemented_proof_action": "prove_mockup_pdf_location_projection_available_state_browser_fixture_without_runtime_widening",
+        "selected_target": "mockup_pdf_location_projection_read_only",
+        "route_contract": "GET /api/v1/layer3/session/{session_id}",
+        "state_contract": "State.sessionSummary.pdf_location_projection",
+        "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+        "backend_authority": "backend/app/services/layer3_pdf_location.py",
+        "schema_id": "layer3.pdf_location_projection.v1",
+        "runtime_behavior_change": False,
+        "backend_behavior_change": False,
+        "route_api_dto_model_migration_service_behavior_change": False,
+        "rendered_behavior_change": True,
+        "single_mockup_screen_server_authoritative_activation_introduced": False,
+        "full_mockup_program_activation_introduced": False,
+        "next_posture": "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+    }
+    if isinstance(manifest, dict):
+        entry = manifest.get("mockup_pdf_location_available_state_browser_proof")
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing mockup_pdf_location_available_state_browser_proof object")
+        else:
+            for key, value in expected_scalars.items():
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} mockup_pdf_location_available_state_browser_proof.{key} must be {value!r}")
+            for key, term in {
+                "rendered_fields": "citation_highlight_span_count",
+                "validation": "node --check ./backend/app/review_ui/static/layer3.js PASS",
+                "browser_proof": "no PDF-location durable browser storage",
+            }.items():
+                values = entry.get(key)
+                if not isinstance(values, list) or term not in values:
+                    errors.append(f"{_rel(MANIFEST)} mockup_pdf_location_available_state_browser_proof.{key} missing {term!r}")
+        current_status = manifest.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(MANIFEST)} current_status must be an object")
+        else:
+            for key, value in {
+                "latest_mockup_pdf_location_available_state_browser_proof_doc": "next_milestone_plans/Layer3_planning_docs/883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+                "latest_mockup_pdf_location_available_state_browser_proof_status": "branch_local_mockup_pdf_location_available_state_browser_proof",
+                "latest_mockup_pdf_location_available_state_browser_proof_rendered_behavior_change": True,
+                "latest_mockup_pdf_location_available_state_browser_proof_next_posture": "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+            }.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} current_status.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get("mockup_pdf_location_available_state_browser_proof")
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing mockup_pdf_location_available_state_browser_proof object")
+        else:
+            expected_proof_scalars = {
+                "proof_kind": "mockup_pdf_location_available_state_browser_proof",
+                **expected_scalars,
+            }
+            for key, value in expected_proof_scalars.items():
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list):
+                errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof.proof_terms must be a list")
+            else:
+                for term in (
+                    "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+                    "mockupPdfLocationHighlightSpanCount",
+                    "2 citation highlight spans",
+                    "available-state rendering",
+                    "unavailable-state fail closed",
+                    "no raw PDF/output/diagnostics/provider/local-path leakage",
+                    "no PDF-location durable browser storage",
+                    "rendered behavior true",
+                    "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+                ):
+                    if term not in proof_terms:
+                        errors.append(f"{_rel(PROOF_MANIFEST)} mockup_pdf_location_available_state_browser_proof.proof_terms missing {term}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -79321,6 +79495,7 @@ def main() -> int:
     _check_mockup_screen_projection_selection(errors)
     _check_mockup_pdf_location_projection_freeze(errors)
     _check_mockup_pdf_location_projection_freeze_current_main_sync(errors)
+    _check_mockup_pdf_location_available_state_browser_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

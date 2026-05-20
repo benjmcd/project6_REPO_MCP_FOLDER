@@ -7388,6 +7388,167 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   ]);
 });
 
+test('Layer 3 mockup PDF-location projection renders available server state without runtime widening', async ({ page }, testInfo) => {
+  const sessionId = 'mockup-pdf-location-available-session';
+  const availableProjection = {
+    schema_id: 'layer3.pdf_location_projection.v1',
+    schema_version: 1,
+    available: true,
+    state: 'available',
+    blocked_reason: null,
+    named_runtime_use_case: 'pdf_location_from_aps_content_document_citation',
+    selected_source_family: 'aps_content_document',
+    server_authority_contract: 'aps_content_document_chunk_page_refs_and_citation_highlight_spans',
+    next_allowed_action: 'implement_read_only_pdf_location_projection_from_existing_authority',
+    session_id: sessionId,
+    pass_run_id: 'pass-run-pdf-location-available',
+    analysis_plan_id: 'plan-pdf-location-available',
+    source_shape: 'aps_content_document',
+    authority_source: 'read_only_aps_content_document_chunk_page_refs',
+    citation_highlight_authority: 'citations[].highlight_spans',
+    document_identity: {
+      content_id: 'content-pdf-location',
+      content_contract_id: 'aps-content-contract-v1',
+      chunking_contract_id: 'aps-chunking-contract-v1',
+      media_type: 'application/pdf',
+      page_count: 12,
+      visual_page_ref_count: 1,
+    },
+    visual_page_refs: [{ page_number: 4, page_label: 'Page 4', status: 'preserved' }],
+    location_items: [{
+      item_ref: 'chunk:chunk-pdf-location-1',
+      content_id: 'content-pdf-location',
+      chunk_id: 'chunk-pdf-location-1',
+      chunk_ordinal: 1,
+      page_start: 4,
+      page_end: 4,
+      page_label: 'Page 4',
+      chunk_text_sha256: 'server-owned-chunk-hash',
+      highlight_spans: [
+        { start_char: 12, end_char: 28, text: 'semiconductor capex' },
+        { start_char: 44, end_char: 59, text: 'supply chain' },
+      ],
+      bounded_text_preview: 'Semiconductor infrastructure spending is linked to auto supply chain exposure.',
+      authority_source: 'ApsContentChunk.page_start/ApsContentChunk.page_end',
+      trace: {
+        session_id: sessionId,
+        analysis_plan_id: 'plan-pdf-location-available',
+        pass_run_id: 'pass-run-pdf-location-available',
+        content_id: 'content-pdf-location',
+        chunk_id: 'chunk-pdf-location-1',
+        source_shape: 'aps_content_document',
+      },
+    }],
+    no_side_effects: true,
+    forbidden_runtime: [
+      'raw_pdf_blob_streaming',
+      'pdf_byte_download',
+      'provider_or_object_store_url_exposure',
+      'browser_owned_authoritative_pdf_location',
+      'frontend_only_durable_authority',
+    ],
+  };
+  const unavailableProjection = {
+    ...availableProjection,
+    available: false,
+    state: 'unavailable',
+    blocked_reason: 'pdf_location_highlight_authority_missing',
+    location_items: [],
+    visual_page_refs: [],
+  };
+  const apiRequests = trackLayer3ApiRequests(page);
+
+  await page.route(`**/api/v1/layer3/session/${sessionId}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        session_id: sessionId,
+        pdf_location_projection: availableProjection,
+      }),
+    });
+  });
+
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  await page.locator('#theme-selector').selectOption('layer3_mockup_workbench_theme');
+
+  const sessionSummary = await page.evaluate(async (activeSessionId) => {
+    State.sessionSummary = await getJson(`/session/${encodeURIComponent(activeSessionId)}`);
+    renderAll();
+    return State.sessionSummary;
+  }, sessionId);
+  expect(sessionSummary.pdf_location_projection.available).toBe(true);
+  expect(sessionSummary.pdf_location_projection.location_items[0].highlight_spans).toHaveLength(2);
+
+  const panel = page.locator('#mockup-pdf-location-projection');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-projection-state', 'available');
+  await expect(panel).toContainText('1 server-authoritative PDF location item available.');
+  await expect(panel).toContainText('Server PDF-location projection');
+  await expect(panel).toContainText('Page 4');
+  await expect(panel).toContainText('chunk-pdf-location-1');
+  await expect(panel).toContainText('2 citation highlight spans');
+  await expect(panel).toContainText('Semiconductor infrastructure spending is linked to auto supply chain exposure.');
+  await expect(panel.locator('.mockup-pdf-location-item')).toHaveCount(1);
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  const leakageProbe = await panel.evaluate((element) => ({
+    text: element.textContent || '',
+    html: element.innerHTML,
+    localStorageKeys: Object.keys(window.localStorage).filter((key) => key.toLowerCase().includes('pdf')),
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+  }));
+  expect(leakageProbe.localStorageKeys).toEqual([]);
+  expect(leakageProbe.horizontalOverflow).toBe(false);
+  for (const forbidden of [
+    'output_payload_ref',
+    'diagnostics_ref',
+    'raw_pdf_blob_streaming',
+    'pdf_byte_download',
+    'provider_or_object_store_url_exposure',
+    'browser_owned_authoritative_pdf_location',
+    'frontend_only_durable_authority',
+    's3://',
+    'gs://',
+    'https://provider.example',
+    'C:\\',
+    'file://',
+    '%PDF-',
+  ]) {
+    expect(leakageProbe.text).not.toContain(forbidden);
+    expect(leakageProbe.html).not.toContain(forbidden);
+  }
+
+  await testInfo.attach('layer3-mockup-pdf-location-available.png', {
+    body: await panel.screenshot(),
+    contentType: 'image/png',
+  });
+
+  await page.evaluate((projection) => {
+    State.sessionSummary = {
+      session_id: projection.session_id,
+      pdf_location_projection: projection,
+    };
+    renderAll();
+  }, unavailableProjection);
+  await expect(panel).toHaveAttribute('data-projection-state', 'unavailable');
+  await expect(panel).toContainText('Server PDF-location projection unavailable: pdf_location_highlight_authority_missing.');
+  await expect(panel).toContainText('Read-only server projection pending');
+  await expect(panel.locator('.mockup-pdf-location-item')).toHaveCount(0);
+  await expect(panel.locator('button,input,select,textarea,a[href]')).toHaveCount(0);
+
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/mixed-corpus/materialize',
+    'source/ingestion/server-configured-directory/scan',
+    'package/mutation',
+    'handoff/connector',
+    'provider-private-signed-url/prepare',
+    'provider-public-url',
+    'execution/start',
+  ]);
+});
+
 test('Layer 3 mockup workbench visual diff harness compares repo-local frames', async ({ page }, testInfo) => {
   const frames = loadMockupFrameManifest();
   const apiRequests = trackLayer3ApiRequests(page);
