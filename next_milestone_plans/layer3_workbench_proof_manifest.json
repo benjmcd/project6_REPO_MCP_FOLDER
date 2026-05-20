@@ -964,7 +964,12 @@
     "latest_mockup_pdf_location_available_state_browser_proof_status": "branch_local_mockup_pdf_location_available_state_browser_proof",
     "latest_mockup_pdf_location_available_state_browser_proof_rendered_behavior_change": true,
     "latest_mockup_pdf_location_available_state_browser_proof_next_posture": "current_main_sync_mockup_pdf_location_available_state_browser_proof",
-    "latest_mockup_pdf_location_available_state_browser_proof_summary": "Doc 883 records branch-local available-state browser proof and a bounded rendered read-only control extension over existing State.sessionSummary.pdf_location_projection."
+    "latest_mockup_pdf_location_available_state_browser_proof_summary": "Doc 883 records branch-local available-state browser proof and a bounded rendered read-only control extension over existing State.sessionSummary.pdf_location_projection.",
+    "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_branch": "codex/l3-pdf-proof-sync",
+    "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+    "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_status": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+    "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+    "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_summary": "Doc 884 records current-main sync for PR #1497 merge commit dbbd021e4229f9bbcc033f8470b59825c96329fd."
   },
   "authority_order": [
     "GitHub PR state for merged/open status",
@@ -34808,5 +34813,69 @@
   "latest_mockup_pdf_location_available_state_browser_proof_status": "branch_local_mockup_pdf_location_available_state_browser_proof",
   "latest_mockup_pdf_location_available_state_browser_proof_rendered_behavior_change": true,
   "latest_mockup_pdf_location_available_state_browser_proof_next_posture": "current_main_sync_mockup_pdf_location_available_state_browser_proof",
-  "latest_mockup_pdf_location_available_state_browser_proof_summary": "Doc 883 records branch-local available-state browser proof and a bounded rendered read-only control extension over existing State.sessionSummary.pdf_location_projection."
+  "latest_mockup_pdf_location_available_state_browser_proof_summary": "Doc 883 records branch-local available-state browser proof and a bounded rendered read-only control extension over existing State.sessionSummary.pdf_location_projection.",
+  "mockup_pdf_location_available_state_browser_proof_current_main_sync": {
+    "proof_kind": "current_main_sync_mockup_pdf_location_available_state_browser_proof",
+    "status": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+    "sync_branch": "codex/l3-pdf-proof-sync",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+    "proof_doc": "next_milestone_plans/Layer3_planning_docs/883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+    "proof_pr": "#1497",
+    "proof_branch": "codex/l3-pdf-proof",
+    "proof_branch_commit": "2db04d7277cceb443a53dc18b9d110a984c04996",
+    "proof_merge_commit": "dbbd021e4229f9bbcc033f8470b59825c96329fd",
+    "current_main_checkpoint_after_merge": "dbbd021e4229f9bbcc033f8470b59825c96329fd",
+    "synced_result": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+    "route_contract": "GET /api/v1/layer3/session/{session_id}",
+    "state_contract": "State.sessionSummary.pdf_location_projection",
+    "rendered_surface": "/review/layer3 #mockup-pdf-location-projection",
+    "backend_authority": "backend/app/services/layer3_pdf_location.py",
+    "checks": [
+      "backend-layer3-api passed 3m24s",
+      "test passed 3m44s"
+    ],
+    "review_gate": [
+      "reviewThreads totalCount 0",
+      "PR comments 0",
+      "latest reviews 0",
+      "mergeStateStatus CLEAN",
+      "mergeable MERGEABLE"
+    ],
+    "post_merge_validation": [
+      "python ./tools/l3-progress-check.py PASS",
+      "focused pytest PASS",
+      "focused headless Chromium proof PASS"
+    ],
+    "runtime_behavior_change": false,
+    "backend_behavior_change": false,
+    "route_api_dto_model_migration_service_behavior_change": false,
+    "rendered_behavior_change": false,
+    "single_mockup_screen_server_authoritative_activation_introduced": false,
+    "full_mockup_program_activation_introduced": false,
+    "proof_terms": [
+      "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+      "883_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF.md",
+      "#1497",
+      "2db04d7277cceb443a53dc18b9d110a984c04996",
+      "dbbd021e4229f9bbcc033f8470b59825c96329fd",
+      "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+      "backend-layer3-api passed 3m24s",
+      "test passed 3m44s",
+      "reviewThreads totalCount 0",
+      "focused headless Chromium proof PASS",
+      "no runtime behavior",
+      "no backend behavior",
+      "no rendered behavior introduced by sync",
+      "no single mockup screen server-authoritative activation",
+      "no full mockup program activation",
+      "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync"
+    ],
+    "next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+    "summary": "Doc 884 records current-main sync for PR #1497 merge commit dbbd021e4229f9bbcc033f8470b59825c96329fd."
+  },
+  "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_branch": "codex/l3-pdf-proof-sync",
+  "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+  "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_status": "current_main_synced_mockup_pdf_location_available_state_browser_proof",
+  "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_next_posture": "select_next_server_authoritative_mockup_screen_activation_target_after_pdf_location_available_state_sync",
+  "latest_mockup_pdf_location_available_state_browser_proof_current_main_sync_summary": "Doc 884 records current-main sync for PR #1497 merge commit dbbd021e4229f9bbcc033f8470b59825c96329fd."
 }
