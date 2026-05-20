@@ -8169,3 +8169,35 @@ Post-merge validation: JSON manifests, checker py_compile, `python ./tools/l3-pr
 Still blocked: package/handoff/export buttons inside the mockup frame, package/handoff/export action activation from the mockup frame, package mutation/reconstruction expansion, provider URL behavior expansion, connector/destination dispatch, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, single mockup screen server-authoritative activation, and full mockup program activation.
 
 Next exact posture: `rerun_mockup_to_live_mapping_after_output_review_package_handoff_projection_sync`.
+
+## Mockup-To-Live Mapping Inventory After Output Review Package Handoff Projection Sync
+
+Inventory doc: `906_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md`.
+
+Status: `post_output_review_package_handoff_projection_mockup_to_live_mapping_inventory_selected`.
+
+Predecessor current-main sync doc: `905_MOCKUP_OUTPUT_REVIEW_PACKAGE_HANDOFF_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before inventory: `79717bb1f89fc5f791f1934015cce9d154eb43db`.
+
+Selected activation mode for this pass: `mockup_to_live_mapping_inventory_after_output_review_package_handoff_projection_sync`.
+
+Already current-main synced server-authoritative mockup-screen activation: `source_directory_ingestion_scan_status_mockup_screen_activation`.
+
+Already current-main synced read-only mockup-screen projections: `mockup_pdf_location_available_state`, `downstream_analysis_environment_projection`, `mockup_sublayers_ab_live_state_projection`, `mockup_sublayer3c_execution_lanes_live_state_projection`, `mockup_query_source_setup_live_state_projection`, and `mockup_output_review_package_handoff_live_state_projection`.
+
+Selected next activation mode: `full_mockup_to_live_coverage_readiness_audit`.
+
+Selected next target: `full_mockup_to_live_coverage_readiness_audit_after_output_review_package_handoff_projection_sync`.
+
+Selected next pass: `run_full_mockup_to_live_coverage_readiness_audit_before_new_activation`.
+
+Why this target: the planned static mockup projection chain is now current-main synced, so the next required pass is whole-program classification before selecting another runtime/control target. The audit must classify every critical mockup frame/control as live action, read-only projection, static visual context, explicitly excluded, or explicitly blocked before any new activation.
+
+Runtime behavior introduced by this inventory: `false`. Rendered behavior introduced by this inventory: `false`. Backend behavior introduced by this inventory: `false`. Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`. Executable test behavior introduced by this inventory: `false`.
+
+Single mockup screen server-authoritative activation selected next: `false`. Full mockup program activation selected: `false`. Implementation-entry allowed next: `false`.
+
+Still blocked: another rendered control extension before coverage audit, another single mockup screen server-authoritative activation before coverage audit, full mockup program activation, package/handoff/export action activation from the mockup frame, broad source picker, caller path/directory/file-byte/URL/glob/recursive controls, connector/destination dispatch, provider URL behavior expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `run_full_mockup_to_live_coverage_readiness_audit_before_new_activation`.
