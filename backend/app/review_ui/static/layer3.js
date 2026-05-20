@@ -384,6 +384,8 @@ const elements = {
     mockupThemeShell: document.getElementById('mockup-theme-shell'),
     mockupThemeFrameList: document.getElementById('mockup-frame-list'),
     mockupFixtureScenario: document.getElementById('mockup-fixture-scenario'),
+    mockupSublayersAbBoard: document.getElementById('mockup-sublayers-ab-board'),
+    mockupSublayersAbProjection: document.getElementById('mockup-sublayers-ab-projection'),
     mockupPdfLocationProjection: document.getElementById('mockup-pdf-location-projection'),
 };
 
@@ -540,6 +542,7 @@ function renderMockupThemeShell() {
         });
     }
     renderMockupPdfLocationProjection(active);
+    renderMockupSublayersAbLiveProjection(active);
 }
 
 function mockupPdfLocationHighlightSpanCount(item) {
@@ -587,6 +590,108 @@ function renderMockupPdfLocationProjection(active = State.themePreference === LA
         <div class="mockup-pdf-location-items" aria-label="Server-authoritative PDF location items">
             ${body}
         </div>
+    `;
+}
+
+function mockupSublayersAbServerSources() {
+    const sources = [];
+    if (State.sessionSummary?.sublayer_visualization) {
+        sources.push('State.sessionSummary.sublayer_visualization');
+    }
+    if (State.materialPreview?.schema_id || (State.materialPreview?.material_candidates || []).length) {
+        sources.push('State.materialPreview');
+    }
+    if (State.gateB?.schema_id || State.gateB?.session_id) {
+        sources.push('State.gateB');
+    }
+    if (State.gateC?.schema_id || State.gateC?.session_id) {
+        sources.push('State.gateC');
+    }
+    if (State.sessionSummary?.authority_rail) {
+        sources.push('State.sessionSummary.authority_rail');
+    }
+    return sources;
+}
+
+function mockupSublayersAbGateLabel(value) {
+    if (value === 'gate_b') return 'Gate B';
+    if (value === 'gate_c') return 'Gate C';
+    return humanizeToken(value || 'unavailable');
+}
+
+function renderMockupSublayersAbLiveProjection(active = State.themePreference === LAYER3_MOCKUP_WORKBENCH_THEME) {
+    const board = elements.mockupSublayersAbBoard;
+    const panel = elements.mockupSublayersAbProjection;
+    if (!board || !panel) return;
+    if (!active) {
+        board.dataset.liveProjectionState = 'inactive';
+        panel.dataset.projectionState = 'inactive';
+        panel.innerHTML = '';
+        return;
+    }
+
+    const model = currentSublayerVisualizationModel();
+    const rail = model.rail || {};
+    const materialCount = model.threeA.objects.length;
+    const modalityCounts = model.threeB.buckets.map((bucket) => ({
+        modality: bucket.modality,
+        label: bucket.meta.label,
+        count: bucket.objects.length,
+    }));
+    const typingCount = modalityCounts.reduce((total, bucket) => total + bucket.count, 0);
+    const serverSources = mockupSublayersAbServerSources();
+    const hasSessionScope = Boolean(rail.session_id && rail.session_id !== 'none');
+    const available = serverSources.length > 0 && (materialCount > 0 || typingCount > 0 || hasSessionScope);
+    const gateRailLabel = mockupSublayersAbGateLabel(rail.current_gate);
+    const status = available
+        ? `${materialCount} read-only 3A material object${materialCount === 1 ? '' : 's'} and ${typingCount} read-only 3B typing object${typingCount === 1 ? '' : 's'} available from server-owned state.`
+        : 'Server Sublayers 3A/3B projection unavailable: material, Gate B, Gate C, and session-summary state are not loaded.';
+    const modalityRows = modalityCounts
+        .filter((bucket) => bucket.modality !== 'unclassified' || bucket.count > 0)
+        .map((bucket) => `
+            <li data-modality="${escapeHtml(bucket.modality)}">
+                <span>${escapeHtml(bucket.label)}</span>
+                <strong>${escapeHtml(bucket.count)}</strong>
+            </li>
+        `).join('');
+    const sourceList = serverSources.length
+        ? serverSources.map((source) => `<span>${escapeHtml(source)}</span>`).join('')
+        : '<span>server state unavailable</span>';
+
+    board.dataset.liveProjectionState = available ? 'available' : 'unavailable';
+    board.dataset.liveProjectionReadOnly = 'true';
+    panel.dataset.projectionState = available ? 'available' : 'unavailable';
+    panel.dataset.readOnly = 'true';
+    panel.innerHTML = `
+        <div class="mockup-sublayers-ab-projection-head">
+            <span class="mockup-frame-label">Server-owned Sublayers 3A/3B projection</span>
+            <strong>${escapeHtml(available ? 'Live read-only' : 'Read-only unavailable')}</strong>
+            <p>${escapeHtml(status)}</p>
+        </div>
+        <div class="mockup-sublayers-ab-live-grid" aria-label="Read-only Sublayers 3A and 3B state counts">
+            <article>
+                <span>Sublayer 3A material ledger</span>
+                <strong>${escapeHtml(materialCount)}</strong>
+                <p>${escapeHtml(model.threeA.stateLabel)}</p>
+            </article>
+            <article>
+                <span>Sublayer 3B typing banks</span>
+                <strong>${escapeHtml(typingCount)}</strong>
+                <p>${escapeHtml(model.threeB.stateLabel)}</p>
+            </article>
+            <article>
+                <span>Gate rail posture</span>
+                <strong>${escapeHtml(gateRailLabel)}</strong>
+                <p>${escapeHtml(`typing ${rail.typing_status || 'not_started'}`)}</p>
+            </article>
+        </div>
+        <ul class="mockup-sublayers-ab-modality-counts" aria-label="Read-only Gate C modality counts">
+            ${modalityRows || '<li data-modality="empty"><span>No Gate C modality objects</span><strong>0</strong></li>'}
+        </ul>
+        <div class="mockup-sublayers-ab-source-list" aria-label="Server state sources used by this read-only projection">
+            ${sourceList}
+        </div>
+        ${available ? '' : '<span class="mockup-disabled-control" aria-disabled="true">Read-only server state projection pending</span>'}
     `;
 }
 
