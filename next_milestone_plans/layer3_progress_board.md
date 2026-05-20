@@ -8233,3 +8233,35 @@ Single existing rendered control extension selected next: `false`. Single mockup
 Still blocked: full mockup program activation, broad source picker, caller path/directory/file-byte/URL/glob/recursive controls, connector/destination dispatch, provider/public URL runtime, broad RAG/vector/hidden LLM behavior, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and any mockup-frame write control without an exact route/state/proof contract.
 
 Next exact posture: `freeze_representative_mockup_scenario_source_to_output_handoff_e2e_proof_before_full_program_activation`.
+
+## Representative Mockup Scenario Source-To-Output-Handoff E2E Proof Freeze
+
+Freeze doc: `908_REPRESENTATIVE_MOCKUP_SCENARIO_SOURCE_TO_OUTPUT_HANDOFF_E2E_PROOF_FREEZE.md`.
+
+Status: `representative_mockup_scenario_source_to_output_handoff_e2e_proof_frozen`.
+
+Predecessor audit doc: `907_FULL_MOCKUP_TO_LIVE_COVERAGE_READINESS_AUDIT_AFTER_OUTPUT_REVIEW_PACKAGE_HANDOFF_PROJECTION_SYNC.md`.
+
+Current-main checkpoint before freeze: `ca195b117ece8704eba04c242aa69ba90b7f61a6`.
+
+Selected freeze mode: `representative_mockup_scenario_e2e_proof_freeze`.
+
+Selected scenario identity: `representative_mockup_scenario_source_directory_hybrid_context_packet_to_output_handoff`.
+
+Selected proof target: `representative_mockup_scenario_source_to_output_handoff_e2e_proof`.
+
+Selected proof action after freeze sync: `implement_representative_mockup_scenario_source_to_output_handoff_e2e_proof_after_freeze_sync`.
+
+Why this target: the full mockup-to-live coverage/readiness audit proved that full activation is blocked by the absence of one deterministic source-to-output-to-handoff proof, not by a missing inventory pass. This freeze binds that proof to the existing current-main source-directory hybrid context-packet qualitative-analysis route family and forbids using the mockup visual frame as durable authority.
+
+Required future proof path: isolated runtime database and source directory fixture; server-configured source-directory scan/status; material-preview and Gate B admission; deterministic local text/vector/hybrid context authority; hybrid context-packet qualitative analysis and status; package commit; package-review submit; handoff export prepare; external export download prepare; delivery status; delivery; persisted `L3OutputPackage` and `L3ReconciliationRecord.summary_json` verification; negative proof for `ConnectorRun`, `ConnectorRunTarget`, provider/public URL runtime, network egress, browser-storage authority, frontend-only durable authority, raw local paths, raw payload refs, browser-supplied bytes, URL/glob/recursive source expansion, and full mockup activation.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`.
+
+Additional current-state sanity check observed during freeze authoring: `python -m pytest .\backend\tests\test_layer3_source_directory_vector_retrieval.py::test_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivers_selected_package -q` passed with `1 passed, 3 warnings`.
+
+Full mockup program activation selected: `false`. Implementation-entry allowed by this freeze: `false`.
+
+Still blocked: full mockup program activation, mockup-frame write controls, broad source picker, caller path/directory/file-byte/URL/glob/recursive controls, real connector/destination dispatch, provider/public URL runtime, broad RAG/vector or hidden LLM behavior, model/provider runtime, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, package mutation/reconstruction expansion, and source expansion beyond the existing server-configured source-directory fixture.
+
+Next exact posture: `current_main_sync_representative_mockup_scenario_source_to_output_handoff_e2e_proof_freeze_then_implement_proof`.
