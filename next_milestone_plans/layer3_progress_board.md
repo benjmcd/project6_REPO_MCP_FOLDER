@@ -7797,3 +7797,33 @@ Post-merge validation: JSON manifests, `tools/l3-progress-check.py` compile, `py
 Still blocked: server-authoritative activation, write controls, duplicate Gate B/Gate C actions, material/typing mutation, plan/execution/package/handoff dispatch, connector/destination dispatch, provider URL behavior, source expansion, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `rerun_mockup_to_live_mapping_after_sublayers_ab_live_state_projection_sync`.
+
+## Mockup-To-Live Mapping Inventory After Sublayers AB Projection Sync
+
+Inventory doc: `894_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYERS_AB_PROJECTION_SYNC.md`.
+
+Status: `post_sublayers_ab_projection_mockup_to_live_mapping_inventory_selected`.
+
+Predecessor current-main sync: `893_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_PROOF_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before inventory: `e36507ff50c11ac9ce54522fe324ab2122644913`.
+
+Selected activation mode: `mockup_to_live_mapping_inventory_after_sublayers_ab_live_state_projection_sync`.
+
+Already synced server-authoritative mockup-screen activation: `source_directory_ingestion_scan_status_mockup_screen_activation`.
+
+Already synced read-only mockup-screen projection: `mockup_sublayers_ab_live_state_projection`.
+
+Selected next activation mode: `single_mockup_screen_read_only_projection`.
+
+Selected next target: `mockup_sublayer3c_execution_lanes_live_state_projection`.
+
+Selected next freeze: `freeze_mockup_sublayer3c_execution_lanes_live_state_projection_before_runtime`.
+
+Why this target: `#mockup-execution-lanes` remains a static Sublayer 3C mockup frame while current live 3C authority already exists through `currentSublayerVisualizationModel()`, `#sublayer-map-panel`, `State.sessionSummary.sublayer_visualization`, `State.sessionSummary.analysis_environment_projection`, plan state, and execution/result state. A read-only projection closes that visible mockup gap without adding actions.
+
+Runtime behavior introduced by this inventory: `false`. Rendered behavior introduced by this inventory: `false`. Backend behavior introduced by this inventory: `false`. Route/API/DTO/model/migration/service behavior introduced by this inventory: `false`. Executable test behavior introduced by this inventory: `false`.
+
+Still blocked: implementation before a freeze, full mockup program activation, plan approval controls in the mockup frame, execution start controls in the mockup frame, result review controls in the mockup frame, package mutation, handoff/export dispatch, connector/destination dispatch, provider URL behavior, source expansion, caller path/directory/file-byte/URL/glob/recursive-flag support, RAG/vector widening, hidden LLM planning, optional-tool runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `freeze_mockup_sublayer3c_execution_lanes_live_state_projection_before_runtime`.
