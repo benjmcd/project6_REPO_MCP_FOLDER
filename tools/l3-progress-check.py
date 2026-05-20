@@ -2546,6 +2546,10 @@ LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_
     PLANNING_DOCS
     / "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION = (
+    PLANNING_DOCS
+    / "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -85152,6 +85156,294 @@ def _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_sta
             errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
 
 
+def _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION,
+        errors,
+    )
+    html_text = _read_required_text(LAYER3_HTML, errors)
+    js_text = _read_required_text(LAYER3_JS, errors)
+    page_test_text = _read_required_text(LAYER3_PAGE_TEST, errors)
+    e2e_text = _read_required_text(LAYER3_WORKBENCH_E2E, errors)
+    entry_key = "source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension"
+    status = "source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_implemented"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md"
+    )
+    checkpoint = "77eb6330041a0d61d2da243762cb32e5945741cc"
+    branch = "codex/l3-source-handoff-rendered-status-extension"
+    rendered_node = "/review/layer3 #source-directory-hybrid-rendered-status-extension"
+    static_proof = (
+        "backend/tests/test_layer3_page.py::"
+        "test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded"
+    )
+    browser_proof = (
+        "e2e/layer3-workbench.spec.js::"
+        "Layer 3 source-directory hybrid rendered status extension stays server-authoritative"
+    )
+    next_posture = (
+        "current_main_sync_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_"
+        "then_select_next_blocker_retirement_lane"
+    )
+    summary = (
+        "Doc 912 implements source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension "
+        "as a read-only rendered status extension over the existing source-directory hybrid delivery control. "
+        "It introduces rendered and production UI behavior plus executable proof coverage only; it introduces "
+        "no runtime, backend, route/API/DTO/model/migration/service behavior and does not activate the full "
+        "mockup program."
+    )
+
+    for term in (
+        "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md",
+        f"Status: source-directory hybrid context packet-to-output-handoff rendered status extension implemented for `{entry_key}`.",
+        "911_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION_FREEZE.md",
+        f"Current-main checkpoint before this implementation: `{checkpoint}`.",
+        f"Implementation branch: `{branch}`.",
+        f"Selected rendered target: `{entry_key}`.",
+        f"Selected rendered node: `{rendered_node}`.",
+        f"Selected static proof: `{static_proof}`.",
+        "Selected browser proof: `e2e/layer3-workbench.spec.js` test `Layer 3 source-directory hybrid rendered status extension stays server-authoritative`.",
+        "The extension renders four proof states from existing server-authority state:",
+        "unavailable/fail-closed state",
+        "status-required state",
+        "status-ready state",
+        "delivery-submitted state",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+        "sourceDirectoryHybridExternalExportDownloadDeliveryPayload",
+        "sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches",
+        "State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus",
+        "State.sourceDirectoryHybridExternalExportDownloadDelivery",
+        "data-rendered-mode=\"source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension\"",
+        "data-read-only=\"true\"",
+        "data-frontend-durable-authority=\"false\"",
+        "no `postJson`, no `submitAttachmentForm`, no `localStorage`, and no `sessionStorage`",
+        "Focused headless Chromium proof",
+        "focused headed Chromium proof",
+        "Headless/headed comparison result: no behavioral divergence observed",
+        "Runtime behavior introduced by this implementation: `false`.",
+        "Rendered behavior introduced by this implementation: `true`.",
+        "Backend behavior introduced by this implementation: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this implementation: `false`.",
+        "Executable test behavior introduced by this implementation: `true`.",
+        "Production UI behavior introduced by this implementation: `true`.",
+        "Server-authoritative full mockup activation introduced by this implementation: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed for full mockup activation by this implementation alone: `false`.",
+        f"The next exact posture is `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION)} missing rendered status extension term: {term}"
+            )
+
+    for term in (
+        'id="source-directory-hybrid-rendered-status-extension"',
+        'data-rendered-mode="source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension"',
+        'data-extension-state="unavailable"',
+        'data-read-only="true"',
+        'data-frontend-durable-authority="false"',
+    ):
+        if term not in html_text:
+            errors.append(f"{_rel(LAYER3_HTML)} missing rendered status extension HTML term: {term}")
+
+    for term in (
+        "sourceDirectoryHybridRenderedStatusExtension: document.getElementById('source-directory-hybrid-rendered-status-extension')",
+        "renderSourceDirectoryHybridRenderedStatusExtension();",
+        "function sourceDirectoryHybridRenderedStatusExtensionState(payload)",
+        "function renderSourceDirectoryHybridRenderedStatusExtension()",
+        "sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull()",
+        "sourceDirectoryHybridExternalExportDownloadDeliveryStatusMatches(payload)",
+        "elements.sourceDirectoryHybridRenderedStatusExtension.dataset.extensionState = extensionState.state",
+        "elements.sourceDirectoryHybridRenderedStatusExtension.dataset.readOnly = 'true'",
+        "elements.sourceDirectoryHybridRenderedStatusExtension.dataset.frontendDurableAuthority = 'false'",
+        "source_directory_hybrid_external_export_download_delivery_status_route",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+        "State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus",
+        "State.sourceDirectoryHybridExternalExportDownloadDelivery",
+        "source_directory_hybrid_status_required",
+        "source_directory_hybrid_status_ready",
+        "source_directory_hybrid_delivery_submitted",
+        "fieldItem('frontend durable authority', 'blocked')",
+        "fieldItem('provider public delivery', status.provider_public_delivery_enabled === false ? 'blocked'",
+    ):
+        if term not in js_text:
+            errors.append(f"{_rel(LAYER3_JS)} missing rendered status extension JS term: {term}")
+
+    for term in (
+        "test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded",
+        'id="source-directory-hybrid-rendered-status-extension"',
+        'data-rendered-mode="source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension"',
+        'data-read-only="true"',
+        'data-frontend-durable-authority="false"',
+        "function sourceDirectoryHybridRenderedStatusExtensionState",
+        "function renderSourceDirectoryHybridRenderedStatusExtension",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+        "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+        "postJson(",
+        "submitAttachmentForm",
+        "localStorage",
+        "sessionStorage",
+    ):
+        if term not in page_test_text:
+            errors.append(f"{_rel(LAYER3_PAGE_TEST)} missing rendered status extension page-test term: {term}")
+
+    for term in (
+        "Layer 3 source-directory hybrid rendered status extension stays server-authoritative",
+        "#source-directory-hybrid-rendered-status-extension",
+        "data-rendered-mode",
+        "data-read-only",
+        "data-frontend-durable-authority",
+        "data-extension-state",
+        "status_required",
+        "source_directory_hybrid_status_required",
+        "status_ready",
+        "source_directory_hybrid_status_ready",
+        "delivery_submitted",
+        "source_directory_hybrid_delivery_submitted",
+        "expect(extension.locator('button,input,select,textarea,a[href]')).toHaveCount(0)",
+        "document.documentElement.scrollWidth > document.documentElement.clientWidth",
+        "expect(consoleErrors).toEqual([])",
+        "expect(pageErrors).toEqual([])",
+        "expectNoRequestsToLayer3Paths(apiRequests",
+        "source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status",
+        "provider-public-url",
+        "provider-private-signed-url",
+        "package/mutation",
+    ):
+        if term not in e2e_text:
+            errors.append(f"{_rel(LAYER3_WORKBENCH_E2E)} missing rendered status extension e2e term: {term}")
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Hybrid Context Packet To Output-Handoff Rendered Status Extension",
+            "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md",
+            status,
+            rendered_node,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory hybrid context packet-to-output-handoff rendered status extension proof to preserve when present",
+            "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md",
+            status,
+            rendered_node,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md",
+            status,
+            rendered_node,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"proof_doc": "{doc_path}"',
+            f'"selected_rendered_node": "{rendered_node}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"proof_kind": "{entry_key}"',
+            "912_SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_TO_OUTPUT_HANDOFF_RENDERED_STATUS_EXTENSION.md",
+            "headless Chromium proof",
+            "headed Chromium proof",
+            "no browser-storage authority",
+            "no frontend-only durable authority",
+            "no full mockup activation",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing rendered status extension term: {term}")
+
+    expected_latest = {
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_current_main_checkpoint_before_implementation": checkpoint,
+        f"latest_{entry_key}_implementation_branch": branch,
+        f"latest_{entry_key}_selected_rendered_target": entry_key,
+        f"latest_{entry_key}_selected_rendered_node": rendered_node,
+        f"latest_{entry_key}_selected_static_proof": static_proof,
+        f"latest_{entry_key}_selected_browser_proof": browser_proof,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_server_authoritative_full_mockup_activation_introduced_by_implementation": False,
+        f"latest_{entry_key}_full_mockup_program_activation_selected": False,
+        f"latest_{entry_key}_implementation_entry_allowed_for_full_mockup_activation_by_implementation_alone": False,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("proof_doc", doc_path),
+        ("predecessor_freeze_doc", predecessor_doc),
+        ("current_main_checkpoint_before_implementation", checkpoint),
+        ("implementation_branch", branch),
+        ("selected_rendered_target", entry_key),
+        ("selected_rendered_node", rendered_node),
+        ("selected_static_proof", static_proof),
+        ("selected_browser_proof", browser_proof),
+        ("rendered_mode", entry_key),
+        ("server_authority", "source_directory_hybrid_external_export_download_delivery_status_route"),
+        ("read_only", True),
+        ("frontend_durable_authority_enabled", False),
+        ("headless_headed_browser_divergence_observed", False),
+        ("runtime_behavior_change_introduced_by_implementation", False),
+        ("rendered_behavior_change_introduced_by_implementation", True),
+        ("backend_behavior_change_introduced_by_implementation", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_implementation", False),
+        ("executable_test_behavior_change_introduced_by_implementation", True),
+        ("production_ui_behavior_change_introduced_by_implementation", True),
+        ("server_authoritative_full_mockup_activation_introduced_by_implementation", False),
+        ("full_mockup_program_activation_selected", False),
+        ("implementation_entry_allowed_for_full_mockup_activation_by_implementation_alone", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for loaded, path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(loaded, dict):
+            continue
+        entry = loaded.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(path)} missing {entry_key} object")
+            continue
+        for key, value in expected_entry_values:
+            if entry.get(key) != value:
+                errors.append(f"{_rel(path)} {entry_key}.{key} must be {value!r}")
+        if path == PROOF_MANIFEST and entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(path)} {entry_key}.proof_kind mismatch")
+        for key, value in expected_latest.items():
+            if loaded.get(key) != value:
+                errors.append(f"{_rel(path)} {key} must be {value!r}")
+        current_status = loaded.get("current_status")
+        if not isinstance(current_status, dict):
+            errors.append(f"{_rel(path)} current_status must be an object")
+        else:
+            for key, value in expected_latest.items():
+                if current_status.get(key) != value:
+                    errors.append(f"{_rel(path)} current_status.{key} must be {value!r}")
+        scope_status = loaded.get("scope_status")
+        if not isinstance(scope_status, dict):
+            errors.append(f"{_rel(path)} scope_status must be an object")
+        elif scope_status.get(entry_key) != status:
+            errors.append(f"{_rel(path)} scope_status.{entry_key} mismatch")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -85939,6 +86231,9 @@ def main() -> int:
         errors
     )
     _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension_freeze(
+        errors
+    )
+    _check_source_directory_hybrid_context_packet_to_output_handoff_rendered_status_extension(
         errors
     )
 
