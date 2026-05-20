@@ -815,3 +815,16 @@ Current Layer 3 provider-public URL delivery/use rendered control extension free
 - preserve future proof requirements: page bounded-control proof, focused page use-control proof, focused headless Chromium proof, focused headed Chromium proof, no console/page errors, mobile no-overflow, no raw provider/public URL/credential/object-store/signed-token/connector/destination/package-byte/browser-byte leakage, no browser-storage authority, no frontend-only durable authority, no provider-public deliver control, no public proxy, no byte streaming, no provider network/object write, no new backend route/DTO/model/migration/service behavior, and no full mockup activation
 - do not treat this freeze as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior change, production UI behavior, implementation-entry admission, full mockup program activation, raw provider-public URL delivery, public proxy behavior, connector/destination dispatch, package mutation, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `current_main_sync_provider_public_url_delivery_use_rendered_control_extension_freeze_then_implement_rendered_extension`
+
+Current Layer 3 provider-public URL delivery/use rendered control extension proof to preserve when present:
+- `914_PROVIDER_PUBLIC_URL_DELIVERY_USE_RENDERED_CONTROL_EXTENSION.md` records the bounded rendered implementation after the Doc 913 freeze
+- classify it as `provider_public_url_delivery_use_rendered_control_extension_implemented`
+- preserve current-main checkpoint before implementation `afe7bf8b513179736b7fe595002ecc710570403e`
+- preserve implementation branch `codex/l3-provider-public-use-rendered-control`
+- preserve selected rendered node `/review/layer3 #provider-public-url-use`
+- preserve static proof `backend/tests/test_layer3_page.py::test_layer3_provider_public_url_use_rendered_control_is_bounded`
+- preserve browser proof `e2e/layer3-workbench.spec.js` test `Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke and provider-public URL prepare status use revoke`
+- preserve proof over existing provider-public prepare/status/revoke/use route authority, fixed `fake_provider_redacted_use_decision` and `use_provider_public_url_redacted_fake_provider` values, server-returned redacted use decision, no provider-public deliver route, no browser-storage authority, no raw URL exposure, and no frontend-only durable authority
+- treat this implementation as rendered behavior, production UI behavior, and executable test behavior only
+- do not treat this implementation as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, full mockup program activation, raw provider-public URL delivery, public proxy behavior, byte streaming, provider network/object writes, connector/destination dispatch, package mutation, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, or frontend-only durable authority
+- preserve next posture as `current_main_sync_provider_public_url_delivery_use_rendered_control_extension_then_select_next_blocker_retirement_lane`
