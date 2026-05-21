@@ -6,6 +6,7 @@ from typing import Any
 MOCKUP_ACTIVATION_READINESS_SCHEMA_ID = "layer3.mockup_activation_readiness.v1"
 MOCKUP_ACTIVATION_READINESS_PHASE = "next_phase_activation_readiness"
 MOCKUP_FIRST_ADMITTED_SLICE = "query_source_setup_interactive_live_classification"
+MOCKUP_NEXT_ADMITTED_SLICE = "output_review_package_handoff_interactive_live_contract"
 
 _NO_GO_BOUNDARIES = (
     "frontend_only_durable_authority",
@@ -84,15 +85,63 @@ _JOURNEYS = (
     {
         "journey_id": "output_review_package_handoff",
         "label": "Output review/package/handoff",
-        "classification": "read_only",
-        "activation_slice": None,
-        "server_authority": "session summary result-review, package, handoff, delivery, and webhook state",
+        "classification": "interactive_live",
+        "activation_slice": MOCKUP_NEXT_ADMITTED_SLICE,
+        "server_authority": "existing result-review, package lifecycle, handoff/export, delivery/use, local outbox, provider-private, external-local export, and internal webhook APIs",
         "rendered_surface": "#mockup-output-review-package-handoff-projection",
         "evidence": (
             "output review package handoff projection reads server session state",
-            "projection has no controls",
+            "existing rendered controls submit only server-owned route contracts",
+            "status projections read session-summary receipt state without exposing package bytes, raw provider tokens, or destination credentials",
         ),
-        "next_allowed_action": "select_exact_server_owned_review_or_handoff_control_before_activation",
+        "interaction_contract": {
+            "contract_id": MOCKUP_NEXT_ADMITTED_SLICE,
+            "route_authority": (
+                "/api/v1/layer3/execution/result/review",
+                "/api/v1/layer3/package/review/preview",
+                "/api/v1/layer3/package/review/commit",
+                "/api/v1/layer3/package/review/submit",
+                "/api/v1/layer3/handoff/export/prepare",
+                "/api/v1/layer3/handoff/export/download/prepare",
+                "/api/v1/layer3/handoff/export/download/deliver",
+                "/api/v1/layer3/handoff/connector/local-outbox/write",
+                "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+                "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+                "/api/v1/layer3/handoff/export/internal-webhook/dispatch",
+            ),
+            "rendered_controls": (
+                "#result-review-submit",
+                "#package-review-preview-inspect",
+                "#package-construction-commit",
+                "#package-review-submit",
+                "#handoff-export-prepare-submit",
+                "#external-export-download-prepare-submit",
+                "#external-export-download-delivery-submit",
+                "#server-owned-local-outbox-write-panel",
+                "#local-outbox-provider-private-handoff-panel",
+                "#external-local-export-panel",
+                "#internal-webhook-dispatch-panel",
+            ),
+            "status_projection": (
+                "State.sessionSummary.execution_result_review",
+                "State.sessionSummary.package_construction",
+                "State.sessionSummary.package_review_submit",
+                "State.sessionSummary.handoff_export_prepare",
+                "State.sessionSummary.external_export_download",
+                "State.sessionSummary.server_owned_local_outbox_write",
+                "State.sessionSummary.local_outbox_provider_private_handoff",
+                "State.sessionSummary.external_local_export",
+                "State.sessionSummary.internal_webhook_dispatch",
+            ),
+            "negative_boundaries": (
+                "raw_package_payload_exposure",
+                "raw_provider_token_exposure",
+                "unapproved_connector_destination_write",
+                "frontend_only_durable_authority",
+                "full_mockup_program_activation",
+            ),
+        },
+        "next_allowed_action": "prove_existing_controls_from_current_main_before_any_new_output_review_package_handoff_runtime",
     },
     {
         "journey_id": "full_mockup_program",
@@ -110,12 +159,24 @@ _JOURNEYS = (
 )
 
 
+def _journey_response(row: dict[str, Any]) -> dict[str, Any]:
+    response = dict(row)
+    response["evidence"] = list(row["evidence"])
+    if isinstance(row.get("interaction_contract"), dict):
+        response["interaction_contract"] = {
+            key: list(value) if isinstance(value, tuple) else value
+            for key, value in row["interaction_contract"].items()
+        }
+    return response
+
+
 def mockup_activation_readiness_contract() -> dict[str, Any]:
-    journeys = [dict(row, evidence=list(row["evidence"])) for row in _JOURNEYS]
+    journeys = [_journey_response(row) for row in _JOURNEYS]
     return {
         "schema_id": MOCKUP_ACTIVATION_READINESS_SCHEMA_ID,
         "phase": MOCKUP_ACTIVATION_READINESS_PHASE,
         "selected_first_slice": MOCKUP_FIRST_ADMITTED_SLICE,
+        "selected_next_slice": MOCKUP_NEXT_ADMITTED_SLICE,
         "classification_mode": "server_owned_next_phase_activation_readiness",
         "journeys": journeys,
         "journey_counts": {
@@ -132,5 +193,5 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "connector_provider_write_enabled": False,
         "broad_source_model_rag_expansion_enabled": False,
         "mutates_runtime_state": False,
-        "next_posture": "land_first_activation_readiness_slice_without_full_mockup_activation",
+        "next_posture": "prove_output_review_package_handoff_existing_controls_before_selecting_next_projection_journey",
     }
