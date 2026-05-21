@@ -457,10 +457,12 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         "execution_readiness",
         "state_action_contract",
         "authority_matrix_contract",
+        "mockup_activation_readiness",
         "authority_rail",
     } <= set(bootstrap_schema["required"])
     assert bootstrap_schema["properties"]["features"]["additionalProperties"]["type"] == "boolean"
     assert bootstrap_schema["properties"]["authority_matrix_contract"]["additionalProperties"] is True
+    assert bootstrap_schema["properties"]["mockup_activation_readiness"]["additionalProperties"] is True
 
     readiness_schema = _openapi_response_schema(spec, "/api/v1/layer3/readiness", "get")
     assert readiness_schema["title"] == "Layer3ExecutionReadinessResponse"
@@ -486,6 +488,19 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
     bootstrap_body = client.get("/api/v1/layer3/bootstrap").json()
     readiness_body = client.get("/api/v1/layer3/readiness").json()
     assert bootstrap_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"
+    assert bootstrap_body["mockup_activation_readiness"]["schema_id"] == "layer3.mockup_activation_readiness.v1"
+    assert (
+        bootstrap_body["mockup_activation_readiness"]["selected_first_slice"]
+        == "query_source_setup_interactive_live_classification"
+    )
+    assert bootstrap_body["mockup_activation_readiness"]["journey_counts"] == {
+        "interactive_live": 1,
+        "read_only": 4,
+        "intentionally_excluded": 0,
+        "blocked": 1,
+    }
+    assert bootstrap_body["mockup_activation_readiness"]["full_mockup_activation_enabled"] is False
+    assert bootstrap_body["mockup_activation_readiness"]["frontend_only_durable_authority_enabled"] is False
     assert readiness_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"
     assert (
         readiness_body["authority_matrix_contract"]["fail_closed_result"]

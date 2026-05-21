@@ -294,6 +294,8 @@ const LAYER3_E2E_GOVERNANCE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_resp
 const AUTHORITY_MATRIX_REVIEW_RENDERED_MODE = 'rendered_authority_matrix_read_only_review_surface';
 const AUTHORITY_MATRIX_REVIEW_USE_CASE = 'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch';
 const AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_matrix_contract';
+const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
+const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
 const State = {
     bootstrap: null,
@@ -423,6 +425,7 @@ const elements = {
     themeSelector: document.getElementById('theme-selector'),
     authorityRail: document.getElementById('authority-rail'),
     authorityMatrixReviewPanel: document.getElementById('authority-matrix-review-panel'),
+    mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
     intentForm: document.getElementById('intent-form'),
@@ -7241,6 +7244,103 @@ function renderAuthorityMatrixReviewPanel() {
     `;
 }
 
+function mockupActivationReadinessContract() {
+    const contract = State.bootstrap?.mockup_activation_readiness;
+    if (!contract || typeof contract !== 'object') return null;
+    if (contract.schema_id !== 'layer3.mockup_activation_readiness.v1') return null;
+    if (!Array.isArray(contract.journeys)) return null;
+    return contract;
+}
+
+function mockupActivationReadinessState(contract) {
+    if (!State.bootstrap) return { label: 'mockup_activation_readiness_bootstrap_pending', pill: 'preview' };
+    if (!contract) return { label: 'mockup_activation_readiness_contract_unavailable', pill: 'blocked' };
+    if (contract.full_mockup_activation_enabled || contract.frontend_only_durable_authority_enabled) {
+        return { label: 'mockup_activation_boundary_violation', pill: 'blocked' };
+    }
+    if (contract.selected_first_slice === 'query_source_setup_interactive_live_classification') {
+        return { label: 'first_activation_readiness_slice_selected', pill: 'ok' };
+    }
+    return { label: 'activation_readiness_classification_loaded', pill: 'preview' };
+}
+
+function renderMockupActivationJourneyRows(journeys) {
+    return journeys.length
+        ? journeys.map((journey) => `
+            <li>
+                <code>${escapeHtml(journey.journey_id || 'unknown_journey')}</code>
+                <strong>${escapeHtml(journey.classification || 'unclassified')}</strong>
+                <span>${escapeHtml(journey.label || 'Untitled journey')}</span>
+                <small>${escapeHtml(journey.server_authority || 'server authority not supplied')}</small>
+            </li>
+        `).join('')
+        : '<li>No mockup activation journeys are exposed by bootstrap.</li>';
+}
+
+function renderMockupActivationReadinessPanel() {
+    if (!elements.mockupActivationReadinessPanel) return;
+    const contract = mockupActivationReadinessContract();
+    const panelState = mockupActivationReadinessState(contract);
+    const journeys = contract?.journeys || [];
+    const noGo = contract?.no_go_boundaries || [
+        'frontend_only_durable_authority',
+        'raw_provider_url_or_token_exposure',
+        'unapproved_connector_destination_write',
+        'unapproved_provider_object_or_network_write',
+        'broad_source_family_expansion',
+        'broad_model_provider_rag_expansion',
+        'full_mockup_program_activation',
+    ];
+    elements.mockupActivationReadinessPanel.dataset.readinessState = panelState.label;
+    elements.mockupActivationReadinessPanel.dataset.frontendDurableAuthority = 'false';
+    elements.mockupActivationReadinessPanel.innerHTML = `
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Activation readiness</p>
+                <h2>Mockup journey classification</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+        </div>
+        <div class="result-review-grid mockup-activation-readiness-grid">
+            <section class="result-review-card">
+                <strong>Server Contract</strong>
+                <ul>
+                    ${fieldItem('rendered mode', MOCKUP_ACTIVATION_READINESS_RENDERED_MODE, { code: true })}
+                    ${fieldItem('response authority', MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('schema id', contract?.schema_id, { code: true })}
+                    ${fieldItem('selected first slice', contract?.selected_first_slice, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Classification Counts</strong>
+                <ul>
+                    ${fieldItem('interactive live', contract?.journey_counts?.interactive_live ?? 0)}
+                    ${fieldItem('read only', contract?.journey_counts?.read_only ?? 0)}
+                    ${fieldItem('intentionally excluded', contract?.journey_counts?.intentionally_excluded ?? 0)}
+                    ${fieldItem('blocked', contract?.journey_counts?.blocked ?? 0)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Boundaries</strong>
+                <ul>
+                    ${fieldItem('full mockup activation', contract?.full_mockup_activation_enabled === true ? 'enabled' : 'blocked')}
+                    ${fieldItem('frontend durable authority', contract?.frontend_only_durable_authority_enabled === true ? 'enabled' : 'blocked')}
+                    ${fieldItem('raw provider exposure', contract?.raw_provider_exposure_enabled === true ? 'enabled' : 'blocked')}
+                    ${fieldItem('connector/provider write', contract?.connector_provider_write_enabled === true ? 'enabled' : 'blocked')}
+                </ul>
+            </section>
+            <section class="result-review-card mockup-activation-journey-rows">
+                <strong>Journey Classifications</strong>
+                <ul>${renderMockupActivationJourneyRows(journeys)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>No-Go Boundaries</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(noGo)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function renderDownstreamAccessLifecycleDashboardPanel() {
     const rows = downstreamAccessLifecycleRows();
     const dashboardState = downstreamAccessLifecycleDashboardState(rows);
@@ -9768,6 +9868,7 @@ function renderAll() {
     renderContext();
     renderMaterialLedger();
     renderAuthorityMatrixReviewPanel();
+    renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
     renderPlanPanel();

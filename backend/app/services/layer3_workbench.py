@@ -308,6 +308,9 @@ from app.services.layer3_workbench_package_state import (
 from app.services.layer3_state_action_contract import build_state_action_contract
 from app.services.layer3_state_model_contract import build_workbench_state_model
 from app.services.layer3_authority_matrix_contract import build_exposed_authority_matrix_contract
+from app.services.layer3_mockup_activation_readiness import (
+    mockup_activation_readiness_contract as _mockup_activation_readiness_contract,
+)
 from app.services.layer3_plan_flow_contract import (
     APPROVED_PLAN_CANCEL_FORBIDDEN_FIELDS,
     EXECUTION_SELECTION_FORBIDDEN_FIELDS,
@@ -894,6 +897,7 @@ def bootstrap() -> dict[str, Any]:
         unavailable_gate_labels=DOWNSTREAM_UNAVAILABLE,
         state_action_contract=_workbench_state_action_contract(),
         authority_matrix_contract=_workbench_authority_matrix_contract(),
+        mockup_activation_readiness=_mockup_activation_readiness_contract(),
         authority_rail=_authority_rail(
             current_gate="intent",
             browser_only_state=["expanded_rows", "hidden_uncommitted_candidates", "selected_tab"],

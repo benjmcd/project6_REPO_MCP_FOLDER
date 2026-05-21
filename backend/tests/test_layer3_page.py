@@ -167,6 +167,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="aps-handoff-dispatch-submit"' in response.text
     assert 'id="authority-matrix-review-panel"' in response.text
     assert 'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"' in response.text
+    assert 'id="mockup-activation-readiness-panel"' in response.text
+    assert 'data-rendered-mode="rendered_mockup_activation_readiness_dashboard"' in response.text
+    assert 'data-frontend-durable-authority="false"' in response.text
     assert 'id="layer3-e2e-governance-lifecycle-dashboard-panel"' in response.text
     assert 'data-rendered-mode="rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard"' in response.text
     assert 'id="downstream-access-lifecycle-dashboard-panel"' in response.text
@@ -491,9 +494,22 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "/handoff/connector/local-destination/receipt" not in js.text
     assert "provider_public_url_redacted ? 'redacted_receipt_only'" in js.text
     assert "raw public URL display/use" in js.text
+    assert "MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard'" in js.text
+    assert "MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness'" in js.text
+    assert "function renderMockupActivationReadinessPanel" in js.text
+    assert "query_source_setup_interactive_live_classification" in js.text
+    assert "unapproved_provider_object_or_network_write" in js.text
+    assert "broad_source_family_expansion" in js.text
+    assert "broad_model_provider_rag_expansion" in js.text
+    assert "broad_source_model_rag_expansion" not in js.text
+    assert "full mockup activation" in js.text
+    assert "frontend durable authority" in js.text
     assert ".authority-matrix-review-panel" in css.text
     assert ".authority-matrix-review-grid" in css.text
     assert ".authority-matrix-review-rows" in css.text
+    assert ".mockup-activation-readiness-panel" in css.text
+    assert ".mockup-activation-readiness-grid" in css.text
+    assert ".mockup-activation-journey-rows" in css.text
     assert ".package-supersession-preview-panel" in css.text
     assert ".package-supersession-preview-grid" in css.text
     assert ".package-supersession-preview-rows" in css.text
