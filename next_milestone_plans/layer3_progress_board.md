@@ -8737,3 +8737,35 @@ Full mockup program activation selected now: `false`. Implementation-entry allow
 Still blocked: implementation before current-main sync, package supersession commit, package replacement activation, source `L3OutputPackage` row mutation, source package payload write/rewrite, caller-entered replacement refs, browser-generated replacement artifacts, connector dispatch, destination writes, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `current_main_sync_source_directory_replacement_package_set_authority_rendered_control_freeze_then_implement_rendered_control`.
+
+## Source-Directory Replacement Package-Set Authority Rendered Control Freeze Current-Main Sync
+
+Doc: `923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Status: `current_main_synced_source_directory_replacement_package_set_authority_rendered_control_freeze`.
+
+Predecessor freeze doc: `922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md`.
+
+Merged PR: `#1537`.
+
+Source branch: `codex/l3-next-target-freeze`.
+
+Freeze commit: `0efe0ffca49d9a162dcfe3d1192051bcf0e5ebbb`.
+
+Merge commit: `cf6da7c843980bdce3b4505d6abab2276916a18a`.
+
+Sync branch: `codex/l3-next-target-freeze-sync`.
+
+Synced target: `source_directory_replacement_package_set_authority_rendered_control`.
+
+Synced source state: `State.sourceDirectoryPackageSupersessionPreview`.
+
+Synced routes: `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`.
+
+GitHub gate: PR `#1537` merged cleanly with `backend-layer3-api` and `test` checks passing, comments `0`, reviews `0`, latestReviews `0`, reviewThreads totalCount `0`, and unresolved reviewThreads totalCount `0`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`. Production UI behavior introduced by this sync: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`.
+
+Next exact posture: `implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync`.
