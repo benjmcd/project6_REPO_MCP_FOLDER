@@ -7856,6 +7856,9 @@ test('Layer 3 mockup activation readiness dashboard classifies next-phase journe
   await expect(panel).toContainText('layer3.analysis_environment_projection.v1');
   await expect(panel).toContainText('#mockup-execution-lanes-projection');
   await expect(panel).toContainText('13 status projections and 11 negative boundaries');
+  await expect(panel).toContainText('analysis_environment_read_only_live_projection_contract');
+  await expect(panel).toContainText('.analysis-environment-projection');
+  await expect(panel).toContainText('8 status projections and 11 negative boundaries');
   await expect(panel).toContainText('interactive live');
   await expect(panel).toContainText('read only');
   await expect(panel).toContainText('full mockup activation');
@@ -7877,6 +7880,7 @@ test('Layer 3 mockup activation readiness dashboard classifies next-phase journe
     { id: 'pdf_location', classification: 'read_only', label: 'PDF-location evidence' },
     { id: 'sublayers_3a_3b', classification: 'read_only', label: 'Sublayers 3A/3B' },
     { id: 'sublayer_3c_execution_lanes', classification: 'read_only', label: 'Sublayer 3C execution lanes' },
+    { id: 'analysis_environment_projection', classification: 'read_only', label: 'Analysis Environment projection' },
     { id: 'output_review_package_handoff', classification: 'interactive_live', label: 'Output review/package/handoff' },
     { id: 'full_mockup_program', classification: 'blocked', label: 'Full mockup program' },
   ]);
@@ -8506,6 +8510,13 @@ test('Layer 3 mockup Sublayer 3C execution lanes projection renders read-only se
   const projectionProof = await panel.evaluate((element) => ({
     text: element.textContent || '',
     html: element.innerHTML,
+    analysisEnvironmentPanels: Array.from(document.querySelectorAll('.analysis-environment-projection')).map((item) => ({
+      state: item.getAttribute('data-projection-state'),
+      available: item.getAttribute('data-projection-available'),
+      readOnly: item.getAttribute('data-read-only'),
+      text: item.textContent.replace(/\s+/g, ' ').trim(),
+      controls: item.querySelectorAll('button,input,select,textarea,a[href]').length,
+    })),
     counts: Array.from(element.querySelectorAll('.mockup-execution-lane-plane-counts li')).map((item) => ({
       modality: item.getAttribute('data-modality'),
       text: item.textContent.replace(/\s+/g, ' ').trim(),
@@ -8526,6 +8537,29 @@ test('Layer 3 mockup Sublayer 3C execution lanes projection renders read-only se
     {
       modality: 'hybrid',
       text: 'Hybrid / Mixed Environment 0 inputs / 0 plans / 0 process / 0 outputs blocked',
+    },
+  ]);
+  expect(projectionProof.analysisEnvironmentPanels).toEqual([
+    {
+      state: 'available',
+      available: 'true',
+      readOnly: 'true',
+      text: 'Server projection available downstream ready Plane readiness ready / typing 2 / sets 1 / runs 1 / outputs 1 Authority read_only_session_summary_projection Blocked reasons no projection blockers reported Downstream unavailable package, handoff Forbidden runtime package mutation, connector dispatch, provider url',
+      controls: 0,
+    },
+    {
+      state: 'available',
+      available: 'true',
+      readOnly: 'true',
+      text: 'Server projection available downstream ready Plane readiness ready / typing 1 / sets 1 / runs 1 / outputs 1 Authority read_only_session_summary_projection Blocked reasons no projection blockers reported Downstream unavailable package, handoff Forbidden runtime package mutation, connector dispatch, provider url',
+      controls: 0,
+    },
+    {
+      state: 'available',
+      available: 'true',
+      readOnly: 'true',
+      text: 'Server projection available downstream ready Plane readiness blocked / typing 0 / sets 0 / runs 0 / outputs 0 Authority read_only_session_summary_projection Blocked reasons no projection blockers reported Downstream unavailable package, handoff Forbidden runtime package mutation, connector dispatch, provider url',
+      controls: 0,
     },
   ]);
   expect(projectionProof.sourceCount).toBe(10);
