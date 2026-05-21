@@ -27,6 +27,10 @@ def test_mockup_activation_readiness_classifies_first_slice_without_full_activat
     assert output_handoff["interaction_contract"]["contract_id"] == MOCKUP_NEXT_ADMITTED_SLICE
     assert "/api/v1/layer3/package/review/commit" in output_handoff["interaction_contract"]["route_authority"]
     assert "/api/v1/layer3/handoff/export/prepare" in output_handoff["interaction_contract"]["route_authority"]
+    assert (
+        "/api/v1/layer3/handoff/export/internal-webhook/dispatch"
+        in output_handoff["interaction_contract"]["route_authority"]
+    )
     assert "#internal-webhook-dispatch-panel" in output_handoff["interaction_contract"]["rendered_controls"]
     assert "raw_provider_token_exposure" in output_handoff["interaction_contract"]["negative_boundaries"]
     assert journeys["full_mockup_program"]["classification"] == "blocked"

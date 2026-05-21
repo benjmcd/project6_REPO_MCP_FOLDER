@@ -107,7 +107,7 @@ _JOURNEYS = (
                 "/api/v1/layer3/handoff/connector/local-outbox/write",
                 "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
                 "/api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
-                "/api/v1/layer3/handoff/internal-webhook/dispatch",
+                "/api/v1/layer3/handoff/export/internal-webhook/dispatch",
             ),
             "rendered_controls": (
                 "#result-review-submit",
