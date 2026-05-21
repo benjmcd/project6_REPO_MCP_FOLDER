@@ -898,3 +898,21 @@ Current Layer 3 source-directory package supersession preview rendered control f
 - preserve selected implementation action after sync `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`
 - treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior, production UI behavior, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`
+
+Current Layer 3 source-directory package supersession preview rendered control implementation to preserve when present:
+- `920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md` records branch-local implementation proof for the Doc `918`/`919` selected rendered control
+- classify it as `source_directory_package_supersession_preview_rendered_control_implemented_branch_local`
+- preserve predecessor sync doc `919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`
+- preserve current-main checkpoint before implementation `d19b7ae31f360b62bbc6316d09c5d2ae1accc562`
+- preserve implementation branch `codex/l3-package-preview-control`
+- preserve selected target `source_directory_package_supersession_preview_rendered_control`
+- preserve rendered node `/review/layer3 #source-directory-package-supersession-preview-panel`
+- preserve selected route `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`
+- preserve selected schema `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`
+- preserve selected mode `source_directory_qualitative_analysis_package_supersession_preview_authority`
+- preserve selected state owner `State.sourceDirectoryPackageSupersessionPreview`
+- preserve static proof `backend/tests/test_layer3_page.py::test_layer3_source_directory_package_supersession_preview_control_is_bounded`
+- preserve API proof `backend/tests/test_layer3_source_directory_qualitative_analysis.py::test_source_directory_qualitative_analysis_handoff_export_prepare_records_bounded_authority`
+- preserve browser proof `e2e/layer3-workbench.spec.js::Layer 3 workbench drives source-directory package supersession preview rendered control`
+- treat this implementation as rendered behavior, executable test behavior, and production UI behavior only; do not treat it as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_package_supersession_preview_rendered_control_then_select_next_blocker_retirement_lane`
