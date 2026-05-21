@@ -38928,5 +38928,52 @@
   "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_base_authority": "project6-origin/main at d6e44a74e99bb4d449af410929bd14343a59c5a6",
   "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_source_prs": "#1548,#1549,#1550",
   "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_merge_commit": "d6e44a74e99bb4d449af410929bd14343a59c5a6",
-  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_next_posture": "prove_source_directory_scan_to_handoff_export_bounded_operator_path_and_record_trial_usable_checkpoint"
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_next_posture": "prove_source_directory_scan_to_handoff_export_bounded_operator_path_and_record_trial_usable_checkpoint",
+  "source_directory_scan_to_handoff_delivery_trial_checkpoint_after_pr1552": {
+    "proof_kind": "source_directory_scan_to_handoff_delivery_trial_checkpoint_after_pr1552",
+    "status": "bounded_trial_usable_checkpoint_source_directory_scan_to_handoff_delivery_after_pr1552",
+    "checkpoint_doc": "next_milestone_plans/Layer3_planning_docs/933-trial-runbook.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/932-post1550-sync.md",
+    "base_authority": "project6-origin/main at 1613db32127d4a411c0aeb3f1e88f535a56c7215",
+    "source_pr": "#1552",
+    "source_branch": "codex/l3-source-directory-operator-proof",
+    "merge_commit": "1613db32127d4a411c0aeb3f1e88f535a56c7215",
+    "github_gate_pr_1552": {
+      "state": "MERGED",
+      "checks": "SUCCESS",
+      "comments_count": 0,
+      "reviews_count": 0,
+      "review_threads_total_count": 0
+    },
+    "proof_terms": [
+      "933-trial-runbook.md",
+      "bounded_trial_usable_checkpoint_source_directory_scan_to_handoff_delivery_after_pr1552",
+      "#1552",
+      "1613db32127d4a411c0aeb3f1e88f535a56c7215",
+      "Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path",
+      "rendered source-directory scan/status/material preview/Gate B",
+      "live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare",
+      "rendered same-origin hybrid external export/download delivery",
+      "middle lifecycle is not one uninterrupted manual-click operator flow",
+      "no provider-private signed URL runtime admission",
+      "no provider-public URL runtime admission",
+      "no connector handoff dispatch",
+      "no full mockup activation"
+    ],
+    "runtime_behavior_change_introduced_by_checkpoint_doc": false,
+    "rendered_behavior_change_introduced_by_checkpoint_doc": false,
+    "backend_behavior_change_introduced_by_checkpoint_doc": false,
+    "route_api_dto_model_migration_service_behavior_change_introduced_by_checkpoint_doc": false,
+    "executable_test_behavior_change_introduced_by_checkpoint_doc": false,
+    "production_ui_behavior_change_introduced_by_checkpoint_doc": false,
+    "frontend_durable_authority_enabled_by_checkpoint_doc": false,
+    "full_mockup_program_activation_selected_now": false,
+    "next_posture": "select_source_directory_internal_webhook_status_or_rendered_middle_lifecycle_gap_from_current_main"
+  },
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_doc": "next_milestone_plans/Layer3_planning_docs/933-trial-runbook.md",
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_status": "bounded_trial_usable_checkpoint_source_directory_scan_to_handoff_delivery_after_pr1552",
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_base_authority": "project6-origin/main at 1613db32127d4a411c0aeb3f1e88f535a56c7215",
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_source_pr": "#1552",
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_merge_commit": "1613db32127d4a411c0aeb3f1e88f535a56c7215",
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_next_posture": "select_source_directory_internal_webhook_status_or_rendered_middle_lifecycle_gap_from_current_main"
 }
