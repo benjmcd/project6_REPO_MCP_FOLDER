@@ -2575,6 +2575,9 @@ LAYER3_QUERY_SOURCE_SETUP_ACTIVATION_ENTRY_FREEZE = (
 LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE = (
     PLANNING_DOCS / "956-output-review-freeze.md"
 )
+LAYER3_BOUNDED_TRIAL_READINESS_CLOSURE_SYNC = (
+    PLANNING_DOCS / "957-trial-readiness-sync.md"
+)
 LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE = (
     PLANNING_DOCS
     / "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
@@ -87034,6 +87037,167 @@ def _check_output_review_package_handoff_activation_entry_freeze(
                 errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms missing {term}")
 
 
+def _check_bounded_trial_readiness_closure_sync(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_BOUNDED_TRIAL_READINESS_CLOSURE_SYNC,
+        errors,
+    )
+    entry_key = "layer3_bounded_trial_readiness_closure_after_activation_entry_freezes"
+    status = "bounded_trial_readiness_current_main_closed_after_activation_entry_freezes"
+    doc_path = "next_milestone_plans/Layer3_planning_docs/957-trial-readiness-sync.md"
+    branch = "codex/l3-trial-checkpoint"
+    current_main = "project6-origin/main at 25530f77 Freeze Layer 3 output handoff activation entry (#1581)"
+    next_posture = "bounded_trial_readiness_closed_await_operator_runbook_evidence_or_product_authority"
+    summary = (
+        "Doc 957 re-audits current-main Layer 3 mockup readiness after the query/source "
+        "and output review/package/handoff activation-entry freezes. The bounded trial "
+        "runbook remains doc 952, every remaining read-only or blocked journey has "
+        "current-main projection or blocker evidence, and full mockup activation plus "
+        "frontend-only durable authority remain blocked."
+    )
+    predecessor_docs = [
+        "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md",
+        "next_milestone_plans/Layer3_planning_docs/953-final-readiness-audit-after-checkpoint.md",
+        "next_milestone_plans/Layer3_planning_docs/954-post-final-readiness-next-phase-selection-freeze.md",
+        "next_milestone_plans/Layer3_planning_docs/955-query-source-freeze.md",
+        "next_milestone_plans/Layer3_planning_docs/956-output-review-freeze.md",
+    ]
+    journey_classification = {
+        "query_source_setup": "interactive_live",
+        "output_review_package_handoff": "interactive_live",
+        "pdf_location": "read_only",
+        "sublayers_3a_3b": "read_only",
+        "sublayer_3c_execution_lanes": "read_only",
+        "analysis_environment_projection": "read_only",
+        "full_mockup_program": "blocked",
+    }
+
+    for term in (
+        "957-trial-readiness-sync.md",
+        "Status: current-main closure sync for `bounded_trial_readiness_after_activation_entry_freezes`.",
+        f"Current-main authority before this branch: `{current_main}`.",
+        f"Sync branch: `{branch}`.",
+        "Predecessor checkpoint/runbook: `952-bounded-trial-checkpoint-runbook.md`.",
+        "Predecessor final readiness audit: `953-final-readiness-audit-after-checkpoint.md`.",
+        "Predecessor next-phase selection: `954-post-final-readiness-next-phase-selection-freeze.md`.",
+        "Predecessor activation-entry freezes: `955-query-source-freeze.md` and `956-output-review-freeze.md`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Backend behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Executable test behavior introduced by this sync: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Frontend-only durable authority selected now: `false`.",
+        "Implementation-entry allowed by this sync alone: `false`.",
+        "selected_first_slice: query_source_setup_interactive_live_classification",
+        "selected_next_slice: output_review_package_handoff_interactive_live_contract",
+        "selected_projection_slice: analysis_environment_read_only_live_projection_contract",
+        "journey counts `interactive_live: 2`, `read_only: 4`, `intentionally_excluded: 0`, `blocked: 1`",
+        "next_posture: record_bounded_trial_checkpoint_after_analysis_environment_projection_contract",
+        "full_mockup_activation_enabled: false",
+        "frontend_only_durable_authority_enabled: false",
+        "raw_provider_exposure_enabled: false",
+        "connector_provider_write_enabled: false",
+        "broad_source_model_rag_expansion_enabled: false",
+        "mutates_runtime_state: false",
+        "`query_source_setup` | `interactive_live`",
+        "`output_review_package_handoff` | `interactive_live`",
+        "`pdf_location` | `read_only`",
+        "`sublayers_3a_3b` | `read_only`",
+        "`sublayer_3c_execution_lanes` | `read_only`",
+        "`analysis_environment_projection` | `read_only`",
+        "`full_mockup_program` | `blocked`",
+        "The minimal operator runbook remains `952-bounded-trial-checkpoint-runbook.md`.",
+        "The bounded trial readiness track is current-main closed for this phase",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_BOUNDED_TRIAL_READINESS_CLOSURE_SYNC)} "
+                f"missing bounded trial readiness closure term: {term}"
+            )
+
+    for proof_doc in (
+        "881_MOCKUP_PDF_LOCATION_PROJECTION_FREEZE.md",
+        "884_MOCKUP_PDF_LOCATION_AVAILABLE_STATE_BROWSER_PROOF_CURRENT_MAIN_SYNC.md",
+        "890_MOCKUP_SUBLAYERS_AB_LIVE_STATE_PROJECTION_FREEZE.md",
+        "894_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYERS_AB_PROJECTION_SYNC.md",
+        "895_MOCKUP_SUBLAYER3C_EXECUTION_LANES_LIVE_STATE_PROJECTION_FREEZE.md",
+        "898_MOCKUP_TO_LIVE_MAPPING_INVENTORY_AFTER_SUBLAYER3C_PROJECTION_SYNC.md",
+        "951-analysis-environment-read-only-projection-contract.md",
+        "955-query-source-freeze.md",
+        "956-output-review-freeze.md",
+    ):
+        if proof_doc not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_BOUNDED_TRIAL_READINESS_CLOSURE_SYNC)} "
+                f"missing current-main coverage doc: {proof_doc}"
+            )
+
+    if not isinstance(manifest, dict):
+        return
+    entry = manifest.get(entry_key)
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        return
+    expected_values = (
+        ("status", status),
+        ("doc", doc_path),
+        ("branch", branch),
+        ("current_main_authority_before_sync", current_main),
+        ("runtime_behavior_change_introduced_by_sync", False),
+        ("rendered_behavior_change_introduced_by_sync", False),
+        ("backend_behavior_change_introduced_by_sync", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+        ("executable_test_behavior_change_introduced_by_sync", False),
+        ("full_mockup_program_activation_selected_now", False),
+        ("frontend_only_durable_authority_selected_now", False),
+        ("implementation_entry_allowed_by_this_sync_alone", False),
+        ("bounded_trial_runbook_doc", "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md"),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for key, value in expected_values:
+        if entry.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+        latest_key = f"latest_{entry_key}_{key}"
+        if manifest.get(latest_key) != value:
+            errors.append(f"{_rel(MANIFEST)} {latest_key} must be {value!r}")
+    if entry.get("predecessor_docs") != predecessor_docs:
+        errors.append(f"{_rel(MANIFEST)} {entry_key}.predecessor_docs mismatch")
+    if entry.get("journey_classification") != journey_classification:
+        errors.append(f"{_rel(MANIFEST)} {entry_key}.journey_classification mismatch")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+            return
+        if proof_entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_kind mismatch")
+        if proof_entry.get("status") != status:
+            errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.status mismatch")
+        proof_terms = proof_entry.get("proof_terms")
+        if not isinstance(proof_terms, list):
+            errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms must be a list")
+            return
+        for term in (
+            "957-trial-readiness-sync.md",
+            "25530f77 Freeze Layer 3 output handoff activation entry (#1581)",
+            "query_source_setup_interactive_live_classification",
+            "output_review_package_handoff_interactive_live_contract",
+            "read_only: pdf_location sublayers_3a_3b sublayer_3c_execution_lanes analysis_environment_projection",
+            "full_mockup_program blocked",
+            "952-bounded-trial-checkpoint-runbook.md",
+            "full mockup activation remains blocked",
+            next_posture,
+        ):
+            if not any(term in str(value) for value in proof_terms):
+                errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms missing {term}")
+
+
 def _check_source_directory_package_supersession_preview_rendered_control_freeze(
     errors: list[str],
 ) -> None:
@@ -90968,6 +91132,7 @@ def main() -> int:
     _check_full_mockup_activation_next_blocker_selection(errors)
     _check_query_source_setup_activation_entry_freeze(errors)
     _check_output_review_package_handoff_activation_entry_freeze(errors)
+    _check_bounded_trial_readiness_closure_sync(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(errors)
     _check_source_directory_package_supersession_preview_rendered_control(errors)
