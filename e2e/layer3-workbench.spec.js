@@ -7848,6 +7848,10 @@ test('Layer 3 mockup activation readiness dashboard classifies next-phase journe
   await expect(panel).toContainText('layer3.pdf_location_projection.v1');
   await expect(panel).toContainText('#mockup-pdf-location-projection');
   await expect(panel).toContainText('1 status projection and 6 negative boundaries');
+  await expect(panel).toContainText('sublayers_3a_3b_read_only_live_projection_contract');
+  await expect(panel).toContainText('layer3.sublayer_visualization_state.v1');
+  await expect(panel).toContainText('#mockup-sublayers-ab-projection');
+  await expect(panel).toContainText('4 status projections and 8 negative boundaries');
   await expect(panel).toContainText('interactive live');
   await expect(panel).toContainText('read only');
   await expect(panel).toContainText('full mockup activation');
