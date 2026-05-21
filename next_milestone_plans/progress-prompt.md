@@ -916,3 +916,20 @@ Current Layer 3 source-directory package supersession preview rendered control i
 - preserve browser proof `e2e/layer3-workbench.spec.js::Layer 3 workbench drives source-directory package supersession preview rendered control`
 - treat this implementation as rendered behavior, executable test behavior, and production UI behavior only; do not treat it as runtime behavior, backend behavior, route/API/DTO/model/migration/service behavior change, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `current_main_sync_source_directory_package_supersession_preview_rendered_control_then_select_next_blocker_retirement_lane`
+
+Current Layer 3 source-directory package supersession preview rendered control current-main sync to preserve when present:
+- `921_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md` records current-main sync for Doc `920` after PR `#1535`
+- classify it as `current_main_synced_source_directory_package_supersession_preview_rendered_control`
+- preserve predecessor implementation doc `920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md`
+- preserve source branch `codex/l3-package-preview-control`
+- preserve implementation commit `cb0c4aebd4757f10b51966213fb3c2deedc34cf0`
+- preserve merge commit `5b2310cfefc3bb597d872495149f49283e2787a9`
+- preserve sync branch `codex/l3-package-preview-control-sync`
+- preserve synced target `source_directory_package_supersession_preview_rendered_control`
+- preserve synced rendered node `/review/layer3 #source-directory-package-supersession-preview-panel`
+- preserve synced route `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`
+- preserve synced schema `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`
+- preserve synced mode `source_directory_qualitative_analysis_package_supersession_preview_authority`
+- preserve synced state owner `State.sourceDirectoryPackageSupersessionPreview`
+- treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior introduced by sync, production UI behavior introduced by sync, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `select_next_blocker_retirement_lane_after_source_directory_package_supersession_preview_rendered_control_current_main_sync`
