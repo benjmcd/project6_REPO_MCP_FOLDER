@@ -44,6 +44,14 @@ const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'lay
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET = 'source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference';
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status';
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RENDERED_MODE = 'rendered_source_directory_hybrid_internal_webhook_dispatch_control';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_USE_CASE = 'operator_dispatches_source_directory_hybrid_internal_webhook_from_server_configured_destination';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RESPONSE_AUTHORITY = 'State.sourceDirectoryHybridInternalWebhookDispatch + State.sessionSummary.internal_webhook_dispatch';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_DISPATCH_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/dispatch';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_STATUS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/status';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_DISPATCH_SCHEMA_ID = 'layer3.source_directory_internal_webhook.dispatch.v1';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_STATUS_SCHEMA_ID = 'layer3.source_directory_internal_webhook.status.v1';
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_OPERATOR_DECISION = 'dispatch_source_directory_hybrid_internal_webhook';
 const SOURCE_DIRECTORY_HYBRID_DELIVERY_PAYLOAD_FIELDS = Object.freeze([
     'material_snapshot_id',
     'source_ingestion_batch_id',
@@ -80,6 +88,16 @@ const SOURCE_DIRECTORY_HYBRID_DELIVERY_PAYLOAD_FIELDS = Object.freeze([
     'package_kind',
     'package_payload_hash',
 ]);
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_EXCLUDED_DELIVERY_FIELDS = new Set([
+    'output_package_id',
+    'package_kind',
+    'package_payload_hash',
+]);
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_PAYLOAD_FIELDS = Object.freeze(
+    SOURCE_DIRECTORY_HYBRID_DELIVERY_PAYLOAD_FIELDS.filter(
+        (field) => !SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_EXCLUDED_DELIVERY_FIELDS.has(field),
+    ),
+);
 const SOURCE_DIRECTORY_HYBRID_DELIVERY_REQUIRED_FIELDS = Object.freeze([
     'material_snapshot_id',
     'source_ingestion_batch_id',
@@ -111,6 +129,11 @@ const SOURCE_DIRECTORY_HYBRID_DELIVERY_REQUIRED_FIELDS = Object.freeze([
     'package_kind',
     'package_payload_hash',
 ]);
+const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_REQUIRED_FIELDS = Object.freeze(
+    SOURCE_DIRECTORY_HYBRID_DELIVERY_REQUIRED_FIELDS.filter(
+        (field) => !SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_EXCLUDED_DELIVERY_FIELDS.has(field),
+    ),
+);
 const RAW_MIXED_MATERIALIZE_REQUEST_SCHEMA_ID = 'layer3.raw_mixed_corpus_materialize_request.v1';
 const RAW_MIXED_MATERIALIZE_MODE = 'raw_mixed_existing_source_materialization_entry';
 const RAW_MIXED_MATERIALIZE_ALLOWED_SOURCE_CLASSES = new Set(['dataset_version', 'aps_content_document']);
@@ -324,6 +347,12 @@ const State = {
     sourceDirectoryHybridExternalExportDownloadDelivery: null,
     sourceDirectoryHybridExternalExportDownloadDeliveryError: null,
     sourceDirectoryHybridExternalExportDownloadDeliveryPending: false,
+    sourceDirectoryHybridInternalWebhookDispatch: null,
+    sourceDirectoryHybridInternalWebhookDispatchError: null,
+    sourceDirectoryHybridInternalWebhookDispatchPending: false,
+    sourceDirectoryHybridInternalWebhookStatus: null,
+    sourceDirectoryHybridInternalWebhookStatusError: null,
+    sourceDirectoryHybridInternalWebhookStatusPending: false,
     externalExportDownloadSignedReference: null,
     externalExportDownloadSignedReferenceError: null,
     externalExportDownloadSignedReferencePending: false,
@@ -441,6 +470,11 @@ const elements = {
     sourceDirectoryHybridExternalExportDownloadDeliveryAuthority: document.getElementById('source-directory-hybrid-external-export-download-delivery-authority'),
     sourceDirectoryHybridExternalExportDownloadDeliveryStatus: document.getElementById('source-directory-hybrid-external-export-download-delivery-status'),
     sourceDirectoryHybridExternalExportDownloadDeliverySubmit: document.getElementById('source-directory-hybrid-external-export-download-delivery-submit'),
+    sourceDirectoryHybridInternalWebhookForm: document.getElementById('source-directory-hybrid-internal-webhook-form'),
+    sourceDirectoryHybridInternalWebhookPanel: document.getElementById('source-directory-hybrid-internal-webhook-panel'),
+    sourceDirectoryHybridInternalWebhookAuthority: document.getElementById('source-directory-hybrid-internal-webhook-authority'),
+    sourceDirectoryHybridInternalWebhookStatus: document.getElementById('source-directory-hybrid-internal-webhook-status'),
+    sourceDirectoryHybridInternalWebhookSubmit: document.getElementById('source-directory-hybrid-internal-webhook-submit'),
     externalExportDownloadSignedReferenceForm: document.getElementById('external-export-download-signed-reference-form'),
     externalExportDownloadSignedReferencePanel: document.getElementById('external-export-download-signed-reference-panel'),
     externalExportDownloadSignedReferenceGenerate: document.getElementById('external-export-download-signed-reference-generate'),
@@ -8881,11 +8915,13 @@ function internalWebhookDispatchStateName(status = internalWebhookDispatchStatus
 function internalWebhookDispatchPanelState() {
     const status = internalWebhookDispatchStatusState() || {};
     const stateName = internalWebhookDispatchStateName(status);
-    if (stateName === 'internal_webhook_dispatched') {
+    if (stateName === 'internal_webhook_dispatched' || stateName === 'source_directory_internal_webhook_dispatched') {
         return {
-            label: 'internal_webhook_dispatched',
+            label: stateName,
             pill: 'ok',
-            message: 'The server recorded a configured internal webhook dispatch receipt.',
+            message: stateName === 'source_directory_internal_webhook_dispatched'
+                ? 'The server recorded a source-directory configured internal webhook dispatch receipt.'
+                : 'The server recorded a configured internal webhook dispatch receipt.',
         };
     }
     if (status.available === true && stateName === 'internal_webhook_dispatch_ready') {
@@ -8895,9 +8931,9 @@ function internalWebhookDispatchPanelState() {
             message: 'Server-owned local outbox authority can support configured internal webhook dispatch.',
         };
     }
-    if (stateName === 'internal_webhook_failed') {
+    if (stateName === 'internal_webhook_failed' || stateName === 'source_directory_internal_webhook_failed') {
         return {
-            label: 'internal_webhook_failed',
+            label: stateName,
             pill: 'warn',
             message: 'The read-only status surface is showing a recorded internal webhook failure.',
         };
@@ -8915,6 +8951,8 @@ function internalWebhookDispatchLifecycle(status) {
 
 function internalWebhookDispatchHistoryRows(status) {
     const lifecycle = internalWebhookDispatchLifecycle(status);
+    if (Array.isArray(lifecycle.source_directory_internal_webhook_dispatch_history)) return lifecycle.source_directory_internal_webhook_dispatch_history;
+    if (Array.isArray(status?.source_directory_internal_webhook_dispatch_history)) return status.source_directory_internal_webhook_dispatch_history;
     if (Array.isArray(lifecycle.internal_webhook_dispatch_history)) return lifecycle.internal_webhook_dispatch_history;
     if (Array.isArray(status?.internal_webhook_dispatch_history)) return status.internal_webhook_dispatch_history;
     return [];
@@ -8940,7 +8978,7 @@ function renderInternalWebhookDispatchHistory(status) {
         return '<li>history: none</li>';
     }
     return history.slice(0, 4).map((row) => (
-        `<li><code>${escapeHtml(row.internal_webhook_dispatch_receipt_id || 'pending')}</code>: ${escapeHtml(row.internal_webhook_dispatch_state || 'unknown')} / <code>${escapeHtml(row.authority_basis_hash || 'no-authority-hash')}</code></li>`
+        `<li><code>${escapeHtml(row.internal_webhook_dispatch_receipt_id || row.source_directory_internal_webhook_dispatch_receipt_id || 'pending')}</code>: ${escapeHtml(row.internal_webhook_dispatch_state || row.source_directory_internal_webhook_dispatch_state || 'unknown')} / <code>${escapeHtml(row.authority_basis_hash || 'no-authority-hash')}</code></li>`
     )).join('');
 }
 
@@ -8950,7 +8988,7 @@ function renderInternalWebhookDispatchAuditHistory(status) {
         return '<li>audit: none</li>';
     }
     return audit.slice(0, 4).map((row) => (
-        `<li><code>${escapeHtml(row.internal_webhook_dispatch_audit_event_id || 'pending')}</code>: ${escapeHtml(row.event_type || 'event')} / ${escapeHtml(row.reason_code || row.event_status || 'status-only')}</li>`
+        `<li><code>${escapeHtml(row.internal_webhook_dispatch_audit_event_id || row.source_directory_internal_webhook_dispatch_audit_event_id || 'pending')}</code>: ${escapeHtml(row.event_type || 'event')} / ${escapeHtml(row.reason_code || row.event_status || 'status-only')}</li>`
     )).join('');
 }
 
@@ -9007,7 +9045,7 @@ function renderInternalWebhookDispatchStatusPanel() {
                     ${fieldItem('state', internalWebhookDispatchStateName(status))}
                     ${fieldItem('available', status.available)}
                     ${fieldItem('blocked reason', status.blocked_reason)}
-                    ${fieldItem('history count', status.internal_webhook_dispatch_history_count ?? lifecycle.history_count)}
+                    ${fieldItem('history count', status.internal_webhook_dispatch_history_count ?? status.source_directory_internal_webhook_dispatch_history_count ?? lifecycle.history_count)}
                     ${fieldItem('audit count', status.audit_event_history_count ?? lifecycle.audit_event_history_count)}
                 </ul>
             </section>
@@ -9016,6 +9054,8 @@ function renderInternalWebhookDispatchStatusPanel() {
                 <ul>
                     ${fieldItem('session', status.session_id || currentSessionId(), { code: true })}
                     ${fieldItem('pass run', status.pass_run_id || selectedResultAuthority().passRunId, { code: true })}
+                    ${fieldItem('source ingestion batch', status.source_ingestion_batch_id, { code: true })}
+                    ${fieldItem('source ingestion file', status.source_ingestion_file_id, { code: true })}
                     ${fieldItem('reconciliation', status.reconciliation_record_id, { code: true })}
                     ${fieldItem('connector record', status.connector_dispatch_record_ref, { code: true })}
                     ${fieldItem('local receipt', status.connector_local_destination_receipt_id, { code: true })}
@@ -9029,12 +9069,13 @@ function renderInternalWebhookDispatchStatusPanel() {
             <section class="result-review-card">
                 <strong>Dispatch Receipt</strong>
                 <ul>
-                    ${fieldItem('receipt id', status.internal_webhook_dispatch_receipt_id, { code: true })}
+                    ${fieldItem('receipt id', status.internal_webhook_dispatch_receipt_id || status.source_directory_internal_webhook_dispatch_receipt_id, { code: true })}
                     ${fieldItem('target', status.target_identity || 'server_configured_internal_webhook_destination')}
                     ${fieldItem('target class', status.target_class || 'real_connector_invocation')}
                     ${fieldItem('mode', status.dispatch_mode || 'server_configured_allowlisted_internal_webhook_post')}
                     ${fieldItem('destination', status.redacted_destination_display_name)}
                     ${fieldItem('package kind', status.package_kind)}
+                    ${fieldItem('package set hash', status.package_set_hash, { code: true })}
                     ${fieldItem('package ref', status.package_artifact_ref, { code: true })}
                     ${fieldItem('package hash', status.package_artifact_hash, { code: true })}
                     ${fieldItem('package size bytes', status.package_artifact_size_bytes)}
@@ -9594,6 +9635,8 @@ function setGateControls() {
     elements.externalExportDownloadDeliverySubmit.disabled = !externalExportDownloadDeliveryControlsEnabled || !canSubmitExternalExportDownloadDelivery();
     elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus.disabled = !canInspectSourceDirectoryHybridExternalExportDownloadDelivery();
     elements.sourceDirectoryHybridExternalExportDownloadDeliverySubmit.disabled = !canSubmitSourceDirectoryHybridExternalExportDownloadDelivery();
+    elements.sourceDirectoryHybridInternalWebhookStatus.disabled = !canInspectSourceDirectoryHybridInternalWebhookStatus();
+    elements.sourceDirectoryHybridInternalWebhookSubmit.disabled = !canSubmitSourceDirectoryHybridInternalWebhook();
     elements.externalExportDownloadSignedReferenceGenerate.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canGenerateExternalExportDownloadSignedReference();
     elements.externalExportDownloadSignedReferenceUse.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canUseExternalExportDownloadSignedReference();
     elements.providerPrivateSignedUrlPrepare.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canPrepareProviderPrivateSignedUrl();
@@ -9641,6 +9684,7 @@ function renderAll() {
     renderExternalExportDownloadDeliveryPanel();
     renderSourceDirectoryHybridRenderedStatusExtension();
     renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel();
+    renderSourceDirectoryHybridInternalWebhookPanel();
     renderExternalExportDownloadSignedReferencePanel();
     renderConnectorLocalDestinationReceiptStatusPanel();
     renderServerOwnedLocalOutboxTargetStatusPanel();
@@ -10608,6 +10652,8 @@ async function refreshSessionSummary() {
         State.apsHandoffDispatchError = null;
         State.externalExportDownloadPrepareError = null;
         State.externalExportDownloadSignedReferenceError = null;
+        State.sourceDirectoryHybridInternalWebhookDispatchError = null;
+        State.sourceDirectoryHybridInternalWebhookStatusError = null;
         addEvent('Session state refreshed.');
         renderAll();
     } catch (error) {
@@ -10737,6 +10783,216 @@ function canSubmitSourceDirectoryHybridExternalExportDownloadDelivery() {
         && !State.sourceDirectoryHybridExternalExportDownloadDeliveryPending
         && !State.sourceDirectoryHybridExternalExportDownloadDelivery
     );
+}
+
+function sourceDirectoryHybridInternalWebhookAuthorityPacket() {
+    const text = elements.sourceDirectoryHybridInternalWebhookAuthority.value.trim();
+    if (!text) {
+        throw new Error('Source-directory hybrid internal webhook authority JSON is required.');
+    }
+    const packet = JSON.parse(text);
+    if (!packet || typeof packet !== 'object' || Array.isArray(packet)) {
+        throw new Error('Source-directory hybrid internal webhook authority must be a JSON object.');
+    }
+    return packet.dispatch_payload && typeof packet.dispatch_payload === 'object'
+        ? packet.dispatch_payload
+        : packet;
+}
+
+function sourceDirectoryHybridInternalWebhookPayload() {
+    const packet = sourceDirectoryHybridInternalWebhookAuthorityPacket();
+    const payload = {
+        client_request_id: requestId(),
+        operator_decision: SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_OPERATOR_DECISION,
+        external_export_download_target: SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+        download_mode: 'reference_only_prepare',
+        external_export_download_state: 'external_export_download_prepared',
+        target_identity: 'server_configured_internal_webhook_destination',
+        target_class: 'real_connector_invocation',
+        dispatch_mode: 'server_configured_allowlisted_internal_webhook_post',
+    };
+    SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_PAYLOAD_FIELDS.forEach((field) => {
+        if (packet[field] != null && payload[field] == null) {
+            payload[field] = packet[field];
+        }
+    });
+    if (!payload.prepare_record_ref && packet.handoff_export_prepare_record_ref) {
+        payload.prepare_record_ref = packet.handoff_export_prepare_record_ref;
+    }
+    payload.handoff_target = payload.handoff_target || 'internal_export_envelope';
+    payload.export_mode = payload.export_mode || 'prepare_only';
+    const missing = SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_REQUIRED_FIELDS.filter((field) => {
+        const value = payload[field];
+        return value == null || value === '' || (Array.isArray(value) && !value.length);
+    });
+    if (missing.length) {
+        throw new Error(`Source-directory hybrid internal webhook authority is missing: ${missing.join(', ')}`);
+    }
+    return payload;
+}
+
+function sourceDirectoryHybridInternalWebhookPayloadOrNull() {
+    try {
+        return sourceDirectoryHybridInternalWebhookPayload();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function sourceDirectoryHybridInternalWebhookReceiptId() {
+    return State.sourceDirectoryHybridInternalWebhookDispatch?.source_directory_internal_webhook_dispatch_receipt_id
+        || State.sourceDirectoryHybridInternalWebhookStatus?.source_directory_internal_webhook_dispatch_receipt_id
+        || State.sessionSummary?.internal_webhook_dispatch?.source_directory_internal_webhook_dispatch_receipt_id
+        || State.sessionSummary?.internal_webhook_dispatch?.latest_source_directory_internal_webhook_dispatch_receipt?.source_directory_internal_webhook_dispatch_receipt_id
+        || null;
+}
+
+function sourceDirectoryHybridInternalWebhookStatusMatches(payload) {
+    const status = State.sourceDirectoryHybridInternalWebhookStatus
+        || State.sourceDirectoryHybridInternalWebhookDispatch
+        || State.sessionSummary?.internal_webhook_dispatch
+        || {};
+    return Boolean(
+        payload
+        && status.source_directory_internal_webhook_dispatch_state === 'source_directory_internal_webhook_dispatched'
+        && status.external_export_download_record_ref === payload.external_export_download_record_ref
+        && status.export_download_descriptor_ref === payload.export_download_descriptor_ref
+        && status.target_identity === 'server_configured_internal_webhook_destination'
+        && status.target_class === 'real_connector_invocation'
+        && status.dispatch_mode === 'server_configured_allowlisted_internal_webhook_post'
+        && status.source_directory_internal_webhook_post_performed === true
+        && status.connector_dispatch_enabled === false
+        && status.provider_public_url_enabled === false
+        && status.provider_private_signed_url_enabled === false
+        && status.raw_target_url_exposed === false
+        && status.raw_package_payload_exposed === false
+        && status.raw_package_bytes_exposed === false
+    );
+}
+
+function canSubmitSourceDirectoryHybridInternalWebhook() {
+    return Boolean(
+        sourceDirectoryHybridInternalWebhookPayloadOrNull()
+        && !State.sourceDirectoryHybridInternalWebhookDispatchPending
+        && !State.sourceDirectoryHybridInternalWebhookStatusPending
+        && !sourceDirectoryHybridInternalWebhookReceiptId()
+    );
+}
+
+function canInspectSourceDirectoryHybridInternalWebhookStatus() {
+    return Boolean(
+        sourceDirectoryHybridInternalWebhookReceiptId()
+        && !State.sourceDirectoryHybridInternalWebhookStatusPending
+        && !State.sourceDirectoryHybridInternalWebhookDispatchPending
+    );
+}
+
+function sourceDirectoryHybridInternalWebhookPanelState() {
+    const payload = sourceDirectoryHybridInternalWebhookPayloadOrNull();
+    if (State.sourceDirectoryHybridInternalWebhookDispatchPending) {
+        return { label: 'source_directory_internal_webhook_dispatching', pill: 'preview', message: 'Submitting one server-configured source-directory internal webhook dispatch.' };
+    }
+    if (State.sourceDirectoryHybridInternalWebhookStatusPending) {
+        return { label: 'source_directory_internal_webhook_status_inspecting', pill: 'preview', message: 'Inspecting durable source-directory internal webhook receipt status.' };
+    }
+    if (State.sourceDirectoryHybridInternalWebhookDispatchError) {
+        return { label: State.sourceDirectoryHybridInternalWebhookDispatchError.error_code || 'source_directory_internal_webhook_dispatch_blocked', pill: 'blocked', message: 'Server authority rejected or blocked source-directory internal webhook dispatch.' };
+    }
+    if (State.sourceDirectoryHybridInternalWebhookStatusError) {
+        return { label: State.sourceDirectoryHybridInternalWebhookStatusError.error_code || 'source_directory_internal_webhook_status_blocked', pill: 'blocked', message: 'Durable source-directory internal webhook status is blocked or unavailable.' };
+    }
+    if (sourceDirectoryHybridInternalWebhookStatusMatches(payload)) {
+        return { label: 'source_directory_internal_webhook_dispatched', pill: 'ok', message: 'The server recorded source-directory internal webhook dispatch and exposes read-only status.' };
+    }
+    if (sourceDirectoryHybridInternalWebhookReceiptId()) {
+        return { label: 'source_directory_internal_webhook_status_available', pill: 'ok', message: 'A durable source-directory internal webhook receipt is available for inspection.' };
+    }
+    if (payload) {
+        return { label: 'source_directory_internal_webhook_ready', pill: 'ok', message: 'Server-derived source-directory authority can submit a configured internal webhook dispatch.' };
+    }
+    return { label: 'source_directory_internal_webhook_authority_missing', pill: 'blocked', message: 'Provide a server-derived source-directory hybrid external export/download authority payload.' };
+}
+
+function renderSourceDirectoryHybridInternalWebhookPanel() {
+    if (!elements.sourceDirectoryHybridInternalWebhookPanel) return;
+    const payload = sourceDirectoryHybridInternalWebhookPayloadOrNull() || {};
+    const dispatch = State.sourceDirectoryHybridInternalWebhookDispatch || {};
+    const status = State.sourceDirectoryHybridInternalWebhookStatus
+        || State.sessionSummary?.internal_webhook_dispatch
+        || {};
+    const panelState = sourceDirectoryHybridInternalWebhookPanelState();
+    const downstream = [
+        'operator_supplied_url',
+        'raw_target_url',
+        'raw_token',
+        'raw_headers',
+        'raw_package_payload',
+        'raw_package_bytes',
+        'provider_public_delivery',
+        'provider_private_signed_url',
+        'frontend_durable_authority',
+        'full_mockup_activation',
+    ];
+    elements.sourceDirectoryHybridInternalWebhookPanel.dataset.renderedMode = SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RENDERED_MODE;
+    elements.sourceDirectoryHybridInternalWebhookPanel.dataset.frontendDurableAuthority = 'false';
+    elements.sourceDirectoryHybridInternalWebhookPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Source-Directory Internal Webhook</strong>
+                <ul>
+                    ${fieldItem('rendered mode', SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RENDERED_MODE)}
+                    ${fieldItem('use case', SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_USE_CASE)}
+                    ${fieldItem('response authority', SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('dispatch schema', dispatch.schema_id || SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_DISPATCH_SCHEMA_ID)}
+                    ${fieldItem('status schema', status.schema_id)}
+                    ${fieldItem('decision', payload.operator_decision || SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_OPERATOR_DECISION)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Basis</strong>
+                <ul>
+                    ${fieldItem('session', payload.session_id || status.session_id, { code: true })}
+                    ${fieldItem('reconciliation', payload.reconciliation_record_id || status.reconciliation_record_id, { code: true })}
+                    ${fieldItem('material snapshot', payload.material_snapshot_id || status.material_snapshot_id, { code: true })}
+                    ${fieldItem('external readiness', payload.external_export_download_record_ref || status.external_export_download_record_ref, { code: true })}
+                    ${fieldItem('descriptor', payload.export_download_descriptor_ref || status.export_download_descriptor_ref, { code: true })}
+                    ${fieldItem('package count', Array.isArray(payload.output_package_ids) ? payload.output_package_ids.length : null)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Dispatch Receipt</strong>
+                <ul>
+                    ${fieldItem('receipt id', sourceDirectoryHybridInternalWebhookReceiptId(), { code: true })}
+                    ${fieldItem('state', status.source_directory_internal_webhook_dispatch_state || dispatch.source_directory_internal_webhook_dispatch_state)}
+                    ${fieldItem('destination', status.redacted_destination_display_name || dispatch.redacted_destination_display_name)}
+                    ${fieldItem('response status', status.response_status_code || dispatch.response_status_code)}
+                    ${fieldItem('post performed', status.source_directory_internal_webhook_post_performed || dispatch.source_directory_internal_webhook_post_performed)}
+                    ${fieldItem('history count', status.source_directory_internal_webhook_dispatch_history_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Fail-Closed Guards</strong>
+                <ul>
+                    ${fieldItem('target identity', payload.target_identity || 'server_configured_internal_webhook_destination')}
+                    ${fieldItem('dispatch mode', payload.dispatch_mode || 'server_configured_allowlisted_internal_webhook_post')}
+                    ${fieldItem('operator destination URL', status.operator_destination_url_enabled === true ? 'unexpected-enabled' : 'blocked')}
+                    ${fieldItem('raw target URL', status.raw_target_url_exposed === true ? 'unexpected-exposed' : 'blocked')}
+                    ${fieldItem('raw package payload', status.raw_package_payload_exposed === true ? 'unexpected-exposed' : 'blocked')}
+                    ${fieldItem('raw package bytes', status.raw_package_bytes_exposed === true ? 'unexpected-exposed' : 'blocked')}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Runtime</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(State.sourceDirectoryHybridInternalWebhookDispatchError)}
+            ${renderErrorCard(State.sourceDirectoryHybridInternalWebhookStatusError)}
+        </div>
+    `;
 }
 
 function sourceDirectoryHybridExternalExportDownloadDeliveryPanelState() {
@@ -11646,6 +11902,82 @@ async function submitSourceDirectoryHybridExternalExportDownloadDelivery(event) 
     }
 }
 
+async function submitSourceDirectoryHybridInternalWebhook(event) {
+    event.preventDefault();
+    if (!canSubmitSourceDirectoryHybridInternalWebhook()) return;
+    const payload = sourceDirectoryHybridInternalWebhookPayload();
+    State.sourceDirectoryHybridInternalWebhookDispatchPending = true;
+    State.sourceDirectoryHybridInternalWebhookDispatchError = null;
+    State.sourceDirectoryHybridInternalWebhookStatusError = null;
+    renderAll();
+    setBusy(elements.sourceDirectoryHybridInternalWebhookSubmit, true, 'Dispatch Internal Webhook');
+    try {
+        State.sourceDirectoryHybridInternalWebhookDispatch = await postJson(
+            SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_DISPATCH_PATH,
+            payload,
+        );
+        State.sourceDirectoryHybridInternalWebhookStatus = State.sourceDirectoryHybridInternalWebhookDispatch;
+        State.sourceDirectoryHybridInternalWebhookDispatchError = null;
+        addEvent('Source-directory hybrid internal webhook dispatch recorded.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
+            persistSessionRecoveryAnchor('source_directory_hybrid_internal_webhook_dispatch');
+        } catch (refreshError) {
+            addEvent(`Internal webhook dispatch recorded; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.sourceDirectoryHybridInternalWebhookDispatch = null;
+        State.sourceDirectoryHybridInternalWebhookDispatchError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'source_directory_internal_webhook_dispatch_request_failed',
+            message: error.message,
+        };
+        addEvent(`Source-directory internal webhook dispatch blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.sourceDirectoryHybridInternalWebhookDispatchPending = false;
+        setBusy(elements.sourceDirectoryHybridInternalWebhookSubmit, false, 'Dispatch Internal Webhook');
+        renderAll();
+    }
+}
+
+async function inspectSourceDirectoryHybridInternalWebhookStatus() {
+    if (!canInspectSourceDirectoryHybridInternalWebhookStatus()) return;
+    const receiptId = sourceDirectoryHybridInternalWebhookReceiptId();
+    State.sourceDirectoryHybridInternalWebhookStatusPending = true;
+    State.sourceDirectoryHybridInternalWebhookStatusError = null;
+    renderAll();
+    setBusy(elements.sourceDirectoryHybridInternalWebhookStatus, true, 'Inspect Webhook Status');
+    try {
+        State.sourceDirectoryHybridInternalWebhookStatus = await getJson(
+            `${SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_STATUS_PATH}/${encodeURIComponent(receiptId)}`,
+        );
+        State.sourceDirectoryHybridInternalWebhookStatusError = null;
+        addEvent('Source-directory hybrid internal webhook status inspected.');
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
+            persistSessionRecoveryAnchor('source_directory_hybrid_internal_webhook_status');
+        } catch (refreshError) {
+            addEvent(`Internal webhook status inspected; session refresh blocked: ${refreshError.message}`);
+        }
+        renderAll();
+    } catch (error) {
+        State.sourceDirectoryHybridInternalWebhookStatus = null;
+        State.sourceDirectoryHybridInternalWebhookStatusError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'source_directory_internal_webhook_status_request_failed',
+            message: error.message,
+        };
+        addEvent(`Source-directory internal webhook status blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.sourceDirectoryHybridInternalWebhookStatusPending = false;
+        setBusy(elements.sourceDirectoryHybridInternalWebhookStatus, false, 'Inspect Webhook Status');
+        renderAll();
+    }
+}
+
 async function submitExternalExportDownloadSignedReference(event) {
     event.preventDefault();
     if (!canGenerateExternalExportDownloadSignedReference()) return;
@@ -12346,6 +12678,15 @@ elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.addEventLi
     State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
     State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
     State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+    renderAll();
+});
+elements.sourceDirectoryHybridInternalWebhookStatus.addEventListener('click', inspectSourceDirectoryHybridInternalWebhookStatus);
+elements.sourceDirectoryHybridInternalWebhookForm.addEventListener('submit', submitSourceDirectoryHybridInternalWebhook);
+elements.sourceDirectoryHybridInternalWebhookAuthority.addEventListener('input', () => {
+    State.sourceDirectoryHybridInternalWebhookDispatch = null;
+    State.sourceDirectoryHybridInternalWebhookDispatchError = null;
+    State.sourceDirectoryHybridInternalWebhookStatus = null;
+    State.sourceDirectoryHybridInternalWebhookStatusError = null;
     renderAll();
 });
 elements.externalExportDownloadSignedReferenceForm.addEventListener('submit', submitExternalExportDownloadSignedReference);
