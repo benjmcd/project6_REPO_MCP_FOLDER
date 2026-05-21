@@ -1,8 +1,10 @@
 # Layer 3 Analysis Environment Read-Only Projection Contract
 
-Status: branch-local activation-readiness projection contract.
+Status: current-main synced activation-readiness projection contract.
 
 Current-main authority before this branch: `project6-origin/main` at `fd0c5df1 Add Sublayer 3C projection contract (#1575)`.
+
+Current-main sync: PR `#1576` merged as `2bbb1976 Add Analysis Environment projection contract (#1576)`.
 
 ## Selected Slice
 
@@ -53,4 +55,4 @@ The rendered surface is read-only and must not include `button`, `input`, `selec
 
 ## Next Posture
 
-After this branch is merged and synced to current main, record the bounded trial-usable checkpoint before adding any Analysis Environment interactivity or attempting full mockup activation.
+Record the bounded trial-usable checkpoint before adding any Analysis Environment interactivity or attempting full mockup activation.
