@@ -583,6 +583,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "postJson('/package/review/commit'" in js.text
     assert "postJson('/package/review/submit'" in js.text
     assert "PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_package_supersession_commit_control'" in js.text
+    assert (
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = "
+        "'rendered_source_directory_package_supersession_commit_control'"
+    ) in js.text
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_PATH" in js.text
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH" in js.text
     assert "PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION = 'commit_package_supersession'" in js.text
     assert "REPLACEMENT_PACKAGE_ARTIFACT_MANIFEST_RENDERED_MODE = 'rendered_replacement_package_artifact_manifest_control'" in js.text
     assert (
@@ -1091,8 +1097,16 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     gate_start = js_text.find("function canSubmitReplacementPackageSetAuthority")
     gate_end = js_text.find("function canSubmitPackageSupersessionCommit")
     render_start = js_text.find("function renderReplacementPackageSetAuthorityPanel")
-    payload_start = js_text.find("function replacementPackageArtifactMaterializationPayload")
-    payload_end = js_text.find("function replacementPackageSetAuthorityPayload")
+    generic_payload_start = js_text.find("function replacementPackageArtifactMaterializationPayload")
+    generic_payload_end = js_text.find("function replacementPackageSetAuthorityPayload")
+    source_payload_start = js_text.find("function sourceDirectoryReplacementPackageSetAuthorityPayload")
+    source_payload_end = js_text.find("async function packageSupersessionCommitPayload")
+    commit_gate_start = js_text.find("function canSubmitPackageSupersessionCommit")
+    commit_gate_end = js_text.find("function canSubmitReplacementPackageArtifactManifest")
+    commit_render_start = js_text.find("function renderPackageSupersessionCommitPanel")
+    commit_render_end = js_text.find("function renderReplacementPackageArtifactManifestPanel")
+    commit_payload_start = js_text.find("function sourceDirectoryPackageSupersessionCommitPayload")
+    commit_payload_end = js_text.find("function replacementPackageArtifactManifestPayload")
     clear_start = js_text.find("function clearSourceDirectoryPackageSupersessionPreviewState")
     clear_end = js_text.find("function safePackagePayloadRefForDisplay")
     source_submit_start = js_text.find("async function submitSourceDirectoryPackageSupersessionPreview")
@@ -1106,8 +1120,16 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     assert gate_start != -1
     assert gate_end != -1
     assert render_start != -1
-    assert payload_start != -1
-    assert payload_end != -1
+    assert generic_payload_start != -1
+    assert generic_payload_end != -1
+    assert source_payload_start != -1
+    assert source_payload_end != -1
+    assert commit_gate_start != -1
+    assert commit_gate_end != -1
+    assert commit_render_start != -1
+    assert commit_render_end != -1
+    assert commit_payload_start != -1
+    assert commit_payload_end != -1
     assert clear_start != -1
     assert clear_end != -1
     assert source_submit_start != -1
@@ -1119,8 +1141,12 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
 
     state_slice = js_text[state_start:state_end]
     gate_slice = js_text[gate_start:gate_end]
-    render_slice = js_text[render_start:payload_start]
-    payload_slice = js_text[payload_start:payload_end]
+    render_slice = js_text[render_start:commit_render_start]
+    generic_payload_slice = js_text[generic_payload_start:generic_payload_end]
+    source_payload_slice = js_text[source_payload_start:source_payload_end]
+    commit_gate_slice = js_text[commit_gate_start:commit_gate_end]
+    commit_render_slice = js_text[commit_render_start:commit_render_end]
+    commit_payload_slice = js_text[commit_payload_start:commit_payload_end]
     clear_slice = js_text[clear_start:clear_end]
     source_submit_slice = js_text[source_submit_start:source_submit_end]
     submit_slice = js_text[submit_start:submit_end]
@@ -1132,23 +1158,47 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     assert "nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in clear_slice
     assert "const requestToken = nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in source_submit_slice
     assert "if (!isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) return" in source_submit_slice
+    assert "function isSourceDirectoryPackageSupersessionPreviewSelected" in state_slice
     assert "sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null" in state_slice
     assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY" in state_slice
     assert "preview?.source_package_set_hash || preview?.package_set_hash || null" in state_slice
     assert "const preview = replacementPackageSetAuthorityPreviewState() || {}" in gate_slice
     assert "const sourcePackageSetHash = replacementPackageSetAuthoritySourcePackageSetHash(preview)" in gate_slice
+    assert "sourceMode === 'source_directory_package_supersession_preview'" in gate_slice
+    assert "preview.session_id" in gate_slice
     assert "&& sourcePackageSetHash" in gate_slice
     assert "!State.sourceDirectoryPackageSupersessionPreviewPending" in gate_slice
+    assert "dataset.renderedMode = renderedMode" in render_slice
     assert "dataset.sourceAuthority = sourceAuthority" in render_slice
+    assert "dataset.sourceMode = sourceMode" in render_slice
     assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE" in render_slice
     assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE" in render_slice
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_PATH" in render_slice
     assert "fieldItem('selected source authority', sourceAuthority" in render_slice
     assert "fieldItem('selected source mode', sourceMode" in render_slice
-    assert "const preview = replacementPackageSetAuthorityPreviewState() || {}" in payload_slice
-    assert "source_package_set_hash: sourcePackageSetHash" in payload_slice
-    assert "const materialization = await postJson(\n            '/package/replacement-artifact/materialize'" in submit_slice
+    assert "const preview = replacementPackageSetAuthorityPreviewState() || {}" in generic_payload_slice
+    assert "source_package_set_hash: sourcePackageSetHash" in generic_payload_slice
+    assert "function sourceDirectoryReplacementPackageSetAuthorityPayload" in source_payload_slice
+    assert "session_id: preview.session_id" in source_payload_slice
+    assert "source_package_set_hash: preview.source_package_set_hash" in source_payload_slice
+    assert "operator_decision: REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION" in source_payload_slice
+    assert "materialization = await postJson(\n                '/package/replacement-artifact/materialize'" in submit_slice
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_PATH" in submit_slice
+    assert "sourceDirectoryReplacementPackageSetAuthorityPayload()" in submit_slice
     assert "State.replacementPackageArtifactMaterialization = materialization" in submit_slice
-    assert "State.replacementPackageSetAuthority = await postJson(\n            '/package/replacement-set/record'" in submit_slice
+    assert "State.replacementPackageSetAuthority = await postJson(" in submit_slice
+    assert ": '/package/replacement-set/record'" in submit_slice
+    assert "source_directory_package_supersession_preview" in commit_gate_slice
+    assert "replacementAuthority.replacement_package_set_authority_id" in commit_gate_slice
+    assert "replacementAuthority.authority_basis_hash" in commit_gate_slice
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE" in commit_render_slice
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_USE_CASE" in commit_render_slice
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH" in commit_render_slice
+    assert "function sourceDirectoryPackageSupersessionCommitPayload" in commit_payload_slice
+    assert "replacement_package_set_authority_id: replacementAuthority.replacement_package_set_authority_id" in commit_payload_slice
+    assert "replacement_authority_basis_hash: replacementAuthority.authority_basis_hash" in commit_payload_slice
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH" in js_text[submit_end:js_text.find("async function submitReplacementPackageArtifactManifest")]
+    assert "sourceDirectoryPackageSupersessionCommitPayload()" in js_text[submit_end:js_text.find("async function submitReplacementPackageArtifactManifest")]
     assert "clearSourceDirectoryPackageSupersessionPreviewState()" in input_slice
     assert "clearReplacementPackageSetAuthorityState()" in input_slice
     for forbidden in (
@@ -1162,8 +1212,21 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     ):
         assert forbidden not in state_slice
         assert forbidden not in gate_slice
-        assert forbidden not in payload_slice
+        assert forbidden not in source_payload_slice
+        assert forbidden not in commit_payload_slice
         assert forbidden not in submit_slice
+    for forbidden in (
+        "source_output_package_ids",
+        "source_payload_refs",
+        "replacement_payload_refs",
+        "commit_basis_hash",
+        "downstream_dependency_hash",
+        "frontend_state",
+        "browser_state",
+        "rendered_control_state",
+    ):
+        assert forbidden not in source_payload_slice
+        assert forbidden not in commit_payload_slice
 
 
 def test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded() -> None:

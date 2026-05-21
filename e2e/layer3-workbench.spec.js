@@ -5036,7 +5036,7 @@ test('Layer 3 workbench records rendered replacement package-set authority contr
   ]);
 });
 
-test('Layer 3 workbench records replacement package-set authority from source-directory preview state', async ({ page, request }) => {
+test('Layer 3 workbench records source-directory replacement authority and supersession commit controls', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);
   const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
@@ -5174,32 +5174,215 @@ test('Layer 3 workbench records replacement package-set authority from source-di
   const replacementPanel = page.locator('#replacement-package-set-authority-panel');
   await replacementPanel.scrollIntoViewIfNeeded();
   await expect(replacementPanel).toHaveAttribute('data-source-authority', 'State.sourceDirectoryPackageSupersessionPreview');
+  await expect(replacementPanel).toHaveAttribute('data-source-mode', 'source_directory_package_supersession_preview');
+  await expect(replacementPanel).toHaveAttribute('data-rendered-mode', 'rendered_source_directory_replacement_package_set_authority_control');
   await expect(replacementPanel).toHaveAttribute('data-authority-state', 'replacement_package_set_authority_ready');
   await expect(replacementPanel).toContainText('rendered_source_directory_replacement_package_set_authority_control');
   await expect(replacementPanel).toContainText('source_directory_package_supersession_preview');
 
-  const replacement = await recordRenderedReplacementPackageSetAuthority(
-    page,
-    gateB.session_id,
-    approval,
-    execution,
-    commit,
-    { ...sourcePreview, package_set_hash: sourcePreview.source_package_set_hash },
+  const replacementPayloadRefs = EXPECTED_PACKAGE_REVIEW_KINDS.map((packageKind) => (
+    `artifact://source-directory-replacement-package-artifact/source-rendered-replacement-set/${packageKind}`
+  ));
+  const sourceReplacementAuthority = {
+    schema_id: 'layer3.replacement_package_set_authority.v1',
+    status: 'recorded',
+    next_state: 'replacement_package_set_authority_recorded',
+    replacement_package_set_authority_id: 'source-directory-replacement-authority-rendered-proof',
+    replacement_package_set_authority_mode: 'source_directory_package_lifecycle_replacement_package_set_authority',
+    source_directory_package_lifecycle_authority: true,
+    source_gate: '931_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC',
+    session_id: gateB.session_id,
+    analysis_plan_id: approval.analysis_plan_id,
+    pass_run_id: execution.selection.pass_run_ids[0],
+    reconciliation_record_id: commit.reconciliation_record_id,
+    package_supersession_preview_hash: sourcePreview.package_supersession_preview_hash,
+    source_package_set_hash: sourcePreview.source_package_set_hash,
+    source_output_package_ids: commit.output_package_ids,
+    source_package_kinds: EXPECTED_PACKAGE_REVIEW_KINDS,
+    source_payload_refs: commit.output_package_ids.map((packageId) => `artifact://source-output-package/${packageId}`),
+    source_payload_hashes: commit.payload_hashes,
+    replacement_package_set_id: 'source-directory-replacement-set-rendered-proof',
+    replacement_package_set_hash: '2'.repeat(64),
+    replacement_package_kinds: EXPECTED_PACKAGE_REVIEW_KINDS,
+    replacement_payload_refs: replacementPayloadRefs,
+    replacement_payload_hashes: EXPECTED_PACKAGE_REVIEW_KINDS.map((_, index) => String(index + 3).repeat(64)),
+    authority_basis_hash: '6'.repeat(64),
+    package_row_mutation_enabled: false,
+    package_payload_write_enabled: false,
+    package_supersession_commit_enabled: false,
+    connector_dispatch_enabled: false,
+    provider_public_url_enabled: false,
+    source_widening_enabled: false,
+    qualitative_hybrid_rag_execution_enabled: false,
+    frontend_only_durable_state_enabled: false,
+    downstream_unavailable: ['package_row_mutation', 'frontend_only_durable_state'],
+  };
+  let capturedSourceReplacementPayload = null;
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview',
+    async (route) => {
+      capturedSourceReplacementPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(sourceReplacementAuthority),
+      });
+    },
   );
-
-  expect(capturedSourcePreviewPayload.operator_decision).toBe('preview_source_directory_package_supersession');
-  expect(replacement.materialization.source_package_set_hash).toBe(sourcePreview.source_package_set_hash);
-  expect(replacement.materialization.package_supersession_preview_hash).toBe(
+  const sourceReplacementResponse = page.waitForResponse((response) => (
+    response.url().includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview')
+  ));
+  await page.locator('#replacement-package-set-authority-submit').click();
+  await expectJson(await sourceReplacementResponse);
+  expectOnlyPayloadKeys(capturedSourceReplacementPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'operator_decision',
+    'package_supersession_preview_hash',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'session_id',
+    'source_package_set_hash',
+  ]);
+  expect(capturedSourceReplacementPayload.session_id).toBe(sourcePreview.session_id);
+  expect(capturedSourceReplacementPayload.analysis_plan_id).toBe(sourcePreview.analysis_plan_id);
+  expect(capturedSourceReplacementPayload.pass_run_id).toBe(sourcePreview.pass_run_id);
+  expect(capturedSourceReplacementPayload.reconciliation_record_id).toBe(sourcePreview.reconciliation_record_id);
+  expect(capturedSourceReplacementPayload.package_supersession_preview_hash).toBe(
     sourcePreview.package_supersession_preview_hash,
   );
-  expect(replacement.replacementAuthority.next_state).toBe('replacement_package_set_authority_recorded');
+  expect(capturedSourceReplacementPayload.source_package_set_hash).toBe(sourcePreview.source_package_set_hash);
+  expect(capturedSourceReplacementPayload.operator_decision).toBe('record_replacement_package_set_authority');
+  for (const forbiddenKey of [
+    'source_output_package_ids',
+    'source_payload_refs',
+    'replacement_payload_refs',
+    'authority_basis_hash',
+    'materialization_basis_hash',
+    'frontend_state',
+    'browser_state',
+    'rendered_control_state',
+  ]) {
+    expect(capturedSourceReplacementPayload).not.toHaveProperty(forbiddenKey);
+  }
+  await expect(replacementPanel).toHaveAttribute('data-authority-state', 'replacement_package_set_authority_recorded');
+
+  expect(capturedSourcePreviewPayload.operator_decision).toBe('preview_source_directory_package_supersession');
+  const commitPanel = page.locator('#package-supersession-commit-panel');
+  await commitPanel.scrollIntoViewIfNeeded();
+  await expect(commitPanel).toHaveAttribute('data-source-authority', 'State.sourceDirectoryPackageSupersessionPreview + State.replacementPackageSetAuthority');
+  await expect(commitPanel).toHaveAttribute('data-source-mode', 'source_directory_package_supersession_preview');
+  await expect(commitPanel).toHaveAttribute('data-rendered-mode', 'rendered_source_directory_package_supersession_commit_control');
+  await expect(commitPanel).toHaveAttribute('data-commit-state', 'package_supersession_commit_ready');
+  const sourceSupersessionCommit = {
+    schema_id: 'layer3.package_supersession_commit.v1',
+    status: 'committed',
+    next_state: 'package_supersession_commit_recorded',
+    package_supersession_commit_id: 'source-directory-package-supersession-commit-rendered-proof',
+    package_supersession_commit_mode: 'source_directory_package_lifecycle_package_supersession_commit_authority',
+    source_directory_package_lifecycle_authority: true,
+    source_gate: '931_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC',
+    session_id: gateB.session_id,
+    analysis_plan_id: approval.analysis_plan_id,
+    pass_run_id: execution.selection.pass_run_ids[0],
+    reconciliation_record_id: commit.reconciliation_record_id,
+    package_supersession_preview_hash: sourcePreview.package_supersession_preview_hash,
+    source_package_set_hash: sourcePreview.source_package_set_hash,
+    source_output_package_ids: sourceReplacementAuthority.source_output_package_ids,
+    source_package_kinds: sourceReplacementAuthority.source_package_kinds,
+    source_payload_refs: sourceReplacementAuthority.source_payload_refs,
+    source_payload_hashes: sourceReplacementAuthority.source_payload_hashes,
+    replacement_package_set_authority_id: sourceReplacementAuthority.replacement_package_set_authority_id,
+    replacement_authority_basis_hash: sourceReplacementAuthority.authority_basis_hash,
+    replacement_package_set_id: sourceReplacementAuthority.replacement_package_set_id,
+    replacement_package_set_hash: sourceReplacementAuthority.replacement_package_set_hash,
+    replacement_package_kinds: sourceReplacementAuthority.replacement_package_kinds,
+    replacement_payload_refs: sourceReplacementAuthority.replacement_payload_refs,
+    replacement_payload_hashes: sourceReplacementAuthority.replacement_payload_hashes,
+    downstream_dependency_hash: sourcePreview.downstream_dependency_hash,
+    commit_basis_hash: '7'.repeat(64),
+    operator_decision: 'commit_package_supersession',
+    package_row_mutation_enabled: false,
+    package_payload_write_enabled: false,
+    l3_output_package_write_enabled: false,
+    broad_package_mutation_enabled: false,
+    connector_dispatch_enabled: false,
+    provider_public_url_enabled: false,
+    source_widening_enabled: false,
+    qualitative_hybrid_rag_execution_enabled: false,
+    frontend_only_durable_state_enabled: false,
+    downstream_unavailable: ['package_row_mutation', 'frontend_only_durable_state'],
+  };
+  let capturedSourceCommitPayload = null;
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit',
+    async (route) => {
+      capturedSourceCommitPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(sourceSupersessionCommit),
+      });
+    },
+  );
+  const sourceCommitResponse = page.waitForResponse((response) => (
+    response.url().includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit')
+  ));
+  await page.locator('#package-supersession-commit-submit').click();
+  await expectJson(await sourceCommitResponse);
+  expectOnlyPayloadKeys(capturedSourceCommitPayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'operator_decision',
+    'package_supersession_preview_hash',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'replacement_authority_basis_hash',
+    'replacement_package_set_authority_id',
+    'session_id',
+    'source_package_set_hash',
+  ]);
+  expect(capturedSourceCommitPayload.session_id).toBe(sourceReplacementAuthority.session_id);
+  expect(capturedSourceCommitPayload.analysis_plan_id).toBe(sourceReplacementAuthority.analysis_plan_id);
+  expect(capturedSourceCommitPayload.pass_run_id).toBe(sourceReplacementAuthority.pass_run_id);
+  expect(capturedSourceCommitPayload.reconciliation_record_id).toBe(sourceReplacementAuthority.reconciliation_record_id);
+  expect(capturedSourceCommitPayload.package_supersession_preview_hash).toBe(
+    sourcePreview.package_supersession_preview_hash,
+  );
+  expect(capturedSourceCommitPayload.source_package_set_hash).toBe(sourcePreview.source_package_set_hash);
+  expect(capturedSourceCommitPayload.replacement_package_set_authority_id).toBe(
+    sourceReplacementAuthority.replacement_package_set_authority_id,
+  );
+  expect(capturedSourceCommitPayload.replacement_authority_basis_hash).toBe(
+    sourceReplacementAuthority.authority_basis_hash,
+  );
+  expect(capturedSourceCommitPayload.operator_decision).toBe('commit_package_supersession');
+  for (const forbiddenKey of [
+    'source_output_package_ids',
+    'source_payload_refs',
+    'replacement_payload_refs',
+    'commit_basis_hash',
+    'downstream_dependency_hash',
+    'frontend_state',
+    'browser_state',
+    'rendered_control_state',
+  ]) {
+    expect(capturedSourceCommitPayload).not.toHaveProperty(forbiddenKey);
+  }
+  await expect(commitPanel).toHaveAttribute('data-commit-state', 'package_supersession_commit_recorded');
   expect(layer3ApiRequests.filter((apiRequest) => (
     apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview')
   ))).toHaveLength(1);
-  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/materialize'))).toHaveLength(2);
-  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-set/record'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview')
+  ))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit')
+  ))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/materialize'))).toHaveLength(0);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-set/record'))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
-    '/package/supersession/commit',
+    '/api/v1/layer3/package/supersession/commit',
     '/package/replacement-artifact/manifest',
     '/package/replacement-namespace',
     '/handoff/connector',
