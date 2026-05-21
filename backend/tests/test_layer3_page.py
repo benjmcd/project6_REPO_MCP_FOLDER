@@ -1541,6 +1541,11 @@ def test_layer3_source_directory_hybrid_middle_lifecycle_rendered_control_is_bou
     assert "source_directory_hybrid_middle_lifecycle_prepared" in middle_slice
     assert "State.sourceDirectoryHybridMiddleLifecycle" in render_slice
     assert "State.sourceDirectoryHybridMiddleLifecycle" in submit_slice
+    assert "function sourceDirectoryHybridPackageSupersessionPreviewAuthority" in middle_slice
+    assert "elements.sourceDirectoryPackageSupersessionPreviewAuthority.value = JSON.stringify" in submit_slice
+    assert "sourceDirectoryPackageSupersessionAuthority" in submit_slice
+    assert "clearSourceDirectoryPackageSupersessionPreviewState()" in submit_slice
+    assert "clearReplacementPackageSetAuthorityState()" in submit_slice
     assert "elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = deliveryAuthorityText" in submit_slice
     assert "elements.sourceDirectoryHybridInternalWebhookAuthority.value = deliveryAuthorityText" in submit_slice
     assert "frontendDurableAuthority = 'false'" in render_slice
