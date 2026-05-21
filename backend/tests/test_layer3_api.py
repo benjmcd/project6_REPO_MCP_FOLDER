@@ -499,8 +499,12 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
     )
     assert (
         bootstrap_body["mockup_activation_readiness"]["selected_projection_slice"]
-        == "pdf_location_read_only_live_projection_contract"
+        == "sublayers_3a_3b_read_only_live_projection_contract"
     )
+    assert bootstrap_body["mockup_activation_readiness"]["selected_projection_slices"] == [
+        "pdf_location_read_only_live_projection_contract",
+        "sublayers_3a_3b_read_only_live_projection_contract",
+    ]
     assert bootstrap_body["mockup_activation_readiness"]["journey_counts"] == {
         "interactive_live": 2,
         "read_only": 3,
@@ -520,6 +524,20 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
     )
     assert "State.sessionSummary.pdf_location_projection" in pdf_projection_contract["status_projection"]
     assert "browser_owned_authoritative_pdf_location" in pdf_projection_contract["negative_boundaries"]
+    sublayers_ab_projection_contract = activation_journeys["sublayers_3a_3b"]["projection_contract"]
+    assert activation_journeys["sublayers_3a_3b"]["classification"] == "read_only"
+    assert (
+        sublayers_ab_projection_contract["contract_id"]
+        == "sublayers_3a_3b_read_only_live_projection_contract"
+    )
+    assert sublayers_ab_projection_contract["schema_id"] == "layer3.sublayer_visualization_state.v1"
+    assert (
+        sublayers_ab_projection_contract["server_authority_contract"]
+        == "read_only_persisted_layer3_rows_and_gate_state_projection"
+    )
+    assert "State.sessionSummary.sublayer_visualization" in sublayers_ab_projection_contract["status_projection"]
+    assert "State.materialPreview" in sublayers_ab_projection_contract["status_projection"]
+    assert "runtime_request_widening" in sublayers_ab_projection_contract["negative_boundaries"]
     assert bootstrap_body["mockup_activation_readiness"]["full_mockup_activation_enabled"] is False
     assert bootstrap_body["mockup_activation_readiness"]["frontend_only_durable_authority_enabled"] is False
     assert readiness_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"

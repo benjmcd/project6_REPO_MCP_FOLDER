@@ -500,6 +500,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "query_source_setup_interactive_live_classification" in js.text
     assert "output_review_package_handoff_interactive_live_contract" in js.text
     assert "selected projection slice" in js.text
+    assert "selected_projection_slices" in js.text
     assert "projection.contract_id" in js.text
     assert "projection.schema_id" in js.text
     assert "projection.status_projection" in js.text
