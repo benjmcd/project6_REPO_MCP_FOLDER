@@ -39365,5 +39365,54 @@
   "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_status": "final_bounded_readiness_audited_complete_full_mockup_activation_blocked",
   "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_current_main_authority": "352f1568 Capture Layer 3 bounded trial evidence (#1568)",
   "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_next_posture": "bounded_objective_complete_select_new_phase_only_with_product_authority",
-  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_summary": "Doc 944 records the final bounded readiness audit: the current-main-selected Layer 3 source-directory operator path is complete through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, review, handoff/export, same-origin delivery/status, admitted redacted delivery/use, internal webhook dispatch/status, and projection visibility. Critical mockup journeys are read-only projected or explicitly blocked; full mockup activation and frontend-only durable authority remain blocked as optional new-phase work."
+  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_summary": "Doc 944 records the final bounded readiness audit: the current-main-selected Layer 3 source-directory operator path is complete through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, review, handoff/export, same-origin delivery/status, admitted redacted delivery/use, internal webhook dispatch/status, and projection visibility. Critical mockup journeys are read-only projected or explicitly blocked; full mockup activation and frontend-only durable authority remain blocked as optional new-phase work.",
+  "layer3_next_phase_activation_readiness_package": {
+    "proof_kind": "layer3_next_phase_activation_readiness_package",
+    "status": "branch_local_activation_readiness_package_implemented",
+    "doc": "next_milestone_plans/Layer3_planning_docs/945-activation-readiness-package.md",
+    "predecessor_final_audit_doc": "next_milestone_plans/Layer3_planning_docs/944-final-readiness-audit.md",
+    "implementation_branch": "codex/l3-next-phase-activation-readiness",
+    "base_current_main_authority": "project6-origin/main at 89924065 Merge pull request #1569 from benjmcd/codex/l3-final-readiness-audit-post-trial",
+    "schema_id": "layer3.mockup_activation_readiness.v1",
+    "selected_first_slice": "query_source_setup_interactive_live_classification",
+    "journey_classification": {
+      "query_source_setup": "interactive_live",
+      "pdf_location": "read_only",
+      "sublayers_3a_3b": "read_only",
+      "sublayer_3c_execution_lanes": "read_only",
+      "output_review_package_handoff": "read_only",
+      "full_mockup_program": "blocked"
+    },
+    "proof_terms": [
+      "mockup_activation_readiness",
+      "layer3.mockup_activation_readiness.v1",
+      "rendered_mockup_activation_readiness_dashboard",
+      "query_source_setup_interactive_live_classification",
+      "full mockup activation blocked",
+      "frontend-only durable authority blocked"
+    ],
+    "validation": [
+      "python -m py_compile activation-readiness backend files PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js PASS",
+      "python -m pytest ./backend/tests/test_layer3_mockup_activation_readiness.py ./backend/tests/test_layer3_mockup_boundary.py -q PASS 2 passed",
+      "python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts ./backend/tests/test_layer3_mockup_activation_readiness.py -q PASS 2 passed",
+      "python -m pytest ./backend/tests/test_layer3_page.py::test_layer3_page_route_serves_workbench_shell -q PASS 1 passed",
+      "python -m pytest ./backend/tests/test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS 1 passed",
+      "headless Chromium activation-readiness dashboard proof PASS 1 passed",
+      "headed Chromium activation-readiness dashboard proof PASS 1 passed",
+      "python ./tools/l3-progress-check.py PASS",
+      "git diff --check PASS"
+    ],
+    "full_mockup_program_activation_selected_now": false,
+    "frontend_durable_authority_enabled": false,
+    "raw_provider_exposure_enabled": false,
+    "connector_provider_write_enabled": false,
+    "broad_source_model_rag_expansion_enabled": false,
+    "next_posture": "select_one_read_only_journey_for_exact_server_owned_interaction_contract"
+  },
+  "latest_layer3_next_phase_activation_readiness_package_doc": "next_milestone_plans/Layer3_planning_docs/945-activation-readiness-package.md",
+  "latest_layer3_next_phase_activation_readiness_package_status": "branch_local_activation_readiness_package_implemented",
+  "latest_layer3_next_phase_activation_readiness_package_selected_first_slice": "query_source_setup_interactive_live_classification",
+  "latest_layer3_next_phase_activation_readiness_package_next_posture": "select_one_read_only_journey_for_exact_server_owned_interaction_contract",
+  "latest_layer3_next_phase_activation_readiness_package_summary": "Doc 945 implements a server-owned Layer 3 mockup activation-readiness contract and rendered dashboard. Query/source setup is classified interactive-live through existing server controls; PDF-location, Sublayers 3A/3B, Sublayer 3C execution lanes, and output review/package/handoff remain read-only; full mockup activation remains blocked."
 }

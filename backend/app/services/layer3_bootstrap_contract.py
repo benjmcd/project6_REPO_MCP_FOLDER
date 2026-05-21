@@ -78,6 +78,7 @@ def build_bootstrap_contract(
     unavailable_gate_labels: Sequence[str],
     state_action_contract: Mapping[str, Any],
     authority_matrix_contract: Mapping[str, Any],
+    mockup_activation_readiness: Mapping[str, Any],
     authority_rail: Mapping[str, Any],
 ) -> dict[str, Any]:
     return {
@@ -92,6 +93,7 @@ def build_bootstrap_contract(
         "unavailable_gate_labels": list(unavailable_gate_labels),
         "state_action_contract": dict(state_action_contract),
         "authority_matrix_contract": dict(authority_matrix_contract),
+        "mockup_activation_readiness": dict(mockup_activation_readiness),
         "features": dict(BOOTSTRAP_FEATURE_FLAGS),
         "execution_readiness": {
             "schema_id": EXECUTION_READINESS_SCHEMA_ID,
