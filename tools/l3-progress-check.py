@@ -2573,6 +2573,10 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE = (
     PLANNING_DOCS
     / "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -86796,6 +86800,193 @@ def _check_source_directory_package_supersession_preview_rendered_control_freeze
             errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
 
 
+def _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    entry_key = (
+        "source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync"
+    )
+    status = (
+        "current_main_synced_source_directory_package_supersession_preview_rendered_control_freeze"
+    )
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
+    )
+    source_pr = "#1533"
+    source_branch = "codex/l3-package-preview-freeze"
+    freeze_commit = "49da2bd06242cc9b62ff345ba966a7efe33425b9"
+    merge_commit = "b6c6425918169f2f1fdf9d49d6ff498fa885b078"
+    sync_branch = "codex/l3-package-preview-sync"
+    synced_target = "source_directory_package_supersession_preview_rendered_control"
+    target_classification = "live_server_authoritative_action"
+    implementation_action = (
+        "implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync"
+    )
+    selected_route = (
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/supersession/preview"
+    )
+    selected_schema = (
+        "layer3.source_directory_qualitative_analysis_package_supersession_preview.v1"
+    )
+    selected_mode = "source_directory_qualitative_analysis_package_supersession_preview_authority"
+    next_posture = (
+        "implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync"
+    )
+    summary = (
+        "Doc 919 syncs PR #1533 to current main as the no-runtime/no-rendered freeze for "
+        "source_directory_package_supersession_preview_rendered_control. This sync introduces no "
+        "runtime, rendered, backend, route/API/DTO/model/migration/service, executable test, "
+        "production UI, full mockup activation, or frontend-only durable authority; the next "
+        "allowed action is only the selected source-directory package supersession preview rendered "
+        "control implementation."
+    )
+
+    for term in (
+        "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+        f"Status: current-main sync for `{entry_key}`.",
+        "Predecessor freeze doc: `918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md`.",
+        f"Merged PR: `{source_pr}`.",
+        f"Source branch: `{source_branch}`.",
+        f"Freeze commit: `{freeze_commit}`.",
+        f"Merge commit: `{merge_commit}`.",
+        f"Sync branch: `{sync_branch}`.",
+        f"Synced target: `{synced_target}`.",
+        f"Synced target classification: `{target_classification}`.",
+        f"Selected implementation action after sync: `{implementation_action}`.",
+        selected_route,
+        selected_schema,
+        selected_mode,
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "reviewThreads totalCount: `0`",
+        "This sync introduces no runtime behavior",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed after this sync: `true`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory package supersession preview freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package Supersession Preview Rendered Control Freeze Current-Main Sync",
+            "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            source_pr,
+            merge_commit,
+            synced_target,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package supersession preview rendered control freeze current-main sync to preserve when present",
+            "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            synced_target,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            source_pr,
+            synced_target,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package supersession preview freeze sync term: {term}"
+                )
+
+    if not isinstance(manifest, dict):
+        return
+    entry = manifest.get(entry_key)
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        return
+    expected_latest = {
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_predecessor_freeze_doc": predecessor_doc,
+        f"latest_{entry_key}_source_pr": source_pr,
+        f"latest_{entry_key}_source_branch": source_branch,
+        f"latest_{entry_key}_freeze_commit": freeze_commit,
+        f"latest_{entry_key}_merge_commit": merge_commit,
+        f"latest_{entry_key}_sync_branch": sync_branch,
+        f"latest_{entry_key}_synced_target": synced_target,
+        f"latest_{entry_key}_synced_target_classification": target_classification,
+        f"latest_{entry_key}_selected_implementation_action_after_sync": implementation_action,
+        f"latest_{entry_key}_selected_route": selected_route,
+        f"latest_{entry_key}_selected_schema": selected_schema,
+        f"latest_{entry_key}_selected_mode": selected_mode,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_sync": False,
+        f"latest_{entry_key}_full_mockup_program_activation_selected_now": False,
+        f"latest_{entry_key}_implementation_entry_allowed_after_sync": True,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("sync_doc", doc_path),
+        ("predecessor_freeze_doc", predecessor_doc),
+        ("source_pr", source_pr),
+        ("source_branch", source_branch),
+        ("freeze_commit", freeze_commit),
+        ("merge_commit", merge_commit),
+        ("sync_branch", sync_branch),
+        ("base_authority", f"project6-origin/main at {merge_commit}"),
+        ("synced_target", synced_target),
+        ("synced_target_classification", target_classification),
+        ("selected_implementation_action_after_sync", implementation_action),
+        ("selected_route", selected_route),
+        ("selected_schema", selected_schema),
+        ("selected_mode", selected_mode),
+        ("runtime_behavior_change_introduced_by_sync", False),
+        ("rendered_behavior_change_introduced_by_sync", False),
+        ("backend_behavior_change_introduced_by_sync", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+        ("executable_test_behavior_change_introduced_by_sync", False),
+        ("production_ui_behavior_change_introduced_by_sync", False),
+        ("full_mockup_program_activation_selected_now", False),
+        ("implementation_entry_allowed_after_sync", True),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for key, value in expected_entry_values:
+        if entry.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+    for key, value in expected_latest.items():
+        if manifest.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -87594,6 +87785,7 @@ def main() -> int:
     _check_source_directory_material_preview_gate_b_rendered_control_current_main_sync(errors)
     _check_full_mockup_activation_next_blocker_selection(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze(errors)
+    _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
