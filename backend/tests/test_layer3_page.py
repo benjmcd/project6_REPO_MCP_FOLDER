@@ -185,6 +185,16 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="source-directory-hybrid-external-export-download-delivery-authority"' in response.text
     assert 'id="source-directory-hybrid-external-export-download-delivery-status"' in response.text
     assert 'id="source-directory-hybrid-external-export-download-delivery-submit"' in response.text
+    assert 'id="source-directory-hybrid-internal-webhook-form"' in response.text
+    assert (
+        'data-rendered-mode="rendered_source_directory_hybrid_internal_webhook_dispatch_control"'
+        in response.text
+    )
+    assert 'data-frontend-durable-authority="false"' in response.text
+    assert 'id="source-directory-hybrid-internal-webhook-panel"' in response.text
+    assert 'id="source-directory-hybrid-internal-webhook-authority"' in response.text
+    assert 'id="source-directory-hybrid-internal-webhook-status"' in response.text
+    assert 'id="source-directory-hybrid-internal-webhook-submit"' in response.text
     assert 'id="external-export-download-signed-reference-form"' in response.text
     assert 'id="external-export-download-signed-reference-panel"' in response.text
     assert 'id="external-export-download-signed-reference-generate"' in response.text
@@ -436,6 +446,15 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "renderExternalLocalExportStatusPanel()" in js.text
     assert "INTERNAL_WEBHOOK_DISPATCH_STATUS_SURFACE_MODE = 'rendered_internal_webhook_dispatch_read_only_status_surface'" in js.text
     assert "INTERNAL_WEBHOOK_DISPATCH_STATUS_RESPONSE_AUTHORITY = 'State.sessionSummary.internal_webhook_dispatch'" in js.text
+    assert "SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RENDERED_MODE = 'rendered_source_directory_hybrid_internal_webhook_dispatch_control'" in js.text
+    assert "SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_DISPATCH_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/dispatch'" in js.text
+    assert "SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_STATUS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/status'" in js.text
+    assert "SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_OPERATOR_DECISION = 'dispatch_source_directory_hybrid_internal_webhook'" in js.text
+    assert "function sourceDirectoryHybridInternalWebhookPayload" in js.text
+    assert "function renderSourceDirectoryHybridInternalWebhookPanel" in js.text
+    assert "async function submitSourceDirectoryHybridInternalWebhook" in js.text
+    assert "async function inspectSourceDirectoryHybridInternalWebhookStatus" in js.text
+    assert "renderSourceDirectoryHybridInternalWebhookPanel()" in js.text
     assert "function internalWebhookDispatchStatusState" in js.text
     assert "function renderInternalWebhookDispatchStatusPanel" in js.text
     assert "renderInternalWebhookDispatchStatusPanel()" in js.text
@@ -1014,6 +1033,91 @@ def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
         "raw_vector",
     ):
         assert forbidden not in payload_slice
+
+
+def test_layer3_source_directory_hybrid_internal_webhook_control_is_bounded() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+    js_text = js.text.replace("\r\n", "\n")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+    assert 'id="source-directory-hybrid-internal-webhook-form"' in html.text
+    assert (
+        'data-rendered-mode="rendered_source_directory_hybrid_internal_webhook_dispatch_control"'
+        in html.text
+    )
+    assert 'data-frontend-durable-authority="false"' in html.text
+
+    payload_start = js_text.find("function sourceDirectoryHybridInternalWebhookPayload")
+    payload_end = js_text.find("function sourceDirectoryHybridInternalWebhookPayloadOrNull")
+    match_start = js_text.find("function sourceDirectoryHybridInternalWebhookStatusMatches")
+    render_start = js_text.find("function renderSourceDirectoryHybridInternalWebhookPanel")
+    render_end = js_text.find("function sourceDirectoryHybridExternalExportDownloadDeliveryPanelState")
+    submit_start = js_text.find("async function submitSourceDirectoryHybridInternalWebhook")
+    status_start = js_text.find("async function inspectSourceDirectoryHybridInternalWebhookStatus")
+    status_end = js_text.find("async function submitExternalExportDownloadSignedReference")
+    assert payload_start != -1
+    assert payload_end != -1
+    assert match_start != -1
+    assert render_start != -1
+    assert render_end != -1
+    assert submit_start != -1
+    assert status_start != -1
+    assert status_end != -1
+
+    payload_slice = js_text[payload_start:payload_end]
+    match_slice = js_text[match_start:render_start]
+    render_slice = js_text[render_start:render_end]
+    submit_slice = js_text[submit_start:status_start]
+    status_slice = js_text[status_start:status_end]
+    request_slices = payload_slice + submit_slice + status_slice
+
+    assert "operator_decision: SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_OPERATOR_DECISION" in payload_slice
+    assert "external_export_download_target: SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET" in payload_slice
+    assert "download_mode: 'reference_only_prepare'" in payload_slice
+    assert "external_export_download_state: 'external_export_download_prepared'" in payload_slice
+    assert "target_identity: 'server_configured_internal_webhook_destination'" in payload_slice
+    assert "target_class: 'real_connector_invocation'" in payload_slice
+    assert "dispatch_mode: 'server_configured_allowlisted_internal_webhook_post'" in payload_slice
+    assert "SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_PAYLOAD_FIELDS.forEach" in payload_slice
+    assert "SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_REQUIRED_FIELDS.filter" in payload_slice
+    assert "postJson(\n            SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_DISPATCH_PATH" in submit_slice
+    assert "getJson(\n            `${SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_STATUS_PATH}/" in status_slice
+    assert "persistSessionRecoveryAnchor('source_directory_hybrid_internal_webhook_dispatch')" in submit_slice
+    assert "persistSessionRecoveryAnchor('source_directory_hybrid_internal_webhook_status')" in status_slice
+    assert "dataset.frontendDurableAuthority = 'false'" in render_slice
+    assert "renderDownstreamLocks(downstream)" in render_slice
+    assert "source_directory_internal_webhook_dispatched" in js_text
+    assert "source_directory_internal_webhook_dispatch_history" in js_text
+    assert "source_directory_internal_webhook_dispatch_receipt_id" in js_text
+    for required_guard in (
+        "status.source_directory_internal_webhook_post_performed === true",
+        "status.connector_dispatch_enabled === false",
+        "status.provider_public_url_enabled === false",
+        "status.provider_private_signed_url_enabled === false",
+        "status.raw_target_url_exposed === false",
+        "status.raw_package_payload_exposed === false",
+        "status.raw_package_bytes_exposed === false",
+    ):
+        assert required_guard in match_slice
+    for forbidden in (
+        "output_package_id",
+        "package_kind",
+        "package_payload_hash",
+        "destination_url",
+        "raw_target_url:",
+        "token",
+        "headers",
+        "raw_package_payload:",
+        "raw_package_bytes:",
+        "provider_credentials",
+        "localStorage",
+        "sessionStorage",
+        "browser_state",
+        "rendered_control_state",
+    ):
+        assert forbidden not in request_slices
 
 
 def test_layer3_source_directory_package_supersession_preview_control_is_bounded() -> None:
