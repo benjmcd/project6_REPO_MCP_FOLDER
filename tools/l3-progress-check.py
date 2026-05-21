@@ -5455,6 +5455,16 @@ def _check_package_replacement_set_freeze(errors: list[str]) -> None:
         "write_bytes(",
     ):
         if forbidden in service_text:
+            allowed_source_directory_lifecycle_pass_run = (
+                forbidden == "L3PassRun("
+                and "SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_SOURCE_GATE" in service_text
+                and "source_directory_package_lifecycle_pass_run.v1" in service_text
+                and "\"runtime_execution\": False" in service_text
+                and "\"model_provider_runtime\": False" in service_text
+                and "\"package_rows_mutated\": False" in service_text
+            )
+            if allowed_source_directory_lifecycle_pass_run:
+                continue
             errors.append(f"{_rel(REPLACEMENT_PACKAGE_SET_AUTHORITY_SERVICE)} contains forbidden creation/write term: {forbidden}")
 
     api_text = _read_required_text(LAYER3_API, errors)

@@ -23,10 +23,17 @@ from app.models.models import (
     AnalysisRun,
     ConnectorRun,
     ConnectorRunTarget,
+    L3AnalysisPlan,
+    L3AnalysisSet,
     L3MaterialSnapshot,
     L3OutputPackage,
+    L3PackageReplacementActivation,
+    L3PackageSupersessionCommit,
     L3PassRun,
     L3ReconciliationRecord,
+    L3ReplacementOutputPackage,
+    L3ReplacementPackageArtifactManifest,
+    L3ReplacementPackageSetAuthority,
 )
 from app.services import layer3_source_directory_qualitative_analysis as qual_service
 from app.services.layer3_source_directory_context_packet import CONTEXT_PACKET_CONTRACT_ID, CONTEXT_PACKET_MODE
@@ -200,6 +207,79 @@ def _assert_no_forbidden_package_commit_downstream(db) -> None:
     assert db.query(AnalysisRun).count() == 0
     assert db.query(ConnectorRun).count() == 0
     assert db.query(ConnectorRunTarget).count() == 0
+
+
+def _source_directory_supersession_preview_flow(client: TestClient, tmp_path, monkeypatch) -> dict:
+    source_dir, snapshot_info, index_authority_hash = _admitted_material(client, tmp_path, monkeypatch)
+    analysis_payload = {
+        **_analysis_payload(snapshot_info, index_authority_hash, "alpha beta"),
+        "limit": 2,
+        "offset": 0,
+    }
+    analysis = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis",
+        json=analysis_payload,
+    )
+    assert analysis.status_code == 200, analysis.text
+    analysis_body = analysis.json()
+    commit = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/commit",
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+            "source_directory_package_review_preview_hash": (
+                analysis_body["source_directory_package_review_preview_hash"]
+            ),
+            "operator_decision": "commit_source_directory_qualitative_analysis_package",
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    commit_body = commit.json()
+    submit_payload = {
+        **analysis_payload,
+        "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+        "source_directory_package_review_preview_hash": (
+            analysis_body["source_directory_package_review_preview_hash"]
+        ),
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": commit_body["output_package_ids"],
+        "package_kinds": commit_body["package_kinds"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+    }
+    submit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/review/submit"
+        ),
+        json=submit_payload,
+    )
+    assert submit.status_code == 200, submit.text
+    submit_body = submit.json()
+    supersession_preview_payload = {
+        **submit_payload,
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": "package_review_approved",
+        "operator_decision": "preview_source_directory_package_supersession",
+    }
+    supersession_preview = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/preview"
+        ),
+        json=supersession_preview_payload,
+    )
+    assert supersession_preview.status_code == 200, supersession_preview.text
+    return {
+        "source_dir": source_dir,
+        "analysis_payload": analysis_payload,
+        "analysis_body": analysis_body,
+        "commit_body": commit_body,
+        "submit_body": submit_body,
+        "preview_payload": supersession_preview_payload,
+        "preview_body": supersession_preview.json(),
+    }
 
 
 def test_source_directory_qualitative_analysis_returns_deterministic_extract_without_side_effects(
@@ -1051,6 +1131,184 @@ def test_source_directory_qualitative_analysis_handoff_export_prepare_records_bo
     replay_body = replay.json()
     assert replay_body["status"] == "already_prepared"
     assert replay_body["prepare_record_ref"] == body["prepare_record_ref"]
+
+
+def test_source_directory_qualitative_analysis_package_lifecycle_records_authority_and_commit(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    flow = _source_directory_supersession_preview_flow(client, tmp_path, monkeypatch)
+    source_dir = flow["source_dir"]
+    preview_body = flow["preview_body"]
+    commit_body = flow["commit_body"]
+    replacement_authority_payload = {
+        "client_request_id": "source-directory-replacement-package-authority",
+        "session_id": preview_body["session_id"],
+        "reconciliation_record_id": preview_body["reconciliation_record_id"],
+        "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+        "source_package_set_hash": preview_body["source_package_set_hash"],
+        "operator_decision": "record_replacement_package_set_authority",
+    }
+
+    stale_authority = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview"
+        ),
+        json={
+            **replacement_authority_payload,
+            "client_request_id": "source-directory-replacement-package-authority-stale",
+            "source_package_set_hash": "0" * 64,
+        },
+    )
+    assert stale_authority.status_code == 409, stale_authority.text
+    assert stale_authority.json()["error_code"] == (
+        "source_directory_package_lifecycle_source_package_set_hash_mismatch"
+    )
+
+    authority = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview"
+        ),
+        json=replacement_authority_payload,
+    )
+    assert authority.status_code == 200, authority.text
+    authority_body = authority.json()
+    assert authority_body["schema_id"] == "layer3.replacement_package_set_authority.v1"
+    assert authority_body["status"] == "recorded"
+    assert authority_body["replacement_package_set_authority_mode"] == (
+        "source_directory_package_lifecycle_replacement_package_set_authority"
+    )
+    assert authority_body["source_gate"] == (
+        "931_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC"
+    )
+    assert authority_body["source_directory_package_lifecycle_authority"] is True
+    assert authority_body["source_package_set_hash"] == preview_body["source_package_set_hash"]
+    assert authority_body["source_output_package_ids"] == commit_body["output_package_ids"]
+    assert authority_body["source_package_kinds"] == ["canonical_internal", "user_facing", "review_facing"]
+    assert authority_body["source_payload_hashes"] == commit_body["payload_hashes"]
+    assert all(ref.startswith("artifact://source-output-package/") for ref in authority_body["source_payload_refs"])
+    assert all(
+        ref.startswith("artifact://replacement-package-set/")
+        for ref in authority_body["replacement_payload_refs"]
+    )
+    assert authority_body["package_row_mutation_enabled"] is False
+    assert authority_body["package_payload_write_enabled"] is False
+    assert authority_body["package_supersession_commit_enabled"] is False
+    assert authority_body["frontend_only_durable_state_enabled"] is False
+    assert authority_body["authority_rail"]["response_payload_refs_redacted"] is True
+    assert authority_body["authority_rail"]["raw_payload_refs_exposed"] is False
+    assert str(source_dir) not in authority.text
+    assert str(Path(settings.storage_dir)) not in authority.text
+    for row in authority_body["authority_snapshot"]["artifacts"]["rows"]:
+        assert row["replacement_payload_ref"].startswith(
+            "artifact://source-directory-replacement-package-artifact/"
+        )
+        assert row["raw_payload_ref_exposed"] is False
+
+    stale_commit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/commit"
+        ),
+        json={
+            "client_request_id": "source-directory-package-supersession-commit-stale",
+            "session_id": authority_body["session_id"],
+            "analysis_plan_id": authority_body["analysis_plan_id"],
+            "pass_run_id": authority_body["pass_run_id"],
+            "reconciliation_record_id": authority_body["reconciliation_record_id"],
+            "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+            "source_package_set_hash": preview_body["source_package_set_hash"],
+            "replacement_package_set_authority_id": authority_body["replacement_package_set_authority_id"],
+            "replacement_authority_basis_hash": "0" * 64,
+            "operator_decision": "commit_package_supersession",
+        },
+    )
+    assert stale_commit.status_code == 409, stale_commit.text
+    assert stale_commit.json()["error_code"] == (
+        "source_directory_package_supersession_commit_replacement_authority_basis_hash_mismatch"
+    )
+
+    commit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/commit"
+        ),
+        json={
+            "client_request_id": "source-directory-package-supersession-commit",
+            "session_id": authority_body["session_id"],
+            "analysis_plan_id": authority_body["analysis_plan_id"],
+            "pass_run_id": authority_body["pass_run_id"],
+            "reconciliation_record_id": authority_body["reconciliation_record_id"],
+            "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+            "source_package_set_hash": preview_body["source_package_set_hash"],
+            "replacement_package_set_authority_id": authority_body["replacement_package_set_authority_id"],
+            "replacement_authority_basis_hash": authority_body["authority_basis_hash"],
+            "operator_decision": "commit_package_supersession",
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    supersession_body = commit.json()
+    assert supersession_body["schema_id"] == "layer3.package_supersession_commit.v1"
+    assert supersession_body["status"] == "committed"
+    assert supersession_body["package_supersession_commit_mode"] == (
+        "source_directory_package_lifecycle_package_supersession_commit_authority"
+    )
+    assert supersession_body["source_gate"] == (
+        "931_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC"
+    )
+    assert supersession_body["source_directory_package_lifecycle_authority"] is True
+    assert supersession_body["replacement_package_set_authority_id"] == (
+        authority_body["replacement_package_set_authority_id"]
+    )
+    assert supersession_body["source_output_package_ids"] == commit_body["output_package_ids"]
+    assert supersession_body["source_payload_hashes"] == commit_body["payload_hashes"]
+    assert all(
+        ref.startswith("artifact://source-output-package/")
+        for ref in supersession_body["source_payload_refs"]
+    )
+    assert all(
+        ref.startswith("artifact://package-supersession-commit-replacement/")
+        for ref in supersession_body["replacement_payload_refs"]
+    )
+    assert supersession_body["package_row_mutation_enabled"] is False
+    assert supersession_body["package_payload_write_enabled"] is False
+    assert supersession_body["l3_output_package_write_enabled"] is False
+    assert supersession_body["frontend_only_durable_state_enabled"] is False
+    assert supersession_body["authority_rail"]["response_payload_refs_redacted"] is True
+    assert supersession_body["authority_rail"]["raw_payload_refs_exposed"] is False
+    assert str(source_dir) not in commit.text
+    assert str(Path(settings.storage_dir)) not in commit.text
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3AnalysisSet).count() == 1
+        assert db.query(L3AnalysisPlan).count() == 1
+        assert db.query(L3PassRun).count() == 1
+        assert db.query(L3OutputPackage).count() == 3
+        assert db.query(L3ReplacementPackageSetAuthority).count() == 1
+        assert db.query(L3PackageSupersessionCommit).count() == 1
+        assert db.query(L3ReplacementPackageArtifactManifest).count() == 0
+        assert db.query(L3ReplacementOutputPackage).count() == 0
+        assert db.query(L3PackageReplacementActivation).count() == 0
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+        authority_row = db.query(L3ReplacementPackageSetAuthority).one()
+        commit_row = db.query(L3PackageSupersessionCommit).one()
+        assert authority_row.authority_snapshot_json["mode"] == (
+            "source_directory_package_lifecycle_replacement_package_set_authority"
+        )
+        assert commit_row.commit_snapshot_json["mode"] == (
+            "source_directory_package_lifecycle_package_supersession_commit_authority"
+        )
+        assert commit_row.commit_snapshot_json["negative_invariants"]["updates_l3_output_package"] is False
+        assert commit_row.replacement_package_set_authority_id == (
+            authority_row.replacement_package_set_authority_id
+        )
+    finally:
+        db.close()
 
 
 def test_source_directory_qualitative_analysis_external_export_download_prepare_records_readiness(
