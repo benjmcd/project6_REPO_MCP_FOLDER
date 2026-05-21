@@ -615,10 +615,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "renderPackageSupersessionCommitPanel()" in js.text
     assert "renderReplacementPackageArtifactManifestPanel()" in js.text
     assert "renderReplacementPackageNamespacePanel()" in js.text
-    assert "postJson('/handoff/export/prepare'" in js.text
+    assert "'/handoff/export/prepare'" in js.text
     assert "postJson('/handoff/aps/dispatch'" in js.text
-    assert "postJson('/handoff/export/download/prepare'" in js.text
-    assert "submitAttachmentForm('/handoff/export/download/deliver'" in js.text
+    assert "'/handoff/export/download/prepare'" in js.text
+    assert "'/handoff/export/download/deliver'" in js.text
     assert "'/handoff/export/download/signed-reference/generate'" in js.text
     assert "handoff/export/download/signed-reference/use" in js.text
     assert "same_origin_signed_delivery_reference" in js.text
@@ -709,6 +709,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     review_start = js.text.find("function resultReviewPayload")
     review_end = js.text.find("function packageReviewPreviewPayload")
     package_start = js.text.find("function packageReviewSubmitPayload")
+    source_directory_handoff_start = js.text.find("function sourceDirectoryQualitativePackageReviewBasePayload")
     handoff_start = js.text.find("function handoffExportPreparePayload")
     aps_start = js.text.find("function apsHandoffDispatchPayload")
     external_start = js.text.find("function externalExportDownloadPreparePayload")
@@ -717,13 +718,14 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert review_start != -1
     assert review_end != -1
     assert package_start != -1
+    assert source_directory_handoff_start != -1
     assert handoff_start != -1
     assert aps_start != -1
     assert external_start != -1
     assert delivery_start != -1
     assert refresh_start != -1
     result_review_slice = js.text[review_start:review_end]
-    package_submit_slice = js.text[package_start:handoff_start]
+    package_submit_slice = js.text[package_start:source_directory_handoff_start]
     handoff_prepare_slice = js.text[handoff_start:aps_start]
     aps_dispatch_slice = js.text[aps_start:external_start]
     external_prepare_slice = js.text[external_start:delivery_start]
@@ -1075,6 +1077,95 @@ def test_layer3_source_directory_package_supersession_preview_control_is_bounded
     ):
         assert forbidden not in payload_slice
         assert forbidden not in submit_slice
+
+
+def test_layer3_source_directory_handoff_export_controls_are_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    js_text = js.text.replace("\r\n", "\n")
+
+    assert js.status_code == 200
+    for required in (
+        "SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH",
+        "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH",
+        "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+        "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+        "rendered_source_directory_qualitative_handoff_export_prepare_control",
+        "rendered_source_directory_qualitative_external_export_download_prepare_control",
+        "rendered_source_directory_qualitative_external_export_download_delivery_control",
+        "source_directory_external_export_download_delivery_ui_ready",
+    ):
+        assert required in js_text
+
+    payload_start = js_text.find("function sourceDirectoryQualitativePackageReviewBasePayload")
+    payload_end = js_text.find("function replacementPackageArtifactMaterializationPayload")
+    status_start = js_text.find("function sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusMatches")
+    status_end = js_text.find("function replacementPackageSetAuthorityState")
+    submit_handoff_start = js_text.find("async function submitHandoffExportPrepare")
+    submit_handoff_end = js_text.find("async function submitApsHandoffDispatch")
+    submit_external_start = js_text.find("async function submitExternalExportDownloadPrepare")
+    submit_external_end = js_text.find("async function submitExternalExportDownloadDelivery")
+    submit_delivery_start = submit_external_end
+    submit_delivery_end = js_text.find("async function inspectSourceDirectoryHybridExternalExportDownloadDelivery")
+    assert payload_start != -1
+    assert payload_end != -1
+    assert status_start != -1
+    assert status_end != -1
+    assert submit_handoff_start != -1
+    assert submit_handoff_end != -1
+    assert submit_external_start != -1
+    assert submit_external_end != -1
+    assert submit_delivery_end != -1
+
+    payload_slice = js_text[payload_start:payload_end]
+    status_slice = js_text[status_start:status_end]
+    submit_handoff_slice = js_text[submit_handoff_start:submit_handoff_end]
+    submit_external_slice = js_text[submit_external_start:submit_external_end]
+    submit_delivery_slice = js_text[submit_delivery_start:submit_delivery_end]
+
+    assert "operator_decision: elements.handoffExportPrepareDecision.value" in payload_slice
+    assert "handoff_target: 'internal_export_envelope'" in payload_slice
+    assert "export_mode: 'prepare_only'" in payload_slice
+    assert "operator_decision: 'prepare_source_directory_external_export_download'" in payload_slice
+    assert "external_export_download_target: SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET" in payload_slice
+    assert "operator_decision: 'deliver_source_directory_external_export_download'" in payload_slice
+    assert "delivery_mode: 'same_origin_artifact_stream'" in payload_slice
+    assert "sourceDirectoryQualitativeExternalExportDownloadSelectedPackage(external)" in payload_slice
+    assert "SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH" in submit_handoff_slice
+    assert "sourceDirectoryQualitativeHandoffExportPreparePayload()" in submit_handoff_slice
+    assert "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH" in submit_external_slice
+    assert "sourceDirectoryQualitativeExternalExportDownloadPreparePayload()" in submit_external_slice
+    assert "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH" in submit_delivery_slice
+    assert "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH" in submit_delivery_slice
+    assert "sourceDirectoryQualitativeExternalExportDownloadDeliveryPayload()" in submit_delivery_slice
+    assert "sourceDirectoryStatusValidated = true" in submit_delivery_slice
+    for required in (
+        "status.same_origin_delivery_enabled === true",
+        "status.browser_managed_same_origin_attachment_enabled === true",
+        "status.provider_public_delivery_enabled === false",
+        "status.provider_private_signed_url_enabled === false",
+        "status.connector_dispatch_enabled === false",
+        "status.network_egress_enabled === false",
+        "status.frontend_durable_authority_enabled === false",
+        "status.raw_local_path_exposed === false",
+    ):
+        assert required in status_slice
+    for forbidden in (
+        "payload_refs",
+        "source_payload_refs",
+        "replacement_payload_refs",
+        "artifact_manifest",
+        "raw_payload_path",
+        "local_file_path",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "localStorage",
+        "sessionStorage",
+    ):
+        assert forbidden not in payload_slice
 
 
 def test_layer3_source_directory_replacement_package_set_authority_control_is_bounded() -> None:
