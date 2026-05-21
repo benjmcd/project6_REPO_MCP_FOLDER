@@ -15,7 +15,11 @@ from app.models.models import (
     L3ReplacementPackageSetAuthority,
     L3Session,
 )
-from app.services import layer3_package_mutation_entry, layer3_workbench
+from app.services import (
+    layer3_package_mutation_entry,
+    layer3_replacement_package_set_authority,
+    layer3_workbench,
+)
 from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
@@ -33,6 +37,12 @@ PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_MODE = (
 PACKAGE_SUPERSESSION_COMMIT_SOURCE_GATE = "126_PACKAGE_COMMIT_FREEZE"
 PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_SOURCE_GATE = (
     "711_CORRECTED_ARTIFACT_PACKAGE_REBUILD_DOWNSTREAM_AUTHORITY_FREEZE_CURRENT_MAIN_SYNC"
+)
+SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_MODE = (
+    "source_directory_package_lifecycle_package_supersession_commit_authority"
+)
+SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_GATE = (
+    layer3_replacement_package_set_authority.SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_SOURCE_GATE
 )
 PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION = "commit_package_supersession"
 PACKAGE_SUPERSESSION_COMMIT_STATE = "package_supersession_commit_recorded"
@@ -162,6 +172,44 @@ PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_ALLOWED_FIELDS = (
     PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_REQUIRED_FIELDS
     | PACKAGE_SUPERSESSION_COMMIT_FROM_CORRECTED_ARTIFACT_SET_FORBIDDEN_FIELDS
 )
+SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_REQUIRED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "reconciliation_record_id",
+        "package_supersession_preview_hash",
+        "source_package_set_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "operator_decision",
+    }
+)
+SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_FORBIDDEN_FIELDS = (
+    PACKAGE_SUPERSESSION_COMMIT_FORBIDDEN_FIELDS
+    | {
+        "source_output_package_ids",
+        "source_package_kinds",
+        "source_payload_refs",
+        "source_payload_hashes",
+        "replacement_package_set_id",
+        "replacement_package_set_hash",
+        "replacement_package_kinds",
+        "replacement_payload_refs",
+        "replacement_payload_hashes",
+        "downstream_dependency_hash",
+        "commit_basis_hash",
+        "authority_basis_hash",
+        "materialization_basis_hash",
+        "frontend_state",
+        "browser_state",
+        "rendered_control_state",
+    }
+)
+SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ALLOWED_FIELDS = (
+    SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_REQUIRED_FIELDS
+    | SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_FORBIDDEN_FIELDS
+    | {"analysis_plan_id", "pass_run_id"}
+)
 PACKAGE_SUPERSESSION_COMMIT_DOWNSTREAM_UNAVAILABLE = (
     "package_row_mutation",
     "package_payload_rewrite",
@@ -285,6 +333,7 @@ def package_supersession_downstream_dependency_hash(
 
 def package_supersession_commit_basis_hash(
     *,
+    mode: str = PACKAGE_SUPERSESSION_COMMIT_MODE,
     session_id: str,
     analysis_plan_id: str,
     pass_run_id: str,
@@ -307,7 +356,7 @@ def package_supersession_commit_basis_hash(
     return stable_hash(
         {
             "schema_id": "layer3.package_supersession_commit_basis.v1",
-            "mode": PACKAGE_SUPERSESSION_COMMIT_MODE,
+            "mode": mode,
             "operator_decision": PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION,
             "session_id": session_id,
             "analysis_plan_id": analysis_plan_id,
@@ -446,6 +495,139 @@ def _commit_response_from_corrected_artifact_authority(
     )
     response["authority_rail"] = authority_rail
     return response
+
+
+def _source_directory_commit_error(
+    code: str,
+    message: str,
+    *,
+    blocked_fields: list[str] | None = None,
+    status: str = "blocked",
+) -> None:
+    raise layer3_workbench.Layer3WorkbenchError(
+        code,
+        message,
+        status=status,
+        http_status=409,
+        blocked_fields=blocked_fields or [],
+        recoverable=True,
+        next_allowed_actions=["refresh_source_directory_package_lifecycle_authority"],
+    )
+
+
+def _commit_response_from_source_directory_lifecycle(
+    *,
+    request_id: str,
+    status: str,
+    commit: L3PackageSupersessionCommit,
+) -> dict[str, Any]:
+    response = _commit_response(request_id=request_id, status=status, commit=commit)
+    source_refs = _redacted_commit_source_refs(commit)
+    replacement_refs = _redacted_commit_replacement_refs(commit)
+    response["source_payload_refs"] = source_refs
+    response["replacement_payload_refs"] = replacement_refs
+    response["package_supersession_commit_mode"] = SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_MODE
+    response["source_gate"] = SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_GATE
+    response["source_directory_package_lifecycle_authority"] = True
+    snapshot = json_clone(response.get("commit_snapshot") or {})
+    if isinstance(snapshot, dict):
+        source_snapshot = dict(snapshot.get("source") or {})
+        source_snapshot["payload_refs"] = source_refs
+        source_snapshot["raw_payload_refs_exposed"] = False
+        replacement_snapshot = dict(snapshot.get("replacement") or {})
+        replacement_snapshot["payload_refs"] = replacement_refs
+        replacement_snapshot["raw_payload_refs_exposed"] = False
+        snapshot["source"] = source_snapshot
+        snapshot["replacement"] = replacement_snapshot
+    response["commit_snapshot"] = snapshot
+    authority_rail = dict(response.get("authority_rail") or {})
+    authority_rail.update(
+        {
+            "source_directory_package_lifecycle_authority": True,
+            "server_computed_payload_refs": True,
+            "response_payload_refs_redacted": True,
+            "raw_payload_refs_exposed": False,
+            "frontend_durable_authority_enabled": False,
+        }
+    )
+    response["authority_rail"] = authority_rail
+    return response
+
+
+def _validate_source_directory_replacement_authority(
+    *,
+    payload: dict[str, Any],
+    authority: L3ReplacementPackageSetAuthority,
+    lifecycle: dict[str, Any],
+) -> tuple[str, str, list[str], list[str], list[str], str]:
+    session_id = lifecycle["session"].session_id
+    analysis_plan_id = str(lifecycle["analysis_plan_id"])
+    pass_run_id = str(lifecycle["pass_run_id"])
+    reconciliation_record_id = lifecycle["reconciliation"].reconciliation_record_id
+    source_package_set_hash = str(lifecycle["source_package_set_hash"])
+    source_output_package_ids = list(lifecycle["source_output_package_ids"])
+    source_package_kinds = list(lifecycle["source_package_kinds"])
+    source_payload_refs = list(lifecycle["source_payload_refs"])
+    source_payload_hashes = list(lifecycle["source_payload_hashes"])
+
+    snapshot = dict(authority.authority_snapshot_json or {})
+    if snapshot.get("mode") != layer3_replacement_package_set_authority.SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_MODE:
+        _raise_mismatch(
+            "source_directory_package_supersession_commit_replacement_authority_mode_mismatch",
+            "replacement_package_set_authority_id",
+            "Replacement package-set authority was not produced from source-directory package lifecycle authority.",
+        )
+    if snapshot.get("source_gate") != SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_GATE:
+        _raise_mismatch(
+            "source_directory_package_supersession_commit_replacement_authority_gate_mismatch",
+            "replacement_package_set_authority_id",
+            "Replacement package-set authority source gate does not match source-directory package lifecycle authority.",
+        )
+    for field, expected in (
+        ("session_id", session_id),
+        ("analysis_plan_id", analysis_plan_id),
+        ("pass_run_id", pass_run_id),
+        ("reconciliation_record_id", reconciliation_record_id),
+    ):
+        if _string(getattr(authority, field)) != expected:
+            _raise_mismatch(
+                f"source_directory_package_supersession_commit_replacement_authority_{field}_mismatch",
+                "replacement_package_set_authority_id",
+                f"Replacement package-set authority {field} does not match source-directory lifecycle authority.",
+            )
+    if authority.source_package_set_hash != source_package_set_hash:
+        _raise_mismatch(
+            "source_directory_package_supersession_commit_replacement_authority_source_hash_mismatch",
+            "source_package_set_hash",
+            "Replacement authority source package-set hash does not match source-directory lifecycle authority.",
+        )
+    for field, expected_values in (
+        ("source_output_package_ids", source_output_package_ids),
+        ("source_package_kinds", source_package_kinds),
+        ("source_payload_refs", source_payload_refs),
+        ("source_payload_hashes", source_payload_hashes),
+    ):
+        authority_values = list(getattr(authority, f"{field}_json") or [])
+        if authority_values != expected_values:
+            _raise_mismatch(
+                f"source_directory_package_supersession_commit_replacement_authority_{field}_mismatch",
+                "replacement_package_set_authority_id",
+                f"Replacement authority {field} do not match source-directory lifecycle authority.",
+            )
+    if _string(payload.get("replacement_authority_basis_hash")) != authority.authority_basis_hash:
+        _raise_mismatch(
+            "source_directory_package_supersession_commit_replacement_authority_basis_hash_mismatch",
+            "replacement_authority_basis_hash",
+            "Supplied replacement_authority_basis_hash does not match source-directory replacement authority.",
+        )
+    return (
+        authority.replacement_package_set_id,
+        authority.replacement_package_set_hash,
+        list(authority.replacement_package_kinds_json or []),
+        list(authority.replacement_payload_refs_json or []),
+        list(authority.replacement_payload_hashes_json or []),
+        authority.authority_basis_hash,
+    )
 
 
 def _validate_replacement_authority(
@@ -864,6 +1046,254 @@ def commit_package_supersession(db: Session, payload: dict[str, Any]) -> dict[st
             next_allowed_actions=["retry_package_supersession_commit_request"],
         ) from exc
     return _commit_response(request_id=request_id, status="committed", commit=commit)
+
+
+def commit_package_supersession_from_source_directory_lifecycle(
+    db: Session,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    request_id = _string(payload.get("client_request_id"))
+    if not request_id:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "client_request_id_required",
+            "client_request_id is required for source-directory package supersession commit.",
+            status="invalid",
+            blocked_fields=["client_request_id"],
+            next_allowed_actions=["submit_complete_source_directory_package_supersession_commit_request"],
+        )
+
+    unknown = sorted(key for key in payload if key not in SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_FORBIDDEN_FIELDS if key in payload)
+    blocked_payload_fields = sorted(set(unknown) | set(forbidden))
+    if blocked_payload_fields:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_commit_scope_not_admitted",
+            "Source-directory package supersession commit request includes non-admitted fields: "
+            + ", ".join(blocked_payload_fields)
+            + ".",
+            status="blocked",
+            http_status=409,
+            blocked_fields=blocked_payload_fields,
+            next_allowed_actions=["submit_source_directory_package_supersession_commit_authority_only_request"],
+        )
+
+    missing = sorted(
+        field
+        for field in SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_REQUIRED_FIELDS
+        if field not in payload or payload.get(field) in (None, "", [])
+    )
+    if missing:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "missing_source_directory_package_supersession_commit_fields",
+            "Source-directory package supersession commit request is missing required fields: "
+            + ", ".join(missing)
+            + ".",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_source_directory_package_supersession_commit_request"],
+        )
+
+    if _string(payload.get("operator_decision")) != PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "unsupported_source_directory_package_supersession_commit_decision",
+            "operator_decision must be commit_package_supersession.",
+            status="invalid",
+            blocked_fields=["operator_decision"],
+        )
+
+    lifecycle = layer3_replacement_package_set_authority.source_directory_package_lifecycle_context(db, payload)
+    session_id = lifecycle["session"].session_id
+    analysis_plan_id = str(lifecycle["analysis_plan_id"])
+    pass_run_id = str(lifecycle["pass_run_id"])
+    reconciliation_record_id = lifecycle["reconciliation"].reconciliation_record_id
+    source_package_set_hash = str(lifecycle["source_package_set_hash"])
+    source_output_package_ids = list(lifecycle["source_output_package_ids"])
+    source_package_kinds = list(lifecycle["source_package_kinds"])
+    source_payload_refs = list(lifecycle["source_payload_refs"])
+    source_payload_hashes = list(lifecycle["source_payload_hashes"])
+    package_supersession_preview_hash = str(lifecycle["package_supersession_preview_hash"])
+    downstream_dependency_hash = str(lifecycle["downstream_dependency_hash"])
+
+    authority_id = _string(payload.get("replacement_package_set_authority_id"))
+    replacement_authority = (
+        db.query(L3ReplacementPackageSetAuthority)
+        .filter(L3ReplacementPackageSetAuthority.replacement_package_set_authority_id == authority_id)
+        .one_or_none()
+    )
+    if replacement_authority is None:
+        _source_directory_commit_error(
+            "source_directory_package_supersession_commit_requires_replacement_authority",
+            "Source-directory package supersession commit requires replacement package-set authority.",
+            blocked_fields=["replacement_package_set_authority_id"],
+        )
+    assert replacement_authority is not None
+    (
+        replacement_package_set_id,
+        replacement_package_set_hash,
+        replacement_package_kinds,
+        replacement_payload_refs,
+        replacement_payload_hashes,
+        replacement_authority_basis_hash,
+    ) = _validate_source_directory_replacement_authority(
+        payload=payload,
+        authority=replacement_authority,
+        lifecycle=lifecycle,
+    )
+
+    computed_basis_hash = package_supersession_commit_basis_hash(
+        mode=SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_MODE,
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        reconciliation_record_id=reconciliation_record_id,
+        package_supersession_preview_hash=package_supersession_preview_hash,
+        source_package_set_hash=source_package_set_hash,
+        source_output_package_ids=source_output_package_ids,
+        source_package_kinds=source_package_kinds,
+        source_payload_refs=source_payload_refs,
+        source_payload_hashes=source_payload_hashes,
+        replacement_package_set_authority_id=authority_id,
+        replacement_authority_basis_hash=replacement_authority_basis_hash,
+        replacement_package_set_id=replacement_package_set_id,
+        replacement_package_set_hash=replacement_package_set_hash,
+        replacement_package_kinds=replacement_package_kinds,
+        replacement_payload_refs=replacement_payload_refs,
+        replacement_payload_hashes=replacement_payload_hashes,
+        downstream_dependency_hash=downstream_dependency_hash,
+    )
+
+    existing_for_request = (
+        db.query(L3PackageSupersessionCommit)
+        .filter(L3PackageSupersessionCommit.client_request_id == request_id)
+        .one_or_none()
+    )
+    if existing_for_request is not None:
+        if existing_for_request.commit_basis_hash != computed_basis_hash:
+            _raise_mismatch(
+                "source_directory_package_supersession_commit_client_request_conflict",
+                "client_request_id",
+                "client_request_id already recorded a different source-directory package supersession commit.",
+            )
+        return _commit_response_from_source_directory_lifecycle(
+            request_id=request_id,
+            status="already_committed",
+            commit=existing_for_request,
+        )
+
+    existing_for_basis = (
+        db.query(L3PackageSupersessionCommit)
+        .filter(L3PackageSupersessionCommit.commit_basis_hash == computed_basis_hash)
+        .one_or_none()
+    )
+    if existing_for_basis is not None:
+        return _commit_response_from_source_directory_lifecycle(
+            request_id=request_id,
+            status="already_committed",
+            commit=existing_for_basis,
+        )
+
+    now = utcnow()
+    snapshot = {
+        "schema_id": "layer3.source_directory_package_supersession_commit_snapshot.v1",
+        "mode": SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_MODE,
+        "source_gate": SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_GATE,
+        "source_directory_package_lifecycle": {
+            "package_supersession_preview_hash": package_supersession_preview_hash,
+            "source_package_set_hash": source_package_set_hash,
+            "downstream_dependency_hash": downstream_dependency_hash,
+            "downstream_dependencies": list(lifecycle["downstream_dependencies"]),
+            "material_snapshot_id": lifecycle["material_snapshot_id"],
+            "qualitative_analysis_hash": lifecycle["qualitative_analysis_hash"],
+            "package_review_preview_hash": lifecycle["package_review_preview_hash"],
+            "package_review_submit_record_ref": lifecycle["package_review_submit_record_ref"],
+        },
+        "source": {
+            "package_set_hash": source_package_set_hash,
+            "output_package_ids": source_output_package_ids,
+            "package_kinds": source_package_kinds,
+            "payload_refs": source_payload_refs,
+            "payload_hashes": source_payload_hashes,
+            "raw_payload_refs_exposed": False,
+        },
+        "replacement": {
+            "replacement_package_set_authority_id": authority_id,
+            "replacement_package_set_id": replacement_package_set_id,
+            "replacement_package_set_hash": replacement_package_set_hash,
+            "package_kinds": replacement_package_kinds,
+            "payload_refs": replacement_payload_refs,
+            "payload_hashes": replacement_payload_hashes,
+            "replacement_authority_basis_hash": replacement_authority_basis_hash,
+            "raw_payload_refs_exposed": False,
+        },
+        "negative_invariants": {
+            "updates_l3_output_package": False,
+            "writes_package_payload": False,
+            "enables_broad_package_mutation": False,
+            "enables_connector_dispatch": False,
+            "enables_source_widening": False,
+            "enables_qualitative_hybrid_rag": False,
+            "enables_provider_public_url": False,
+            "enables_full_mockup_activation": False,
+        },
+    }
+    commit = L3PackageSupersessionCommit(
+        client_request_id=request_id,
+        session_id=session_id,
+        analysis_plan_id=analysis_plan_id,
+        pass_run_id=pass_run_id,
+        reconciliation_record_id=reconciliation_record_id,
+        replacement_package_set_authority_id=authority_id,
+        package_supersession_preview_hash=package_supersession_preview_hash,
+        source_package_set_hash=source_package_set_hash,
+        source_output_package_ids_json=source_output_package_ids,
+        source_package_kinds_json=source_package_kinds,
+        source_payload_refs_json=source_payload_refs,
+        source_payload_hashes_json=source_payload_hashes,
+        replacement_package_set_id=replacement_package_set_id,
+        replacement_package_set_hash=replacement_package_set_hash,
+        replacement_package_kinds_json=replacement_package_kinds,
+        replacement_payload_refs_json=replacement_payload_refs,
+        replacement_payload_hashes_json=replacement_payload_hashes,
+        downstream_dependency_hash=downstream_dependency_hash,
+        replacement_authority_basis_hash=replacement_authority_basis_hash,
+        commit_basis_hash=computed_basis_hash,
+        commit_snapshot_json=snapshot,
+        operator_decision=PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION,
+        status=PACKAGE_SUPERSESSION_COMMIT_STATUS,
+        created_at=now,
+        updated_at=now,
+    )
+    db.add(commit)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        existing = (
+            db.query(L3PackageSupersessionCommit)
+            .filter(L3PackageSupersessionCommit.commit_basis_hash == computed_basis_hash)
+            .one_or_none()
+        )
+        if existing is not None and existing.commit_basis_hash == computed_basis_hash:
+            return _commit_response_from_source_directory_lifecycle(
+                request_id=request_id,
+                status="already_committed",
+                commit=existing,
+            )
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_commit_in_progress",
+            "Source-directory package supersession commit is already being recorded for this request.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["client_request_id", "commit_basis_hash"],
+            recoverable=True,
+            next_allowed_actions=["retry_source_directory_package_supersession_commit_request"],
+        ) from exc
+    db.refresh(commit)
+    return _commit_response_from_source_directory_lifecycle(
+        request_id=request_id,
+        status="committed",
+        commit=commit,
+    )
 
 
 def commit_package_supersession_from_corrected_artifact_set_authority(
