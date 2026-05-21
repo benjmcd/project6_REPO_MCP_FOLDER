@@ -9078,7 +9078,7 @@ Merged source PRs: `#1554` backend source-directory internal webhook dispatch/st
 
 GitHub gates for PRs `#1554`, `#1555`, and `#1556`: merged to current main with required checks passing and no admitted unresolved review/comment blocker before merge.
 
-Current bounded trial status: current main proves the source-directory path from rendered scan/status/material preview/Gate B admission through live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare, rendered same-origin hybrid external export/download delivery, and rendered source-directory internal webhook dispatch/status. The middle lifecycle is live API-proven with server-authored authority, not yet a single uninterrupted manual-click operator flow.
+Current bounded trial status: current main proves the source-directory path from rendered scan/status/material preview/Gate B admission through live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare, rendered same-origin hybrid external export/download delivery, and rendered source-directory internal webhook dispatch/status. Branch `codex/l3-middle-flow-operator` adds a rendered middle-lifecycle control that sequences retrieval/context, qualitative analysis/status, package commit, package review submit, handoff/export prepare, and external export/download prepare from server-derived authority, then populates the existing rendered delivery and webhook authority controls. The remaining interruption is the Gate B to source-directory hybrid authority/index-generation bridge, which still depends on test-only helper authority in the proof.
 
 Minimal operator runbook: use a clean current-main worktree; run `python ./tools/l3-progress-check.py`, `node --check ./backend/app/review_ui/static/layer3.js`, the focused backend source-directory tests, and both headed/headless Playwright for `Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path`.
 
@@ -9086,6 +9086,6 @@ Runtime behavior introduced by this checkpoint doc: `false`. Rendered behavior i
 
 Frontend-only durable authority enabled by this checkpoint doc: `false`. Full mockup program activation selected now: `false`.
 
-Remaining whole-program gaps: the rendered middle lifecycle still needs a continuous operator-flow proof where current main admits controls; provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, and full mockup activation remain separately blocked.
+Remaining whole-program gaps: the Gate B to source-directory hybrid authority/index-generation bridge still needs a current-main-admitted rendered/operator proof; package replacement/supersession still needs source-directory path proof; provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, and full mockup activation remain separately blocked.
 
-Next exact posture: `select_rendered_middle_lifecycle_operator_flow_gap_from_current_main`.
+Next exact posture: `freeze_source_directory_hybrid_authority_generation_operator_bridge_before_runtime`.

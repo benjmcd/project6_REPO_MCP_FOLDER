@@ -10660,55 +10660,121 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(authority.material_snapshot_id).toBeTruthy();
   expect(authority.index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
   expect(authority.embedding_index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
-  const retrievalAuthority = {
-    material_snapshot_id: authority.material_snapshot_id,
-    source_ingestion_batch_id: authority.source_ingestion_batch_id,
-    source_ingestion_file_id: authority.source_ingestion_file_id,
-    content_sha256: authority.content_sha256,
-    file_identity_hash: authority.file_identity_hash,
-    authority_basis_hash: authority.authority_basis_hash,
-    payload_hash: authority.payload_hash,
-    index_authority_hash: authority.index_authority_hash,
-    embedding_index_authority_hash: authority.embedding_index_authority_hash,
-    query_text: authority.query_text,
-    top_k: authority.top_k,
-  };
-  const contextAuthority = {
-    ...retrievalAuthority,
-    limit: authority.limit,
-    offset: authority.offset,
-  };
-  const analysisAuthority = {
-    ...contextAuthority,
-    analysis_question: authority.analysis_question,
-    analysis_focus: authority.analysis_focus,
-  };
+  const retrievalPayloadKeys = [
+    'authority_basis_hash',
+    'client_request_id',
+    'content_sha256',
+    'embedding_index_authority_hash',
+    'file_identity_hash',
+    'index_authority_hash',
+    'material_snapshot_id',
+    'payload_hash',
+    'query_text',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'top_k',
+  ];
+  const contextPayloadKeys = [...retrievalPayloadKeys, 'limit', 'offset'].sort();
+  const analysisPayloadKeys = [...contextPayloadKeys, 'analysis_focus', 'analysis_question'].sort();
+  const packageCommitPayloadKeys = [
+    ...analysisPayloadKeys,
+    'operator_decision',
+    'qualitative_analysis_hash',
+    'source_directory_hybrid_package_review_preview_hash',
+  ].sort();
+  const packageReviewSubmitPayloadKeys = [
+    ...analysisPayloadKeys,
+    'construction_basis_hash',
+    'operator_decision',
+    'output_package_ids',
+    'package_kinds',
+    'payload_hashes',
+    'qualitative_analysis_hash',
+    'reconciliation_record_id',
+    'source_directory_hybrid_package_review_preview_hash',
+  ].sort();
+  const handoffPreparePayloadKeys = [
+    ...packageReviewSubmitPayloadKeys,
+    'export_mode',
+    'handoff_target',
+    'package_review_state',
+    'package_review_submit_record_ref',
+  ].sort();
+  const externalPreparePayloadKeys = [
+    ...handoffPreparePayloadKeys,
+    'download_mode',
+    'external_export_download_target',
+    'handoff_export_envelope_ref',
+    'handoff_export_state',
+    'prepare_record_ref',
+  ].sort();
+  const waitForPostRequest = (path) => page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname === path && apiRequest.method() === 'POST'
+  ));
+  const waitForPostResponse = (path) => page.waitForResponse((response) => (
+    new URL(response.url()).pathname === path && response.request().method() === 'POST'
+  ));
+  const middleLifecyclePanel = page.locator('#source-directory-hybrid-middle-lifecycle-panel');
+  await middleLifecyclePanel.scrollIntoViewIfNeeded();
+  await expect(middleLifecyclePanel).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_source_directory_hybrid_middle_lifecycle_control',
+  );
+  await expect(middleLifecyclePanel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#source-directory-hybrid-middle-lifecycle-authority').fill(
+    JSON.stringify(authority),
+  );
+  await expect(middleLifecyclePanel).toHaveAttribute('data-lifecycle-state', 'ready');
+  await expect(page.locator('#source-directory-hybrid-middle-lifecycle-submit')).toBeEnabled();
 
-  const retrieval = await expectJson(await request.post(vectorRetrievalPath, {
-    data: {
-      ...retrievalAuthority,
-      client_request_id: requestId('source-directory-full-path-retrieval'),
-    },
-  }));
+  const retrievalRequestPromise = waitForPostRequest(vectorRetrievalPath);
+  const retrievalResponsePromise = waitForPostResponse(vectorRetrievalPath);
+  const contextRequestPromise = waitForPostRequest(contextPacketPath);
+  const contextResponsePromise = waitForPostResponse(contextPacketPath);
+  const analysisRequestPromise = waitForPostRequest(analysisPath);
+  const analysisResponsePromise = waitForPostResponse(analysisPath);
+  const analysisStatusRequestPromise = waitForPostRequest(analysisStatusPath);
+  const analysisStatusResponsePromise = waitForPostResponse(analysisStatusPath);
+  const commitRequestPromise = waitForPostRequest(packageCommitPath);
+  const commitResponsePromise = waitForPostResponse(packageCommitPath);
+  const reviewSubmitRequestPromise = waitForPostRequest(packageReviewSubmitPath);
+  const reviewSubmitResponsePromise = waitForPostResponse(packageReviewSubmitPath);
+  const handoffPrepareRequestPromise = waitForPostRequest(handoffPreparePath);
+  const handoffPrepareResponsePromise = waitForPostResponse(handoffPreparePath);
+  const externalPrepareRequestPromise = waitForPostRequest(externalPreparePath);
+  const externalPrepareResponsePromise = waitForPostResponse(externalPreparePath);
+
+  await page.locator('#source-directory-hybrid-middle-lifecycle-submit').click();
+  const retrievalPayload = (await retrievalRequestPromise).postDataJSON();
+  const retrieval = await expectJson(await retrievalResponsePromise);
+  expectOnlyPayloadKeys(retrievalPayload, retrievalPayloadKeys);
+  expectNoForbiddenPayloadKeys(retrievalPayload);
   expect(retrieval.schema_id).toBe('layer3.source_directory_vector_retrieval.v1');
   expect(retrieval.top_k).toBe(2);
   expect(retrieval.source_ingestion_file_id).toBe(authority.source_ingestion_file_id);
 
-  const contextPacket = await expectJson(await request.post(contextPacketPath, {
-    data: {
-      ...contextAuthority,
-      client_request_id: requestId('source-directory-full-path-context'),
-    },
-  }));
+  const contextPayload = (await contextRequestPromise).postDataJSON();
+  const contextPacket = await expectJson(await contextResponsePromise);
+  expectOnlyPayloadKeys(contextPayload, contextPayloadKeys);
+  expect(withoutClientRequestId(contextPayload)).toEqual({
+    ...withoutClientRequestId(retrievalPayload),
+    limit: authority.limit,
+    offset: authority.offset,
+  });
+  expectNoForbiddenPayloadKeys(contextPayload);
   expect(contextPacket.schema_id).toBe('layer3.source_directory_hybrid_retrieval_context_packet.v1');
   expect(contextPacket.source_ingestion_file_id).toBe(authority.source_ingestion_file_id);
   expect(contextPacket.hybrid_context_packet_hash).toMatch(/^[a-f0-9]{64}$/);
 
-  const analysisPayload = {
-    ...analysisAuthority,
-    client_request_id: requestId('source-directory-full-path-analysis'),
-  };
-  const analysis = await expectJson(await request.post(analysisPath, { data: analysisPayload }));
+  const analysisPayload = (await analysisRequestPromise).postDataJSON();
+  const analysis = await expectJson(await analysisResponsePromise);
+  expectOnlyPayloadKeys(analysisPayload, analysisPayloadKeys);
+  expect(withoutClientRequestId(analysisPayload)).toEqual({
+    ...withoutClientRequestId(contextPayload),
+    analysis_question: authority.analysis_question,
+    analysis_focus: authority.analysis_focus,
+  });
+  expectNoForbiddenPayloadKeys(analysisPayload);
   expect(analysis.schema_id).toBe(
     'layer3.source_directory_hybrid_context_packet_qualitative_analysis.v1',
   );
@@ -10717,25 +10783,26 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(analysis.package_commit_enabled).toBe(false);
   expect(analysis.source_directory_hybrid_package_review_preview_hash).toMatch(/^[a-f0-9]{64}$/);
 
-  const analysisStatus = await expectJson(await request.post(analysisStatusPath, {
-    data: {
-      ...analysisAuthority,
-      client_request_id: requestId('source-directory-full-path-analysis-status'),
-    },
-  }));
+  const analysisStatusPayload = (await analysisStatusRequestPromise).postDataJSON();
+  const analysisStatus = await expectJson(await analysisStatusResponsePromise);
+  expectOnlyPayloadKeys(analysisStatusPayload, analysisPayloadKeys);
+  expect(withoutClientRequestId(analysisStatusPayload)).toEqual(withoutClientRequestId(analysisPayload));
+  expectNoForbiddenPayloadKeys(analysisStatusPayload);
   expect(analysisStatus.schema_id).toBe(
     'layer3.source_directory_hybrid_context_packet_qualitative_analysis_status.v1',
   );
   expect(analysisStatus.source_directory_hybrid_package_commit_available).toBe(false);
 
-  const commitPayload = {
-    ...analysisPayload,
-    client_request_id: requestId('source-directory-full-path-package-commit'),
+  const commitPayload = (await commitRequestPromise).postDataJSON();
+  const commit = await expectJson(await commitResponsePromise);
+  expectOnlyPayloadKeys(commitPayload, packageCommitPayloadKeys);
+  expect(withoutClientRequestId(commitPayload)).toEqual({
+    ...withoutClientRequestId(analysisPayload),
     qualitative_analysis_hash: analysis.qualitative_analysis_hash,
     source_directory_hybrid_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
     operator_decision: 'commit_source_directory_hybrid_context_packet_qualitative_analysis_package',
-  };
-  const commit = await expectJson(await request.post(packageCommitPath, { data: commitPayload }));
+  });
+  expectNoForbiddenPayloadKeys(commitPayload);
   expect(commit.schema_id).toBe(
     'layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_commit.v1',
   );
@@ -10745,9 +10812,11 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(commit.package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
   expect(commit.output_package_ids).toHaveLength(3);
 
-  const submitPayload = {
-    ...analysisPayload,
-    client_request_id: requestId('source-directory-full-path-package-review-submit'),
+  const submitPayload = (await reviewSubmitRequestPromise).postDataJSON();
+  const submit = await expectJson(await reviewSubmitResponsePromise);
+  expectOnlyPayloadKeys(submitPayload, packageReviewSubmitPayloadKeys);
+  expect(withoutClientRequestId(submitPayload)).toEqual({
+    ...withoutClientRequestId(analysisPayload),
     qualitative_analysis_hash: analysis.qualitative_analysis_hash,
     source_directory_hybrid_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
     construction_basis_hash: commit.construction_basis_hash,
@@ -10756,8 +10825,8 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     package_kinds: commit.package_kinds,
     payload_hashes: commit.payload_hashes,
     operator_decision: 'approved',
-  };
-  const submit = await expectJson(await request.post(packageReviewSubmitPath, { data: submitPayload }));
+  });
+  expectNoForbiddenPayloadKeys(submitPayload);
   expect(submit.schema_id).toBe(
     'layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit.v1',
   );
@@ -10765,16 +10834,18 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(submit.package_review_state).toBe('package_review_approved');
   expect(submit.handoff_enabled).toBe(true);
 
-  const handoffPayload = {
-    ...submitPayload,
-    client_request_id: requestId('source-directory-full-path-handoff-prepare'),
+  const handoffPayload = (await handoffPrepareRequestPromise).postDataJSON();
+  const handoff = await expectJson(await handoffPrepareResponsePromise);
+  expectOnlyPayloadKeys(handoffPayload, handoffPreparePayloadKeys);
+  expect(withoutClientRequestId(handoffPayload)).toEqual({
+    ...withoutClientRequestId(submitPayload),
     operator_decision: 'authorize_prepare',
     package_review_submit_record_ref: submit.submit_record_ref,
     package_review_state: submit.package_review_state,
     handoff_target: 'internal_export_envelope',
     export_mode: 'prepare_only',
-  };
-  const handoff = await expectJson(await request.post(handoffPreparePath, { data: handoffPayload }));
+  });
+  expectNoForbiddenPayloadKeys(handoffPayload);
   expect(handoff.schema_id).toBe(
     'layer3.source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare.v1',
   );
@@ -10783,19 +10854,19 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(handoff.handoff_export_envelope.payload_refs).toBeNull();
   expect(handoff.handoff_export_envelope.payload_refs_redacted).toBe(true);
 
-  const externalPreparePayload = {
-    ...handoffPayload,
-    client_request_id: requestId('source-directory-full-path-external-prepare'),
+  const externalPreparePayload = (await externalPrepareRequestPromise).postDataJSON();
+  const externalPrepare = await expectJson(await externalPrepareResponsePromise);
+  expectOnlyPayloadKeys(externalPreparePayload, externalPreparePayloadKeys);
+  expect(withoutClientRequestId(externalPreparePayload)).toEqual({
+    ...withoutClientRequestId(handoffPayload),
     operator_decision: 'prepare_source_directory_hybrid_external_export_download',
     prepare_record_ref: handoff.prepare_record_ref,
     handoff_export_state: handoff.handoff_export_state,
     handoff_export_envelope_ref: handoff.handoff_export_envelope.envelope_ref,
     external_export_download_target: 'source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference',
     download_mode: 'reference_only_prepare',
-  };
-  const externalPrepare = await expectJson(await request.post(externalPreparePath, {
-    data: externalPreparePayload,
-  }));
+  });
+  expectNoForbiddenPayloadKeys(externalPreparePayload);
   expect(externalPrepare.schema_id).toBe(
     'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1',
   );
@@ -10805,6 +10876,8 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(externalPrepare.external_export_download_descriptor.payload_refs_redacted).toBe(true);
   expect(externalPrepare.provider_public_delivery_enabled).toBe(false);
   expect(externalPrepare.connector_dispatch_enabled).toBe(false);
+  await expect(middleLifecyclePanel).toHaveAttribute('data-lifecycle-state', 'prepared', { timeout: 10000 });
+  await expect(middleLifecyclePanel).toContainText('source_directory_hybrid_middle_lifecycle_prepared');
 
   const summary = await expectJson(await request.get(`/api/v1/layer3/session/${gateB.session_id}`));
   expect(summary.analysis_environment_projection.schema_id).toBe('layer3.analysis_environment_projection.v1');
@@ -10821,7 +10894,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   await expect(analysisProjection).toHaveAttribute('data-read-only', 'true');
 
   const selectedPackage = externalPrepare.output_packages.find((row) => row.package_kind === 'user_facing');
-  const deliveryAuthority = {
+  const expectedDeliveryAuthority = {
     ...externalPreparePayload,
     package_review_submit_record_ref: submit.submit_record_ref,
     package_review_state: submit.package_review_state,
@@ -10841,9 +10914,13 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   };
   const hybridDeliveryPanel = page.locator('#source-directory-hybrid-external-export-download-delivery-panel');
   await hybridDeliveryPanel.scrollIntoViewIfNeeded();
-  await page.locator('#source-directory-hybrid-external-export-download-delivery-authority').fill(
-    JSON.stringify(deliveryAuthority),
+  const deliveryAuthority = JSON.parse(
+    await page.locator('#source-directory-hybrid-external-export-download-delivery-authority').inputValue(),
   );
+  expect(withoutClientRequestId(deliveryAuthority)).toEqual(withoutClientRequestId(expectedDeliveryAuthority));
+  expect(JSON.parse(
+    await page.locator('#source-directory-hybrid-internal-webhook-authority').inputValue(),
+  )).toEqual(deliveryAuthority);
   await expect(page.locator('#source-directory-hybrid-external-export-download-delivery-status')).toBeEnabled();
 
   const hybridStatusRequestPromise = page.waitForRequest((apiRequest) => (
@@ -10903,9 +10980,6 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'rendered_source_directory_hybrid_internal_webhook_dispatch_control',
   );
   await expect(internalWebhookPanel).toHaveAttribute('data-frontend-durable-authority', 'false');
-  await page.locator('#source-directory-hybrid-internal-webhook-authority').fill(
-    JSON.stringify(deliveryAuthority),
-  );
   await expect(page.locator('#source-directory-hybrid-internal-webhook-submit')).toBeEnabled();
 
   const internalWebhookDispatchRequestPromise = page.waitForRequest((apiRequest) => (
@@ -10971,6 +11045,14 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path.startsWith(statusPathFragment))).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === materialPreviewPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === gateBPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === vectorRetrievalPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === contextPacketPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === analysisPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === analysisStatusPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === packageCommitPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === packageReviewSubmitPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === handoffPreparePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === externalPreparePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === internalWebhookDispatchPath)).toHaveLength(1);
