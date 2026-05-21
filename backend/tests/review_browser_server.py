@@ -10,7 +10,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import ModuleType, SimpleNamespace
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import create_engine
@@ -38,6 +38,7 @@ from app.models.models import (
     DatasetSourceProvenance,
     DatasetVersion,
     L3AnalysisSet,
+    L3MaterialSnapshot,
     L3OutputPackage,
     L3ReconciliationRecord,
     VariableDefinition,
@@ -61,6 +62,10 @@ from app.services.layer3_session_entry import (
     expand_descriptors,
     finalize_session,
     record_retrieval_event,
+)
+from app.services.layer3_source_directory_text_index import source_directory_material_text_index
+from app.services.layer3_source_directory_vector_index import (
+    source_directory_material_embedding_vector_index,
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
@@ -224,6 +229,14 @@ def _write_text(path: Path, payload: str) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(payload, encoding="utf-8")
     return str(path)
+
+
+def _write_layer3_source_directory_fixture(root: Path) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    lines = ["alpha beta beta lead\n"]
+    lines.extend(f"context filler line {index}\n" for index in range(1, 42))
+    lines.append("alpha gamma tail\n")
+    (root / "vector-retrieval.txt").write_text("".join(lines), encoding="utf-8")
 
 
 def _seed_browser_dataset_version(db, temp_path: Path, *, seed_id: str, dataset_id: str, dataset_version_id: str) -> Path:
@@ -997,6 +1010,9 @@ def create_app() -> FastAPI:
     _install_layer3_browser_patches(temp_path)
     settings.storage_dir = str(temp_path / "storage")
     settings.layer3_external_local_export_dir = str(temp_path / "external-local-export")
+    source_dir = temp_path / "source-dir"
+    _write_layer3_source_directory_fixture(source_dir)
+    settings.layer3_source_ingestion_dir = str(source_dir)
     bootstrap_storage_tree(settings.storage_dir)
     engine = create_engine(
         "sqlite:///:memory:",
@@ -1070,8 +1086,77 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-cohort-aps-handoff",
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
+                "/__test/layer3/source-directory-hybrid-authority",
             ],
         }
+
+    @app.post("/__test/layer3/source-directory-hybrid-authority")
+    def source_directory_hybrid_authority(payload: dict[str, object]) -> dict[str, object]:
+        session_id = str(payload.get("session_id") or "").strip()
+        if not session_id:
+            raise HTTPException(status_code=400, detail="session_id is required")
+        db = SessionLocal()
+        try:
+            snapshot = (
+                db.query(L3MaterialSnapshot)
+                .filter(
+                    L3MaterialSnapshot.session_id == session_id,
+                    L3MaterialSnapshot.source_shape == "server_configured_directory_file",
+                )
+                .one_or_none()
+            )
+            if snapshot is None:
+                raise HTTPException(status_code=404, detail="source-directory material snapshot not found")
+            identity = dict(snapshot.source_identity_json or {})
+            snapshot_info = {
+                "material_snapshot_id": snapshot.material_snapshot_id,
+                "payload_hash": snapshot.payload_hash,
+                "source_ingestion_batch_id": identity.get("source_ingestion_batch_id"),
+                "source_ingestion_file_id": identity.get("source_ingestion_file_id"),
+                "content_sha256": identity.get("content_sha256"),
+                "file_identity_hash": identity.get("file_identity_hash"),
+                "authority_basis_hash": identity.get("authority_basis_hash"),
+            }
+            missing = [field for field, value in snapshot_info.items() if not value]
+            if missing:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"source-directory material snapshot is missing authority fields: {', '.join(missing)}",
+                )
+            text_index = source_directory_material_text_index(
+                db,
+                {
+                    "client_request_id": f"browser-source-directory-text-index-{snapshot.material_snapshot_id}",
+                    **snapshot_info,
+                },
+            )
+            vector_index = source_directory_material_embedding_vector_index(
+                db,
+                {
+                    "client_request_id": f"browser-source-directory-vector-index-{snapshot.material_snapshot_id}",
+                    **snapshot_info,
+                    "index_authority_hash": text_index["index_authority_hash"],
+                },
+            )
+            return {
+                "schema_id": "project6.review_browser_source_directory_hybrid_authority.v1",
+                "schema_version": 1,
+                "test_only": True,
+                "session_id": session_id,
+                "authority_payload": {
+                    **snapshot_info,
+                    "index_authority_hash": text_index["index_authority_hash"],
+                    "embedding_index_authority_hash": vector_index["embedding_index_authority_hash"],
+                    "query_text": "BETA alpha alpha",
+                    "analysis_question": "What does the alpha beta evidence support?",
+                    "analysis_focus": "rendered source-directory scan to hybrid handoff delivery proof",
+                    "limit": 2,
+                    "offset": 0,
+                    "top_k": 2,
+                },
+            }
+        finally:
+            db.close()
 
     @app.post("/__test/layer3/seed-quant")
     def seed_layer3_quant() -> dict[str, str]:
