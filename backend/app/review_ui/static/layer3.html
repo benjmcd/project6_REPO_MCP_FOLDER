@@ -803,6 +803,17 @@
                         <button id="source-directory-hybrid-external-export-download-delivery-submit" class="primary-btn" type="submit" disabled>Deliver Hybrid Package</button>
                     </div>
                 </form>
+                <form id="source-directory-hybrid-internal-webhook-form" class="result-review-form" data-rendered-mode="rendered_source_directory_hybrid_internal_webhook_dispatch_control" data-frontend-durable-authority="false">
+                    <div id="source-directory-hybrid-internal-webhook-panel" class="result-review-panel source-directory-hybrid-internal-webhook-panel" aria-label="Source-directory hybrid internal webhook dispatch" aria-live="polite">
+                        <div class="empty-panel">Source-directory hybrid internal webhook authority has not been inspected.</div>
+                    </div>
+                    <label for="source-directory-hybrid-internal-webhook-authority">Source-directory hybrid internal webhook authority JSON</label>
+                    <textarea id="source-directory-hybrid-internal-webhook-authority" rows="5" autocomplete="off" spellcheck="false"></textarea>
+                    <div class="result-review-controls external-export-download-controls" aria-label="Source-directory hybrid internal webhook controls">
+                        <button id="source-directory-hybrid-internal-webhook-status" class="secondary-btn" type="button" disabled>Inspect Webhook Status</button>
+                        <button id="source-directory-hybrid-internal-webhook-submit" class="primary-btn" type="submit" disabled>Dispatch Internal Webhook</button>
+                    </div>
+                </form>
                 <form id="external-export-download-signed-reference-form" class="result-review-form">
                     <div id="external-export-download-signed-reference-panel" class="result-review-panel">
                         <div class="empty-panel">Prepare external export/download readiness before signed-reference generation.</div>
