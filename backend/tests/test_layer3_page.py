@@ -177,6 +177,14 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="external-export-download-delivery-form"' in response.text
     assert 'id="external-export-download-delivery-panel"' in response.text
     assert 'id="external-export-download-delivery-submit"' in response.text
+    assert 'id="source-directory-hybrid-middle-lifecycle-form"' in response.text
+    assert (
+        'data-rendered-mode="rendered_source_directory_hybrid_middle_lifecycle_control"'
+        in response.text
+    )
+    assert 'id="source-directory-hybrid-middle-lifecycle-panel"' in response.text
+    assert 'id="source-directory-hybrid-middle-lifecycle-authority"' in response.text
+    assert 'id="source-directory-hybrid-middle-lifecycle-submit"' in response.text
     assert 'id="source-directory-hybrid-external-export-download-delivery-form"' in response.text
     assert (
         'data-rendered-mode="rendered_source_directory_hybrid_external_export_download_delivery_control"'
@@ -1477,6 +1485,73 @@ def test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded() -
         "schema_migration:",
     ):
         assert forbidden not in extension_slice
+
+
+def test_layer3_source_directory_hybrid_middle_lifecycle_rendered_control_is_bounded() -> None:
+    response = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert response.status_code == 200
+    assert js.status_code == 200
+    assert 'id="source-directory-hybrid-middle-lifecycle-form"' in response.text
+    assert 'id="source-directory-hybrid-middle-lifecycle-panel"' in response.text
+    assert 'id="source-directory-hybrid-middle-lifecycle-authority"' in response.text
+    assert 'id="source-directory-hybrid-middle-lifecycle-submit"' in response.text
+    assert (
+        'data-rendered-mode="rendered_source_directory_hybrid_middle_lifecycle_control"'
+        in response.text
+    )
+    assert 'data-frontend-durable-authority="false"' in response.text
+
+    authority_start = js.text.find("function sourceDirectoryHybridMiddleLifecycleAuthorityPacket")
+    authority_end = js.text.find("function sourceDirectoryHybridExternalExportDownloadSelectedPackage")
+    render_start = js.text.find("function renderSourceDirectoryHybridMiddleLifecyclePanel")
+    render_end = js.text.find("function sourceDirectoryHybridInternalWebhookPanelState")
+    submit_start = js.text.find("async function submitSourceDirectoryHybridMiddleLifecycle")
+    next_submit_start = js.text.find("async function inspectSourceDirectoryHybridExternalExportDownloadDelivery")
+    assert authority_start != -1
+    assert authority_end != -1
+    assert render_start != -1
+    assert render_end != -1
+    assert submit_start != -1
+    assert next_submit_start != -1
+    assert authority_start < authority_end < render_start < render_end < submit_start < next_submit_start
+    authority_slice = js.text[authority_start:authority_end]
+    render_slice = js.text[render_start:render_end]
+    submit_slice = js.text[submit_start:next_submit_start]
+
+    assert "SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH" in render_slice
+    assert "SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH" in render_slice
+    assert "SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH" in render_slice
+    assert "SOURCE_DIRECTORY_HYBRID_PACKAGE_COMMIT_PATH" in render_slice
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH" in render_slice
+    assert "postJson(SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH" in submit_slice
+    assert "postJson(SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH" in submit_slice
+    assert "postJson(SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH" in submit_slice
+    assert "postJson(SOURCE_DIRECTORY_HYBRID_PACKAGE_COMMIT_PATH" in submit_slice
+    assert "SOURCE_DIRECTORY_HYBRID_PACKAGE_REVIEW_SUBMIT_PATH" in submit_slice
+    assert "SOURCE_DIRECTORY_HYBRID_HANDOFF_EXPORT_PREPARE_PATH" in submit_slice
+    assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH" in submit_slice
+    assert submit_slice.count("postJson(") >= 8
+    middle_slice = authority_slice + render_slice + submit_slice
+    assert "source_directory_hybrid_middle_lifecycle_prepared" in middle_slice
+    assert "State.sourceDirectoryHybridMiddleLifecycle" in render_slice
+    assert "State.sourceDirectoryHybridMiddleLifecycle" in submit_slice
+    assert "elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = deliveryAuthorityText" in submit_slice
+    assert "elements.sourceDirectoryHybridInternalWebhookAuthority.value = deliveryAuthorityText" in submit_slice
+    assert "frontendDurableAuthority = 'false'" in render_slice
+    assert "submitAttachmentForm(" not in submit_slice
+    assert "localStorage" not in middle_slice
+    assert "sessionStorage" not in middle_slice
+    for forbidden in (
+        "download_url",
+        "public_url",
+        "signed_url:",
+        "provider_credentials",
+        "frontend_state",
+        "browser_state",
+    ):
+        assert forbidden not in middle_slice
 
 
 def test_layer3_analysis_environment_projection_rendered_reader_is_bounded() -> None:

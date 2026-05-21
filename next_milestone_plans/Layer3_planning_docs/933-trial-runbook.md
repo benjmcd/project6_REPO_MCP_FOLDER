@@ -86,16 +86,17 @@ Use a clean worktree at current `project6-origin/main`. Do not run this from the
 
 Immediate next pass:
 
-1. Keep this checkpoint synced to current main and do not reopen broad planning unless the runbook fails.
-2. Select the smallest current-main-admitted rendered middle lifecycle operator-flow gap. The preferred target is one continuous rendered proof from source-directory scan/status and Gate B authority through retrieval/context, qualitative analysis/status, package commit, package review, handoff/export prepare, external export/download prepare, same-origin delivery, internal webhook dispatch/status, and status/projection visibility.
-3. If current main does not yet admit a rendered middle lifecycle control, freeze the exact missing control/contract boundary instead of inferring product authority.
+1. Merge the branch-local rendered middle lifecycle control only if the focused static checks and headed/headless live-server proof stay clean.
+2. Select the smallest Gate B to source-directory hybrid authority/index-generation bridge so the rendered middle lifecycle can run from operator-visible source-directory authority instead of test-only helper authority.
+3. If current main does not yet admit that bridge, freeze the exact route/control/contract boundary instead of inferring product authority.
 
 Mid-term passes:
 
-1. Convert the remaining middle source-directory lifecycle steps into one rendered/operator-continuous flow where current main admits controls: retrieval/context, qualitative analysis/status, package commit, package review submit, handoff/export prepare, external export/download prepare, replacement/supersession, same-origin delivery, and internal webhook dispatch/status.
-2. Re-run headed and headless Chromium proofs after every rendered-control addition and compare request surfaces, console/page errors, overflow, stale response handling, and forbidden payload keys.
-3. Extend Analysis Environment/mockup projection only as read-only evidence of live state, explicit exclusion, or explicit blocker status.
-4. Keep provider-private signed URL runtime, provider-public URL runtime, broad source expansion, broader RAG/model/provider behavior, auth/security expansion, and frontend-only durable authority blocked until a current-main authority doc and implementation slice admit each one.
+1. Close the Gate B to source-directory hybrid authority/index-generation bridge so the rendered middle lifecycle no longer depends on test-only helper authority.
+2. Convert the remaining package replacement/supersession steps into the rendered/operator-continuous source-directory path where current main admits controls.
+3. Re-run headed and headless Chromium proofs after every rendered-control addition and compare request surfaces, console/page errors, overflow, stale response handling, and forbidden payload keys.
+4. Extend Analysis Environment/mockup projection only as read-only evidence of live state, explicit exclusion, or explicit blocker status.
+5. Keep provider-private signed URL runtime, provider-public URL runtime, broad source expansion, broader RAG/model/provider behavior, auth/security expansion, and frontend-only durable authority blocked until a current-main authority doc and implementation slice admit each one.
 
 Long-term closeout:
 
@@ -114,10 +115,10 @@ This checkpoint doc introduces no runtime behavior, rendered behavior, backend b
 | Did current main close the prior source-directory internal webhook gap? | Yes for backend dispatch/status, rendered source-directory dispatch/status controls, and headed/headless live-server proof through that rendered control path. |
 | Does this authorize provider-private or provider-public URL runtime? | No. The proof explicitly avoids `/provider-private-signed-url` and `/provider-public-url`, and provider runtime admission remains separately gated. |
 | Does this authorize generic connector handoff or caller-supplied webhook destinations? | No. The proof avoids `/handoff/connector`, uses server-owned dispatch authority, and checks that raw destination, token, header, provider URL, and package payload authority do not leak from the browser. |
-| Is the middle lifecycle now one uninterrupted manual-click rendered operator flow? | No. Middle retrieval, context, qualitative analysis, package lifecycle, review, and prepare steps remain live API-proven with server-authored authority rather than one continuous rendered/manual flow. |
-| Is another broad planning pass more valuable than implementation after this checkpoint? | No, unless current-main proof fails. The next useful pass is the smallest rendered middle lifecycle operator-flow gap or an explicit freeze if current main does not admit the control. |
+| Is the middle lifecycle now one uninterrupted manual-click rendered operator flow? | Partially. Branch `codex/l3-middle-flow-operator` adds a rendered control that sequences retrieval/context, qualitative analysis/status, package commit, package review submit, handoff/export prepare, and external export/download prepare from server-derived authority, then populates delivery/webhook authority. The remaining interruption is the Gate B to source-directory hybrid authority/index-generation bridge, which still depends on test-only helper authority in the proof. |
+| Is another broad planning pass more valuable than implementation after this checkpoint? | No, unless current-main proof fails. The next useful pass is the smallest Gate B to hybrid-authority bridge that removes test-helper authority from the rendered source-directory path, or an explicit freeze if current main does not admit that runtime bridge. |
 | Does this activate the full mockup program? | No. Full activation remains blocked until final readiness audit closure. |
 
 ## Next Posture
 
-Next exact posture: `select_rendered_middle_lifecycle_operator_flow_gap_from_current_main`.
+Next exact posture: `freeze_source_directory_hybrid_authority_generation_operator_bridge_before_runtime`.
