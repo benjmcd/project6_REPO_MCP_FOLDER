@@ -2593,6 +2593,14 @@ LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZ
     PLANNING_DOCS
     / "923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL = (
+    PLANNING_DOCS
+    / "924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md"
+)
+LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -87922,6 +87930,284 @@ def _check_source_directory_replacement_package_set_authority_rendered_control_f
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_replacement_package_set_authority_rendered_control(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL,
+        errors,
+    )
+    entry_key = "source_directory_replacement_package_set_authority_rendered_control"
+    status = "source_directory_replacement_package_set_authority_rendered_control_implemented_with_review_fix"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md"
+    )
+    implementation_pr = "#1539"
+    implementation_commit = "655a76563db041d523e29a4f047d9c3666f460e4"
+    implementation_merge_commit = "7116ed4eca19109dc972580c53a2900d6feea347"
+    review_fix_pr = "#1540"
+    review_fix_commit = "c0ae6c43176b43cce0238d5281723f2ec2cc1a5f"
+    review_fix_merge_commit = "0d873c11c325600dff4b08dbe6a2f14ad95a9c74"
+    target = "source_directory_replacement_package_set_authority_rendered_control"
+    rendered_node = "/review/layer3 #replacement-package-set-authority-panel"
+    source_authority = "State.sourceDirectoryPackageSupersessionPreview"
+    fallback_authority = "State.packageSupersessionPreview"
+    materialization_route = "POST /api/v1/layer3/package/replacement-artifact/materialize"
+    replacement_route = "POST /api/v1/layer3/package/replacement-set/record"
+    next_posture = (
+        "current_main_sync_source_directory_replacement_package_set_authority_"
+        "rendered_control_after_review_fix"
+    )
+
+    for term in (
+        "924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md",
+        f"Status: implementation proof for `{target}` with follow-up stale-response review fix.",
+        f"Implementation PR: `{implementation_pr}`.",
+        f"Implementation commit: `{implementation_commit}`.",
+        f"Implementation merge commit: `{implementation_merge_commit}`.",
+        f"Review-fix PR: `{review_fix_pr}`.",
+        f"Review-fix commit: `{review_fix_commit}`.",
+        f"Review-fix merge commit: `{review_fix_merge_commit}`.",
+        f"Selected rendered node: `{rendered_node}`.",
+        f"Selected source authority: `{source_authority}`.",
+        f"Selected fallback authority: `{fallback_authority}`.",
+        materialization_route,
+        replacement_route,
+        "PR `#1539` review state was not empty after merge",
+        "stale source-directory preview response could repopulate",
+        "PR `#1540` review state before merge",
+        "Runtime behavior introduced by this implementation: `false`.",
+        "Rendered behavior introduced by this implementation: `true`.",
+        "Frontend-only durable authority enabled: `false`.",
+        "Full mockup program activation selected: `false`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL)} "
+                f"missing source-directory replacement package-set authority implementation term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Replacement Package-Set Authority Rendered Control",
+            "924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md",
+            status,
+            implementation_pr,
+            implementation_merge_commit,
+            review_fix_pr,
+            review_fix_merge_commit,
+            source_authority,
+            fallback_authority,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory replacement package-set authority rendered control implementation and review fix to preserve when present",
+            "924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md",
+            status,
+            implementation_commit,
+            review_fix_commit,
+            source_authority,
+            fallback_authority,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md",
+            status,
+            implementation_pr,
+            review_fix_pr,
+            source_authority,
+            fallback_authority,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"implementation_merge_commit": "{implementation_merge_commit}"',
+            f'"review_fix_merge_commit": "{review_fix_merge_commit}"',
+            f'"selected_source_authority": "{source_authority}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"implementation_merge_commit": "{implementation_merge_commit}"',
+            f'"review_fix_merge_commit": "{review_fix_merge_commit}"',
+            f'"selected_source_authority": "{source_authority}"',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory replacement package-set authority implementation term: {term}"
+                )
+
+    for data, data_path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(data, dict):
+            continue
+        entry = data.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(data_path)} missing {entry_key} object")
+            continue
+        for key, value in (
+            ("status", status),
+            ("implementation_pr", implementation_pr),
+            ("implementation_merge_commit", implementation_merge_commit),
+            ("review_fix_pr", review_fix_pr),
+            ("review_fix_merge_commit", review_fix_merge_commit),
+            ("selected_target", target),
+            ("selected_source_authority", source_authority),
+            ("selected_fallback_authority", fallback_authority),
+            ("selected_materialization_route", materialization_route),
+            ("selected_replacement_authority_route", replacement_route),
+            ("frontend_durable_authority_enabled", False),
+            ("full_mockup_program_activation_selected", False),
+            ("next_posture", next_posture),
+        ):
+            if entry.get(key) != value:
+                errors.append(f"{_rel(data_path)} {entry_key}.{key} must be {value!r}")
+
+
+def _check_source_directory_replacement_package_set_authority_rendered_control_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    entry_key = "source_directory_replacement_package_set_authority_rendered_control_current_main_sync"
+    status = "current_main_synced_source_directory_replacement_package_set_authority_rendered_control_after_review_fix"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+    )
+    implementation_pr = "#1539"
+    implementation_merge_commit = "7116ed4eca19109dc972580c53a2900d6feea347"
+    review_fix_pr = "#1540"
+    review_fix_merge_commit = "0d873c11c325600dff4b08dbe6a2f14ad95a9c74"
+    target = "source_directory_replacement_package_set_authority_rendered_control"
+    rendered_node = "/review/layer3 #replacement-package-set-authority-panel"
+    source_authority = "State.sourceDirectoryPackageSupersessionPreview"
+    fallback_authority = "State.packageSupersessionPreview"
+    materialization_route = "POST /api/v1/layer3/package/replacement-artifact/materialize"
+    replacement_route = "POST /api/v1/layer3/package/replacement-set/record"
+    next_posture = (
+        "select_next_blocker_retirement_lane_after_source_directory_replacement_"
+        "package_set_authority_rendered_control_current_main_sync"
+    )
+
+    for term in (
+        "925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+        "Status: current-main sync for `source_directory_replacement_package_set_authority_rendered_control_after_review_fix`.",
+        f"Implementation PR: `{implementation_pr}`.",
+        f"Implementation merge commit: `{implementation_merge_commit}`.",
+        f"Review-fix PR: `{review_fix_pr}`.",
+        f"Review-fix merge commit: `{review_fix_merge_commit}`.",
+        f"Base authority: `project6-origin/main` at `{review_fix_merge_commit}`.",
+        f"Synced target: `{target}`.",
+        f"Synced rendered node: `{rendered_node}`.",
+        f"Synced source authority: `{source_authority}`.",
+        f"Synced fallback authority: `{fallback_authority}`.",
+        materialization_route,
+        replacement_route,
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "reviewThreads totalCount: `0`",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Implementation-entry allowed for full mockup activation by this sync alone: `false`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory replacement package-set authority current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Replacement Package-Set Authority Rendered Control Current-Main Sync",
+            "925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            status,
+            implementation_merge_commit,
+            review_fix_merge_commit,
+            source_authority,
+            fallback_authority,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory replacement package-set authority rendered control current-main sync to preserve when present",
+            "925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            status,
+            implementation_merge_commit,
+            review_fix_merge_commit,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md",
+            status,
+            implementation_merge_commit,
+            review_fix_merge_commit,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"implementation_merge_commit": "{implementation_merge_commit}"',
+            f'"review_fix_merge_commit": "{review_fix_merge_commit}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"implementation_merge_commit": "{implementation_merge_commit}"',
+            f'"review_fix_merge_commit": "{review_fix_merge_commit}"',
+            '"runtime_behavior_change_introduced_by_sync": false',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory replacement package-set authority current-main sync term: {term}"
+                )
+
+    for data, data_path in ((manifest, MANIFEST), (proof_manifest, PROOF_MANIFEST)):
+        if not isinstance(data, dict):
+            continue
+        entry = data.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(data_path)} missing {entry_key} object")
+            continue
+        for key, value in (
+            ("status", status),
+            ("implementation_pr", implementation_pr),
+            ("implementation_merge_commit", implementation_merge_commit),
+            ("review_fix_pr", review_fix_pr),
+            ("review_fix_merge_commit", review_fix_merge_commit),
+            ("synced_target", target),
+            ("synced_source_authority", source_authority),
+            ("synced_fallback_authority", fallback_authority),
+            ("synced_materialization_route", materialization_route),
+            ("synced_replacement_authority_route", replacement_route),
+            ("runtime_behavior_change_introduced_by_sync", False),
+            ("frontend_durable_authority_enabled", False),
+            ("next_posture", next_posture),
+        ):
+            if entry.get(key) != value:
+                errors.append(f"{_rel(data_path)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -88725,6 +89011,8 @@ def main() -> int:
     _check_source_directory_package_supersession_preview_rendered_control_current_main_sync(errors)
     _check_source_directory_replacement_package_set_authority_rendered_control_freeze(errors)
     _check_source_directory_replacement_package_set_authority_rendered_control_freeze_current_main_sync(errors)
+    _check_source_directory_replacement_package_set_authority_rendered_control(errors)
+    _check_source_directory_replacement_package_set_authority_rendered_control_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

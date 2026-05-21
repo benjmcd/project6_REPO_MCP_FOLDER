@@ -966,3 +966,25 @@ Current Layer 3 source-directory replacement package-set authority rendered cont
 - preserve GitHub checks `backend-layer3-api` and `test` as `SUCCESS` with empty comments/reviews/latestReviews/reviewThreads before merge
 - treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior introduced by sync, production UI behavior introduced by sync, package supersession commit, package replacement activation, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync`
+
+Current Layer 3 source-directory replacement package-set authority rendered control implementation and review fix to preserve when present:
+- `924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md` records implementation proof for `source_directory_replacement_package_set_authority_rendered_control` plus the follow-up stale-response review fix
+- classify it as `source_directory_replacement_package_set_authority_rendered_control_implemented_with_review_fix`
+- preserve predecessor sync doc `923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`
+- preserve implementation PR `#1539`, implementation commit `655a76563db041d523e29a4f047d9c3666f460e4`, and implementation merge commit `7116ed4eca19109dc972580c53a2900d6feea347`
+- preserve review-fix PR `#1540`, review-fix commit `c0ae6c43176b43cce0238d5281723f2ec2cc1a5f`, and review-fix merge commit `0d873c11c325600dff4b08dbe6a2f14ad95a9c74`
+- preserve selected target `source_directory_replacement_package_set_authority_rendered_control`, rendered node `/review/layer3 #replacement-package-set-authority-panel`, source authority `State.sourceDirectoryPackageSupersessionPreview`, fallback authority `State.packageSupersessionPreview`, and selected routes `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`
+- preserve the PR `#1539` caveat: one COMMENTED review and one unresolved review thread after merge, retired by PR `#1540` source-directory preview request-token invalidation
+- treat this implementation as rendered behavior, executable test behavior, and production UI behavior only; do not treat it as backend behavior, route/API/DTO/model/migration/service behavior, package supersession commit, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_replacement_package_set_authority_rendered_control_after_review_fix`
+
+Current Layer 3 source-directory replacement package-set authority rendered control current-main sync to preserve when present:
+- `925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md` records current-main sync for PR `#1539` plus PR `#1540`
+- classify it as `current_main_synced_source_directory_replacement_package_set_authority_rendered_control_after_review_fix`
+- preserve predecessor implementation doc `924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md`
+- preserve synced implementation PR `#1539` at merge commit `7116ed4eca19109dc972580c53a2900d6feea347`
+- preserve synced review-fix PR `#1540` at merge commit `0d873c11c325600dff4b08dbe6a2f14ad95a9c74`
+- preserve synced target `source_directory_replacement_package_set_authority_rendered_control`, rendered node `/review/layer3 #replacement-package-set-authority-panel`, source authority `State.sourceDirectoryPackageSupersessionPreview`, fallback authority `State.packageSupersessionPreview`, and selected routes `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`
+- preserve GitHub checks `backend-layer3-api` and `test` as `SUCCESS` for PR `#1540` with comments `0`, reviews `0`, latestReviews `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN`
+- treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, package supersession commit, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `select_next_blocker_retirement_lane_after_source_directory_replacement_package_set_authority_rendered_control_current_main_sync`

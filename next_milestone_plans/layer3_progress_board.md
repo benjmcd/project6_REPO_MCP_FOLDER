@@ -8769,3 +8769,59 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`.
 
 Next exact posture: `implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync`.
+
+## Source-Directory Replacement Package-Set Authority Rendered Control
+
+Doc: `924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md`.
+
+Status: `source_directory_replacement_package_set_authority_rendered_control_implemented_with_review_fix`.
+
+Predecessor sync doc: `923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Implementation PR: `#1539`. Implementation commit: `655a76563db041d523e29a4f047d9c3666f460e4`. Implementation merge commit: `7116ed4eca19109dc972580c53a2900d6feea347`.
+
+Review-fix PR: `#1540`. Review-fix commit: `c0ae6c43176b43cce0238d5281723f2ec2cc1a5f`. Review-fix merge commit: `0d873c11c325600dff4b08dbe6a2f14ad95a9c74`.
+
+Selected target: `source_directory_replacement_package_set_authority_rendered_control`.
+
+Selected rendered node: `/review/layer3 #replacement-package-set-authority-panel`.
+
+Selected source authority: `State.sourceDirectoryPackageSupersessionPreview`. Selected fallback authority: `State.packageSupersessionPreview`.
+
+Selected routes: `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`.
+
+Review caveat: PR `#1539` had one COMMENTED review and one unresolved review thread after merge; PR `#1540` retired it with source-directory preview request-token invalidation and had reviewThreads totalCount `0` before merge.
+
+Runtime behavior introduced by this implementation: `false`. Rendered behavior introduced by this implementation: `true`. Backend behavior introduced by this implementation: `false`. Route/API/DTO/model/migration/service behavior introduced by this implementation: `false`. Executable test behavior introduced by this implementation: `true`. Production UI behavior introduced by this implementation: `true`.
+
+Full mockup program activation selected: `false`. Frontend-only durable authority enabled: `false`.
+
+Next exact posture: `current_main_sync_source_directory_replacement_package_set_authority_rendered_control_after_review_fix`.
+
+## Source-Directory Replacement Package-Set Authority Rendered Control Current-Main Sync
+
+Doc: `925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.
+
+Status: `current_main_synced_source_directory_replacement_package_set_authority_rendered_control_after_review_fix`.
+
+Predecessor implementation doc: `924_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL.md`.
+
+Synced implementation PR: `#1539` at merge commit `7116ed4eca19109dc972580c53a2900d6feea347`.
+
+Synced review-fix PR: `#1540` at merge commit `0d873c11c325600dff4b08dbe6a2f14ad95a9c74`.
+
+Synced target: `source_directory_replacement_package_set_authority_rendered_control`.
+
+Synced rendered node: `/review/layer3 #replacement-package-set-authority-panel`.
+
+Synced source authority: `State.sourceDirectoryPackageSupersessionPreview`. Synced fallback authority: `State.packageSupersessionPreview`.
+
+Synced routes: `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`.
+
+GitHub gate: PR `#1540` merged cleanly with `backend-layer3-api` and `test` checks passing, comments `0`, reviews `0`, latestReviews `0`, reviewThreads totalCount `0`, and unresolved reviewThreads totalCount `0`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`. Production UI behavior introduced by this sync: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`.
+
+Next exact posture: `select_next_blocker_retirement_lane_after_source_directory_replacement_package_set_authority_rendered_control_current_main_sync`.
