@@ -2569,6 +2569,10 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SY
 LAYER3_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION = (
     PLANNING_DOCS / "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE = (
+    PLANNING_DOCS
+    / "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -86627,6 +86631,171 @@ def _check_full_mockup_activation_next_blocker_selection(errors: list[str]) -> N
             errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
 
 
+def _check_source_directory_package_supersession_preview_rendered_control_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE,
+        errors,
+    )
+    entry_key = "source_directory_package_supersession_preview_rendered_control_freeze"
+    status = "source_directory_package_supersession_preview_rendered_control_frozen"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md"
+    )
+    checkpoint = "b6ba2a45c8075e8d5305974231b7baa53ffaa820"
+    freeze_branch = "codex/l3-package-preview-freeze"
+    selected_target = "source_directory_package_supersession_preview_rendered_control"
+    target_classification = "live_server_authoritative_action"
+    implementation_action = (
+        "implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync"
+    )
+    selected_route = (
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/supersession/preview"
+    )
+    selected_schema = (
+        "layer3.source_directory_qualitative_analysis_package_supersession_preview.v1"
+    )
+    selected_mode = "source_directory_qualitative_analysis_package_supersession_preview_authority"
+    next_posture = (
+        "current_main_sync_source_directory_package_supersession_preview_rendered_control_"
+        "freeze_then_implement_rendered_control"
+    )
+    summary = (
+        "Doc 918 freezes source_directory_package_supersession_preview_rendered_control as one "
+        "named full-mockup activation target over the existing source-directory qualitative-analysis "
+        "package supersession preview route. The freeze admits no runtime, rendered, backend, "
+        "route/API/DTO/model/migration/service, executable test, production UI, package replacement, "
+        "supersession commit, connector/provider/RAG/auth/browser-storage, frontend-only durable "
+        "authority, or full mockup activation behavior."
+    )
+
+    for term in (
+        "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md",
+        f"Status: no-runtime/no-rendered freeze for `{selected_target}`.",
+        "Predecessor selection doc: `917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md`.",
+        f"Current-main checkpoint before freeze: `{checkpoint}`.",
+        f"Freeze branch: `{freeze_branch}`.",
+        f"Selected target: `{selected_target}`.",
+        f"Selected target classification: `{target_classification}`.",
+        f"Selected implementation action after freeze sync: `{implementation_action}`.",
+        selected_route,
+        selected_schema,
+        selected_mode,
+        "The current rendered workbench already has a generic package supersession preview panel and state object",
+        "This freeze admits no runtime behavior",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed by this freeze alone: `false`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE)} "
+                f"missing source-directory package supersession preview freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package Supersession Preview Rendered Control Freeze",
+            "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md",
+            status,
+            selected_target,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package supersession preview rendered control freeze to preserve when present",
+            "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md",
+            status,
+            selected_target,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md",
+            status,
+            selected_target,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package supersession preview freeze term: {term}"
+                )
+
+    if not isinstance(manifest, dict):
+        return
+    entry = manifest.get(entry_key)
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        return
+    expected_latest = {
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_predecessor_selection_doc": predecessor_doc,
+        f"latest_{entry_key}_current_main_checkpoint_before_freeze": checkpoint,
+        f"latest_{entry_key}_freeze_branch": freeze_branch,
+        f"latest_{entry_key}_selected_target": selected_target,
+        f"latest_{entry_key}_selected_target_classification": target_classification,
+        f"latest_{entry_key}_selected_implementation_action_after_freeze_sync": implementation_action,
+        f"latest_{entry_key}_selected_route": selected_route,
+        f"latest_{entry_key}_selected_schema": selected_schema,
+        f"latest_{entry_key}_selected_mode": selected_mode,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_freeze": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_freeze": False,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_freeze": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_freeze": False,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_freeze": False,
+        f"latest_{entry_key}_full_mockup_program_activation_selected_now": False,
+        f"latest_{entry_key}_implementation_entry_allowed_by_freeze_alone": False,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("doc", doc_path),
+        ("predecessor_selection_doc", predecessor_doc),
+        ("current_main_checkpoint_before_freeze", checkpoint),
+        ("freeze_branch", freeze_branch),
+        ("selected_target", selected_target),
+        ("selected_target_classification", target_classification),
+        ("selected_implementation_action_after_freeze_sync", implementation_action),
+        ("selected_route", selected_route),
+        ("selected_schema", selected_schema),
+        ("selected_mode", selected_mode),
+        ("runtime_behavior_change_introduced_by_freeze", False),
+        ("rendered_behavior_change_introduced_by_freeze", False),
+        ("backend_behavior_change_introduced_by_freeze", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+        ("executable_test_behavior_change_introduced_by_freeze", False),
+        ("production_ui_behavior_change_introduced_by_freeze", False),
+        ("full_mockup_program_activation_selected_now", False),
+        ("implementation_entry_allowed_by_freeze_alone", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for key, value in expected_entry_values:
+        if entry.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+    for key, value in expected_latest.items():
+        if manifest.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -87424,6 +87593,7 @@ def main() -> int:
     _check_provider_public_url_delivery_use_rendered_control_status_freshness_remediation(errors)
     _check_source_directory_material_preview_gate_b_rendered_control_current_main_sync(errors)
     _check_full_mockup_activation_next_blocker_selection(errors)
+    _check_source_directory_package_supersession_preview_rendered_control_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
