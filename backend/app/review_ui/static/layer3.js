@@ -7286,7 +7286,9 @@ function renderMockupActivationReadinessPanel() {
         'frontend_only_durable_authority',
         'raw_provider_url_or_token_exposure',
         'unapproved_connector_destination_write',
-        'broad_source_model_rag_expansion',
+        'unapproved_provider_object_or_network_write',
+        'broad_source_family_expansion',
+        'broad_model_provider_rag_expansion',
         'full_mockup_program_activation',
     ];
     elements.mockupActivationReadinessPanel.dataset.readinessState = panelState.label;

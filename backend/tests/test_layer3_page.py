@@ -498,6 +498,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness'" in js.text
     assert "function renderMockupActivationReadinessPanel" in js.text
     assert "query_source_setup_interactive_live_classification" in js.text
+    assert "unapproved_provider_object_or_network_write" in js.text
+    assert "broad_source_family_expansion" in js.text
+    assert "broad_model_provider_rag_expansion" in js.text
+    assert "broad_source_model_rag_expansion" not in js.text
     assert "full mockup activation" in js.text
     assert "frontend durable authority" in js.text
     assert ".authority-matrix-review-panel" in css.text
