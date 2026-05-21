@@ -2609,6 +2609,10 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURR
     PLANNING_DOCS
     / "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE = (
+    PLANNING_DOCS
+    / "928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -88666,6 +88670,238 @@ def _check_source_directory_package_supersession_commit_rendered_control_freeze_
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_package_supersession_commit_route_state_gap_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE,
+        errors,
+    )
+    entry_key = "source_directory_package_supersession_commit_route_state_gap_freeze"
+    status = "source_directory_package_supersession_commit_route_state_gap_frozen"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+    )
+    checkpoint = "4b40109e3922399c3b4a86f8d158ed5d9907599c"
+    branch = "codex/l3-package-commit-gap-freeze"
+    target = "source_directory_package_supersession_commit_rendered_control"
+    implementation_action = (
+        "implement_source_directory_package_supersession_commit_rendered_control_after_freeze_sync"
+    )
+    stop_action = "source_directory_package_supersession_commit_route_state_gap_freeze"
+    rendered_node = "/review/layer3 #package-supersession-commit-panel"
+    commit_route = "POST /api/v1/layer3/package/supersession/commit"
+    owner_service = "backend/app/services/layer3_package_supersession_commit.py"
+    preview_service = "backend/app/services/layer3_source_directory_qualitative_analysis.py"
+    replacement_service = "backend/app/services/layer3_replacement_package_set_authority.py"
+    gap_summary = (
+        "source-directory preview/replacement authority uses source-directory "
+        "package-set and preview hash bases, while the existing commit service "
+        "recomputes generic package-set and preview hash bases and requires "
+        "replacement authority to match those generic hashes"
+    )
+    next_posture = (
+        "current_main_sync_source_directory_package_supersession_commit_"
+        "route_state_gap_freeze_then_select_commit_contract"
+    )
+    summary = (
+        "Doc 928 freezes the source-directory package supersession commit "
+        "route/state gap after current-main sync doc 927. It records that the "
+        "source-directory preview/replacement authority hash bases do not match "
+        "the existing generic package supersession commit route contract, "
+        "introduces no behavior, and blocks rendered commit implementation until "
+        "a later server-owned contract selection resolves the mismatch."
+    )
+
+    for term in (
+        "928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md",
+        f"Status: no-runtime/no-rendered route-state gap freeze for `{target}`.",
+        "Predecessor current-main sync doc: `927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`.",
+        f"Current-main checkpoint before gap freeze: `{checkpoint}`.",
+        f"Gap-freeze branch: `{branch}`.",
+        f"Blocked target: `{target}`.",
+        f"Blocked implementation action: `{implementation_action}`.",
+        f"Selected stop action: `{stop_action}`.",
+        f"Existing rendered node: `{rendered_node}`.",
+        f"Existing commit route: `{commit_route}`.",
+        f"Owner service: `{owner_service}`.",
+        f"Source-directory preview service: `{preview_service}`.",
+        f"Replacement authority service: `{replacement_service}`.",
+        "source package set schema: `layer3.source_directory_package_supersession_source_package_set.v1`",
+        "preview basis schema: `layer3.source_directory_package_supersession_preview_basis.v1`",
+        "source package set schema: `layer3.package_supersession_source_package_set.v1`",
+        "preview basis schema: `layer3.package_supersession_preview_basis.v1`",
+        "Runtime behavior introduced by this gap freeze: `false`.",
+        "Rendered behavior introduced by this gap freeze: `false`.",
+        "Backend behavior introduced by this gap freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this gap freeze: `false`.",
+        "Executable test behavior introduced by this gap freeze: `false`.",
+        "Production UI behavior introduced by this gap freeze: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed by this gap freeze alone: `false`.",
+        f"Next exact posture: `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE)} "
+                f"missing source-directory package supersession commit route/state gap freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package Supersession Commit Route-State Gap Freeze",
+            "928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md",
+            status,
+            checkpoint,
+            branch,
+            target,
+            stop_action,
+            commit_route,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package supersession commit route-state gap freeze to preserve when present",
+            "928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md",
+            status,
+            checkpoint,
+            branch,
+            target,
+            stop_action,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md",
+            status,
+            checkpoint,
+            branch,
+            target,
+            stop_action,
+            commit_route,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"predecessor_current_main_sync_doc": "{predecessor_doc}"',
+            f'"current_main_checkpoint_before_gap_freeze": "{checkpoint}"',
+            f'"gap_freeze_branch": "{branch}"',
+            f'"blocked_target": "{target}"',
+            f'"selected_stop_action": "{stop_action}"',
+            f'"existing_commit_route": "{commit_route}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"blocked_target": "{target}"',
+            f'"selected_stop_action": "{stop_action}"',
+            '"runtime_behavior_change_introduced_by_gap_freeze": false',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package supersession commit route/state gap freeze term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("status", status),
+                ("doc", doc_path),
+                ("predecessor_current_main_sync_doc", predecessor_doc),
+                ("current_main_checkpoint_before_gap_freeze", checkpoint),
+                ("gap_freeze_branch", branch),
+                ("blocked_target", target),
+                ("blocked_implementation_action", implementation_action),
+                ("selected_stop_action", stop_action),
+                ("existing_rendered_node", rendered_node),
+                ("existing_commit_route", commit_route),
+                ("owner_service", owner_service),
+                ("source_directory_preview_service", preview_service),
+                ("replacement_authority_service", replacement_service),
+                ("gap_summary", gap_summary),
+                ("runtime_behavior_change_introduced_by_gap_freeze", False),
+                ("rendered_behavior_change_introduced_by_gap_freeze", False),
+                ("backend_behavior_change_introduced_by_gap_freeze", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_gap_freeze", False),
+                ("executable_test_behavior_change_introduced_by_gap_freeze", False),
+                ("production_ui_behavior_change_introduced_by_gap_freeze", False),
+                ("full_mockup_program_activation_selected_now", False),
+                ("implementation_entry_allowed_by_gap_freeze_alone", False),
+                ("next_posture", next_posture),
+                ("summary", summary),
+            ):
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+        for key, value in {
+            f"latest_{entry_key}_status": status,
+            f"latest_{entry_key}_doc": doc_path,
+            f"latest_{entry_key}_current_main_checkpoint_before_gap_freeze": checkpoint,
+            f"latest_{entry_key}_branch": branch,
+            f"latest_{entry_key}_blocked_target": target,
+            f"latest_{entry_key}_selected_stop_action": stop_action,
+            f"latest_{entry_key}_existing_commit_route": commit_route,
+            f"latest_{entry_key}_runtime_behavior_change_introduced_by_gap_freeze": False,
+            f"latest_{entry_key}_rendered_behavior_change_introduced_by_gap_freeze": False,
+            f"latest_{entry_key}_backend_behavior_change_introduced_by_gap_freeze": False,
+            f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_gap_freeze": False,
+            f"latest_{entry_key}_executable_test_behavior_change_introduced_by_gap_freeze": False,
+            f"latest_{entry_key}_production_ui_behavior_change_introduced_by_gap_freeze": False,
+            f"latest_{entry_key}_full_mockup_program_activation_selected_now": False,
+            f"latest_{entry_key}_implementation_entry_allowed_by_gap_freeze_alone": False,
+            f"latest_{entry_key}_next_posture": next_posture,
+            f"latest_{entry_key}_summary": summary,
+        }.items():
+            if manifest.get(key) != value:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("proof_kind", entry_key),
+                ("status", status),
+                ("doc", doc_path),
+                ("current_main_checkpoint_before_gap_freeze", checkpoint),
+                ("gap_freeze_branch", branch),
+                ("blocked_target", target),
+                ("blocked_implementation_action", implementation_action),
+                ("selected_stop_action", stop_action),
+                ("existing_commit_route", commit_route),
+                ("owner_service", owner_service),
+                ("source_directory_preview_service", preview_service),
+                ("replacement_authority_service", replacement_service),
+                ("runtime_behavior_change_introduced_by_gap_freeze", False),
+                ("rendered_behavior_change_introduced_by_gap_freeze", False),
+                ("backend_behavior_change_introduced_by_gap_freeze", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_gap_freeze", False),
+                ("executable_test_behavior_change_introduced_by_gap_freeze", False),
+                ("production_ui_behavior_change_introduced_by_gap_freeze", False),
+                ("frontend_durable_authority_enabled", False),
+                ("full_mockup_program_activation_selected", False),
+                ("next_posture", next_posture),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -89473,6 +89709,7 @@ def main() -> int:
     _check_source_directory_replacement_package_set_authority_rendered_control_current_main_sync(errors)
     _check_source_directory_package_supersession_commit_rendered_control_freeze(errors)
     _check_source_directory_package_supersession_commit_rendered_control_freeze_current_main_sync(errors)
+    _check_source_directory_package_supersession_commit_route_state_gap_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
