@@ -8955,3 +8955,41 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`. Implementation-entry allowed for blocked rendered commit target after sync: `false`. Contract-selection entry allowed after sync: `true`.
 
 Next exact posture: `select_source_directory_package_supersession_commit_route_state_contract_after_gap_freeze_sync`.
+
+## Source-Directory Package Lifecycle Contract Freeze
+
+Doc: `930-lifecycle-contract.md`.
+
+Status: `source_directory_package_lifecycle_contract_frozen`.
+
+Predecessor current-main sync doc: `929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before contract freeze: `4448adf6ea168abde8346c1601ab3be52d570dbf`.
+
+Contract-freeze branch: `codex/l3-package-lifecycle-contract-freeze`.
+
+Originating posture: `select_source_directory_package_supersession_commit_route_state_contract_after_gap_freeze_sync`.
+
+Blocked rendered target remains: `source_directory_package_supersession_commit_rendered_control`.
+
+Selected contract: `source_directory_package_lifecycle_server_owned_contract`.
+
+Selected immediate implementation slice after current-main sync: `implement_source_directory_package_lifecycle_server_owned_contract`.
+
+Selected rendered implementation after contract proof: `implement_source_directory_package_supersession_commit_rendered_control_against_server_owned_lifecycle_contract`.
+
+Existing source-directory preview route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`.
+
+Existing generic replacement artifact route: `POST /api/v1/layer3/package/replacement-artifact/materialize`.
+
+Existing generic replacement authority route: `POST /api/v1/layer3/package/replacement-set/record`.
+
+Existing generic commit route: `POST /api/v1/layer3/package/supersession/commit`.
+
+Repo-local server-owned precedent routes: `POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set` and `POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority`.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`. Production UI behavior introduced by this freeze: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed by this freeze alone: `false`. Backend contract implementation entry allowed after current-main sync: `true`. Rendered commit-control implementation entry allowed by this freeze alone: `false`.
+
+Next exact posture: `current_main_sync_source_directory_package_lifecycle_contract_freeze_then_backend_contract`.
