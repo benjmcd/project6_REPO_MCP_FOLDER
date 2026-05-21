@@ -1,5 +1,6 @@
 from app.services.layer3_mockup_activation_readiness import (
     MOCKUP_ACTIVATION_READINESS_SCHEMA_ID,
+    MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE,
     MOCKUP_FIRST_ADMITTED_SLICE,
     MOCKUP_NEXT_ADMITTED_SLICE,
     MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
@@ -15,15 +16,16 @@ def test_mockup_activation_readiness_classifies_first_slice_without_full_activat
     assert contract["schema_id"] == MOCKUP_ACTIVATION_READINESS_SCHEMA_ID
     assert contract["selected_first_slice"] == MOCKUP_FIRST_ADMITTED_SLICE
     assert contract["selected_next_slice"] == MOCKUP_NEXT_ADMITTED_SLICE
-    assert contract["selected_projection_slice"] == MOCKUP_SUBLAYER_3C_PROJECTION_SLICE
+    assert contract["selected_projection_slice"] == MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE
     assert contract["selected_projection_slices"] == [
         MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
         MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
         MOCKUP_SUBLAYER_3C_PROJECTION_SLICE,
+        MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE,
     ]
     assert contract["journey_counts"] == {
         "interactive_live": 2,
-        "read_only": 3,
+        "read_only": 4,
         "intentionally_excluded": 0,
         "blocked": 1,
     }
@@ -80,6 +82,28 @@ def test_mockup_activation_readiness_classifies_first_slice_without_full_activat
     assert "a[href]" in sublayer_3c["projection_contract"]["read_only_controls_absent"]
     assert "execution_start_side_effect" in sublayer_3c["projection_contract"]["negative_boundaries"]
     assert "package_construction_or_mutation" in sublayer_3c["projection_contract"]["negative_boundaries"]
+    analysis_environment = journeys["analysis_environment_projection"]
+    assert analysis_environment["classification"] == "read_only"
+    assert analysis_environment["activation_slice"] is None
+    assert analysis_environment["projection_slice"] == MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE
+    assert (
+        analysis_environment["projection_contract"]["contract_id"]
+        == MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE
+    )
+    assert analysis_environment["projection_contract"]["schema_id"] == "layer3.analysis_environment_projection.v1"
+    assert (
+        analysis_environment["projection_contract"]["server_authority_contract"]
+        == "read_only_session_summary_analysis_environment_plane_projection"
+    )
+    assert (
+        "State.sessionSummary.analysis_environment_projection"
+        in analysis_environment["projection_contract"]["status_projection"]
+    )
+    assert "State.resultReview" in analysis_environment["projection_contract"]["status_projection"]
+    assert ".analysis-environment-projection" == analysis_environment["projection_contract"]["rendered_surface"]
+    assert "a[href]" in analysis_environment["projection_contract"]["read_only_controls_absent"]
+    assert "analysis_run_mutation" in analysis_environment["projection_contract"]["negative_boundaries"]
+    assert "full_mockup_program_activation" in analysis_environment["projection_contract"]["negative_boundaries"]
     output_handoff = journeys["output_review_package_handoff"]
     assert output_handoff["classification"] == "interactive_live"
     assert output_handoff["activation_slice"] == MOCKUP_NEXT_ADMITTED_SLICE
