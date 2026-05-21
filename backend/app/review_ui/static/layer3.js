@@ -7258,6 +7258,9 @@ function mockupActivationReadinessState(contract) {
     if (contract.full_mockup_activation_enabled || contract.frontend_only_durable_authority_enabled) {
         return { label: 'mockup_activation_boundary_violation', pill: 'blocked' };
     }
+    if (contract.selected_next_slice === 'output_review_package_handoff_interactive_live_contract') {
+        return { label: 'next_activation_readiness_slice_selected', pill: 'ok' };
+    }
     if (contract.selected_first_slice === 'query_source_setup_interactive_live_classification') {
         return { label: 'first_activation_readiness_slice_selected', pill: 'ok' };
     }
@@ -7266,14 +7269,23 @@ function mockupActivationReadinessState(contract) {
 
 function renderMockupActivationJourneyRows(journeys) {
     return journeys.length
-        ? journeys.map((journey) => `
+        ? journeys.map((journey) => {
+            const interaction = journey.interaction_contract || {};
+            const routeCount = Array.isArray(interaction.route_authority) ? interaction.route_authority.length : 0;
+            const controlCount = Array.isArray(interaction.rendered_controls) ? interaction.rendered_controls.length : 0;
+            const interactionText = interaction.contract_id
+                ? `${interaction.contract_id}: ${mockupCountLabel(routeCount, 'route')} and ${mockupCountLabel(controlCount, 'rendered control')} mapped`
+                : journey.next_allowed_action || 'no interactive contract selected';
+            return `
             <li>
                 <code>${escapeHtml(journey.journey_id || 'unknown_journey')}</code>
                 <strong>${escapeHtml(journey.classification || 'unclassified')}</strong>
                 <span>${escapeHtml(journey.label || 'Untitled journey')}</span>
                 <small>${escapeHtml(journey.server_authority || 'server authority not supplied')}</small>
+                <small>${escapeHtml(interactionText)}</small>
             </li>
-        `).join('')
+        `;
+        }).join('')
         : '<li>No mockup activation journeys are exposed by bootstrap.</li>';
 }
 
@@ -7309,6 +7321,7 @@ function renderMockupActivationReadinessPanel() {
                     ${fieldItem('response authority', MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY, { code: true })}
                     ${fieldItem('schema id', contract?.schema_id, { code: true })}
                     ${fieldItem('selected first slice', contract?.selected_first_slice, { code: true })}
+                    ${fieldItem('selected next slice', contract?.selected_next_slice, { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">
