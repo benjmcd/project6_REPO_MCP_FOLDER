@@ -2623,6 +2623,9 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE = (
 LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "931-lifecycle-sync.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_EXPORT_POST1550_SYNC = (
+    PLANNING_DOCS / "932-post1550-sync.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -89572,6 +89575,261 @@ def _check_source_directory_package_lifecycle_contract_freeze_current_main_sync(
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_package_handoff_export_post1550_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_EXPORT_POST1550_SYNC,
+        errors,
+    )
+    entry_key = "source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550"
+    status = "current_main_synced_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550"
+    doc_path = "next_milestone_plans/Layer3_planning_docs/932-post1550-sync.md"
+    predecessor_doc = "next_milestone_plans/Layer3_planning_docs/931-lifecycle-sync.md"
+    base_authority = "project6-origin/main at d6e44a74e99bb4d449af410929bd14343a59c5a6"
+    backend_contract_pr = "#1548"
+    backend_contract_commit = "c5ae8229"
+    rendered_controls_pr = "#1549"
+    rendered_controls_commit = "e8fcc09a"
+    handoff_export_pr = "#1550"
+    handoff_export_commit = "d6e44a74e99bb4d449af410929bd14343a59c5a6"
+    next_posture = (
+        "prove_source_directory_scan_to_handoff_export_bounded_operator_path_"
+        "and_record_trial_usable_checkpoint"
+    )
+    bounded_status = (
+        "source_directory_qualitative_package_lifecycle_and_handoff_export_rendered_controls_"
+        "current_main_synced_through_same_origin_external_export_download_delivery"
+    )
+    proof_gap = (
+        "current_rendered_handoff_export_e2e_starts_from_injected_source_directory_"
+        "package_authority_not_single_scan_to_projection_operator_run"
+    )
+    route_terms = (
+        "record-from-supersession-preview",
+        "package/supersession/commit",
+        "qualitative-hybrid-analysis/handoff/export/prepare",
+        "qualitative-hybrid-analysis/handoff/export/download/prepare",
+        "qualitative-hybrid-analysis/handoff/export/download/deliver/status",
+        "qualitative-hybrid-analysis/handoff/export/download/deliver",
+    )
+    rendered_terms = (
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH",
+        "SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH",
+        "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH",
+        "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH",
+        "SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH",
+        "rendered_source_directory_qualitative_handoff_export_prepare_control",
+        "rendered_source_directory_qualitative_external_export_download_prepare_control",
+        "rendered_source_directory_qualitative_external_export_download_delivery_control",
+    )
+    schema_terms = (
+        "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+        "layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1",
+        "layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1",
+        "layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1",
+    )
+
+    for term in (
+        "932-post1550-sync.md",
+        f"Status: current-main sync for `{entry_key}`.",
+        "Predecessor current-main sync doc: `931-lifecycle-sync.md`.",
+        f"Base authority: `project6-origin/main` at `{handoff_export_commit}`.",
+        f"Synced backend contract PR: `{backend_contract_pr}`.",
+        f"Synced backend contract merge commit: `{backend_contract_commit}`.",
+        f"Synced rendered package lifecycle control PR: `{rendered_controls_pr}`.",
+        f"Synced rendered package lifecycle control merge commit: `{rendered_controls_commit}`.",
+        f"Synced source-directory handoff export UI PR: `{handoff_export_pr}`.",
+        f"Synced source-directory handoff export UI merge commit: `{handoff_export_commit}`.",
+        "GitHub gate for PR `#1550`: merge state `CLEAN`, checks `SUCCESS`, comments `0`, reviews `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`.",
+        "`python ./tools/l3-progress-check.py`: `PASS`.",
+        "`node --check ./backend/app/review_ui/static/layer3.js`: `PASS`.",
+        "`python -m pytest ./backend/tests/test_layer3_page.py -q`: `14 passed, 3 warnings`.",
+        "`python -m pytest ./backend/tests/test_layer3_source_directory_qualitative_analysis.py -q`: `13 passed, 3 warnings`.",
+        "Runtime behavior introduced by this sync doc: `false`.",
+        "Rendered behavior introduced by this sync doc: `false`.",
+        "Backend behavior introduced by this sync doc: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync doc: `false`.",
+        "Executable test behavior introduced by this sync doc: `false`.",
+        "Production UI behavior introduced by this sync doc: `false`.",
+        "Frontend-only durable authority enabled by this sync doc: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Current bounded live-path status: source-directory qualitative package lifecycle and handoff/export rendered controls are now current-main synced through same-origin external export/download delivery.",
+        "Remaining proof gap: the current rendered handoff/export E2E proof starts from injected source-directory package authority, not a single source-directory operator run from scan/status through material preview, Gate B admission, retrieval/context, qualitative analysis, package lifecycle, handoff/export, delivery/use, internal webhook status, and Analysis Environment/mockup projection.",
+        f"Next exact posture: `{next_posture}`.",
+        *route_terms,
+        *rendered_terms,
+        *schema_terms,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_EXPORT_POST1550_SYNC)} "
+                f"missing post-1550 source-directory sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package And Handoff Export Current-Main Sync",
+            "932-post1550-sync.md",
+            status,
+            backend_contract_pr,
+            rendered_controls_pr,
+            handoff_export_pr,
+            handoff_export_commit,
+            "headless Chromium E2E",
+            "headed E2E",
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package lifecycle and handoff export current-main sync to preserve when present",
+            "932-post1550-sync.md",
+            status,
+            backend_contract_pr,
+            rendered_controls_pr,
+            handoff_export_pr,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "932-post1550-sync.md",
+            entry_key,
+            backend_contract_pr,
+            rendered_controls_pr,
+            handoff_export_pr,
+            "not a single scan/status to projection operator run",
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"predecessor_current_main_sync_doc": "{predecessor_doc}"',
+            f'"base_authority": "{base_authority}"',
+            f'"backend_contract": "{backend_contract_commit}"',
+            f'"rendered_package_lifecycle_control": "{rendered_controls_commit}"',
+            f'"source_directory_handoff_export_ui": "{handoff_export_commit}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"proof_kind": "{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"base_authority": "{base_authority}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        LAYER3_API: route_terms,
+        LAYER3_JS: rendered_terms + schema_terms + (
+            "State.sourceDirectoryPackageSupersessionPreview",
+            "State.replacementPackageSetAuthority",
+            "sourceDirectoryPackageSupersessionPreviewPayload",
+            "State.handoffExportPrepare",
+        ),
+        LAYER3_PAGE_TEST: (
+            "test_layer3_source_directory_handoff_export_controls_are_bounded",
+            "test_layer3_source_directory_replacement_package_set_authority_control_is_bounded",
+            *rendered_terms,
+        ),
+        LAYER3_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_TEST: (
+            "test_source_directory_qualitative_analysis_package_lifecycle_records_authority_and_commit",
+            "test_source_directory_qualitative_analysis_external_export_download_prepare_records_readiness",
+            "source_directory_external_export_download_delivery_ready",
+            *schema_terms,
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench drives source-directory qualitative handoff export rendered controls",
+            "source-directory qualitative handoff export rendered control proof",
+            "deliveryStatusPath",
+            "deliveryPath",
+            "layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1",
+            "layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1",
+            "operator_decision",
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing post-1550 source-directory sync term: {term}")
+
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("predecessor_current_main_sync_doc", predecessor_doc),
+                ("base_authority", base_authority),
+                ("runtime_behavior_change_introduced_by_sync_doc", False),
+                ("rendered_behavior_change_introduced_by_sync_doc", False),
+                ("backend_behavior_change_introduced_by_sync_doc", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync_doc", False),
+                ("executable_test_behavior_change_introduced_by_sync_doc", False),
+                ("production_ui_behavior_change_introduced_by_sync_doc", False),
+                ("frontend_durable_authority_enabled_by_sync_doc", False),
+                ("full_mockup_program_activation_selected_now", False),
+                ("current_bounded_live_path_status", bounded_status),
+                ("remaining_proof_gap", proof_gap),
+                ("next_posture", next_posture),
+            ):
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+            if entry.get("source_prs") != [
+                backend_contract_pr,
+                rendered_controls_pr,
+                handoff_export_pr,
+            ]:
+                errors.append(f"{_rel(MANIFEST)} {entry_key}.source_prs must list #1548, #1549, #1550")
+            merge_commits = entry.get("merge_commits")
+            if not isinstance(merge_commits, dict) or merge_commits.get("source_directory_handoff_export_ui") != handoff_export_commit:
+                errors.append(f"{_rel(MANIFEST)} {entry_key}.merge_commits invalid")
+            github_gate = entry.get("github_gate_pr_1550")
+            if not isinstance(github_gate, dict) or github_gate.get("review_threads_total_count") != 0:
+                errors.append(f"{_rel(MANIFEST)} {entry_key}.github_gate_pr_1550 invalid")
+            for list_key, required_terms in (
+                ("backend_api_authority", route_terms),
+                ("rendered_authority", ("#replacement-package-set-authority-panel", "#package-supersession-commit-panel", "#handoff-export-prepare-panel")),
+                ("schema_state_authority", schema_terms),
+            ):
+                values = entry.get(list_key)
+                if not isinstance(values, list) or any(
+                    not any(required in str(value) for value in values)
+                    for required in required_terms
+                ):
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{list_key} missing required authority terms")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("proof_kind", entry_key),
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("predecessor_current_main_sync_doc", predecessor_doc),
+                ("base_authority", base_authority),
+                ("current_bounded_live_path_status", bounded_status),
+                ("remaining_proof_gap", proof_gap),
+                ("runtime_behavior_change_introduced_by_sync_doc", False),
+                ("rendered_behavior_change_introduced_by_sync_doc", False),
+                ("backend_behavior_change_introduced_by_sync_doc", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync_doc", False),
+                ("executable_test_behavior_change_introduced_by_sync_doc", False),
+                ("production_ui_behavior_change_introduced_by_sync_doc", False),
+                ("frontend_durable_authority_enabled_by_sync_doc", False),
+                ("full_mockup_program_activation_selected_now", False),
+                ("next_posture", next_posture),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+            proof_terms = proof_entry.get("proof_terms")
+            if not isinstance(proof_terms, list) or "no full mockup activation" not in proof_terms:
+                errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms invalid")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -90383,6 +90641,7 @@ def main() -> int:
     _check_source_directory_package_supersession_commit_route_state_gap_freeze_current_main_sync(errors)
     _check_source_directory_package_lifecycle_contract_freeze(errors)
     _check_source_directory_package_lifecycle_contract_freeze_current_main_sync(errors)
+    _check_source_directory_package_handoff_export_post1550_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

@@ -1087,3 +1087,19 @@ Current Layer 3 source-directory package lifecycle contract freeze current-main 
 - treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, package supersession commit implementation, replacement package-set implementation, source package row mutation, source package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve backend contract implementation entry after sync as `true`, but keep rendered commit-control implementation blocked until that server-owned lifecycle contract lands and syncs
 - preserve next posture as `implement_source_directory_package_lifecycle_server_owned_contract`
+
+Current Layer 3 source-directory package lifecycle and handoff export current-main sync to preserve when present:
+- `932-post1550-sync.md` records current-main sync for PRs `#1548`, `#1549`, and `#1550`
+- classify it as `current_main_synced_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550`
+- preserve predecessor current-main sync doc `931-lifecycle-sync.md`
+- preserve base authority `project6-origin/main` at `d6e44a74e99bb4d449af410929bd14343a59c5a6`
+- preserve backend contract PR `#1548` at merge commit `c5ae8229`
+- preserve rendered package lifecycle control PR `#1549` at merge commit `e8fcc09a`
+- preserve source-directory handoff export UI PR `#1550` at merge commit `d6e44a74e99bb4d449af410929bd14343a59c5a6`
+- preserve source-directory backend/API authority for replacement-set record-from-supersession-preview, package supersession commit, handoff/export prepare, external export/download prepare, delivery status, and same-origin delivery
+- preserve rendered controls for `/review/layer3 #replacement-package-set-authority-panel`, `#package-supersession-commit-panel`, `#handoff-export-prepare-panel`, `#external-export-download-prepare-panel`, and `#external-export-download-delivery-panel`
+- preserve schema/state authority `layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1`, `layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1`, `layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1`, `layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1`, `State.sourceDirectoryPackageSupersessionPreview`, `State.replacementPackageSetAuthority`, `sourceDirectoryPackageSupersessionPreviewPayload`, and `State.handoffExportPrepare`
+- preserve post-merge validation as progress-check PASS, `node --check` PASS, page tests `14 passed`, source-directory qualitative tests `13 passed`, and headed/headless source-directory qualitative handoff export rendered-control E2E `1 passed` each
+- treat this sync doc as progress/control metadata only; do not treat it as introducing new runtime behavior, new rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior, production UI behavior, frontend-only durable authority, or full mockup activation
+- preserve the remaining proof gap: the current rendered handoff/export E2E starts from injected source-directory package authority, not a single scan/status to projection operator run
+- preserve next posture as `prove_source_directory_scan_to_handoff_export_bounded_operator_path_and_record_trial_usable_checkpoint`

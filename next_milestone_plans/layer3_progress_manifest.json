@@ -40767,5 +40767,85 @@
   "latest_source_directory_package_lifecycle_contract_freeze_current_main_sync_backend_contract_implementation_entry_allowed_after_sync": true,
   "latest_source_directory_package_lifecycle_contract_freeze_current_main_sync_rendered_commit_control_implementation_entry_allowed_after_sync": false,
   "latest_source_directory_package_lifecycle_contract_freeze_current_main_sync_next_posture": "implement_source_directory_package_lifecycle_server_owned_contract",
-  "latest_source_directory_package_lifecycle_contract_freeze_current_main_sync_summary": "Doc 931 syncs PR #1546 merge commit 7a7b7599c21168f7e7ebb043bb277370b7d7e636 to current main as the current-main authority for source_directory_package_lifecycle_contract_freeze. This sync introduces no behavior and unblocks only backend/API implementation of the server-owned source-directory package lifecycle contract; the rendered package supersession commit control remains blocked until that contract lands and is current-main synced."
+  "latest_source_directory_package_lifecycle_contract_freeze_current_main_sync_summary": "Doc 931 syncs PR #1546 merge commit 7a7b7599c21168f7e7ebb043bb277370b7d7e636 to current main as the current-main authority for source_directory_package_lifecycle_contract_freeze. This sync introduces no behavior and unblocks only backend/API implementation of the server-owned source-directory package lifecycle contract; the rendered package supersession commit control remains blocked until that contract lands and is current-main synced.",
+  "source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550": {
+    "status": "current_main_synced_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/932-post1550-sync.md",
+    "predecessor_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/931-lifecycle-sync.md",
+    "base_authority": "project6-origin/main at d6e44a74e99bb4d449af410929bd14343a59c5a6",
+    "source_prs": [
+      "#1548",
+      "#1549",
+      "#1550"
+    ],
+    "merge_commits": {
+      "backend_contract": "c5ae8229",
+      "rendered_package_lifecycle_control": "e8fcc09a",
+      "source_directory_handoff_export_ui": "d6e44a74e99bb4d449af410929bd14343a59c5a6"
+    },
+    "synced_branch_set": [
+      "codex/l3-package-lifecycle-contract",
+      "codex/l3-package-lifecycle-ui",
+      "codex/l3-handoff-export-ui"
+    ],
+    "github_gate_pr_1550": {
+      "merge_state": "CLEAN",
+      "checks": "SUCCESS",
+      "comments_count": 0,
+      "reviews_count": 0,
+      "review_threads_total_count": 0,
+      "unresolved_review_threads_total_count": 0
+    },
+    "backend_api_authority": [
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status",
+      "POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver"
+    ],
+    "rendered_authority": [
+      "/review/layer3 #replacement-package-set-authority-panel",
+      "/review/layer3 #package-supersession-commit-panel",
+      "/review/layer3 #handoff-export-prepare-panel",
+      "/review/layer3 #external-export-download-prepare-panel",
+      "/review/layer3 #external-export-download-delivery-panel"
+    ],
+    "schema_state_authority": [
+      "layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1",
+      "layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1",
+      "layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1",
+      "layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1",
+      "State.sourceDirectoryPackageSupersessionPreview",
+      "State.replacementPackageSetAuthority",
+      "sourceDirectoryPackageSupersessionPreviewPayload",
+      "State.handoffExportPrepare"
+    ],
+    "post_merge_validation": [
+      "python ./tools/l3-progress-check.py PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js PASS",
+      "python -m pytest ./backend/tests/test_layer3_page.py -q PASS 14 passed, 3 warnings",
+      "python -m pytest ./backend/tests/test_layer3_source_directory_qualitative_analysis.py -q PASS 13 passed, 3 warnings",
+      "npm run test:e2e:chromium source-directory qualitative handoff export rendered controls PASS 1 passed",
+      "npm run test:e2e:headed source-directory qualitative handoff export rendered controls PASS 1 passed"
+    ],
+    "runtime_behavior_change_introduced_by_sync_doc": false,
+    "rendered_behavior_change_introduced_by_sync_doc": false,
+    "backend_behavior_change_introduced_by_sync_doc": false,
+    "route_api_dto_model_migration_service_behavior_change_introduced_by_sync_doc": false,
+    "executable_test_behavior_change_introduced_by_sync_doc": false,
+    "production_ui_behavior_change_introduced_by_sync_doc": false,
+    "frontend_durable_authority_enabled_by_sync_doc": false,
+    "full_mockup_program_activation_selected_now": false,
+    "current_bounded_live_path_status": "source_directory_qualitative_package_lifecycle_and_handoff_export_rendered_controls_current_main_synced_through_same_origin_external_export_download_delivery",
+    "remaining_proof_gap": "current_rendered_handoff_export_e2e_starts_from_injected_source_directory_package_authority_not_single_scan_to_projection_operator_run",
+    "next_posture": "prove_source_directory_scan_to_handoff_export_bounded_operator_path_and_record_trial_usable_checkpoint"
+  },
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_status": "current_main_synced_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550",
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_doc": "next_milestone_plans/Layer3_planning_docs/932-post1550-sync.md",
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_base_authority": "project6-origin/main at d6e44a74e99bb4d449af410929bd14343a59c5a6",
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_source_prs": "#1548,#1549,#1550",
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_merge_commit": "d6e44a74e99bb4d449af410929bd14343a59c5a6",
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_next_posture": "prove_source_directory_scan_to_handoff_export_bounded_operator_path_and_record_trial_usable_checkpoint",
+  "latest_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550_summary": "Doc 932 syncs PRs #1548, #1549, and #1550 to current main at d6e44a74e99bb4d449af410929bd14343a59c5a6. Source-directory package lifecycle and handoff/export rendered controls are current-main synced through same-origin external export/download delivery, but the remaining proof gap is a single source-directory operator run from scan/status through material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, handoff/export, delivery/use, internal webhook status, and Analysis Environment/mockup projection."
 }
