@@ -267,6 +267,7 @@ const State = {
     sourceDirectoryPackageSupersessionPreview: null,
     sourceDirectoryPackageSupersessionPreviewError: null,
     sourceDirectoryPackageSupersessionPreviewPending: false,
+    sourceDirectoryPackageSupersessionPreviewRequestToken: 0,
     replacementPackageArtifactMaterialization: null,
     replacementPackageArtifactMaterializationError: null,
     replacementPackageArtifactMaterializationPending: false,
@@ -2661,6 +2662,15 @@ function sourceDirectoryPackageSupersessionPreviewState() {
     return State.sourceDirectoryPackageSupersessionPreview || null;
 }
 
+function nextSourceDirectoryPackageSupersessionPreviewRequestToken() {
+    State.sourceDirectoryPackageSupersessionPreviewRequestToken += 1;
+    return State.sourceDirectoryPackageSupersessionPreviewRequestToken;
+}
+
+function isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken) {
+    return State.sourceDirectoryPackageSupersessionPreviewRequestToken === requestToken;
+}
+
 function replacementPackageSetAuthorityPreviewState() {
     return sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null;
 }
@@ -2752,6 +2762,7 @@ function clearReplacementPackageSetAuthorityState() {
 }
 
 function clearSourceDirectoryPackageSupersessionPreviewState() {
+    nextSourceDirectoryPackageSupersessionPreviewRequestToken();
     State.sourceDirectoryPackageSupersessionPreview = null;
     State.sourceDirectoryPackageSupersessionPreviewError = null;
     State.sourceDirectoryPackageSupersessionPreviewPending = false;
@@ -10613,6 +10624,7 @@ async function submitPackageSupersessionPreview() {
 
 async function submitSourceDirectoryPackageSupersessionPreview() {
     if (!canSubmitSourceDirectoryPackageSupersessionPreview()) return;
+    const requestToken = nextSourceDirectoryPackageSupersessionPreviewRequestToken();
     State.sourceDirectoryPackageSupersessionPreviewPending = true;
     State.sourceDirectoryPackageSupersessionPreviewError = null;
     State.sourceDirectoryPackageSupersessionPreview = null;
@@ -10620,14 +10632,17 @@ async function submitSourceDirectoryPackageSupersessionPreview() {
     renderAll();
     setBusy(elements.sourceDirectoryPackageSupersessionPreviewSubmit, true, 'Preview Source-Directory Supersession');
     try {
-        State.sourceDirectoryPackageSupersessionPreview = await postJson(
+        const preview = await postJson(
             SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH,
             sourceDirectoryPackageSupersessionPreviewPayload(),
         );
+        if (!isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) return;
+        State.sourceDirectoryPackageSupersessionPreview = preview;
         State.sourceDirectoryPackageSupersessionPreviewError = null;
         addEvent('Source-directory package supersession preview returned as read-only response state.');
         renderAll();
     } catch (error) {
+        if (!isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) return;
         State.sourceDirectoryPackageSupersessionPreviewError = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
             error_code: 'source_directory_package_supersession_preview_request_failed',
@@ -10636,7 +10651,9 @@ async function submitSourceDirectoryPackageSupersessionPreview() {
         addEvent(`Source-directory package supersession preview blocked: ${error.message}`);
         renderAll();
     } finally {
-        State.sourceDirectoryPackageSupersessionPreviewPending = false;
+        if (isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) {
+            State.sourceDirectoryPackageSupersessionPreviewPending = false;
+        }
         setBusy(elements.sourceDirectoryPackageSupersessionPreviewSubmit, false, 'Preview Source-Directory Supersession');
         renderAll();
     }
@@ -11716,8 +11733,7 @@ elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview)
 elements.packageSupersessionPreviewSubmit.addEventListener('click', submitPackageSupersessionPreview);
 elements.sourceDirectoryPackageSupersessionPreviewSubmit.addEventListener('click', submitSourceDirectoryPackageSupersessionPreview);
 elements.sourceDirectoryPackageSupersessionPreviewAuthority.addEventListener('input', () => {
-    State.sourceDirectoryPackageSupersessionPreview = null;
-    State.sourceDirectoryPackageSupersessionPreviewError = null;
+    clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
     renderAll();
 });
