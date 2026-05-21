@@ -8547,3 +8547,37 @@ Full mockup program activation selected now: `false`. Implementation-entry allow
 Still required before full mockup activation: every action-capable mockup control needs route/state/durable-authority/headed/headless/security proof; every read-only panel needs server-owned state and redaction/stale-state policy; every excluded or blocked control needs explicit classification; source/package/connector/provider/RAG/browser/auth behavior must remain separately frozen and proven if selected.
 
 Next exact posture: `freeze_one_named_full_mockup_activation_target_from_current_main_evidence`.
+
+## Source-Directory Package Supersession Preview Rendered Control Freeze
+
+Doc: `918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md`.
+
+Status: `source_directory_package_supersession_preview_rendered_control_frozen`.
+
+Predecessor selection doc: `917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md`.
+
+Current-main checkpoint before freeze: `b6ba2a45c8075e8d5305974231b7baa53ffaa820`.
+
+Freeze branch: `codex/l3-package-preview-freeze`.
+
+Selected target: `source_directory_package_supersession_preview_rendered_control`.
+
+Selected target classification: `live_server_authoritative_action`.
+
+Selected route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`.
+
+Selected schema: `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`.
+
+Selected mode: `source_directory_qualitative_analysis_package_supersession_preview_authority`.
+
+Selected implementation action after freeze sync: `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`.
+
+Why this target: current main already has the source-directory package supersession preview route and response authority from Docs `820` and `821`, while `/review/layer3` only has the generic package supersession preview control posting to `/package/mutation/preview`. The next bounded activation target is therefore one source-directory-specific rendered preview control over existing server authority, not broad package mutation or full mockup activation.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`. Production UI behavior introduced by this freeze: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed by this freeze alone: `false`.
+
+Still blocked: replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source `L3OutputPackage` row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, public proxy runtime, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `current_main_sync_source_directory_package_supersession_preview_rendered_control_freeze_then_implement_rendered_control`.
