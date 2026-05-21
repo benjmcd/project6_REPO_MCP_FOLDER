@@ -10478,6 +10478,9 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const packageReviewSubmitPath = `${analysisPath}/package/review/submit`;
   const handoffPreparePath = `${analysisPath}/handoff/export/prepare`;
   const externalPreparePath = `${analysisPath}/handoff/export/download/prepare`;
+  const sourceSupersessionPreviewPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview';
+  const sourceReplacementAuthorityPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview';
+  const sourceSupersessionCommitPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit';
   const deliveryStatusPath = `${analysisPath}/handoff/export/download/deliver/status`;
   const deliveryPath = `${analysisPath}/handoff/export/download/deliver`;
   const internalWebhookDispatchPath = `${analysisPath}/handoff/export/internal-webhook/dispatch`;
@@ -10699,6 +10702,52 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'handoff_export_state',
     'prepare_record_ref',
   ].sort();
+  const sourceSupersessionPreviewPayloadKeys = [
+    'analysis_focus',
+    'analysis_question',
+    'authority_basis_hash',
+    'client_request_id',
+    'construction_basis_hash',
+    'content_sha256',
+    'file_identity_hash',
+    'index_authority_hash',
+    'limit',
+    'material_snapshot_id',
+    'offset',
+    'operator_decision',
+    'output_package_ids',
+    'package_kinds',
+    'package_review_state',
+    'package_review_submit_record_ref',
+    'payload_hash',
+    'payload_hashes',
+    'qualitative_analysis_hash',
+    'query_text',
+    'reconciliation_record_id',
+    'source_directory_package_review_preview_hash',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+  ].sort();
+  const sourceReplacementAuthorityPayloadKeys = [
+    'client_request_id',
+    'operator_decision',
+    'package_supersession_preview_hash',
+    'reconciliation_record_id',
+    'session_id',
+    'source_package_set_hash',
+  ].sort();
+  const sourceSupersessionCommitPayloadKeys = [
+    'analysis_plan_id',
+    'client_request_id',
+    'operator_decision',
+    'package_supersession_preview_hash',
+    'pass_run_id',
+    'reconciliation_record_id',
+    'replacement_authority_basis_hash',
+    'replacement_package_set_authority_id',
+    'session_id',
+    'source_package_set_hash',
+  ].sort();
   const waitForPostRequest = (path) => page.waitForRequest((apiRequest) => (
     new URL(apiRequest.url()).pathname === path && apiRequest.method() === 'POST'
   ));
@@ -10889,6 +10938,119 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   await expect(middleLifecyclePanel).toHaveAttribute('data-lifecycle-state', 'prepared', { timeout: 10000 });
   await expect(middleLifecyclePanel).toContainText('source_directory_hybrid_middle_lifecycle_prepared');
 
+  const expectedSourceSupersessionAuthority = {
+    analysis_question: authority.analysis_question,
+    analysis_focus: authority.analysis_focus,
+    material_snapshot_id: authority.material_snapshot_id,
+    source_ingestion_batch_id: authority.source_ingestion_batch_id,
+    source_ingestion_file_id: authority.source_ingestion_file_id,
+    content_sha256: authority.content_sha256,
+    file_identity_hash: authority.file_identity_hash,
+    authority_basis_hash: authority.authority_basis_hash,
+    payload_hash: authority.payload_hash,
+    index_authority_hash: authority.index_authority_hash,
+    query_text: authority.query_text,
+    limit: authority.limit,
+    offset: authority.offset,
+    qualitative_analysis_hash: analysis.qualitative_analysis_hash,
+    source_directory_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
+    construction_basis_hash: commit.construction_basis_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: commit.output_package_ids,
+    package_kinds: commit.package_kinds,
+    payload_hashes: commit.payload_hashes,
+    package_review_submit_record_ref: submit.submit_record_ref,
+    package_review_state: submit.package_review_state,
+  };
+  const sourcePreviewPanel = page.locator('#source-directory-package-supersession-preview-panel');
+  await sourcePreviewPanel.scrollIntoViewIfNeeded();
+  const sourceSupersessionAuthority = JSON.parse(
+    await page.locator('#source-directory-package-supersession-preview-authority').inputValue(),
+  );
+  expect(sourceSupersessionAuthority).toEqual(expectedSourceSupersessionAuthority);
+  await expect(sourcePreviewPanel).toHaveAttribute(
+    'data-preview-state',
+    'source_directory_package_supersession_preview_ready',
+  );
+  await expect(page.locator('#source-directory-package-supersession-preview-submit')).toBeEnabled();
+  const sourcePreviewRequestPromise = waitForPostRequest(sourceSupersessionPreviewPath);
+  const sourcePreviewResponsePromise = waitForPostResponse(sourceSupersessionPreviewPath);
+  await page.locator('#source-directory-package-supersession-preview-submit').click();
+  const sourcePreviewPayload = (await sourcePreviewRequestPromise).postDataJSON();
+  const sourcePreview = await expectJson(await sourcePreviewResponsePromise);
+  expectOnlyPayloadKeys(sourcePreviewPayload, sourceSupersessionPreviewPayloadKeys);
+  expect(withoutClientRequestId(sourcePreviewPayload)).toEqual({
+    ...expectedSourceSupersessionAuthority,
+    operator_decision: 'preview_source_directory_package_supersession',
+  });
+  expectNoForbiddenPayloadKeys(sourcePreviewPayload);
+  expect(sourcePreview.schema_id).toBe('layer3.source_directory_qualitative_analysis_package_supersession_preview.v1');
+  expect(sourcePreview.next_state).toBe('source_directory_package_supersession_previewed');
+  expect(sourcePreview.session_id).toBe(gateB.session_id);
+  expect(sourcePreview.reconciliation_record_id).toBe(commit.reconciliation_record_id);
+  expect(sourcePreview.package_supersession_preview_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(sourcePreview.source_package_set_hash).toMatch(/^[a-f0-9]{64}$/);
+
+  const sourceReplacementPanel = page.locator('#replacement-package-set-authority-panel');
+  await sourceReplacementPanel.scrollIntoViewIfNeeded();
+  await expect(sourceReplacementPanel).toHaveAttribute(
+    'data-authority-state',
+    'replacement_package_set_authority_ready',
+  );
+  await expect(page.locator('#replacement-package-set-authority-submit')).toBeEnabled();
+  const sourceReplacementRequestPromise = waitForPostRequest(sourceReplacementAuthorityPath);
+  const sourceReplacementResponsePromise = waitForPostResponse(sourceReplacementAuthorityPath);
+  await page.locator('#replacement-package-set-authority-submit').click();
+  const sourceReplacementPayload = (await sourceReplacementRequestPromise).postDataJSON();
+  const sourceReplacementAuthority = await expectJson(await sourceReplacementResponsePromise);
+  expectOnlyPayloadKeys(sourceReplacementPayload, sourceReplacementAuthorityPayloadKeys);
+  expect(sourceReplacementPayload).toEqual({
+    client_request_id: sourceReplacementPayload.client_request_id,
+    session_id: sourcePreview.session_id,
+    reconciliation_record_id: sourcePreview.reconciliation_record_id,
+    package_supersession_preview_hash: sourcePreview.package_supersession_preview_hash,
+    source_package_set_hash: sourcePreview.source_package_set_hash,
+    operator_decision: 'record_replacement_package_set_authority',
+  });
+  expectNoForbiddenPayloadKeys(sourceReplacementPayload);
+  expect(sourceReplacementAuthority.schema_id).toBe('layer3.replacement_package_set_authority.v1');
+  expect(sourceReplacementAuthority.next_state).toBe('replacement_package_set_authority_recorded');
+  expect(sourceReplacementAuthority.source_directory_package_lifecycle_authority).toBe(true);
+  expect(sourceReplacementAuthority.replacement_package_set_authority_id).toBeTruthy();
+  expect(sourceReplacementAuthority.authority_basis_hash).toMatch(/^[a-f0-9]{64}$/);
+
+  const sourceCommitPanel = page.locator('#package-supersession-commit-panel');
+  await sourceCommitPanel.scrollIntoViewIfNeeded();
+  await expect(sourceCommitPanel).toHaveAttribute(
+    'data-commit-state',
+    'package_supersession_commit_ready',
+  );
+  await expect(page.locator('#package-supersession-commit-submit')).toBeEnabled();
+  const sourceCommitRequestPromise = waitForPostRequest(sourceSupersessionCommitPath);
+  const sourceCommitResponsePromise = waitForPostResponse(sourceSupersessionCommitPath);
+  await page.locator('#package-supersession-commit-submit').click();
+  const sourceCommitPayload = (await sourceCommitRequestPromise).postDataJSON();
+  const sourceSupersessionCommit = await expectJson(await sourceCommitResponsePromise);
+  expectOnlyPayloadKeys(sourceCommitPayload, sourceSupersessionCommitPayloadKeys);
+  expect(sourceCommitPayload).toEqual({
+    client_request_id: sourceCommitPayload.client_request_id,
+    session_id: sourceReplacementAuthority.session_id,
+    analysis_plan_id: sourceReplacementAuthority.analysis_plan_id,
+    pass_run_id: sourceReplacementAuthority.pass_run_id,
+    reconciliation_record_id: sourceReplacementAuthority.reconciliation_record_id,
+    package_supersession_preview_hash: sourcePreview.package_supersession_preview_hash,
+    source_package_set_hash: sourcePreview.source_package_set_hash,
+    replacement_package_set_authority_id: sourceReplacementAuthority.replacement_package_set_authority_id,
+    replacement_authority_basis_hash: sourceReplacementAuthority.authority_basis_hash,
+    operator_decision: 'commit_package_supersession',
+  });
+  expectNoForbiddenPayloadKeys(sourceCommitPayload);
+  expect(sourceSupersessionCommit.schema_id).toBe('layer3.package_supersession_commit.v1');
+  expect(sourceSupersessionCommit.next_state).toBe('package_supersession_commit_recorded');
+  expect(sourceSupersessionCommit.source_directory_package_lifecycle_authority).toBe(true);
+  expect(sourceSupersessionCommit.package_supersession_commit_id).toBeTruthy();
+  expect(sourceSupersessionCommit.commit_basis_hash).toMatch(/^[a-f0-9]{64}$/);
+
   const summary = await expectJson(await request.get(`/api/v1/layer3/session/${gateB.session_id}`));
   expect(summary.analysis_environment_projection.schema_id).toBe('layer3.analysis_environment_projection.v1');
   expect(summary.analysis_environment_projection.no_side_effects).toBe(true);
@@ -11064,6 +11226,9 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === packageReviewSubmitPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === handoffPreparePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === externalPreparePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceSupersessionPreviewPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceReplacementAuthorityPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceSupersessionCommitPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === internalWebhookDispatchPath)).toHaveLength(1);

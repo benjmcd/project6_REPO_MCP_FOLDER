@@ -23,10 +23,12 @@ from app.models.models import (
     AnalysisRun,
     ConnectorRun,
     ConnectorRunTarget,
+    L3PackageSupersessionCommit,
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3ReplacementPackageSetAuthority,
     L3SourceDirectoryInternalWebhookDispatchAuditEvent,
     L3SourceDirectoryInternalWebhookDispatchReceipt,
 )
@@ -1417,6 +1419,137 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_package_rev
     )
     assert conflict.status_code == 409
     assert conflict.json()["error"]["code"] == "source_directory_hybrid_package_review_submit_already_recorded"
+
+
+def test_source_directory_hybrid_package_lifecycle_records_replacement_and_supersession(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    analysis_body, commit_body, submit_body, submit_payload, _embedding_index_authority_hash = (
+        _hybrid_package_review_submit_authority(
+            client,
+            tmp_path,
+            monkeypatch,
+            client_request_id="source-directory-hybrid-package-lifecycle",
+        )
+    )
+    preview_payload = {
+        "client_request_id": "source-directory-hybrid-package-lifecycle-preview",
+        "analysis_question": submit_payload["analysis_question"],
+        "analysis_focus": submit_payload["analysis_focus"],
+        "material_snapshot_id": submit_payload["material_snapshot_id"],
+        "source_ingestion_batch_id": submit_payload["source_ingestion_batch_id"],
+        "source_ingestion_file_id": submit_payload["source_ingestion_file_id"],
+        "content_sha256": submit_payload["content_sha256"],
+        "file_identity_hash": submit_payload["file_identity_hash"],
+        "authority_basis_hash": submit_payload["authority_basis_hash"],
+        "payload_hash": submit_payload["payload_hash"],
+        "index_authority_hash": submit_payload["index_authority_hash"],
+        "query_text": submit_payload["query_text"],
+        "limit": submit_payload["limit"],
+        "offset": submit_payload["offset"],
+        "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+        "source_directory_package_review_preview_hash": (
+            analysis_body["source_directory_hybrid_package_review_preview_hash"]
+        ),
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": commit_body["output_package_ids"],
+        "package_kinds": commit_body["package_kinds"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": "package_review_approved",
+        "operator_decision": "preview_source_directory_package_supersession",
+    }
+    preview = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/preview"
+        ),
+        json=preview_payload,
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+    assert preview_body["status"] == "previewed"
+    assert preview_body["context_packet_hash"] == analysis_body["hybrid_context_packet_hash"]
+    assert preview_body["source_directory_package_review_preview_hash"] == (
+        analysis_body["source_directory_hybrid_package_review_preview_hash"]
+    )
+    assert preview_body["package_construction_source_gate"] == (
+        "828_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_CONSTRUCTION_RUNTIME_ENTRY_FREEZE"
+    )
+    assert preview_body["package_review_submit_source_gate"] == (
+        "830_SOURCE_DIRECTORY_HYBRID_CONTEXT_QUALITATIVE_ANALYSIS_PACKAGE_REVIEW_SUBMIT_RUNTIME_ENTRY_FREEZE"
+    )
+    assert preview_body["output_package_ids"] == commit_body["output_package_ids"]
+    assert preview_body["payload_hashes"] == commit_body["payload_hashes"]
+    assert preview_body["payload_refs_redacted"] is True
+
+    replacement = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview"
+        ),
+        json={
+            "client_request_id": "source-directory-hybrid-package-lifecycle-replacement",
+            "session_id": preview_body["session_id"],
+            "reconciliation_record_id": preview_body["reconciliation_record_id"],
+            "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+            "source_package_set_hash": preview_body["source_package_set_hash"],
+            "operator_decision": "record_replacement_package_set_authority",
+        },
+    )
+    assert replacement.status_code == 200, replacement.text
+    replacement_body = replacement.json()
+    assert replacement_body["status"] == "recorded"
+    assert replacement_body["source_directory_package_lifecycle_authority"] is True
+    assert replacement_body["source_package_set_hash"] == preview_body["source_package_set_hash"]
+    assert replacement_body["source_output_package_ids"] == commit_body["output_package_ids"]
+    assert replacement_body["source_payload_hashes"] == commit_body["payload_hashes"]
+
+    supersession = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/commit"
+        ),
+        json={
+            "client_request_id": "source-directory-hybrid-package-lifecycle-commit",
+            "session_id": replacement_body["session_id"],
+            "analysis_plan_id": replacement_body["analysis_plan_id"],
+            "pass_run_id": replacement_body["pass_run_id"],
+            "reconciliation_record_id": replacement_body["reconciliation_record_id"],
+            "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+            "source_package_set_hash": preview_body["source_package_set_hash"],
+            "replacement_package_set_authority_id": (
+                replacement_body["replacement_package_set_authority_id"]
+            ),
+            "replacement_authority_basis_hash": replacement_body["authority_basis_hash"],
+            "operator_decision": "commit_package_supersession",
+        },
+    )
+    assert supersession.status_code == 200, supersession.text
+    supersession_body = supersession.json()
+    assert supersession_body["status"] == "committed"
+    assert supersession_body["source_directory_package_lifecycle_authority"] is True
+    assert supersession_body["replacement_package_set_authority_id"] == (
+        replacement_body["replacement_package_set_authority_id"]
+    )
+    assert supersession_body["source_output_package_ids"] == commit_body["output_package_ids"]
+    assert supersession_body["source_payload_hashes"] == commit_body["payload_hashes"]
+    assert supersession_body["package_payload_write_enabled"] is False
+    assert supersession_body["l3_output_package_write_enabled"] is False
+    assert supersession_body["frontend_only_durable_state_enabled"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == 3
+        assert db.query(L3ReplacementPackageSetAuthority).count() == 1
+        assert db.query(L3PackageSupersessionCommit).count() == 1
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+    finally:
+        db.close()
 
 
 def test_source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare_records_bounded_authority(
