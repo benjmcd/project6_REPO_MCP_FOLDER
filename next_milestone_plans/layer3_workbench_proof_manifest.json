@@ -39818,7 +39818,7 @@
   "latest_layer3_sublayer_3c_read_only_projection_contract_summary": "Doc 950 adds a branch-local activation-readiness projection contract for Sublayer 3C execution lanes. The sublayer_3c_execution_lanes journey remains read_only and is grounded in State.sessionSummary analysis-environment/execution projections, layer3.analysis_environment_projection.v1, and #mockup-execution-lanes-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation.",
   "latest_layer3_sublayer_3c_read_only_projection_contract_current_main_authority": "project6-origin/main at fd0c5df1 Add Sublayer 3C projection contract (#1575)",
   "layer3_analysis_environment_read_only_projection_contract": {
-    "status": "branch_local_analysis_environment_read_only_projection_contract_implemented",
+    "status": "current_main_synced_analysis_environment_read_only_projection_contract",
     "doc": "next_milestone_plans/Layer3_planning_docs/951-analysis-environment-read-only-projection-contract.md",
     "predecessor_contract_doc": "next_milestone_plans/Layer3_planning_docs/950-sublayer-3c-read-only-projection-contract.md",
     "implementation_branch": "codex/l3-analysis-environment-projection-gap",
@@ -39895,7 +39895,7 @@
       "python ./tools/l3-progress-check.py PASS"
     ],
     "next_posture": "record_bounded_trial_checkpoint_after_analysis_environment_projection_contract",
-    "summary": "Doc 951 adds a branch-local activation-readiness projection contract for the Analysis Environment rendered reader. The analysis_environment_projection journey remains read_only and is grounded in State.sessionSummary.analysis_environment_projection, layer3.analysis_environment_projection.v1, read_only_session_summary_analysis_environment_plane_projection, and .analysis-environment-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation.",
+    "summary": "Doc 951 is current-main synced as the activation-readiness projection contract for the Analysis Environment rendered reader. The analysis_environment_projection journey remains read_only and is grounded in State.sessionSummary.analysis_environment_projection, layer3.analysis_environment_projection.v1, read_only_session_summary_analysis_environment_plane_projection, and .analysis-environment-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation.",
     "proof_kind": "layer3_analysis_environment_read_only_projection_contract",
     "proof_terms": [
       "951-analysis-environment-read-only-projection-contract.md",
@@ -39907,12 +39907,124 @@
       "analysis_run_mutation blocked",
       "package_construction_or_mutation blocked",
       "no full mockup activation"
-    ]
+    ],
+    "current_main_authority": "project6-origin/main at 2bbb1976 Add Analysis Environment projection contract (#1576)"
   },
   "latest_layer3_analysis_environment_read_only_projection_contract_doc": "next_milestone_plans/Layer3_planning_docs/951-analysis-environment-read-only-projection-contract.md",
-  "latest_layer3_analysis_environment_read_only_projection_contract_status": "branch_local_analysis_environment_read_only_projection_contract_implemented",
+  "latest_layer3_analysis_environment_read_only_projection_contract_status": "current_main_synced_analysis_environment_read_only_projection_contract",
   "latest_layer3_analysis_environment_read_only_projection_contract_selected_projection_slice": "analysis_environment_read_only_live_projection_contract",
   "latest_layer3_analysis_environment_read_only_projection_contract_projection_schema_id": "layer3.analysis_environment_projection.v1",
   "latest_layer3_analysis_environment_read_only_projection_contract_next_posture": "record_bounded_trial_checkpoint_after_analysis_environment_projection_contract",
-  "latest_layer3_analysis_environment_read_only_projection_contract_summary": "Doc 951 adds a branch-local activation-readiness projection contract for the Analysis Environment rendered reader. The analysis_environment_projection journey remains read_only and is grounded in State.sessionSummary.analysis_environment_projection, layer3.analysis_environment_projection.v1, read_only_session_summary_analysis_environment_plane_projection, and .analysis-environment-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation."
+  "latest_layer3_analysis_environment_read_only_projection_contract_summary": "Doc 951 is current-main synced as the activation-readiness projection contract for the Analysis Environment rendered reader. The analysis_environment_projection journey remains read_only and is grounded in State.sessionSummary.analysis_environment_projection, layer3.analysis_environment_projection.v1, read_only_session_summary_analysis_environment_plane_projection, and .analysis-environment-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation.",
+  "latest_layer3_analysis_environment_read_only_projection_contract_current_main_authority": "project6-origin/main at 2bbb1976 Add Analysis Environment projection contract (#1576)",
+  "layer3_bounded_trial_checkpoint_runbook_after_analysis_environment_projection": {
+    "status": "branch_local_bounded_trial_checkpoint_runbook_proven",
+    "doc": "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md",
+    "branch": "codex/l3-bounded-trial-checkpoint",
+    "base_current_main_authority": "project6-origin/main at 2bbb1976 Add Analysis Environment projection contract (#1576)",
+    "predecessor_docs": [
+      "next_milestone_plans/Layer3_planning_docs/943-bounded-trial-capture.md",
+      "next_milestone_plans/Layer3_planning_docs/944-final-readiness-audit.md",
+      "next_milestone_plans/Layer3_planning_docs/945-activation-readiness-package.md",
+      "next_milestone_plans/Layer3_planning_docs/951-analysis-environment-read-only-projection-contract.md"
+    ],
+    "covered_operator_path": [
+      "source_directory_scan_status",
+      "material_preview",
+      "gate_b_admission",
+      "retrieval_context_and_qualitative_analysis_authority",
+      "qualitative_analysis_status",
+      "package_preview_commit_review",
+      "package_replacement_supersession_preview_authority_commit",
+      "handoff_export_prepare",
+      "external_export_download_prepare",
+      "same_origin_delivery_status",
+      "admitted_redacted_delivery_prepare_use",
+      "internal_webhook_dispatch_status",
+      "status_projection_visibility",
+      "analysis_environment_and_mockup_read_only_projection_evidence"
+    ],
+    "expected_rendered_status_evidence": [
+      "mockup_activation_readiness bootstrap state",
+      "analysis_environment_projection session-summary read-only projection",
+      "analysis_environment_read_only_live_projection_contract selected",
+      ".analysis-environment-projection read-only rendered surface",
+      "no raw path provider URL token object ref output payload ref diagnostics ref destination credential or browser-storage durable authority",
+      "full_mockup_program_activation remains blocked"
+    ],
+    "validation_runbook": [
+      "python ./tools/l3-progress-check.py",
+      "node --check ./backend/app/review_ui/static/layer3.js",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json",
+      "python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts ./backend/tests/test_layer3_page.py::test_layer3_static_assets_are_mounted ./backend/tests/test_layer3_page.py::test_layer3_analysis_environment_projection_rendered_reader_is_bounded -q",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --grep \"Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path\"",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path\"",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --grep \"Layer 3 mockup (activation readiness dashboard classifies next-phase journeys from bootstrap authority|Sublayer 3C execution lanes projection renders read-only server state without runtime widening)\"",
+      "npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"Layer 3 mockup (activation readiness dashboard classifies next-phase journeys from bootstrap authority|Sublayer 3C execution lanes projection renders read-only server state without runtime widening)\"",
+      "git diff --check"
+    ],
+    "blocked_boundaries": [
+      "new_runtime_authority",
+      "analysis_environment_interactivity",
+      "frontend_only_durable_state",
+      "raw_provider_path_token_object_exposure",
+      "connector_provider_writes",
+      "package_construction_or_mutation_beyond_existing_admitted_controls",
+      "execution_side_effects",
+      "route_api_dto_model_migration_service_widening",
+      "full_mockup_activation"
+    ],
+    "stop_conditions": [
+      "any_runbook_command_fails",
+      "headed_headless_browser_proof_diverges",
+      "raw_provider_path_token_object_or_payload_reference_exposure",
+      "read_only_projection_gains_write_controls",
+      "branch_local_status_remains_after_current_main_sync",
+      "diff_includes_runtime_model_route_migration_or_ui_behavior_change",
+      "critical_mockup_journey_cannot_be_classified_live_read_only_intentionally_excluded_or_blocked"
+    ],
+    "runtime_behavior_change_introduced_by_checkpoint": false,
+    "rendered_behavior_change_introduced_by_checkpoint": false,
+    "backend_behavior_change_introduced_by_checkpoint": false,
+    "route_api_dto_model_migration_service_behavior_change_introduced_by_checkpoint": false,
+    "executable_test_behavior_change_introduced_by_checkpoint": false,
+    "full_mockup_program_activation_selected": false,
+    "next_posture": "run_final_readiness_audit_after_bounded_trial_checkpoint_current_main_sync",
+    "summary": "Doc 952 records and proves the bounded trial-usable checkpoint and minimal operator runbook after the current-main Analysis Environment projection contract. It preserves the source-directory operator path through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, handoff/export, same-origin or admitted redacted delivery/use, internal webhook dispatch/status, and read-only Analysis Environment/mockup projection evidence. It adds no runtime authority, Analysis Environment interactivity, frontend durable authority, raw provider/path exposure, connector/provider writes, package/execution side effects, or full mockup activation.",
+    "proof_kind": "layer3_bounded_trial_checkpoint_runbook_after_analysis_environment_projection",
+    "proof_terms": [
+      "952-bounded-trial-checkpoint-runbook.md",
+      "2bbb1976 Add Analysis Environment projection contract (#1576)",
+      "current_main_synced_analysis_environment_read_only_projection_contract",
+      "source-directory scan/status to delivery/webhook/status/projection visibility",
+      "analysis_environment_read_only_live_projection_contract",
+      ".analysis-environment-projection",
+      "headless Chromium proof required",
+      "headed Chromium proof required",
+      "no runtime authority added",
+      "no Analysis Environment interactivity",
+      "no raw provider/path exposure",
+      "no connector/provider writes",
+      "no full mockup activation",
+      "run_final_readiness_audit_after_bounded_trial_checkpoint_current_main_sync"
+    ],
+    "validation_results": [
+      "python ./tools/l3-progress-check.py PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js PASS",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json PASS",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json PASS",
+      "python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts ./backend/tests/test_layer3_page.py::test_layer3_static_assets_are_mounted ./backend/tests/test_layer3_page.py::test_layer3_analysis_environment_projection_rendered_reader_is_bounded -q PASS 3 passed",
+      "headless Chromium source-directory path proof PASS 1 passed",
+      "headed Chromium source-directory path proof PASS 1 passed",
+      "headless Chromium mockup/read-only projection group PASS 2 passed",
+      "headed Chromium mockup/read-only projection group PASS 2 passed",
+      "git diff --check PASS"
+    ]
+  },
+  "latest_layer3_bounded_trial_checkpoint_runbook_doc": "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md",
+  "latest_layer3_bounded_trial_checkpoint_runbook_status": "branch_local_bounded_trial_checkpoint_runbook_proven",
+  "latest_layer3_bounded_trial_checkpoint_runbook_base_current_main_authority": "project6-origin/main at 2bbb1976 Add Analysis Environment projection contract (#1576)",
+  "latest_layer3_bounded_trial_checkpoint_runbook_next_posture": "run_final_readiness_audit_after_bounded_trial_checkpoint_current_main_sync",
+  "latest_layer3_bounded_trial_checkpoint_runbook_summary": "Doc 952 records and proves the bounded trial-usable checkpoint and minimal operator runbook after the current-main Analysis Environment projection contract. It preserves the source-directory operator path through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, handoff/export, same-origin or admitted redacted delivery/use, internal webhook dispatch/status, and read-only Analysis Environment/mockup projection evidence. It adds no runtime authority, Analysis Environment interactivity, frontend durable authority, raw provider/path exposure, connector/provider writes, package/execution side effects, or full mockup activation."
 }
