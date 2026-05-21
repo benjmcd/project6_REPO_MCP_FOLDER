@@ -2,17 +2,19 @@
 
 ## Status
 
-Status: current-main next-phase activation-readiness slice for Layer 3 mockup/projection evolution.
+Status: current-main next-phase activation-readiness package for governed Layer 3 mockup/projection evolution.
 
 Doc: `945-activation-readiness-package.md`.
 
 Predecessor final audit: `944-final-readiness-audit.md`.
 
-Current main authority: `project6-origin/main` at `89924065 Merge pull request #1569 from benjmcd/codex/l3-final-readiness-audit-post-trial`.
+Current main authority: `project6-origin/main` at `31d0c528 Merge pull request #1570 from benjmcd/codex/l3-next-phase-activation-readiness`.
 
-Implementation branch: `codex/l3-next-phase-activation-readiness`.
+Follow-up branch: `codex/l3-next-operator-path-proof`.
 
 Selected first slice: `query_source_setup_interactive_live_classification`.
+
+Selected next slice: `output_review_package_handoff_interactive_live_contract`.
 
 ## Classification
 
@@ -24,7 +26,7 @@ This package does not activate the full mockup program. It makes the next-phase 
 | PDF-location evidence | Read-only | Current authority is session-summary PDF-location projection; no write/navigation authority is selected. |
 | Sublayers 3A/3B | Read-only | Current authority is session-summary sublayer visualization; no edit/drilldown control is selected. |
 | Sublayer 3C execution lanes | Read-only | Current authority is analysis-environment and execution-state projection; no execution-lane control is selected. |
-| Output review/package/handoff | Read-only | Current authority is session-summary result-review/package/handoff projection; no new review or handoff control is selected. |
+| Output review/package/handoff | Interactive-live | Current authority includes existing result-review, package lifecycle, handoff/export, same-origin/admitted redacted delivery/use, local outbox, provider-private, external-local export, and internal webhook route/control/status surfaces. This classification adds no new runtime authority. |
 | Full mockup program | Blocked | Full mockup activation and frontend-only durable authority still require a later freeze and readiness audit. |
 
 ## Admitted Behavior
@@ -32,6 +34,7 @@ This package does not activate the full mockup program. It makes the next-phase 
 - `backend/app/services/layer3_mockup_activation_readiness.py` owns `layer3.mockup_activation_readiness.v1`.
 - `/api/v1/layer3/bootstrap` exposes `mockup_activation_readiness` as server-owned bootstrap state.
 - `/review/layer3` renders `#mockup-activation-readiness-panel` from `State.bootstrap.mockup_activation_readiness`.
+- `output_review_package_handoff_interactive_live_contract` records the existing route/control/status contract for the output review, package, handoff, delivery, local outbox, provider-private, external-local export, and internal webhook path without admitting new package mutation, raw package bytes, raw provider tokens, destination credentials, connector/provider writes, frontend-only durable authority, or full mockup activation.
 
 ## Non-Admission Boundary
 
@@ -52,4 +55,4 @@ This slice does not admit frontend-only durable authority, raw provider URL/toke
 
 ## Next Posture
 
-The next useful pass is to select one read-only journey, define its exact server-owned interaction contract, and prove it with headed/headless browser evidence before changing it from read-only to interactive-live.
+The next useful pass is to prove the existing output review/package/handoff controls from current main with headed/headless browser evidence, then select the next still-read-only projection journey only after current-main server authority identifies an exact interaction contract.

@@ -493,9 +493,13 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         bootstrap_body["mockup_activation_readiness"]["selected_first_slice"]
         == "query_source_setup_interactive_live_classification"
     )
+    assert (
+        bootstrap_body["mockup_activation_readiness"]["selected_next_slice"]
+        == "output_review_package_handoff_interactive_live_contract"
+    )
     assert bootstrap_body["mockup_activation_readiness"]["journey_counts"] == {
-        "interactive_live": 1,
-        "read_only": 4,
+        "interactive_live": 2,
+        "read_only": 3,
         "intentionally_excluded": 0,
         "blocked": 1,
     }
