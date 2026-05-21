@@ -39624,7 +39624,7 @@
   "latest_layer3_pdf_location_read_only_projection_contract_summary": "PR #1573 merged the PDF-location read-only projection contract to current main at 9243d966319cc38eb9adfa7e112b473ef4bdf66b; PDF-location remains read_only and full mockup activation remains blocked.",
   "layer3_sublayers_ab_read_only_projection_contract": {
     "proof_kind": "layer3_sublayers_ab_read_only_projection_contract",
-    "status": "branch_local_sublayers_ab_read_only_projection_contract_implemented",
+    "status": "current_main_synced_sublayers_ab_read_only_projection_contract",
     "doc": "next_milestone_plans/Layer3_planning_docs/949-sublayers-ab-read-only-projection-contract.md",
     "predecessor_contract_doc": "next_milestone_plans/Layer3_planning_docs/948-pdf-location-read-only-projection-contract.md",
     "implementation_branch": "codex/l3-sublayers-ab-projection-contract",
@@ -39707,10 +39707,113 @@
     ]
   },
   "latest_layer3_sublayers_ab_read_only_projection_contract_doc": "next_milestone_plans/Layer3_planning_docs/949-sublayers-ab-read-only-projection-contract.md",
-  "latest_layer3_sublayers_ab_read_only_projection_contract_status": "branch_local_sublayers_ab_read_only_projection_contract_implemented",
+  "latest_layer3_sublayers_ab_read_only_projection_contract_status": "current_main_synced_sublayers_ab_read_only_projection_contract",
   "latest_layer3_sublayers_ab_read_only_projection_contract_selected_projection_slice": "sublayers_3a_3b_read_only_live_projection_contract",
   "latest_layer3_sublayers_ab_read_only_projection_contract_projection_schema_id": "layer3.sublayer_visualization_state.v1",
   "latest_layer3_sublayers_ab_read_only_projection_contract_next_posture": "publish_sublayers_ab_projection_contract_then_select_3c_execution_lanes_projection_contract",
   "latest_layer3_sublayers_ab_read_only_projection_contract_summary": "Doc 949 adds a branch-local activation-readiness projection contract for Sublayers 3A/3B. The sublayers_3a_3b journey remains read_only and is grounded in State.sessionSummary.sublayer_visualization, State.materialPreview, State.gateB, State.gateC, layer3.sublayer_visualization_state.v1, and #mockup-sublayers-ab-projection. It adds no interactive edit/drilldown controls, runtime request widening, route/model/migration behavior, raw path/provider exposure, connector/provider writes, frontend durable authority, or full mockup activation.",
-  "latest_layer3_pdf_location_read_only_projection_contract_current_main_authority": "project6-origin/main at 9243d966319cc38eb9adfa7e112b473ef4bdf66b (9243d966 Add PDF location projection contract)"
+  "latest_layer3_pdf_location_read_only_projection_contract_current_main_authority": "project6-origin/main at 9243d966319cc38eb9adfa7e112b473ef4bdf66b (9243d966 Add PDF location projection contract)",
+  "latest_layer3_sublayers_ab_read_only_projection_contract_current_main_authority": "project6-origin/main at 66435b86 Add Sublayers AB projection contract (#1574)",
+  "layer3_sublayer_3c_read_only_projection_contract": {
+    "status": "branch_local_sublayer_3c_read_only_projection_contract_implemented",
+    "doc": "next_milestone_plans/Layer3_planning_docs/950-sublayer-3c-read-only-projection-contract.md",
+    "predecessor_contract_doc": "next_milestone_plans/Layer3_planning_docs/949-sublayers-ab-read-only-projection-contract.md",
+    "implementation_branch": "codex/l3-sublayer-3c-projection-contract",
+    "base_current_main_authority": "project6-origin/main at 66435b86 Add Sublayers AB projection contract (#1574)",
+    "schema_id": "layer3.mockup_activation_readiness.v1",
+    "selected_projection_slice": "sublayer_3c_execution_lanes_read_only_live_projection_contract",
+    "selected_projection_slices": [
+      "pdf_location_read_only_live_projection_contract",
+      "sublayers_3a_3b_read_only_live_projection_contract",
+      "sublayer_3c_execution_lanes_read_only_live_projection_contract"
+    ],
+    "projection_schema_id": "layer3.analysis_environment_projection.v1",
+    "journey_classification": {
+      "query_source_setup": "interactive_live",
+      "pdf_location": "read_only",
+      "sublayers_3a_3b": "read_only",
+      "sublayer_3c_execution_lanes": "read_only",
+      "output_review_package_handoff": "interactive_live",
+      "full_mockup_program": "blocked"
+    },
+    "projection_contract": {
+      "contract_id": "sublayer_3c_execution_lanes_read_only_live_projection_contract",
+      "server_authority_contract": "read_only_session_summary_analysis_environment_execution_projection",
+      "status_projection": [
+        "State.sessionSummary.sublayer_visualization",
+        "State.sessionSummary.analysis_environment_projection",
+        "State.sessionSummary.plan_preview",
+        "State.sessionSummary.plan_approval",
+        "State.sessionSummary.execution_selection",
+        "State.sessionSummary.analysis_execution_start",
+        "State.sessionSummary.execution_result_review",
+        "State.planPreview",
+        "State.planApproval",
+        "State.executionSelection",
+        "State.executionStart",
+        "State.resultStatus",
+        "State.resultReview"
+      ],
+      "rendered_surface": "#mockup-execution-lanes-projection",
+      "read_only_controls_absent": [
+        "button",
+        "input",
+        "select",
+        "textarea",
+        "a[href]"
+      ]
+    },
+    "blocked_boundaries": [
+      "execution_start_side_effect",
+      "analysis_run_mutation",
+      "raw_execution_payload_exposure",
+      "output_payload_ref_exposure",
+      "diagnostics_ref_exposure",
+      "package_construction_or_mutation",
+      "connector_provider_write",
+      "provider_or_object_store_url_exposure",
+      "frontend_only_durable_authority",
+      "runtime_request_widening",
+      "full_mockup_program_activation"
+    ],
+    "runtime_behavior_change_introduced_by_contract": false,
+    "rendered_behavior_change_introduced_by_contract": false,
+    "backend_behavior_change_introduced_by_contract": true,
+    "route_api_dto_model_migration_service_behavior_change_introduced_by_contract": false,
+    "executable_test_behavior_change_introduced_by_contract": true,
+    "production_ui_behavior_change_introduced_by_contract": false,
+    "frontend_durable_authority_enabled": false,
+    "full_mockup_program_activation_selected": false,
+    "validation": [
+      "python -m py_compile ./backend/app/services/layer3_mockup_activation_readiness.py PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js PASS",
+      "python -m pytest ./backend/tests/test_layer3_mockup_activation_readiness.py ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts ./backend/tests/test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS",
+      "headless Chromium activation-readiness dashboard and Sublayer 3C projection proof PASS",
+      "headed Chromium activation-readiness dashboard and Sublayer 3C projection proof PASS",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json PASS",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json PASS",
+      "python ./tools/l3-progress-check.py PASS"
+    ],
+    "next_posture": "publish_sublayer_3c_projection_contract_then_select_analysis_environment_mockup_projection_gap",
+    "summary": "Doc 950 adds a branch-local activation-readiness projection contract for Sublayer 3C execution lanes. The sublayer_3c_execution_lanes journey remains read_only and is grounded in State.sessionSummary analysis-environment/execution projections, layer3.analysis_environment_projection.v1, and #mockup-execution-lanes-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation.",
+    "proof_kind": "layer3_sublayer_3c_read_only_projection_contract",
+    "proof_terms": [
+      "950-sublayer-3c-read-only-projection-contract.md",
+      "sublayer_3c_execution_lanes_read_only_live_projection_contract",
+      "layer3.analysis_environment_projection.v1",
+      "State.sessionSummary.analysis_environment_projection",
+      "State.resultStatus",
+      "#mockup-execution-lanes-projection",
+      "sublayer_3c_execution_lanes remains read_only",
+      "execution_start_side_effect blocked",
+      "package_construction_or_mutation blocked",
+      "no full mockup activation"
+    ]
+  },
+  "latest_layer3_sublayer_3c_read_only_projection_contract_doc": "next_milestone_plans/Layer3_planning_docs/950-sublayer-3c-read-only-projection-contract.md",
+  "latest_layer3_sublayer_3c_read_only_projection_contract_status": "branch_local_sublayer_3c_read_only_projection_contract_implemented",
+  "latest_layer3_sublayer_3c_read_only_projection_contract_selected_projection_slice": "sublayer_3c_execution_lanes_read_only_live_projection_contract",
+  "latest_layer3_sublayer_3c_read_only_projection_contract_projection_schema_id": "layer3.analysis_environment_projection.v1",
+  "latest_layer3_sublayer_3c_read_only_projection_contract_next_posture": "publish_sublayer_3c_projection_contract_then_select_analysis_environment_mockup_projection_gap",
+  "latest_layer3_sublayer_3c_read_only_projection_contract_summary": "Doc 950 adds a branch-local activation-readiness projection contract for Sublayer 3C execution lanes. The sublayer_3c_execution_lanes journey remains read_only and is grounded in State.sessionSummary analysis-environment/execution projections, layer3.analysis_environment_projection.v1, and #mockup-execution-lanes-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation."
 }
