@@ -45,6 +45,7 @@ from app.models.models import (
     VariableProfile,
     uuid_str,
 )
+from app.services import layer3_internal_webhook_connector
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
@@ -1010,6 +1011,8 @@ def create_app() -> FastAPI:
     _install_layer3_browser_patches(temp_path)
     settings.storage_dir = str(temp_path / "storage")
     settings.layer3_external_local_export_dir = str(temp_path / "external-local-export")
+    settings.layer3_internal_webhook_url = "http://127.0.0.1/source-directory-browser-webhook"
+    settings.layer3_internal_webhook_display_name = "source-directory-browser-webhook"
     source_dir = temp_path / "source-dir"
     _write_layer3_source_directory_fixture(source_dir)
     settings.layer3_source_ingestion_dir = str(source_dir)
@@ -1028,6 +1031,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="NRC APS Review Browser Server")
     app.state.review_browser_temp_dir = temp_dir
     app.state.review_browser_fixture = fixture
+    app.state.layer3_internal_webhook_calls = []
     app.state.layer3_engine = engine
     app.include_router(review_nrc_aps.router, prefix="/api/v1/review/nrc-aps")
     app.include_router(layer3.router, prefix="/api/v1/layer3")
@@ -1042,6 +1046,26 @@ def create_app() -> FastAPI:
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
+
+    def review_browser_internal_webhook_transport(
+        destination_url: str,
+        envelope: dict[str, object],
+        headers: dict[str, str],
+        timeout: float,
+    ) -> tuple[int, dict[str, object]]:
+        app.state.layer3_internal_webhook_calls.append(
+            {
+                "destination_url": destination_url,
+                "envelope_schema_id": envelope.get("schema_id"),
+                "headers": dict(headers),
+                "timeout": timeout,
+            }
+        )
+        return 202, {"accepted": True, "receipt": "source-directory-browser-webhook"}
+
+    layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT = (
+        review_browser_internal_webhook_transport
+    )
 
     @app.get("/review/nrc-aps", response_class=HTMLResponse)
     def review_nrc_aps_page() -> HTMLResponse:

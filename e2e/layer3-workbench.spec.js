@@ -10479,6 +10479,8 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const externalPreparePath = `${analysisPath}/handoff/export/download/prepare`;
   const deliveryStatusPath = `${analysisPath}/handoff/export/download/deliver/status`;
   const deliveryPath = `${analysisPath}/handoff/export/download/deliver`;
+  const internalWebhookDispatchPath = `${analysisPath}/handoff/export/internal-webhook/dispatch`;
+  const internalWebhookStatusPathPrefix = `${analysisPath}/handoff/export/internal-webhook/status/`;
   const forbiddenPayloadKeys = [
     'payload_refs',
     'source_payload_refs',
@@ -10490,10 +10492,18 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'file_bytes',
     'download_url',
     'public_url',
+    'destination_url',
+    'target_url',
     'signed_url',
     'connector_run_id',
     'destination_id',
     'provider_credentials',
+    'token',
+    'headers',
+    'raw_target_url',
+    'raw_headers',
+    'raw_package_payload',
+    'raw_package_bytes',
   ];
   const expectNoForbiddenPayloadKeys = (payload) => {
     for (const forbiddenKey of forbiddenPayloadKeys) {
@@ -10547,6 +10557,17 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'source_ingestion_file_id',
     'top_k',
   ];
+  const internalWebhookPayloadKeys = [
+    ...deliveryPayloadKeys.filter((key) => ![
+      'delivery_mode',
+      'output_package_id',
+      'package_kind',
+      'package_payload_hash',
+    ].includes(key)),
+    'dispatch_mode',
+    'target_class',
+    'target_identity',
+  ].sort();
 
   await page.setViewportSize({ width: 1360, height: 980 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
@@ -10875,12 +10896,87 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     { timeout: 8000 },
   );
 
+  const internalWebhookPanel = page.locator('#source-directory-hybrid-internal-webhook-panel');
+  await internalWebhookPanel.scrollIntoViewIfNeeded();
+  await expect(internalWebhookPanel).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_source_directory_hybrid_internal_webhook_dispatch_control',
+  );
+  await expect(internalWebhookPanel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#source-directory-hybrid-internal-webhook-authority').fill(
+    JSON.stringify(deliveryAuthority),
+  );
+  await expect(page.locator('#source-directory-hybrid-internal-webhook-submit')).toBeEnabled();
+
+  const internalWebhookDispatchRequestPromise = page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname === internalWebhookDispatchPath
+    && apiRequest.method() === 'POST'
+  ));
+  const internalWebhookDispatchResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname === internalWebhookDispatchPath
+    && response.request().method() === 'POST'
+  ));
+  await page.locator('#source-directory-hybrid-internal-webhook-submit').click();
+  const internalWebhookPayload = (await internalWebhookDispatchRequestPromise).postDataJSON();
+  const internalWebhook = await expectJson(await internalWebhookDispatchResponsePromise);
+  expectOnlyPayloadKeys(internalWebhookPayload, internalWebhookPayloadKeys);
+  expectNoForbiddenPayloadKeys(internalWebhookPayload);
+  expect(internalWebhookPayload.operator_decision).toBe('dispatch_source_directory_hybrid_internal_webhook');
+  expect(internalWebhookPayload.target_identity).toBe('server_configured_internal_webhook_destination');
+  expect(internalWebhookPayload.target_class).toBe('real_connector_invocation');
+  expect(internalWebhookPayload.dispatch_mode).toBe('server_configured_allowlisted_internal_webhook_post');
+  expect(internalWebhookPayload).not.toHaveProperty('output_package_id');
+  expect(internalWebhookPayload).not.toHaveProperty('package_kind');
+  expect(internalWebhookPayload).not.toHaveProperty('package_payload_hash');
+  expect(internalWebhook.schema_id).toBe('layer3.source_directory_internal_webhook.dispatch.v1');
+  expect(internalWebhook.status).toBe('dispatched');
+  expect(internalWebhook.source_directory_internal_webhook_dispatch_state).toBe(
+    'source_directory_internal_webhook_dispatched',
+  );
+  expect(internalWebhook.source_directory_internal_webhook_post_performed).toBe(true);
+  expect(internalWebhook.connector_dispatch_enabled).toBe(false);
+  expect(internalWebhook.raw_target_url_exposed).toBe(false);
+  expect(internalWebhook.raw_package_payload_exposed).toBe(false);
+  expect(internalWebhook.raw_package_bytes_exposed).toBe(false);
+  await expect(internalWebhookPanel).toContainText('source_directory_internal_webhook_dispatched');
+  await expect(page.locator('#source-directory-hybrid-internal-webhook-submit')).toBeDisabled();
+  await expect(page.locator('#source-directory-hybrid-internal-webhook-status')).toBeEnabled();
+
+  const internalWebhookStatusRequestPromise = page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname.startsWith(internalWebhookStatusPathPrefix)
+    && apiRequest.method() === 'GET'
+  ));
+  const internalWebhookStatusResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname.startsWith(internalWebhookStatusPathPrefix)
+    && response.request().method() === 'GET'
+  ));
+  await page.locator('#source-directory-hybrid-internal-webhook-status').click();
+  const internalWebhookStatusRequest = await internalWebhookStatusRequestPromise;
+  const internalWebhookStatus = await expectJson(await internalWebhookStatusResponsePromise);
+  expect(new URL(internalWebhookStatusRequest.url()).pathname).toContain(
+    internalWebhook.source_directory_internal_webhook_dispatch_receipt_id,
+  );
+  expect(internalWebhookStatus.schema_id).toBe('layer3.source_directory_internal_webhook.status.v1');
+  expect(internalWebhookStatus.source_directory_internal_webhook_dispatch_receipt_id).toBe(
+    internalWebhook.source_directory_internal_webhook_dispatch_receipt_id,
+  );
+  expect(internalWebhookStatus.source_directory_internal_webhook_dispatch_state).toBe(
+    'source_directory_internal_webhook_dispatched',
+  );
+  await expect(page.locator('#internal-webhook-dispatch-panel')).toContainText(
+    'source_directory_internal_webhook_dispatched',
+  );
+
   expect(apiRequests.filter((apiRequest) => apiRequest.path === scanPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path.startsWith(statusPathFragment))).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === materialPreviewPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === gateBPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === internalWebhookDispatchPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.startsWith(internalWebhookStatusPathPrefix)
+  ))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(apiRequests, [
     '/source/mixed-corpus/materialize',
     '/handoff/connector',
@@ -10890,9 +10986,11 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   ]);
   const sourceText = await sourcePanel.textContent();
   const deliveryText = await hybridDeliveryPanel.textContent();
+  const internalWebhookText = await internalWebhookPanel.textContent();
   for (const forbidden of ['C:\\', '/Users/', 'raw_payload_path', 'local_file_path', 'file_bytes', 'http://', 'https://']) {
     expect(sourceText).not.toContain(forbidden);
     expect(deliveryText).not.toContain(forbidden);
+    expect(internalWebhookText).not.toContain(forbidden);
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
