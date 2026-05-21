@@ -2572,6 +2572,9 @@ LAYER3_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION = (
 LAYER3_QUERY_SOURCE_SETUP_ACTIVATION_ENTRY_FREEZE = (
     PLANNING_DOCS / "955-query-source-freeze.md"
 )
+LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE = (
+    PLANNING_DOCS / "956-output-review-freeze.md"
+)
 LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE = (
     PLANNING_DOCS
     / "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
@@ -86843,6 +86846,194 @@ def _check_query_source_setup_activation_entry_freeze(errors: list[str]) -> None
                 errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms missing {term}")
 
 
+def _check_output_review_package_handoff_activation_entry_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE,
+        errors,
+    )
+    entry_key = "layer3_output_review_package_handoff_activation_entry_freeze"
+    status = "output_review_package_handoff_activation_entry_freeze_recorded"
+    doc_path = "next_milestone_plans/Layer3_planning_docs/956-output-review-freeze.md"
+    predecessor_doc = "next_milestone_plans/Layer3_planning_docs/955-query-source-freeze.md"
+    checkpoint = "4f0e74d0 Freeze Layer 3 query source activation entry"
+    freeze_branch = "codex/l3-output-journey-freeze"
+    selected_journey = "output_review_package_handoff"
+    classification = "interactive_live"
+    activation_slice = "output_review_package_handoff_interactive_live_contract"
+    rendered_surface = "#mockup-output-review-package-handoff-projection"
+    next_posture = (
+        "current_main_sync_output_review_package_handoff_activation_entry_freeze_"
+        "then_select_next_read_only_or_blocked_journey"
+    )
+    summary = (
+        "Doc 956 freezes output_review_package_handoff as the next single-journey "
+        "activation-entry target from current-main evidence after the query/source setup freeze. "
+        "Existing output review, package lifecycle, handoff/export, delivery/use, local-outbox, "
+        "provider-private, external-local export, and internal webhook controls remain live only "
+        "through the service-defined server-owned route/API authority, the mockup projection "
+        "remains read-only over session summary state, rollback returns to "
+        "full_mockup_activation_enabled false, and full mockup activation plus frontend-only "
+        "durable authority remain blocked."
+    )
+
+    for term in (
+        "956-output-review-freeze.md",
+        "Status: no-runtime single-journey activation-entry freeze for "
+        "`output_review_package_handoff_existing_controls_activation_entry_freeze`.",
+        "Predecessor freeze doc: `955-query-source-freeze.md`.",
+        f"Current-main checkpoint before freeze: `{checkpoint}`.",
+        f"Freeze branch: `{freeze_branch}`.",
+        f"Selected journey: `{selected_journey}`.",
+        f"Selected journey classification: `{classification}`.",
+        f"Selected activation slice: `{activation_slice}`.",
+        f"Rendered projection surface: `{rendered_surface}`.",
+        "Full mockup program activation selected now: `false`.",
+        "Frontend-only durable authority selected now: `false`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed by this freeze alone: `false`.",
+        "Adjacent APS dispatch, signed-reference, provider-public URL, provider-private use, revoke, "
+        "and status routes are not newly admitted by this freeze",
+        "The rendered mockup projection must not call these routes directly.",
+        "Rollback is the current bounded readiness posture:",
+        "package bytes, raw provider tokens, destination credentials, browser storage, and "
+        "frontend-local state do not become durable authority",
+        "Headed and headless Chromium agree for the selected journey before any interactive expansion",
+        "This freeze does not admit:",
+        "Stop before implementation if:",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE)} "
+                f"missing output review/package/handoff activation-entry freeze term: {term}"
+            )
+
+    for route in (
+        "POST /api/v1/layer3/execution/result/review",
+        "POST /api/v1/layer3/package/review/preview",
+        "POST /api/v1/layer3/package/review/commit",
+        "POST /api/v1/layer3/package/review/submit",
+        "POST /api/v1/layer3/handoff/export/prepare",
+        "POST /api/v1/layer3/handoff/export/download/prepare",
+        "POST /api/v1/layer3/handoff/export/download/deliver",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/write",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
+        "POST /api/v1/layer3/handoff/connector/local-outbox/external-local-export/write",
+        "POST /api/v1/layer3/handoff/export/internal-webhook/dispatch",
+    ):
+        if route not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE)} "
+                f"missing route/API authority term: {route}"
+            )
+
+    for control in (
+        "#result-review-submit",
+        "#package-review-preview-inspect",
+        "#package-construction-commit",
+        "#package-review-submit",
+        "#handoff-export-prepare-submit",
+        "#external-export-download-prepare-submit",
+        "#external-export-download-delivery-submit",
+        "#server-owned-local-outbox-write-panel",
+        "#local-outbox-provider-private-handoff-panel",
+        "#external-local-export-panel",
+        "#internal-webhook-dispatch-panel",
+    ):
+        if control not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE)} "
+                f"missing rendered control authority term: {control}"
+            )
+
+    for state_term in (
+        "State.sessionSummary.execution_result_review",
+        "State.sessionSummary.package_construction",
+        "State.sessionSummary.package_review_submit",
+        "State.sessionSummary.handoff_export_prepare",
+        "State.sessionSummary.external_export_download",
+        "State.sessionSummary.server_owned_local_outbox_write",
+        "State.sessionSummary.local_outbox_provider_private_handoff",
+        "State.sessionSummary.external_local_export",
+        "State.sessionSummary.internal_webhook_dispatch",
+    ):
+        if state_term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE)} "
+                f"missing status projection authority term: {state_term}"
+            )
+
+    if not isinstance(manifest, dict):
+        return
+    entry = manifest.get(entry_key)
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        return
+    expected_values = (
+        ("status", status),
+        ("doc", doc_path),
+        ("predecessor_doc", predecessor_doc),
+        ("current_main_checkpoint_before_freeze", checkpoint),
+        ("freeze_branch", freeze_branch),
+        ("selected_journey", selected_journey),
+        ("selected_journey_classification", classification),
+        ("selected_activation_slice", activation_slice),
+        ("rendered_projection_surface", rendered_surface),
+        ("full_mockup_program_activation_selected_now", False),
+        ("frontend_only_durable_authority_selected_now", False),
+        ("runtime_behavior_change_introduced_by_freeze", False),
+        ("rendered_behavior_change_introduced_by_freeze", False),
+        ("backend_behavior_change_introduced_by_freeze", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+        ("executable_test_behavior_change_introduced_by_freeze", False),
+        ("implementation_entry_allowed_by_this_freeze_alone", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for key, value in expected_values:
+        if entry.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+        latest_key = f"latest_{entry_key}_{key}"
+        if manifest.get(latest_key) != value:
+            errors.append(f"{_rel(MANIFEST)} {latest_key} must be {value!r}")
+    if manifest.get(f"latest_{entry_key}_doc") != doc_path:
+        errors.append(f"{_rel(MANIFEST)} latest_{entry_key}_doc mismatch")
+    if manifest.get(f"latest_{entry_key}_status") != status:
+        errors.append(f"{_rel(MANIFEST)} latest_{entry_key}_status mismatch")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+            return
+        if proof_entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_kind mismatch")
+        proof_terms = proof_entry.get("proof_terms")
+        if not isinstance(proof_terms, list):
+            errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms must be a list")
+            return
+        for term in (
+            "956-output-review-freeze.md",
+            "output_review_package_handoff",
+            "interactive_live",
+            "output_review_package_handoff_interactive_live_contract",
+            "#mockup-output-review-package-handoff-projection",
+            "service-defined route/control/status interaction contract only",
+            "full_mockup_program_activation_selected_now false",
+            "frontend_only_durable_authority_selected_now false",
+            "mockup projection remains read-only",
+            "package bytes raw provider tokens destination credentials remain blocked",
+            next_posture,
+        ):
+            if not any(term in str(value) for value in proof_terms):
+                errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms missing {term}")
+
+
 def _check_source_directory_package_supersession_preview_rendered_control_freeze(
     errors: list[str],
 ) -> None:
@@ -90776,6 +90967,7 @@ def main() -> int:
     _check_source_directory_material_preview_gate_b_rendered_control_current_main_sync(errors)
     _check_full_mockup_activation_next_blocker_selection(errors)
     _check_query_source_setup_activation_entry_freeze(errors)
+    _check_output_review_package_handoff_activation_entry_freeze(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(errors)
     _check_source_directory_package_supersession_preview_rendered_control(errors)

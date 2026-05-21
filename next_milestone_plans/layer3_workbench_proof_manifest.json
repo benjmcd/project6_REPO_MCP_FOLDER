@@ -40338,5 +40338,23 @@
   "latest_layer3_query_source_setup_activation_entry_freeze_executable_test_behavior_change_introduced_by_freeze": false,
   "latest_layer3_query_source_setup_activation_entry_freeze_implementation_entry_allowed_by_this_freeze_alone": false,
   "latest_layer3_query_source_setup_activation_entry_freeze_next_posture": "current_main_sync_query_source_setup_activation_entry_freeze_then_select_next_single_journey",
-  "latest_layer3_query_source_setup_activation_entry_freeze_summary": "Doc 955 freezes query_source_setup as the first single-journey activation-entry target from current-main evidence. Existing query/source setup controls remain live only through server-owned route/API authority, the mockup projection remains read-only, rollback returns to full_mockup_activation_enabled false, and full mockup activation plus frontend-only durable authority remain blocked."
+  "latest_layer3_query_source_setup_activation_entry_freeze_summary": "Doc 955 freezes query_source_setup as the first single-journey activation-entry target from current-main evidence. Existing query/source setup controls remain live only through server-owned route/API authority, the mockup projection remains read-only, rollback returns to full_mockup_activation_enabled false, and full mockup activation plus frontend-only durable authority remain blocked.",
+  "layer3_output_review_package_handoff_activation_entry_freeze": {
+    "proof_kind": "layer3_output_review_package_handoff_activation_entry_freeze",
+    "proof_doc": "next_milestone_plans/Layer3_planning_docs/956-output-review-freeze.md",
+    "status": "output_review_package_handoff_activation_entry_freeze_recorded",
+    "proof_terms": [
+      "956-output-review-freeze.md",
+      "output_review_package_handoff",
+      "interactive_live",
+      "output_review_package_handoff_interactive_live_contract",
+      "#mockup-output-review-package-handoff-projection",
+      "service-defined route/control/status interaction contract only",
+      "full_mockup_program_activation_selected_now false",
+      "frontend_only_durable_authority_selected_now false",
+      "mockup projection remains read-only",
+      "package bytes raw provider tokens destination credentials remain blocked",
+      "current_main_sync_output_review_package_handoff_activation_entry_freeze_then_select_next_read_only_or_blocked_journey"
+    ]
+  }
 }
