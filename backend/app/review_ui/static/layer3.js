@@ -7328,6 +7328,7 @@ function renderMockupActivationReadinessPanel() {
                     ${fieldItem('selected first slice', contract?.selected_first_slice, { code: true })}
                     ${fieldItem('selected next slice', contract?.selected_next_slice, { code: true })}
                     ${fieldItem('selected projection slice', contract?.selected_projection_slice, { code: true })}
+                    ${fieldItem('selected projection slices', Array.isArray(contract?.selected_projection_slices) ? contract.selected_projection_slices.join(', ') : null, { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">

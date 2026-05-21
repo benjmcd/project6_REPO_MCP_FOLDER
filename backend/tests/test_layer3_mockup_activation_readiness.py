@@ -3,6 +3,7 @@ from app.services.layer3_mockup_activation_readiness import (
     MOCKUP_FIRST_ADMITTED_SLICE,
     MOCKUP_NEXT_ADMITTED_SLICE,
     MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
+    MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
     mockup_activation_readiness_contract,
 )
 
@@ -13,7 +14,11 @@ def test_mockup_activation_readiness_classifies_first_slice_without_full_activat
     assert contract["schema_id"] == MOCKUP_ACTIVATION_READINESS_SCHEMA_ID
     assert contract["selected_first_slice"] == MOCKUP_FIRST_ADMITTED_SLICE
     assert contract["selected_next_slice"] == MOCKUP_NEXT_ADMITTED_SLICE
-    assert contract["selected_projection_slice"] == MOCKUP_PDF_LOCATION_PROJECTION_SLICE
+    assert contract["selected_projection_slice"] == MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE
+    assert contract["selected_projection_slices"] == [
+        MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
+        MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
+    ]
     assert contract["journey_counts"] == {
         "interactive_live": 2,
         "read_only": 3,
@@ -38,6 +43,22 @@ def test_mockup_activation_readiness_classifies_first_slice_without_full_activat
     assert "a[href]" in pdf_location["projection_contract"]["read_only_controls_absent"]
     assert "browser_owned_authoritative_pdf_location" in pdf_location["projection_contract"]["negative_boundaries"]
     assert "provider_or_object_store_url_exposure" in pdf_location["projection_contract"]["negative_boundaries"]
+    sublayers_ab = journeys["sublayers_3a_3b"]
+    assert sublayers_ab["classification"] == "read_only"
+    assert sublayers_ab["activation_slice"] is None
+    assert sublayers_ab["projection_slice"] == MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE
+    assert sublayers_ab["projection_contract"]["contract_id"] == MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE
+    assert sublayers_ab["projection_contract"]["schema_id"] == "layer3.sublayer_visualization_state.v1"
+    assert (
+        sublayers_ab["projection_contract"]["server_authority_contract"]
+        == "read_only_persisted_layer3_rows_and_gate_state_projection"
+    )
+    assert "State.sessionSummary.sublayer_visualization" in sublayers_ab["projection_contract"]["status_projection"]
+    assert "State.materialPreview" in sublayers_ab["projection_contract"]["status_projection"]
+    assert "#mockup-sublayers-ab-projection" == sublayers_ab["projection_contract"]["rendered_surface"]
+    assert "a[href]" in sublayers_ab["projection_contract"]["read_only_controls_absent"]
+    assert "raw_local_file_path_exposure" in sublayers_ab["projection_contract"]["negative_boundaries"]
+    assert "runtime_request_widening" in sublayers_ab["projection_contract"]["negative_boundaries"]
     output_handoff = journeys["output_review_package_handoff"]
     assert output_handoff["classification"] == "interactive_live"
     assert output_handoff["activation_slice"] == MOCKUP_NEXT_ADMITTED_SLICE

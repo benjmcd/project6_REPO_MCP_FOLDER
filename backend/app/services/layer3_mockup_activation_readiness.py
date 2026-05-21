@@ -8,6 +8,7 @@ MOCKUP_ACTIVATION_READINESS_PHASE = "next_phase_activation_readiness"
 MOCKUP_FIRST_ADMITTED_SLICE = "query_source_setup_interactive_live_classification"
 MOCKUP_NEXT_ADMITTED_SLICE = "output_review_package_handoff_interactive_live_contract"
 MOCKUP_PDF_LOCATION_PROJECTION_SLICE = "pdf_location_read_only_live_projection_contract"
+MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE = "sublayers_3a_3b_read_only_live_projection_contract"
 
 _NO_GO_BOUNDARIES = (
     "frontend_only_durable_authority",
@@ -88,12 +89,43 @@ _JOURNEYS = (
         "label": "Sublayers 3A/3B",
         "classification": "read_only",
         "activation_slice": None,
+        "projection_slice": MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
         "server_authority": "session summary sublayer_visualization",
         "rendered_surface": "#mockup-sublayers-ab-projection",
         "evidence": (
             "server sublayer visualization projection",
+            "material preview, Gate B, and Gate C state render as read-only projection inputs",
             "mockup fixture remains target-state only",
         ),
+        "projection_contract": {
+            "contract_id": MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
+            "schema_id": "layer3.sublayer_visualization_state.v1",
+            "server_authority_contract": "read_only_persisted_layer3_rows_and_gate_state_projection",
+            "status_projection": (
+                "State.sessionSummary.sublayer_visualization",
+                "State.materialPreview",
+                "State.gateB",
+                "State.gateC",
+            ),
+            "rendered_surface": "#mockup-sublayers-ab-projection",
+            "read_only_controls_absent": (
+                "button",
+                "input",
+                "select",
+                "textarea",
+                "a[href]",
+            ),
+            "negative_boundaries": (
+                "raw_local_file_path_exposure",
+                "provider_or_object_store_url_exposure",
+                "provider_private_url_projection",
+                "output_payload_ref_exposure",
+                "diagnostics_ref_exposure",
+                "frontend_only_durable_authority",
+                "runtime_request_widening",
+                "full_mockup_program_activation",
+            ),
+        },
         "next_allowed_action": "select_exact_server_owned_edit_or_drilldown_before_activation",
     },
     {
@@ -205,7 +237,11 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "phase": MOCKUP_ACTIVATION_READINESS_PHASE,
         "selected_first_slice": MOCKUP_FIRST_ADMITTED_SLICE,
         "selected_next_slice": MOCKUP_NEXT_ADMITTED_SLICE,
-        "selected_projection_slice": MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
+        "selected_projection_slice": MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
+        "selected_projection_slices": [
+            MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
+            MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
+        ],
         "classification_mode": "server_owned_next_phase_activation_readiness",
         "journeys": journeys,
         "journey_counts": {
@@ -222,5 +258,5 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "connector_provider_write_enabled": False,
         "broad_source_model_rag_expansion_enabled": False,
         "mutates_runtime_state": False,
-        "next_posture": "prove_pdf_location_read_only_projection_contract_before_selecting_next_projection_journey",
+        "next_posture": "prove_sublayers_3a_3b_read_only_projection_contract_before_selecting_3c_projection_journey",
     }
