@@ -497,12 +497,29 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
         bootstrap_body["mockup_activation_readiness"]["selected_next_slice"]
         == "output_review_package_handoff_interactive_live_contract"
     )
+    assert (
+        bootstrap_body["mockup_activation_readiness"]["selected_projection_slice"]
+        == "pdf_location_read_only_live_projection_contract"
+    )
     assert bootstrap_body["mockup_activation_readiness"]["journey_counts"] == {
         "interactive_live": 2,
         "read_only": 3,
         "intentionally_excluded": 0,
         "blocked": 1,
     }
+    activation_journeys = {
+        row["journey_id"]: row for row in bootstrap_body["mockup_activation_readiness"]["journeys"]
+    }
+    pdf_projection_contract = activation_journeys["pdf_location"]["projection_contract"]
+    assert activation_journeys["pdf_location"]["classification"] == "read_only"
+    assert pdf_projection_contract["contract_id"] == "pdf_location_read_only_live_projection_contract"
+    assert pdf_projection_contract["schema_id"] == "layer3.pdf_location_projection.v1"
+    assert (
+        pdf_projection_contract["server_authority_contract"]
+        == "aps_content_document_chunk_page_refs_and_citation_highlight_spans"
+    )
+    assert "State.sessionSummary.pdf_location_projection" in pdf_projection_contract["status_projection"]
+    assert "browser_owned_authoritative_pdf_location" in pdf_projection_contract["negative_boundaries"]
     assert bootstrap_body["mockup_activation_readiness"]["full_mockup_activation_enabled"] is False
     assert bootstrap_body["mockup_activation_readiness"]["frontend_only_durable_authority_enabled"] is False
     assert readiness_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"
