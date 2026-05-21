@@ -41152,5 +41152,59 @@
   "latest_source_directory_package_replacement_supersession_rendered_proof_base_commit": "2c46c06c62d2b7359c7971b2b5e2c99007783ed2",
   "latest_source_directory_package_replacement_supersession_rendered_proof_next_posture": "publish_and_settle_source_directory_package_replacement_supersession_rendered_proof_pr",
   "latest_source_directory_package_replacement_supersession_rendered_proof_next_after_current_main_sync": "record_bounded_trial_usable_checkpoint_after_source_directory_replacement_supersession_proof",
-  "latest_source_directory_package_replacement_supersession_rendered_proof_summary": "Doc 937 records the branch-local proof that the bounded rendered source-directory path now runs package supersession preview, replacement package-set authority, and package supersession commit after hybrid package-review submit. It bridges persisted hybrid package lifecycle authority server-side, keeps existing route contracts, and does not admit package mutation, provider URLs, connector dispatch, source expansion, frontend-only durable authority, or full mockup activation."
+  "latest_source_directory_package_replacement_supersession_rendered_proof_summary": "Doc 937 records the branch-local proof that the bounded rendered source-directory path now runs package supersession preview, replacement package-set authority, and package supersession commit after hybrid package-review submit. It bridges persisted hybrid package lifecycle authority server-side, keeps existing route contracts, and does not admit package mutation, provider URLs, connector dispatch, source expansion, frontend-only durable authority, or full mockup activation.",
+  "source_directory_package_replacement_supersession_current_main_sync": {
+    "status": "current_main_synced_source_directory_package_replacement_supersession_rendered_path",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/938-source-supersession-current-main-sync.md",
+    "predecessor_implementation_doc": "next_milestone_plans/Layer3_planning_docs/937-source-supersession-proof.md",
+    "merged_pr": "#1562",
+    "source_branch": "codex/l3-source-supersession-proof",
+    "implementation_commit": "5fe9bb6619135f51ca6e8654789a4c238b60a68a",
+    "merge_commit": "b53a62cb5b4ddaf0584fed01bde241c33d372717",
+    "base_authority_before_implementation": "project6-origin/main at 2c46c06c62d2b7359c7971b2b5e2c99007783ed2",
+    "synced_rendered_path": "/review/layer3 source-directory scan/status through package supersession preview, replacement package-set authority, package supersession commit, handoff/export, same-origin delivery/status, and internal webhook dispatch/status",
+    "github_gate_pr_1562": {
+      "backend_layer3_api": "SUCCESS 3m38s",
+      "test": "SUCCESS 4m34s",
+      "comments_count": 0,
+      "reviews_count": 0,
+      "review_threads_total_count": 0,
+      "unresolved_review_threads_total_count": 0,
+      "merge_state": "CLEAN",
+      "mergeable": "MERGEABLE"
+    },
+    "current_main_authority": "The bounded rendered source-directory path now runs through package supersession preview, replacement package-set authority, and package supersession commit after the hybrid middle lifecycle using server-owned persisted hybrid reconciliation/package authority and existing route contracts.",
+    "post_merge_validation": [
+      "GitHub backend-layer3-api SUCCESS",
+      "GitHub test SUCCESS",
+      "post-merge project6-origin/main refreshed to b53a62cb5b4ddaf0584fed01bde241c33d372717",
+      "git diff --stat project6-origin/main HEAD no tree diff on merged implementation lane"
+    ],
+    "runtime_behavior_change_introduced_by_sync_doc": false,
+    "rendered_behavior_change_introduced_by_sync_doc": false,
+    "backend_behavior_change_introduced_by_sync_doc": false,
+    "route_api_dto_model_migration_service_behavior_change_introduced_by_sync_doc": false,
+    "executable_test_behavior_change_introduced_by_sync_doc": false,
+    "production_ui_behavior_change_introduced_by_sync_doc": false,
+    "frontend_durable_authority_enabled_by_sync_doc": false,
+    "full_mockup_program_activation_selected_now": false,
+    "remaining_whole_program_gaps": [
+      "final bounded readiness/runbook audit",
+      "Analysis Environment/mockup projection disposition",
+      "provider-private signed URL runtime",
+      "provider-public URL runtime",
+      "broader source/RAG/model/provider behavior",
+      "auth/security expansion",
+      "observability/performance hardening",
+      "final full mockup readiness audit"
+    ],
+    "next_posture": "run_final_bounded_readiness_and_mockup_activation_blocker_audit_after_source_directory_replacement_supersession_current_main_sync"
+  },
+  "latest_source_directory_package_replacement_supersession_current_main_sync_doc": "next_milestone_plans/Layer3_planning_docs/938-source-supersession-current-main-sync.md",
+  "latest_source_directory_package_replacement_supersession_current_main_sync_status": "current_main_synced_source_directory_package_replacement_supersession_rendered_path",
+  "latest_source_directory_package_replacement_supersession_current_main_sync_source_pr": "#1562",
+  "latest_source_directory_package_replacement_supersession_current_main_sync_source_branch": "codex/l3-source-supersession-proof",
+  "latest_source_directory_package_replacement_supersession_current_main_sync_merge_commit": "b53a62cb5b4ddaf0584fed01bde241c33d372717",
+  "latest_source_directory_package_replacement_supersession_current_main_sync_next_posture": "run_final_bounded_readiness_and_mockup_activation_blocker_audit_after_source_directory_replacement_supersession_current_main_sync",
+  "latest_source_directory_package_replacement_supersession_current_main_sync_summary": "Doc 938 syncs PR #1562 to current main at b53a62cb5b4ddaf0584fed01bde241c33d372717 and records the bounded trial-usable checkpoint for the rendered source-directory path through package replacement/supersession. Frontend-only durable authority and full mockup activation remain blocked."
 }
