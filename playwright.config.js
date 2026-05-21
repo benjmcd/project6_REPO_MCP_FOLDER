@@ -3,7 +3,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 const SERVER_PORT = 8031;
 const PYTHON = process.env.PLAYWRIGHT_PYTHON
-  || (process.platform === 'win32' ? 'py -3.12' : 'python3');
+  || (process.platform === 'win32' ? 'python' : 'python3');
 
 /**
  * Read environment variables from file.

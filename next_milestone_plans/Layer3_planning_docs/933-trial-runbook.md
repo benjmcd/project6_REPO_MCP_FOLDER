@@ -76,7 +76,6 @@ Use a clean worktree at current `project6-origin/main`. Do not run this from the
 4. Run both browser modes for the current trial path:
 
    ```powershell
-   $env:PLAYWRIGHT_PYTHON = 'python'
    npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep "Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path"
    npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep "Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path"
    ```
@@ -87,9 +86,8 @@ Use a clean worktree at current `project6-origin/main`. Do not run this from the
 
 Immediate next pass:
 
-1. Standardize the rendered proof runtime so operators do not need to override `PLAYWRIGHT_PYTHON=python`; the default Python 3.12 selector previously surfaced an existing session-summary `GET /session/{id}` 500.
-2. Run one complete bounded source-directory trial from current main with isolated runtime state and capture the exact proof evidence.
-3. Perform the final mockup readiness audit only after that bounded trial is clean.
+1. Run one complete bounded source-directory trial from current main with isolated runtime state and capture the exact proof evidence.
+2. Perform the final mockup readiness audit only after that bounded trial is clean.
 
 Mid-term passes:
 
@@ -116,9 +114,9 @@ This checkpoint doc introduces no runtime behavior, rendered behavior, backend b
 | Does this authorize provider-private or provider-public URL runtime? | It authorizes only the source-directory provider-private redacted prepare bridge and existing provider-public redacted prepare/use rail. Direct provider-private use, raw provider URLs/tokens, real provider object/network writes, and frontend-only durable authority remain blocked. |
 | Does this authorize generic connector handoff or caller-supplied webhook destinations? | No. The proof avoids `/handoff/connector`, uses server-owned dispatch authority, and checks that raw destination, token, header, provider URL, and package payload authority do not leak from the browser. |
 | Is the middle lifecycle now one uninterrupted manual-click rendered operator flow? | Partially. The focused rendered proof drives the current admitted path through server-authored authority and rendered controls where current main admits them, but the checkpoint remains a bounded trial proof rather than a claim that every middle lifecycle step is a manual-click-only flow. |
-| Is another broad planning pass more valuable than implementation after this checkpoint? | No, unless current-main proof fails. The next useful pass is runtime standardization, complete bounded trial capture, and final mockup readiness audit. |
+| Is another broad planning pass more valuable than implementation after this checkpoint? | No, unless current-main proof fails. The next useful pass is complete bounded trial capture and final mockup readiness audit. |
 | Does this activate the full mockup program? | No. Full activation remains blocked until final readiness audit closure. |
 
 ## Next Posture
 
-Next exact posture: `standardize_post1565_bounded_trial_runtime_then_final_mockup_readiness_audit`.
+Next exact posture: `capture_post1565_bounded_trial_then_final_mockup_readiness_audit`.
