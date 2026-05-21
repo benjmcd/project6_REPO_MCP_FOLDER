@@ -2,6 +2,7 @@ from app.services.layer3_mockup_activation_readiness import (
     MOCKUP_ACTIVATION_READINESS_SCHEMA_ID,
     MOCKUP_FIRST_ADMITTED_SLICE,
     MOCKUP_NEXT_ADMITTED_SLICE,
+    MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
     mockup_activation_readiness_contract,
 )
 
@@ -12,6 +13,7 @@ def test_mockup_activation_readiness_classifies_first_slice_without_full_activat
     assert contract["schema_id"] == MOCKUP_ACTIVATION_READINESS_SCHEMA_ID
     assert contract["selected_first_slice"] == MOCKUP_FIRST_ADMITTED_SLICE
     assert contract["selected_next_slice"] == MOCKUP_NEXT_ADMITTED_SLICE
+    assert contract["selected_projection_slice"] == MOCKUP_PDF_LOCATION_PROJECTION_SLICE
     assert contract["journey_counts"] == {
         "interactive_live": 2,
         "read_only": 3,
@@ -21,6 +23,21 @@ def test_mockup_activation_readiness_classifies_first_slice_without_full_activat
     journeys = {row["journey_id"]: row for row in contract["journeys"]}
     assert journeys["query_source_setup"]["classification"] == "interactive_live"
     assert journeys["query_source_setup"]["activation_slice"] == MOCKUP_FIRST_ADMITTED_SLICE
+    pdf_location = journeys["pdf_location"]
+    assert pdf_location["classification"] == "read_only"
+    assert pdf_location["activation_slice"] is None
+    assert pdf_location["projection_slice"] == MOCKUP_PDF_LOCATION_PROJECTION_SLICE
+    assert pdf_location["projection_contract"]["contract_id"] == MOCKUP_PDF_LOCATION_PROJECTION_SLICE
+    assert pdf_location["projection_contract"]["schema_id"] == "layer3.pdf_location_projection.v1"
+    assert (
+        pdf_location["projection_contract"]["server_authority_contract"]
+        == "aps_content_document_chunk_page_refs_and_citation_highlight_spans"
+    )
+    assert "State.sessionSummary.pdf_location_projection" in pdf_location["projection_contract"]["status_projection"]
+    assert "#mockup-pdf-location-projection" == pdf_location["projection_contract"]["rendered_surface"]
+    assert "a[href]" in pdf_location["projection_contract"]["read_only_controls_absent"]
+    assert "browser_owned_authoritative_pdf_location" in pdf_location["projection_contract"]["negative_boundaries"]
+    assert "provider_or_object_store_url_exposure" in pdf_location["projection_contract"]["negative_boundaries"]
     output_handoff = journeys["output_review_package_handoff"]
     assert output_handoff["classification"] == "interactive_live"
     assert output_handoff["activation_slice"] == MOCKUP_NEXT_ADMITTED_SLICE

@@ -7271,10 +7271,15 @@ function renderMockupActivationJourneyRows(journeys) {
     return journeys.length
         ? journeys.map((journey) => {
             const interaction = journey.interaction_contract || {};
+            const projection = journey.projection_contract || {};
             const routeCount = Array.isArray(interaction.route_authority) ? interaction.route_authority.length : 0;
             const controlCount = Array.isArray(interaction.rendered_controls) ? interaction.rendered_controls.length : 0;
+            const projectionCount = Array.isArray(projection.status_projection) ? projection.status_projection.length : 0;
+            const projectionBoundaryCount = Array.isArray(projection.negative_boundaries) ? projection.negative_boundaries.length : 0;
             const interactionText = interaction.contract_id
                 ? `${interaction.contract_id}: ${mockupCountLabel(routeCount, 'route')} and ${mockupCountLabel(controlCount, 'rendered control')} mapped`
+                : projection.contract_id
+                    ? `${projection.contract_id}: ${projection.schema_id || 'projection schema'} mapped to ${projection.rendered_surface || journey.rendered_surface || 'rendered surface'} with ${mockupCountLabel(projectionCount, 'status projection')} and ${mockupCountLabel(projectionBoundaryCount, 'negative boundary', 'negative boundaries')}`
                 : journey.next_allowed_action || 'no interactive contract selected';
             return `
             <li>
@@ -7322,6 +7327,7 @@ function renderMockupActivationReadinessPanel() {
                     ${fieldItem('schema id', contract?.schema_id, { code: true })}
                     ${fieldItem('selected first slice', contract?.selected_first_slice, { code: true })}
                     ${fieldItem('selected next slice', contract?.selected_next_slice, { code: true })}
+                    ${fieldItem('selected projection slice', contract?.selected_projection_slice, { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">
