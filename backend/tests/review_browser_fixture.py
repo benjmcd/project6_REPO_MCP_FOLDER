@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker
 import app.api.review_nrc_aps as review_api
 from app.db.session import Base
 from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, ConnectorRun, ConnectorRunTarget
+import app.services.layer3_internal_webhook_connector as layer3_internal_webhook_connector
 import app.services.review_nrc_aps_candidate_b_trace as trace_service
 import app.services.layer3_pass_entry as layer3_pass_entry_module
 import app.services.layer3_workbench as layer3_workbench_module
@@ -532,6 +533,7 @@ def capture_review_browser_patch_state() -> dict[str, object]:
         "aps_evidence_bundle_module": sys.modules.get(APS_EVIDENCE_BUNDLE_MODULE, _MISSING_MODULE),
         "layer3_check_aps_handoff_compatibility": layer3_workbench_module.check_aps_handoff_compatibility,
         "layer3_materialize_aps_handoff": layer3_workbench_module.materialize_aps_handoff,
+        "layer3_internal_webhook_transport": layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT,
         "layer3_recommend_analysis": layer3_pass_entry_module.recommend_analysis,
         "layer3_run_analysis": layer3_pass_entry_module.run_analysis,
         "runtime_discover_runtime_bindings": runtime_service.discover_runtime_bindings,
@@ -557,6 +559,7 @@ def restore_review_browser_patches(patch_state: dict[str, object]) -> None:
         sys.modules[APS_EVIDENCE_BUNDLE_MODULE] = saved_aps_bundle_module
     layer3_workbench_module.check_aps_handoff_compatibility = patch_state["layer3_check_aps_handoff_compatibility"]
     layer3_workbench_module.materialize_aps_handoff = patch_state["layer3_materialize_aps_handoff"]
+    layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT = patch_state["layer3_internal_webhook_transport"]
     layer3_pass_entry_module.recommend_analysis = patch_state["layer3_recommend_analysis"]
     layer3_pass_entry_module.run_analysis = patch_state["layer3_run_analysis"]
     runtime_service.discover_runtime_bindings = patch_state["runtime_discover_runtime_bindings"]
