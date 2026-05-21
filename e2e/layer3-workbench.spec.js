@@ -9618,6 +9618,102 @@ test('Layer 3 workbench drives source-directory package supersession preview ren
   expect(pageErrors).toEqual([]);
 });
 
+test('Layer 3 workbench ignores stale source-directory preview responses after authority changes', async ({ page }) => {
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  const authorityPayload = {
+    analysis_question: 'What changed in the server-owned source directory package?',
+    analysis_focus: 'source-directory package supersession preview stale response proof',
+    material_snapshot_id: 'snapshot-source-package-preview-stale-proof',
+    source_ingestion_batch_id: 'batch-source-package-preview-stale-proof',
+    source_ingestion_file_id: 'file-source-package-preview-stale-proof',
+    content_sha256: 'a'.repeat(64),
+    file_identity_hash: 'b'.repeat(64),
+    authority_basis_hash: 'c'.repeat(64),
+    payload_hash: 'd'.repeat(64),
+    index_authority_hash: 'e'.repeat(64),
+    query_text: 'source directory stale preview evidence',
+    qualitative_analysis_hash: 'f'.repeat(64),
+    source_directory_package_review_preview_hash: '1'.repeat(64),
+    construction_basis_hash: '2'.repeat(64),
+    reconciliation_record_id: 'reconciliation-source-package-preview-stale-proof',
+    output_package_ids: [
+      'pkg-source-package-preview-stale-canonical',
+      'pkg-source-package-preview-stale-review',
+      'pkg-source-package-preview-stale-user',
+    ],
+    package_kinds: ['canonical_internal', 'review_facing', 'user_facing'],
+    payload_hashes: ['3'.repeat(64), '4'.repeat(64), '5'.repeat(64)],
+    package_review_submit_record_ref: 'submit-ref-source-package-preview-stale-proof',
+    package_review_state: 'package_review_approved',
+  };
+  const stalePreviewBody = {
+    schema_id: 'layer3.source_directory_qualitative_analysis_package_supersession_preview.v1',
+    mode: 'source_directory_qualitative_analysis_package_supersession_preview_authority',
+    status: 'previewed',
+    next_state: 'source_directory_package_supersession_previewed',
+    source_package_set_hash: '7'.repeat(64),
+    downstream_dependency_hash: '8'.repeat(64),
+    output_package_ids: authorityPayload.output_package_ids,
+    package_kinds: authorityPayload.package_kinds,
+    payload_hashes: authorityPayload.payload_hashes,
+    replacement_package_set_authority_enabled: false,
+    frontend_durable_authority_enabled: false,
+  };
+
+  let releasePreview = () => {};
+  let routeStarted = () => {};
+  const previewRelease = new Promise((resolve) => {
+    releasePreview = resolve;
+  });
+  const previewStarted = new Promise((resolve) => {
+    routeStarted = resolve;
+  });
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview',
+    async (route) => {
+      routeStarted();
+      await previewRelease;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(stalePreviewBody),
+      });
+    },
+  );
+
+  await page.setViewportSize({ width: 1360, height: 980 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#source-directory-package-supersession-preview-panel');
+  const authorityInput = page.locator('#source-directory-package-supersession-preview-authority');
+  const sourceSubmit = page.locator('#source-directory-package-supersession-preview-submit');
+  const replacementSubmit = page.locator('#replacement-package-set-authority-submit');
+  await panel.scrollIntoViewIfNeeded();
+  await authorityInput.fill(JSON.stringify(authorityPayload));
+  await expect(panel).toHaveAttribute('data-preview-state', 'source_directory_package_supersession_preview_ready');
+  await expect(sourceSubmit).toBeEnabled();
+
+  await sourceSubmit.click();
+  await previewStarted;
+  await expect(sourceSubmit).toBeDisabled();
+  await authorityInput.fill('{}');
+  await expect(panel).toHaveAttribute('data-preview-state', 'source_directory_package_supersession_preview_unavailable');
+
+  const staleResponse = page.waitForResponse((response) => (
+    response.url().includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview')
+    && response.status() === 200
+  ));
+  releasePreview();
+  await staleResponse;
+
+  await expect(panel).toHaveAttribute('data-preview-state', 'source_directory_package_supersession_preview_unavailable');
+  await expect(panel).not.toContainText('source_directory_package_supersession_previewed');
+  await expect(panel).not.toContainText('7777777777777777777777777777777777777777777777777777777777777777');
+  await expect(replacementSubmit).toBeDisabled();
+});
+
 test('Layer 3 source-directory hybrid rendered status extension stays server-authoritative', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   const consoleErrors = [];

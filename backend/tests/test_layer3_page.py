@@ -1045,7 +1045,8 @@ def test_layer3_source_directory_package_supersession_preview_control_is_bounded
     assert "payload[field].length !== 3" in payload_slice
     assert "payload.package_review_state !== 'package_review_approved'" in payload_slice
     assert "postJson(\n            SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH" in submit_slice
-    assert "State.sourceDirectoryPackageSupersessionPreview = await postJson" in submit_slice
+    assert "const preview = await postJson" in submit_slice
+    assert "State.sourceDirectoryPackageSupersessionPreview = preview" in submit_slice
     assert "dataset.readOnly = 'true'" in render_slice
     assert "dataset.frontendDurableAuthority = 'false'" in render_slice
     assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_SCHEMA_ID" in render_slice
@@ -1092,6 +1093,10 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     render_start = js_text.find("function renderReplacementPackageSetAuthorityPanel")
     payload_start = js_text.find("function replacementPackageArtifactMaterializationPayload")
     payload_end = js_text.find("function replacementPackageSetAuthorityPayload")
+    clear_start = js_text.find("function clearSourceDirectoryPackageSupersessionPreviewState")
+    clear_end = js_text.find("function safePackagePayloadRefForDisplay")
+    source_submit_start = js_text.find("async function submitSourceDirectoryPackageSupersessionPreview")
+    source_submit_end = js_text.find("async function submitReplacementPackageSetAuthority")
     submit_start = js_text.find("async function submitReplacementPackageSetAuthority")
     submit_end = js_text.find("async function submitPackageSupersessionCommit")
     input_start = js_text.find("elements.sourceDirectoryPackageSupersessionPreviewAuthority.addEventListener")
@@ -1103,6 +1108,10 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     assert render_start != -1
     assert payload_start != -1
     assert payload_end != -1
+    assert clear_start != -1
+    assert clear_end != -1
+    assert source_submit_start != -1
+    assert source_submit_end != -1
     assert submit_start != -1
     assert submit_end != -1
     assert input_start != -1
@@ -1112,9 +1121,17 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     gate_slice = js_text[gate_start:gate_end]
     render_slice = js_text[render_start:payload_start]
     payload_slice = js_text[payload_start:payload_end]
+    clear_slice = js_text[clear_start:clear_end]
+    source_submit_slice = js_text[source_submit_start:source_submit_end]
     submit_slice = js_text[submit_start:submit_end]
     input_slice = js_text[input_start:input_end]
 
+    assert "sourceDirectoryPackageSupersessionPreviewRequestToken: 0" in js_text
+    assert "function nextSourceDirectoryPackageSupersessionPreviewRequestToken" in js_text
+    assert "function isCurrentSourceDirectoryPackageSupersessionPreviewRequest" in js_text
+    assert "nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in clear_slice
+    assert "const requestToken = nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in source_submit_slice
+    assert "if (!isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) return" in source_submit_slice
     assert "sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null" in state_slice
     assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY" in state_slice
     assert "preview?.source_package_set_hash || preview?.package_set_hash || null" in state_slice
@@ -1132,6 +1149,7 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     assert "const materialization = await postJson(\n            '/package/replacement-artifact/materialize'" in submit_slice
     assert "State.replacementPackageArtifactMaterialization = materialization" in submit_slice
     assert "State.replacementPackageSetAuthority = await postJson(\n            '/package/replacement-set/record'" in submit_slice
+    assert "clearSourceDirectoryPackageSupersessionPreviewState()" in input_slice
     assert "clearReplacementPackageSetAuthorityState()" in input_slice
     for forbidden in (
         "localStorage",
