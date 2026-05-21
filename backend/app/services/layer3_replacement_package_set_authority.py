@@ -20,6 +20,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
+    SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
 )
 from app.services.layer3_utils import json_clone, stable_hash, stable_id, utcnow
@@ -685,6 +686,10 @@ def source_directory_package_lifecycle_context(db: Session, payload: dict[str, A
 
     reconciliation_summary = json_clone(reconciliation.summary_json or {})
     commit_summary = reconciliation_summary.get("source_directory_qualitative_package_commit")
+    if not isinstance(commit_summary, dict):
+        commit_summary = reconciliation_summary.get(
+            "source_directory_hybrid_context_qualitative_package_commit"
+        )
     submit_state = reconciliation_summary.get("package_review_submit")
     if not isinstance(commit_summary, dict) or not isinstance(submit_state, dict):
         _source_directory_lifecycle_error(
@@ -709,21 +714,44 @@ def source_directory_package_lifecycle_context(db: Session, payload: dict[str, A
             blocked_fields=["reconciliation_record_id"],
         )
     assert isinstance(authority_basis, dict)
-    material_snapshot_id = _string(authority_basis.get("material_snapshot_id"))
-    qualitative_analysis_hash = _string(authority_basis.get("qualitative_analysis_hash"))
+    source_authority = authority_basis.get("source_authority")
+    if not isinstance(source_authority, dict):
+        source_authority = {}
+    material_snapshot_id = _string(
+        authority_basis.get("material_snapshot_id") or source_authority.get("material_snapshot_id")
+    )
+    qualitative_analysis_hash = _string(
+        authority_basis.get("qualitative_analysis_hash")
+        or source_authority.get("qualitative_analysis_hash")
+    )
     package_review_preview_hash = _string(commit_summary.get("package_review_preview_hash"))
     package_review_submit_record_ref = _string(submit_state.get("submit_record_ref"))
+    package_construction_source_gate = _string(
+        commit_summary.get("package_construction_source_gate")
+        or authority_basis.get("source_gate")
+        or SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE
+    )
     if not all(
         (
             material_snapshot_id,
             qualitative_analysis_hash,
             package_review_preview_hash,
             package_review_submit_record_ref,
+            package_construction_source_gate,
         )
     ):
         _source_directory_lifecycle_error(
             "source_directory_package_lifecycle_incomplete_package_commit_basis",
             "Source-directory package lifecycle authority basis is incomplete.",
+            blocked_fields=["reconciliation_record_id"],
+        )
+    if package_construction_source_gate not in {
+        SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+    }:
+        _source_directory_lifecycle_error(
+            "source_directory_package_lifecycle_package_construction_source_gate_mismatch",
+            "Source-directory package lifecycle authority requires a recognized package-construction source gate.",
             blocked_fields=["reconciliation_record_id"],
         )
 
@@ -747,7 +775,7 @@ def source_directory_package_lifecycle_context(db: Session, payload: dict[str, A
             "package_kinds": source_package_kinds,
             "payload_hashes": source_payload_hashes,
             "payload_refs_redacted": True,
-            "source_gate": SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+            "source_gate": package_construction_source_gate,
         }
     )
     if _string(payload.get("source_package_set_hash")) != source_package_set_hash:
@@ -803,6 +831,7 @@ def source_directory_package_lifecycle_context(db: Session, payload: dict[str, A
         "qualitative_analysis_hash": qualitative_analysis_hash,
         "package_review_preview_hash": package_review_preview_hash,
         "package_review_submit_record_ref": package_review_submit_record_ref,
+        "package_construction_source_gate": package_construction_source_gate,
     }
 
 

@@ -23,6 +23,7 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_CANONICAL_INTERNAL,
     PACKAGE_KIND_REVIEW_FACING,
     PACKAGE_KIND_USER_FACING,
+    SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
     SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
     materialize_source_directory_qualitative_analysis_package_commit,
 )
@@ -1100,6 +1101,14 @@ def source_directory_qualitative_analysis_package_supersession_preview(
             details={"blocked_fields": ["package_review_state"]},
         )
 
+    hybrid_preview = _source_directory_hybrid_package_supersession_preview(
+        db,
+        fields,
+        request_id=request_id,
+    )
+    if hybrid_preview is not None:
+        return hybrid_preview
+
     qualitative_analysis = source_directory_material_context_packet_qualitative_hybrid_analysis(
         db,
         _qualitative_analysis_payload(fields),
@@ -1290,6 +1299,288 @@ def source_directory_qualitative_analysis_package_supersession_preview(
         "source_gate": PACKAGE_SUPERSESSION_PREVIEW_SOURCE_GATE,
         "package_review_submit_source_gate": PACKAGE_REVIEW_SUBMIT_SOURCE_GATE,
         "package_construction_source_gate": SOURCE_DIRECTORY_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE,
+        "next_state": "source_directory_package_supersession_previewed",
+        "next_allowed_actions": [],
+        "negative_invariants": {
+            "package_row_mutation_enabled": False,
+            "package_payload_rewrite_enabled": False,
+            "source_package_row_mutation_enabled": False,
+            "replacement_package_set_authority_enabled": False,
+            "package_supersession_commit_enabled": False,
+            "connector_dispatch_enabled": False,
+            "provider_public_delivery_enabled": False,
+            "network_egress_enabled": False,
+            "frontend_durable_authority_enabled": False,
+        },
+    }
+
+
+def _source_directory_hybrid_package_supersession_preview(
+    db: Session,
+    fields: Mapping[str, Any],
+    *,
+    request_id: str,
+) -> dict[str, Any] | None:
+    reconciliation_record_id = _require_supersession_preview_field(fields, "reconciliation_record_id")
+    reconciliation = (
+        db.query(L3ReconciliationRecord)
+        .filter(L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id)
+        .one_or_none()
+    )
+    if reconciliation is None:
+        return None
+
+    reconciliation_summary = _json_clone(reconciliation.summary_json or {})
+    commit_summary = reconciliation_summary.get("source_directory_hybrid_context_qualitative_package_commit")
+    if not isinstance(commit_summary, dict):
+        return None
+
+    submit_state = reconciliation_summary.get("package_review_submit")
+    if not isinstance(submit_state, dict):
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_requires_package_review_submit",
+            "Package supersession preview requires existing source-directory hybrid package commit and review-submit authority.",
+            http_status=409,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+    if (
+        str(reconciliation_summary.get("source_gate") or "")
+        != SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE
+    ):
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_source_gate_mismatch",
+            "Package supersession preview requires the source-directory hybrid package-construction source gate.",
+            http_status=409,
+            details={"blocked_fields": ["reconciliation_record_id"]},
+        )
+
+    session = db.query(L3Session).filter(L3Session.session_id == reconciliation.session_id).one_or_none()
+    material_snapshot = db.get(
+        L3MaterialSnapshot,
+        _require_supersession_preview_field(fields, "material_snapshot_id"),
+    )
+    if session is None or material_snapshot is None:
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_requires_existing_hybrid_authority",
+            "Package supersession preview requires existing source-directory hybrid session and material authority.",
+            http_status=404,
+            details={"blocked_fields": ["material_snapshot_id", "reconciliation_record_id"]},
+        )
+    if material_snapshot.session_id != session.session_id:
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_material_session_mismatch",
+            "Package supersession preview material snapshot does not match the package lifecycle session.",
+            http_status=409,
+            details={"blocked_fields": ["material_snapshot_id", "reconciliation_record_id"]},
+        )
+
+    authority_basis = commit_summary.get("authority_basis")
+    if not isinstance(authority_basis, dict):
+        authority_basis = {}
+    source_authority = authority_basis.get("source_authority")
+    if not isinstance(source_authority, dict):
+        source_authority = {}
+
+    expected_analysis_hash = str(
+        authority_basis.get("qualitative_analysis_hash")
+        or source_authority.get("qualitative_analysis_hash")
+        or ""
+    )
+    expected_preview_hash = str(
+        commit_summary.get("package_review_preview_hash")
+        or authority_basis.get("package_review_preview_hash")
+        or ""
+    )
+    if str(fields.get("qualitative_analysis_hash") or "") != expected_analysis_hash:
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_qualitative_analysis_hash_mismatch",
+            "Package supersession preview must reference the current server-owned hybrid qualitative-analysis hash.",
+            http_status=409,
+            details={"blocked_fields": ["qualitative_analysis_hash"]},
+        )
+    if str(fields.get("source_directory_package_review_preview_hash") or "") != expected_preview_hash:
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_preview_hash_mismatch",
+            "Package supersession preview must reference the current server-owned hybrid package-review preview hash.",
+            http_status=409,
+            details={"blocked_fields": ["source_directory_package_review_preview_hash"]},
+        )
+
+    if str(submit_state.get("submit_record_ref") or "") != str(fields.get("package_review_submit_record_ref") or ""):
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_submit_record_ref_mismatch",
+            "Supplied package_review_submit_record_ref does not match existing package-review submit authority.",
+            http_status=409,
+            details={"blocked_fields": ["package_review_submit_record_ref"]},
+        )
+    if str(submit_state.get("package_review_state") or "") != "package_review_approved":
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_submit_not_approved",
+            "Package supersession preview requires an approved source-directory package-review submit record.",
+            http_status=409,
+            details={"blocked_fields": ["package_review_state"]},
+        )
+
+    packages = _source_directory_review_packages_for_supersession_preview(
+        db,
+        session_id=session.session_id,
+        reconciliation_record_id=reconciliation_record_id,
+    )
+    expected_construction_basis_hash = str(
+        commit_summary.get("construction_basis_hash")
+        or next(
+            (
+                str((package.summary_json or {}).get("construction_basis_hash") or "")
+                for package in packages
+                if str((package.summary_json or {}).get("construction_basis_hash") or "")
+            ),
+            "",
+        )
+        or commit_summary.get("authority_basis_hash")
+        or ""
+    )
+    if expected_construction_basis_hash != str(fields.get("construction_basis_hash") or ""):
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_construction_basis_hash_mismatch",
+            "Package supersession preview must reference the existing source-directory hybrid construction basis.",
+            http_status=409,
+            details={"blocked_fields": ["construction_basis_hash"]},
+        )
+    if str(submit_state.get("package_review_preview_hash") or "") != expected_preview_hash:
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_submit_preview_hash_mismatch",
+            "Existing package-review submit authority does not match the current hybrid package-review preview hash.",
+            http_status=409,
+            details={"blocked_fields": ["source_directory_package_review_preview_hash"]},
+        )
+
+    field_expectations = {
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_ingestion_batch_id": source_authority.get("source_ingestion_batch_id"),
+        "source_ingestion_file_id": source_authority.get("source_ingestion_file_id"),
+        "content_sha256": source_authority.get("content_sha256"),
+        "file_identity_hash": source_authority.get("file_identity_hash"),
+        "authority_basis_hash": source_authority.get("authority_basis_hash"),
+        "payload_hash": source_authority.get("payload_hash"),
+        "index_authority_hash": source_authority.get("index_authority_hash"),
+    }
+    source_mismatches = [
+        field
+        for field, expected in field_expectations.items()
+        if str(expected or "") and str(fields.get(field) or "") != str(expected)
+    ]
+    if source_mismatches:
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_source_authority_mismatch",
+            "Supplied source-directory fields do not match the stored hybrid package lifecycle authority.",
+            http_status=409,
+            details={"blocked_fields": source_mismatches},
+        )
+
+    supplied_package_ids = _preview_string_list(fields.get("output_package_ids"), field="output_package_ids")
+    supplied_package_kinds = _preview_string_list(fields.get("package_kinds"), field="package_kinds")
+    supplied_payload_hashes = _preview_string_list(fields.get("payload_hashes"), field="payload_hashes")
+    expected_package_ids = [package.output_package_id for package in packages]
+    expected_package_kinds = [package.package_kind for package in packages]
+    expected_payload_hashes = [package.payload_hash for package in packages]
+    mismatches = [
+        field
+        for field, supplied, expected in (
+            ("output_package_ids", supplied_package_ids, expected_package_ids),
+            ("package_kinds", supplied_package_kinds, expected_package_kinds),
+            ("payload_hashes", supplied_payload_hashes, expected_payload_hashes),
+        )
+        if supplied != expected
+    ]
+    if mismatches:
+        raise SourceDirectoryPackageSupersessionPreviewError(
+            "source_directory_package_supersession_preview_package_set_mismatch",
+            "Supplied package set fields do not match existing source-directory hybrid packages.",
+            http_status=409,
+            details={"blocked_fields": mismatches},
+        )
+
+    package_construction_source_gate = str(
+        commit_summary.get("package_construction_source_gate")
+        or authority_basis.get("source_gate")
+        or SOURCE_DIRECTORY_HYBRID_QUALITATIVE_PACKAGE_CONSTRUCTION_FREEZE
+    )
+    source_package_set = {
+        "schema_id": "layer3.source_directory_package_supersession_source_package_set.v1",
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_hashes": expected_payload_hashes,
+        "payload_refs_redacted": True,
+        "source_gate": package_construction_source_gate,
+    }
+    source_package_set_hash = _stable_hash(source_package_set)
+    downstream_dependencies = _source_directory_package_downstream_dependencies(reconciliation_summary)
+    downstream_dependency_hash = _stable_hash(
+        {
+            "schema_id": "layer3.source_directory_package_supersession_downstream_dependencies.v1",
+            "reconciliation_record_id": reconciliation_record_id,
+            "dependencies": downstream_dependencies,
+        }
+    )
+    preview_basis = {
+        "schema_id": "layer3.source_directory_package_supersession_preview_basis.v1",
+        "source_package_set_hash": source_package_set_hash,
+        "downstream_dependency_hash": downstream_dependency_hash,
+        "qualitative_analysis_hash": expected_analysis_hash,
+        "package_review_preview_hash": expected_preview_hash,
+        "package_review_submit_record_ref": submit_state["submit_record_ref"],
+        "source_gate": PACKAGE_SUPERSESSION_PREVIEW_SOURCE_GATE,
+    }
+    package_supersession_preview_hash = _stable_hash(preview_basis)
+    return {
+        "schema_id": PACKAGE_SUPERSESSION_PREVIEW_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "mode": PACKAGE_SUPERSESSION_PREVIEW_MODE,
+        "status": "previewed",
+        "operator_decision": PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION,
+        "session_id": session.session_id,
+        "selection_manifest_id": session.selection_manifest_id,
+        "material_snapshot_id": material_snapshot.material_snapshot_id,
+        "source_ingestion_batch_id": str(source_authority.get("source_ingestion_batch_id") or ""),
+        "source_ingestion_file_id": str(source_authority.get("source_ingestion_file_id") or ""),
+        "content_sha256": str(source_authority.get("content_sha256") or ""),
+        "file_identity_hash": str(source_authority.get("file_identity_hash") or ""),
+        "authority_basis_hash": str(source_authority.get("authority_basis_hash") or ""),
+        "payload_hash": str(source_authority.get("payload_hash") or ""),
+        "index_authority_hash": str(source_authority.get("index_authority_hash") or ""),
+        "context_packet_hash": str(source_authority.get("hybrid_context_packet_hash") or ""),
+        "qualitative_analysis_hash": expected_analysis_hash,
+        "source_directory_package_review_preview_hash": expected_preview_hash,
+        "construction_basis_hash": fields["construction_basis_hash"],
+        "reconciliation_record_id": reconciliation_record_id,
+        "package_review_submit_record_ref": submit_state["submit_record_ref"],
+        "package_review_state": submit_state["package_review_state"],
+        "source_package_set_hash": source_package_set_hash,
+        "package_supersession_preview_hash": package_supersession_preview_hash,
+        "downstream_dependency_hash": downstream_dependency_hash,
+        "downstream_dependencies": downstream_dependencies,
+        "output_package_ids": expected_package_ids,
+        "package_kinds": expected_package_kinds,
+        "payload_hashes": expected_payload_hashes,
+        "payload_refs_redacted": True,
+        "replacement_package_set_authority_enabled": False,
+        "package_supersession_commit_enabled": False,
+        "package_row_mutation_enabled": False,
+        "package_payload_rewrite_enabled": False,
+        "source_package_row_mutation_enabled": False,
+        "connector_dispatch_enabled": False,
+        "provider_public_delivery_enabled": False,
+        "network_egress_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "source_gate": PACKAGE_SUPERSESSION_PREVIEW_SOURCE_GATE,
+        "package_review_submit_source_gate": submit_state["source_gate"],
+        "package_construction_source_gate": package_construction_source_gate,
         "next_state": "source_directory_package_supersession_previewed",
         "next_allowed_actions": [],
         "negative_invariants": {
