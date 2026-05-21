@@ -41257,11 +41257,11 @@
   "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_next_posture": "bounded_objective_complete_select_new_phase_only_with_product_authority",
   "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_summary": "Doc 944 records the final bounded readiness audit: the current-main-selected Layer 3 source-directory operator path is complete through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, review, handoff/export, same-origin delivery/status, admitted redacted delivery/use, internal webhook dispatch/status, and projection visibility. Critical mockup journeys are read-only projected or explicitly blocked; full mockup activation and frontend-only durable authority remain blocked as optional new-phase work.",
   "layer3_next_phase_activation_readiness_package": {
-    "status": "branch_local_activation_readiness_package_implemented",
+    "status": "current_main_activation_readiness_package_merged",
     "doc": "next_milestone_plans/Layer3_planning_docs/945-activation-readiness-package.md",
     "predecessor_final_audit_doc": "next_milestone_plans/Layer3_planning_docs/944-final-readiness-audit.md",
     "implementation_branch": "codex/l3-next-phase-activation-readiness",
-    "base_current_main_authority": "project6-origin/main at 89924065 Merge pull request #1569 from benjmcd/codex/l3-final-readiness-audit-post-trial",
+    "base_current_main_authority": "project6-origin/main at 31d0c528 Merge pull request #1570 from benjmcd/codex/l3-next-phase-activation-readiness",
     "schema_id": "layer3.mockup_activation_readiness.v1",
     "selected_first_slice": "query_source_setup_interactive_live_classification",
     "journey_classification": {
@@ -41269,7 +41269,7 @@
       "pdf_location": "read_only",
       "sublayers_3a_3b": "read_only",
       "sublayer_3c_execution_lanes": "read_only",
-      "output_review_package_handoff": "read_only",
+      "output_review_package_handoff": "interactive_live",
       "full_mockup_program": "blocked"
     },
     "admitted_behavior": [
@@ -41294,11 +41294,61 @@
     "raw_provider_exposure_enabled": false,
     "connector_provider_write_enabled": false,
     "broad_source_model_rag_expansion_enabled": false,
-    "next_posture": "select_one_read_only_journey_for_exact_server_owned_interaction_contract"
+    "next_posture": "prove_output_review_package_handoff_existing_controls_before_selecting_next_projection_journey",
+    "selected_next_slice": "output_review_package_handoff_interactive_live_contract",
+    "summary": "Doc 946 promotes output review/package/handoff to an interactive-live activation-readiness journey by mapping existing result-review, package lifecycle, handoff/export, same-origin or admitted redacted delivery/use, local outbox, provider-private, external-local export, and internal webhook route/control/status authority. It adds no new runtime authority and keeps full mockup activation, frontend-only durable authority, raw package/provider exposure, unapproved connector/provider writes, source expansion, and broad model/RAG expansion blocked."
   },
   "latest_layer3_next_phase_activation_readiness_package_doc": "next_milestone_plans/Layer3_planning_docs/945-activation-readiness-package.md",
-  "latest_layer3_next_phase_activation_readiness_package_status": "branch_local_activation_readiness_package_implemented",
+  "latest_layer3_next_phase_activation_readiness_package_status": "current_main_activation_readiness_package_merged",
   "latest_layer3_next_phase_activation_readiness_package_selected_first_slice": "query_source_setup_interactive_live_classification",
-  "latest_layer3_next_phase_activation_readiness_package_next_posture": "select_one_read_only_journey_for_exact_server_owned_interaction_contract",
-  "latest_layer3_next_phase_activation_readiness_package_summary": "Doc 945 implements a server-owned Layer 3 mockup activation-readiness contract and rendered dashboard. Query/source setup is classified interactive-live through existing server controls; PDF-location, Sublayers 3A/3B, Sublayer 3C execution lanes, and output review/package/handoff remain read-only; full mockup activation remains blocked."
+  "latest_layer3_next_phase_activation_readiness_package_next_posture": "prove_output_review_package_handoff_existing_controls_before_selecting_next_projection_journey",
+  "latest_layer3_next_phase_activation_readiness_package_summary": "Doc 946 promotes output review/package/handoff to an interactive-live activation-readiness journey by mapping existing result-review, package lifecycle, handoff/export, same-origin or admitted redacted delivery/use, local outbox, provider-private, external-local export, and internal webhook route/control/status authority. It adds no new runtime authority and keeps full mockup activation, frontend-only durable authority, raw package/provider exposure, unapproved connector/provider writes, source expansion, and broad model/RAG expansion blocked.",
+  "layer3_output_review_package_handoff_activation_contract": {
+    "status": "branch_local_output_review_package_handoff_activation_contract_implemented",
+    "doc": "next_milestone_plans/Layer3_planning_docs/946-output-review-package-handoff-activation-contract.md",
+    "predecessor_doc": "next_milestone_plans/Layer3_planning_docs/945-activation-readiness-package.md",
+    "implementation_branch": "codex/l3-next-operator-path-proof",
+    "base_current_main_authority": "project6-origin/main at 31d0c528 Merge pull request #1570 from benjmcd/codex/l3-next-phase-activation-readiness",
+    "schema_id": "layer3.mockup_activation_readiness.v1",
+    "selected_next_slice": "output_review_package_handoff_interactive_live_contract",
+    "journey_classification": {
+      "query_source_setup": "interactive_live",
+      "pdf_location": "read_only",
+      "sublayers_3a_3b": "read_only",
+      "sublayer_3c_execution_lanes": "read_only",
+      "output_review_package_handoff": "interactive_live",
+      "full_mockup_program": "blocked"
+    },
+    "admitted_behavior": [
+      "server-owned activation-readiness interaction contract for existing output review/package/handoff controls",
+      "rendered workbench activation-readiness dashboard exposes selected_next_slice from bootstrap authority",
+      "no new runtime route, model, migration, connector/provider write, or frontend durable authority"
+    ],
+    "blocked_boundaries": [
+      "raw_package_payload_or_byte_exposure",
+      "raw_provider_token_exposure",
+      "unapproved_connector_destination_write",
+      "provider_object_or_network_write",
+      "frontend_only_durable_authority",
+      "source_family_expansion",
+      "broad_model_provider_rag_expansion",
+      "full_mockup_program_activation"
+    ],
+    "validation": [
+      "python -m py_compile ./backend/app/services/layer3_mockup_activation_readiness.py PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js PASS",
+      "python -m pytest ./backend/tests/test_layer3_mockup_activation_readiness.py ./backend/tests/test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS 2 passed",
+      "headless Chromium activation-readiness dashboard proof PASS 1 passed after output_review_package_handoff promotion",
+      "headed Chromium activation-readiness dashboard proof PASS 1 passed after output_review_package_handoff promotion",
+      "python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts ./backend/tests/test_layer3_bootstrap_contract.py::test_layer3_bootstrap_contract_is_shared ./backend/tests/test_layer3_mockup_activation_readiness.py -q PASS 3 passed"
+    ],
+    "next_posture": "prove_output_review_package_handoff_existing_controls_before_selecting_next_projection_journey",
+    "summary": "Doc 946 promotes output review/package/handoff to an interactive-live activation-readiness journey by mapping existing result-review, package lifecycle, handoff/export, same-origin or admitted redacted delivery/use, local outbox, provider-private, external-local export, and internal webhook route/control/status authority. It adds no new runtime authority and keeps full mockup activation, frontend-only durable authority, raw package/provider exposure, unapproved connector/provider writes, source expansion, and broad model/RAG expansion blocked."
+  },
+  "latest_layer3_output_review_package_handoff_activation_contract_doc": "next_milestone_plans/Layer3_planning_docs/946-output-review-package-handoff-activation-contract.md",
+  "latest_layer3_output_review_package_handoff_activation_contract_status": "branch_local_output_review_package_handoff_activation_contract_implemented",
+  "latest_layer3_output_review_package_handoff_activation_contract_selected_next_slice": "output_review_package_handoff_interactive_live_contract",
+  "latest_layer3_output_review_package_handoff_activation_contract_next_posture": "prove_output_review_package_handoff_existing_controls_before_selecting_next_projection_journey",
+  "latest_layer3_output_review_package_handoff_activation_contract_summary": "Doc 946 promotes output review/package/handoff to an interactive-live activation-readiness journey by mapping existing result-review, package lifecycle, handoff/export, same-origin or admitted redacted delivery/use, local outbox, provider-private, external-local export, and internal webhook route/control/status authority. It adds no new runtime authority and keeps full mockup activation, frontend-only durable authority, raw package/provider exposure, unapproved connector/provider writes, source expansion, and broad model/RAG expansion blocked.",
+  "latest_layer3_next_phase_activation_readiness_package_selected_next_slice": "output_review_package_handoff_interactive_live_contract"
 }
