@@ -988,3 +988,25 @@ Current Layer 3 source-directory replacement package-set authority rendered cont
 - preserve GitHub checks `backend-layer3-api` and `test` as `SUCCESS` for PR `#1540` with comments `0`, reviews `0`, latestReviews `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN`
 - treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, package supersession commit, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `select_next_blocker_retirement_lane_after_source_directory_replacement_package_set_authority_rendered_control_current_main_sync`
+
+Current Layer 3 source-directory package supersession commit rendered control freeze to preserve when present:
+- `926_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE.md` records a no-runtime/no-rendered freeze for the next package lifecycle target after Doc `925`
+- classify it as `source_directory_package_supersession_commit_rendered_control_frozen`
+- preserve predecessor current-main sync doc `925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`
+- preserve current-main checkpoint before freeze `7c17530bd78f454567b519cb4b53ca75ce97aa19`
+- preserve freeze branch `codex/l3-package-commit-freeze`
+- preserve selected target `source_directory_package_supersession_commit_rendered_control`
+- preserve selected target classification `live_server_authoritative_action`
+- preserve selected activation target class `single_existing_rendered_control_extension`
+- preserve selected rendered node `/review/layer3 #package-supersession-commit-panel`
+- preserve selected submit control `/review/layer3 #package-supersession-commit-submit`
+- preserve selected source authority `State.sourceDirectoryPackageSupersessionPreview`
+- preserve selected fallback authority `State.packageSupersessionPreview`
+- preserve selected replacement authority state `State.replacementPackageSetAuthority`
+- preserve selected commit route `POST /api/v1/layer3/package/supersession/commit`
+- preserve owner service `backend/app/services/layer3_package_supersession_commit.py`
+- preserve server runtime mode `package_supersession_commit_entry`
+- preserve selected implementation action after freeze sync `implement_source_directory_package_supersession_commit_rendered_control_after_freeze_sync`
+- preserve stop action `source_directory_package_supersession_commit_route_state_gap_freeze`
+- treat this freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior, production UI behavior, implementation-entry admission by itself, package replacement activation, source package row mutation, source package payload write/rewrite, replacement artifact manifests, downstream invalidation, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_package_supersession_commit_rendered_control_freeze_then_implement_rendered_control`
