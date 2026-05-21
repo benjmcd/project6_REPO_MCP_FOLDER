@@ -2589,6 +2589,10 @@ LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZ
     PLANNING_DOCS
     / "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -87702,6 +87706,222 @@ def _check_source_directory_replacement_package_set_authority_rendered_control_f
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_replacement_package_set_authority_rendered_control_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    entry_key = "source_directory_replacement_package_set_authority_rendered_control_freeze_current_main_sync"
+    status = "current_main_synced_source_directory_replacement_package_set_authority_rendered_control_freeze"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md"
+    )
+    source_pr = "#1537"
+    source_branch = "codex/l3-next-target-freeze"
+    freeze_commit = "0efe0ffca49d9a162dcfe3d1192051bcf0e5ebbb"
+    merge_commit = "cf6da7c843980bdce3b4505d6abab2276916a18a"
+    sync_branch = "codex/l3-next-target-freeze-sync"
+    target = "source_directory_replacement_package_set_authority_rendered_control"
+    source_state = "State.sourceDirectoryPackageSupersessionPreview"
+    materialization_route = "POST /api/v1/layer3/package/replacement-artifact/materialize"
+    replacement_route = "POST /api/v1/layer3/package/replacement-set/record"
+    next_posture = "implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync"
+    summary = (
+        "Doc 923 syncs PR #1537 merge commit cf6da7c843980bdce3b4505d6abab2276916a18a "
+        "to current main as the current-main authority for the source_directory_replacement_package_set_authority_rendered_control "
+        "freeze. This sync introduces no runtime, rendered, backend, route/API/DTO/model/migration/service, "
+        "executable test, production UI, full mockup activation, browser-storage authority, or frontend-only durable "
+        "authority; the next posture is implementing only the selected rendered control after route/state contract proof."
+    )
+
+    for term in (
+        "923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Status: current-main sync for `source_directory_replacement_package_set_authority_rendered_control_freeze`.",
+        "Predecessor freeze doc: `922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md`.",
+        f"Merged PR: `{source_pr}`.",
+        f"Source branch: `{source_branch}`.",
+        f"Freeze commit: `{freeze_commit}`.",
+        f"Merge commit: `{merge_commit}`.",
+        f"Sync branch: `{sync_branch}`.",
+        f"Base authority: `project6-origin/main` at `{merge_commit}`.",
+        f"Synced target: `{target}`.",
+        f"Synced source state: `{source_state}`.",
+        materialization_route,
+        replacement_route,
+        "`backend-layer3-api`: `SUCCESS`",
+        "`test`: `SUCCESS`",
+        "reviewThreads totalCount: `0`",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Backend behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Executable test behavior introduced by this sync: `false`.",
+        "Production UI behavior introduced by this sync: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed for full mockup activation by this sync alone: `false`.",
+        "Implementation-entry allowed for selected target after this sync: `true`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory replacement package-set authority current-main sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Replacement Package-Set Authority Rendered Control Freeze Current-Main Sync",
+            "923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            source_pr,
+            merge_commit,
+            target,
+            source_state,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory replacement package-set authority rendered control freeze current-main sync to preserve when present",
+            "923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            freeze_commit,
+            merge_commit,
+            target,
+            source_state,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            source_pr,
+            freeze_commit,
+            merge_commit,
+            target,
+            source_state,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"synced_source_state": "{source_state}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"synced_source_state": "{source_state}"',
+            '"runtime_behavior_change_introduced_by_sync": false',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory replacement package-set authority current-main sync term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("predecessor_freeze_doc", predecessor_doc),
+                ("source_pr", source_pr),
+                ("source_branch", source_branch),
+                ("freeze_commit", freeze_commit),
+                ("merge_commit", merge_commit),
+                ("sync_branch", sync_branch),
+                ("base_authority", f"project6-origin/main at {merge_commit}"),
+                ("synced_target", target),
+                ("synced_source_state", source_state),
+                ("synced_materialization_route", materialization_route),
+                ("synced_replacement_authority_route", replacement_route),
+                ("github_review_surfaces_empty_before_merge", True),
+                ("runtime_behavior_change_introduced_by_sync", False),
+                ("rendered_behavior_change_introduced_by_sync", False),
+                ("backend_behavior_change_introduced_by_sync", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+                ("executable_test_behavior_change_introduced_by_sync", False),
+                ("production_ui_behavior_change_introduced_by_sync", False),
+                ("full_mockup_program_activation_selected_now", False),
+                ("implementation_entry_allowed_for_full_mockup_activation_by_sync_alone", False),
+                ("implementation_entry_allowed_for_selected_target_after_sync", True),
+                ("next_posture", next_posture),
+                ("summary", summary),
+            ):
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+        for key, value in {
+            f"latest_{entry_key}_status": status,
+            f"latest_{entry_key}_doc": doc_path,
+            f"latest_{entry_key}_source_pr": source_pr,
+            f"latest_{entry_key}_freeze_commit": freeze_commit,
+            f"latest_{entry_key}_merge_commit": merge_commit,
+            f"latest_{entry_key}_synced_target": target,
+            f"latest_{entry_key}_synced_source_state": source_state,
+            f"latest_{entry_key}_synced_materialization_route": materialization_route,
+            f"latest_{entry_key}_synced_replacement_authority_route": replacement_route,
+            f"latest_{entry_key}_runtime_behavior_change_introduced_by_sync": False,
+            f"latest_{entry_key}_rendered_behavior_change_introduced_by_sync": False,
+            f"latest_{entry_key}_backend_behavior_change_introduced_by_sync": False,
+            f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_sync": False,
+            f"latest_{entry_key}_executable_test_behavior_change_introduced_by_sync": False,
+            f"latest_{entry_key}_production_ui_behavior_change_introduced_by_sync": False,
+            f"latest_{entry_key}_full_mockup_program_activation_selected_now": False,
+            f"latest_{entry_key}_implementation_entry_allowed_for_full_mockup_activation_by_sync_alone": False,
+            f"latest_{entry_key}_implementation_entry_allowed_for_selected_target_after_sync": True,
+            f"latest_{entry_key}_next_posture": next_posture,
+            f"latest_{entry_key}_summary": summary,
+        }.items():
+            if manifest.get(key) != value:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("proof_kind", entry_key),
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("source_pr", source_pr),
+                ("freeze_commit", freeze_commit),
+                ("merge_commit", merge_commit),
+                ("synced_target", target),
+                ("synced_source_state", source_state),
+                ("synced_materialization_route", materialization_route),
+                ("synced_replacement_authority_route", replacement_route),
+                ("runtime_behavior_change_introduced_by_sync", False),
+                ("rendered_behavior_change_introduced_by_sync", False),
+                ("backend_behavior_change_introduced_by_sync", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+                ("executable_test_behavior_change_introduced_by_sync", False),
+                ("production_ui_behavior_change_introduced_by_sync", False),
+                ("server_authoritative_full_mockup_activation_introduced_by_sync", False),
+                ("frontend_durable_authority_enabled", False),
+                ("full_mockup_program_activation_selected", False),
+                ("next_posture", next_posture),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -88504,6 +88724,7 @@ def main() -> int:
     _check_source_directory_package_supersession_preview_rendered_control(errors)
     _check_source_directory_package_supersession_preview_rendered_control_current_main_sync(errors)
     _check_source_directory_replacement_package_set_authority_rendered_control_freeze(errors)
+    _check_source_directory_replacement_package_set_authority_rendered_control_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
