@@ -10483,6 +10483,9 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const sourceSupersessionCommitPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit';
   const deliveryStatusPath = `${analysisPath}/handoff/export/download/deliver/status`;
   const deliveryPath = `${analysisPath}/handoff/export/download/deliver`;
+  const sourceProviderPrivatePreparePath = `${analysisPath}/handoff/export/download/provider-private-signed-url/prepare`;
+  const providerPublicPreparePath = '/api/v1/layer3/handoff/export/download/provider-public-url/prepare';
+  const providerPublicUsePath = '/api/v1/layer3/handoff/export/download/provider-public-url/use';
   const internalWebhookDispatchPath = `${analysisPath}/handoff/export/internal-webhook/dispatch`;
   const internalWebhookStatusPathPrefix = `${analysisPath}/handoff/export/internal-webhook/status/`;
   const forbiddenPayloadKeys = [
@@ -10572,6 +10575,30 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'target_class',
     'target_identity',
   ].sort();
+  const sourceProviderPrivatePayloadKeys = [
+    ...deliveryPayloadKeys,
+    'decision_notes',
+    'recipient_scope',
+    'requested_ttl_seconds',
+  ].sort();
+  const providerPublicPreparePayloadKeys = [
+    'client_request_id',
+    'decision_notes',
+    'delivery_mode',
+    'operator_decision',
+    'provider_private_signed_url_receipt_id',
+    'recipient_scope',
+    'requested_ttl_seconds',
+  ];
+  const providerPublicUsePayloadKeys = [
+    'client_request_id',
+    'delivery_use_mode',
+    'expected_authority_hash',
+    'expected_source_artifact_hash',
+    'expected_source_artifact_size_bytes',
+    'operator_decision',
+    'provider_public_url_receipt_id',
+  ];
 
   await page.setViewportSize({ width: 1360, height: 980 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
@@ -11145,6 +11172,117 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     { timeout: 8000 },
   );
 
+  await page.locator('#external-export-download-band').scrollIntoViewIfNeeded();
+  const providerPrivatePanel = page.locator('#provider-private-signed-url-panel');
+  await providerPrivatePanel.scrollIntoViewIfNeeded();
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_ui_ready');
+  await expect(providerPrivatePanel).toContainText(sourceProviderPrivatePreparePath.replace('/api/v1/layer3', ''));
+  await expect(page.locator('#provider-private-signed-url-prepare')).toBeEnabled();
+  const sourceProviderPrivateRequestPromise = waitForPostRequest(sourceProviderPrivatePreparePath);
+  const sourceProviderPrivateResponsePromise = waitForPostResponse(sourceProviderPrivatePreparePath);
+  await page.locator('#provider-private-signed-url-prepare').click();
+  const sourceProviderPrivatePayload = (await sourceProviderPrivateRequestPromise).postDataJSON();
+  const sourceProviderPrivate = await expectJson(await sourceProviderPrivateResponsePromise);
+  expectOnlyPayloadKeys(sourceProviderPrivatePayload, sourceProviderPrivatePayloadKeys);
+  expect(withoutClientRequestId(sourceProviderPrivatePayload)).toEqual({
+    ...withoutClientRequestId(hybridStatusPayload),
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'prepare_source_directory_hybrid_provider_private_signed_url',
+    recipient_scope: 'external_downstream_recipient_private_artifact_delivery',
+    requested_ttl_seconds: 300,
+    decision_notes: 'Rendered source-directory hybrid provider-private bridge; provider-private use remains closed.',
+  });
+  expectNoForbiddenPayloadKeys(sourceProviderPrivatePayload);
+  expect(sourceProviderPrivate.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.prepare.v1',
+  );
+  expect(sourceProviderPrivate.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(sourceProviderPrivate.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  expect(sourceProviderPrivate.output_package_id).toBe(selectedPackage.output_package_id);
+  expect(sourceProviderPrivate.source_artifact_hash).toBe(selectedPackage.payload_hash);
+  expect(sourceProviderPrivate.raw_provider_private_signed_url_token_exposed).toBe(false);
+  expect(sourceProviderPrivate.provider_network_enabled).toBe(false);
+  expect(sourceProviderPrivate.provider_object_write_enabled).toBe(false);
+  expect(sourceProviderPrivate.connector_dispatch_enabled).toBe(false);
+  expect(sourceProviderPrivate.package_mutation_enabled).toBe(false);
+  expect(sourceProviderPrivate.source_expansion_enabled).toBe(false);
+  expect(sourceProviderPrivate.frontend_durable_authority_enabled).toBe(false);
+  expect(sourceProviderPrivate).not.toHaveProperty('provider_private_signed_url_token');
+  expect(sourceProviderPrivate).not.toHaveProperty('raw_provider_private_signed_url_token');
+  expect(sourceProviderPrivate.audit_receipt || {}).not.toHaveProperty('provider_private_signed_url_token');
+  expect(sourceProviderPrivate.audit_receipt || {}).not.toHaveProperty('raw_provider_private_signed_url_token');
+  await expect(providerPrivatePanel).toContainText(sourceProviderPrivate.provider_signed_url_receipt_id);
+  await expect(providerPrivatePanel).toContainText('provider-private-signed-url:redacted');
+  await expect(page.locator('#provider-private-signed-url-prepare')).toBeDisabled();
+
+  const providerPublicPanel = page.locator('#provider-public-url-panel');
+  await providerPublicPanel.scrollIntoViewIfNeeded();
+  await expect(providerPublicPanel).toContainText('provider_public_url_ui_ready');
+  await expect(page.locator('#provider-public-url-prepare')).toBeEnabled();
+  await expect(page.locator('#provider-public-url-use')).toBeDisabled();
+  const providerPublicPrepareRequestPromise = waitForPostRequest(providerPublicPreparePath);
+  const providerPublicPrepareResponsePromise = waitForPostResponse(providerPublicPreparePath);
+  await page.locator('#provider-public-url-prepare').click();
+  const providerPublicPreparePayload = (await providerPublicPrepareRequestPromise).postDataJSON();
+  const providerPublicPrepare = await expectJson(await providerPublicPrepareResponsePromise);
+  expectOnlyPayloadKeys(providerPublicPreparePayload, providerPublicPreparePayloadKeys);
+  expect(providerPublicPreparePayload.provider_private_signed_url_receipt_id).toBe(
+    sourceProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expect(providerPublicPreparePayload.delivery_mode).toBe('provider_public_url');
+  expect(providerPublicPreparePayload.operator_decision).toBe('prepare_provider_public_url');
+  expect(providerPublicPreparePayload.requested_ttl_seconds).toBe(300);
+  expectNoForbiddenPayloadKeys(providerPublicPreparePayload);
+  expect(providerPublicPrepare.schema_id).toBe('layer3.provider_public_url.prepare.v1');
+  expect(providerPublicPrepare.provider_private_signed_url_receipt_id).toBe(
+    sourceProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expect(providerPublicPrepare.provider_public_url_state).toBe('provider_public_url_prepared');
+  expect(providerPublicPrepare.provider_public_url_redacted).toBe('provider-public-url:redacted');
+  expect(providerPublicPrepare.raw_public_url_exposed).toBe(false);
+  expect(providerPublicPrepare.public_url_enabled).toBe(false);
+  expect(providerPublicPrepare.source_artifact_hash).toBe(sourceProviderPrivate.source_artifact_hash);
+  expect(providerPublicPrepare.source_artifact_size_bytes).toBe(sourceProviderPrivate.source_artifact_size_bytes);
+  expect(JSON.stringify(providerPublicPrepare)).not.toContain('provider-public.invalid');
+  await expect(providerPublicPanel).toContainText(providerPublicPrepare.provider_public_url_receipt_id);
+  await expect(providerPublicPanel).toContainText('provider-public-url:redacted');
+  await expect(page.locator('#provider-public-url-use')).toBeEnabled();
+
+  const providerPublicUseRequestPromise = waitForPostRequest(providerPublicUsePath);
+  const providerPublicUseResponsePromise = waitForPostResponse(providerPublicUsePath);
+  await page.locator('#provider-public-url-use').click();
+  const providerPublicUsePayload = (await providerPublicUseRequestPromise).postDataJSON();
+  const providerPublicUse = await expectJson(await providerPublicUseResponsePromise);
+  expectOnlyPayloadKeys(providerPublicUsePayload, providerPublicUsePayloadKeys);
+  expect(providerPublicUsePayload.provider_public_url_receipt_id).toBe(
+    providerPublicPrepare.provider_public_url_receipt_id,
+  );
+  expect(providerPublicUsePayload.delivery_use_mode).toBe('fake_provider_redacted_use_decision');
+  expect(providerPublicUsePayload.operator_decision).toBe('use_provider_public_url_redacted_fake_provider');
+  expect(providerPublicUsePayload.expected_authority_hash).toBe(
+    providerPublicPrepare.audit_receipt.authority_hash,
+  );
+  expect(providerPublicUsePayload.expected_source_artifact_hash).toBe(providerPublicPrepare.source_artifact_hash);
+  expect(providerPublicUsePayload.expected_source_artifact_size_bytes).toBe(
+    providerPublicPrepare.source_artifact_size_bytes,
+  );
+  expectNoForbiddenPayloadKeys(providerPublicUsePayload);
+  expect(providerPublicUse.schema_id).toBe('layer3.provider_public_url.delivery_use.v1');
+  expect(providerPublicUse.delivery_use_decision).toBe('allowed');
+  expect(providerPublicUse.provider_public_url_redacted).toBe('provider-public-url:redacted');
+  expect(providerPublicUse.raw_public_url_exposed).toBe(false);
+  expect(providerPublicUse.public_url_enabled).toBe(false);
+  expect(providerPublicUse.provider_network_enabled).toBe(false);
+  expect(providerPublicUse.provider_object_write_enabled).toBe(false);
+  expect(providerPublicUse.byte_streaming_enabled).toBe(false);
+  expect(providerPublicUse.durable_use_row_created).toBe(false);
+  expect(providerPublicUse.connector_dispatch_enabled).toBe(false);
+  expect(providerPublicUse.package_mutation_enabled).toBe(false);
+  expect(providerPublicUse.source_expansion_enabled).toBe(false);
+  expect(providerPublicUse.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(providerPublicUse)).not.toContain('provider-public.invalid');
+  await expect(providerPublicPanel).toContainText('provider_public_url_use_allowed');
+
   const internalWebhookPanel = page.locator('#source-directory-hybrid-internal-webhook-panel');
   await internalWebhookPanel.scrollIntoViewIfNeeded();
   await expect(internalWebhookPanel).toHaveAttribute(
@@ -11231,6 +11369,12 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceSupersessionCommitPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivatePreparePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicPreparePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicUsePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path === '/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare'
+  ))).toHaveLength(0);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === internalWebhookDispatchPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => (
     apiRequest.path.startsWith(internalWebhookStatusPathPrefix)
@@ -11238,16 +11382,18 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expectNoRequestsToLayer3Paths(apiRequests, [
     '/source/mixed-corpus/materialize',
     '/handoff/connector',
-    '/provider-private-signed-url',
-    '/provider-public-url',
     '/package/mutation',
   ]);
   const sourceText = await sourcePanel.textContent();
   const deliveryText = await hybridDeliveryPanel.textContent();
+  const providerPrivateText = await providerPrivatePanel.textContent();
+  const providerPublicText = await providerPublicPanel.textContent();
   const internalWebhookText = await internalWebhookPanel.textContent();
   for (const forbidden of ['C:\\', '/Users/', 'raw_payload_path', 'local_file_path', 'file_bytes', 'http://', 'https://']) {
     expect(sourceText).not.toContain(forbidden);
     expect(deliveryText).not.toContain(forbidden);
+    expect(providerPrivateText).not.toContain(forbidden);
+    expect(providerPublicText).not.toContain(forbidden);
     expect(internalWebhookText).not.toContain(forbidden);
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
