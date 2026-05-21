@@ -19,6 +19,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         unavailable_gate_labels=layer3_workbench.DOWNSTREAM_UNAVAILABLE,
         state_action_contract=workbench_body["state_action_contract"],
         authority_matrix_contract=workbench_body["authority_matrix_contract"],
+        mockup_activation_readiness=workbench_body["mockup_activation_readiness"],
         authority_rail=workbench_body["authority_rail"],
     )
     direct_body["request_id"] = workbench_body["request_id"]
