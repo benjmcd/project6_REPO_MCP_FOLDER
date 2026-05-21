@@ -184,6 +184,7 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     )
     assert 'id="source-directory-hybrid-middle-lifecycle-panel"' in response.text
     assert 'id="source-directory-hybrid-middle-lifecycle-authority"' in response.text
+    assert 'id="source-directory-hybrid-authority-prepare"' in response.text
     assert 'id="source-directory-hybrid-middle-lifecycle-submit"' in response.text
     assert 'id="source-directory-hybrid-external-export-download-delivery-form"' in response.text
     assert (
@@ -1496,6 +1497,7 @@ def test_layer3_source_directory_hybrid_middle_lifecycle_rendered_control_is_bou
     assert 'id="source-directory-hybrid-middle-lifecycle-form"' in response.text
     assert 'id="source-directory-hybrid-middle-lifecycle-panel"' in response.text
     assert 'id="source-directory-hybrid-middle-lifecycle-authority"' in response.text
+    assert 'id="source-directory-hybrid-authority-prepare"' in response.text
     assert 'id="source-directory-hybrid-middle-lifecycle-submit"' in response.text
     assert (
         'data-rendered-mode="rendered_source_directory_hybrid_middle_lifecycle_control"'
@@ -1520,6 +1522,7 @@ def test_layer3_source_directory_hybrid_middle_lifecycle_rendered_control_is_bou
     render_slice = js.text[render_start:render_end]
     submit_slice = js.text[submit_start:next_submit_start]
 
+    assert "SOURCE_DIRECTORY_HYBRID_AUTHORITY_PREPARE_PATH" in render_slice
     assert "SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH" in render_slice
     assert "SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH" in render_slice
     assert "SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH" in render_slice
@@ -1532,6 +1535,7 @@ def test_layer3_source_directory_hybrid_middle_lifecycle_rendered_control_is_bou
     assert "SOURCE_DIRECTORY_HYBRID_PACKAGE_REVIEW_SUBMIT_PATH" in submit_slice
     assert "SOURCE_DIRECTORY_HYBRID_HANDOFF_EXPORT_PREPARE_PATH" in submit_slice
     assert "SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH" in submit_slice
+    assert "postJson(SOURCE_DIRECTORY_HYBRID_AUTHORITY_PREPARE_PATH" in js.text
     assert submit_slice.count("postJson(") >= 8
     middle_slice = authority_slice + render_slice + submit_slice
     assert "source_directory_hybrid_middle_lifecycle_prepared" in middle_slice

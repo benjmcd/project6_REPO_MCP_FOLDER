@@ -35,6 +35,7 @@ from app.services import (
     layer3_source_directory_material_admission,
     layer3_source_directory_context_packet,
     layer3_source_directory_hybrid_analysis,
+    layer3_source_directory_hybrid_authority,
     layer3_source_directory_hybrid_context,
     layer3_source_directory_internal_webhook,
     layer3_source_directory_qualitative_analysis,
@@ -2524,6 +2525,20 @@ class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
     actor: str | None = None
 
 
+class Layer3SourceDirectoryHybridAuthorityPrepareRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    session_id: str = Field(min_length=1)
+    material_snapshot_id: str | None = Field(default=None, min_length=1)
+    analysis_question: str | None = Field(default=None, min_length=1)
+    analysis_focus: str | None = Field(default=None, min_length=1)
+    query_text: str | None = Field(default=None, min_length=1)
+    top_k: int | None = Field(default=None, ge=1, le=20)
+    limit: int | None = Field(default=None, ge=1, le=50)
+    offset: int | None = Field(default=None, ge=0)
+
+
 class Layer3SourceDirectoryVectorRetrievalRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2810,6 +2825,21 @@ class Layer3SourceDirectoryMaterialPreviewResponse(Layer3BaseResponse):
     downstream_eligibility: dict[str, bool]
     next_allowed_actions: list[str]
     negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryHybridAuthorityPrepareResponse(Layer3BaseResponse):
+    mode: str
+    session_id: str
+    material_snapshot_id: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    index_authority_hash: str
+    embedding_index_authority_hash: str
+    authority_prepare_hash: str
+    authority_payload: dict[str, Any]
+    redaction_guards: dict[str, bool]
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
 
 
 class Layer3SourceDirectoryVectorRetrievalResponse(Layer3BaseResponse):
@@ -8286,6 +8316,28 @@ def post_source_directory_material_preview(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_source_directory_material_admission.SourceDirectoryMaterialAdmissionError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+    response_model=Layer3SourceDirectoryHybridAuthorityPrepareResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_hybrid_authority_prepare(
+    payload: Layer3SourceDirectoryHybridAuthorityPrepareRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_source_directory_hybrid_authority.source_directory_hybrid_authority_prepare(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    except (
+        layer3_source_directory_hybrid_authority.SourceDirectoryHybridAuthorityError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_vector_index.SourceDirectoryVectorIndexError,
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

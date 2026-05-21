@@ -45,6 +45,7 @@ const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET = 'source_director
 const SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_RENDERED_MODE = 'rendered_source_directory_hybrid_middle_lifecycle_control';
 const SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_USE_CASE = 'operator_prepares_source_directory_hybrid_context_packet_package_and_handoff_from_rendered_control';
 const SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_RESPONSE_AUTHORITY = 'State.sourceDirectoryHybridMiddleLifecycle';
+const SOURCE_DIRECTORY_HYBRID_AUTHORITY_PREPARE_PATH = '/source/ingestion/server-configured-directory/hybrid-authority/prepare';
 const SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH = '/source/ingestion/server-configured-directory/vector-retrieval';
 const SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet';
 const SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis';
@@ -369,6 +370,10 @@ const State = {
     sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus: null,
     sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError: null,
     sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending: false,
+    sourceDirectoryHybridAuthorityPrepare: null,
+    sourceDirectoryHybridAuthorityPrepareError: null,
+    sourceDirectoryHybridAuthorityPreparePending: false,
+    sourceDirectoryHybridAuthoritySourceSessionId: null,
     sourceDirectoryHybridMiddleLifecycle: null,
     sourceDirectoryHybridMiddleLifecycleError: null,
     sourceDirectoryHybridMiddleLifecyclePending: false,
@@ -498,6 +503,7 @@ const elements = {
     sourceDirectoryHybridMiddleLifecycleForm: document.getElementById('source-directory-hybrid-middle-lifecycle-form'),
     sourceDirectoryHybridMiddleLifecyclePanel: document.getElementById('source-directory-hybrid-middle-lifecycle-panel'),
     sourceDirectoryHybridMiddleLifecycleAuthority: document.getElementById('source-directory-hybrid-middle-lifecycle-authority'),
+    sourceDirectoryHybridAuthorityPrepare: document.getElementById('source-directory-hybrid-authority-prepare'),
     sourceDirectoryHybridMiddleLifecycleSubmit: document.getElementById('source-directory-hybrid-middle-lifecycle-submit'),
     sourceDirectoryHybridExternalExportDownloadDeliveryForm: document.getElementById('source-directory-hybrid-external-export-download-delivery-form'),
     sourceDirectoryHybridRenderedStatusExtension: document.getElementById('source-directory-hybrid-rendered-status-extension'),
@@ -9668,6 +9674,7 @@ function setGateControls() {
     elements.apsHandoffDispatchSubmit.disabled = !apsHandoffControlsEnabled || !canSubmitApsHandoffDispatch();
     elements.externalExportDownloadPrepareSubmit.disabled = !externalExportDownloadControlsEnabled || !canSubmitExternalExportDownloadPrepare();
     elements.externalExportDownloadDeliverySubmit.disabled = !externalExportDownloadDeliveryControlsEnabled || !canSubmitExternalExportDownloadDelivery();
+    elements.sourceDirectoryHybridAuthorityPrepare.disabled = !canPrepareSourceDirectoryHybridAuthority();
     elements.sourceDirectoryHybridMiddleLifecycleSubmit.disabled = !canSubmitSourceDirectoryHybridMiddleLifecycle();
     elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus.disabled = !canInspectSourceDirectoryHybridExternalExportDownloadDelivery();
     elements.sourceDirectoryHybridExternalExportDownloadDeliverySubmit.disabled = !canSubmitSourceDirectoryHybridExternalExportDownloadDelivery();
@@ -10761,6 +10768,63 @@ function sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull() {
     }
 }
 
+function currentSourceDirectoryHybridSessionId() {
+    const candidates = State.materialPreview?.material_candidates || [];
+    const candidate = candidates[0] || State.materialPreview?.material_candidate || {};
+    const isSourceDirectoryMaterial = candidate.source_class === 'server_configured_directory_file'
+        || Boolean(State.materialPreview?.source_ingestion_file_id);
+    const sessionId = isSourceDirectoryMaterial ? currentSessionId() : null;
+    return sessionId && sessionId === State.sourceDirectoryHybridAuthoritySourceSessionId ? sessionId : null;
+}
+
+function clearSourceDirectoryHybridAuthorityState({ clearAuthorityText = true, sourceSessionId = null } = {}) {
+    State.sourceDirectoryHybridAuthorityPrepare = null;
+    State.sourceDirectoryHybridAuthorityPrepareError = null;
+    State.sourceDirectoryHybridAuthoritySourceSessionId = sourceSessionId;
+    State.sourceDirectoryHybridMiddleLifecycle = null;
+    State.sourceDirectoryHybridMiddleLifecycleError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+    State.sourceDirectoryHybridInternalWebhookDispatch = null;
+    State.sourceDirectoryHybridInternalWebhookDispatchError = null;
+    State.sourceDirectoryHybridInternalWebhookStatus = null;
+    State.sourceDirectoryHybridInternalWebhookStatusError = null;
+    if (clearAuthorityText) {
+        elements.sourceDirectoryHybridMiddleLifecycleAuthority.value = '';
+    }
+    elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = '';
+    elements.sourceDirectoryHybridInternalWebhookAuthority.value = '';
+}
+
+function sourceDirectoryHybridAuthorityPreparePayload() {
+    const sessionId = currentSourceDirectoryHybridSessionId();
+    if (!sessionId) {
+        throw new Error('A source-directory Gate B session is required before hybrid authority can be prepared.');
+    }
+    return {
+        client_request_id: requestId('source-directory-hybrid-authority-prepare'),
+        session_id: sessionId,
+    };
+}
+
+function sourceDirectoryHybridAuthorityPreparePayloadOrNull() {
+    try {
+        return sourceDirectoryHybridAuthorityPreparePayload();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function canPrepareSourceDirectoryHybridAuthority() {
+    return Boolean(
+        sourceDirectoryHybridAuthorityPreparePayloadOrNull()
+        && !State.sourceDirectoryHybridAuthorityPreparePending
+        && !State.sourceDirectoryHybridMiddleLifecyclePending
+    );
+}
+
 function sourceDirectoryHybridMiddleLifecyclePayload(fields, packet, clientRequestLabel) {
     const base = sourceDirectoryHybridMiddleLifecycleBasePayload(packet);
     const payload = { client_request_id: requestId(clientRequestLabel) };
@@ -10813,6 +10877,7 @@ function sourceDirectoryHybridMiddleLifecycleDeliveryAuthority(
 function canSubmitSourceDirectoryHybridMiddleLifecycle() {
     return Boolean(
         sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull()
+        && !State.sourceDirectoryHybridAuthorityPreparePending
         && !State.sourceDirectoryHybridMiddleLifecyclePending
         && !State.sourceDirectoryHybridMiddleLifecycle
     );
@@ -11022,8 +11087,14 @@ function canInspectSourceDirectoryHybridInternalWebhookStatus() {
 }
 
 function sourceDirectoryHybridMiddleLifecyclePanelState() {
+    if (State.sourceDirectoryHybridAuthorityPreparePending) {
+        return { state: 'authority_preparing', label: 'source_directory_hybrid_authority_preparing', pill: 'preview', message: 'Preparing server-derived source-directory hybrid authority.' };
+    }
     if (State.sourceDirectoryHybridMiddleLifecyclePending) {
         return { state: 'preparing', label: 'source_directory_hybrid_middle_lifecycle_preparing', pill: 'preview', message: 'Preparing the source-directory hybrid retrieval, analysis, package, review, and handoff path.' };
+    }
+    if (State.sourceDirectoryHybridAuthorityPrepareError) {
+        return { state: 'authority_blocked', label: State.sourceDirectoryHybridAuthorityPrepareError.error_code || 'source_directory_hybrid_authority_blocked', pill: 'blocked', message: 'Server authority generation is blocked or unavailable for the current source-directory session.' };
     }
     if (State.sourceDirectoryHybridMiddleLifecycleError) {
         return { state: 'blocked', label: State.sourceDirectoryHybridMiddleLifecycleError.error_code || 'source_directory_hybrid_middle_lifecycle_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the source-directory hybrid middle lifecycle.' };
@@ -11040,6 +11111,7 @@ function sourceDirectoryHybridMiddleLifecyclePanelState() {
 function renderSourceDirectoryHybridMiddleLifecyclePanel() {
     if (!elements.sourceDirectoryHybridMiddleLifecyclePanel) return;
     const payload = sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull() || {};
+    const authorityPrepare = State.sourceDirectoryHybridAuthorityPrepare || {};
     const lifecycle = State.sourceDirectoryHybridMiddleLifecycle || {};
     const analysis = lifecycle.analysis || {};
     const commit = lifecycle.packageCommit || {};
@@ -11077,6 +11149,7 @@ function renderSourceDirectoryHybridMiddleLifecyclePanel() {
             <section class="result-review-card">
                 <strong>Route Sequence</strong>
                 <ul>
+                    ${fieldItem('authority prepare', SOURCE_DIRECTORY_HYBRID_AUTHORITY_PREPARE_PATH, { code: true })}
                     ${fieldItem('retrieval', SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH, { code: true })}
                     ${fieldItem('context packet', SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH, { code: true })}
                     ${fieldItem('analysis', SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH, { code: true })}
@@ -11090,6 +11163,7 @@ function renderSourceDirectoryHybridMiddleLifecyclePanel() {
                     ${fieldItem('material snapshot', payload.material_snapshot_id, { code: true })}
                     ${fieldItem('source batch', payload.source_ingestion_batch_id, { code: true })}
                     ${fieldItem('source file', payload.source_ingestion_file_id, { code: true })}
+                    ${fieldItem('authority prepare hash', authorityPrepare.authority_prepare_hash, { code: true })}
                     ${fieldItem('query present', Boolean(payload.query_text))}
                     ${fieldItem('analysis focus present', Boolean(payload.analysis_focus))}
                 </ul>
@@ -11109,6 +11183,7 @@ function renderSourceDirectoryHybridMiddleLifecyclePanel() {
                 <strong>Blocked Runtime</strong>
                 <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
             </section>
+            ${renderErrorCard(State.sourceDirectoryHybridAuthorityPrepareError)}
             ${renderErrorCard(State.sourceDirectoryHybridMiddleLifecycleError)}
         </div>
     `;
@@ -12053,6 +12128,48 @@ async function submitExternalExportDownloadDelivery(event) {
         State.externalExportDownloadDeliveryPending = false;
         State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending = false;
         setBusy(elements.externalExportDownloadDeliverySubmit, false, 'Deliver External Bundle');
+        renderAll();
+    }
+}
+
+async function prepareSourceDirectoryHybridAuthority(event) {
+    event.preventDefault();
+    if (!canPrepareSourceDirectoryHybridAuthority()) return;
+    const payload = sourceDirectoryHybridAuthorityPreparePayload();
+    State.sourceDirectoryHybridAuthorityPreparePending = true;
+    clearSourceDirectoryHybridAuthorityState({ sourceSessionId: payload.session_id });
+    renderAll();
+    setBusy(elements.sourceDirectoryHybridAuthorityPrepare, true, 'Prepare Hybrid Packet');
+    try {
+        const authority = await postJson(SOURCE_DIRECTORY_HYBRID_AUTHORITY_PREPARE_PATH, payload);
+        State.sourceDirectoryHybridAuthorityPrepare = authority;
+        State.sourceDirectoryHybridAuthorityPrepareError = null;
+        elements.sourceDirectoryHybridMiddleLifecycleAuthority.value = JSON.stringify(
+            authority.authority_payload || authority,
+            null,
+            2,
+        );
+        addEvent('Source-directory hybrid authority prepared from server material snapshot.');
+        renderAll();
+    } catch (error) {
+        State.sourceDirectoryHybridAuthorityPrepare = null;
+        const errorPayload = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'source_directory_hybrid_authority_prepare_request_failed',
+            message: error.message,
+        };
+        State.sourceDirectoryHybridAuthorityPrepareError = errorPayload.error
+            ? {
+                ...errorPayload,
+                error_code: errorPayload.error.code,
+                message: errorPayload.error.message,
+            }
+            : errorPayload;
+        addEvent(`Source-directory hybrid authority blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.sourceDirectoryHybridAuthorityPreparePending = false;
+        setBusy(elements.sourceDirectoryHybridAuthorityPrepare, false, 'Prepare Hybrid Packet');
         renderAll();
     }
 }
@@ -13052,20 +13169,13 @@ elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExport
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);
 elements.externalExportDownloadDeliveryForm.addEventListener('submit', submitExternalExportDownloadDelivery);
+elements.sourceDirectoryHybridAuthorityPrepare.addEventListener('click', prepareSourceDirectoryHybridAuthority);
 elements.sourceDirectoryHybridMiddleLifecycleForm.addEventListener('submit', submitSourceDirectoryHybridMiddleLifecycle);
 elements.sourceDirectoryHybridMiddleLifecycleAuthority.addEventListener('input', () => {
-    State.sourceDirectoryHybridMiddleLifecycle = null;
-    State.sourceDirectoryHybridMiddleLifecycleError = null;
-    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = null;
-    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
-    State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
-    State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
-    State.sourceDirectoryHybridInternalWebhookDispatch = null;
-    State.sourceDirectoryHybridInternalWebhookDispatchError = null;
-    State.sourceDirectoryHybridInternalWebhookStatus = null;
-    State.sourceDirectoryHybridInternalWebhookStatusError = null;
-    elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = '';
-    elements.sourceDirectoryHybridInternalWebhookAuthority.value = '';
+    clearSourceDirectoryHybridAuthorityState({
+        clearAuthorityText: false,
+        sourceSessionId: State.sourceDirectoryHybridAuthoritySourceSessionId,
+    });
     renderAll();
 });
 elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus.addEventListener('click', inspectSourceDirectoryHybridExternalExportDownloadDelivery);
@@ -13729,6 +13839,7 @@ init();
         state.latestError = null;
         state.latestPreview = null;
         state.gateBClientRequestId = null;
+        clearSourceDirectoryHybridAuthorityState();
         setDirectoryControls();
         setDirectoryMessage('Requesting bounded source-directory material preview...', 'busy');
         try {
@@ -13778,6 +13889,7 @@ init();
             State.planPreview = null;
             State.planApproval = null;
             State.planRevision = null;
+            clearSourceDirectoryHybridAuthorityState({ sourceSessionId: State.gateB.session_id });
             clearResultReviewState();
             persistSessionRecoveryAnchor('source_directory_gate_b_commit');
             state.committedPreviewId = preview.material_preview_id;
@@ -13806,6 +13918,7 @@ init();
         state.latestError = null;
         state.latestPreview = null;
         state.gateBClientRequestId = null;
+        clearSourceDirectoryHybridAuthorityState();
         setDirectoryControls();
         setDirectoryMessage('Scanning server-configured source directory...', 'busy');
         try {

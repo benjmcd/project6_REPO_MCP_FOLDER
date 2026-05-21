@@ -219,6 +219,19 @@ def _admitted_material(
     )
 
 
+def _session_id_for_snapshot(client: TestClient, material_snapshot_id: str) -> str:
+    db = client.layer3_session_factory()
+    try:
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.material_snapshot_id == material_snapshot_id)
+            .one()
+        )
+        return snapshot.session_id
+    finally:
+        db.close()
+
+
 def _assert_no_downstream_side_effects(db) -> None:
     assert db.query(L3PassRun).count() == 0
     assert db.query(AnalysisRun).count() == 0
@@ -257,6 +270,119 @@ def _assert_disabled_authority_flags(body: dict) -> None:
             for item in value:
                 if isinstance(item, dict):
                     _assert_disabled_authority_flags(item)
+
+
+def test_source_directory_hybrid_authority_prepare_route_derives_index_authority_from_gate_b_session(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir, snapshot_info, index_authority_hash, embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    session_id = _session_id_for_snapshot(client, snapshot_info["material_snapshot_id"])
+
+    response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+        json={
+            "client_request_id": "source-directory-hybrid-authority-prepare",
+            "session_id": session_id,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.source_directory_hybrid_authority_prepare.v1"
+    assert body["status"] == "available"
+    assert body["mode"] == "source_directory_hybrid_authority_generation_operator_bridge"
+    assert body["session_id"] == session_id
+    assert body["material_snapshot_id"] == snapshot_info["material_snapshot_id"]
+    assert body["source_ingestion_batch_id"] == snapshot_info["source_ingestion_batch_id"]
+    assert body["source_ingestion_file_id"] == snapshot_info["source_ingestion_file_id"]
+    assert body["index_authority_hash"] == index_authority_hash
+    assert body["embedding_index_authority_hash"] == embedding_index_authority_hash
+    assert body["authority_prepare_hash"]
+    authority_payload = body["authority_payload"]
+    assert authority_payload == {
+        **snapshot_info,
+        "index_authority_hash": index_authority_hash,
+        "embedding_index_authority_hash": embedding_index_authority_hash,
+        "query_text": "BETA alpha alpha",
+        "analysis_question": "What does the alpha beta evidence support?",
+        "analysis_focus": "rendered source-directory scan to hybrid handoff delivery proof",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+    assert body["redaction_guards"]["absolute_path_exposed"] is False
+    assert body["redaction_guards"]["frontend_durable_authority_enabled"] is False
+    assert body["negative_invariants"]["source_index_rows_written"] is False
+    assert body["negative_invariants"]["retrieval_rows_written"] is False
+    assert body["negative_invariants"]["package_rows_written"] is False
+    assert "submit_source_directory_hybrid_middle_lifecycle_from_server_authority" in body["next_allowed_actions"]
+    assert str(source_dir) not in response.text
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_downstream_side_effects(db)
+    finally:
+        db.close()
+
+
+def test_source_directory_hybrid_authority_prepare_fails_closed_for_missing_forbidden_and_stale_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    missing = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+        json={
+            "client_request_id": "source-directory-hybrid-authority-prepare-missing",
+            "session_id": "missing-source-directory-session",
+        },
+    )
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "source_directory_hybrid_authority_material_snapshot_not_found"
+
+    source_dir, snapshot_info, _index_authority_hash, _embedding_index_authority_hash = _admitted_material(
+        client,
+        tmp_path,
+        monkeypatch,
+    )
+    session_id = _session_id_for_snapshot(client, snapshot_info["material_snapshot_id"])
+
+    forbidden = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+        json={
+            "client_request_id": "source-directory-hybrid-authority-prepare-forbidden",
+            "session_id": session_id,
+            "index_authority_hash": "0" * 64,
+        },
+    )
+    assert forbidden.status_code == 422
+    assert ("body", "index_authority_hash") in {
+        tuple(error["loc"]) for error in forbidden.json()["detail"]
+    }
+
+    (source_dir / "vector-retrieval.txt").write_text("alpha beta drift\n", encoding="utf-8")
+    stale = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+        json={
+            "client_request_id": "source-directory-hybrid-authority-prepare-stale",
+            "session_id": session_id,
+        },
+    )
+    assert stale.status_code == 409, stale.text
+    assert stale.json()["error"]["code"] == "source_directory_text_index_file_identity_mismatch"
+    assert str(source_dir) not in stale.text
+
+    db = client.layer3_session_factory()
+    try:
+        _assert_no_downstream_side_effects(db)
+    finally:
+        db.close()
 
 
 def _hybrid_package_review_submit_authority(
