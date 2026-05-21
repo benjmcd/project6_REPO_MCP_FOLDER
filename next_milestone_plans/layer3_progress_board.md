@@ -8927,3 +8927,31 @@ Runtime behavior introduced by this gap freeze: `false`. Rendered behavior intro
 Full mockup program activation selected now: `false`. Implementation-entry allowed by this gap freeze alone: `false`.
 
 Next exact posture: `current_main_sync_source_directory_package_supersession_commit_route_state_gap_freeze_then_select_commit_contract`.
+
+## Source-Directory Package Supersession Commit Route-State Gap Freeze Current-Main Sync
+
+Doc: `929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Status: `current_main_synced_source_directory_package_supersession_commit_route_state_gap_freeze`.
+
+Predecessor gap-freeze doc: `928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md`.
+
+Merged PR: `#1544`.
+
+Gap-freeze commit: `144afa29a7ac744b5684048e2bf8c61924d6b57e`.
+
+Merge commit: `a7ec760f387e9b790146354ac874aab1fb01e225`.
+
+Sync branch: `codex/l3-package-commit-gap-freeze-sync`.
+
+Synced blocked target: `source_directory_package_supersession_commit_rendered_control`.
+
+Synced stop action: `source_directory_package_supersession_commit_route_state_gap_freeze`.
+
+Synced existing commit route: `POST /api/v1/layer3/package/supersession/commit`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`. Production UI behavior introduced by this sync: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`. Implementation-entry allowed for blocked rendered commit target after sync: `false`. Contract-selection entry allowed after sync: `true`.
+
+Next exact posture: `select_source_directory_package_supersession_commit_route_state_contract_after_gap_freeze_sync`.
