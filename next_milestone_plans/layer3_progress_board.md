@@ -8623,3 +8623,37 @@ Full mockup program activation selected now: `false`. Implementation-entry allow
 Still blocked: replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source `L3OutputPackage` row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, public proxy runtime, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`.
+
+## Source-Directory Package Supersession Preview Rendered Control
+
+Doc: `920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md`.
+
+Status: `source_directory_package_supersession_preview_rendered_control_implemented_branch_local`.
+
+Predecessor sync doc: `919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before implementation: `d19b7ae31f360b62bbc6316d09c5d2ae1accc562`.
+
+Implementation branch: `codex/l3-package-preview-control`.
+
+Selected target: `source_directory_package_supersession_preview_rendered_control`.
+
+Rendered node: `/review/layer3 #source-directory-package-supersession-preview-panel`.
+
+Selected route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`.
+
+Selected schema: `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`.
+
+Selected mode: `source_directory_qualitative_analysis_package_supersession_preview_authority`.
+
+Selected state owner: `State.sourceDirectoryPackageSupersessionPreview`.
+
+Proof: static/page proof, source-directory qualitative-analysis API authority proof, headless Chromium proof, and headed Chromium proof all pass for the focused rendered control.
+
+Runtime behavior introduced by this implementation: `false`. Rendered behavior introduced by this implementation: `true`. Backend behavior introduced by this implementation: `false`. Route/API/DTO/model/migration/service behavior introduced by this implementation: `false`. Executable test behavior introduced by this implementation: `true`. Production UI behavior introduced by this implementation: `true`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this implementation alone: `false`.
+
+Still blocked: full mockup program activation, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source package row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `current_main_sync_source_directory_package_supersession_preview_rendered_control_then_select_next_blocker_retirement_lane`.

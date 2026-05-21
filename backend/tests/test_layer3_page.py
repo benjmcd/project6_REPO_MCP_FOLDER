@@ -140,6 +140,13 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="package-review-submit-form"' in response.text
     assert 'id="package-supersession-preview-panel"' in response.text
     assert 'data-rendered-mode="rendered_package_supersession_preview_control"' in response.text
+    assert 'id="source-directory-package-supersession-preview-submit"' in response.text
+    assert 'id="source-directory-package-supersession-preview-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_source_directory_package_supersession_preview_control"'
+        in response.text
+    )
+    assert 'id="source-directory-package-supersession-preview-authority"' in response.text
     assert 'id="replacement-package-set-authority-panel"' in response.text
     assert 'data-rendered-mode="rendered_replacement_package_set_authority_control"' in response.text
     assert 'id="package-supersession-commit-panel"' in response.text
@@ -382,6 +389,15 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function packageSupersessionPreviewPayload" in js.text
     assert "postJson('/package/mutation/preview'" in js.text
     assert "package_supersession_preview_ready" in js.text
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE = 'rendered_source_directory_package_supersession_preview_control'" in js.text
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview'" in js.text
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = 'preview_source_directory_package_supersession'" in js.text
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview'" in js.text
+    assert "layer3.source_directory_qualitative_analysis_package_supersession_preview.v1" in js.text
+    assert "source_directory_qualitative_analysis_package_supersession_preview_authority" in js.text
+    assert "function sourceDirectoryPackageSupersessionPreviewPayload" in js.text
+    assert "postJson(\n            SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH" in js.text
+    assert "source_directory_package_supersession_preview_ready" in js.text
     assert "redacted_local_payload_ref" in js.text
     assert "function authorityMatrixContract" in js.text
     assert "function authorityMatrixReviewState" in js.text
@@ -985,6 +1001,67 @@ def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
         "raw_vector",
     ):
         assert forbidden not in payload_slice
+
+
+def test_layer3_source_directory_package_supersession_preview_control_is_bounded() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+    assert 'id="source-directory-package-supersession-preview-submit"' in html.text
+    assert 'id="source-directory-package-supersession-preview-authority"' in html.text
+    assert (
+        'data-rendered-mode="rendered_source_directory_package_supersession_preview_control"'
+        in html.text
+    )
+    assert 'data-read-only="true"' in html.text
+    assert 'data-frontend-durable-authority="false"' in html.text
+
+    payload_start = js.text.find("function sourceDirectoryPackageSupersessionPreviewPayload")
+    payload_end = js.text.find("function sourceDirectoryPackageSupersessionPreviewPayloadOrNull")
+    render_start = js.text.find("function renderSourceDirectoryPackageSupersessionPreviewPanel")
+    render_end = js.text.find("function renderReplacementPackageSetAuthorityPanel")
+    submit_start = js.text.find("async function submitSourceDirectoryPackageSupersessionPreview")
+    submit_end = js.text.find("async function submitReplacementPackageSetAuthority")
+    assert payload_start != -1
+    assert payload_end != -1
+    assert render_start != -1
+    assert render_end != -1
+    assert submit_start != -1
+    assert submit_end != -1
+
+    payload_slice = js.text[payload_start:payload_end]
+    render_slice = js.text[render_start:render_end]
+    submit_slice = js.text[submit_start:submit_end]
+    assert "operator_decision: SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION" in payload_slice
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PAYLOAD_FIELDS.forEach" in payload_slice
+    assert "payload[field].length !== 3" in payload_slice
+    assert "payload.package_review_state !== 'package_review_approved'" in payload_slice
+    assert "postJson(\n            SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH" in submit_slice
+    assert "State.sourceDirectoryPackageSupersessionPreview = await postJson" in submit_slice
+    assert "dataset.readOnly = 'true'" in render_slice
+    assert "dataset.frontendDurableAuthority = 'false'" in render_slice
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_SCHEMA_ID" in render_slice
+    assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_MODE" in render_slice
+    for forbidden in (
+        "payload_refs",
+        "raw_payload_path",
+        "local_file_path",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "connector_run_id",
+        "destination_id",
+        "provider_credentials",
+        "localStorage",
+        "sessionStorage",
+        "/package/mutation/preview",
+        "/package/supersession/commit",
+        "/package/replacement",
+    ):
+        assert forbidden not in payload_slice
+        assert forbidden not in submit_slice
 
 
 def test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded() -> None:

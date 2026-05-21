@@ -121,6 +121,59 @@ const PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE = 'rendered_package_supersessio
 const PACKAGE_SUPERSESSION_PREVIEW_USE_CASE = 'operator_previews_package_supersession_without_package_row_or_payload_mutation';
 const PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY = 'State.packageSupersessionPreview';
 const PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = 'preview_package_supersession';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE = 'rendered_source_directory_package_supersession_preview_control';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_USE_CASE = 'operator_previews_source_directory_package_supersession_without_package_row_or_payload_mutation';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = 'preview_source_directory_package_supersession';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_SCHEMA_ID = 'layer3.source_directory_qualitative_analysis_package_supersession_preview.v1';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_MODE = 'source_directory_qualitative_analysis_package_supersession_preview_authority';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PAYLOAD_FIELDS = Object.freeze([
+    'analysis_question',
+    'analysis_focus',
+    'material_snapshot_id',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'content_sha256',
+    'file_identity_hash',
+    'authority_basis_hash',
+    'payload_hash',
+    'index_authority_hash',
+    'query_text',
+    'limit',
+    'offset',
+    'qualitative_analysis_hash',
+    'source_directory_package_review_preview_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+]);
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_REQUIRED_FIELDS = Object.freeze([
+    'analysis_question',
+    'analysis_focus',
+    'material_snapshot_id',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'content_sha256',
+    'file_identity_hash',
+    'authority_basis_hash',
+    'payload_hash',
+    'index_authority_hash',
+    'query_text',
+    'qualitative_analysis_hash',
+    'source_directory_package_review_preview_hash',
+    'construction_basis_hash',
+    'reconciliation_record_id',
+    'output_package_ids',
+    'package_kinds',
+    'payload_hashes',
+    'package_review_submit_record_ref',
+    'package_review_state',
+]);
 const REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE = 'rendered_replacement_package_set_authority_control';
 const REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE = 'operator_records_replacement_package_set_authority_from_server_owned_materialization';
 const REPLACEMENT_PACKAGE_SET_AUTHORITY_RESPONSE_AUTHORITY = 'State.replacementPackageSetAuthority';
@@ -208,6 +261,9 @@ const State = {
     packageSupersessionPreview: null,
     packageSupersessionPreviewError: null,
     packageSupersessionPreviewPending: false,
+    sourceDirectoryPackageSupersessionPreview: null,
+    sourceDirectoryPackageSupersessionPreviewError: null,
+    sourceDirectoryPackageSupersessionPreviewPending: false,
     replacementPackageArtifactMaterialization: null,
     replacementPackageArtifactMaterializationError: null,
     replacementPackageArtifactMaterializationPending: false,
@@ -327,6 +383,9 @@ const elements = {
     packageLifecycleDashboardPanel: document.getElementById('package-lifecycle-dashboard-panel'),
     packageSupersessionPreviewPanel: document.getElementById('package-supersession-preview-panel'),
     packageSupersessionPreviewSubmit: document.getElementById('package-supersession-preview-submit'),
+    sourceDirectoryPackageSupersessionPreviewPanel: document.getElementById('source-directory-package-supersession-preview-panel'),
+    sourceDirectoryPackageSupersessionPreviewSubmit: document.getElementById('source-directory-package-supersession-preview-submit'),
+    sourceDirectoryPackageSupersessionPreviewAuthority: document.getElementById('source-directory-package-supersession-preview-authority'),
     replacementPackageSetAuthorityPanel: document.getElementById('replacement-package-set-authority-panel'),
     replacementPackageSetAuthoritySubmit: document.getElementById('replacement-package-set-authority-submit'),
     packageSupersessionCommitPanel: document.getElementById('package-supersession-commit-panel'),
@@ -1329,7 +1388,7 @@ function renderUnavailable(labels) {
 }
 
 function currentAuthorityRail() {
-    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.replacementPackageNamespace?.authority_rail || State.replacementPackageArtifactManifest?.authority_rail || State.packageSupersessionCommit?.authority_rail || State.replacementPackageSetAuthority?.authority_rail || State.replacementPackageArtifactMaterialization?.authority_rail || State.packageSupersessionPreview?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
+    return State.externalExportDownloadPrepare?.authority_rail || State.apsHandoffDispatch?.authority_rail || State.handoffExportPrepare?.authority_rail || State.replacementPackageNamespace?.authority_rail || State.replacementPackageArtifactManifest?.authority_rail || State.packageSupersessionCommit?.authority_rail || State.replacementPackageSetAuthority?.authority_rail || State.replacementPackageArtifactMaterialization?.authority_rail || State.sourceDirectoryPackageSupersessionPreview?.authority_rail || State.packageSupersessionPreview?.authority_rail || State.packageReviewSubmit?.authority_rail || State.packageConstruction?.authority_rail || State.packageReviewPreview?.authority_rail
         || State.sessionSummary?.authority_rail || State.resultReview?.authority_rail || State.resultStatus?.authority_rail
         || State.executionStart?.authority_rail || State.executionSelection?.authority_rail
         || State.planApproval?.authority_rail || State.planRevision?.authority_rail || State.planPreview?.authority_rail || State.gateC?.authority_rail || State.gateB?.authority_rail
@@ -1361,6 +1420,7 @@ function currentDownstreamUnavailable() {
         || State.packageSupersessionCommit?.downstream_unavailable
         || State.replacementPackageSetAuthority?.downstream_unavailable
         || State.replacementPackageArtifactMaterialization?.downstream_unavailable
+        || State.sourceDirectoryPackageSupersessionPreview?.downstream_unavailable
         || State.packageSupersessionPreview?.downstream_unavailable
         || State.packageReviewSubmit?.downstream_unavailable
         || State.packageConstruction?.downstream_unavailable
@@ -1398,6 +1458,7 @@ function renderContext() {
         package_construction: State.packageConstruction?.next_state || State.packageConstructionError?.error_code || State.sessionSummary?.package_construction?.state || 'none',
         package_review_submit: State.packageReviewSubmit?.next_state || State.packageReviewSubmitError?.error_code || State.sessionSummary?.package_review_submit?.state || 'none',
         package_supersession_preview: State.packageSupersessionPreview?.next_state || State.packageSupersessionPreviewError?.error_code || 'none',
+        source_directory_package_supersession_preview: State.sourceDirectoryPackageSupersessionPreview?.next_state || State.sourceDirectoryPackageSupersessionPreviewError?.error_code || 'none',
         replacement_package_set_authority: State.replacementPackageSetAuthority?.next_state || State.replacementPackageSetAuthorityError?.error_code || State.replacementPackageArtifactMaterialization?.next_state || State.replacementPackageArtifactMaterializationError?.error_code || 'none',
         package_supersession_commit: State.packageSupersessionCommit?.next_state || State.packageSupersessionCommitError?.error_code || 'none',
         replacement_package_artifact_manifest: State.replacementPackageArtifactManifest?.next_state || State.replacementPackageArtifactManifestError?.error_code || 'none',
@@ -2590,6 +2651,10 @@ function packageLifecycleOutputRows() {
 
 function packageSupersessionPreviewState() {
     return State.packageSupersessionPreview || null;
+}
+
+function sourceDirectoryPackageSupersessionPreviewState() {
+    return State.sourceDirectoryPackageSupersessionPreview || null;
 }
 
 function replacementPackageArtifactMaterializationState() {
@@ -6079,6 +6144,96 @@ function renderPackageSupersessionPreviewPanel() {
     `;
 }
 
+function renderSourceDirectoryPackageSupersessionPreviewPanel() {
+    const preview = sourceDirectoryPackageSupersessionPreviewState() || {};
+    const payload = sourceDirectoryPackageSupersessionPreviewPayloadOrNull() || {};
+    const rows = Array.isArray(preview.package_rows) && preview.package_rows.length
+        ? preview.package_rows
+        : replacementPackageRows({
+            packageIds: preview.output_package_ids || payload.output_package_ids || [],
+            packageKinds: preview.package_kinds || payload.package_kinds || [],
+            payloadHashes: preview.payload_hashes || payload.payload_hashes || [],
+        });
+    const dependencies = Array.isArray(preview.downstream_dependencies)
+        ? preview.downstream_dependencies
+        : [];
+    const error = State.sourceDirectoryPackageSupersessionPreviewError;
+    const stateLabel = State.sourceDirectoryPackageSupersessionPreviewPending
+        ? 'source_directory_package_supersession_preview_submitting'
+        : (error?.error_code || preview.next_state || (canSubmitSourceDirectoryPackageSupersessionPreview() ? 'source_directory_package_supersession_preview_ready' : 'source_directory_package_supersession_preview_unavailable'));
+    const statePill = error ? 'blocked' : (preview.next_state ? 'ok' : 'preview');
+    elements.sourceDirectoryPackageSupersessionPreviewPanel.dataset.previewState = stateLabel;
+    elements.sourceDirectoryPackageSupersessionPreviewPanel.dataset.readOnly = 'true';
+    elements.sourceDirectoryPackageSupersessionPreviewPanel.dataset.frontendDurableAuthority = 'false';
+    elements.sourceDirectoryPackageSupersessionPreviewPanel.dataset.serverRoute = SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH;
+    elements.sourceDirectoryPackageSupersessionPreviewPanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(statePill)}">${escapeHtml(stateLabel)}</span>
+            <span class="rail-label">${escapeHtml(SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_MODE)}</span>
+        </div>
+        <div class="result-review-grid package-supersession-preview-grid">
+            <section class="result-review-card">
+                <strong>Rendered Control</strong>
+                <ul>
+                    ${fieldItem('use case', SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_USE_CASE, { code: true })}
+                    ${fieldItem('response authority', SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('server route', `POST ${API_ROOT}${SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH}`, { code: true })}
+                    ${fieldItem('operator decision', SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION, { code: true })}
+                    ${fieldItem('browser durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Server Authority Basis</strong>
+                <ul>
+                    ${fieldItem('payload source', 'sourceDirectoryPackageSupersessionPreviewPayload', { code: true })}
+                    ${fieldItem('session', preview.session_id || payload.session_id, { code: true })}
+                    ${fieldItem('material snapshot', preview.material_snapshot_id || payload.material_snapshot_id, { code: true })}
+                    ${fieldItem('source file', preview.source_ingestion_file_id || payload.source_ingestion_file_id, { code: true })}
+                    ${fieldItem('reconciliation', preview.reconciliation_record_id || payload.reconciliation_record_id, { code: true })}
+                    ${fieldItem('package review submit ref', preview.package_review_submit_record_ref || payload.package_review_submit_record_ref, { code: true })}
+                    ${fieldItem('package count', rows.length)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Preview Result</strong>
+                <ul>
+                    ${fieldItem('schema', preview.schema_id || SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_SCHEMA_ID, { code: true })}
+                    ${fieldItem('mode', preview.mode || SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_MODE, { code: true })}
+                    ${fieldItem('status', preview.status)}
+                    ${fieldItem('source gate', preview.source_gate, { code: true })}
+                    ${fieldItem('preview hash', preview.package_supersession_preview_hash, { code: true })}
+                    ${fieldItem('source package set hash', preview.source_package_set_hash, { code: true })}
+                    ${fieldItem('downstream dependency hash', preview.downstream_dependency_hash, { code: true })}
+                    ${fieldItem('next state', preview.next_state)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Disabled Capability Flags</strong>
+                <ul>
+                    ${fieldItem('replacement package-set authority', preview.replacement_package_set_authority_enabled)}
+                    ${fieldItem('package supersession commit', preview.package_supersession_commit_enabled)}
+                    ${fieldItem('package row mutation', preview.package_row_mutation_enabled)}
+                    ${fieldItem('payload rewrite', preview.package_payload_rewrite_enabled)}
+                    ${fieldItem('source package row mutation', preview.source_package_row_mutation_enabled)}
+                    ${fieldItem('connector dispatch', preview.connector_dispatch_enabled)}
+                    ${fieldItem('provider public delivery', preview.provider_public_delivery_enabled)}
+                    ${fieldItem('network egress', preview.network_egress_enabled)}
+                    ${fieldItem('frontend durable authority', preview.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card package-supersession-preview-rows">
+                <strong>Source Package Rows</strong>
+                <ul>${renderPackageSupersessionPreviewRows(rows)}</ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Downstream Dependencies</strong>
+                <ul>${renderPackageSupersessionDependencyRows(dependencies)}</ul>
+            </section>
+            ${renderErrorCard(error)}
+        </div>
+    `;
+}
+
 function renderReplacementPackageSetAuthorityPanel() {
     const preview = packageSupersessionPreviewState() || {};
     const materialization = replacementPackageArtifactMaterializationState() || {};
@@ -8994,6 +9149,7 @@ function setGateControls() {
     elements.packageReviewPreviewInspect.disabled = !canInspectPackageReviewPreview();
     elements.packageConstructionCommit.disabled = !canCommitPackageConstruction();
     elements.packageSupersessionPreviewSubmit.disabled = !canSubmitPackageSupersessionPreview();
+    elements.sourceDirectoryPackageSupersessionPreviewSubmit.disabled = !canSubmitSourceDirectoryPackageSupersessionPreview();
     elements.replacementPackageSetAuthoritySubmit.disabled = !canSubmitReplacementPackageSetAuthority();
     elements.packageSupersessionCommitSubmit.disabled = !canSubmitPackageSupersessionCommit();
     elements.replacementPackageArtifactManifestSubmit.disabled = !canSubmitReplacementPackageArtifactManifest();
@@ -9044,6 +9200,7 @@ function renderAll() {
     renderPackageReviewPreviewPanel();
     renderPackageLifecycleDashboardPanel();
     renderPackageSupersessionPreviewPanel();
+    renderSourceDirectoryPackageSupersessionPreviewPanel();
     renderReplacementPackageSetAuthorityPanel();
     renderPackageSupersessionCommitPanel();
     renderReplacementPackageArtifactManifestPanel();
@@ -9241,6 +9398,61 @@ function packageSupersessionPreviewPayload(authority = selectedResultAuthority()
         payload.connector_dispatch_record_ref = connector.connector_dispatch_record_ref;
     }
     return payload;
+}
+
+function sourceDirectoryPackageSupersessionPreviewAuthorityPacket() {
+    const raw = elements.sourceDirectoryPackageSupersessionPreviewAuthority?.value?.trim();
+    if (!raw) {
+        throw new Error('Source-directory package supersession preview requires server package authority JSON.');
+    }
+    const packet = JSON.parse(raw);
+    if (!packet || typeof packet !== 'object' || Array.isArray(packet)) {
+        throw new Error('Source-directory package authority JSON must be an object.');
+    }
+    return packet;
+}
+
+function sourceDirectoryPackageSupersessionPreviewPayload() {
+    const packet = sourceDirectoryPackageSupersessionPreviewAuthorityPacket();
+    const payload = {
+        client_request_id: packet.client_request_id || requestId(),
+        operator_decision: SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION,
+    };
+    SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PAYLOAD_FIELDS.forEach((field) => {
+        if (packet[field] != null) {
+            payload[field] = packet[field];
+        }
+    });
+    if (!payload.package_review_submit_record_ref && packet.submit_record_ref) {
+        payload.package_review_submit_record_ref = packet.submit_record_ref;
+    }
+    if (!payload.package_review_state && (packet.next_state || packet.state)) {
+        payload.package_review_state = packet.next_state || packet.state;
+    }
+    const missing = SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_REQUIRED_FIELDS.filter((field) => {
+        const value = payload[field];
+        return value == null || value === '' || (Array.isArray(value) && !value.length);
+    });
+    if (missing.length) {
+        throw new Error(`Source-directory package supersession preview authority is missing: ${missing.join(', ')}`);
+    }
+    for (const field of ['output_package_ids', 'package_kinds', 'payload_hashes']) {
+        if (!Array.isArray(payload[field]) || payload[field].length !== 3) {
+            throw new Error(`Source-directory package supersession preview authority requires exactly three ${field}.`);
+        }
+    }
+    if (payload.package_review_state !== 'package_review_approved') {
+        throw new Error('Source-directory package supersession preview requires package_review_approved authority.');
+    }
+    return payload;
+}
+
+function sourceDirectoryPackageSupersessionPreviewPayloadOrNull() {
+    try {
+        return sourceDirectoryPackageSupersessionPreviewPayload();
+    } catch (_error) {
+        return null;
+    }
 }
 
 function replacementPackageArtifactMaterializationPayload(authority = selectedResultAuthority()) {
@@ -10318,6 +10530,13 @@ async function submitPackageReview(event) {
     }
 }
 
+function canSubmitSourceDirectoryPackageSupersessionPreview() {
+    return Boolean(
+        sourceDirectoryPackageSupersessionPreviewPayloadOrNull()
+        && !State.sourceDirectoryPackageSupersessionPreviewPending
+    );
+}
+
 async function submitPackageSupersessionPreview() {
     if (!canSubmitPackageSupersessionPreview()) return;
     State.packageSupersessionPreviewPending = true;
@@ -10341,6 +10560,36 @@ async function submitPackageSupersessionPreview() {
     } finally {
         State.packageSupersessionPreviewPending = false;
         setBusy(elements.packageSupersessionPreviewSubmit, false, 'Preview Supersession');
+        renderAll();
+    }
+}
+
+async function submitSourceDirectoryPackageSupersessionPreview() {
+    if (!canSubmitSourceDirectoryPackageSupersessionPreview()) return;
+    State.sourceDirectoryPackageSupersessionPreviewPending = true;
+    State.sourceDirectoryPackageSupersessionPreviewError = null;
+    State.sourceDirectoryPackageSupersessionPreview = null;
+    renderAll();
+    setBusy(elements.sourceDirectoryPackageSupersessionPreviewSubmit, true, 'Preview Source-Directory Supersession');
+    try {
+        State.sourceDirectoryPackageSupersessionPreview = await postJson(
+            SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH,
+            sourceDirectoryPackageSupersessionPreviewPayload(),
+        );
+        State.sourceDirectoryPackageSupersessionPreviewError = null;
+        addEvent('Source-directory package supersession preview returned as read-only response state.');
+        renderAll();
+    } catch (error) {
+        State.sourceDirectoryPackageSupersessionPreviewError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'source_directory_package_supersession_preview_request_failed',
+            message: error.message,
+        };
+        addEvent(`Source-directory package supersession preview blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.sourceDirectoryPackageSupersessionPreviewPending = false;
+        setBusy(elements.sourceDirectoryPackageSupersessionPreviewSubmit, false, 'Preview Source-Directory Supersession');
         renderAll();
     }
 }
@@ -11416,6 +11665,12 @@ elements.packageReviewPreviewInspect.addEventListener('click', inspectPackageRev
 elements.packageConstructionCommit.addEventListener('click', commitPackageConstruction);
 elements.packageReviewSubmitForm.addEventListener('submit', submitPackageReview);
 elements.packageSupersessionPreviewSubmit.addEventListener('click', submitPackageSupersessionPreview);
+elements.sourceDirectoryPackageSupersessionPreviewSubmit.addEventListener('click', submitSourceDirectoryPackageSupersessionPreview);
+elements.sourceDirectoryPackageSupersessionPreviewAuthority.addEventListener('input', () => {
+    State.sourceDirectoryPackageSupersessionPreview = null;
+    State.sourceDirectoryPackageSupersessionPreviewError = null;
+    renderAll();
+});
 elements.replacementPackageSetAuthoritySubmit.addEventListener('click', submitReplacementPackageSetAuthority);
 elements.packageSupersessionCommitSubmit.addEventListener('click', submitPackageSupersessionCommit);
 elements.replacementPackageArtifactManifestSubmit.addEventListener('click', submitReplacementPackageArtifactManifest);
