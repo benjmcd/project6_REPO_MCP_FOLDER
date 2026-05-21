@@ -36,6 +36,7 @@ from app.services import (
     layer3_source_directory_context_packet,
     layer3_source_directory_hybrid_analysis,
     layer3_source_directory_hybrid_context,
+    layer3_source_directory_internal_webhook,
     layer3_source_directory_qualitative_analysis,
     layer3_source_directory_text_index,
     layer3_source_directory_text_retrieval,
@@ -2603,6 +2604,18 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloa
     operator_decision: Literal["prepare_source_directory_hybrid_external_export_download"]
 
 
+class Layer3SourceDirectoryHybridContextQualitativeAnalysisInternalWebhookDispatchRequest(
+    Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadPrepareRequest
+):
+    external_export_download_record_ref: str = Field(min_length=1)
+    export_download_descriptor_ref: str = Field(min_length=1)
+    external_export_download_state: Literal["external_export_download_prepared"]
+    target_identity: Literal["server_configured_internal_webhook_destination"]
+    target_class: Literal["real_connector_invocation"]
+    dispatch_mode: Literal["server_configured_allowlisted_internal_webhook_post"]
+    operator_decision: Literal["dispatch_source_directory_hybrid_internal_webhook"]
+
+
 class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliverRequest(
     Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadPrepareRequest
 ):
@@ -3236,6 +3249,71 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloa
     next_state: str
     next_allowed_actions: list[str]
     negative_invariants: dict[str, bool]
+
+
+class Layer3SourceDirectoryHybridContextQualitativeAnalysisInternalWebhookDispatchResponse(
+    Layer3BaseResponse
+):
+    session_id: str
+    selection_manifest_id: str
+    material_snapshot_id: str
+    source_ingestion_batch_id: str
+    source_ingestion_file_id: str
+    reconciliation_record_id: str
+    source_directory_internal_webhook_dispatch_receipt_id: str
+    external_export_download_record_ref: str
+    export_download_descriptor_ref: str
+    package_review_submit_record_ref: str
+    handoff_export_prepare_ref: str
+    handoff_export_envelope_ref: str
+    output_package_ids: list[str]
+    package_kinds: list[str]
+    payload_hashes: list[str]
+    package_set_hash: str
+    target_identity: str
+    target_class: str
+    dispatch_mode: str
+    source_directory_internal_webhook_dispatch_state: str
+    dispatch_operation_state: str
+    redacted_destination_display_name: str
+    idempotency_key: str
+    request_basis_hash: str
+    authority_basis_hash: str
+    response_status_code: int | None
+    redacted_response_summary: dict[str, Any]
+    failure_code: str | None
+    audit_receipt: dict[str, Any]
+    server_configured_internal_webhook_enabled: bool
+    source_directory_internal_webhook_post_performed: bool
+    real_connector_invocation_enabled: bool
+    server_configured_allowlisted_url_enabled: bool
+    operator_destination_url_enabled: bool
+    raw_target_url_exposed: bool
+    raw_token_exposed: bool
+    raw_headers_exposed: bool
+    raw_local_path_exposed: bool
+    raw_package_payload_exposed: bool
+    raw_package_bytes_exposed: bool
+    connector_dispatch_enabled: bool
+    connector_run_created: bool
+    connector_run_target_created: bool
+    credentials_enabled: bool
+    provider_public_url_enabled: bool
+    provider_private_signed_url_enabled: bool
+    cloud_object_store_write_enabled: bool
+    package_mutation_enabled: bool
+    source_expansion_enabled: bool
+    rag_vector_enabled: bool
+    optional_tool_runtime_enabled: bool
+    internal_webhook_network_egress_enabled: bool
+    external_provider_network_enabled: bool
+    auth_security_implementation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    full_mockup_activation_enabled: bool
+    rendered_write_submit_control_enabled: bool
+    downstream_unavailable: list[str]
+    next_allowed_actions: list[str]
+    next_state: str
 
 
 class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliveryStatusResponse(
@@ -8434,6 +8512,47 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_external_ex
         layer3_source_directory_vector_retrieval.SourceDirectoryVectorRetrievalError,
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/hybrid-context-packet/"
+        "qualitative-analysis/handoff/export/internal-webhook/dispatch"
+    ),
+    response_model=Layer3SourceDirectoryHybridContextQualitativeAnalysisInternalWebhookDispatchResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_hybrid_context_packet_qualitative_analysis_internal_webhook_dispatch(
+    payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisInternalWebhookDispatchRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_source_directory_internal_webhook.dispatch_source_directory_internal_webhook(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.get(
+    (
+        "/source/ingestion/server-configured-directory/hybrid-context-packet/"
+        "qualitative-analysis/handoff/export/internal-webhook/status/"
+        "{source_directory_internal_webhook_dispatch_receipt_id}"
+    ),
+    response_model=Layer3SourceDirectoryHybridContextQualitativeAnalysisInternalWebhookDispatchResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_source_directory_hybrid_context_packet_qualitative_analysis_internal_webhook_status(
+    source_directory_internal_webhook_dispatch_receipt_id: str,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_source_directory_internal_webhook.source_directory_internal_webhook_status(
+            db,
+            source_directory_internal_webhook_dispatch_receipt_id,
+        )
+    )
 
 
 @router.post(
