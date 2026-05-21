@@ -9066,17 +9066,19 @@ Next exact posture: `prove_source_directory_scan_to_handoff_export_bounded_opera
 
 Doc: `933-trial-runbook.md`.
 
-Status: `bounded_trial_usable_checkpoint_source_directory_scan_to_handoff_delivery_after_pr1552`.
+Status: `bounded_trial_usable_checkpoint_source_directory_scan_to_handoff_delivery_internal_webhook_after_pr1556`.
 
 Predecessor current-main sync doc: `932-post1550-sync.md`.
 
-Base authority: `project6-origin/main` at `1613db32127d4a411c0aeb3f1e88f535a56c7215`.
+Predecessor trial checkpoint: PR `#1552` source-directory scan/status to same-origin hybrid delivery proof at `1613db32127d4a411c0aeb3f1e88f535a56c7215`.
 
-Merged proof PR: `#1552`; branch: `codex/l3-source-directory-operator-proof`; merge commit: `1613db32127d4a411c0aeb3f1e88f535a56c7215`.
+Base authority: `project6-origin/main` at `aeccceaa115ed3b613dfc32f67336bbb6bf8298c`.
 
-GitHub gate for PR `#1552`: state `MERGED`, checks `backend-layer3-api` `SUCCESS` and `test` `SUCCESS`, comments `0`, reviews `0`, reviewThreads totalCount `0`.
+Merged source PRs: `#1554` backend source-directory internal webhook dispatch/status, merge commit `56953746f1e330681dc93e098146c6a9ef933384`; `#1555` rendered source-directory internal webhook dispatch/status control, merge commit `2f0721bf44108eddfdfa0661d1f3b42fb84f5a1c`; `#1556` rendered source-directory webhook live-server proof, merge commit `aeccceaa115ed3b613dfc32f67336bbb6bf8298c`.
 
-Current bounded trial status: current main proves the source-directory path from rendered scan/status/material preview/Gate B admission through live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare and rendered same-origin hybrid external export/download delivery. The middle lifecycle is live API-proven with server-authored authority, not yet a single uninterrupted manual-click operator flow.
+GitHub gates for PRs `#1554`, `#1555`, and `#1556`: merged to current main with required checks passing and no admitted unresolved review/comment blocker before merge.
+
+Current bounded trial status: current main proves the source-directory path from rendered scan/status/material preview/Gate B admission through live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare, rendered same-origin hybrid external export/download delivery, and rendered source-directory internal webhook dispatch/status. The middle lifecycle is live API-proven with server-authored authority, not yet a single uninterrupted manual-click operator flow.
 
 Minimal operator runbook: use a clean current-main worktree; run `python ./tools/l3-progress-check.py`, `node --check ./backend/app/review_ui/static/layer3.js`, the focused backend source-directory tests, and both headed/headless Playwright for `Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path`.
 
@@ -9084,6 +9086,6 @@ Runtime behavior introduced by this checkpoint doc: `false`. Rendered behavior i
 
 Frontend-only durable authority enabled by this checkpoint doc: `false`. Full mockup program activation selected now: `false`.
 
-Remaining whole-program gaps: source-directory internal webhook dispatch/status remains a bounded next slice; the rendered middle lifecycle still needs a continuous operator-flow proof where current main admits controls; provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, and full mockup activation remain separately blocked.
+Remaining whole-program gaps: the rendered middle lifecycle still needs a continuous operator-flow proof where current main admits controls; provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, and full mockup activation remain separately blocked.
 
-Next exact posture: `select_source_directory_internal_webhook_status_or_rendered_middle_lifecycle_gap_from_current_main`.
+Next exact posture: `select_rendered_middle_lifecycle_operator_flow_gap_from_current_main`.
