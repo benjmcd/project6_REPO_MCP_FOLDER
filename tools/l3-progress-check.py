@@ -2569,6 +2569,9 @@ LAYER3_SOURCE_DIRECTORY_MATERIAL_PREVIEW_GATE_B_RENDERED_CONTROL_CURRENT_MAIN_SY
 LAYER3_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION = (
     PLANNING_DOCS / "917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md"
 )
+LAYER3_QUERY_SOURCE_SETUP_ACTIVATION_ENTRY_FREEZE = (
+    PLANNING_DOCS / "955-query-source-freeze.md"
+)
 LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE = (
     PLANNING_DOCS
     / "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
@@ -86695,6 +86698,151 @@ def _check_full_mockup_activation_next_blocker_selection(errors: list[str]) -> N
             errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
 
 
+def _check_query_source_setup_activation_entry_freeze(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_QUERY_SOURCE_SETUP_ACTIVATION_ENTRY_FREEZE,
+        errors,
+    )
+    entry_key = "layer3_query_source_setup_activation_entry_freeze"
+    status = "query_source_setup_activation_entry_freeze_recorded"
+    doc_path = "next_milestone_plans/Layer3_planning_docs/955-query-source-freeze.md"
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "954-post-final-readiness-next-phase-selection-freeze.md"
+    )
+    checkpoint = "8d56880f Freeze Layer 3 post-readiness next phase"
+    freeze_branch = "codex/l3-single-journey-freeze"
+    selected_journey = "query_source_setup"
+    classification = "interactive_live"
+    activation_slice = "query_source_setup_interactive_live_classification"
+    rendered_surface = "#mockup-query-source-setup-projection"
+    next_posture = (
+        "current_main_sync_query_source_setup_activation_entry_freeze_"
+        "then_select_next_single_journey"
+    )
+    summary = (
+        "Doc 955 freezes query_source_setup as the first single-journey "
+        "activation-entry target from current-main evidence. Existing "
+        "query/source setup controls remain live only through server-owned "
+        "route/API authority, the mockup projection remains read-only, "
+        "rollback returns to full_mockup_activation_enabled false, and full "
+        "mockup activation plus frontend-only durable authority remain blocked."
+    )
+
+    for term in (
+        "955-query-source-freeze.md",
+        "Status: no-runtime single-journey activation-entry freeze for `query_source_setup_existing_controls_activation_entry_freeze`.",
+        f"Predecessor selection doc: `954-post-final-readiness-next-phase-selection-freeze.md`.",
+        f"Current-main checkpoint before freeze: `{checkpoint}`.",
+        f"Freeze branch: `{freeze_branch}`.",
+        f"Selected journey: `{selected_journey}`.",
+        f"Selected journey classification: `{classification}`.",
+        f"Selected activation slice: `{activation_slice}`.",
+        f"Rendered projection surface: `{rendered_surface}`.",
+        "Full mockup program activation selected now: `false`.",
+        "Frontend-only durable authority selected now: `false`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Implementation-entry allowed by this freeze alone: `false`.",
+        "The rendered mockup projection must not call these routes directly.",
+        "Rollback is the current bounded readiness posture:",
+        "Headed and headless Chromium agree for the selected journey before any interactive expansion",
+        "This freeze does not admit:",
+        "Stop before implementation if:",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_QUERY_SOURCE_SETUP_ACTIVATION_ENTRY_FREEZE)} "
+                f"missing query/source activation-entry freeze term: {term}"
+            )
+
+    for route in (
+        "GET /api/v1/layer3/bootstrap",
+        "POST /api/v1/layer3/preflight",
+        "POST /api/v1/layer3/source-preview",
+        "POST /api/v1/layer3/material-preview",
+        "POST /api/v1/layer3/source/intake/upload",
+        "GET /api/v1/layer3/source/intake/inventory",
+        "GET /api/v1/layer3/source/intake/{source_intake_record_id}/preview",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        "GET /api/v1/layer3/source/ingestion/server-configured-directory/status/{source_ingestion_batch_id}",
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        "POST /api/v1/layer3/gate-b/decision",
+        "GET /api/v1/layer3/session/{session_id}",
+    ):
+        if route not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_QUERY_SOURCE_SETUP_ACTIVATION_ENTRY_FREEZE)} "
+                f"missing route/API authority term: {route}"
+            )
+
+    if not isinstance(manifest, dict):
+        return
+    entry = manifest.get(entry_key)
+    if not isinstance(entry, dict):
+        errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        return
+    expected_values = (
+        ("status", status),
+        ("doc", doc_path),
+        ("predecessor_doc", predecessor_doc),
+        ("current_main_checkpoint_before_freeze", checkpoint),
+        ("freeze_branch", freeze_branch),
+        ("selected_journey", selected_journey),
+        ("selected_journey_classification", classification),
+        ("selected_activation_slice", activation_slice),
+        ("rendered_projection_surface", rendered_surface),
+        ("full_mockup_program_activation_selected_now", False),
+        ("frontend_only_durable_authority_selected_now", False),
+        ("runtime_behavior_change_introduced_by_freeze", False),
+        ("rendered_behavior_change_introduced_by_freeze", False),
+        ("backend_behavior_change_introduced_by_freeze", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+        ("executable_test_behavior_change_introduced_by_freeze", False),
+        ("implementation_entry_allowed_by_this_freeze_alone", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    for key, value in expected_values:
+        if entry.get(key) != value:
+            errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+        latest_key = f"latest_{entry_key}_{key}"
+        if manifest.get(latest_key) != value:
+            errors.append(f"{_rel(MANIFEST)} {latest_key} must be {value!r}")
+    if manifest.get(f"latest_{entry_key}_doc") != doc_path:
+        errors.append(f"{_rel(MANIFEST)} latest_{entry_key}_doc mismatch")
+    if manifest.get(f"latest_{entry_key}_status") != status:
+        errors.append(f"{_rel(MANIFEST)} latest_{entry_key}_status mismatch")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+            return
+        if proof_entry.get("proof_kind") != entry_key:
+            errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_kind mismatch")
+        proof_terms = proof_entry.get("proof_terms")
+        if not isinstance(proof_terms, list):
+            errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms must be a list")
+            return
+        for term in (
+            "955-query-source-freeze.md",
+            "query_source_setup",
+            "interactive_live",
+            "query_source_setup_interactive_live_classification",
+            "#mockup-query-source-setup-projection",
+            "full_mockup_program_activation_selected_now false",
+            "frontend_only_durable_authority_selected_now false",
+            "mockup projection remains read-only",
+            next_posture,
+        ):
+            if not any(term in str(value) for value in proof_terms):
+                errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms missing {term}")
+
+
 def _check_source_directory_package_supersession_preview_rendered_control_freeze(
     errors: list[str],
 ) -> None:
@@ -90627,6 +90775,7 @@ def main() -> int:
     _check_provider_public_url_delivery_use_rendered_control_status_freshness_remediation(errors)
     _check_source_directory_material_preview_gate_b_rendered_control_current_main_sync(errors)
     _check_full_mockup_activation_next_blocker_selection(errors)
+    _check_query_source_setup_activation_entry_freeze(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(errors)
     _check_source_directory_package_supersession_preview_rendered_control(errors)
