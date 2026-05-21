@@ -9023,3 +9023,41 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`. Backend contract implementation entry allowed after sync: `true`. Rendered commit-control implementation entry allowed after sync: `false`.
 
 Next exact posture: `implement_source_directory_package_lifecycle_server_owned_contract`.
+
+## Source-Directory Package And Handoff Export Current-Main Sync
+
+Doc: `932-post1550-sync.md`.
+
+Status: `current_main_synced_source_directory_package_lifecycle_handoff_export_rendered_path_after_pr1550`.
+
+Predecessor current-main sync doc: `931-lifecycle-sync.md`.
+
+Base authority: `project6-origin/main` at `d6e44a74e99bb4d449af410929bd14343a59c5a6`.
+
+Synced backend contract PR: `#1548`; merge commit: `c5ae8229`.
+
+Synced rendered package lifecycle control PR: `#1549`; merge commit: `e8fcc09a`.
+
+Synced source-directory handoff export UI PR: `#1550`; merge commit: `d6e44a74e99bb4d449af410929bd14343a59c5a6`.
+
+Synced branch set: `codex/l3-package-lifecycle-contract`, `codex/l3-package-lifecycle-ui`, and `codex/l3-handoff-export-ui`.
+
+GitHub gate for PR `#1550`: merge state `CLEAN`, checks `SUCCESS`, comments `0`, reviews `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`.
+
+Post-merge current-main validation: `python ./tools/l3-progress-check.py` PASS; `node --check ./backend/app/review_ui/static/layer3.js` PASS; `python -m pytest ./backend/tests/test_layer3_page.py -q` `14 passed, 3 warnings`; `python -m pytest ./backend/tests/test_layer3_source_directory_qualitative_analysis.py -q` `13 passed, 3 warnings`; headless Chromium E2E `Layer 3 workbench drives source-directory qualitative handoff export rendered controls` `1 passed`; headed E2E for the same proof `1 passed`.
+
+Synced backend/API authority: `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview`, `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit`, `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare`, `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare`, `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status`, and `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver`.
+
+Synced rendered authority: `/review/layer3 #replacement-package-set-authority-panel`, `/review/layer3 #package-supersession-commit-panel`, `/review/layer3 #handoff-export-prepare-panel`, `/review/layer3 #external-export-download-prepare-panel`, and `/review/layer3 #external-export-download-delivery-panel` now cover the source-directory package lifecycle through source-directory handoff/export prepare, external export/download prepare, delivery status, and same-origin delivery controls.
+
+Synced schema and state authority: `layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1`, `layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1`, `layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1`, `layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1`, `State.sourceDirectoryPackageSupersessionPreview`, `State.replacementPackageSetAuthority`, `sourceDirectoryPackageSupersessionPreviewPayload`, and `State.handoffExportPrepare`.
+
+Runtime behavior introduced by this sync doc: `false`. Rendered behavior introduced by this sync doc: `false`. Backend behavior introduced by this sync doc: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync doc: `false`. Executable test behavior introduced by this sync doc: `false`. Production UI behavior introduced by this sync doc: `false`.
+
+Frontend-only durable authority enabled by this sync doc: `false`. Full mockup program activation selected now: `false`.
+
+Current bounded live-path status: source-directory qualitative package lifecycle and handoff/export rendered controls are now current-main synced through same-origin external export/download delivery.
+
+Remaining proof gap: the current rendered handoff/export E2E proof starts from injected source-directory package authority, not a single source-directory operator run from scan/status through material preview, Gate B admission, retrieval/context, qualitative analysis, package lifecycle, handoff/export, delivery/use, internal webhook status, and Analysis Environment/mockup projection.
+
+Next exact posture: `prove_source_directory_scan_to_handoff_export_bounded_operator_path_and_record_trial_usable_checkpoint`.
