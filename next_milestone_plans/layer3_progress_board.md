@@ -8657,3 +8657,45 @@ Full mockup program activation selected now: `false`. Implementation-entry allow
 Still blocked: full mockup program activation, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source package row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `current_main_sync_source_directory_package_supersession_preview_rendered_control_then_select_next_blocker_retirement_lane`.
+
+## Source-Directory Package Supersession Preview Rendered Control Current-Main Sync
+
+Doc: `921_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.
+
+Status: `current_main_synced_source_directory_package_supersession_preview_rendered_control`.
+
+Predecessor implementation doc: `920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md`.
+
+Merged PR: `#1535`.
+
+Source branch: `codex/l3-package-preview-control`.
+
+Implementation commit: `cb0c4aebd4757f10b51966213fb3c2deedc34cf0`.
+
+Merge commit: `5b2310cfefc3bb597d872495149f49283e2787a9`.
+
+Sync branch: `codex/l3-package-preview-control-sync`.
+
+Base authority: `project6-origin/main` at `5b2310cfefc3bb597d872495149f49283e2787a9`.
+
+Synced target: `source_directory_package_supersession_preview_rendered_control`.
+
+Synced rendered node: `/review/layer3 #source-directory-package-supersession-preview-panel`.
+
+Synced route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`.
+
+Synced schema: `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`.
+
+Synced mode: `source_directory_qualitative_analysis_package_supersession_preview_authority`.
+
+Synced state owner: `State.sourceDirectoryPackageSupersessionPreview`.
+
+GitHub gate: PR `#1535` merged cleanly with `backend-layer3-api` and `test` checks passing, comments `0`, reviews `0`, latestReviews `0`, reviewThreads totalCount `0`, and unresolved reviewThreads totalCount `0`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`. Production UI behavior introduced by this sync: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`.
+
+Still blocked: full mockup program activation, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source package row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
+
+Next exact posture: `select_next_blocker_retirement_lane_after_source_directory_package_supersession_preview_rendered_control_current_main_sync`.
