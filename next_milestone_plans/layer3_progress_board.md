@@ -8825,3 +8825,45 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`.
 
 Next exact posture: `select_next_blocker_retirement_lane_after_source_directory_replacement_package_set_authority_rendered_control_current_main_sync`.
+
+## Source-Directory Package Supersession Commit Rendered Control Freeze
+
+Doc: `926_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE.md`.
+
+Status: `source_directory_package_supersession_commit_rendered_control_frozen`.
+
+Predecessor current-main sync doc: `925_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before freeze: `7c17530bd78f454567b519cb4b53ca75ce97aa19`.
+
+Freeze branch: `codex/l3-package-commit-freeze`.
+
+Selected target: `source_directory_package_supersession_commit_rendered_control`.
+
+Selected target classification: `live_server_authoritative_action`.
+
+Selected activation target class: `single_existing_rendered_control_extension`.
+
+Selected rendered node: `/review/layer3 #package-supersession-commit-panel`.
+
+Selected source authority: `State.sourceDirectoryPackageSupersessionPreview`. Selected fallback authority: `State.packageSupersessionPreview`.
+
+Selected replacement authority state: `State.replacementPackageSetAuthority`.
+
+Selected commit route: `POST /api/v1/layer3/package/supersession/commit`.
+
+Owner service: `backend/app/services/layer3_package_supersession_commit.py`.
+
+Server runtime mode: `package_supersession_commit_entry`.
+
+Selected implementation action after freeze sync: `implement_source_directory_package_supersession_commit_rendered_control_after_freeze_sync`.
+
+Stop action if route/state contract is not adequate: `source_directory_package_supersession_commit_route_state_gap_freeze`.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`. Production UI behavior introduced by this freeze: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed by this freeze alone: `false`.
+
+Still blocked: implementation before current-main sync, package replacement activation, source `L3OutputPackage` row mutation, source package payload write/rewrite, replacement namespace rows, replacement artifact manifests, downstream invalidation, connector dispatch, destination writes, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `current_main_sync_source_directory_package_supersession_commit_rendered_control_freeze_then_implement_rendered_control`.
