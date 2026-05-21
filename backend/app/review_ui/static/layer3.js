@@ -42,6 +42,17 @@ const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'laye
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID = 'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1';
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1';
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET = 'source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference';
+const SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_RENDERED_MODE = 'rendered_source_directory_hybrid_middle_lifecycle_control';
+const SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_USE_CASE = 'operator_prepares_source_directory_hybrid_context_packet_package_and_handoff_from_rendered_control';
+const SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_RESPONSE_AUTHORITY = 'State.sourceDirectoryHybridMiddleLifecycle';
+const SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH = '/source/ingestion/server-configured-directory/vector-retrieval';
+const SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet';
+const SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis';
+const SOURCE_DIRECTORY_HYBRID_ANALYSIS_STATUS_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/status`;
+const SOURCE_DIRECTORY_HYBRID_PACKAGE_COMMIT_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/package/commit`;
+const SOURCE_DIRECTORY_HYBRID_PACKAGE_REVIEW_SUBMIT_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/package/review/submit`;
+const SOURCE_DIRECTORY_HYBRID_HANDOFF_EXPORT_PREPARE_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/prepare`;
+const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/download/prepare`;
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status';
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RENDERED_MODE = 'rendered_source_directory_hybrid_internal_webhook_dispatch_control';
@@ -52,6 +63,23 @@ const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_STATUS_PATH = '/source/ingestion/
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_DISPATCH_SCHEMA_ID = 'layer3.source_directory_internal_webhook.dispatch.v1';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_STATUS_SCHEMA_ID = 'layer3.source_directory_internal_webhook.status.v1';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_OPERATOR_DECISION = 'dispatch_source_directory_hybrid_internal_webhook';
+const SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_REQUIRED_FIELDS = Object.freeze([
+    'material_snapshot_id',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'content_sha256',
+    'file_identity_hash',
+    'authority_basis_hash',
+    'payload_hash',
+    'index_authority_hash',
+    'embedding_index_authority_hash',
+    'query_text',
+    'top_k',
+    'limit',
+    'offset',
+    'analysis_question',
+    'analysis_focus',
+]);
 const SOURCE_DIRECTORY_HYBRID_DELIVERY_PAYLOAD_FIELDS = Object.freeze([
     'material_snapshot_id',
     'source_ingestion_batch_id',
@@ -341,6 +369,9 @@ const State = {
     sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus: null,
     sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError: null,
     sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending: false,
+    sourceDirectoryHybridMiddleLifecycle: null,
+    sourceDirectoryHybridMiddleLifecycleError: null,
+    sourceDirectoryHybridMiddleLifecyclePending: false,
     sourceDirectoryHybridExternalExportDownloadDeliveryStatus: null,
     sourceDirectoryHybridExternalExportDownloadDeliveryStatusError: null,
     sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending: false,
@@ -464,6 +495,10 @@ const elements = {
     externalExportDownloadDeliveryForm: document.getElementById('external-export-download-delivery-form'),
     externalExportDownloadDeliveryPanel: document.getElementById('external-export-download-delivery-panel'),
     externalExportDownloadDeliverySubmit: document.getElementById('external-export-download-delivery-submit'),
+    sourceDirectoryHybridMiddleLifecycleForm: document.getElementById('source-directory-hybrid-middle-lifecycle-form'),
+    sourceDirectoryHybridMiddleLifecyclePanel: document.getElementById('source-directory-hybrid-middle-lifecycle-panel'),
+    sourceDirectoryHybridMiddleLifecycleAuthority: document.getElementById('source-directory-hybrid-middle-lifecycle-authority'),
+    sourceDirectoryHybridMiddleLifecycleSubmit: document.getElementById('source-directory-hybrid-middle-lifecycle-submit'),
     sourceDirectoryHybridExternalExportDownloadDeliveryForm: document.getElementById('source-directory-hybrid-external-export-download-delivery-form'),
     sourceDirectoryHybridRenderedStatusExtension: document.getElementById('source-directory-hybrid-rendered-status-extension'),
     sourceDirectoryHybridExternalExportDownloadDeliveryPanel: document.getElementById('source-directory-hybrid-external-export-download-delivery-panel'),
@@ -9633,6 +9668,7 @@ function setGateControls() {
     elements.apsHandoffDispatchSubmit.disabled = !apsHandoffControlsEnabled || !canSubmitApsHandoffDispatch();
     elements.externalExportDownloadPrepareSubmit.disabled = !externalExportDownloadControlsEnabled || !canSubmitExternalExportDownloadPrepare();
     elements.externalExportDownloadDeliverySubmit.disabled = !externalExportDownloadDeliveryControlsEnabled || !canSubmitExternalExportDownloadDelivery();
+    elements.sourceDirectoryHybridMiddleLifecycleSubmit.disabled = !canSubmitSourceDirectoryHybridMiddleLifecycle();
     elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus.disabled = !canInspectSourceDirectoryHybridExternalExportDownloadDelivery();
     elements.sourceDirectoryHybridExternalExportDownloadDeliverySubmit.disabled = !canSubmitSourceDirectoryHybridExternalExportDownloadDelivery();
     elements.sourceDirectoryHybridInternalWebhookStatus.disabled = !canInspectSourceDirectoryHybridInternalWebhookStatus();
@@ -9682,6 +9718,7 @@ function renderAll() {
     renderApsHandoffDispatchPanel();
     renderExternalExportDownloadPreparePanel();
     renderExternalExportDownloadDeliveryPanel();
+    renderSourceDirectoryHybridMiddleLifecyclePanel();
     renderSourceDirectoryHybridRenderedStatusExtension();
     renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel();
     renderSourceDirectoryHybridInternalWebhookPanel();
@@ -10652,6 +10689,7 @@ async function refreshSessionSummary() {
         State.apsHandoffDispatchError = null;
         State.externalExportDownloadPrepareError = null;
         State.externalExportDownloadSignedReferenceError = null;
+        State.sourceDirectoryHybridMiddleLifecycleError = null;
         State.sourceDirectoryHybridInternalWebhookDispatchError = null;
         State.sourceDirectoryHybridInternalWebhookStatusError = null;
         addEvent('Session state refreshed.');
@@ -10682,6 +10720,102 @@ function sourceDirectoryHybridExternalExportDownloadAuthorityPacket() {
     return packet.delivery_payload && typeof packet.delivery_payload === 'object'
         ? packet.delivery_payload
         : packet;
+}
+
+function sourceDirectoryHybridMiddleLifecycleAuthorityPacket() {
+    const text = elements.sourceDirectoryHybridMiddleLifecycleAuthority.value.trim();
+    if (!text) {
+        throw new Error('Source-directory hybrid middle lifecycle authority JSON is required.');
+    }
+    const packet = JSON.parse(text);
+    if (!packet || typeof packet !== 'object' || Array.isArray(packet)) {
+        throw new Error('Source-directory hybrid middle lifecycle authority must be a JSON object.');
+    }
+    return packet.authority_payload && typeof packet.authority_payload === 'object'
+        ? packet.authority_payload
+        : packet;
+}
+
+function sourceDirectoryHybridMiddleLifecycleBasePayload(packet = sourceDirectoryHybridMiddleLifecycleAuthorityPacket()) {
+    const payload = {};
+    SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_REQUIRED_FIELDS.forEach((field) => {
+        if (packet[field] != null) {
+            payload[field] = packet[field];
+        }
+    });
+    const missing = SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_REQUIRED_FIELDS.filter((field) => {
+        const value = payload[field];
+        return value == null || value === '' || (Array.isArray(value) && !value.length);
+    });
+    if (missing.length) {
+        throw new Error(`Source-directory hybrid middle lifecycle authority is missing: ${missing.join(', ')}`);
+    }
+    return payload;
+}
+
+function sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull() {
+    try {
+        return sourceDirectoryHybridMiddleLifecycleAuthorityPacket();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function sourceDirectoryHybridMiddleLifecyclePayload(fields, packet, clientRequestLabel) {
+    const base = sourceDirectoryHybridMiddleLifecycleBasePayload(packet);
+    const payload = { client_request_id: requestId(clientRequestLabel) };
+    fields.forEach((field) => {
+        if (base[field] != null) {
+            payload[field] = base[field];
+        }
+    });
+    return payload;
+}
+
+function sourceDirectoryHybridMiddleLifecycleSelectedPackage(externalPrepare) {
+    const packages = Array.isArray(externalPrepare.output_packages) ? externalPrepare.output_packages : [];
+    const selected = packages.find((row) => row.package_kind === 'user_facing') || packages[0] || {};
+    return {
+        output_package_id: selected.output_package_id,
+        package_kind: selected.package_kind,
+        package_payload_hash: selected.package_payload_hash || selected.payload_hash,
+    };
+}
+
+function sourceDirectoryHybridMiddleLifecycleDeliveryAuthority(
+    externalPreparePayload,
+    commit,
+    submit,
+    handoff,
+    externalPrepare,
+) {
+    const selectedPackage = sourceDirectoryHybridMiddleLifecycleSelectedPackage(externalPrepare);
+    return {
+        ...externalPreparePayload,
+        package_review_submit_record_ref: submit.submit_record_ref,
+        package_review_state: submit.package_review_state,
+        prepare_record_ref: handoff.prepare_record_ref,
+        handoff_export_state: handoff.handoff_export_state,
+        handoff_export_envelope_ref: handoff.handoff_export_envelope?.envelope_ref,
+        external_export_download_record_ref: externalPrepare.external_export_download_record_ref,
+        export_download_descriptor_ref: externalPrepare.export_download_descriptor_ref,
+        external_export_download_state: externalPrepare.external_export_download_state,
+        output_package_ids: commit.output_package_ids,
+        package_kinds: commit.package_kinds,
+        payload_hashes: commit.payload_hashes,
+        output_packages: externalPrepare.output_packages,
+        output_package_id: selectedPackage.output_package_id,
+        package_kind: selectedPackage.package_kind,
+        package_payload_hash: selectedPackage.package_payload_hash,
+    };
+}
+
+function canSubmitSourceDirectoryHybridMiddleLifecycle() {
+    return Boolean(
+        sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull()
+        && !State.sourceDirectoryHybridMiddleLifecyclePending
+        && !State.sourceDirectoryHybridMiddleLifecycle
+    );
 }
 
 function sourceDirectoryHybridExternalExportDownloadSelectedPackage(packet) {
@@ -10885,6 +11019,99 @@ function canInspectSourceDirectoryHybridInternalWebhookStatus() {
         && !State.sourceDirectoryHybridInternalWebhookStatusPending
         && !State.sourceDirectoryHybridInternalWebhookDispatchPending
     );
+}
+
+function sourceDirectoryHybridMiddleLifecyclePanelState() {
+    if (State.sourceDirectoryHybridMiddleLifecyclePending) {
+        return { state: 'preparing', label: 'source_directory_hybrid_middle_lifecycle_preparing', pill: 'preview', message: 'Preparing the source-directory hybrid retrieval, analysis, package, review, and handoff path.' };
+    }
+    if (State.sourceDirectoryHybridMiddleLifecycleError) {
+        return { state: 'blocked', label: State.sourceDirectoryHybridMiddleLifecycleError.error_code || 'source_directory_hybrid_middle_lifecycle_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the source-directory hybrid middle lifecycle.' };
+    }
+    if (State.sourceDirectoryHybridMiddleLifecycle) {
+        return { state: 'prepared', label: 'source_directory_hybrid_middle_lifecycle_prepared', pill: 'ok', message: 'Rendered control prepared source-directory hybrid package handoff authority.' };
+    }
+    if (sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull()) {
+        return { state: 'ready', label: 'source_directory_hybrid_middle_lifecycle_ready', pill: 'ok', message: 'Server-derived source-directory hybrid authority can prepare package handoff.' };
+    }
+    return { state: 'authority_missing', label: 'source_directory_hybrid_middle_lifecycle_authority_missing', pill: 'blocked', message: 'Provide server-derived source-directory hybrid authority before preparing handoff.' };
+}
+
+function renderSourceDirectoryHybridMiddleLifecyclePanel() {
+    if (!elements.sourceDirectoryHybridMiddleLifecyclePanel) return;
+    const payload = sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull() || {};
+    const lifecycle = State.sourceDirectoryHybridMiddleLifecycle || {};
+    const analysis = lifecycle.analysis || {};
+    const commit = lifecycle.packageCommit || {};
+    const submit = lifecycle.packageReviewSubmit || {};
+    const handoff = lifecycle.handoffExportPrepare || {};
+    const externalPrepare = lifecycle.externalExportDownloadPrepare || {};
+    const panelState = sourceDirectoryHybridMiddleLifecyclePanelState();
+    const downstream = [
+        'frontend_durable_authority',
+        'full_mockup_activation',
+        'provider_public_delivery',
+        'provider_private_signed_url',
+        'connector_dispatch',
+        'operator_supplied_destination',
+    ];
+    elements.sourceDirectoryHybridMiddleLifecyclePanel.dataset.renderedMode = SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_RENDERED_MODE;
+    elements.sourceDirectoryHybridMiddleLifecyclePanel.dataset.lifecycleState = panelState.state;
+    elements.sourceDirectoryHybridMiddleLifecyclePanel.dataset.frontendDurableAuthority = 'false';
+    elements.sourceDirectoryHybridMiddleLifecyclePanel.innerHTML = `
+        <div class="result-review-status">
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+            <span class="rail-label">${escapeHtml(panelState.message)}</span>
+        </div>
+        <div class="result-review-grid">
+            <section class="result-review-card">
+                <strong>Middle Lifecycle</strong>
+                <ul>
+                    ${fieldItem('rendered mode', SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_RENDERED_MODE)}
+                    ${fieldItem('use case', SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_USE_CASE)}
+                    ${fieldItem('response authority', SOURCE_DIRECTORY_HYBRID_MIDDLE_LIFECYCLE_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('state', lifecycle.state || panelState.state)}
+                    ${fieldItem('frontend durable authority', 'blocked')}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Route Sequence</strong>
+                <ul>
+                    ${fieldItem('retrieval', SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH, { code: true })}
+                    ${fieldItem('context packet', SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH, { code: true })}
+                    ${fieldItem('analysis', SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH, { code: true })}
+                    ${fieldItem('package commit', SOURCE_DIRECTORY_HYBRID_PACKAGE_COMMIT_PATH, { code: true })}
+                    ${fieldItem('external prepare', SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Source Authority</strong>
+                <ul>
+                    ${fieldItem('material snapshot', payload.material_snapshot_id, { code: true })}
+                    ${fieldItem('source batch', payload.source_ingestion_batch_id, { code: true })}
+                    ${fieldItem('source file', payload.source_ingestion_file_id, { code: true })}
+                    ${fieldItem('query present', Boolean(payload.query_text))}
+                    ${fieldItem('analysis focus present', Boolean(payload.analysis_focus))}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Prepared Output</strong>
+                <ul>
+                    ${fieldItem('analysis status', analysis.status)}
+                    ${fieldItem('package status', commit.status)}
+                    ${fieldItem('review state', submit.package_review_state)}
+                    ${fieldItem('handoff state', handoff.handoff_export_state)}
+                    ${fieldItem('external state', externalPrepare.external_export_download_state)}
+                    ${fieldItem('package count', Array.isArray(commit.output_package_ids) ? commit.output_package_ids.length : null)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Runtime</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
+            </section>
+            ${renderErrorCard(State.sourceDirectoryHybridMiddleLifecycleError)}
+        </div>
+    `;
 }
 
 function sourceDirectoryHybridInternalWebhookPanelState() {
@@ -11830,6 +12057,160 @@ async function submitExternalExportDownloadDelivery(event) {
     }
 }
 
+async function submitSourceDirectoryHybridMiddleLifecycle(event) {
+    event.preventDefault();
+    if (!canSubmitSourceDirectoryHybridMiddleLifecycle()) return;
+    const packet = sourceDirectoryHybridMiddleLifecycleAuthorityPacket();
+    const retrievalFields = [
+        'material_snapshot_id',
+        'source_ingestion_batch_id',
+        'source_ingestion_file_id',
+        'content_sha256',
+        'file_identity_hash',
+        'authority_basis_hash',
+        'payload_hash',
+        'index_authority_hash',
+        'embedding_index_authority_hash',
+        'query_text',
+        'top_k',
+    ];
+    const contextFields = [...retrievalFields, 'limit', 'offset'];
+    const analysisFields = [...contextFields, 'analysis_question', 'analysis_focus'];
+    State.sourceDirectoryHybridMiddleLifecyclePending = true;
+    State.sourceDirectoryHybridMiddleLifecycleError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+    State.sourceDirectoryHybridInternalWebhookDispatch = null;
+    State.sourceDirectoryHybridInternalWebhookDispatchError = null;
+    State.sourceDirectoryHybridInternalWebhookStatus = null;
+    State.sourceDirectoryHybridInternalWebhookStatusError = null;
+    elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = '';
+    elements.sourceDirectoryHybridInternalWebhookAuthority.value = '';
+    renderAll();
+    setBusy(elements.sourceDirectoryHybridMiddleLifecycleSubmit, true, 'Prepare Hybrid Handoff');
+    try {
+        const retrievalPayload = sourceDirectoryHybridMiddleLifecyclePayload(
+            retrievalFields,
+            packet,
+            'source-directory-hybrid-middle-lifecycle-retrieval',
+        );
+        const retrieval = await postJson(SOURCE_DIRECTORY_HYBRID_VECTOR_RETRIEVAL_PATH, retrievalPayload);
+        const contextPayload = sourceDirectoryHybridMiddleLifecyclePayload(
+            contextFields,
+            packet,
+            'source-directory-hybrid-middle-lifecycle-context',
+        );
+        const contextPacket = await postJson(SOURCE_DIRECTORY_HYBRID_CONTEXT_PACKET_PATH, contextPayload);
+        const analysisPayload = sourceDirectoryHybridMiddleLifecyclePayload(
+            analysisFields,
+            packet,
+            'source-directory-hybrid-middle-lifecycle-analysis',
+        );
+        const analysis = await postJson(SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH, analysisPayload);
+        const analysisStatusPayload = {
+            ...analysisPayload,
+            client_request_id: requestId('source-directory-hybrid-middle-lifecycle-analysis-status'),
+        };
+        const analysisStatus = await postJson(SOURCE_DIRECTORY_HYBRID_ANALYSIS_STATUS_PATH, analysisStatusPayload);
+        const packageCommitPayload = {
+            ...analysisPayload,
+            client_request_id: requestId('source-directory-hybrid-middle-lifecycle-package-commit'),
+            qualitative_analysis_hash: analysis.qualitative_analysis_hash,
+            source_directory_hybrid_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
+            operator_decision: 'commit_source_directory_hybrid_context_packet_qualitative_analysis_package',
+        };
+        const packageCommit = await postJson(SOURCE_DIRECTORY_HYBRID_PACKAGE_COMMIT_PATH, packageCommitPayload);
+        const packageReviewSubmitPayload = {
+            ...analysisPayload,
+            client_request_id: requestId('source-directory-hybrid-middle-lifecycle-package-review-submit'),
+            qualitative_analysis_hash: analysis.qualitative_analysis_hash,
+            source_directory_hybrid_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
+            construction_basis_hash: packageCommit.construction_basis_hash,
+            reconciliation_record_id: packageCommit.reconciliation_record_id,
+            output_package_ids: packageCommit.output_package_ids,
+            package_kinds: packageCommit.package_kinds,
+            payload_hashes: packageCommit.payload_hashes,
+            operator_decision: 'approved',
+        };
+        const packageReviewSubmit = await postJson(
+            SOURCE_DIRECTORY_HYBRID_PACKAGE_REVIEW_SUBMIT_PATH,
+            packageReviewSubmitPayload,
+        );
+        const handoffExportPreparePayload = {
+            ...packageReviewSubmitPayload,
+            client_request_id: requestId('source-directory-hybrid-middle-lifecycle-handoff-prepare'),
+            operator_decision: 'authorize_prepare',
+            package_review_submit_record_ref: packageReviewSubmit.submit_record_ref,
+            package_review_state: packageReviewSubmit.package_review_state,
+            handoff_target: 'internal_export_envelope',
+            export_mode: 'prepare_only',
+        };
+        const handoffExportPrepare = await postJson(
+            SOURCE_DIRECTORY_HYBRID_HANDOFF_EXPORT_PREPARE_PATH,
+            handoffExportPreparePayload,
+        );
+        const externalExportDownloadPreparePayload = {
+            ...handoffExportPreparePayload,
+            client_request_id: requestId('source-directory-hybrid-middle-lifecycle-external-prepare'),
+            operator_decision: 'prepare_source_directory_hybrid_external_export_download',
+            prepare_record_ref: handoffExportPrepare.prepare_record_ref,
+            handoff_export_state: handoffExportPrepare.handoff_export_state,
+            handoff_export_envelope_ref: handoffExportPrepare.handoff_export_envelope?.envelope_ref,
+            external_export_download_target: SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+            download_mode: 'reference_only_prepare',
+        };
+        const externalExportDownloadPrepare = await postJson(
+            SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH,
+            externalExportDownloadPreparePayload,
+        );
+        const deliveryAuthority = sourceDirectoryHybridMiddleLifecycleDeliveryAuthority(
+            externalExportDownloadPreparePayload,
+            packageCommit,
+            packageReviewSubmit,
+            handoffExportPrepare,
+            externalExportDownloadPrepare,
+        );
+        const deliveryAuthorityText = JSON.stringify(deliveryAuthority, null, 2);
+        elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = deliveryAuthorityText;
+        elements.sourceDirectoryHybridInternalWebhookAuthority.value = deliveryAuthorityText;
+        State.sourceDirectoryHybridMiddleLifecycle = {
+            state: 'source_directory_hybrid_middle_lifecycle_prepared',
+            retrieval,
+            contextPacket,
+            analysis,
+            analysisStatus,
+            packageCommit,
+            packageReviewSubmit,
+            handoffExportPrepare,
+            externalExportDownloadPrepare,
+            deliveryAuthority,
+        };
+        try {
+            State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
+        } catch (refreshError) {
+            addEvent(`Source-directory hybrid handoff prepared; session refresh blocked: ${refreshError.message}`);
+        }
+        State.sourceDirectoryHybridMiddleLifecycleError = null;
+        addEvent('Source-directory hybrid middle lifecycle prepared delivery and webhook authority.');
+        renderAll();
+    } catch (error) {
+        State.sourceDirectoryHybridMiddleLifecycle = null;
+        State.sourceDirectoryHybridMiddleLifecycleError = error.payload || {
+            schema_id: 'layer3.workbench_error.v1',
+            error_code: 'source_directory_hybrid_middle_lifecycle_request_failed',
+            message: error.message,
+        };
+        addEvent(`Source-directory hybrid middle lifecycle blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.sourceDirectoryHybridMiddleLifecyclePending = false;
+        setBusy(elements.sourceDirectoryHybridMiddleLifecycleSubmit, false, 'Prepare Hybrid Handoff');
+        renderAll();
+    }
+}
+
 async function inspectSourceDirectoryHybridExternalExportDownloadDelivery(event) {
     event.preventDefault();
     if (!canInspectSourceDirectoryHybridExternalExportDownloadDelivery()) return;
@@ -12671,6 +13052,22 @@ elements.handoffExportPrepareForm.addEventListener('submit', submitHandoffExport
 elements.apsHandoffDispatchForm.addEventListener('submit', submitApsHandoffDispatch);
 elements.externalExportDownloadPrepareForm.addEventListener('submit', submitExternalExportDownloadPrepare);
 elements.externalExportDownloadDeliveryForm.addEventListener('submit', submitExternalExportDownloadDelivery);
+elements.sourceDirectoryHybridMiddleLifecycleForm.addEventListener('submit', submitSourceDirectoryHybridMiddleLifecycle);
+elements.sourceDirectoryHybridMiddleLifecycleAuthority.addEventListener('input', () => {
+    State.sourceDirectoryHybridMiddleLifecycle = null;
+    State.sourceDirectoryHybridMiddleLifecycleError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatus = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusError = null;
+    State.sourceDirectoryHybridExternalExportDownloadDelivery = null;
+    State.sourceDirectoryHybridExternalExportDownloadDeliveryError = null;
+    State.sourceDirectoryHybridInternalWebhookDispatch = null;
+    State.sourceDirectoryHybridInternalWebhookDispatchError = null;
+    State.sourceDirectoryHybridInternalWebhookStatus = null;
+    State.sourceDirectoryHybridInternalWebhookStatusError = null;
+    elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = '';
+    elements.sourceDirectoryHybridInternalWebhookAuthority.value = '';
+    renderAll();
+});
 elements.sourceDirectoryHybridExternalExportDownloadDeliveryStatus.addEventListener('click', inspectSourceDirectoryHybridExternalExportDownloadDelivery);
 elements.sourceDirectoryHybridExternalExportDownloadDeliveryForm.addEventListener('submit', submitSourceDirectoryHybridExternalExportDownloadDelivery);
 elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.addEventListener('input', () => {
