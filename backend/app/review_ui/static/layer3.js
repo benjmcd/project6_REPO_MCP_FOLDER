@@ -128,6 +128,9 @@ const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION = 'preview
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_SCHEMA_ID = 'layer3.source_directory_qualitative_analysis_package_supersession_preview.v1';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_MODE = 'source_directory_qualitative_analysis_package_supersession_preview_authority';
+const SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE = 'rendered_source_directory_replacement_package_set_authority_control';
+const SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE = 'operator_records_replacement_package_set_authority_from_source_directory_supersession_preview';
+const SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PAYLOAD_FIELDS = Object.freeze([
     'analysis_question',
     'analysis_focus',
@@ -2164,6 +2167,7 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.packageSupersessionPreview = null;
     State.packageSupersessionPreviewError = null;
     State.packageSupersessionPreviewPending = false;
+    clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
@@ -2657,6 +2661,26 @@ function sourceDirectoryPackageSupersessionPreviewState() {
     return State.sourceDirectoryPackageSupersessionPreview || null;
 }
 
+function replacementPackageSetAuthorityPreviewState() {
+    return sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null;
+}
+
+function replacementPackageSetAuthorityPreviewSourceMode(preview = replacementPackageSetAuthorityPreviewState()) {
+    return preview && preview === sourceDirectoryPackageSupersessionPreviewState()
+        ? 'source_directory_package_supersession_preview'
+        : 'package_supersession_preview';
+}
+
+function replacementPackageSetAuthorityPreviewSourceAuthority(preview = replacementPackageSetAuthorityPreviewState()) {
+    return replacementPackageSetAuthorityPreviewSourceMode(preview) === 'source_directory_package_supersession_preview'
+        ? SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY
+        : PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY;
+}
+
+function replacementPackageSetAuthoritySourcePackageSetHash(preview = replacementPackageSetAuthorityPreviewState()) {
+    return preview?.source_package_set_hash || preview?.package_set_hash || null;
+}
+
 function replacementPackageArtifactMaterializationState() {
     return State.replacementPackageArtifactMaterialization || null;
 }
@@ -2725,6 +2749,12 @@ function clearReplacementPackageSetAuthorityState() {
     State.replacementPackageSetAuthorityError = null;
     State.replacementPackageSetAuthorityPending = false;
     clearPackageSupersessionCommitState();
+}
+
+function clearSourceDirectoryPackageSupersessionPreviewState() {
+    State.sourceDirectoryPackageSupersessionPreview = null;
+    State.sourceDirectoryPackageSupersessionPreviewError = null;
+    State.sourceDirectoryPackageSupersessionPreviewPending = false;
 }
 
 function safePackagePayloadRefForDisplay(value) {
@@ -3736,14 +3766,15 @@ function canSubmitPackageSupersessionPreview() {
 
 function canSubmitReplacementPackageSetAuthority() {
     const authority = selectedResultAuthority();
-    const preview = packageSupersessionPreviewState() || {};
+    const preview = replacementPackageSetAuthorityPreviewState() || {};
     const source = replacementPackageSourceArrays(preview);
+    const sourcePackageSetHash = replacementPackageSetAuthoritySourcePackageSetHash(preview);
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
         && authority.terminal
         && preview.package_supersession_preview_hash
-        && preview.package_set_hash
+        && sourcePackageSetHash
         && (preview.reconciliation_record_id || packageReviewSubmitState()?.reconciliation_record_id || packageConstructionState()?.reconciliation_record_id)
         && source.outputPackageIds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
         && source.packageKinds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
@@ -3754,6 +3785,7 @@ function canSubmitReplacementPackageSetAuthority() {
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
         && !State.packageSupersessionPreviewPending
+        && !State.sourceDirectoryPackageSupersessionPreviewPending
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageNamespaceBusy()
@@ -6235,10 +6267,12 @@ function renderSourceDirectoryPackageSupersessionPreviewPanel() {
 }
 
 function renderReplacementPackageSetAuthorityPanel() {
-    const preview = packageSupersessionPreviewState() || {};
+    const preview = replacementPackageSetAuthorityPreviewState() || {};
     const materialization = replacementPackageArtifactMaterializationState() || {};
     const authority = replacementPackageSetAuthorityState() || {};
     const source = replacementPackageSourceArrays(preview);
+    const sourceMode = replacementPackageSetAuthorityPreviewSourceMode(preview);
+    const sourceAuthority = replacementPackageSetAuthorityPreviewSourceAuthority(preview);
     const sourceRows = replacementPackageRows({
         packageIds: source.outputPackageIds,
         packageKinds: source.packageKinds,
@@ -6264,6 +6298,7 @@ function renderReplacementPackageSetAuthorityPanel() {
     const statePill = error ? 'blocked' : (authority.replacement_package_set_authority_id ? 'ok' : 'preview');
     const downstream = authority.downstream_unavailable || materialization.downstream_unavailable || [];
     elements.replacementPackageSetAuthorityPanel.dataset.authorityState = stateLabel;
+    elements.replacementPackageSetAuthorityPanel.dataset.sourceAuthority = sourceAuthority;
     elements.replacementPackageSetAuthorityPanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(statePill)}">${escapeHtml(stateLabel)}</span>
@@ -6275,6 +6310,10 @@ function renderReplacementPackageSetAuthorityPanel() {
                 <ul>
                     ${fieldItem('use case', REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE, { code: true })}
                     ${fieldItem('response authority', REPLACEMENT_PACKAGE_SET_AUTHORITY_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('source-directory mode', SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE, { code: true })}
+                    ${fieldItem('source-directory use case', SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE, { code: true })}
+                    ${fieldItem('selected source authority', sourceAuthority, { code: true })}
+                    ${fieldItem('selected source mode', sourceMode, { code: true })}
                     ${fieldItem('materialization decision', REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_OPERATOR_DECISION, { code: true })}
                     ${fieldItem('authority decision', REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION, { code: true })}
                     ${fieldItem('browser durable authority', false)}
@@ -9456,10 +9495,11 @@ function sourceDirectoryPackageSupersessionPreviewPayloadOrNull() {
 }
 
 function replacementPackageArtifactMaterializationPayload(authority = selectedResultAuthority()) {
-    const preview = packageSupersessionPreviewState() || {};
+    const preview = replacementPackageSetAuthorityPreviewState() || {};
     const submit = packageReviewSubmitState() || {};
     const construction = packageConstructionState() || {};
     const source = replacementPackageSourceArrays(preview);
+    const sourcePackageSetHash = replacementPackageSetAuthoritySourcePackageSetHash(preview);
     return {
         client_request_id: requestId(),
         session_id: preview.session_id || authority.sessionId,
@@ -9467,7 +9507,7 @@ function replacementPackageArtifactMaterializationPayload(authority = selectedRe
         pass_run_id: preview.pass_run_id || authority.passRunId,
         reconciliation_record_id: preview.reconciliation_record_id || submit.reconciliation_record_id || construction.reconciliation_record_id,
         package_supersession_preview_hash: preview.package_supersession_preview_hash,
-        source_package_set_hash: preview.package_set_hash,
+        source_package_set_hash: sourcePackageSetHash,
         source_output_package_ids: source.outputPackageIds,
         source_package_kinds: source.packageKinds,
         source_payload_refs: source.payloadRefs,
@@ -9959,6 +9999,7 @@ async function selectExecution() {
         State.packageReviewSubmitError = null;
         State.packageSupersessionPreview = null;
         State.packageSupersessionPreviewError = null;
+        clearSourceDirectoryPackageSupersessionPreviewState();
         clearReplacementPackageSetAuthorityState();
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
@@ -10002,6 +10043,7 @@ async function startExecution() {
         State.packageReviewSubmitError = null;
         State.packageSupersessionPreview = null;
         State.packageSupersessionPreviewError = null;
+        clearSourceDirectoryPackageSupersessionPreviewState();
         clearReplacementPackageSetAuthorityState();
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
@@ -10380,6 +10422,7 @@ async function inspectResultStatus() {
         State.packageReviewSubmitError = null;
         State.packageSupersessionPreview = null;
         State.packageSupersessionPreviewError = null;
+        clearSourceDirectoryPackageSupersessionPreviewState();
         clearReplacementPackageSetAuthorityState();
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
@@ -10412,6 +10455,7 @@ async function inspectPackageReviewPreview() {
     State.apsHandoffDispatchError = null;
     State.packageSupersessionPreview = null;
     State.packageSupersessionPreviewError = null;
+    clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
     clearExternalExportDownloadPrepareState();
     renderAll();
@@ -10448,6 +10492,7 @@ async function commitPackageConstruction() {
     State.packageReviewSubmitError = null;
     State.packageSupersessionPreview = null;
     State.packageSupersessionPreviewError = null;
+    clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
@@ -10493,6 +10538,7 @@ async function submitPackageReview(event) {
     State.packageReviewSubmitError = null;
     State.packageSupersessionPreview = null;
     State.packageSupersessionPreviewError = null;
+    clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
@@ -10541,6 +10587,7 @@ async function submitPackageSupersessionPreview() {
     if (!canSubmitPackageSupersessionPreview()) return;
     State.packageSupersessionPreviewPending = true;
     State.packageSupersessionPreviewError = null;
+    clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
     renderAll();
     setBusy(elements.packageSupersessionPreviewSubmit, true, 'Preview Supersession');
@@ -10569,6 +10616,7 @@ async function submitSourceDirectoryPackageSupersessionPreview() {
     State.sourceDirectoryPackageSupersessionPreviewPending = true;
     State.sourceDirectoryPackageSupersessionPreviewError = null;
     State.sourceDirectoryPackageSupersessionPreview = null;
+    clearReplacementPackageSetAuthorityState();
     renderAll();
     setBusy(elements.sourceDirectoryPackageSupersessionPreviewSubmit, true, 'Preview Source-Directory Supersession');
     try {
@@ -11065,6 +11113,7 @@ async function submitResultReview(event) {
         State.packageReviewSubmitError = null;
         State.packageSupersessionPreview = null;
         State.packageSupersessionPreviewError = null;
+        clearSourceDirectoryPackageSupersessionPreviewState();
         clearReplacementPackageSetAuthorityState();
         State.handoffExportPrepare = null;
         State.handoffExportPrepareError = null;
@@ -11669,6 +11718,7 @@ elements.sourceDirectoryPackageSupersessionPreviewSubmit.addEventListener('click
 elements.sourceDirectoryPackageSupersessionPreviewAuthority.addEventListener('input', () => {
     State.sourceDirectoryPackageSupersessionPreview = null;
     State.sourceDirectoryPackageSupersessionPreviewError = null;
+    clearReplacementPackageSetAuthorityState();
     renderAll();
 });
 elements.replacementPackageSetAuthoritySubmit.addEventListener('click', submitReplacementPackageSetAuthority);
