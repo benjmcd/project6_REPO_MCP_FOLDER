@@ -39361,11 +39361,11 @@
       "frontend-only durable authority blocked"
     ]
   },
-  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_doc": "next_milestone_plans/Layer3_planning_docs/944-final-readiness-audit.md",
-  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_status": "final_bounded_readiness_audited_complete_full_mockup_activation_blocked",
-  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_current_main_authority": "352f1568 Capture Layer 3 bounded trial evidence (#1568)",
-  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_next_posture": "bounded_objective_complete_select_new_phase_only_with_product_authority",
-  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_summary": "Doc 944 records the final bounded readiness audit: the current-main-selected Layer 3 source-directory operator path is complete through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, review, handoff/export, same-origin delivery/status, admitted redacted delivery/use, internal webhook dispatch/status, and projection visibility. Critical mockup journeys are read-only projected or explicitly blocked; full mockup activation and frontend-only durable authority remain blocked as optional new-phase work.",
+  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_doc": "next_milestone_plans/Layer3_planning_docs/953-final-readiness-audit-after-checkpoint.md",
+  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_status": "final_readiness_audited_full_mockup_activation_blocked_after_checkpoint",
+  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_current_main_authority": "project6-origin/main at 75714106 Record Layer 3 bounded trial checkpoint (#1577)",
+  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_next_posture": "select_governed_full_mockup_activation_freeze_only_with_product_authority_or_close_named_blocker_slice",
+  "latest_layer3_bounded_readiness_mockup_activation_blocker_audit_summary": "Doc 953 runs the final readiness audit against current main after checkpoint 952. Current-main readiness state classifies query/source setup and output review/package/handoff as interactive_live, PDF-location, Sublayers 3A/3B, Sublayer 3C execution lanes, and Analysis Environment projection as read_only, and the full mockup program as blocked. The bounded source-directory path remains trial-usable and server-authoritative, but full mockup activation remains blocked because current main has no governed activation freeze, rollback plan, product activation authority, or frontend-only durable authority admission.",
   "layer3_next_phase_activation_readiness_package": {
     "proof_kind": "layer3_next_phase_activation_readiness_package",
     "status": "current_main_activation_readiness_package_merged",
@@ -39918,7 +39918,7 @@
   "latest_layer3_analysis_environment_read_only_projection_contract_summary": "Doc 951 is current-main synced as the activation-readiness projection contract for the Analysis Environment rendered reader. The analysis_environment_projection journey remains read_only and is grounded in State.sessionSummary.analysis_environment_projection, layer3.analysis_environment_projection.v1, read_only_session_summary_analysis_environment_plane_projection, and .analysis-environment-projection. It adds no execution side effects, analysis-run mutation, package construction, connector/provider writes, frontend durable authority, runtime request widening, or full mockup activation.",
   "latest_layer3_analysis_environment_read_only_projection_contract_current_main_authority": "project6-origin/main at 2bbb1976 Add Analysis Environment projection contract (#1576)",
   "layer3_bounded_trial_checkpoint_runbook_after_analysis_environment_projection": {
-    "status": "branch_local_bounded_trial_checkpoint_runbook_proven",
+    "status": "current_main_synced_bounded_trial_checkpoint_runbook_proven",
     "doc": "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md",
     "branch": "codex/l3-bounded-trial-checkpoint",
     "base_current_main_authority": "project6-origin/main at 2bbb1976 Add Analysis Environment projection contract (#1576)",
@@ -39991,7 +39991,7 @@
     "executable_test_behavior_change_introduced_by_checkpoint": false,
     "full_mockup_program_activation_selected": false,
     "next_posture": "run_final_readiness_audit_after_bounded_trial_checkpoint_current_main_sync",
-    "summary": "Doc 952 records and proves the bounded trial-usable checkpoint and minimal operator runbook after the current-main Analysis Environment projection contract. It preserves the source-directory operator path through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, handoff/export, same-origin or admitted redacted delivery/use, internal webhook dispatch/status, and read-only Analysis Environment/mockup projection evidence. It adds no runtime authority, Analysis Environment interactivity, frontend durable authority, raw provider/path exposure, connector/provider writes, package/execution side effects, or full mockup activation.",
+    "summary": "Doc 952 is current-main synced through PR #1577 merge commit 75714106 as the bounded trial-usable checkpoint and minimal operator runbook after the Analysis Environment projection contract. It preserves the source-directory operator path through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, handoff/export, same-origin or admitted redacted delivery/use, internal webhook dispatch/status, and read-only Analysis Environment/mockup projection evidence without admitting runtime authority, Analysis Environment interactivity, frontend durable authority, raw provider/path exposure, connector/provider writes, package/execution side effects, or full mockup activation.",
     "proof_kind": "layer3_bounded_trial_checkpoint_runbook_after_analysis_environment_projection",
     "proof_terms": [
       "952-bounded-trial-checkpoint-runbook.md",
@@ -40007,7 +40007,10 @@
       "no raw provider/path exposure",
       "no connector/provider writes",
       "no full mockup activation",
-      "run_final_readiness_audit_after_bounded_trial_checkpoint_current_main_sync"
+      "run_final_readiness_audit_after_bounded_trial_checkpoint_current_main_sync",
+      "PR #1577 merged",
+      "75714106e3a4c86c97e811502ab61baa527326c3",
+      "current_main_synced_bounded_trial_checkpoint_runbook_proven"
     ],
     "validation_results": [
       "python ./tools/l3-progress-check.py PASS",
@@ -40020,11 +40023,87 @@
       "headless Chromium mockup/read-only projection group PASS 2 passed",
       "headed Chromium mockup/read-only projection group PASS 2 passed",
       "git diff --check PASS"
-    ]
+    ],
+    "current_main_sync_pr": "#1577",
+    "current_main_sync_merge_commit": "75714106e3a4c86c97e811502ab61baa527326c3",
+    "current_main_authority": "project6-origin/main at 75714106 Record Layer 3 bounded trial checkpoint (#1577)"
   },
   "latest_layer3_bounded_trial_checkpoint_runbook_doc": "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md",
-  "latest_layer3_bounded_trial_checkpoint_runbook_status": "branch_local_bounded_trial_checkpoint_runbook_proven",
+  "latest_layer3_bounded_trial_checkpoint_runbook_status": "current_main_synced_bounded_trial_checkpoint_runbook_proven",
   "latest_layer3_bounded_trial_checkpoint_runbook_base_current_main_authority": "project6-origin/main at 2bbb1976 Add Analysis Environment projection contract (#1576)",
   "latest_layer3_bounded_trial_checkpoint_runbook_next_posture": "run_final_readiness_audit_after_bounded_trial_checkpoint_current_main_sync",
-  "latest_layer3_bounded_trial_checkpoint_runbook_summary": "Doc 952 records and proves the bounded trial-usable checkpoint and minimal operator runbook after the current-main Analysis Environment projection contract. It preserves the source-directory operator path through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, handoff/export, same-origin or admitted redacted delivery/use, internal webhook dispatch/status, and read-only Analysis Environment/mockup projection evidence. It adds no runtime authority, Analysis Environment interactivity, frontend durable authority, raw provider/path exposure, connector/provider writes, package/execution side effects, or full mockup activation."
+  "latest_layer3_bounded_trial_checkpoint_runbook_summary": "Doc 952 is current-main synced through PR #1577 merge commit 75714106 as the bounded trial-usable checkpoint and minimal operator runbook after the Analysis Environment projection contract. It preserves the source-directory operator path through scan/status, material preview, Gate B, retrieval/context, qualitative analysis, package lifecycle, replacement/supersession, handoff/export, same-origin or admitted redacted delivery/use, internal webhook dispatch/status, and read-only Analysis Environment/mockup projection evidence without admitting runtime authority, Analysis Environment interactivity, frontend durable authority, raw provider/path exposure, connector/provider writes, package/execution side effects, or full mockup activation.",
+  "latest_layer3_bounded_trial_checkpoint_runbook_current_main_authority": "project6-origin/main at 75714106 Record Layer 3 bounded trial checkpoint (#1577)",
+  "latest_layer3_bounded_trial_checkpoint_runbook_merge_commit": "75714106e3a4c86c97e811502ab61baa527326c3",
+  "layer3_final_readiness_audit_after_bounded_trial_checkpoint": {
+    "status": "final_readiness_audited_full_mockup_activation_blocked_after_checkpoint",
+    "doc": "next_milestone_plans/Layer3_planning_docs/953-final-readiness-audit-after-checkpoint.md",
+    "branch": "codex/l3-final-audit-sync",
+    "current_main_authority": "project6-origin/main at 75714106 Record Layer 3 bounded trial checkpoint (#1577)",
+    "predecessor_checkpoint_doc": "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md",
+    "predecessor_checkpoint_pr": "#1577",
+    "journey_classification": {
+      "query_source_setup": "interactive_live",
+      "pdf_location": "read_only",
+      "sublayers_3a_3b": "read_only",
+      "sublayer_3c_execution_lanes": "read_only",
+      "analysis_environment_projection": "read_only",
+      "output_review_package_handoff": "interactive_live",
+      "full_mockup_program": "blocked"
+    },
+    "journey_counts": {
+      "interactive_live": 2,
+      "read_only": 4,
+      "intentionally_excluded": 0,
+      "blocked": 1
+    },
+    "bounded_path_result": "trial_usable_server_authoritative_operator_path_preserved",
+    "full_mockup_activation_result": "blocked",
+    "frontend_only_durable_authority_result": "blocked",
+    "analysis_environment_interactivity_result": "blocked_until_separate_freeze",
+    "provider_connector_write_result": "blocked_until_separate_freeze",
+    "runtime_behavior_change_introduced_by_audit": false,
+    "rendered_behavior_change_introduced_by_audit": false,
+    "backend_behavior_change_introduced_by_audit": false,
+    "route_api_dto_model_migration_service_behavior_change_introduced_by_audit": false,
+    "full_mockup_program_activation_selected": false,
+    "next_posture": "select_governed_full_mockup_activation_freeze_only_with_product_authority_or_close_named_blocker_slice",
+    "summary": "Doc 953 runs the final readiness audit against current main after checkpoint 952. Current-main readiness state classifies query/source setup and output review/package/handoff as interactive_live, PDF-location, Sublayers 3A/3B, Sublayer 3C execution lanes, and Analysis Environment projection as read_only, and the full mockup program as blocked. The bounded source-directory path remains trial-usable and server-authoritative, but full mockup activation remains blocked because current main has no governed activation freeze, rollback plan, product activation authority, or frontend-only durable authority admission.",
+    "proof_kind": "layer3_final_readiness_audit_after_bounded_trial_checkpoint",
+    "proof_terms": [
+      "953-final-readiness-audit-after-checkpoint.md",
+      "75714106 Record Layer 3 bounded trial checkpoint (#1577)",
+      "final_readiness_audited_full_mockup_activation_blocked_after_checkpoint",
+      "query_source_setup interactive_live",
+      "output_review_package_handoff interactive_live",
+      "pdf_location read_only",
+      "sublayers_3a_3b read_only",
+      "sublayer_3c_execution_lanes read_only",
+      "analysis_environment_projection read_only",
+      "full_mockup_program blocked",
+      "full_mockup_activation_enabled false",
+      "frontend_only_durable_authority_enabled false",
+      "no governed activation freeze",
+      "select_governed_full_mockup_activation_freeze_only_with_product_authority_or_close_named_blocker_slice",
+      "headless Chromium mockup/readiness journey group PASS 6 passed",
+      "headed Chromium mockup/readiness journey group PASS 6 passed"
+    ],
+    "validation_results": [
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json PASS",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js PASS",
+      "git diff --check PASS",
+      "python ./tools/l3-progress-check.py PASS",
+      "python -m pytest ./backend/tests/test_layer3_mockup_activation_readiness.py ./backend/tests/test_layer3_mockup_boundary.py ./backend/tests/test_layer3_preflight_request_contract.py ./backend/tests/test_layer3_page.py::test_layer3_static_assets_are_mounted ./backend/tests/test_layer3_page.py::test_layer3_analysis_environment_projection_rendered_reader_is_bounded ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts -q PASS 8 passed",
+      "headless Chromium source-directory path proof PASS 1 passed",
+      "headed Chromium source-directory path proof PASS 1 passed",
+      "headless Chromium mockup/readiness journey group PASS 6 passed",
+      "headed Chromium mockup/readiness journey group PASS 6 passed"
+    ]
+  },
+  "latest_layer3_final_readiness_audit_after_bounded_trial_checkpoint_doc": "next_milestone_plans/Layer3_planning_docs/953-final-readiness-audit-after-checkpoint.md",
+  "latest_layer3_final_readiness_audit_after_bounded_trial_checkpoint_status": "final_readiness_audited_full_mockup_activation_blocked_after_checkpoint",
+  "latest_layer3_final_readiness_audit_after_bounded_trial_checkpoint_current_main_authority": "project6-origin/main at 75714106 Record Layer 3 bounded trial checkpoint (#1577)",
+  "latest_layer3_final_readiness_audit_after_bounded_trial_checkpoint_next_posture": "select_governed_full_mockup_activation_freeze_only_with_product_authority_or_close_named_blocker_slice",
+  "latest_layer3_final_readiness_audit_after_bounded_trial_checkpoint_summary": "Doc 953 runs the final readiness audit against current main after checkpoint 952. Current-main readiness state classifies query/source setup and output review/package/handoff as interactive_live, PDF-location, Sublayers 3A/3B, Sublayer 3C execution lanes, and Analysis Environment projection as read_only, and the full mockup program as blocked. The bounded source-directory path remains trial-usable and server-authoritative, but full mockup activation remains blocked because current main has no governed activation freeze, rollback plan, product activation authority, or frontend-only durable authority admission."
 }
