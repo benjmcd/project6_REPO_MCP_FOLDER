@@ -2617,6 +2617,9 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRE
     PLANNING_DOCS
     / "929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE = (
+    PLANNING_DOCS / "930-lifecycle-contract.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -89121,6 +89124,210 @@ def _check_source_directory_package_supersession_commit_route_state_gap_freeze_c
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_package_lifecycle_contract_freeze(errors: list[str]) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE,
+        errors,
+    )
+    entry_key = "source_directory_package_lifecycle_contract_freeze"
+    status = "source_directory_package_lifecycle_contract_frozen"
+    doc_path = "next_milestone_plans/Layer3_planning_docs/930-lifecycle-contract.md"
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md"
+    )
+    checkpoint = "4448adf6ea168abde8346c1601ab3be52d570dbf"
+    branch = "codex/l3-package-lifecycle-contract-freeze"
+    originating_posture = (
+        "select_source_directory_package_supersession_commit_route_state_contract_after_gap_freeze_sync"
+    )
+    blocked_target = "source_directory_package_supersession_commit_rendered_control"
+    selected_contract = "source_directory_package_lifecycle_server_owned_contract"
+    implementation_slice = "implement_source_directory_package_lifecycle_server_owned_contract"
+    rendered_implementation = (
+        "implement_source_directory_package_supersession_commit_rendered_control_"
+        "against_server_owned_lifecycle_contract"
+    )
+    source_preview_route = (
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/supersession/preview"
+    )
+    replacement_artifact_route = "POST /api/v1/layer3/package/replacement-artifact/materialize"
+    replacement_authority_route = "POST /api/v1/layer3/package/replacement-set/record"
+    commit_route = "POST /api/v1/layer3/package/supersession/commit"
+    corrected_replacement_route = (
+        "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set"
+    )
+    corrected_commit_route = (
+        "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority"
+    )
+    next_posture = "current_main_sync_source_directory_package_lifecycle_contract_freeze_then_backend_contract"
+    summary = (
+        "Doc 930 freezes the source-directory package lifecycle server-owned contract after doc 929 proved "
+        "the route/state gap. It selects a backend/API contract bridge for source-directory preview to "
+        "durable replacement authority and replacement authority to package supersession commit, using the "
+        "corrected-artifact route family as precedent. This freeze introduces no runtime, rendered, backend, "
+        "route/API/DTO/model/migration/service, executable test, production UI, frontend durable authority, "
+        "or full mockup activation behavior."
+    )
+
+    for term in (
+        "930-lifecycle-contract.md",
+        f"Status: no-runtime/no-rendered route-state contract freeze for `{selected_contract}`.",
+        "Predecessor current-main sync doc: `929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md`.",
+        f"Current-main checkpoint before contract freeze: `{checkpoint}`.",
+        f"Contract-freeze branch: `{branch}`.",
+        f"Originating posture: `{originating_posture}`.",
+        f"Blocked rendered target remains: `{blocked_target}`.",
+        f"Selected contract: `{selected_contract}`.",
+        f"Selected immediate implementation slice after current-main sync: `{implementation_slice}`.",
+        f"Selected rendered implementation after contract proof: `{rendered_implementation}`.",
+        f"Existing source-directory preview route: `{source_preview_route}`.",
+        f"Existing generic replacement artifact route: `{replacement_artifact_route}`.",
+        f"Existing generic replacement authority route: `{replacement_authority_route}`.",
+        f"Existing generic commit route: `{commit_route}`.",
+        f"Repo-local server-owned precedent routes: `{corrected_replacement_route}` and `{corrected_commit_route}`.",
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Executable test behavior introduced by this freeze: `false`.",
+        "Production UI behavior introduced by this freeze: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed by this freeze alone: `false`.",
+        "Backend contract implementation entry allowed after current-main sync: `true`.",
+        "Rendered commit-control implementation entry allowed by this freeze alone: `false`.",
+        f"Next exact posture: `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE)} "
+                f"missing source-directory package lifecycle contract freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package Lifecycle Contract Freeze",
+            "930-lifecycle-contract.md",
+            status,
+            checkpoint,
+            branch,
+            selected_contract,
+            implementation_slice,
+            blocked_target,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package lifecycle contract freeze to preserve when present",
+            "930-lifecycle-contract.md",
+            status,
+            checkpoint,
+            branch,
+            selected_contract,
+            implementation_slice,
+            blocked_target,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "930-lifecycle-contract.md",
+            status,
+            checkpoint,
+            branch,
+            selected_contract,
+            implementation_slice,
+            blocked_target,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"predecessor_current_main_sync_doc": "{predecessor_doc}"',
+            f'"current_main_checkpoint_before_contract_freeze": "{checkpoint}"',
+            f'"contract_freeze_branch": "{branch}"',
+            f'"selected_contract": "{selected_contract}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"proof_kind": "{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"selected_contract": "{selected_contract}"',
+            '"runtime_behavior_change_introduced_by_freeze": false',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package lifecycle contract freeze term: {term}"
+                )
+
+    expected_common = (
+        ("status", status),
+        ("doc", doc_path),
+        ("predecessor_current_main_sync_doc", predecessor_doc),
+        ("current_main_checkpoint_before_contract_freeze", checkpoint),
+        ("contract_freeze_branch", branch),
+        ("originating_posture", originating_posture),
+        ("blocked_rendered_target_remains", blocked_target),
+        ("selected_contract", selected_contract),
+        ("selected_immediate_implementation_slice_after_current_main_sync", implementation_slice),
+        ("selected_rendered_implementation_after_contract_proof", rendered_implementation),
+        ("existing_source_directory_preview_route", source_preview_route),
+        ("existing_generic_replacement_artifact_route", replacement_artifact_route),
+        ("existing_generic_replacement_authority_route", replacement_authority_route),
+        ("existing_generic_commit_route", commit_route),
+        ("runtime_behavior_change_introduced_by_freeze", False),
+        ("rendered_behavior_change_introduced_by_freeze", False),
+        ("backend_behavior_change_introduced_by_freeze", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+        ("executable_test_behavior_change_introduced_by_freeze", False),
+        ("production_ui_behavior_change_introduced_by_freeze", False),
+        ("implementation_entry_allowed_by_freeze_alone", False),
+        ("backend_contract_implementation_entry_allowed_after_current_main_sync", True),
+        ("rendered_commit_control_implementation_entry_allowed_by_freeze_alone", False),
+        ("next_posture", next_posture),
+    )
+
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in expected_common + (
+                ("full_mockup_program_activation_selected_now", False),
+                ("summary", summary),
+            ):
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+            if entry.get("repo_local_server_owned_precedent_routes") != [
+                corrected_replacement_route,
+                corrected_commit_route,
+            ]:
+                errors.append(
+                    f"{_rel(MANIFEST)} {entry_key}.repo_local_server_owned_precedent_routes must preserve corrected-artifact precedent routes"
+                )
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("proof_kind", entry_key),
+                *expected_common,
+                ("frontend_durable_authority_enabled", False),
+                ("full_mockup_program_activation_selected", False),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -89930,6 +90137,7 @@ def main() -> int:
     _check_source_directory_package_supersession_commit_rendered_control_freeze_current_main_sync(errors)
     _check_source_directory_package_supersession_commit_route_state_gap_freeze(errors)
     _check_source_directory_package_supersession_commit_route_state_gap_freeze_current_main_sync(errors)
+    _check_source_directory_package_lifecycle_contract_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
