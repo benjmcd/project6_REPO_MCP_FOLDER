@@ -2620,6 +2620,9 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRE
 LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE = (
     PLANNING_DOCS / "930-lifecycle-contract.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "931-lifecycle-sync.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -89328,6 +89331,236 @@ def _check_source_directory_package_lifecycle_contract_freeze(errors: list[str])
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_package_lifecycle_contract_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    entry_key = "source_directory_package_lifecycle_contract_freeze_current_main_sync"
+    status = "current_main_synced_source_directory_package_lifecycle_contract_freeze"
+    doc_path = "next_milestone_plans/Layer3_planning_docs/931-lifecycle-sync.md"
+    predecessor_doc = "next_milestone_plans/Layer3_planning_docs/930-lifecycle-contract.md"
+    source_pr = "#1546"
+    source_branch = "codex/l3-package-lifecycle-contract-freeze"
+    contract_freeze_commit = "056467bb7f6dc52b9799f996bf813bce21ceea20"
+    merge_commit = "7a7b7599c21168f7e7ebb043bb277370b7d7e636"
+    sync_branch = "codex/l3-package-lifecycle-contract-sync"
+    selected_contract = "source_directory_package_lifecycle_server_owned_contract"
+    blocked_target = "source_directory_package_supersession_commit_rendered_control"
+    implementation_slice = "implement_source_directory_package_lifecycle_server_owned_contract"
+    rendered_implementation = (
+        "implement_source_directory_package_supersession_commit_rendered_control_"
+        "against_server_owned_lifecycle_contract"
+    )
+    source_preview_route = (
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/supersession/preview"
+    )
+    replacement_artifact_route = "POST /api/v1/layer3/package/replacement-artifact/materialize"
+    replacement_authority_route = "POST /api/v1/layer3/package/replacement-set/record"
+    commit_route = "POST /api/v1/layer3/package/supersession/commit"
+    corrected_replacement_route = (
+        "POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set"
+    )
+    corrected_commit_route = (
+        "POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority"
+    )
+    next_posture = "implement_source_directory_package_lifecycle_server_owned_contract"
+    summary = (
+        "Doc 931 syncs PR #1546 merge commit 7a7b7599c21168f7e7ebb043bb277370b7d7e636 "
+        "to current main as the current-main authority for source_directory_package_lifecycle_contract_freeze. "
+        "This sync introduces no behavior and unblocks only backend/API implementation of the server-owned "
+        "source-directory package lifecycle contract; the rendered package supersession commit control remains "
+        "blocked until that contract lands and is current-main synced."
+    )
+
+    for term in (
+        "931-lifecycle-sync.md",
+        "Status: current-main sync for `source_directory_package_lifecycle_contract_freeze`.",
+        "Predecessor contract-freeze doc: `930-lifecycle-contract.md`.",
+        f"Merged PR: `{source_pr}`.",
+        f"Source branch: `{source_branch}`.",
+        f"Contract-freeze commit: `{contract_freeze_commit}`.",
+        f"Merge commit: `{merge_commit}`.",
+        f"Sync branch: `{sync_branch}`.",
+        f"Base authority: `project6-origin/main` at `{merge_commit}`.",
+        f"Synced contract: `{selected_contract}`.",
+        f"Synced blocked rendered target: `{blocked_target}`.",
+        f"Synced immediate implementation slice: `{implementation_slice}`.",
+        f"Synced rendered implementation after contract proof: `{rendered_implementation}`.",
+        f"Synced source-directory preview route: `{source_preview_route}`.",
+        f"Synced generic replacement artifact route: `{replacement_artifact_route}`.",
+        f"Synced generic replacement authority route: `{replacement_authority_route}`.",
+        f"Synced generic commit route: `{commit_route}`.",
+        f"Synced corrected-artifact precedent routes: `{corrected_replacement_route}` and `{corrected_commit_route}`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Backend behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Executable test behavior introduced by this sync: `false`.",
+        "Production UI behavior introduced by this sync: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed for full mockup activation by this sync alone: `false`.",
+        "Backend contract implementation entry allowed after sync: `true`.",
+        "Rendered commit-control implementation entry allowed after sync: `false`.",
+        "`backend-layer3-api`: `SUCCESS` in `3m17s`",
+        "`test`: `SUCCESS` in `3m59s`",
+        "reviewThreads totalCount: `0`",
+        f"Next exact posture: `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory package lifecycle contract sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package Lifecycle Contract Current-Main Sync",
+            "931-lifecycle-sync.md",
+            status,
+            source_pr,
+            merge_commit,
+            selected_contract,
+            blocked_target,
+            implementation_slice,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package lifecycle contract freeze current-main sync to preserve when present",
+            "931-lifecycle-sync.md",
+            status,
+            source_pr,
+            contract_freeze_commit,
+            merge_commit,
+            selected_contract,
+            blocked_target,
+            implementation_slice,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "931-lifecycle-sync.md",
+            status,
+            source_pr,
+            contract_freeze_commit,
+            merge_commit,
+            selected_contract,
+            blocked_target,
+            implementation_slice,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"predecessor_contract_freeze_doc": "{predecessor_doc}"',
+            f'"source_pr": "{source_pr}"',
+            f'"contract_freeze_commit": "{contract_freeze_commit}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"synced_contract": "{selected_contract}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"proof_kind": "{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"source_pr": "{source_pr}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"synced_contract": "{selected_contract}"',
+            '"runtime_behavior_change_introduced_by_sync": false',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package lifecycle contract sync term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("predecessor_contract_freeze_doc", predecessor_doc),
+                ("source_pr", source_pr),
+                ("source_branch", source_branch),
+                ("contract_freeze_commit", contract_freeze_commit),
+                ("merge_commit", merge_commit),
+                ("sync_branch", sync_branch),
+                ("base_authority", f"project6-origin/main at {merge_commit}"),
+                ("synced_contract", selected_contract),
+                ("synced_blocked_rendered_target", blocked_target),
+                ("synced_immediate_implementation_slice", implementation_slice),
+                ("synced_rendered_implementation_after_contract_proof", rendered_implementation),
+                ("synced_source_directory_preview_route", source_preview_route),
+                ("synced_generic_replacement_artifact_route", replacement_artifact_route),
+                ("synced_generic_replacement_authority_route", replacement_authority_route),
+                ("synced_generic_commit_route", commit_route),
+                ("comments_count_before_merge", 0),
+                ("reviews_count_before_merge", 0),
+                ("latest_reviews_count_before_merge", 0),
+                ("review_threads_total_count_before_merge", 0),
+                ("unresolved_review_threads_total_count_before_merge", 0),
+                ("merge_state_before_merge", "CLEAN"),
+                ("runtime_behavior_change_introduced_by_sync", False),
+                ("rendered_behavior_change_introduced_by_sync", False),
+                ("backend_behavior_change_introduced_by_sync", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+                ("executable_test_behavior_change_introduced_by_sync", False),
+                ("production_ui_behavior_change_introduced_by_sync", False),
+                ("full_mockup_program_activation_selected_now", False),
+                ("implementation_entry_allowed_for_full_mockup_activation_by_sync_alone", False),
+                ("backend_contract_implementation_entry_allowed_after_sync", True),
+                ("rendered_commit_control_implementation_entry_allowed_after_sync", False),
+                ("next_posture", next_posture),
+                ("summary", summary),
+            ):
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("proof_kind", entry_key),
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("source_pr", source_pr),
+                ("contract_freeze_commit", contract_freeze_commit),
+                ("merge_commit", merge_commit),
+                ("synced_contract", selected_contract),
+                ("synced_blocked_rendered_target", blocked_target),
+                ("synced_immediate_implementation_slice", implementation_slice),
+                ("github_review_threads_total_count_before_merge", 0),
+                ("runtime_behavior_change_introduced_by_sync", False),
+                ("rendered_behavior_change_introduced_by_sync", False),
+                ("backend_behavior_change_introduced_by_sync", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+                ("executable_test_behavior_change_introduced_by_sync", False),
+                ("production_ui_behavior_change_introduced_by_sync", False),
+                ("frontend_durable_authority_enabled", False),
+                ("full_mockup_program_activation_selected", False),
+                ("implementation_entry_allowed_for_full_mockup_activation_by_sync_alone", False),
+                ("backend_contract_implementation_entry_allowed_after_sync", True),
+                ("rendered_commit_control_implementation_entry_allowed_after_sync", False),
+                ("next_posture", next_posture),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -90138,6 +90371,7 @@ def main() -> int:
     _check_source_directory_package_supersession_commit_route_state_gap_freeze(errors)
     _check_source_directory_package_supersession_commit_route_state_gap_freeze_current_main_sync(errors)
     _check_source_directory_package_lifecycle_contract_freeze(errors)
+    _check_source_directory_package_lifecycle_contract_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
