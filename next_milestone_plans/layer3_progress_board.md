@@ -9157,3 +9157,39 @@ Frontend-only durable authority enabled by this implementation: `false`. Full mo
 Non-admitted: model/migration changes, package mutation, source expansion, provider-private signed URL runtime, provider-public URL runtime, external object-store behavior, public proxy behavior, connector dispatch, connector destination writes, caller-supplied webhook destination authority, browser localStorage/sessionStorage authority, frontend-only durable authority, broader source/RAG/model/provider behavior, hidden LLM planning, auth/security expansion, and full mockup activation.
 
 Next exact posture: `publish_and_settle_source_directory_hybrid_authority_generation_operator_bridge_pr`.
+
+## Source-Directory Hybrid Authority Bridge Current-Main Sync
+
+Doc: `936-hybrid-authority-current-main-sync.md`.
+
+Status: `current_main_synced_source_directory_hybrid_authority_generation_operator_bridge`.
+
+Predecessor implementation doc: `935-hybrid-authority-implementation.md`.
+
+Merged PR: `#1560`.
+
+Source branch: `codex/l3-hybrid-authority-bridge`.
+
+Implementation commit: `5fe4fe29`.
+
+CI remediation commit: `55a67378771a21a47b46fe934eb0c3b9f8d18c8f`.
+
+Merge commit: `225954dc665084b2320ff955d517acf29803cc10`.
+
+Synced route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare`.
+
+Synced rendered control: `/review/layer3 #source-directory-hybrid-authority-prepare`.
+
+GitHub gate for PR `#1560`: `backend-layer3-api` `SUCCESS` in `3m33s`; `test` `SUCCESS` in `4m29s`; comments `0`; reviews `0`; reviewThreads totalCount `0`; unresolved reviewThreads totalCount `0`; merge state `CLEAN`; mergeable state `MERGEABLE`.
+
+Current-main authority: the bounded source-directory operator path now uses the production rendered prepare control to derive middle-lifecycle authority from the admitted Gate B session/material snapshot. The focused E2E no longer calls `POST /__test/layer3/source-directory-hybrid-authority`, and the production prepare request carries only `client_request_id` and `session_id` before continuing through retrieval/context, qualitative analysis/status, package commit, package review submit, handoff/export prepare, external export/download prepare, same-origin delivery/status, and internal webhook dispatch/status.
+
+Post-merge validation: `python ./tools/l3-progress-check.py` PASS after `project6-origin/main` refreshed to `225954dc665084b2320ff955d517acf29803cc10`; `git diff --stat project6-origin/main HEAD` showed no tree diff; local full Chromium Playwright after CI remediation passed `68 passed`; representative failing headed/headless slices each passed `3 passed`; GitHub checks both passed.
+
+Runtime behavior introduced by this sync doc: `false`. Rendered behavior introduced by this sync doc: `false`. Backend behavior introduced by this sync doc: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync doc: `false`. Executable test behavior introduced by this sync doc: `false`. Production UI behavior introduced by this sync doc: `false`.
+
+Frontend-only durable authority enabled by this sync doc: `false`. Full mockup program activation selected now: `false`.
+
+Remaining whole-program gaps: source-directory package replacement/supersession proof disposition, provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, observability/performance hardening, and final full mockup readiness audit.
+
+Next exact posture: `audit_source_directory_package_replacement_supersession_proof_after_hybrid_authority_current_main_sync`.
