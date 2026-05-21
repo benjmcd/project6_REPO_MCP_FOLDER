@@ -2,11 +2,13 @@
 
 ## Status
 
-Status: branch-local bounded trial-usable checkpoint and minimal operator runbook proven after the current-main Analysis Environment projection contract.
+Status: current-main synced bounded trial-usable checkpoint and minimal operator runbook proven after the current-main Analysis Environment projection contract.
 
 Doc: `952-bounded-trial-checkpoint-runbook.md`.
 
 Current-main authority before this branch: `project6-origin/main` at `2bbb1976 Add Analysis Environment projection contract (#1576)`.
+
+Current-main sync: PR `#1577` merged as `75714106 Record Layer 3 bounded trial checkpoint`.
 
 Predecessor docs:
 
@@ -70,7 +72,7 @@ Expected evidence:
 
 ## Verification Results
 
-Branch-local proof on `codex/l3-bounded-trial-checkpoint`:
+Proof from `codex/l3-bounded-trial-checkpoint`, now current-main synced through PR `#1577`:
 
 - `python ./tools/l3-progress-check.py`: PASS.
 - `node --check ./backend/app/review_ui/static/layer3.js`: PASS.
@@ -113,16 +115,15 @@ Stop and return to audit/reconciliation if:
 
 Immediate:
 
-1. Land this checkpoint on current main after the runbook proof is clean.
-2. Refresh `project6-origin/main` and re-run `python ./tools/l3-progress-check.py`.
-3. Confirm doc 951 and both manifests no longer claim the Analysis Environment contract is only branch-local.
+1. Run the final readiness audit against current main.
+2. Classify every critical mockup operator journey as live, read-only, intentionally excluded, or explicitly blocked.
+3. Keep full mockup activation blocked unless the audit proves the bounded path and all required blockers are closed.
 
 Mid-term:
 
-1. Run the final readiness audit against current main.
-2. Classify every critical mockup operator journey as live, read-only, intentionally excluded, or explicitly blocked.
-3. Record any blockers as named current-main evidence, not inferred backlog.
-4. Keep full mockup activation blocked unless the audit proves the full bounded path and all required blockers are closed.
+1. Select a governed full-mockup activation freeze only if product authority accepts the audit result and current-main evidence closes the blockers.
+2. Otherwise, choose the next current-main-admitted slice that closes the highest-value named blocker.
+3. Record any blocker as named current-main evidence, not inferred backlog.
 
 Long-term:
 
