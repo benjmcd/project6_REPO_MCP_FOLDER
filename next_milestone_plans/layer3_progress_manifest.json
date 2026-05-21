@@ -40894,20 +40894,21 @@
     "frontend_durable_authority_enabled_by_checkpoint_doc": false,
     "full_mockup_program_activation_selected_now": false,
     "remaining_gaps": [
-      "continuous rendered middle lifecycle operator-flow proof",
+      "Gate B to source-directory hybrid authority/index-generation rendered bridge",
+      "source-directory package replacement/supersession rendered path proof",
       "provider-private signed URL runtime admission",
       "provider-public URL runtime admission",
       "broader source/RAG/model/provider behavior",
       "auth/security expansion",
       "full mockup readiness audit"
     ],
-    "next_posture": "select_rendered_middle_lifecycle_operator_flow_gap_from_current_main"
+    "next_posture": "freeze_source_directory_hybrid_authority_generation_operator_bridge_before_runtime"
   },
   "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_doc": "next_milestone_plans/Layer3_planning_docs/933-trial-runbook.md",
   "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_status": "bounded_trial_usable_checkpoint_source_directory_scan_to_handoff_delivery_internal_webhook_after_pr1556",
   "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_base_authority": "project6-origin/main at aeccceaa115ed3b613dfc32f67336bbb6bf8298c",
   "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_source_prs": "#1554,#1555,#1556",
   "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_merge_commit": "aeccceaa115ed3b613dfc32f67336bbb6bf8298c",
-  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_next_posture": "select_rendered_middle_lifecycle_operator_flow_gap_from_current_main",
-  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_summary": "Doc 933 records the bounded trial-usable checkpoint after PRs #1554, #1555, and #1556. Current main proves rendered source-directory scan/status/material preview/Gate B through live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare to rendered same-origin hybrid delivery and rendered source-directory internal webhook dispatch/status, while preserving the caveat that middle lifecycle steps are API-proven rather than one uninterrupted manual-click flow."
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_next_posture": "freeze_source_directory_hybrid_authority_generation_operator_bridge_before_runtime",
+  "latest_source_directory_scan_to_handoff_delivery_trial_checkpoint_summary": "Doc 933 records the bounded trial-usable checkpoint after PRs #1554, #1555, and #1556. Branch codex/l3-middle-flow-operator adds a rendered source-directory hybrid middle-lifecycle control that sequences retrieval/context, qualitative analysis/status, package commit, package review submit, handoff/export prepare, and external export/download prepare from server-derived authority, then populates rendered delivery and webhook authority controls. The remaining interruption is the Gate B to source-directory hybrid authority/index-generation bridge, which still depends on test-only helper authority in the proof."
 }
