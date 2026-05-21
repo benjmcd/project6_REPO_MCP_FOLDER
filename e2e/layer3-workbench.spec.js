@@ -10469,6 +10469,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const statusPathFragment = '/api/v1/layer3/source/ingestion/server-configured-directory/status/';
   const materialPreviewPath = '/api/v1/layer3/source/ingestion/server-configured-directory/material-preview';
   const gateBPath = '/api/v1/layer3/gate-b/decision';
+  const authorityPreparePath = '/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare';
   const vectorRetrievalPath = '/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval';
   const contextPacketPath = '/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet';
   const analysisPath = '/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis';
@@ -10650,16 +10651,6 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expectNoForbiddenPayloadKeys(gateBPayload);
   expectNoDeferredRawMixedPayloadFields(gateBPayload);
 
-  const authoritySetup = await expectJson(await request.post('/__test/layer3/source-directory-hybrid-authority', {
-    data: { session_id: gateB.session_id },
-  }));
-  expect(authoritySetup.schema_id).toBe('project6.review_browser_source_directory_hybrid_authority.v1');
-  const authority = authoritySetup.authority_payload;
-  expect(authority.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
-  expect(authority.source_ingestion_file_id).toBe(scanBody.files[0].source_ingestion_file_id);
-  expect(authority.material_snapshot_id).toBeTruthy();
-  expect(authority.index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
-  expect(authority.embedding_index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
   const retrievalPayloadKeys = [
     'authority_basis_hash',
     'client_request_id',
@@ -10721,9 +10712,28 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'rendered_source_directory_hybrid_middle_lifecycle_control',
   );
   await expect(middleLifecyclePanel).toHaveAttribute('data-frontend-durable-authority', 'false');
-  await page.locator('#source-directory-hybrid-middle-lifecycle-authority').fill(
-    JSON.stringify(authority),
-  );
+  await expect(page.locator('#source-directory-hybrid-authority-prepare')).toBeEnabled();
+  const authorityPrepareRequestPromise = waitForPostRequest(authorityPreparePath);
+  const authorityPrepareResponsePromise = waitForPostResponse(authorityPreparePath);
+  await page.locator('#source-directory-hybrid-authority-prepare').click();
+  const authorityPreparePayload = (await authorityPrepareRequestPromise).postDataJSON();
+  const authoritySetup = await expectJson(await authorityPrepareResponsePromise);
+  expectOnlyPayloadKeys(authorityPreparePayload, ['client_request_id', 'session_id']);
+  expect(authorityPreparePayload.session_id).toBe(gateB.session_id);
+  expectNoForbiddenPayloadKeys(authorityPreparePayload);
+  expect(authoritySetup.schema_id).toBe('layer3.source_directory_hybrid_authority_prepare.v1');
+  expect(authoritySetup.mode).toBe('source_directory_hybrid_authority_generation_operator_bridge');
+  expect(authoritySetup.redaction_guards.absolute_path_exposed).toBe(false);
+  expect(authoritySetup.redaction_guards.frontend_durable_authority_enabled).toBe(false);
+  const authority = authoritySetup.authority_payload;
+  expect(authority.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
+  expect(authority.source_ingestion_file_id).toBe(scanBody.files[0].source_ingestion_file_id);
+  expect(authority.material_snapshot_id).toBeTruthy();
+  expect(authority.index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(authority.embedding_index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(JSON.parse(
+    await page.locator('#source-directory-hybrid-middle-lifecycle-authority').inputValue(),
+  )).toEqual(authority);
   await expect(middleLifecyclePanel).toHaveAttribute('data-lifecycle-state', 'ready');
   await expect(page.locator('#source-directory-hybrid-middle-lifecycle-submit')).toBeEnabled();
 
@@ -11045,6 +11055,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path.startsWith(statusPathFragment))).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === materialPreviewPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === gateBPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === authorityPreparePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === vectorRetrievalPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === contextPacketPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === analysisPath)).toHaveLength(1);
