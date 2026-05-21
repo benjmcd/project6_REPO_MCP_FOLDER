@@ -951,3 +951,18 @@ Current Layer 3 source-directory replacement package-set authority rendered cont
 - preserve stop action `source_directory_replacement_package_set_authority_route_state_gap_freeze`
 - treat this freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior, production UI behavior, implementation-entry admission by itself, package supersession commit, package replacement activation, source package row mutation, source package payload write/rewrite, caller-entered replacement refs, browser-generated replacement artifacts, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `current_main_sync_source_directory_replacement_package_set_authority_rendered_control_freeze_then_implement_rendered_control`
+
+Current Layer 3 source-directory replacement package-set authority rendered control freeze current-main sync to preserve when present:
+- `923_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md` records current-main sync for Doc `922` after PR `#1537`
+- classify it as `current_main_synced_source_directory_replacement_package_set_authority_rendered_control_freeze`
+- preserve predecessor freeze doc `922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md`
+- preserve source branch `codex/l3-next-target-freeze`
+- preserve freeze commit `0efe0ffca49d9a162dcfe3d1192051bcf0e5ebbb`
+- preserve merge commit `cf6da7c843980bdce3b4505d6abab2276916a18a`
+- preserve sync branch `codex/l3-next-target-freeze-sync`
+- preserve synced target `source_directory_replacement_package_set_authority_rendered_control`
+- preserve synced source state `State.sourceDirectoryPackageSupersessionPreview`
+- preserve synced routes `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`
+- preserve GitHub checks `backend-layer3-api` and `test` as `SUCCESS` with empty comments/reviews/latestReviews/reviewThreads before merge
+- treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior introduced by sync, production UI behavior introduced by sync, package supersession commit, package replacement activation, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync`
