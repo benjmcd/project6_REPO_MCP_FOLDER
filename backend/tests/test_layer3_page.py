@@ -396,7 +396,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "layer3.source_directory_qualitative_analysis_package_supersession_preview.v1" in js.text
     assert "source_directory_qualitative_analysis_package_supersession_preview_authority" in js.text
     assert "function sourceDirectoryPackageSupersessionPreviewPayload" in js.text
-    assert "postJson(\n            SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH" in js.text
+    assert "postJson(\n            SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PATH" in js_text
     assert "source_directory_package_supersession_preview_ready" in js.text
     assert "redacted_local_payload_ref" in js.text
     assert "function authorityMatrixContract" in js.text
@@ -447,6 +447,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Guardrail Projection" in js.text
     assert "renderConnectorLocalDestinationReceiptStatusPanel()" in js.text
     assert "renderReplacementPackageSetAuthorityPanel()" in js.text
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE = 'rendered_source_directory_replacement_package_set_authority_control'" in js.text
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview'" in js.text
+    assert "function replacementPackageSetAuthorityPreviewState" in js.text
+    assert "return sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null" in js.text
+    assert "function replacementPackageSetAuthoritySourcePackageSetHash" in js.text
     assert "replacementPackageArtifactMaterializationPayload()" in js.text
     assert "replacementPackageSetAuthorityPayload(materialization)" in js.text
     assert "/package/replacement-artifact/materialize" in js.text
@@ -1006,6 +1011,7 @@ def test_layer3_source_directory_hybrid_delivery_control_is_bounded() -> None:
 def test_layer3_source_directory_package_supersession_preview_control_is_bounded() -> None:
     html = client.get("/review/layer3")
     js = client.get("/review/layer3/static/layer3.js")
+    js_text = js.text.replace("\r\n", "\n")
 
     assert html.status_code == 200
     assert js.status_code == 200
@@ -1018,12 +1024,12 @@ def test_layer3_source_directory_package_supersession_preview_control_is_bounded
     assert 'data-read-only="true"' in html.text
     assert 'data-frontend-durable-authority="false"' in html.text
 
-    payload_start = js.text.find("function sourceDirectoryPackageSupersessionPreviewPayload")
-    payload_end = js.text.find("function sourceDirectoryPackageSupersessionPreviewPayloadOrNull")
-    render_start = js.text.find("function renderSourceDirectoryPackageSupersessionPreviewPanel")
-    render_end = js.text.find("function renderReplacementPackageSetAuthorityPanel")
-    submit_start = js.text.find("async function submitSourceDirectoryPackageSupersessionPreview")
-    submit_end = js.text.find("async function submitReplacementPackageSetAuthority")
+    payload_start = js_text.find("function sourceDirectoryPackageSupersessionPreviewPayload")
+    payload_end = js_text.find("function sourceDirectoryPackageSupersessionPreviewPayloadOrNull")
+    render_start = js_text.find("function renderSourceDirectoryPackageSupersessionPreviewPanel")
+    render_end = js_text.find("function renderReplacementPackageSetAuthorityPanel")
+    submit_start = js_text.find("async function submitSourceDirectoryPackageSupersessionPreview")
+    submit_end = js_text.find("async function submitReplacementPackageSetAuthority")
     assert payload_start != -1
     assert payload_end != -1
     assert render_start != -1
@@ -1031,9 +1037,9 @@ def test_layer3_source_directory_package_supersession_preview_control_is_bounded
     assert submit_start != -1
     assert submit_end != -1
 
-    payload_slice = js.text[payload_start:payload_end]
-    render_slice = js.text[render_start:render_end]
-    submit_slice = js.text[submit_start:submit_end]
+    payload_slice = js_text[payload_start:payload_end]
+    render_slice = js_text[render_start:render_end]
+    submit_slice = js_text[submit_start:submit_end]
     assert "operator_decision: SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_OPERATOR_DECISION" in payload_slice
     assert "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PAYLOAD_FIELDS.forEach" in payload_slice
     assert "payload[field].length !== 3" in payload_slice
@@ -1060,6 +1066,84 @@ def test_layer3_source_directory_package_supersession_preview_control_is_bounded
         "/package/supersession/commit",
         "/package/replacement",
     ):
+        assert forbidden not in payload_slice
+        assert forbidden not in submit_slice
+
+
+def test_layer3_source_directory_replacement_package_set_authority_control_is_bounded() -> None:
+    html = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+    js_text = js.text.replace("\r\n", "\n")
+
+    assert html.status_code == 200
+    assert js.status_code == 200
+    assert 'id="replacement-package-set-authority-submit"' in html.text
+    assert 'id="replacement-package-set-authority-panel"' in html.text
+    assert (
+        'data-rendered-mode="rendered_replacement_package_set_authority_control"'
+        in html.text
+    )
+    assert 'data-frontend-durable-authority="false"' in html.text
+
+    state_start = js_text.find("function replacementPackageSetAuthorityPreviewState")
+    state_end = js_text.find("function replacementPackageArtifactMaterializationState")
+    gate_start = js_text.find("function canSubmitReplacementPackageSetAuthority")
+    gate_end = js_text.find("function canSubmitPackageSupersessionCommit")
+    render_start = js_text.find("function renderReplacementPackageSetAuthorityPanel")
+    payload_start = js_text.find("function replacementPackageArtifactMaterializationPayload")
+    payload_end = js_text.find("function replacementPackageSetAuthorityPayload")
+    submit_start = js_text.find("async function submitReplacementPackageSetAuthority")
+    submit_end = js_text.find("async function submitPackageSupersessionCommit")
+    input_start = js_text.find("elements.sourceDirectoryPackageSupersessionPreviewAuthority.addEventListener")
+    input_end = js_text.find("elements.replacementPackageSetAuthoritySubmit.addEventListener")
+    assert state_start != -1
+    assert state_end != -1
+    assert gate_start != -1
+    assert gate_end != -1
+    assert render_start != -1
+    assert payload_start != -1
+    assert payload_end != -1
+    assert submit_start != -1
+    assert submit_end != -1
+    assert input_start != -1
+    assert input_end != -1
+
+    state_slice = js_text[state_start:state_end]
+    gate_slice = js_text[gate_start:gate_end]
+    render_slice = js_text[render_start:payload_start]
+    payload_slice = js_text[payload_start:payload_end]
+    submit_slice = js_text[submit_start:submit_end]
+    input_slice = js_text[input_start:input_end]
+
+    assert "sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null" in state_slice
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY" in state_slice
+    assert "preview?.source_package_set_hash || preview?.package_set_hash || null" in state_slice
+    assert "const preview = replacementPackageSetAuthorityPreviewState() || {}" in gate_slice
+    assert "const sourcePackageSetHash = replacementPackageSetAuthoritySourcePackageSetHash(preview)" in gate_slice
+    assert "&& sourcePackageSetHash" in gate_slice
+    assert "!State.sourceDirectoryPackageSupersessionPreviewPending" in gate_slice
+    assert "dataset.sourceAuthority = sourceAuthority" in render_slice
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE" in render_slice
+    assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE" in render_slice
+    assert "fieldItem('selected source authority', sourceAuthority" in render_slice
+    assert "fieldItem('selected source mode', sourceMode" in render_slice
+    assert "const preview = replacementPackageSetAuthorityPreviewState() || {}" in payload_slice
+    assert "source_package_set_hash: sourcePackageSetHash" in payload_slice
+    assert "const materialization = await postJson(\n            '/package/replacement-artifact/materialize'" in submit_slice
+    assert "State.replacementPackageArtifactMaterialization = materialization" in submit_slice
+    assert "State.replacementPackageSetAuthority = await postJson(\n            '/package/replacement-set/record'" in submit_slice
+    assert "clearReplacementPackageSetAuthorityState()" in input_slice
+    for forbidden in (
+        "localStorage",
+        "sessionStorage",
+        "/package/supersession/commit",
+        "download_url",
+        "public_url",
+        "signed_url",
+        "provider_credentials",
+    ):
+        assert forbidden not in state_slice
+        assert forbidden not in gate_slice
         assert forbidden not in payload_slice
         assert forbidden not in submit_slice
 

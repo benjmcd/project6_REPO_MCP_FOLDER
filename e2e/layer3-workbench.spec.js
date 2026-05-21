@@ -5036,6 +5036,178 @@ test('Layer 3 workbench records rendered replacement package-set authority contr
   ]);
 });
 
+test('Layer 3 workbench records replacement package-set authority from source-directory preview state', async ({ page, request }) => {
+  const layer3ApiRequests = trackLayer3ApiRequests(page);
+  const materialization = await openRawMixedMaterializedWorkbench(page, request);
+  const { material } = await runRawMixedRenderedMaterialPreview(page, materialization);
+  const gateB = await submitRenderedGateB(page, material);
+  await previewRenderedGateC(page, gateB.session_id);
+  await commitRenderedGateC(page, gateB.session_id);
+  const planPreview = await previewRenderedPlan(page, gateB.session_id, materialization);
+  const approval = await approveRenderedPlan(page, gateB.session_id, planPreview);
+  await assertRenderedPlanApprovalStopsBeforeExecution(page, gateB.session_id, layer3ApiRequests);
+  const execution = await selectAndStartRenderedExecution(page, gateB.session_id, approval, planPreview);
+  const status = await inspectRenderedResultStatus(page, gateB.session_id, approval, planPreview, execution);
+  const review = await submitRenderedResultReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    status,
+    {
+      operatorDecision: 'approved',
+      reviewNotes: 'Raw mixed rendered result review approves source-directory replacement authority.',
+      packageReviewEnabled: true,
+    },
+  );
+  const packagePreview = await inspectRenderedPackagePreview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+  );
+  const commit = await commitRenderedPackageConstruction(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    packagePreview,
+  );
+  const packageSubmit = await submitRenderedPackageReview(
+    page,
+    gateB.session_id,
+    approval,
+    planPreview,
+    execution,
+    review,
+    commit,
+  );
+  const genericPreview = await previewRenderedPackageSupersession(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    packageSubmit,
+    { proveFailure: false },
+  );
+  const sourcePreviewAuthority = {
+    analysis_question: 'What changed in the server-owned source directory package?',
+    analysis_focus: 'source-directory replacement package-set authority rendered control proof',
+    material_snapshot_id: 'snapshot-source-replacement-authority-rendered-proof',
+    source_ingestion_batch_id: 'batch-source-replacement-authority-rendered-proof',
+    source_ingestion_file_id: 'file-source-replacement-authority-rendered-proof',
+    content_sha256: 'a'.repeat(64),
+    file_identity_hash: 'b'.repeat(64),
+    authority_basis_hash: 'c'.repeat(64),
+    payload_hash: 'd'.repeat(64),
+    index_authority_hash: 'e'.repeat(64),
+    query_text: 'source directory replacement package-set evidence',
+    qualitative_analysis_hash: 'f'.repeat(64),
+    source_directory_package_review_preview_hash: '1'.repeat(64),
+    construction_basis_hash: commit.construction_basis_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: commit.output_package_ids,
+    package_kinds: EXPECTED_PACKAGE_REVIEW_KINDS,
+    payload_hashes: commit.payload_hashes,
+    package_review_submit_record_ref: packageSubmit.submit_record_ref,
+    package_review_state: 'package_review_approved',
+  };
+  const sourcePreview = {
+    schema_id: 'layer3.source_directory_qualitative_analysis_package_supersession_preview.v1',
+    mode: 'source_directory_qualitative_analysis_package_supersession_preview_authority',
+    status: 'previewed',
+    source_gate: 'source_directory_package_review_submit_approved',
+    next_state: 'source_directory_package_supersession_previewed',
+    session_id: gateB.session_id,
+    analysis_plan_id: approval.analysis_plan_id,
+    pass_run_id: execution.selection.pass_run_ids[0],
+    reconciliation_record_id: commit.reconciliation_record_id,
+    package_review_submit_record_ref: packageSubmit.submit_record_ref,
+    output_package_ids: commit.output_package_ids,
+    package_kinds: EXPECTED_PACKAGE_REVIEW_KINDS,
+    payload_hashes: commit.payload_hashes,
+    package_supersession_preview_hash: genericPreview.package_supersession_preview_hash,
+    source_package_set_hash: genericPreview.package_set_hash,
+    downstream_dependency_hash: '8'.repeat(64),
+    downstream_dependencies: [{
+      state_key: 'source_directory_package_review_submit',
+      submit_record_ref: packageSubmit.submit_record_ref,
+      package_review_state: 'package_review_approved',
+    }],
+    replacement_package_set_authority_enabled: false,
+    package_supersession_commit_enabled: false,
+    package_row_mutation_enabled: false,
+    package_payload_rewrite_enabled: false,
+    source_package_row_mutation_enabled: false,
+    connector_dispatch_enabled: false,
+    provider_public_delivery_enabled: false,
+    network_egress_enabled: false,
+    frontend_durable_authority_enabled: false,
+  };
+  let capturedSourcePreviewPayload = null;
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview',
+    async (route) => {
+      capturedSourcePreviewPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(sourcePreview),
+      });
+    },
+  );
+
+  const sourcePreviewPanel = page.locator('#source-directory-package-supersession-preview-panel');
+  await sourcePreviewPanel.scrollIntoViewIfNeeded();
+  await page.locator('#source-directory-package-supersession-preview-authority').fill(
+    JSON.stringify(sourcePreviewAuthority),
+  );
+  await page.locator('#source-directory-package-supersession-preview-submit').click();
+  await expect(sourcePreviewPanel).toHaveAttribute('data-preview-state', 'source_directory_package_supersession_previewed');
+
+  const replacementPanel = page.locator('#replacement-package-set-authority-panel');
+  await replacementPanel.scrollIntoViewIfNeeded();
+  await expect(replacementPanel).toHaveAttribute('data-source-authority', 'State.sourceDirectoryPackageSupersessionPreview');
+  await expect(replacementPanel).toHaveAttribute('data-authority-state', 'replacement_package_set_authority_ready');
+  await expect(replacementPanel).toContainText('rendered_source_directory_replacement_package_set_authority_control');
+  await expect(replacementPanel).toContainText('source_directory_package_supersession_preview');
+
+  const replacement = await recordRenderedReplacementPackageSetAuthority(
+    page,
+    gateB.session_id,
+    approval,
+    execution,
+    commit,
+    { ...sourcePreview, package_set_hash: sourcePreview.source_package_set_hash },
+  );
+
+  expect(capturedSourcePreviewPayload.operator_decision).toBe('preview_source_directory_package_supersession');
+  expect(replacement.materialization.source_package_set_hash).toBe(sourcePreview.source_package_set_hash);
+  expect(replacement.materialization.package_supersession_preview_hash).toBe(
+    sourcePreview.package_supersession_preview_hash,
+  );
+  expect(replacement.replacementAuthority.next_state).toBe('replacement_package_set_authority_recorded');
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview')
+  ))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/materialize'))).toHaveLength(2);
+  expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-set/record'))).toHaveLength(2);
+  expectNoRequestsToLayer3Paths(layer3ApiRequests, [
+    '/package/supersession/commit',
+    '/package/replacement-artifact/manifest',
+    '/package/replacement-namespace',
+    '/handoff/connector',
+    '/provider-private-signed-url',
+    '/provider-public-url',
+  ]);
+});
+
 test('Layer 3 workbench records rendered package supersession commit control', async ({ page, request }) => {
   const layer3ApiRequests = trackLayer3ApiRequests(page);
   const materialization = await openRawMixedMaterializedWorkbench(page, request);
