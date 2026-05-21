@@ -866,3 +866,18 @@ Current Layer 3 full mockup activation next blocker selection to preserve when p
 - preserve selected full-program posture `blocked_until_all_critical_mockup_operator_journeys_are_live_read_only_excluded_or_blocked`
 - treat this selection as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior, production UI behavior, implementation-entry admission, full mockup program activation, mockup-frame write control, broad source/package/connector/provider/RAG/browser/auth behavior, browser-storage authority, or frontend-only durable authority
 - preserve next posture as `freeze_one_named_full_mockup_activation_target_from_current_main_evidence`
+
+Current Layer 3 source-directory package supersession preview rendered control freeze to preserve when present:
+- `918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md` records a no-runtime/no-rendered freeze for the next named activation target after Doc `917`
+- classify it as `source_directory_package_supersession_preview_rendered_control_frozen`
+- preserve predecessor selection doc `917_FULL_MOCKUP_ACTIVATION_NEXT_BLOCKER_SELECTION.md`
+- preserve current-main checkpoint before freeze `b6ba2a45c8075e8d5305974231b7baa53ffaa820`
+- preserve freeze branch `codex/l3-package-preview-freeze`
+- preserve selected target `source_directory_package_supersession_preview_rendered_control`
+- preserve selected target classification `live_server_authoritative_action`
+- preserve selected route `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`
+- preserve selected schema `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`
+- preserve selected mode `source_directory_qualitative_analysis_package_supersession_preview_authority`
+- preserve selected implementation action after freeze sync `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`
+- treat this freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior, production UI behavior, implementation-entry admission by itself, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_package_supersession_preview_rendered_control_freeze_then_implement_rendered_control`
