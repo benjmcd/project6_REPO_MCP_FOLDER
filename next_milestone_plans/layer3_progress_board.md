@@ -9219,3 +9219,35 @@ Frontend-only durable authority enabled by this implementation: `false`. Full mo
 Non-admitted: model/migration changes, new package mutation routes, package payload rewrite, source package row mutation, provider-private signed URL runtime, provider-public URL runtime, external object-store behavior, public proxy behavior, connector dispatch, destination write, caller-supplied webhook destination authority, source expansion, broader RAG/model/provider behavior, hidden LLM planning, auth/security expansion, browser-storage authority, frontend-only durable authority, and full mockup activation.
 
 Next exact posture: `publish_and_settle_source_directory_package_replacement_supersession_rendered_proof_pr`.
+
+## Source-Directory Package Supersession Current-Main Sync
+
+Doc: `938-source-supersession-current-main-sync.md`.
+
+Status: `current_main_synced_source_directory_package_replacement_supersession_rendered_path`.
+
+Predecessor implementation proof doc: `937-source-supersession-proof.md`.
+
+Merged PR: `#1562`.
+
+Source branch: `codex/l3-source-supersession-proof`.
+
+Implementation commit: `5fe9bb6619135f51ca6e8654789a4c238b60a68a`.
+
+Merge commit: `b53a62cb5b4ddaf0584fed01bde241c33d372717`.
+
+GitHub gate for PR `#1562`: `backend-layer3-api` `SUCCESS` in `3m38s`; `test` `SUCCESS` in `4m34s`; comments `0`; reviews `0`; reviewThreads totalCount `0`; unresolved reviewThreads totalCount `0`; merge state `CLEAN`; mergeable state `MERGEABLE`.
+
+Current-main authority: the bounded rendered source-directory path now runs through package supersession preview, replacement package-set authority, and package supersession commit after the hybrid middle lifecycle, using server-owned persisted hybrid reconciliation/package authority and existing route contracts.
+
+Post-merge validation: `project6-origin/main` refreshed to `b53a62cb5b4ddaf0584fed01bde241c33d372717`; the merged implementation lane had no tree diff against refreshed main; GitHub checks passed.
+
+Bounded trial-usable checkpoint: current main now proves source-directory scan/status through material preview, Gate B, hybrid authority prepare, retrieval/context, qualitative analysis/status, package commit, package review submit, package replacement/supersession, handoff/export, same-origin delivery/status, and internal webhook dispatch/status.
+
+Runtime behavior introduced by this sync doc: `false`. Rendered behavior introduced by this sync doc: `false`. Backend behavior introduced by this sync doc: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync doc: `false`. Executable test behavior introduced by this sync doc: `false`. Production UI behavior introduced by this sync doc: `false`.
+
+Frontend-only durable authority enabled by this sync doc: `false`. Full mockup program activation selected now: `false`.
+
+Remaining whole-program gaps: final bounded readiness/runbook audit, Analysis Environment/mockup projection disposition, provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, observability/performance hardening, and final full mockup readiness audit.
+
+Next exact posture: `run_final_bounded_readiness_and_mockup_activation_blocker_audit_after_source_directory_replacement_supersession_current_main_sync`.
