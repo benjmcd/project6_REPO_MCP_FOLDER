@@ -8699,3 +8699,41 @@ Full mockup program activation selected now: `false`. Implementation-entry allow
 Still blocked: full mockup program activation, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source package row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, and frontend-only durable authority.
 
 Next exact posture: `select_next_blocker_retirement_lane_after_source_directory_package_supersession_preview_rendered_control_current_main_sync`.
+
+## Source-Directory Replacement Package-Set Authority Rendered Control Freeze
+
+Doc: `922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md`.
+
+Status: `source_directory_replacement_package_set_authority_rendered_control_frozen`.
+
+Predecessor current-main sync doc: `921_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before freeze: `6ab8a141ea2ab50d1c330a32edfa122086987aac`.
+
+Freeze branch: `codex/l3-next-target-freeze`.
+
+Selected target: `source_directory_replacement_package_set_authority_rendered_control`.
+
+Selected target classification: `live_server_authoritative_action`.
+
+Selected activation target class: `single_existing_rendered_control_extension`.
+
+Selected source state: `State.sourceDirectoryPackageSupersessionPreview`.
+
+Selected downstream states: `State.replacementPackageArtifactMaterialization` and `State.replacementPackageSetAuthority`, subject to future implementation proof that shared downstream state remains unambiguous.
+
+Selected routes: `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`.
+
+Owner services: `backend/app/services/layer3_replacement_package_materialization.py` and `backend/app/services/layer3_replacement_package_set_authority.py`.
+
+Selected implementation action after freeze sync: `implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync`.
+
+Stop action if route/state contract is not adequate: `source_directory_replacement_package_set_authority_route_state_gap_freeze`.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`. Production UI behavior introduced by this freeze: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed by this freeze alone: `false`.
+
+Still blocked: implementation before current-main sync, package supersession commit, package replacement activation, source `L3OutputPackage` row mutation, source package payload write/rewrite, caller-entered replacement refs, browser-generated replacement artifacts, connector dispatch, destination writes, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `current_main_sync_source_directory_replacement_package_set_authority_rendered_control_freeze_then_implement_rendered_control`.

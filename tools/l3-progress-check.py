@@ -2585,6 +2585,10 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MA
     PLANNING_DOCS
     / "921_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE = (
+    PLANNING_DOCS
+    / "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -87459,6 +87463,245 @@ def _check_source_directory_package_supersession_preview_rendered_control_curren
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_replacement_package_set_authority_rendered_control_freeze(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE,
+        errors,
+    )
+    entry_key = "source_directory_replacement_package_set_authority_rendered_control_freeze"
+    status = "source_directory_replacement_package_set_authority_rendered_control_frozen"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "921_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md"
+    )
+    checkpoint = "6ab8a141ea2ab50d1c330a32edfa122086987aac"
+    branch = "codex/l3-next-target-freeze"
+    target = "source_directory_replacement_package_set_authority_rendered_control"
+    target_classification = "live_server_authoritative_action"
+    activation_class = "single_existing_rendered_control_extension"
+    source_state = "State.sourceDirectoryPackageSupersessionPreview"
+    materialization_state = "State.replacementPackageArtifactMaterialization"
+    replacement_state = "State.replacementPackageSetAuthority"
+    materialization_route = "POST /api/v1/layer3/package/replacement-artifact/materialize"
+    replacement_route = "POST /api/v1/layer3/package/replacement-set/record"
+    materialization_service = "backend/app/services/layer3_replacement_package_materialization.py"
+    replacement_service = "backend/app/services/layer3_replacement_package_set_authority.py"
+    implementation_action = (
+        "implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync"
+    )
+    stop_action = "source_directory_replacement_package_set_authority_route_state_gap_freeze"
+    next_posture = (
+        "current_main_sync_source_directory_replacement_package_set_authority_"
+        "rendered_control_freeze_then_implement_rendered_control"
+    )
+    summary = (
+        "Doc 922 freezes source_directory_replacement_package_set_authority_rendered_control "
+        "as the next exact package lifecycle blocker-retirement target after the source-directory "
+        "package supersession preview current-main sync. It selects a single existing rendered "
+        "control extension over the current source-directory preview state and existing server-owned "
+        "materialization/replacement authority routes, introduces no runtime or rendered behavior "
+        "in this pass, and blocks implementation until current-main sync and route/state contract proof."
+    )
+
+    for term in (
+        "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md",
+        f"Status: no-runtime/no-rendered freeze for `{target}`.",
+        "Predecessor current-main sync doc: `921_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`.",
+        f"Current-main checkpoint before freeze: `{checkpoint}`.",
+        f"Freeze branch: `{branch}`.",
+        f"Selected target: `{target}`.",
+        f"Selected target classification: `{target_classification}`.",
+        f"Selected activation target class: `{activation_class}`.",
+        f"Selected implementation action after freeze sync: `{implementation_action}`.",
+        f"Stop action if route/state contract is not adequate: `{stop_action}`.",
+        source_state,
+        materialization_state,
+        replacement_state,
+        materialization_route,
+        replacement_route,
+        materialization_service,
+        replacement_service,
+        "Runtime behavior introduced by this freeze: `false`.",
+        "Rendered behavior introduced by this freeze: `false`.",
+        "Backend behavior introduced by this freeze: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`.",
+        "Executable test behavior introduced by this freeze: `false`.",
+        "Production UI behavior introduced by this freeze: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed by this freeze alone: `false`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE)} "
+                f"missing source-directory replacement package-set authority freeze term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Replacement Package-Set Authority Rendered Control Freeze",
+            "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md",
+            status,
+            checkpoint,
+            branch,
+            target,
+            source_state,
+            materialization_route,
+            replacement_route,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory replacement package-set authority rendered control freeze to preserve when present",
+            "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md",
+            status,
+            checkpoint,
+            branch,
+            target,
+            source_state,
+            materialization_route,
+            replacement_route,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md",
+            status,
+            checkpoint,
+            branch,
+            target,
+            source_state,
+            materialization_route,
+            replacement_route,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"predecessor_current_main_sync_doc": "{predecessor_doc}"',
+            f'"current_main_checkpoint_before_freeze": "{checkpoint}"',
+            f'"freeze_branch": "{branch}"',
+            f'"selected_target": "{target}"',
+            f'"selected_source_state": "{source_state}"',
+            f'"selected_materialization_route": "{materialization_route}"',
+            f'"selected_replacement_authority_route": "{replacement_route}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"selected_source_state": "{source_state}"',
+            f'"selected_materialization_state": "{materialization_state}"',
+            f'"selected_replacement_authority_state": "{replacement_state}"',
+            '"runtime_behavior_change_introduced_by_freeze": false',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory replacement package-set authority freeze term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("status", status),
+                ("doc", doc_path),
+                ("predecessor_current_main_sync_doc", predecessor_doc),
+                ("current_main_checkpoint_before_freeze", checkpoint),
+                ("freeze_branch", branch),
+                ("selected_target", target),
+                ("selected_target_classification", target_classification),
+                ("selected_activation_target_class", activation_class),
+                ("selected_source_state", source_state),
+                ("selected_materialization_state", materialization_state),
+                ("selected_replacement_authority_state", replacement_state),
+                ("selected_materialization_route", materialization_route),
+                ("selected_replacement_authority_route", replacement_route),
+                ("selected_implementation_action_after_freeze_sync", implementation_action),
+                ("stop_action_if_route_state_contract_is_not_adequate", stop_action),
+                ("runtime_behavior_change_introduced_by_freeze", False),
+                ("rendered_behavior_change_introduced_by_freeze", False),
+                ("backend_behavior_change_introduced_by_freeze", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+                ("executable_test_behavior_change_introduced_by_freeze", False),
+                ("production_ui_behavior_change_introduced_by_freeze", False),
+                ("full_mockup_program_activation_selected_now", False),
+                ("implementation_entry_allowed_by_freeze_alone", False),
+                ("next_posture", next_posture),
+                ("summary", summary),
+            ):
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+        for key, value in {
+            f"latest_{entry_key}_status": status,
+            f"latest_{entry_key}_doc": doc_path,
+            f"latest_{entry_key}_current_main_checkpoint_before_freeze": checkpoint,
+            f"latest_{entry_key}_branch": branch,
+            f"latest_{entry_key}_selected_target": target,
+            f"latest_{entry_key}_selected_source_state": source_state,
+            f"latest_{entry_key}_selected_materialization_state": materialization_state,
+            f"latest_{entry_key}_selected_replacement_authority_state": replacement_state,
+            f"latest_{entry_key}_selected_materialization_route": materialization_route,
+            f"latest_{entry_key}_selected_replacement_authority_route": replacement_route,
+            f"latest_{entry_key}_runtime_behavior_change_introduced_by_freeze": False,
+            f"latest_{entry_key}_rendered_behavior_change_introduced_by_freeze": False,
+            f"latest_{entry_key}_backend_behavior_change_introduced_by_freeze": False,
+            f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_freeze": False,
+            f"latest_{entry_key}_executable_test_behavior_change_introduced_by_freeze": False,
+            f"latest_{entry_key}_production_ui_behavior_change_introduced_by_freeze": False,
+            f"latest_{entry_key}_full_mockup_program_activation_selected_now": False,
+            f"latest_{entry_key}_implementation_entry_allowed_by_freeze_alone": False,
+            f"latest_{entry_key}_next_posture": next_posture,
+            f"latest_{entry_key}_summary": summary,
+        }.items():
+            if manifest.get(key) != value:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("proof_kind", entry_key),
+                ("status", status),
+                ("doc", doc_path),
+                ("current_main_checkpoint_before_freeze", checkpoint),
+                ("freeze_branch", branch),
+                ("selected_target", target),
+                ("selected_source_state", source_state),
+                ("selected_materialization_state", materialization_state),
+                ("selected_replacement_authority_state", replacement_state),
+                ("selected_materialization_route", materialization_route),
+                ("selected_replacement_authority_route", replacement_route),
+                ("runtime_behavior_change_introduced_by_freeze", False),
+                ("rendered_behavior_change_introduced_by_freeze", False),
+                ("backend_behavior_change_introduced_by_freeze", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_freeze", False),
+                ("executable_test_behavior_change_introduced_by_freeze", False),
+                ("production_ui_behavior_change_introduced_by_freeze", False),
+                ("frontend_durable_authority_enabled", False),
+                ("full_mockup_program_activation_selected", False),
+                ("next_posture", next_posture),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -88260,6 +88503,7 @@ def main() -> int:
     _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(errors)
     _check_source_directory_package_supersession_preview_rendered_control(errors)
     _check_source_directory_package_supersession_preview_rendered_control_current_main_sync(errors)
+    _check_source_directory_replacement_package_set_authority_rendered_control_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
