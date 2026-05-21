@@ -42,6 +42,8 @@ from app.models.models import (
     L3ServerOwnedLocalOutboxTargetReceipt,
     L3ServerOwnedLocalOutboxWriteReceipt,
     L3Session,
+    L3SourceDirectoryInternalWebhookDispatchAuditEvent,
+    L3SourceDirectoryInternalWebhookDispatchReceipt,
     L3SourceIntakeRecord,
     L3TypingRecord,
     VariableDefinition,
@@ -13864,6 +13866,172 @@ def _with_internal_webhook_lifecycle(
     }
 
 
+def _source_directory_internal_webhook_audit_item(
+    row: L3SourceDirectoryInternalWebhookDispatchAuditEvent,
+) -> dict[str, Any]:
+    payload = _json_clone(row.event_payload_json or {})
+    return {
+        "schema_id": "layer3.source_directory_internal_webhook.audit.v1",
+        "source_directory_internal_webhook_dispatch_audit_event_id": (
+            row.source_directory_internal_webhook_dispatch_audit_event_id
+        ),
+        "source_directory_internal_webhook_dispatch_receipt_id": (
+            row.source_directory_internal_webhook_dispatch_receipt_id
+        ),
+        "event_type": row.event_type,
+        "event_status": row.event_status,
+        "request_id": row.request_id,
+        "authority_basis_hash": row.authority_basis_hash,
+        "reason_code": row.reason_code,
+        "redacted_destination_display_name": payload.get("redacted_destination_display_name"),
+        "redacted_response_summary": payload if "response_keys" in payload or "response_kind" in payload else {},
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    }
+
+
+def _source_directory_internal_webhook_history_item(
+    row: L3SourceDirectoryInternalWebhookDispatchReceipt,
+    *,
+    audit_events: list[dict[str, Any]],
+) -> dict[str, Any]:
+    authority = _json_clone(row.authority_snapshot_json or {})
+    return {
+        "schema_id": "layer3.source_directory_internal_webhook.lifecycle.v1",
+        "source_directory_internal_webhook_dispatch_receipt_id": (
+            row.source_directory_internal_webhook_dispatch_receipt_id
+        ),
+        "source_directory_internal_webhook_dispatch_state": row.dispatch_status,
+        "session_id": row.session_id,
+        "reconciliation_record_id": row.reconciliation_record_id,
+        "material_snapshot_id": row.material_snapshot_id,
+        "source_ingestion_batch_id": row.source_ingestion_batch_id,
+        "source_ingestion_file_id": row.source_ingestion_file_id,
+        "external_export_download_record_ref": row.external_export_download_record_ref,
+        "export_download_descriptor_ref": row.export_download_descriptor_ref,
+        "package_review_submit_record_ref": row.package_review_submit_record_ref,
+        "handoff_export_prepare_ref": row.handoff_export_prepare_ref,
+        "handoff_export_envelope_ref": row.handoff_export_envelope_ref,
+        "output_package_ids": _json_clone(row.output_package_ids_json or []),
+        "package_kinds": _json_clone(row.package_kinds_json or []),
+        "payload_hashes": _json_clone(row.payload_hashes_json or []),
+        "package_set_hash": authority.get("package_set_hash"),
+        "target_identity": row.target_identity,
+        "target_class": row.target_class,
+        "dispatch_mode": row.dispatch_mode,
+        "redacted_destination_display_name": row.redacted_destination_display_name,
+        "request_basis_hash": row.request_basis_hash,
+        "authority_basis_hash": row.authority_basis_hash,
+        "response_status_code": row.response_status_code,
+        "redacted_response_summary": _json_clone(row.redacted_response_summary_json or {}),
+        "failure_code": row.failure_code,
+        "created_by_request_id": row.created_by_request_id,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "audit_events": audit_events,
+        "audit_authority": "durable_source_directory_internal_webhook_dispatch_receipt_row",
+    }
+
+
+def _source_directory_internal_webhook_status(
+    *,
+    history_rows: list[L3SourceDirectoryInternalWebhookDispatchReceipt],
+    audit_rows: list[L3SourceDirectoryInternalWebhookDispatchAuditEvent],
+) -> dict[str, Any] | None:
+    if not history_rows:
+        return None
+    audit_history_by_receipt: dict[str, list[dict[str, Any]]] = {}
+    audit_history = [_source_directory_internal_webhook_audit_item(row) for row in audit_rows]
+    for item in audit_history:
+        receipt_id = str(item.get("source_directory_internal_webhook_dispatch_receipt_id") or "")
+        audit_history_by_receipt.setdefault(receipt_id, []).append(item)
+    history = [
+        _source_directory_internal_webhook_history_item(
+            row,
+            audit_events=audit_history_by_receipt.get(
+                row.source_directory_internal_webhook_dispatch_receipt_id,
+                [],
+            ),
+        )
+        for row in history_rows
+    ]
+    latest_receipt = history[0]
+    latest_row = history_rows[0]
+    latest_audit = audit_history[0] if audit_history else None
+    return {
+        "schema_id": INTERNAL_WEBHOOK_STATUS_SCHEMA_ID,
+        "available": False,
+        "state": latest_row.dispatch_status,
+        "blocked_reason": None,
+        "session_id": latest_row.session_id,
+        "reconciliation_record_id": latest_row.reconciliation_record_id,
+        "source_directory_internal_webhook_dispatch_receipt_id": (
+            latest_row.source_directory_internal_webhook_dispatch_receipt_id
+        ),
+        "source_directory_internal_webhook_dispatch_state": latest_row.dispatch_status,
+        "external_export_download_record_ref": latest_row.external_export_download_record_ref,
+        "export_download_descriptor_ref": latest_row.export_download_descriptor_ref,
+        "package_set_hash": latest_receipt.get("package_set_hash"),
+        "target_identity": latest_row.target_identity,
+        "target_class": latest_row.target_class,
+        "dispatch_mode": latest_row.dispatch_mode,
+        "redacted_destination_display_name": latest_row.redacted_destination_display_name,
+        "response_status_code": latest_row.response_status_code,
+        "redacted_response_summary": _json_clone(latest_row.redacted_response_summary_json or {}),
+        "failure_code": latest_row.failure_code,
+        "server_configured_internal_webhook_enabled": True,
+        "internal_webhook_post_performed": (
+            latest_row.dispatch_status == "source_directory_internal_webhook_dispatched"
+        ),
+        "source_directory_internal_webhook_post_performed": (
+            latest_row.dispatch_status == "source_directory_internal_webhook_dispatched"
+        ),
+        "real_connector_invocation_enabled": True,
+        "server_configured_allowlisted_url_enabled": True,
+        "operator_destination_url_enabled": False,
+        "raw_target_url_exposed": False,
+        "raw_token_exposed": False,
+        "raw_headers_exposed": False,
+        "raw_local_path_exposed": False,
+        "raw_package_payload_exposed": False,
+        "raw_package_bytes_exposed": False,
+        "connector_dispatch_enabled": False,
+        "connector_run_created": False,
+        "connector_run_target_created": False,
+        "credentials_enabled": False,
+        "provider_public_url_enabled": False,
+        "provider_private_signed_url_enabled": False,
+        "package_mutation_enabled": False,
+        "source_expansion_enabled": False,
+        "rag_vector_enabled": False,
+        "optional_tool_runtime_enabled": False,
+        "auth_security_implementation_enabled": False,
+        "rendered_write_submit_control_enabled": False,
+        "status_surface_mode": "read_only_server_session_summary_projection",
+        "response_authority": "durable_source_directory_internal_webhook_dispatch_receipt_row",
+        "downstream_unavailable": list(INTERNAL_WEBHOOK_DOWNSTREAM_UNAVAILABLE),
+        "next_allowed_actions": ["inspect_source_directory_internal_webhook_dispatch_status"],
+        "next_state": latest_row.dispatch_status,
+        "lifecycle_status_surface": {
+            "schema_id": "layer3.source_directory_internal_webhook.lifecycle.v1",
+            "surface_mode": "read_only_source_directory_internal_webhook_dispatch_status_history",
+            "history_listing_authority": "durable_source_directory_internal_webhook_dispatch_receipt_rows",
+            "audit_trail_authority": "durable_source_directory_internal_webhook_dispatch_audit_event_rows",
+            "history_count": len(history),
+            "source_directory_internal_webhook_dispatch_history": history,
+            "latest_source_directory_internal_webhook_dispatch_receipt": latest_receipt,
+            "audit_event_history_count": len(audit_history),
+            "audit_event_history": audit_history,
+            "latest_audit_event": latest_audit,
+        },
+        "source_directory_internal_webhook_dispatch_history": history,
+        "source_directory_internal_webhook_dispatch_history_count": len(history),
+        "latest_source_directory_internal_webhook_dispatch_receipt": latest_receipt,
+        "audit_event_history": audit_history,
+        "audit_event_history_count": len(audit_history),
+        "latest_audit_event": latest_audit,
+    }
+
+
 def _internal_webhook_dispatch_summary(
     db: Session,
     *,
@@ -13964,6 +14132,35 @@ def _internal_webhook_dispatch_summary(
             current_state=receipt_row.dispatch_status,
             blocked_reason=None,
         )
+    source_directory_history_rows = (
+        db.query(L3SourceDirectoryInternalWebhookDispatchReceipt)
+        .filter(L3SourceDirectoryInternalWebhookDispatchReceipt.session_id == session_id)
+        .order_by(L3SourceDirectoryInternalWebhookDispatchReceipt.created_at.desc())
+        .all()
+    )
+    if source_directory_history_rows:
+        source_directory_receipt_ids = [
+            row.source_directory_internal_webhook_dispatch_receipt_id
+            for row in source_directory_history_rows
+        ]
+        source_directory_audit_rows = []
+        if source_directory_receipt_ids:
+            source_directory_audit_rows = (
+                db.query(L3SourceDirectoryInternalWebhookDispatchAuditEvent)
+                .filter(
+                    L3SourceDirectoryInternalWebhookDispatchAuditEvent.source_directory_internal_webhook_dispatch_receipt_id.in_(
+                        source_directory_receipt_ids
+                    )
+                )
+                .order_by(L3SourceDirectoryInternalWebhookDispatchAuditEvent.created_at.desc())
+                .all()
+            )
+        source_directory_status = _source_directory_internal_webhook_status(
+            history_rows=source_directory_history_rows,
+            audit_rows=source_directory_audit_rows,
+        )
+        if source_directory_status is not None:
+            return source_directory_status
     write_recorded = (
         server_owned_local_outbox_write_state.get("state") == SERVER_OWNED_LOCAL_OUTBOX_WRITE_RECORDED_STATE
         and write_receipt_id

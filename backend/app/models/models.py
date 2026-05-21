@@ -2178,6 +2178,90 @@ class L3InternalWebhookDispatchAuditEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class L3SourceDirectoryInternalWebhookDispatchReceipt(Base):
+    __tablename__ = "l3_source_directory_internal_webhook_dispatch_receipt"
+    __table_args__ = (
+        UniqueConstraint("client_request_id", name="uq_l3_srcdir_internal_webhook_client_request"),
+        UniqueConstraint("authority_basis_hash", name="uq_l3_srcdir_internal_webhook_authority_basis"),
+        UniqueConstraint("request_basis_hash", name="uq_l3_srcdir_internal_webhook_request_basis"),
+        Index("ix_l3_srcdir_internal_webhook_session", "session_id"),
+        Index("ix_l3_srcdir_internal_webhook_reconciliation", "reconciliation_record_id"),
+        Index("ix_l3_srcdir_internal_webhook_status", "dispatch_status"),
+    )
+
+    source_directory_internal_webhook_dispatch_receipt_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    session_id: Mapped[str] = mapped_column(ForeignKey("l3_session.session_id"), nullable=False)
+    reconciliation_record_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_reconciliation_record.reconciliation_record_id"),
+        nullable=False,
+    )
+    material_snapshot_id: Mapped[str] = mapped_column(
+        ForeignKey("l3_material_snapshot.material_snapshot_id"),
+        nullable=False,
+    )
+    source_ingestion_batch_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    source_ingestion_file_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    client_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    external_export_download_record_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    export_download_descriptor_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    package_review_submit_record_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    handoff_export_prepare_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    handoff_export_envelope_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    target_identity: Mapped[str] = mapped_column(String(128), nullable=False)
+    target_class: Mapped[str] = mapped_column(String(128), nullable=False)
+    dispatch_mode: Mapped[str] = mapped_column(String(128), nullable=False)
+    redacted_destination_display_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    request_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    dispatch_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_status_code: Mapped[int | None] = mapped_column(Integer)
+    redacted_response_summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    failure_code: Mapped[str | None] = mapped_column(String(128))
+    output_package_ids_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    package_kinds_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    payload_hashes_json: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_by_request_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class L3SourceDirectoryInternalWebhookDispatchAuditEvent(Base):
+    __tablename__ = "l3_source_directory_internal_webhook_dispatch_audit_event"
+    __table_args__ = (
+        Index(
+            "ix_l3_srcdir_internal_webhook_audit_receipt",
+            "source_directory_internal_webhook_dispatch_receipt_id",
+        ),
+        Index("ix_l3_srcdir_internal_webhook_audit_type_created", "event_type", "created_at"),
+    )
+
+    source_directory_internal_webhook_dispatch_audit_event_id: Mapped[str] = mapped_column(
+        String(36),
+        primary_key=True,
+        default=uuid_str,
+    )
+    source_directory_internal_webhook_dispatch_receipt_id: Mapped[str] = mapped_column(
+        ForeignKey(
+            "l3_source_directory_internal_webhook_dispatch_receipt."
+            "source_directory_internal_webhook_dispatch_receipt_id"
+        ),
+        nullable=False,
+    )
+    event_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    event_status: Mapped[str] = mapped_column(String(64), nullable=False)
+    request_id: Mapped[str | None] = mapped_column(String(255))
+    authority_basis_hash: Mapped[str | None] = mapped_column(String(64))
+    reason_code: Mapped[str] = mapped_column(String(128), nullable=False)
+    event_payload_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class L3ProviderPublicUrlObjectAuthority(Base):
     __tablename__ = "l3_provider_public_url_object_authority"
     __table_args__ = (

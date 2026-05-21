@@ -27,7 +27,10 @@ from app.models.models import (
     L3OutputPackage,
     L3PassRun,
     L3ReconciliationRecord,
+    L3SourceDirectoryInternalWebhookDispatchAuditEvent,
+    L3SourceDirectoryInternalWebhookDispatchReceipt,
 )
+from app.services import layer3_internal_webhook_connector
 from app.services.layer3_source_directory_text_index import (
     SourceDirectoryTextIndexError,
     source_directory_material_text_index,
@@ -389,6 +392,25 @@ def _hybrid_external_export_download_prepare_authority(
     )
     assert prepare.status_code == 200, prepare.text
     return analysis_body, prepare.json(), prepare_payload
+
+
+def _source_directory_internal_webhook_payload(
+    prepare_body: dict,
+    prepare_payload: dict,
+    *,
+    request_id: str,
+) -> dict:
+    return {
+        **prepare_payload,
+        "client_request_id": request_id,
+        "operator_decision": "dispatch_source_directory_hybrid_internal_webhook",
+        "external_export_download_record_ref": prepare_body["external_export_download_record_ref"],
+        "export_download_descriptor_ref": prepare_body["export_download_descriptor_ref"],
+        "external_export_download_state": "external_export_download_prepared",
+        "target_identity": "server_configured_internal_webhook_destination",
+        "target_class": "real_connector_invocation",
+        "dispatch_mode": "server_configured_allowlisted_internal_webhook_post",
+    }
 
 
 def test_source_directory_vector_retrieval_returns_deterministic_ranked_segments_without_side_effects(
@@ -2062,6 +2084,194 @@ def test_representative_mockup_scenario_source_to_output_handoff_e2e_proof(
             prepare_body["external_export_download_record_ref"]
         )
         assert "external_export_download_delivery" not in summary
+    finally:
+        db.close()
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_internal_webhook_dispatch_success_idempotent_and_redacted(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_internal_webhook_url", "http://127.0.0.1/source-directory-webhook")
+    monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "source-directory-test-webhook")
+    _analysis_body, prepare_body, prepare_payload = _hybrid_external_export_download_prepare_authority(
+        client,
+        tmp_path,
+        monkeypatch,
+        client_request_id="source-directory-internal-webhook-analysis",
+    )
+    dispatch_path = (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/dispatch"
+    )
+    calls: list[dict] = []
+
+    def fake_transport(url, envelope, headers, timeout):
+        calls.append({"url": url, "envelope": envelope, "headers": headers, "timeout": timeout})
+        return 202, {"accepted": True, "receipt": "source-directory-ok"}
+
+    monkeypatch.setattr(layer3_internal_webhook_connector, "INTERNAL_WEBHOOK_TRANSPORT", fake_transport)
+    payload = _source_directory_internal_webhook_payload(
+        prepare_body,
+        prepare_payload,
+        request_id="source-directory-internal-webhook-dispatch",
+    )
+
+    dispatch = client.post(dispatch_path, json=payload)
+    assert dispatch.status_code == 200, dispatch.text
+    body = dispatch.json()
+    assert body["schema_id"] == "layer3.source_directory_internal_webhook.dispatch.v1"
+    assert body["status"] == "dispatched"
+    assert body["source_directory_internal_webhook_dispatch_state"] == (
+        "source_directory_internal_webhook_dispatched"
+    )
+    assert body["source_directory_internal_webhook_post_performed"] is True
+    assert body["internal_webhook_network_egress_enabled"] is True
+    assert body["connector_dispatch_enabled"] is False
+    assert body["connector_run_created"] is False
+    assert body["provider_public_url_enabled"] is False
+    assert body["provider_private_signed_url_enabled"] is False
+    assert body["package_mutation_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["full_mockup_activation_enabled"] is False
+    assert body["redacted_destination_display_name"] == "source-directory-test-webhook"
+    assert body["redacted_response_summary"]["response_keys"] == ["accepted", "receipt"]
+    assert len(calls) == 1
+    assert calls[0]["url"] == "http://127.0.0.1/source-directory-webhook"
+    assert calls[0]["timeout"] == 5.0
+    assert calls[0]["headers"]["X-Layer3-Envelope-Schema"] == (
+        "layer3.source_directory_internal_webhook.delivery_envelope.v1"
+    )
+    envelope = calls[0]["envelope"]
+    assert envelope["schema_id"] == "layer3.source_directory_internal_webhook.delivery_envelope.v1"
+    assert envelope["raw_package_bytes_included"] is False
+    assert envelope["raw_package_payload_included"] is False
+    assert envelope["raw_target_url_included"] is False
+    envelope_text = json.dumps(envelope, sort_keys=True)
+    assert "http://127.0.0.1/source-directory-webhook" not in envelope_text
+    assert str(tmp_path) not in envelope_text
+
+    status = client.get(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/status/"
+            f"{body['source_directory_internal_webhook_dispatch_receipt_id']}"
+        )
+    )
+    assert status.status_code == 200, status.text
+    status_body = status.json()
+    assert status_body["schema_id"] == "layer3.source_directory_internal_webhook.status.v1"
+    assert status_body["source_directory_internal_webhook_dispatch_state"] == (
+        "source_directory_internal_webhook_dispatched"
+    )
+    assert status_body["source_directory_internal_webhook_dispatch_receipt_id"] == (
+        body["source_directory_internal_webhook_dispatch_receipt_id"]
+    )
+
+    summary = client.get(f"/api/v1/layer3/session/{body['session_id']}")
+    assert summary.status_code == 200, summary.text
+    dispatch_status = summary.json()["internal_webhook_dispatch"]
+    assert dispatch_status["schema_id"] == "layer3.internal_webhook.status.v1"
+    assert dispatch_status["state"] == "source_directory_internal_webhook_dispatched"
+    assert dispatch_status["response_authority"] == "durable_source_directory_internal_webhook_dispatch_receipt_row"
+    assert dispatch_status["source_directory_internal_webhook_dispatch_receipt_id"] == (
+        body["source_directory_internal_webhook_dispatch_receipt_id"]
+    )
+    assert dispatch_status["source_directory_internal_webhook_post_performed"] is True
+    assert dispatch_status["operator_destination_url_enabled"] is False
+    assert dispatch_status["raw_target_url_exposed"] is False
+    assert dispatch_status["raw_package_payload_exposed"] is False
+    assert dispatch_status["raw_package_bytes_exposed"] is False
+    assert dispatch_status["connector_run_created"] is False
+    assert dispatch_status["connector_run_target_created"] is False
+    assert dispatch_status["rendered_write_submit_control_enabled"] is False
+    assert dispatch_status["source_directory_internal_webhook_dispatch_history_count"] == 1
+    assert dispatch_status["audit_event_history_count"] == 2
+    dispatch_status_text = json.dumps(dispatch_status, sort_keys=True)
+    assert "http://127.0.0.1/source-directory-webhook" not in dispatch_status_text
+    assert str(tmp_path) not in dispatch_status_text
+
+    replay = client.post(dispatch_path, json=payload)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()["status"] == "already_recorded"
+    assert replay.json()["source_directory_internal_webhook_dispatch_receipt_id"] == (
+        body["source_directory_internal_webhook_dispatch_receipt_id"]
+    )
+    assert len(calls) == 1
+
+    new_key_replay = client.post(
+        dispatch_path,
+        json={
+            **payload,
+            "client_request_id": "source-directory-internal-webhook-dispatch-second-key",
+        },
+    )
+    assert new_key_replay.status_code == 200, new_key_replay.text
+    assert new_key_replay.json()["status"] == "already_recorded"
+    assert new_key_replay.json()["source_directory_internal_webhook_dispatch_receipt_id"] == (
+        body["source_directory_internal_webhook_dispatch_receipt_id"]
+    )
+    assert len(calls) == 1
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3SourceDirectoryInternalWebhookDispatchReceipt).count() == 1
+        assert db.query(L3SourceDirectoryInternalWebhookDispatchAuditEvent).count() == 4
+        _assert_no_forbidden_package_commit_downstream(db)
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        state = reconciliation.summary_json["source_directory_internal_webhook_dispatch"]
+        assert state["state"] == "source_directory_internal_webhook_dispatched"
+        assert state["source_directory_internal_webhook_post_performed"] is True
+        assert state["connector_run_created"] is False
+    finally:
+        db.close()
+
+
+def test_source_directory_hybrid_context_packet_qualitative_analysis_internal_webhook_dispatch_fails_closed_on_stale_readiness(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_internal_webhook_url", "http://127.0.0.1/source-directory-webhook")
+    monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "source-directory-test-webhook")
+    _analysis_body, prepare_body, prepare_payload = _hybrid_external_export_download_prepare_authority(
+        client,
+        tmp_path,
+        monkeypatch,
+        client_request_id="source-directory-internal-webhook-stale-analysis",
+    )
+    calls: list[dict] = []
+
+    def fake_transport(url, envelope, headers, timeout):
+        calls.append({"url": url, "envelope": envelope, "headers": headers, "timeout": timeout})
+        return 202, {"accepted": True}
+
+    monkeypatch.setattr(layer3_internal_webhook_connector, "INTERNAL_WEBHOOK_TRANSPORT", fake_transport)
+    stale_payload = _source_directory_internal_webhook_payload(
+        prepare_body,
+        prepare_payload,
+        request_id="source-directory-internal-webhook-stale",
+    )
+    stale_payload["external_export_download_record_ref"] = "stale-external-export-download-record"
+    stale = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/dispatch"
+        ),
+        json=stale_payload,
+    )
+    assert stale.status_code == 409, stale.text
+    assert stale.json()["error_code"] == "source_directory_internal_webhook_readiness_mismatch"
+    assert "external_export_download_record_ref" in stale.json()["blocked_fields"]
+    assert calls == []
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3SourceDirectoryInternalWebhookDispatchReceipt).count() == 0
+        assert db.query(L3SourceDirectoryInternalWebhookDispatchAuditEvent).count() == 0
+        _assert_no_forbidden_package_commit_downstream(db)
+        reconciliation = db.query(L3ReconciliationRecord).one()
+        assert "source_directory_internal_webhook_dispatch" not in reconciliation.summary_json
     finally:
         db.close()
 
