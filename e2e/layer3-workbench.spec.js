@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   expectJson,
+  expectJsonStatus,
   requestId,
   expectOnlyPayloadKeys,
   formPostPayload,
@@ -10445,4 +10446,456 @@ test('Layer 3 source-directory hybrid rendered status extension stays server-aut
     'provider-public-url',
     'package/mutation',
   ]);
+});
+
+test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path', async ({ page, request }) => {
+  test.setTimeout(90000);
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+  });
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  const scanPath = '/api/v1/layer3/source/ingestion/server-configured-directory/scan';
+  const statusPathFragment = '/api/v1/layer3/source/ingestion/server-configured-directory/status/';
+  const materialPreviewPath = '/api/v1/layer3/source/ingestion/server-configured-directory/material-preview';
+  const gateBPath = '/api/v1/layer3/gate-b/decision';
+  const vectorRetrievalPath = '/api/v1/layer3/source/ingestion/server-configured-directory/vector-retrieval';
+  const contextPacketPath = '/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet';
+  const analysisPath = '/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis';
+  const analysisStatusPath = `${analysisPath}/status`;
+  const packageCommitPath = `${analysisPath}/package/commit`;
+  const packageReviewSubmitPath = `${analysisPath}/package/review/submit`;
+  const handoffPreparePath = `${analysisPath}/handoff/export/prepare`;
+  const externalPreparePath = `${analysisPath}/handoff/export/download/prepare`;
+  const deliveryStatusPath = `${analysisPath}/handoff/export/download/deliver/status`;
+  const deliveryPath = `${analysisPath}/handoff/export/download/deliver`;
+  const forbiddenPayloadKeys = [
+    'payload_refs',
+    'source_payload_refs',
+    'artifact_manifest',
+    'browser_state',
+    'frontend_state',
+    'raw_payload_path',
+    'local_file_path',
+    'file_bytes',
+    'download_url',
+    'public_url',
+    'signed_url',
+    'connector_run_id',
+    'destination_id',
+    'provider_credentials',
+  ];
+  const expectNoForbiddenPayloadKeys = (payload) => {
+    for (const forbiddenKey of forbiddenPayloadKeys) {
+      expect(payload).not.toHaveProperty(forbiddenKey);
+    }
+  };
+  const withoutClientRequestId = (payload) => {
+    const clone = { ...payload };
+    delete clone.client_request_id;
+    return clone;
+  };
+  const deliveryPayloadKeys = [
+    'analysis_focus',
+    'analysis_question',
+    'authority_basis_hash',
+    'client_request_id',
+    'construction_basis_hash',
+    'content_sha256',
+    'delivery_mode',
+    'download_mode',
+    'embedding_index_authority_hash',
+    'export_download_descriptor_ref',
+    'external_export_download_record_ref',
+    'external_export_download_state',
+    'external_export_download_target',
+    'export_mode',
+    'file_identity_hash',
+    'handoff_export_envelope_ref',
+    'handoff_export_state',
+    'handoff_target',
+    'index_authority_hash',
+    'limit',
+    'material_snapshot_id',
+    'offset',
+    'operator_decision',
+    'output_package_id',
+    'output_package_ids',
+    'package_kind',
+    'package_kinds',
+    'package_payload_hash',
+    'package_review_state',
+    'package_review_submit_record_ref',
+    'payload_hash',
+    'payload_hashes',
+    'prepare_record_ref',
+    'qualitative_analysis_hash',
+    'query_text',
+    'reconciliation_record_id',
+    'source_directory_hybrid_package_review_preview_hash',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'top_k',
+  ];
+
+  await page.setViewportSize({ width: 1360, height: 980 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const sourcePanel = page.locator('#source-directory-ingestion-rendered-controls');
+  await sourcePanel.scrollIntoViewIfNeeded();
+  await expect(sourcePanel).toBeVisible();
+
+  const scanRequestPromise = page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname === scanPath && apiRequest.method() === 'POST'
+  ));
+  const scanResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname === scanPath && response.request().method() === 'POST'
+  ));
+  await page.locator('#source-directory-ingestion-client-request-id').fill(requestId('source-directory-full-path-scan'));
+  await page.locator('#source-directory-ingestion-scan-submit').click();
+  const scanPayload = (await scanRequestPromise).postDataJSON();
+  const scanBody = await expectJsonStatus(await scanResponsePromise, 201);
+  expectOnlyPayloadKeys(scanPayload, [
+    'client_request_id',
+    'operator_decision',
+    'source_family',
+    'ingestion_mode',
+  ]);
+  expect(scanBody.schema_id).toBe('layer3.source_directory_ingestion_batch.v1');
+  expect(scanBody.files).toHaveLength(1);
+  expect(scanBody.files[0].relative_name).toBe('vector-retrieval.txt');
+  expect(scanBody.source_root_absolute_path_exposed).toBe(false);
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('vector-retrieval.txt');
+  await expect(page.locator('#source-directory-ingestion-panel')).not.toContainText('C:\\');
+  await expect(page.locator('#source-directory-ingestion-panel')).not.toContainText('/Users/');
+  expectNoForbiddenPayloadKeys(scanPayload);
+
+  const statusResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname.startsWith(statusPathFragment) && response.request().method() === 'GET'
+  ));
+  await page.locator('#source-directory-ingestion-status').click();
+  const statusBody = await expectJson(await statusResponsePromise);
+  expect(statusBody.schema_id).toBe('layer3.source_directory_ingestion_status.v1');
+  expect(statusBody.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
+
+  const materialRequestPromise = page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname === materialPreviewPath && apiRequest.method() === 'POST'
+  ));
+  const materialResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname === materialPreviewPath && response.request().method() === 'POST'
+  ));
+  await expect(page.locator('.source-directory-material-preview-button')).toBeEnabled();
+  await page.locator('.source-directory-material-preview-button').first().click();
+  const materialPayload = (await materialRequestPromise).postDataJSON();
+  const materialPreview = await expectJson(await materialResponsePromise);
+  expectOnlyPayloadKeys(materialPayload, [
+    'client_request_id',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+    'file_identity_hash',
+    'authority_basis_hash',
+    'max_chars',
+  ]);
+  expect(materialPreview.schema_id).toBe('layer3.source_directory_material_preview.v1');
+  expect(materialPreview.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
+  expect(materialPreview.source_ingestion_file_id).toBe(scanBody.files[0].source_ingestion_file_id);
+  expect(materialPreview.material_candidate.source_class).toBe('server_configured_directory_file');
+  expectNoForbiddenPayloadKeys(materialPayload);
+
+  const gateBRequestPromise = page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname === gateBPath && apiRequest.method() === 'POST'
+  ));
+  const gateBResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname === gateBPath && response.request().method() === 'POST'
+  ));
+  await page.locator('#source-directory-gate-b-submit').click();
+  const gateBPayload = (await gateBRequestPromise).postDataJSON();
+  const gateB = await expectJson(await gateBResponsePromise);
+  expect(gateB.schema_id).toBe('layer3.gate_b_decision_result.v1');
+  expect(gateB.session_id).toBeTruthy();
+  expect(gateB.next_state).toBe('gate_c_preview_ready');
+  expect(gateBPayload.source_set_id).toBe(scanBody.source_ingestion_batch_id);
+  expect(gateBPayload.material_preview_id).toBe(materialPreview.material_preview_id);
+  expect(gateBPayload.candidate_decisions).toHaveLength(1);
+  expectNoForbiddenPayloadKeys(gateBPayload);
+  expectNoDeferredRawMixedPayloadFields(gateBPayload);
+
+  const authoritySetup = await expectJson(await request.post('/__test/layer3/source-directory-hybrid-authority', {
+    data: { session_id: gateB.session_id },
+  }));
+  expect(authoritySetup.schema_id).toBe('project6.review_browser_source_directory_hybrid_authority.v1');
+  const authority = authoritySetup.authority_payload;
+  expect(authority.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
+  expect(authority.source_ingestion_file_id).toBe(scanBody.files[0].source_ingestion_file_id);
+  expect(authority.material_snapshot_id).toBeTruthy();
+  expect(authority.index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
+  expect(authority.embedding_index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
+  const retrievalAuthority = {
+    material_snapshot_id: authority.material_snapshot_id,
+    source_ingestion_batch_id: authority.source_ingestion_batch_id,
+    source_ingestion_file_id: authority.source_ingestion_file_id,
+    content_sha256: authority.content_sha256,
+    file_identity_hash: authority.file_identity_hash,
+    authority_basis_hash: authority.authority_basis_hash,
+    payload_hash: authority.payload_hash,
+    index_authority_hash: authority.index_authority_hash,
+    embedding_index_authority_hash: authority.embedding_index_authority_hash,
+    query_text: authority.query_text,
+    top_k: authority.top_k,
+  };
+  const contextAuthority = {
+    ...retrievalAuthority,
+    limit: authority.limit,
+    offset: authority.offset,
+  };
+  const analysisAuthority = {
+    ...contextAuthority,
+    analysis_question: authority.analysis_question,
+    analysis_focus: authority.analysis_focus,
+  };
+
+  const retrieval = await expectJson(await request.post(vectorRetrievalPath, {
+    data: {
+      ...retrievalAuthority,
+      client_request_id: requestId('source-directory-full-path-retrieval'),
+    },
+  }));
+  expect(retrieval.schema_id).toBe('layer3.source_directory_vector_retrieval.v1');
+  expect(retrieval.top_k).toBe(2);
+  expect(retrieval.source_ingestion_file_id).toBe(authority.source_ingestion_file_id);
+
+  const contextPacket = await expectJson(await request.post(contextPacketPath, {
+    data: {
+      ...contextAuthority,
+      client_request_id: requestId('source-directory-full-path-context'),
+    },
+  }));
+  expect(contextPacket.schema_id).toBe('layer3.source_directory_hybrid_retrieval_context_packet.v1');
+  expect(contextPacket.source_ingestion_file_id).toBe(authority.source_ingestion_file_id);
+  expect(contextPacket.hybrid_context_packet_hash).toMatch(/^[a-f0-9]{64}$/);
+
+  const analysisPayload = {
+    ...analysisAuthority,
+    client_request_id: requestId('source-directory-full-path-analysis'),
+  };
+  const analysis = await expectJson(await request.post(analysisPath, { data: analysisPayload }));
+  expect(analysis.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis.v1',
+  );
+  expect(analysis.status).toBe('available');
+  expect(analysis.source_directory_package_review_preview_enabled).toBe(true);
+  expect(analysis.package_commit_enabled).toBe(false);
+  expect(analysis.source_directory_hybrid_package_review_preview_hash).toMatch(/^[a-f0-9]{64}$/);
+
+  const analysisStatus = await expectJson(await request.post(analysisStatusPath, {
+    data: {
+      ...analysisAuthority,
+      client_request_id: requestId('source-directory-full-path-analysis-status'),
+    },
+  }));
+  expect(analysisStatus.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_status.v1',
+  );
+  expect(analysisStatus.source_directory_hybrid_package_commit_available).toBe(false);
+
+  const commitPayload = {
+    ...analysisPayload,
+    client_request_id: requestId('source-directory-full-path-package-commit'),
+    qualitative_analysis_hash: analysis.qualitative_analysis_hash,
+    source_directory_hybrid_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
+    operator_decision: 'commit_source_directory_hybrid_context_packet_qualitative_analysis_package',
+  };
+  const commit = await expectJson(await request.post(packageCommitPath, { data: commitPayload }));
+  expect(commit.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_commit.v1',
+  );
+  expect(commit.status).toBe('committed');
+  expect(commit.package_rows_written).toBe(true);
+  expect(commit.package_payloads_written).toBe(true);
+  expect(commit.package_kinds).toEqual(['canonical_internal', 'user_facing', 'review_facing']);
+  expect(commit.output_package_ids).toHaveLength(3);
+
+  const submitPayload = {
+    ...analysisPayload,
+    client_request_id: requestId('source-directory-full-path-package-review-submit'),
+    qualitative_analysis_hash: analysis.qualitative_analysis_hash,
+    source_directory_hybrid_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
+    construction_basis_hash: commit.construction_basis_hash,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    output_package_ids: commit.output_package_ids,
+    package_kinds: commit.package_kinds,
+    payload_hashes: commit.payload_hashes,
+    operator_decision: 'approved',
+  };
+  const submit = await expectJson(await request.post(packageReviewSubmitPath, { data: submitPayload }));
+  expect(submit.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_package_review_submit.v1',
+  );
+  expect(submit.status).toBe('submitted');
+  expect(submit.package_review_state).toBe('package_review_approved');
+  expect(submit.handoff_enabled).toBe(true);
+
+  const handoffPayload = {
+    ...submitPayload,
+    client_request_id: requestId('source-directory-full-path-handoff-prepare'),
+    operator_decision: 'authorize_prepare',
+    package_review_submit_record_ref: submit.submit_record_ref,
+    package_review_state: submit.package_review_state,
+    handoff_target: 'internal_export_envelope',
+    export_mode: 'prepare_only',
+  };
+  const handoff = await expectJson(await request.post(handoffPreparePath, { data: handoffPayload }));
+  expect(handoff.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare.v1',
+  );
+  expect(handoff.status).toBe('prepared');
+  expect(handoff.handoff_export_state).toBe('handoff_export_prepared');
+  expect(handoff.handoff_export_envelope.payload_refs).toBeNull();
+  expect(handoff.handoff_export_envelope.payload_refs_redacted).toBe(true);
+
+  const externalPreparePayload = {
+    ...handoffPayload,
+    client_request_id: requestId('source-directory-full-path-external-prepare'),
+    operator_decision: 'prepare_source_directory_hybrid_external_export_download',
+    prepare_record_ref: handoff.prepare_record_ref,
+    handoff_export_state: handoff.handoff_export_state,
+    handoff_export_envelope_ref: handoff.handoff_export_envelope.envelope_ref,
+    external_export_download_target: 'source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference',
+    download_mode: 'reference_only_prepare',
+  };
+  const externalPrepare = await expectJson(await request.post(externalPreparePath, {
+    data: externalPreparePayload,
+  }));
+  expect(externalPrepare.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_prepare.v1',
+  );
+  expect(externalPrepare.status).toBe('prepared');
+  expect(externalPrepare.external_export_download_state).toBe('external_export_download_prepared');
+  expect(externalPrepare.external_export_download_descriptor.payload_refs).toBeNull();
+  expect(externalPrepare.external_export_download_descriptor.payload_refs_redacted).toBe(true);
+  expect(externalPrepare.provider_public_delivery_enabled).toBe(false);
+  expect(externalPrepare.connector_dispatch_enabled).toBe(false);
+
+  const summary = await expectJson(await request.get(`/api/v1/layer3/session/${gateB.session_id}`));
+  expect(summary.analysis_environment_projection.schema_id).toBe('layer3.analysis_environment_projection.v1');
+  expect(summary.analysis_environment_projection.no_side_effects).toBe(true);
+  expect(summary.analysis_environment_projection.projection_state).toBe('export_ready');
+  expect(summary.analysis_environment_projection.available_for_downstream_analysis).toBe(true);
+  await page.evaluate((sessionSummary) => {
+    State.sessionSummary = sessionSummary;
+    renderAll();
+  }, summary);
+  const analysisProjection = page.locator('.analysis-environment-projection').first();
+  await expect(analysisProjection).toHaveAttribute('data-projection-state', 'export_ready');
+  await expect(analysisProjection).toHaveAttribute('data-projection-available', 'true');
+  await expect(analysisProjection).toHaveAttribute('data-read-only', 'true');
+
+  const selectedPackage = externalPrepare.output_packages.find((row) => row.package_kind === 'user_facing');
+  const deliveryAuthority = {
+    ...externalPreparePayload,
+    package_review_submit_record_ref: submit.submit_record_ref,
+    package_review_state: submit.package_review_state,
+    prepare_record_ref: handoff.prepare_record_ref,
+    handoff_export_state: handoff.handoff_export_state,
+    handoff_export_envelope_ref: handoff.handoff_export_envelope.envelope_ref,
+    external_export_download_record_ref: externalPrepare.external_export_download_record_ref,
+    export_download_descriptor_ref: externalPrepare.export_download_descriptor_ref,
+    external_export_download_state: externalPrepare.external_export_download_state,
+    output_package_ids: commit.output_package_ids,
+    package_kinds: commit.package_kinds,
+    payload_hashes: commit.payload_hashes,
+    output_packages: externalPrepare.output_packages,
+    output_package_id: selectedPackage.output_package_id,
+    package_kind: selectedPackage.package_kind,
+    package_payload_hash: selectedPackage.payload_hash,
+  };
+  const hybridDeliveryPanel = page.locator('#source-directory-hybrid-external-export-download-delivery-panel');
+  await hybridDeliveryPanel.scrollIntoViewIfNeeded();
+  await page.locator('#source-directory-hybrid-external-export-download-delivery-authority').fill(
+    JSON.stringify(deliveryAuthority),
+  );
+  await expect(page.locator('#source-directory-hybrid-external-export-download-delivery-status')).toBeEnabled();
+
+  const hybridStatusRequestPromise = page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname === deliveryStatusPath && apiRequest.method() === 'POST'
+  ));
+  const hybridStatusResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname === deliveryStatusPath && response.request().method() === 'POST'
+  ));
+  await page.locator('#source-directory-hybrid-external-export-download-delivery-status').click();
+  const hybridStatusPayload = (await hybridStatusRequestPromise).postDataJSON();
+  const hybridStatus = await expectJson(await hybridStatusResponsePromise);
+  expectOnlyPayloadKeys(hybridStatusPayload, deliveryPayloadKeys);
+  expectNoForbiddenPayloadKeys(hybridStatusPayload);
+  expect(hybridStatus.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery_status.v1',
+  );
+  expect(hybridStatus.delivery_available).toBe(true);
+  expect(hybridStatus.delivery_state).toBe('external_export_download_delivered');
+  expect(hybridStatus.same_origin_delivery_enabled).toBe(true);
+  expect(hybridStatus.browser_managed_same_origin_attachment_enabled).toBe(true);
+  await expect(page.locator('#source-directory-hybrid-rendered-status-extension')).toHaveAttribute(
+    'data-extension-state',
+    'status_ready',
+  );
+  await expect(page.locator('#source-directory-hybrid-external-export-download-delivery-submit')).toBeEnabled();
+
+  const deliveryRequestPromise = page.waitForRequest((apiRequest) => (
+    new URL(apiRequest.url()).pathname === deliveryPath && apiRequest.method() === 'POST'
+  ));
+  const deliveryResponsePromise = page.waitForResponse((response) => (
+    new URL(response.url()).pathname === deliveryPath && response.request().method() === 'POST'
+  ));
+  await page.locator('#source-directory-hybrid-external-export-download-delivery-submit').click();
+  const deliveryPayload = formPostPayload(await deliveryRequestPromise);
+  const deliveryResponse = await deliveryResponsePromise;
+  expect(deliveryResponse.status()).toBe(200);
+  expect(deliveryResponse.headers()['x-layer3-schema-id']).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1',
+  );
+  expectOnlyPayloadKeys(deliveryPayload, deliveryPayloadKeys);
+  expect(withoutClientRequestId(deliveryPayload)).toEqual(withoutClientRequestId(hybridStatusPayload));
+  expectNoForbiddenPayloadKeys(deliveryPayload);
+  await expect(page.locator('#source-directory-hybrid-rendered-status-extension')).toHaveAttribute(
+    'data-extension-state',
+    'delivery_submitted',
+    { timeout: 8000 },
+  );
+  await expect(hybridDeliveryPanel).toContainText(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_delivery.v1',
+    { timeout: 8000 },
+  );
+
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === scanPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path.startsWith(statusPathFragment))).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === materialPreviewPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === gateBPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    '/source/mixed-corpus/materialize',
+    '/handoff/connector',
+    '/provider-private-signed-url',
+    '/provider-public-url',
+    '/package/mutation',
+  ]);
+  const sourceText = await sourcePanel.textContent();
+  const deliveryText = await hybridDeliveryPanel.textContent();
+  for (const forbidden of ['C:\\', '/Users/', 'raw_payload_path', 'local_file_path', 'file_bytes', 'http://', 'https://']) {
+    expect(sourceText).not.toContain(forbidden);
+    expect(deliveryText).not.toContain(forbidden);
+  }
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
 });
