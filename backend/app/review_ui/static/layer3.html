@@ -671,6 +671,7 @@
                         <button id="package-review-preview-inspect" class="secondary-btn" type="button" disabled>Inspect Package Preview</button>
                         <button id="package-construction-commit" class="secondary-btn" type="button" disabled>Commit Package Set</button>
                         <button id="package-supersession-preview-submit" class="secondary-btn" type="button" disabled>Preview Supersession</button>
+                        <button id="source-directory-package-supersession-preview-submit" class="secondary-btn" type="button" disabled>Preview Source-Directory Supersession</button>
                         <button id="replacement-package-set-authority-submit" class="secondary-btn" type="button" disabled>Record Replacement Set</button>
                         <button id="package-supersession-commit-submit" class="secondary-btn" type="button" disabled>Commit Supersession</button>
                         <button id="replacement-package-artifact-manifest-submit" class="secondary-btn" type="button" disabled>Record Manifest</button>
@@ -687,6 +688,9 @@
                     <div id="package-supersession-preview-panel" class="result-review-panel package-supersession-preview-panel" data-rendered-mode="rendered_package_supersession_preview_control" aria-label="Package supersession preview" aria-live="polite">
                         <div class="empty-panel">Package supersession preview is not available.</div>
                     </div>
+                    <div id="source-directory-package-supersession-preview-panel" class="result-review-panel package-supersession-preview-panel" data-rendered-mode="rendered_source_directory_package_supersession_preview_control" data-read-only="true" data-frontend-durable-authority="false" aria-label="Source-directory package supersession preview" aria-live="polite">
+                        <div class="empty-panel">Source-directory package supersession preview is unavailable until server package authority is provided.</div>
+                    </div>
                     <div id="replacement-package-set-authority-panel" class="result-review-panel replacement-package-set-authority-panel" data-rendered-mode="rendered_replacement_package_set_authority_control" aria-label="Replacement package-set authority" aria-live="polite">
                         <div class="empty-panel">Replacement package-set authority is not available.</div>
                     </div>
@@ -699,6 +703,8 @@
                     <div id="replacement-package-namespace-panel" class="result-review-panel replacement-package-namespace-panel" data-rendered-mode="rendered_replacement_package_namespace_control" aria-label="Replacement package namespace" aria-live="polite">
                         <div class="empty-panel">Replacement package namespace is not available.</div>
                     </div>
+                    <label for="source-directory-package-supersession-preview-authority">Source-directory package authority JSON</label>
+                    <textarea id="source-directory-package-supersession-preview-authority" rows="5" autocomplete="off" spellcheck="false" placeholder="Paste server-returned source-directory qualitative-analysis package submit authority."></textarea>
                     <div class="result-review-controls package-review-controls" aria-label="Package review controls">
                         <label for="package-review-submit-decision">Decision</label>
                         <select id="package-review-submit-decision" disabled>

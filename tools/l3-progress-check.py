@@ -2577,6 +2577,10 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CUR
     PLANNING_DOCS
     / "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL = (
+    PLANNING_DOCS
+    / "920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -86987,6 +86991,251 @@ def _check_source_directory_package_supersession_preview_rendered_control_freeze
             errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
 
 
+def _check_source_directory_package_supersession_preview_rendered_control(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL,
+        errors,
+    )
+    entry_key = "source_directory_package_supersession_preview_rendered_control"
+    status = (
+        "source_directory_package_supersession_preview_rendered_control_"
+        "implemented_branch_local"
+    )
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+    )
+    checkpoint = "d19b7ae31f360b62bbc6316d09c5d2ae1accc562"
+    branch = "codex/l3-package-preview-control"
+    target = "source_directory_package_supersession_preview_rendered_control"
+    rendered_node = "/review/layer3 #source-directory-package-supersession-preview-panel"
+    authority_input = "/review/layer3 #source-directory-package-supersession-preview-authority"
+    submit_control = "/review/layer3 #source-directory-package-supersession-preview-submit"
+    selected_route = (
+        "POST /api/v1/layer3/source/ingestion/server-configured-directory/"
+        "qualitative-hybrid-analysis/package/supersession/preview"
+    )
+    selected_schema = (
+        "layer3.source_directory_qualitative_analysis_package_supersession_preview.v1"
+    )
+    selected_mode = "source_directory_qualitative_analysis_package_supersession_preview_authority"
+    state_owner = "State.sourceDirectoryPackageSupersessionPreview"
+    static_proof = (
+        "backend/tests/test_layer3_page.py::"
+        "test_layer3_source_directory_package_supersession_preview_control_is_bounded"
+    )
+    api_proof = (
+        "backend/tests/test_layer3_source_directory_qualitative_analysis.py::"
+        "test_source_directory_qualitative_analysis_handoff_export_prepare_records_bounded_authority"
+    )
+    browser_proof = (
+        "e2e/layer3-workbench.spec.js::Layer 3 workbench drives source-directory "
+        "package supersession preview rendered control"
+    )
+    next_posture = (
+        "current_main_sync_source_directory_package_supersession_preview_"
+        "rendered_control_then_select_next_blocker_retirement_lane"
+    )
+    summary = (
+        "Doc 920 implements one source-directory package supersession preview rendered "
+        "control over the existing source-directory route, using server-derived package "
+        "authority JSON, posting only to the selected route, storing response state only "
+        "in State.sourceDirectoryPackageSupersessionPreview, preserving the generic "
+        "/package/mutation/preview control, and proving the control with static/page, "
+        "API, headless Chromium, and headed Chromium coverage. It introduces rendered "
+        "and executable proof behavior only; it introduces no runtime, backend, "
+        "route/API/DTO/model/migration/service, full mockup activation, browser-storage "
+        "authority, or frontend-only durable authority."
+    )
+
+    for term in (
+        "920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+        f"Status: branch-local implementation proof for `{target}`.",
+        "Predecessor sync doc: `919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`.",
+        f"Current-main checkpoint before implementation: `{checkpoint}`.",
+        f"Implementation branch: `{branch}`.",
+        f"Selected rendered node: `{rendered_node}`.",
+        f"Selected request authority input: `{authority_input}`.",
+        f"Selected submit control: `{submit_control}`.",
+        selected_route,
+        selected_schema,
+        selected_mode,
+        f"Selected state owner: `{state_owner}`.",
+        "preserves the existing generic `/package/mutation/preview` rendered control",
+        static_proof,
+        api_proof,
+        "headless Chromium proof",
+        "headed Chromium proof",
+        "Headless/headed comparison result: no behavioral divergence observed",
+        "Runtime behavior introduced by this implementation: `false`.",
+        "Rendered behavior introduced by this implementation: `true`.",
+        "Backend behavior introduced by this implementation: `false`.",
+        "Server-authoritative full mockup activation introduced by this implementation: `false`.",
+        "Full mockup program activation selected: `false`.",
+        "Implementation-entry allowed for full mockup activation by this implementation alone: `false`.",
+        next_posture,
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL)} "
+                f"missing source-directory package supersession preview implementation term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package Supersession Preview Rendered Control",
+            "920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+            status,
+            branch,
+            rendered_node,
+            state_owner,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package supersession preview rendered control implementation to preserve when present",
+            "920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+            status,
+            rendered_node,
+            state_owner,
+            static_proof,
+            api_proof,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "920_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL.md",
+            status,
+            branch,
+            rendered_node,
+            state_owner,
+            browser_proof,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"doc": "{doc_path}"',
+            f'"selected_state_owner": "{state_owner}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"selected_state_owner": "{state_owner}"',
+            '"headless_chromium_proof_passed": true',
+            '"headed_chromium_proof_passed": true',
+            '"headless_headed_divergence_observed": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package supersession preview implementation term: {term}"
+                )
+
+    expected_latest = {
+        f"latest_{entry_key}_status": status,
+        f"latest_{entry_key}_doc": doc_path,
+        f"latest_{entry_key}_predecessor_sync_doc": predecessor_doc,
+        f"latest_{entry_key}_current_main_checkpoint_before_implementation": checkpoint,
+        f"latest_{entry_key}_implementation_branch": branch,
+        f"latest_{entry_key}_selected_target": target,
+        f"latest_{entry_key}_rendered_node": rendered_node,
+        f"latest_{entry_key}_selected_route": selected_route,
+        f"latest_{entry_key}_selected_schema": selected_schema,
+        f"latest_{entry_key}_selected_mode": selected_mode,
+        f"latest_{entry_key}_selected_state_owner": state_owner,
+        f"latest_{entry_key}_selected_static_proof": static_proof,
+        f"latest_{entry_key}_selected_api_proof": api_proof,
+        f"latest_{entry_key}_selected_browser_proof": browser_proof,
+        f"latest_{entry_key}_headless_chromium_proof_passed": True,
+        f"latest_{entry_key}_headed_chromium_proof_passed": True,
+        f"latest_{entry_key}_headless_headed_divergence_observed": False,
+        f"latest_{entry_key}_runtime_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_rendered_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_backend_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_route_api_dto_model_migration_service_behavior_change_introduced_by_implementation": False,
+        f"latest_{entry_key}_executable_test_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_production_ui_behavior_change_introduced_by_implementation": True,
+        f"latest_{entry_key}_server_authoritative_full_mockup_activation_introduced_by_implementation": False,
+        f"latest_{entry_key}_full_mockup_program_activation_selected": False,
+        f"latest_{entry_key}_implementation_entry_allowed_for_full_mockup_activation_by_implementation_alone": False,
+        f"latest_{entry_key}_next_posture": next_posture,
+        f"latest_{entry_key}_summary": summary,
+    }
+    expected_entry_values = (
+        ("status", status),
+        ("doc", doc_path),
+        ("predecessor_sync_doc", predecessor_doc),
+        ("current_main_checkpoint_before_implementation", checkpoint),
+        ("implementation_branch", branch),
+        ("selected_target", target),
+        ("rendered_node", rendered_node),
+        ("request_authority_input", authority_input),
+        ("submit_control", submit_control),
+        ("selected_route", selected_route),
+        ("selected_schema", selected_schema),
+        ("selected_mode", selected_mode),
+        ("selected_state_owner", state_owner),
+        ("selected_static_proof", static_proof),
+        ("selected_api_proof", api_proof),
+        ("selected_browser_proof", browser_proof),
+        ("headless_chromium_proof_passed", True),
+        ("headed_chromium_proof_passed", True),
+        ("headless_headed_divergence_observed", False),
+        ("runtime_behavior_change_introduced_by_implementation", False),
+        ("rendered_behavior_change_introduced_by_implementation", True),
+        ("backend_behavior_change_introduced_by_implementation", False),
+        ("route_api_dto_model_migration_service_behavior_change_introduced_by_implementation", False),
+        ("executable_test_behavior_change_introduced_by_implementation", True),
+        ("production_ui_behavior_change_introduced_by_implementation", True),
+        ("server_authoritative_full_mockup_activation_introduced_by_implementation", False),
+        ("full_mockup_program_activation_selected", False),
+        ("implementation_entry_allowed_for_full_mockup_activation_by_implementation_alone", False),
+        ("next_posture", next_posture),
+        ("summary", summary),
+    )
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in expected_entry_values:
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+        for key, value in expected_latest.items():
+            if manifest.get(key) != value:
+                errors.append(f"{_rel(MANIFEST)} {key} must be {value!r}")
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("status", status),
+                ("doc", doc_path),
+                ("implementation_branch", branch),
+                ("rendered_node", rendered_node),
+                ("selected_state_owner", state_owner),
+                ("headless_chromium_proof_passed", True),
+                ("headed_chromium_proof_passed", True),
+                ("headless_headed_divergence_observed", False),
+                ("frontend_durable_authority_enabled", False),
+                ("full_mockup_program_activation_selected", False),
+                ("next_posture", next_posture),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -87786,6 +88035,7 @@ def main() -> int:
     _check_full_mockup_activation_next_blocker_selection(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(errors)
+    _check_source_directory_package_supersession_preview_rendered_control(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
