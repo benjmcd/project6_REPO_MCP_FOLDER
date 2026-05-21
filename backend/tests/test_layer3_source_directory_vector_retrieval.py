@@ -27,6 +27,11 @@ from app.models.models import (
     L3MaterialSnapshot,
     L3OutputPackage,
     L3PassRun,
+    L3ProviderPrivateSignedUrlAuditEvent,
+    L3ProviderPrivateSignedUrlObjectAuthority,
+    L3ProviderPrivateSignedUrlReceipt,
+    L3ProviderPublicUrlObjectAuthority,
+    L3ProviderPublicUrlReceipt,
     L3ReconciliationRecord,
     L3ReplacementPackageSetAuthority,
     L3SourceDirectoryInternalWebhookDispatchAuditEvent,
@@ -1960,6 +1965,171 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_external_ex
     assert stale.json()["error"]["code"] == (
         "source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch"
     )
+
+
+def test_source_directory_hybrid_context_packet_provider_private_to_public_redacted_use(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _analysis_body, prepare_body, prepare_payload = _hybrid_external_export_download_prepare_authority(
+        client,
+        tmp_path,
+        monkeypatch,
+        client_request_id="source-directory-hybrid-provider-private-redacted-delivery",
+    )
+    selected_package = next(
+        package for package in prepare_body["output_packages"] if package["package_kind"] == "user_facing"
+    )
+    delivery_authority = {
+        **prepare_payload,
+        "operator_decision": "deliver_source_directory_hybrid_external_export_download",
+        "external_export_download_record_ref": prepare_body["external_export_download_record_ref"],
+        "export_download_descriptor_ref": prepare_body["export_download_descriptor_ref"],
+        "external_export_download_state": "external_export_download_prepared",
+        "delivery_mode": "same_origin_artifact_stream",
+        "output_package_id": selected_package["output_package_id"],
+        "package_kind": selected_package["package_kind"],
+        "package_payload_hash": selected_package["payload_hash"],
+    }
+    provider_private = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_authority,
+            "client_request_id": "source-directory-provider-private-prepare",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": "source-directory-redacted-delivery-test",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert provider_private.status_code == 200, provider_private.text
+    private_body = provider_private.json()
+    assert private_body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.prepare.v1"
+    )
+    assert private_body["status"] == "prepared"
+    assert private_body["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    assert private_body["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert private_body["source_artifact_hash"] == selected_package["payload_hash"]
+    assert private_body["source_artifact_size_bytes"] > 0
+    assert private_body["source_artifact_ref"] == "artifact://provider-private-signed-url-redacted"
+    assert private_body["output_package_id"] == selected_package["output_package_id"]
+    assert private_body["provider_private_signed_url_enabled"] is True
+    assert private_body["provider_public_url_prepare_enabled"] is True
+    assert private_body["provider_network_enabled"] is False
+    assert private_body["provider_object_write_enabled"] is False
+    assert private_body["connector_dispatch_enabled"] is False
+    assert private_body["package_mutation_enabled"] is False
+    assert private_body["source_expansion_enabled"] is False
+    assert private_body["frontend_durable_authority_enabled"] is False
+    assert private_body["raw_provider_private_signed_url_token_exposed"] is False
+    assert str(tmp_path) not in json.dumps(private_body, sort_keys=True)
+
+    forbidden_private = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_authority,
+            "client_request_id": "source-directory-provider-private-forbidden",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": "source-directory-redacted-delivery-test",
+            "requested_ttl_seconds": 300,
+            "raw_provider_private_signed_url_token": "must-not-be-accepted",
+        },
+    )
+    assert forbidden_private.status_code == 400, forbidden_private.text
+    assert forbidden_private.json()["error"]["code"] == (
+        "source_directory_hybrid_provider_private_signed_url_forbidden_field_not_admitted"
+    )
+
+    conflicting_private = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_authority,
+            "client_request_id": "source-directory-provider-private-prepare",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": "source-directory-redacted-delivery-conflict",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert conflicting_private.status_code == 409, conflicting_private.text
+    assert conflicting_private.json()["error"]["code"] == (
+        "provider_private_signed_url_state_idempotency_conflict"
+    )
+
+    provider_public = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json={
+            "client_request_id": "source-directory-provider-public-prepare",
+            "provider_private_signed_url_receipt_id": private_body["provider_signed_url_receipt_id"],
+            "recipient_scope": "source-directory-redacted-delivery-test",
+            "requested_ttl_seconds": 300,
+            "delivery_mode": "provider_public_url",
+            "operator_decision": "prepare_provider_public_url",
+        },
+    )
+    assert provider_public.status_code == 200, provider_public.text
+    public_body = provider_public.json()
+    assert public_body["status"] == "prepared"
+    assert public_body["provider_public_url_state"] == "provider_public_url_prepared"
+    assert public_body["provider_private_signed_url_receipt_id"] == (
+        private_body["provider_signed_url_receipt_id"]
+    )
+    assert public_body["source_artifact_hash"] == private_body["source_artifact_hash"]
+    assert public_body["source_artifact_size_bytes"] == private_body["source_artifact_size_bytes"]
+    assert public_body["raw_public_url_exposed"] is False
+    assert public_body["public_url_enabled"] is False
+
+    delivery_use = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/use",
+        json={
+            "client_request_id": "source-directory-provider-public-use",
+            "provider_public_url_receipt_id": public_body["provider_public_url_receipt_id"],
+            "expected_source_artifact_hash": private_body["source_artifact_hash"],
+            "expected_source_artifact_size_bytes": private_body["source_artifact_size_bytes"],
+            "delivery_use_mode": "fake_provider_redacted_use_decision",
+            "operator_decision": "use_provider_public_url_redacted_fake_provider",
+        },
+    )
+    assert delivery_use.status_code == 200, delivery_use.text
+    use_body = delivery_use.json()
+    assert use_body["delivery_use_decision"] == "allowed"
+    assert use_body["raw_public_url_exposed"] is False
+    assert use_body["provider_network_enabled"] is False
+    assert use_body["byte_streaming_enabled"] is False
+    assert use_body["durable_use_row_created"] is False
+    assert use_body["connector_dispatch_enabled"] is False
+    assert use_body["package_mutation_enabled"] is False
+    assert use_body["source_expansion_enabled"] is False
+    assert use_body["frontend_durable_authority_enabled"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
+        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 1
+        assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() == 1
+        assert db.query(L3ProviderPublicUrlObjectAuthority).count() == 1
+        assert db.query(L3ProviderPublicUrlReceipt).count() == 1
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
+        assert db.query(L3OutputPackage).count() == 3
+    finally:
+        db.close()
 
 
 def test_representative_mockup_scenario_source_to_output_handoff_e2e_proof(
