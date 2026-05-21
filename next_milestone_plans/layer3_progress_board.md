@@ -9251,3 +9251,33 @@ Frontend-only durable authority enabled by this sync doc: `false`. Full mockup p
 Remaining whole-program gaps: final bounded readiness/runbook audit, Analysis Environment/mockup projection disposition, provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, observability/performance hardening, and final full mockup readiness audit.
 
 Next exact posture: `run_final_bounded_readiness_and_mockup_activation_blocker_audit_after_source_directory_replacement_supersession_current_main_sync`.
+
+## Layer 3 Bounded Readiness Audit
+
+Doc: `939-readiness-audit.md`.
+
+Status: `bounded_readiness_audited_source_directory_redacted_use_blocked_for_full_activation`.
+
+Predecessor current-main sync doc: `938-source-supersession-current-main-sync.md`.
+
+Audit branch: `codex/l3-final-readiness-audit`.
+
+Current main authority: `project6-origin/main` at `d3f70d409f760b08c53f7cd5cb6a79f4cc846e6c`.
+
+Audit result: bounded trial-usable for the current-main-selected source-directory rendered path, but not complete for the full long-term goal and not ready for full mockup activation.
+
+Proven live in source-directory path: scan/status, material preview, Gate B, hybrid authority prepare, retrieval/context, qualitative analysis/status, package commit, package review submit, package supersession preview, replacement package-set authority, package supersession commit, handoff/export prepare, external export/download prepare, same-origin delivery/status, internal webhook dispatch/status, and read-only status/projection visibility.
+
+Proven live outside the source-directory path: admitted provider-public redacted delivery/use on the raw-mixed/provider-public rail.
+
+Explicitly blocked in source-directory path: provider-private/provider-public redacted delivery/use. Current source-directory readiness contracts disable provider URLs and signed URLs, and the focused source-directory E2E asserts no provider-private or provider-public route requests.
+
+Critical mockup journeys: query/source setup, PDF-location, Sublayers 3A/3B, Sublayer 3C execution lanes, and output review/package/handoff are read-only live-state projections. Full mockup activation and frontend-only durable authority remain explicitly blocked.
+
+Validation: projection/mockup/preflight backend contracts passed `7 passed`; rendered page static proof passed `16 passed`; source-directory vector/retrieval backend proof passed `23 passed`; focused source-directory E2E passed headed and headless; provider-public redacted-use E2E passed headed and headless; mockup projection group passed headed and headless with `8 passed` in each mode.
+
+Runtime behavior introduced by this audit doc: `false`. Rendered behavior introduced by this audit doc: `false`. Backend behavior introduced by this audit doc: `false`. Route/API/DTO/model/migration/service behavior introduced by this audit doc: `false`. Executable test behavior introduced by this audit doc: `false`. Production UI behavior introduced by this audit doc: `false`.
+
+Frontend-only durable authority enabled by this audit doc: `false`. Full mockup program activation selected now: `false`.
+
+Next exact posture: `decide_source_directory_redacted_delivery_use_bridge_or_accept_same_origin_delivery_rail_before_full_mockup_activation`.
