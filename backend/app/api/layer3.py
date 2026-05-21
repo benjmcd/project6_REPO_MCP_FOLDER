@@ -73,6 +73,7 @@ class Layer3WorkbenchBootstrapResponse(Layer3BaseResponse):
     unavailable_gate_labels: list[str]
     state_action_contract: dict[str, Any]
     authority_matrix_contract: dict[str, Any]
+    mockup_activation_readiness: dict[str, Any]
     features: dict[str, bool]
     execution_readiness: dict[str, Any]
     authority_rail: dict[str, Any]

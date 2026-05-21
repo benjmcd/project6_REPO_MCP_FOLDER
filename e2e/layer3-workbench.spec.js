@@ -7831,6 +7831,61 @@ test('Layer 3 mockup workbench theme exposes fixture projection without backend 
   ]);
 });
 
+test('Layer 3 mockup activation readiness dashboard classifies next-phase journeys from bootstrap authority', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1360, height: 940 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+
+  const panel = page.locator('#mockup-activation-readiness-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_mockup_activation_readiness_dashboard');
+  await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(panel).toHaveAttribute('data-readiness-state', 'first_activation_readiness_slice_selected');
+  await expect(panel).toContainText('State.bootstrap.mockup_activation_readiness');
+  await expect(panel).toContainText('layer3.mockup_activation_readiness.v1');
+  await expect(panel).toContainText('query_source_setup_interactive_live_classification');
+  await expect(panel).toContainText('interactive live');
+  await expect(panel).toContainText('read only');
+  await expect(panel).toContainText('full mockup activation');
+  await expect(panel).toContainText('blocked');
+
+  const readinessProof = await panel.evaluate((element) => ({
+    text: element.textContent || '',
+    html: element.innerHTML,
+    rows: Array.from(element.querySelectorAll('.mockup-activation-journey-rows li')).map((item) => ({
+      id: item.querySelector('code')?.textContent?.trim(),
+      classification: item.querySelector('strong')?.textContent?.trim(),
+      label: item.querySelector('span')?.textContent?.trim(),
+    })),
+    localStorageKeys: Object.keys(window.localStorage).filter((key) => key.toLowerCase().includes('mockup')),
+    horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+  }));
+  expect(readinessProof.rows).toEqual([
+    { id: 'query_source_setup', classification: 'interactive_live', label: 'Query/source setup' },
+    { id: 'pdf_location', classification: 'read_only', label: 'PDF-location evidence' },
+    { id: 'sublayers_3a_3b', classification: 'read_only', label: 'Sublayers 3A/3B' },
+    { id: 'sublayer_3c_execution_lanes', classification: 'read_only', label: 'Sublayer 3C execution lanes' },
+    { id: 'output_review_package_handoff', classification: 'read_only', label: 'Output review/package/handoff' },
+    { id: 'full_mockup_program', classification: 'blocked', label: 'Full mockup program' },
+  ]);
+  expect(readinessProof.localStorageKeys).toEqual([]);
+  expect(readinessProof.horizontalOverflow).toBe(false);
+  for (const forbidden of [
+    'raw_provider_url',
+    'provider_token',
+    'connector_secret',
+    'destination_write_enabled',
+    'frontend_only_durable_authority_enabled true',
+  ]) {
+    expect(readinessProof.text).not.toContain(forbidden);
+    expect(readinessProof.html).not.toContain(forbidden);
+  }
+
+  await testInfo.attach('layer3-mockup-activation-readiness-dashboard.png', {
+    body: await panel.screenshot(),
+    contentType: 'image/png',
+  });
+});
+
 test('Layer 3 mockup PDF-location projection renders available server state without runtime widening', async ({ page }, testInfo) => {
   const sessionId = 'mockup-pdf-location-available-session';
   const availableProjection = {
