@@ -2,11 +2,13 @@
 
 ## Status
 
-Status: branch-local final readiness audit after current-main bounded trial checkpoint sync.
+Status: current-main synced final readiness audit after current-main bounded trial checkpoint sync.
 
 Doc: `953-final-readiness-audit-after-checkpoint.md`.
 
 Current-main authority before this branch: `project6-origin/main` at `75714106 Record Layer 3 bounded trial checkpoint`.
+
+Current-main sync: PR `#1578` merged as `ad98a832 Record Layer 3 final readiness audit`.
 
 Predecessor checkpoint: `952-bounded-trial-checkpoint-runbook.md`.
 
@@ -75,7 +77,7 @@ Rationale:
 
 ## Verification Results
 
-Branch-local proof on `codex/l3-final-audit-sync`:
+Proof from `codex/l3-final-audit-sync`, now current-main synced through PR `#1578`:
 
 - `python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json > $null`: PASS.
 - `python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json > $null`: PASS.
@@ -90,7 +92,9 @@ Branch-local proof on `codex/l3-final-audit-sync`:
 
 ## Next Posture
 
-Next work is not blanket full mockup activation. The next admissible pass is one of:
+Next work is not blanket full mockup activation. The follow-up selection packet is `954-post-final-readiness-next-phase-selection-freeze.md`, which selects a no-runtime blocker-closure freeze because product authority for activation is absent.
+
+The next admissible pass is one of:
 
 1. create a governed full-mockup activation freeze if product authority explicitly accepts this audit and names activation as the next phase;
 2. select the highest-value named blocker from this audit and close it with a current-main-admitted slice;
