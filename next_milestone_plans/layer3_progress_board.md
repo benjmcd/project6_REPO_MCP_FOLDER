@@ -8901,3 +8901,29 @@ Runtime behavior introduced by this sync: `false`. Rendered behavior introduced 
 Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`. Implementation-entry allowed for selected target after sync: `true`.
 
 Next exact posture: `implement_source_directory_package_supersession_commit_rendered_control_after_freeze_sync`.
+
+## Source-Directory Package Supersession Commit Route-State Gap Freeze
+
+Doc: `928_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE.md`.
+
+Status: `source_directory_package_supersession_commit_route_state_gap_frozen`.
+
+Predecessor current-main sync doc: `927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Current-main checkpoint before gap freeze: `4b40109e3922399c3b4a86f8d158ed5d9907599c`.
+
+Gap-freeze branch: `codex/l3-package-commit-gap-freeze`.
+
+Blocked target: `source_directory_package_supersession_commit_rendered_control`.
+
+Selected stop action: `source_directory_package_supersession_commit_route_state_gap_freeze`.
+
+Existing commit route: `POST /api/v1/layer3/package/supersession/commit`.
+
+Gap summary: source-directory preview/replacement authority uses source-directory package-set and preview hash bases, while the existing commit service recomputes generic package-set and preview hash bases and requires replacement authority to match those generic hashes.
+
+Runtime behavior introduced by this gap freeze: `false`. Rendered behavior introduced by this gap freeze: `false`. Backend behavior introduced by this gap freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this gap freeze: `false`. Executable test behavior introduced by this gap freeze: `false`. Production UI behavior introduced by this gap freeze: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed by this gap freeze alone: `false`.
+
+Next exact posture: `current_main_sync_source_directory_package_supersession_commit_route_state_gap_freeze_then_select_commit_contract`.
