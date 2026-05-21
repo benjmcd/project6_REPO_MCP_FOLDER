@@ -1039,3 +1039,14 @@ Current Layer 3 source-directory package supersession commit route-state gap fre
 - preserve the gap finding that source-directory preview/replacement authority uses source-directory package-set and preview hash bases while the existing commit route recomputes generic package-set and preview hash bases
 - treat this gap freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior, production UI behavior, implementation-entry admission by itself, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `current_main_sync_source_directory_package_supersession_commit_route_state_gap_freeze_then_select_commit_contract`
+
+Current Layer 3 source-directory package supersession commit route-state gap freeze current-main sync to preserve when present:
+- `929_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ROUTE_STATE_GAP_FREEZE_CURRENT_MAIN_SYNC.md` records current-main sync for Doc `928`
+- classify it as `current_main_synced_source_directory_package_supersession_commit_route_state_gap_freeze`
+- preserve source PR `#1544`, gap-freeze commit `144afa29a7ac744b5684048e2bf8c61924d6b57e`, and merge commit `a7ec760f387e9b790146354ac874aab1fb01e225`
+- preserve synced blocked target `source_directory_package_supersession_commit_rendered_control`
+- preserve synced stop action `source_directory_package_supersession_commit_route_state_gap_freeze`
+- preserve synced existing commit route `POST /api/v1/layer3/package/supersession/commit`
+- preserve GitHub checks `backend-layer3-api` and `test` as `SUCCESS` with empty comments/reviews/latestReviews/reviewThreads before merge
+- treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, package supersession commit implementation, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `select_source_directory_package_supersession_commit_route_state_contract_after_gap_freeze_sync`
