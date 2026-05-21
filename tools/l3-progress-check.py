@@ -2605,6 +2605,10 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE = (
     PLANNING_DOCS
     / "926_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE.md"
 )
+LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -88454,6 +88458,214 @@ def _check_source_directory_package_supersession_commit_rendered_control_freeze(
                     errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
 
 
+def _check_source_directory_package_supersession_commit_rendered_control_freeze_current_main_sync(
+    errors: list[str],
+) -> None:
+    manifest = _load_json(MANIFEST, errors)
+    proof_manifest = _load_json(PROOF_MANIFEST, errors)
+    doc_text = _read_required_text(
+        LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC,
+        errors,
+    )
+    entry_key = "source_directory_package_supersession_commit_rendered_control_freeze_current_main_sync"
+    status = "current_main_synced_source_directory_package_supersession_commit_rendered_control_freeze"
+    doc_path = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md"
+    )
+    predecessor_doc = (
+        "next_milestone_plans/Layer3_planning_docs/"
+        "926_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE.md"
+    )
+    source_pr = "#1542"
+    source_branch = "codex/l3-package-commit-freeze"
+    freeze_commit = "75d3cb6028037d2b70c6d3fbca72f3c5d19c7cb2"
+    merge_commit = "89c9aea9f7909adc5fbcc238d8213d797f96c411"
+    sync_branch = "codex/l3-package-commit-freeze-sync"
+    target = "source_directory_package_supersession_commit_rendered_control"
+    source_authority = "State.sourceDirectoryPackageSupersessionPreview"
+    fallback_authority = "State.packageSupersessionPreview"
+    replacement_state = "State.replacementPackageSetAuthority"
+    commit_route = "POST /api/v1/layer3/package/supersession/commit"
+    next_posture = (
+        "implement_source_directory_package_supersession_commit_rendered_control_after_freeze_sync"
+    )
+    summary = (
+        "Doc 927 syncs PR #1542 merge commit "
+        "89c9aea9f7909adc5fbcc238d8213d797f96c411 to current main as the "
+        "current-main authority for the source_directory_package_supersession_commit_rendered_control "
+        "freeze. This sync introduces no runtime, rendered, backend, route/API/DTO/model/migration/service, "
+        "executable test, production UI, full mockup activation, browser-storage authority, or "
+        "frontend-only durable authority; the next posture is implementing only the selected rendered "
+        "control after route/state contract proof."
+    )
+
+    for term in (
+        "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+        "Status: current-main sync for `source_directory_package_supersession_commit_rendered_control_freeze`.",
+        "Predecessor freeze doc: `926_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE.md`.",
+        f"Merged PR: `{source_pr}`.",
+        f"Source branch: `{source_branch}`.",
+        f"Freeze commit: `{freeze_commit}`.",
+        f"Merge commit: `{merge_commit}`.",
+        f"Sync branch: `{sync_branch}`.",
+        f"Base authority: `project6-origin/main` at `{merge_commit}`.",
+        f"Synced target: `{target}`.",
+        f"Synced source authority: `{source_authority}`.",
+        f"Synced fallback authority: `{fallback_authority}`.",
+        f"Synced replacement authority state: `{replacement_state}`.",
+        f"Synced commit route: `{commit_route}`.",
+        "Runtime behavior introduced by this sync: `false`.",
+        "Rendered behavior introduced by this sync: `false`.",
+        "Backend behavior introduced by this sync: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this sync: `false`.",
+        "Executable test behavior introduced by this sync: `false`.",
+        "Production UI behavior introduced by this sync: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Implementation-entry allowed for full mockup activation by this sync alone: `false`.",
+        "Implementation-entry allowed for selected target after sync: `true`.",
+        "`backend-layer3-api`: `SUCCESS` in `3m10s`",
+        "`test`: `SUCCESS` in `3m56s`",
+        "reviewThreads totalCount: `0`",
+        f"Next exact posture: `{next_posture}`.",
+    ):
+        if term not in doc_text:
+            errors.append(
+                f"{_rel(LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC)} "
+                f"missing source-directory package supersession commit freeze sync term: {term}"
+            )
+
+    for path, terms in {
+        BOARD: (
+            "## Source-Directory Package Supersession Commit Rendered Control Freeze Current-Main Sync",
+            "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            source_pr,
+            merge_commit,
+            target,
+            source_authority,
+            commit_route,
+            next_posture,
+        ),
+        PROGRESS_PROMPT: (
+            "Current Layer 3 source-directory package supersession commit rendered control freeze current-main sync to preserve when present",
+            "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            freeze_commit,
+            merge_commit,
+            target,
+            source_authority,
+            commit_route,
+            next_posture,
+        ),
+        REFRESH_SPEC: (
+            "927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md",
+            status,
+            source_pr,
+            freeze_commit,
+            merge_commit,
+            target,
+            source_authority,
+            commit_route,
+            next_posture,
+        ),
+        MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"predecessor_freeze_doc": "{predecessor_doc}"',
+            f'"source_pr": "{source_pr}"',
+            f'"freeze_commit": "{freeze_commit}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"synced_target": "{target}"',
+            f'"synced_source_authority": "{source_authority}"',
+            f'"synced_commit_route": "{commit_route}"',
+            f'"next_posture": "{next_posture}"',
+        ),
+        PROOF_MANIFEST: (
+            f'"{entry_key}"',
+            f'"status": "{status}"',
+            f'"sync_doc": "{doc_path}"',
+            f'"source_pr": "{source_pr}"',
+            f'"merge_commit": "{merge_commit}"',
+            f'"synced_source_authority": "{source_authority}"',
+            '"runtime_behavior_change_introduced_by_sync": false',
+            '"frontend_durable_authority_enabled": false',
+        ),
+    }.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(
+                    f"{_rel(path)} missing source-directory package supersession commit freeze sync term: {term}"
+                )
+
+    if isinstance(manifest, dict):
+        entry = manifest.get(entry_key)
+        if not isinstance(entry, dict):
+            errors.append(f"{_rel(MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("predecessor_freeze_doc", predecessor_doc),
+                ("source_pr", source_pr),
+                ("source_branch", source_branch),
+                ("freeze_commit", freeze_commit),
+                ("merge_commit", merge_commit),
+                ("sync_branch", sync_branch),
+                ("base_authority", f"project6-origin/main at {merge_commit}"),
+                ("synced_target", target),
+                ("synced_source_authority", source_authority),
+                ("synced_fallback_authority", fallback_authority),
+                ("synced_replacement_authority_state", replacement_state),
+                ("synced_commit_route", commit_route),
+                ("runtime_behavior_change_introduced_by_sync", False),
+                ("rendered_behavior_change_introduced_by_sync", False),
+                ("backend_behavior_change_introduced_by_sync", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+                ("executable_test_behavior_change_introduced_by_sync", False),
+                ("production_ui_behavior_change_introduced_by_sync", False),
+                ("full_mockup_program_activation_selected_now", False),
+                ("implementation_entry_allowed_for_full_mockup_activation_by_sync_alone", False),
+                ("implementation_entry_allowed_for_selected_target_after_sync", True),
+                ("next_posture", next_posture),
+                ("summary", summary),
+            ):
+                if entry.get(key) != value:
+                    errors.append(f"{_rel(MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+    if isinstance(proof_manifest, dict):
+        proof_entry = proof_manifest.get(entry_key)
+        if not isinstance(proof_entry, dict):
+            errors.append(f"{_rel(PROOF_MANIFEST)} missing {entry_key} object")
+        else:
+            for key, value in (
+                ("proof_kind", entry_key),
+                ("status", status),
+                ("sync_doc", doc_path),
+                ("source_pr", source_pr),
+                ("freeze_commit", freeze_commit),
+                ("merge_commit", merge_commit),
+                ("synced_target", target),
+                ("synced_source_authority", source_authority),
+                ("synced_fallback_authority", fallback_authority),
+                ("synced_replacement_authority_state", replacement_state),
+                ("synced_commit_route", commit_route),
+                ("runtime_behavior_change_introduced_by_sync", False),
+                ("rendered_behavior_change_introduced_by_sync", False),
+                ("backend_behavior_change_introduced_by_sync", False),
+                ("route_api_dto_model_migration_service_behavior_change_introduced_by_sync", False),
+                ("executable_test_behavior_change_introduced_by_sync", False),
+                ("production_ui_behavior_change_introduced_by_sync", False),
+                ("frontend_durable_authority_enabled", False),
+                ("full_mockup_program_activation_selected", False),
+                ("next_posture", next_posture),
+            ):
+                if proof_entry.get(key) != value:
+                    errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.{key} must be {value!r}")
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -89260,6 +89472,7 @@ def main() -> int:
     _check_source_directory_replacement_package_set_authority_rendered_control(errors)
     _check_source_directory_replacement_package_set_authority_rendered_control_current_main_sync(errors)
     _check_source_directory_package_supersession_commit_rendered_control_freeze(errors)
+    _check_source_directory_package_supersession_commit_rendered_control_freeze_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

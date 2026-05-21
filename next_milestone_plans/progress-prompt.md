@@ -1010,3 +1010,20 @@ Current Layer 3 source-directory package supersession commit rendered control fr
 - preserve stop action `source_directory_package_supersession_commit_route_state_gap_freeze`
 - treat this freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior, production UI behavior, implementation-entry admission by itself, package replacement activation, source package row mutation, source package payload write/rewrite, replacement artifact manifests, downstream invalidation, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `current_main_sync_source_directory_package_supersession_commit_rendered_control_freeze_then_implement_rendered_control`
+
+Current Layer 3 source-directory package supersession commit rendered control freeze current-main sync to preserve when present:
+- `927_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md` records current-main sync for Doc `926` after PR `#1542`
+- classify it as `current_main_synced_source_directory_package_supersession_commit_rendered_control_freeze`
+- preserve predecessor freeze doc `926_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_CONTROL_FREEZE.md`
+- preserve source branch `codex/l3-package-commit-freeze`
+- preserve freeze commit `75d3cb6028037d2b70c6d3fbca72f3c5d19c7cb2`
+- preserve merge commit `89c9aea9f7909adc5fbcc238d8213d797f96c411`
+- preserve sync branch `codex/l3-package-commit-freeze-sync`
+- preserve synced target `source_directory_package_supersession_commit_rendered_control`
+- preserve synced source authority `State.sourceDirectoryPackageSupersessionPreview`
+- preserve synced fallback authority `State.packageSupersessionPreview`
+- preserve synced replacement authority state `State.replacementPackageSetAuthority`
+- preserve synced commit route `POST /api/v1/layer3/package/supersession/commit`
+- preserve GitHub checks `backend-layer3-api` and `test` as `SUCCESS` with empty comments/reviews/latestReviews/reviewThreads before merge
+- treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, package replacement activation, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `implement_source_directory_package_supersession_commit_rendered_control_after_freeze_sync`
