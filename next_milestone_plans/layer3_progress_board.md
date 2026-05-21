@@ -9078,7 +9078,7 @@ Merged source PRs: `#1554` backend source-directory internal webhook dispatch/st
 
 GitHub gates for PRs `#1554`, `#1555`, and `#1556`: merged to current main with required checks passing and no admitted unresolved review/comment blocker before merge.
 
-Current bounded trial status: current main proves the source-directory path from rendered scan/status/material preview/Gate B admission through live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare, rendered same-origin hybrid external export/download delivery, and rendered source-directory internal webhook dispatch/status. Branch `codex/l3-middle-flow-operator` adds a rendered middle-lifecycle control that sequences retrieval/context, qualitative analysis/status, package commit, package review submit, handoff/export prepare, and external export/download prepare from server-derived authority, then populates the existing rendered delivery and webhook authority controls. The remaining interruption is the Gate B to source-directory hybrid authority/index-generation bridge, which still depends on test-only helper authority in the proof.
+Current bounded trial status: current main proves the source-directory path from rendered scan/status/material preview/Gate B admission through live API retrieval/context/qualitative analysis/package lifecycle/handoff/export prepare, rendered same-origin hybrid external export/download delivery, and rendered source-directory internal webhook dispatch/status. PR `#1558` merged the rendered middle-lifecycle control from branch `codex/l3-middle-flow-operator`; current main now sequences retrieval/context, qualitative analysis/status, package commit, package review submit, handoff/export prepare, and external export/download prepare from server-derived authority, then populates the existing rendered delivery and webhook authority controls. The remaining interruption is the Gate B to source-directory hybrid authority/index-generation bridge, which still depends on test-only helper authority in the proof.
 
 Minimal operator runbook: use a clean current-main worktree; run `python ./tools/l3-progress-check.py`, `node --check ./backend/app/review_ui/static/layer3.js`, the focused backend source-directory tests, and both headed/headless Playwright for `Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path`.
 
@@ -9089,3 +9089,43 @@ Frontend-only durable authority enabled by this checkpoint doc: `false`. Full mo
 Remaining whole-program gaps: the Gate B to source-directory hybrid authority/index-generation bridge still needs a current-main-admitted rendered/operator proof; package replacement/supersession still needs source-directory path proof; provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, and full mockup activation remain separately blocked.
 
 Next exact posture: `freeze_source_directory_hybrid_authority_generation_operator_bridge_before_runtime`.
+
+## Source-Directory Hybrid Authority Bridge Freeze
+
+Doc: `934-hybrid-authority.md`.
+
+Status: `source_directory_hybrid_authority_generation_operator_bridge_frozen`.
+
+Predecessor checkpoint doc: `933-trial-runbook.md`.
+
+Current-main checkpoint before freeze: `f4a75bb5ebc3b4f4f03247db54f61383d208f164`.
+
+Predecessor rendered middle-lifecycle PR: `#1558`, merge commit `f4a75bb5ebc3b4f4f03247db54f61383d208f164`.
+
+Freeze branch: `codex/l3-hybrid-authority-freeze`.
+
+Originating posture: `freeze_source_directory_hybrid_authority_generation_operator_bridge_before_runtime`.
+
+Selected bridge: `source_directory_hybrid_authority_generation_operator_bridge`.
+
+Selected production route contract: `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare`.
+
+Selected rendered control contract: `/review/layer3` must prepare the middle-lifecycle authority payload from current server-owned Gate B/session/material authority instead of test-helper or browser-authored index authority.
+
+Current-main authority after PR `#1558`: rendered `/review/layer3` now sequences existing production routes for source-directory vector retrieval, hybrid context packet, qualitative analysis/status, package commit, package review submit, handoff/export prepare, and external export/download prepare, then populates the existing rendered delivery and webhook authority controls.
+
+Remaining bridge gap: `POST /__test/layer3/source-directory-hybrid-authority` still creates the `index_authority_hash` and `embedding_index_authority_hash` used to start the rendered middle lifecycle proof.
+
+Selected immediate implementation slice after this freeze lands: `implement_source_directory_hybrid_authority_generation_operator_bridge`.
+
+Runtime behavior introduced by this freeze: `false`. Rendered behavior introduced by this freeze: `false`. Backend behavior introduced by this freeze: `false`. Route/API/DTO/model/migration/service behavior introduced by this freeze: `false`. Executable test behavior introduced by this freeze: `false`. Production UI behavior introduced by this freeze: `false`.
+
+Frontend-only durable authority enabled by this freeze: `false`. Full mockup program activation selected now: `false`.
+
+Implementation-entry allowed after this freeze is current-main authority: `true`, only for the server-owned Gate B/session/material snapshot to source-directory hybrid authority bridge.
+
+Required proof after implementation: backend route tests for success and fail-closed authority mismatches, rendered control proof that production route populates the middle-lifecycle authority, headed/headless Chromium proof, request allowlist proof, no `POST /__test/layer3/source-directory-hybrid-authority` in the bounded operator path, forbidden payload-key proof, JSON validation, `python ./tools/l3-progress-check.py`, and `git diff --check`.
+
+Remaining whole-program gaps after this freeze: uninterrupted source-directory scan/status/material preview/Gate B through hybrid middle lifecycle without test-only authority; source-directory package replacement/supersession rendered path proof if still admitted by current main; provider-private signed URL runtime; provider-public URL runtime; broader source/RAG/model/provider behavior; auth/security expansion; observability/performance hardening; and final full mockup readiness audit.
+
+Next exact posture: `implement_source_directory_hybrid_authority_generation_operator_bridge`.
