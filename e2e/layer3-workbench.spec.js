@@ -9801,6 +9801,402 @@ test('Layer 3 workbench drives source-directory package supersession preview ren
   expect(pageErrors).toEqual([]);
 });
 
+test('Layer 3 workbench drives source-directory qualitative handoff export rendered controls', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+  });
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  const sourceSessionId = 'session-source-directory-handoff-export-rendered-proof';
+  const previewPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview';
+  const handoffPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare';
+  const externalPreparePath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare';
+  const deliveryStatusPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status';
+  const deliveryPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver';
+  const packageKinds = ['canonical_internal', 'review_facing', 'user_facing'];
+  const outputPackageIds = [
+    'pkg-source-handoff-canonical',
+    'pkg-source-handoff-review',
+    'pkg-source-handoff-user',
+  ];
+  const payloadHashes = ['3'.repeat(64), '4'.repeat(64), '5'.repeat(64)];
+  const authorityPayload = {
+    analysis_question: 'What can the operator export from the source-directory qualitative package?',
+    analysis_focus: 'source-directory qualitative handoff export rendered control proof',
+    material_snapshot_id: 'snapshot-source-handoff-export-rendered-proof',
+    source_ingestion_batch_id: 'batch-source-handoff-export-rendered-proof',
+    source_ingestion_file_id: 'file-source-handoff-export-rendered-proof',
+    content_sha256: 'a'.repeat(64),
+    file_identity_hash: 'b'.repeat(64),
+    authority_basis_hash: 'c'.repeat(64),
+    payload_hash: 'd'.repeat(64),
+    index_authority_hash: 'e'.repeat(64),
+    query_text: 'source directory qualitative handoff export evidence',
+    qualitative_analysis_hash: 'f'.repeat(64),
+    source_directory_package_review_preview_hash: '1'.repeat(64),
+    construction_basis_hash: '2'.repeat(64),
+    reconciliation_record_id: 'reconciliation-source-handoff-export-rendered-proof',
+    output_package_ids: outputPackageIds,
+    package_kinds: packageKinds,
+    payload_hashes: payloadHashes,
+    package_review_submit_record_ref: 'submit-ref-source-handoff-export-rendered-proof',
+    package_review_state: 'package_review_approved',
+  };
+  const baseSourcePayloadKeys = [
+    'analysis_focus',
+    'analysis_question',
+    'authority_basis_hash',
+    'client_request_id',
+    'construction_basis_hash',
+    'content_sha256',
+    'file_identity_hash',
+    'index_authority_hash',
+    'material_snapshot_id',
+    'operator_decision',
+    'output_package_ids',
+    'package_kinds',
+    'package_review_state',
+    'package_review_submit_record_ref',
+    'payload_hash',
+    'payload_hashes',
+    'qualitative_analysis_hash',
+    'query_text',
+    'reconciliation_record_id',
+    'source_directory_package_review_preview_hash',
+    'source_ingestion_batch_id',
+    'source_ingestion_file_id',
+  ];
+  const handoffPayloadKeys = [...baseSourcePayloadKeys, 'decision_notes', 'export_mode', 'handoff_target'];
+  const externalPreparePayloadKeys = [
+    ...baseSourcePayloadKeys,
+    'download_mode',
+    'export_mode',
+    'external_export_download_target',
+    'handoff_export_envelope_ref',
+    'handoff_export_state',
+    'handoff_target',
+    'prepare_record_ref',
+  ];
+  const deliveryPayloadKeys = [
+    ...externalPreparePayloadKeys,
+    'delivery_mode',
+    'external_export_download_record_ref',
+    'external_export_download_state',
+    'export_download_descriptor_ref',
+    'output_package_id',
+    'package_kind',
+    'package_payload_hash',
+  ];
+  const forbiddenPayloadKeys = [
+    'payload_refs',
+    'source_payload_refs',
+    'replacement_payload_refs',
+    'artifact_manifest',
+    'browser_state',
+    'frontend_state',
+    'raw_payload_path',
+    'local_file_path',
+    'download_url',
+    'public_url',
+    'signed_url',
+    'connector_run_id',
+    'destination_id',
+    'provider_credentials',
+  ];
+  const expectNoForbiddenPayloadKeys = (payload) => {
+    for (const forbiddenKey of forbiddenPayloadKeys) {
+      expect(payload).not.toHaveProperty(forbiddenKey);
+    }
+  };
+  const outputPackages = packageKinds.map((packageKind, index) => ({
+    output_package_id: outputPackageIds[index],
+    package_kind: packageKind,
+    package_payload_hash: payloadHashes[index],
+  }));
+  const handoffEnvelopeRef = 'handoff-envelope-source-directory-rendered-proof';
+  const externalRecordRef = 'external-export-source-directory-rendered-proof';
+  const descriptorRef = 'descriptor-source-directory-rendered-proof';
+
+  await page.route('**/api/v1/layer3/session/**', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ session_id: sourceSessionId }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/**/package/supersession/preview', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.source_directory_qualitative_analysis_package_supersession_preview.v1',
+        mode: 'source_directory_qualitative_analysis_package_supersession_preview_authority',
+        status: 'previewed',
+        session_id: sourceSessionId,
+        source_gate: 'source_directory_package_review_submit_approved',
+        next_state: 'source_directory_package_supersession_previewed',
+        material_snapshot_id: authorityPayload.material_snapshot_id,
+        source_ingestion_file_id: authorityPayload.source_ingestion_file_id,
+        reconciliation_record_id: authorityPayload.reconciliation_record_id,
+        package_review_submit_record_ref: authorityPayload.package_review_submit_record_ref,
+        output_package_ids: outputPackageIds,
+        package_kinds: packageKinds,
+        payload_hashes: payloadHashes,
+        package_supersession_preview_hash: '6'.repeat(64),
+        source_package_set_hash: '7'.repeat(64),
+        downstream_dependency_hash: '8'.repeat(64),
+        downstream_dependencies: [{
+          state_key: 'source_directory_package_review_submit',
+          record_ref: authorityPayload.package_review_submit_record_ref,
+          state: 'package_review_approved',
+        }],
+        replacement_package_set_authority_enabled: false,
+        package_supersession_commit_enabled: false,
+        package_row_mutation_enabled: false,
+        package_payload_rewrite_enabled: false,
+        source_package_row_mutation_enabled: false,
+        connector_dispatch_enabled: false,
+        provider_public_delivery_enabled: false,
+        network_egress_enabled: false,
+        frontend_durable_authority_enabled: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/**/handoff/export/prepare', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1',
+        mode: 'source_directory_qualitative_analysis_handoff_export_prepare',
+        status: 'prepared',
+        session_id: sourceSessionId,
+        source_gate: '808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE',
+        handoff_export_state: 'handoff_export_prepared',
+        handoff_target: 'internal_export_envelope',
+        export_mode: 'prepare_only',
+        prepare_record_ref: 'prepare-source-directory-rendered-proof',
+        handoff_export_envelope_ref: handoffEnvelopeRef,
+        handoff_export_envelope: {
+          envelope_ref: handoffEnvelopeRef,
+          package_review_submit_record_ref: authorityPayload.package_review_submit_record_ref,
+          reconciliation_record_id: authorityPayload.reconciliation_record_id,
+          output_package_ids: outputPackageIds,
+        },
+        package_review_submit_record_ref: authorityPayload.package_review_submit_record_ref,
+        package_review_state: 'package_review_approved',
+        output_package_ids: outputPackageIds,
+        package_kinds: packageKinds,
+        payload_hashes: payloadHashes,
+        payload_refs_redacted: true,
+        external_export_download_prepare_enabled: true,
+        connector_dispatch_enabled: false,
+        provider_public_delivery_enabled: false,
+        network_egress_enabled: false,
+        frontend_durable_authority_enabled: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/**/handoff/export/download/prepare', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1',
+        mode: 'source_directory_qualitative_analysis_external_export_download_prepare',
+        status: 'prepared',
+        session_id: sourceSessionId,
+        source_gate: '812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE',
+        external_export_download_state: 'external_export_download_prepared',
+        external_export_download_record_ref: externalRecordRef,
+        export_download_descriptor_ref: descriptorRef,
+        prepare_record_ref: 'prepare-source-directory-rendered-proof',
+        handoff_export_state: 'handoff_export_prepared',
+        handoff_export_envelope_ref: handoffEnvelopeRef,
+        handoff_target: 'internal_export_envelope',
+        export_mode: 'prepare_only',
+        external_export_download_target: 'source_directory_qualitative_analysis_package_download_reference',
+        download_mode: 'reference_only_prepare',
+        package_review_submit_record_ref: authorityPayload.package_review_submit_record_ref,
+        package_review_state: 'package_review_approved',
+        output_package_ids: outputPackageIds,
+        package_kinds: packageKinds,
+        payload_hashes: payloadHashes,
+        output_packages: outputPackages,
+        external_export_download_descriptor: {
+          descriptor_ref: descriptorRef,
+          source_artifact_ref: 'artifact://source-directory/qualitative-package/user-facing',
+          export_download_target: 'source_directory_qualitative_analysis_package_download_reference',
+          download_mode: 'reference_only_prepare',
+          browser_download_enabled: true,
+          download_url_enabled: false,
+        },
+        same_origin_delivery_enabled: true,
+        browser_download_enabled: true,
+        provider_public_delivery_enabled: false,
+        provider_private_signed_url_enabled: false,
+        connector_dispatch_enabled: false,
+        network_egress_enabled: false,
+        frontend_durable_authority_enabled: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/**/handoff/export/download/deliver/status', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1',
+        mode: 'source_directory_qualitative_analysis_external_export_download_delivery',
+        delivery_status: 'available',
+        delivery_available: true,
+        delivery_streaming_performed: false,
+        delivery_state: 'external_export_download_delivery_available',
+        source_gate: '812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE',
+        validated_delivery_source_gate: '812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE',
+        external_export_download_record_ref: externalRecordRef,
+        export_download_descriptor_ref: descriptorRef,
+        output_package_id: outputPackageIds[2],
+        package_kind: 'user_facing',
+        package_payload_hash: payloadHashes[2],
+        same_origin_delivery_enabled: true,
+        browser_managed_same_origin_attachment_enabled: true,
+        provider_public_delivery_enabled: false,
+        provider_private_signed_url_enabled: false,
+        connector_dispatch_enabled: false,
+        network_egress_enabled: false,
+        frontend_durable_authority_enabled: false,
+        package_payload_rewrite_enabled: false,
+        source_package_row_mutation_enabled: false,
+        raw_local_path_exposed: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/server-configured-directory/**/handoff/export/download/deliver', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/octet-stream', body: '' });
+  });
+
+  await page.setViewportSize({ width: 1360, height: 980 });
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const sourcePreviewPanel = page.locator('#source-directory-package-supersession-preview-panel');
+  await sourcePreviewPanel.scrollIntoViewIfNeeded();
+  await expect(sourcePreviewPanel).toBeVisible();
+  await page.locator('#source-directory-package-supersession-preview-authority').fill(JSON.stringify(authorityPayload));
+  await expect(sourcePreviewPanel).toHaveAttribute(
+    'data-preview-state',
+    'source_directory_package_supersession_preview_ready',
+  );
+  await expect(page.locator('#source-directory-package-supersession-preview-submit')).toBeEnabled();
+  const previewRequestPromise = page.waitForRequest((request) => (
+    request.url().includes('/package/supersession/preview') && request.method() === 'POST'
+  ));
+  await page.locator('#source-directory-package-supersession-preview-submit').click();
+  expect(new URL((await previewRequestPromise).url()).pathname).toBe(previewPath);
+  await expect(sourcePreviewPanel).toHaveAttribute(
+    'data-preview-state',
+    'source_directory_package_supersession_previewed',
+  );
+
+  await page.locator('#theme-selector').selectOption('workbench');
+  await page.locator('[data-operation-target="handoff-export-band"]').click();
+  await expect(page.locator('#handoff-export-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#handoff-export-prepare-panel')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_source_directory_qualitative_handoff_export_prepare_control',
+  );
+  await expect(page.locator('#handoff-export-prepare-submit')).toBeEnabled();
+  await page.locator('#handoff-export-prepare-decision').selectOption('authorize_prepare');
+  await page.locator('#handoff-export-prepare-notes').fill('Authorize source-directory qualitative package handoff export.');
+  const handoffRequestPromise = page.waitForRequest((request) => (
+    new URL(request.url()).pathname === handoffPath && request.method() === 'POST'
+  ));
+  await page.locator('#handoff-export-prepare-submit').click();
+  const handoffPayload = (await handoffRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(handoffPayload, handoffPayloadKeys);
+  expect(handoffPayload.operator_decision).toBe('authorize_prepare');
+  expect(handoffPayload.handoff_target).toBe('internal_export_envelope');
+  expect(handoffPayload.export_mode).toBe('prepare_only');
+  expect(handoffPayload.output_package_ids).toEqual(outputPackageIds);
+  expectNoForbiddenPayloadKeys(handoffPayload);
+
+  await expect(page.locator('[data-operation-target="external-export-download-band"]')).toHaveAttribute(
+    'data-operation-state',
+    'ready',
+  );
+  await page.locator('[data-operation-target="external-export-download-band"]').click();
+  await expect(page.locator('#external-export-download-band')).toHaveAttribute('data-operation-active', 'true');
+  await expect(page.locator('#external-export-download-prepare-panel')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_source_directory_qualitative_external_export_download_prepare_control',
+  );
+  await expect(page.locator('#external-export-download-prepare-submit')).toBeEnabled();
+  const externalPrepareRequestPromise = page.waitForRequest((request) => (
+    new URL(request.url()).pathname === externalPreparePath && request.method() === 'POST'
+  ));
+  await page.locator('#external-export-download-prepare-submit').click();
+  const externalPreparePayload = (await externalPrepareRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(externalPreparePayload, externalPreparePayloadKeys);
+  expect(externalPreparePayload.operator_decision).toBe('prepare_source_directory_external_export_download');
+  expect(externalPreparePayload.external_export_download_target).toBe('source_directory_qualitative_analysis_package_download_reference');
+  expect(externalPreparePayload.handoff_export_envelope_ref).toBe(handoffEnvelopeRef);
+  expectNoForbiddenPayloadKeys(externalPreparePayload);
+
+  await expect(page.locator('#external-export-download-delivery-panel')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_source_directory_qualitative_external_export_download_delivery_control',
+  );
+  await expect(page.locator('#external-export-download-delivery-submit')).toBeEnabled();
+  const deliveryStatusRequestPromise = page.waitForRequest((request) => (
+    new URL(request.url()).pathname === deliveryStatusPath && request.method() === 'POST'
+  ));
+  const deliveryRequestPromise = page.waitForRequest((request) => (
+    new URL(request.url()).pathname === deliveryPath && request.method() === 'POST'
+  ));
+  await page.locator('#external-export-download-delivery-submit').click();
+  const deliveryStatusPayload = (await deliveryStatusRequestPromise).postDataJSON();
+  const deliveryPayload = formPostPayload(await deliveryRequestPromise);
+  expectOnlyPayloadKeys(deliveryStatusPayload, deliveryPayloadKeys);
+  expectOnlyPayloadKeys(deliveryPayload, deliveryPayloadKeys);
+  expect(deliveryStatusPayload.output_package_id).toBe(outputPackageIds[2]);
+  expect(deliveryStatusPayload.package_kind).toBe('user_facing');
+  expect(deliveryStatusPayload.package_payload_hash).toBe(payloadHashes[2]);
+  expect(deliveryPayload).toEqual(deliveryStatusPayload);
+  expectNoForbiddenPayloadKeys(deliveryStatusPayload);
+  await expect(page.locator('#external-export-download-delivery-panel')).toContainText(
+    'layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1',
+    { timeout: 8000 },
+  );
+
+  expect(apiRequests.filter((request) => request.path === '/api/v1/layer3/handoff/export/prepare')).toEqual([]);
+  expect(apiRequests.filter((request) => request.path === '/api/v1/layer3/handoff/export/download/prepare')).toEqual([]);
+  expect(apiRequests.filter((request) => request.path === '/api/v1/layer3/handoff/export/download/deliver')).toEqual([]);
+  expect(apiRequests.filter((request) => request.path === previewPath)).toHaveLength(1);
+  expect(apiRequests.filter((request) => request.path === handoffPath)).toHaveLength(1);
+  expect(apiRequests.filter((request) => request.path === externalPreparePath)).toHaveLength(1);
+  expect(apiRequests.filter((request) => request.path === deliveryStatusPath)).toHaveLength(1);
+  expect(apiRequests.filter((request) => request.path === deliveryPath)).toHaveLength(1);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    '/handoff/connector',
+    '/provider-private-signed-url',
+    '/provider-public-url',
+    '/source/mixed-corpus/materialize',
+  ]);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+  expect(overflow).toBe(false);
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+});
+
 test('Layer 3 workbench ignores stale source-directory preview responses after authority changes', async ({ page }) => {
   await page.route('**/favicon.ico', async (route) => {
     await route.fulfill({ status: 204, body: '' });

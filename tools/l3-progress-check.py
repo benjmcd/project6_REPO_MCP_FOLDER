@@ -25594,7 +25594,8 @@ def _check_source_intake_external_export_download_rendered_controls_boundary(err
             "source_intake_external_export_download_delivery_ui_ready",
             "!isSourceIntakeExternalExportDownloadState(external)",
             "serverExternalExportDownloadDeliveryUiState(external)",
-            "submitAttachmentForm('/handoff/export/download/deliver'",
+            "submitAttachmentForm(",
+            "'/handoff/export/download/deliver'",
         ),
         ROOT / "backend/tests/test_layer3_page.py": (
             "SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_intake_external_export_download_prepare.v1'",
