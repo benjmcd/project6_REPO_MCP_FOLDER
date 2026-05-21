@@ -9129,3 +9129,31 @@ Required proof after implementation: backend route tests for success and fail-cl
 Remaining whole-program gaps after this freeze: uninterrupted source-directory scan/status/material preview/Gate B through hybrid middle lifecycle without test-only authority; source-directory package replacement/supersession rendered path proof if still admitted by current main; provider-private signed URL runtime; provider-public URL runtime; broader source/RAG/model/provider behavior; auth/security expansion; observability/performance hardening; and final full mockup readiness audit.
 
 Next exact posture: `implement_source_directory_hybrid_authority_generation_operator_bridge`.
+
+## Source-Directory Hybrid Authority Bridge Implementation
+
+Doc: `935-hybrid-authority-implementation.md`.
+
+Status: `source_directory_hybrid_authority_generation_operator_bridge_branch_local_implemented`.
+
+Predecessor freeze doc: `934-hybrid-authority.md`.
+
+Implementation branch: `codex/l3-hybrid-authority-bridge`.
+
+Current-main checkpoint before implementation: `d8a3cc3b6e723fb1b29adad34be0e9a2bb54da18`.
+
+Implemented route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare`.
+
+Rendered control: `/review/layer3 #source-directory-hybrid-authority-prepare`.
+
+Implementation summary: the route derives source-directory hybrid middle-lifecycle authority from the admitted Gate B session/material snapshot by reusing the existing source-directory text-index and embedding-vector-index owner services. The rendered control prepares authority through that production route, fills the existing middle-lifecycle authority textarea, and then continues through the live source-directory retrieval/context/qualitative-analysis/package/review/handoff/export/delivery/internal-webhook chain.
+
+Proof summary: service compile, static JS check, focused page pytest, focused source-directory backend pytest, focused headless Chromium proof, and focused headed Chromium proof passed in the implementation lane. The E2E path no longer calls `POST /__test/layer3/source-directory-hybrid-authority`; it asserts the production authority-prepare payload contains only `client_request_id` and `session_id`.
+
+Runtime behavior introduced by this implementation: `true`. Rendered behavior introduced by this implementation: `true`. Backend behavior introduced by this implementation: `true`. Route/API/DTO/model/migration/service behavior introduced by this implementation: `true` for route/API/DTO/service only, `false` for model/migration. Executable test behavior introduced by this implementation: `true`. Production UI behavior introduced by this implementation: `true`.
+
+Frontend-only durable authority enabled by this implementation: `false`. Full mockup program activation selected now: `false`.
+
+Non-admitted: model/migration changes, package mutation, source expansion, provider-private signed URL runtime, provider-public URL runtime, external object-store behavior, public proxy behavior, connector dispatch, connector destination writes, caller-supplied webhook destination authority, browser localStorage/sessionStorage authority, frontend-only durable authority, broader source/RAG/model/provider behavior, hidden LLM planning, auth/security expansion, and full mockup activation.
+
+Next exact posture: `publish_and_settle_source_directory_hybrid_authority_generation_operator_bridge_pr`.

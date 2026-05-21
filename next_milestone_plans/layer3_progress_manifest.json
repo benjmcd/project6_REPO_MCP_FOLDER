@@ -40966,5 +40966,70 @@
   "latest_source_directory_hybrid_authority_generation_operator_bridge_freeze_predecessor_merge_commit": "f4a75bb5ebc3b4f4f03247db54f61383d208f164",
   "latest_source_directory_hybrid_authority_generation_operator_bridge_freeze_selected_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
   "latest_source_directory_hybrid_authority_generation_operator_bridge_freeze_next_posture": "implement_source_directory_hybrid_authority_generation_operator_bridge",
-  "latest_source_directory_hybrid_authority_generation_operator_bridge_freeze_summary": "Doc 934 freezes the production Gate B/session/material snapshot to source-directory hybrid authority bridge after PR #1558 merged the rendered middle-lifecycle control. The current proof still uses POST /__test/layer3/source-directory-hybrid-authority for index_authority_hash and embedding_index_authority_hash, so the next admitted slice is only the server-owned production route/control that prepares that authority without frontend durable authority or full mockup activation."
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_freeze_summary": "Doc 934 freezes the production Gate B/session/material snapshot to source-directory hybrid authority bridge after PR #1558 merged the rendered middle-lifecycle control. The current proof still uses POST /__test/layer3/source-directory-hybrid-authority for index_authority_hash and embedding_index_authority_hash, so the next admitted slice is only the server-owned production route/control that prepares that authority without frontend durable authority or full mockup activation.",
+  "source_directory_hybrid_authority_generation_operator_bridge_implementation": {
+    "status": "source_directory_hybrid_authority_generation_operator_bridge_branch_local_implemented",
+    "proof_doc": "next_milestone_plans/Layer3_planning_docs/935-hybrid-authority-implementation.md",
+    "predecessor_freeze_doc": "next_milestone_plans/Layer3_planning_docs/934-hybrid-authority.md",
+    "implementation_branch": "codex/l3-hybrid-authority-bridge",
+    "current_main_checkpoint_before_implementation": "d8a3cc3b6e723fb1b29adad34be0e9a2bb54da18",
+    "implemented_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+    "implemented_rendered_control": "/review/layer3 #source-directory-hybrid-authority-prepare",
+    "owner_service": "backend/app/services/layer3_source_directory_hybrid_authority.py",
+    "api_owner": "backend/app/api/layer3.py",
+    "rendered_assets": [
+      "backend/app/review_ui/static/layer3.html",
+      "backend/app/review_ui/static/layer3.js"
+    ],
+    "test_assets": [
+      "backend/tests/test_layer3_source_directory_vector_retrieval.py",
+      "backend/tests/test_layer3_page.py",
+      "e2e/layer3-workbench.spec.js"
+    ],
+    "runtime_behavior_change_introduced_by_implementation": true,
+    "rendered_behavior_change_introduced_by_implementation": true,
+    "backend_behavior_change_introduced_by_implementation": true,
+    "route_api_dto_service_behavior_change_introduced_by_implementation": true,
+    "model_migration_behavior_change_introduced_by_implementation": false,
+    "executable_test_behavior_change_introduced_by_implementation": true,
+    "production_ui_behavior_change_introduced_by_implementation": true,
+    "frontend_durable_authority_enabled_by_implementation": false,
+    "full_mockup_program_activation_selected_now": false,
+    "proof_commands_passed": [
+      "python -m py_compile ./backend/app/services/layer3_source_directory_hybrid_authority.py",
+      "node --check ./backend/app/review_ui/static/layer3.js",
+      "python -m pytest ./backend/tests/test_layer3_page.py -q",
+      "python -m pytest ./backend/tests/test_layer3_source_directory_vector_retrieval.py -q",
+      "CI=1 npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep \"Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path\"",
+      "CI=1 npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path\""
+    ],
+    "request_allowlist_proof": "production authority prepare request carries only client_request_id and session_id in the focused rendered E2E proof",
+    "test_helper_authority_removed_from_bounded_operator_path": true,
+    "non_admitted": [
+      "model_migration_changes",
+      "package_mutation",
+      "source_expansion",
+      "provider_private_signed_url_runtime",
+      "provider_public_url_runtime",
+      "external_object_store_behavior",
+      "public_proxy_behavior",
+      "connector_dispatch",
+      "connector_destination_writes",
+      "caller_supplied_webhook_destination_authority",
+      "browser_storage_authority",
+      "frontend_only_durable_authority",
+      "broader_source_rag_model_provider_behavior",
+      "hidden_llm_planning",
+      "auth_security_expansion",
+      "full_mockup_activation"
+    ],
+    "next_posture": "publish_and_settle_source_directory_hybrid_authority_generation_operator_bridge_pr"
+  },
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_implementation_doc": "next_milestone_plans/Layer3_planning_docs/935-hybrid-authority-implementation.md",
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_implementation_status": "source_directory_hybrid_authority_generation_operator_bridge_branch_local_implemented",
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_implementation_branch": "codex/l3-hybrid-authority-bridge",
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_implementation_route": "POST /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_implementation_rendered_control": "/review/layer3 #source-directory-hybrid-authority-prepare",
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_implementation_next_posture": "publish_and_settle_source_directory_hybrid_authority_generation_operator_bridge_pr",
+  "latest_source_directory_hybrid_authority_generation_operator_bridge_implementation_summary": "Doc 935 records the branch-local implementation of the production source-directory hybrid authority bridge. The route derives middle-lifecycle authority from server-owned Gate B/session/material snapshot authority through existing text-index and embedding-vector-index services, the rendered control prepares that authority via /review/layer3, and the focused E2E path no longer calls POST /__test/layer3/source-directory-hybrid-authority. Full mockup activation and frontend-only durable authority remain blocked."
 }
