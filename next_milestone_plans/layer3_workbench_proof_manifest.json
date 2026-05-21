@@ -40356,5 +40356,32 @@
       "package bytes raw provider tokens destination credentials remain blocked",
       "current_main_sync_output_review_package_handoff_activation_entry_freeze_then_select_next_read_only_or_blocked_journey"
     ]
+  },
+  "layer3_bounded_trial_readiness_closure_after_activation_entry_freezes": {
+    "proof_kind": "layer3_bounded_trial_readiness_closure_after_activation_entry_freezes",
+    "status": "bounded_trial_readiness_current_main_closed_after_activation_entry_freezes",
+    "doc": "next_milestone_plans/Layer3_planning_docs/957-trial-readiness-sync.md",
+    "current_main_authority_before_sync": "project6-origin/main at 25530f77 Freeze Layer 3 output handoff activation entry (#1581)",
+    "bounded_trial_runbook_doc": "next_milestone_plans/Layer3_planning_docs/952-bounded-trial-checkpoint-runbook.md",
+    "journey_classification": {
+      "query_source_setup": "interactive_live",
+      "output_review_package_handoff": "interactive_live",
+      "pdf_location": "read_only",
+      "sublayers_3a_3b": "read_only",
+      "sublayer_3c_execution_lanes": "read_only",
+      "analysis_environment_projection": "read_only",
+      "full_mockup_program": "blocked"
+    },
+    "proof_terms": [
+      "957-trial-readiness-sync.md",
+      "25530f77 Freeze Layer 3 output handoff activation entry (#1581)",
+      "query_source_setup_interactive_live_classification",
+      "output_review_package_handoff_interactive_live_contract",
+      "read_only: pdf_location sublayers_3a_3b sublayer_3c_execution_lanes analysis_environment_projection",
+      "full_mockup_program blocked",
+      "952-bounded-trial-checkpoint-runbook.md",
+      "full mockup activation remains blocked",
+      "bounded_trial_readiness_closed_await_operator_runbook_evidence_or_product_authority"
+    ]
   }
 }
