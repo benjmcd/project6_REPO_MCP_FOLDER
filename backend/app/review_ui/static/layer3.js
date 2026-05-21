@@ -131,6 +131,11 @@ const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_MODE = 'source_directory_qua
 const SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE = 'rendered_source_directory_replacement_package_set_authority_control';
 const SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE = 'operator_records_replacement_package_set_authority_from_source_directory_supersession_preview';
 const SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview';
+const SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_source_directory_package_supersession_commit_control';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_USE_CASE = 'operator_commits_source_directory_package_supersession_lineage_after_replacement_package_set_authority';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview + State.replacementPackageSetAuthority';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PAYLOAD_FIELDS = Object.freeze([
     'analysis_question',
     'analysis_focus',
@@ -2675,8 +2680,12 @@ function replacementPackageSetAuthorityPreviewState() {
     return sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null;
 }
 
+function isSourceDirectoryPackageSupersessionPreviewSelected(preview = replacementPackageSetAuthorityPreviewState()) {
+    return Boolean(preview && preview === sourceDirectoryPackageSupersessionPreviewState());
+}
+
 function replacementPackageSetAuthorityPreviewSourceMode(preview = replacementPackageSetAuthorityPreviewState()) {
-    return preview && preview === sourceDirectoryPackageSupersessionPreviewState()
+    return isSourceDirectoryPackageSupersessionPreviewSelected(preview)
         ? 'source_directory_package_supersession_preview'
         : 'package_supersession_preview';
 }
@@ -2689,6 +2698,20 @@ function replacementPackageSetAuthorityPreviewSourceAuthority(preview = replacem
 
 function replacementPackageSetAuthoritySourcePackageSetHash(preview = replacementPackageSetAuthorityPreviewState()) {
     return preview?.source_package_set_hash || preview?.package_set_hash || null;
+}
+
+function packageSupersessionCommitPreviewState() {
+    return replacementPackageSetAuthorityPreviewState();
+}
+
+function packageSupersessionCommitPreviewSourceMode(preview = packageSupersessionCommitPreviewState()) {
+    return replacementPackageSetAuthorityPreviewSourceMode(preview);
+}
+
+function packageSupersessionCommitPreviewSourceAuthority(preview = packageSupersessionCommitPreviewState()) {
+    return packageSupersessionCommitPreviewSourceMode(preview) === 'source_directory_package_supersession_preview'
+        ? SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_AUTHORITY
+        : PACKAGE_SUPERSESSION_PREVIEW_RESPONSE_AUTHORITY;
 }
 
 function replacementPackageArtifactMaterializationState() {
@@ -3779,19 +3802,10 @@ function canSubmitReplacementPackageSetAuthority() {
     const authority = selectedResultAuthority();
     const preview = replacementPackageSetAuthorityPreviewState() || {};
     const source = replacementPackageSourceArrays(preview);
+    const sourceMode = replacementPackageSetAuthorityPreviewSourceMode(preview);
     const sourcePackageSetHash = replacementPackageSetAuthoritySourcePackageSetHash(preview);
-    return Boolean(
-        hasResultAuthorityIdentity(authority)
-        && authority.selected
-        && authority.terminal
-        && preview.package_supersession_preview_hash
-        && sourcePackageSetHash
-        && (preview.reconciliation_record_id || packageReviewSubmitState()?.reconciliation_record_id || packageConstructionState()?.reconciliation_record_id)
-        && source.outputPackageIds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
-        && source.packageKinds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
-        && source.payloadRefs.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
-        && source.payloadHashes.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
-        && !replacementPackageSetAuthorityState()
+    const noPendingLifecycleWork = Boolean(
+        !replacementPackageSetAuthorityState()
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
@@ -3805,13 +3819,64 @@ function canSubmitReplacementPackageSetAuthority() {
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
     );
+    if (sourceMode === 'source_directory_package_supersession_preview') {
+        return Boolean(
+            preview.session_id
+            && preview.reconciliation_record_id
+            && preview.package_supersession_preview_hash
+            && sourcePackageSetHash
+            && noPendingLifecycleWork
+        );
+    }
+    return Boolean(
+        hasResultAuthorityIdentity(authority)
+        && authority.selected
+        && authority.terminal
+        && preview.package_supersession_preview_hash
+        && sourcePackageSetHash
+        && (preview.reconciliation_record_id || packageReviewSubmitState()?.reconciliation_record_id || packageConstructionState()?.reconciliation_record_id)
+        && source.outputPackageIds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && source.packageKinds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && source.payloadRefs.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && source.payloadHashes.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && noPendingLifecycleWork
+    );
 }
 
 function canSubmitPackageSupersessionCommit() {
     const authority = selectedResultAuthority();
-    const preview = packageSupersessionPreviewState() || {};
+    const preview = packageSupersessionCommitPreviewState() || {};
+    const sourceMode = packageSupersessionCommitPreviewSourceMode(preview);
+    const sourcePackageSetHash = replacementPackageSetAuthoritySourcePackageSetHash(preview);
     const replacementAuthority = replacementPackageSetAuthorityState() || {};
     const source = replacementPackageSourceArrays(preview);
+    const noPendingLifecycleWork = Boolean(
+        !packageSupersessionCommitState()
+        && !State.packageReviewPreviewPending
+        && !State.packageConstructionPending
+        && !State.packageReviewSubmitPending
+        && !State.packageSupersessionPreviewPending
+        && !State.sourceDirectoryPackageSupersessionPreviewPending
+        && !replacementPackageSetAuthorityBusy()
+        && !packageSupersessionCommitBusy()
+        && !replacementPackageArtifactManifestBusy()
+        && !replacementPackageNamespaceBusy()
+        && !State.handoffExportPreparePending
+        && !State.apsHandoffDispatchPending
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+    );
+    if (sourceMode === 'source_directory_package_supersession_preview') {
+        return Boolean(
+            preview.session_id
+            && preview.reconciliation_record_id
+            && preview.package_supersession_preview_hash
+            && sourcePackageSetHash
+            && replacementAuthority.replacement_package_set_authority_id
+            && replacementAuthority.authority_basis_hash
+            && noPendingLifecycleWork
+        );
+    }
     return Boolean(
         stableHashAvailable()
         && hasResultAuthorityIdentity(authority)
@@ -3834,19 +3899,7 @@ function canSubmitPackageSupersessionCommit() {
         && replacementAuthority.replacement_payload_refs.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
         && Array.isArray(replacementAuthority.replacement_payload_hashes)
         && replacementAuthority.replacement_payload_hashes.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
-        && !packageSupersessionCommitState()
-        && !State.packageReviewPreviewPending
-        && !State.packageConstructionPending
-        && !State.packageReviewSubmitPending
-        && !State.packageSupersessionPreviewPending
-        && !replacementPackageSetAuthorityBusy()
-        && !packageSupersessionCommitBusy()
-        && !replacementPackageArtifactManifestBusy()
-        && !replacementPackageNamespaceBusy()
-        && !State.handoffExportPreparePending
-        && !State.apsHandoffDispatchPending
-        && !State.externalExportDownloadPreparePending
-        && !State.externalExportDownloadDeliveryPending
+        && noPendingLifecycleWork
     );
 }
 
@@ -6284,6 +6337,19 @@ function renderReplacementPackageSetAuthorityPanel() {
     const source = replacementPackageSourceArrays(preview);
     const sourceMode = replacementPackageSetAuthorityPreviewSourceMode(preview);
     const sourceAuthority = replacementPackageSetAuthorityPreviewSourceAuthority(preview);
+    const sourceDirectoryMode = sourceMode === 'source_directory_package_supersession_preview';
+    const renderedMode = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE
+        : REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE;
+    const useCase = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE
+        : REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE;
+    const recordRoute = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_PATH
+        : '/package/replacement-set/record';
+    const materializationDecision = sourceDirectoryMode
+        ? 'not_applicable_source_directory_logical_replacement_refs'
+        : REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_OPERATOR_DECISION;
     const sourceRows = replacementPackageRows({
         packageIds: source.outputPackageIds,
         packageKinds: source.packageKinds,
@@ -6308,24 +6374,27 @@ function renderReplacementPackageSetAuthorityPanel() {
         );
     const statePill = error ? 'blocked' : (authority.replacement_package_set_authority_id ? 'ok' : 'preview');
     const downstream = authority.downstream_unavailable || materialization.downstream_unavailable || [];
+    elements.replacementPackageSetAuthorityPanel.dataset.renderedMode = renderedMode;
     elements.replacementPackageSetAuthorityPanel.dataset.authorityState = stateLabel;
     elements.replacementPackageSetAuthorityPanel.dataset.sourceAuthority = sourceAuthority;
+    elements.replacementPackageSetAuthorityPanel.dataset.sourceMode = sourceMode;
     elements.replacementPackageSetAuthorityPanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(statePill)}">${escapeHtml(stateLabel)}</span>
-            <span class="rail-label">${escapeHtml(REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE)}</span>
+            <span class="rail-label">${escapeHtml(renderedMode)}</span>
         </div>
         <div class="result-review-grid replacement-package-set-authority-grid">
             <section class="result-review-card">
                 <strong>Rendered Control</strong>
                 <ul>
-                    ${fieldItem('use case', REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE, { code: true })}
+                    ${fieldItem('use case', useCase, { code: true })}
                     ${fieldItem('response authority', REPLACEMENT_PACKAGE_SET_AUTHORITY_RESPONSE_AUTHORITY, { code: true })}
                     ${fieldItem('source-directory mode', SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE, { code: true })}
                     ${fieldItem('source-directory use case', SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_USE_CASE, { code: true })}
                     ${fieldItem('selected source authority', sourceAuthority, { code: true })}
                     ${fieldItem('selected source mode', sourceMode, { code: true })}
-                    ${fieldItem('materialization decision', REPLACEMENT_PACKAGE_ARTIFACT_MATERIALIZATION_OPERATOR_DECISION, { code: true })}
+                    ${fieldItem('record route', recordRoute, { code: true })}
+                    ${fieldItem('materialization decision', materializationDecision, { code: true })}
                     ${fieldItem('authority decision', REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION, { code: true })}
                     ${fieldItem('browser durable authority', false)}
                 </ul>
@@ -6384,7 +6453,19 @@ function renderReplacementPackageSetAuthorityPanel() {
 }
 
 function renderPackageSupersessionCommitPanel() {
-    const preview = packageSupersessionPreviewState() || {};
+    const preview = packageSupersessionCommitPreviewState() || {};
+    const sourceMode = packageSupersessionCommitPreviewSourceMode(preview);
+    const sourceAuthority = packageSupersessionCommitPreviewSourceAuthority(preview);
+    const sourceDirectoryMode = sourceMode === 'source_directory_package_supersession_preview';
+    const renderedMode = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE
+        : PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE;
+    const useCase = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_USE_CASE
+        : PACKAGE_SUPERSESSION_COMMIT_USE_CASE;
+    const commitRoute = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH
+        : '/package/supersession/commit';
     const replacementAuthority = replacementPackageSetAuthorityState() || {};
     const commit = packageSupersessionCommitState() || {};
     const source = replacementPackageSourceArrays(preview);
@@ -6407,24 +6488,30 @@ function renderPackageSupersessionCommitPanel() {
             || commit.next_state
             || (canSubmitPackageSupersessionCommit()
                 ? 'package_supersession_commit_ready'
-                : (stableHashAvailable()
+                : (sourceDirectoryMode || stableHashAvailable()
                     ? 'package_supersession_commit_unavailable'
                     : 'package_supersession_commit_hashing_unavailable'))
         );
     const statePill = error ? 'blocked' : (commit.package_supersession_commit_id ? 'ok' : 'preview');
     const downstream = commit.downstream_unavailable || replacementAuthority.downstream_unavailable || [];
+    elements.packageSupersessionCommitPanel.dataset.renderedMode = renderedMode;
     elements.packageSupersessionCommitPanel.dataset.commitState = stateLabel;
+    elements.packageSupersessionCommitPanel.dataset.sourceAuthority = sourceAuthority;
+    elements.packageSupersessionCommitPanel.dataset.sourceMode = sourceMode;
     elements.packageSupersessionCommitPanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(statePill)}">${escapeHtml(stateLabel)}</span>
-            <span class="rail-label">${escapeHtml(PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE)}</span>
+            <span class="rail-label">${escapeHtml(renderedMode)}</span>
         </div>
         <div class="result-review-grid package-supersession-commit-grid">
             <section class="result-review-card">
                 <strong>Rendered Control</strong>
                 <ul>
-                    ${fieldItem('use case', PACKAGE_SUPERSESSION_COMMIT_USE_CASE, { code: true })}
+                    ${fieldItem('use case', useCase, { code: true })}
                     ${fieldItem('response authority', PACKAGE_SUPERSESSION_COMMIT_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('selected source authority', sourceAuthority, { code: true })}
+                    ${fieldItem('selected source mode', sourceMode, { code: true })}
+                    ${fieldItem('commit route', commitRoute, { code: true })}
                     ${fieldItem('operator decision', PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION, { code: true })}
                     ${fieldItem('browser durable authority', false)}
                 </ul>
@@ -6433,7 +6520,7 @@ function renderPackageSupersessionCommitPanel() {
                 <strong>Source Authority</strong>
                 <ul>
                     ${fieldItem('preview hash', preview.package_supersession_preview_hash || commit.package_supersession_preview_hash, { code: true })}
-                    ${fieldItem('source package set hash', preview.package_set_hash || commit.source_package_set_hash, { code: true })}
+                    ${fieldItem('source package set hash', replacementPackageSetAuthoritySourcePackageSetHash(preview) || commit.source_package_set_hash, { code: true })}
                     ${fieldItem('downstream dependency count', Array.isArray(preview.downstream_dependencies) ? preview.downstream_dependencies.length : null)}
                     ${fieldItem('source gate', commit.source_gate, { code: true })}
                 </ul>
@@ -9549,6 +9636,26 @@ function replacementPackageSetAuthorityPayload(materialization, authority = sele
     };
 }
 
+function sourceDirectoryReplacementPackageSetAuthorityPayload() {
+    const preview = sourceDirectoryPackageSupersessionPreviewState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    return {
+        client_request_id: requestId(),
+        session_id: preview.session_id,
+        analysis_plan_id: preview.analysis_plan_id,
+        pass_run_id: preview.pass_run_id,
+        reconciliation_record_id: (
+            preview.reconciliation_record_id
+            || submit.reconciliation_record_id
+            || construction.reconciliation_record_id
+        ),
+        package_supersession_preview_hash: preview.package_supersession_preview_hash,
+        source_package_set_hash: preview.source_package_set_hash,
+        operator_decision: REPLACEMENT_PACKAGE_SET_AUTHORITY_OPERATOR_DECISION,
+    };
+}
+
 async function packageSupersessionCommitPayload(authority = selectedResultAuthority()) {
     const preview = packageSupersessionPreviewState() || {};
     const replacementAuthority = replacementPackageSetAuthorityState() || {};
@@ -9613,6 +9720,30 @@ async function packageSupersessionCommitPayload(authority = selectedResultAuthor
         downstream_dependency_hash: payload.downstream_dependency_hash,
     });
     return payload;
+}
+
+function sourceDirectoryPackageSupersessionCommitPayload() {
+    const preview = sourceDirectoryPackageSupersessionPreviewState() || {};
+    const replacementAuthority = replacementPackageSetAuthorityState() || {};
+    const submit = packageReviewSubmitState() || {};
+    const construction = packageConstructionState() || {};
+    return {
+        client_request_id: requestId(),
+        session_id: replacementAuthority.session_id || preview.session_id,
+        analysis_plan_id: replacementAuthority.analysis_plan_id || preview.analysis_plan_id,
+        pass_run_id: replacementAuthority.pass_run_id || preview.pass_run_id,
+        reconciliation_record_id: (
+            replacementAuthority.reconciliation_record_id
+            || preview.reconciliation_record_id
+            || submit.reconciliation_record_id
+            || construction.reconciliation_record_id
+        ),
+        package_supersession_preview_hash: preview.package_supersession_preview_hash,
+        source_package_set_hash: preview.source_package_set_hash,
+        replacement_package_set_authority_id: replacementAuthority.replacement_package_set_authority_id,
+        replacement_authority_basis_hash: replacementAuthority.authority_basis_hash,
+        operator_decision: PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION,
+    };
 }
 
 function replacementPackageArtifactManifestPayload(authority = selectedResultAuthority()) {
@@ -10661,7 +10792,10 @@ async function submitSourceDirectoryPackageSupersessionPreview() {
 
 async function submitReplacementPackageSetAuthority() {
     if (!canSubmitReplacementPackageSetAuthority()) return;
-    State.replacementPackageArtifactMaterializationPending = true;
+    const sourceDirectoryMode = (
+        replacementPackageSetAuthorityPreviewSourceMode() === 'source_directory_package_supersession_preview'
+    );
+    State.replacementPackageArtifactMaterializationPending = !sourceDirectoryMode;
     State.replacementPackageArtifactMaterializationError = null;
     State.replacementPackageSetAuthority = null;
     State.replacementPackageSetAuthorityPending = false;
@@ -10675,23 +10809,32 @@ async function submitReplacementPackageSetAuthority() {
     renderAll();
     setBusy(elements.replacementPackageSetAuthoritySubmit, true, 'Record Replacement Set');
     try {
-        const materialization = await postJson(
-            '/package/replacement-artifact/materialize',
-            replacementPackageArtifactMaterializationPayload(),
-        );
-        State.replacementPackageArtifactMaterialization = materialization;
-        State.replacementPackageArtifactMaterializationError = null;
-        State.replacementPackageArtifactMaterializationPending = false;
+        let materialization = null;
+        if (!sourceDirectoryMode) {
+            materialization = await postJson(
+                '/package/replacement-artifact/materialize',
+                replacementPackageArtifactMaterializationPayload(),
+            );
+            State.replacementPackageArtifactMaterialization = materialization;
+            State.replacementPackageArtifactMaterializationError = null;
+            State.replacementPackageArtifactMaterializationPending = false;
+            addEvent('Replacement package artifacts materialized from server-owned source.');
+        }
         State.replacementPackageSetAuthorityPending = true;
-        addEvent('Replacement package artifacts materialized from server-owned source.');
         renderAll();
 
         State.replacementPackageSetAuthority = await postJson(
-            '/package/replacement-set/record',
-            replacementPackageSetAuthorityPayload(materialization),
+            sourceDirectoryMode
+                ? SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_PATH
+                : '/package/replacement-set/record',
+            sourceDirectoryMode
+                ? sourceDirectoryReplacementPackageSetAuthorityPayload()
+                : replacementPackageSetAuthorityPayload(materialization),
         );
         State.replacementPackageSetAuthorityError = null;
-        addEvent('Replacement package-set authority recorded from server-owned materialization.');
+        addEvent(sourceDirectoryMode
+            ? 'Source-directory replacement package-set authority recorded from server-owned preview.'
+            : 'Replacement package-set authority recorded from server-owned materialization.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.replacementPackageSetAuthority.session_id)}`);
             persistSessionRecoveryAnchor('replacement_package_set_authority_refresh');
@@ -10725,17 +10868,26 @@ async function submitReplacementPackageSetAuthority() {
 
 async function submitPackageSupersessionCommit() {
     if (!canSubmitPackageSupersessionCommit()) return;
+    const sourceDirectoryMode = (
+        packageSupersessionCommitPreviewSourceMode() === 'source_directory_package_supersession_preview'
+    );
     State.packageSupersessionCommitPending = true;
     State.packageSupersessionCommitError = null;
     renderAll();
     setBusy(elements.packageSupersessionCommitSubmit, true, 'Commit Supersession');
     try {
         State.packageSupersessionCommit = await postJson(
-            '/package/supersession/commit',
-            await packageSupersessionCommitPayload(),
+            sourceDirectoryMode
+                ? SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH
+                : '/package/supersession/commit',
+            sourceDirectoryMode
+                ? sourceDirectoryPackageSupersessionCommitPayload()
+                : await packageSupersessionCommitPayload(),
         );
         State.packageSupersessionCommitError = null;
-        addEvent('Package supersession commit lineage recorded.');
+        addEvent(sourceDirectoryMode
+            ? 'Source-directory package supersession commit lineage recorded.'
+            : 'Package supersession commit lineage recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.packageSupersessionCommit.session_id)}`);
             persistSessionRecoveryAnchor('package_supersession_commit_refresh');
