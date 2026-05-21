@@ -8581,3 +8581,45 @@ Full mockup program activation selected now: `false`. Implementation-entry allow
 Still blocked: replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source `L3OutputPackage` row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, public proxy runtime, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
 
 Next exact posture: `current_main_sync_source_directory_package_supersession_preview_rendered_control_freeze_then_implement_rendered_control`.
+
+## Source-Directory Package Supersession Preview Rendered Control Freeze Current-Main Sync
+
+Doc: `919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md`.
+
+Status: `current_main_synced_source_directory_package_supersession_preview_rendered_control_freeze`.
+
+Predecessor freeze doc: `918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md`.
+
+Merged PR: `#1533`.
+
+Source branch: `codex/l3-package-preview-freeze`.
+
+Freeze commit: `49da2bd06242cc9b62ff345ba966a7efe33425b9`.
+
+Merge commit: `b6c6425918169f2f1fdf9d49d6ff498fa885b078`.
+
+Sync branch: `codex/l3-package-preview-sync`.
+
+Base authority: `project6-origin/main` at `b6c6425918169f2f1fdf9d49d6ff498fa885b078`.
+
+Synced target: `source_directory_package_supersession_preview_rendered_control`.
+
+Synced target classification: `live_server_authoritative_action`.
+
+Selected route: `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`.
+
+Selected schema: `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`.
+
+Selected mode: `source_directory_qualitative_analysis_package_supersession_preview_authority`.
+
+Selected implementation action after sync: `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`.
+
+Why this sync matters: Doc `918` is now current-main truth through PR `#1533`, so the next code-bearing lane no longer needs to choose a target. It may implement only the source-directory-specific package supersession preview rendered control over existing server authority.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`. Production UI behavior introduced by this sync: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed after this sync: `true`.
+
+Still blocked: replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, source `L3OutputPackage` row mutation, package payload write/rewrite, connector dispatch, destination writes, provider delivery, public proxy runtime, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, and full mockup program activation.
+
+Next exact posture: `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`.

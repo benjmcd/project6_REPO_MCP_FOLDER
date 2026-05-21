@@ -881,3 +881,20 @@ Current Layer 3 source-directory package supersession preview rendered control f
 - preserve selected implementation action after freeze sync `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`
 - treat this freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior, production UI behavior, implementation-entry admission by itself, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `current_main_sync_source_directory_package_supersession_preview_rendered_control_freeze_then_implement_rendered_control`
+
+Current Layer 3 source-directory package supersession preview rendered control freeze current-main sync to preserve when present:
+- `919_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE_CURRENT_MAIN_SYNC.md` records current-main sync for Doc `918` after PR `#1533`
+- classify it as `current_main_synced_source_directory_package_supersession_preview_rendered_control_freeze`
+- preserve predecessor freeze doc `918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md`
+- preserve source branch `codex/l3-package-preview-freeze`
+- preserve freeze commit `49da2bd06242cc9b62ff345ba966a7efe33425b9`
+- preserve merge commit `b6c6425918169f2f1fdf9d49d6ff498fa885b078`
+- preserve sync branch `codex/l3-package-preview-sync`
+- preserve synced target `source_directory_package_supersession_preview_rendered_control`
+- preserve synced target classification `live_server_authoritative_action`
+- preserve selected route `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`
+- preserve selected schema `layer3.source_directory_qualitative_analysis_package_supersession_preview.v1`
+- preserve selected mode `source_directory_qualitative_analysis_package_supersession_preview_authority`
+- preserve selected implementation action after sync `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`
+- treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior, production UI behavior, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `implement_source_directory_package_supersession_preview_rendered_control_after_freeze_sync`
