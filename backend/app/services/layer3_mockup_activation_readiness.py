@@ -9,6 +9,7 @@ MOCKUP_FIRST_ADMITTED_SLICE = "query_source_setup_interactive_live_classificatio
 MOCKUP_NEXT_ADMITTED_SLICE = "output_review_package_handoff_interactive_live_contract"
 MOCKUP_PDF_LOCATION_PROJECTION_SLICE = "pdf_location_read_only_live_projection_contract"
 MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE = "sublayers_3a_3b_read_only_live_projection_contract"
+MOCKUP_SUBLAYER_3C_PROJECTION_SLICE = "sublayer_3c_execution_lanes_read_only_live_projection_contract"
 
 _NO_GO_BOUNDARIES = (
     "frontend_only_durable_authority",
@@ -133,12 +134,54 @@ _JOURNEYS = (
         "label": "Sublayer 3C execution lanes",
         "classification": "read_only",
         "activation_slice": None,
+        "projection_slice": MOCKUP_SUBLAYER_3C_PROJECTION_SLICE,
         "server_authority": "session summary analysis_environment_projection and execution state",
         "rendered_surface": "#mockup-execution-lanes-projection",
         "evidence": (
             "analysis environment projection is read-only",
             "execution lane projection has no controls",
         ),
+        "projection_contract": {
+            "contract_id": MOCKUP_SUBLAYER_3C_PROJECTION_SLICE,
+            "schema_id": "layer3.analysis_environment_projection.v1",
+            "server_authority_contract": "read_only_session_summary_analysis_environment_execution_projection",
+            "status_projection": (
+                "State.sessionSummary.sublayer_visualization",
+                "State.sessionSummary.analysis_environment_projection",
+                "State.sessionSummary.plan_preview",
+                "State.sessionSummary.plan_approval",
+                "State.sessionSummary.execution_selection",
+                "State.sessionSummary.analysis_execution_start",
+                "State.sessionSummary.execution_result_review",
+                "State.planPreview",
+                "State.planApproval",
+                "State.executionSelection",
+                "State.executionStart",
+                "State.resultStatus",
+                "State.resultReview",
+            ),
+            "rendered_surface": "#mockup-execution-lanes-projection",
+            "read_only_controls_absent": (
+                "button",
+                "input",
+                "select",
+                "textarea",
+                "a[href]",
+            ),
+            "negative_boundaries": (
+                "execution_start_side_effect",
+                "analysis_run_mutation",
+                "raw_execution_payload_exposure",
+                "output_payload_ref_exposure",
+                "diagnostics_ref_exposure",
+                "package_construction_or_mutation",
+                "connector_provider_write",
+                "provider_or_object_store_url_exposure",
+                "frontend_only_durable_authority",
+                "runtime_request_widening",
+                "full_mockup_program_activation",
+            ),
+        },
         "next_allowed_action": "select_exact_execution_lane_control_before_interactive_activation",
     },
     {
@@ -237,10 +280,11 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "phase": MOCKUP_ACTIVATION_READINESS_PHASE,
         "selected_first_slice": MOCKUP_FIRST_ADMITTED_SLICE,
         "selected_next_slice": MOCKUP_NEXT_ADMITTED_SLICE,
-        "selected_projection_slice": MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
+        "selected_projection_slice": MOCKUP_SUBLAYER_3C_PROJECTION_SLICE,
         "selected_projection_slices": [
             MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
             MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
+            MOCKUP_SUBLAYER_3C_PROJECTION_SLICE,
         ],
         "classification_mode": "server_owned_next_phase_activation_readiness",
         "journeys": journeys,
@@ -258,5 +302,5 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "connector_provider_write_enabled": False,
         "broad_source_model_rag_expansion_enabled": False,
         "mutates_runtime_state": False,
-        "next_posture": "prove_sublayers_3a_3b_read_only_projection_contract_before_selecting_3c_projection_journey",
+        "next_posture": "prove_analysis_environment_mockup_projection_after_sublayer_3c_read_only_projection_contract",
     }
