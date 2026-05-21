@@ -2644,6 +2644,22 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloa
     operator_decision: Literal["deliver_source_directory_hybrid_external_export_download"]
 
 
+class Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlPrepareRequest(
+    Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliverRequest
+):
+    delivery_mode: Literal["provider_private_signed_url"]
+    recipient_scope: str = Field(min_length=1)
+    requested_ttl_seconds: int | None = Field(default=None, ge=1, le=900)
+    operator_decision: Literal["prepare_source_directory_hybrid_provider_private_signed_url"]
+    provider_private_signed_url_token: Any | None = None
+    raw_provider_private_signed_url_token: Any | None = None
+    provider_credentials: Any | None = None
+    provider_secret: Any | None = None
+    provider_public_url: Any | None = None
+    raw_public_url: Any | None = None
+    raw_provider_url: Any | None = None
+
+
 class Layer3SourceDirectoryQualitativeAnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3375,6 +3391,53 @@ class Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloa
     delivery_headers: dict[str, str]
     delivery_authority: dict[str, Any]
     next_allowed_actions: list[str]
+
+
+class Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlPrepareResponse(
+    Layer3BaseResponse
+):
+    mode: str
+    session_id: str
+    reconciliation_record_id: str
+    external_export_download_record_ref: str
+    export_download_descriptor_ref: str
+    output_package_id: str
+    package_kind: str
+    package_payload_hash: str
+    provider_signed_url_receipt_id: str
+    provider_private_signed_url_object_authority_id: str
+    provider_signed_url_state: str
+    delivery_mode: str
+    provider_url_redacted: str
+    provider_url_expires_at: str
+    provider_url_expires_in_seconds: int
+    provider_url_replay_policy: str
+    provider_url_revocation_supported: bool
+    provider_url_use_count: int
+    provider_url_max_use_count: int
+    provider_url_revoked: bool
+    source_artifact_ref: str
+    source_artifact_hash: str
+    source_artifact_size_bytes: int
+    source_directory_delivery_authority: dict[str, Any]
+    audit_receipt: dict[str, Any]
+    authority_rail: dict[str, Any]
+    source_directory_provider_private_signed_url_enabled: bool
+    provider_private_signed_url_enabled: bool
+    provider_public_url_prepare_enabled: bool
+    same_origin_delivery_changed: bool
+    raw_local_path_exposed: bool
+    raw_provider_url_exposed: bool
+    raw_provider_private_signed_url_token_exposed: bool
+    provider_network_enabled: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    destination_write_enabled: bool
+    package_mutation_enabled: bool
+    source_expansion_enabled: bool
+    frontend_durable_authority_enabled: bool
+    next_allowed_actions: list[str]
+    next_state: str
 
 
 class Layer3SourceDirectoryQualitativeAnalysisResponse(Layer3BaseResponse):
@@ -8631,6 +8694,42 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_external_ex
         layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
         layer3_source_directory_hybrid_analysis.SourceDirectoryHybridAnalysisError,
         layer3_source_directory_hybrid_analysis.SourceDirectoryHybridExternalExportDownloadDeliveryError,
+        layer3_source_directory_hybrid_context.SourceDirectoryHybridContextError,
+        layer3_source_directory_text_index.SourceDirectoryTextIndexError,
+        layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
+        layer3_source_directory_vector_index.SourceDirectoryVectorIndexError,
+        layer3_source_directory_vector_retrieval.SourceDirectoryVectorRetrievalError,
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/hybrid-context-packet/"
+        "qualitative-analysis/handoff/export/download/provider-private-signed-url/prepare"
+    ),
+    response_model=(
+        Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlPrepareResponse
+    ),
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_prepare(
+    payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisProviderPrivateSignedUrlPrepareRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_source_directory_hybrid_analysis
+            .source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_prepare(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
+        layer3_source_directory_hybrid_analysis.SourceDirectoryHybridAnalysisError,
+        layer3_source_directory_hybrid_analysis.SourceDirectoryHybridExternalExportDownloadDeliveryError,
+        layer3_source_directory_hybrid_analysis.SourceDirectoryHybridProviderPrivateSignedUrlPrepareError,
         layer3_source_directory_hybrid_context.SourceDirectoryHybridContextError,
         layer3_source_directory_text_index.SourceDirectoryTextIndexError,
         layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,

@@ -56,6 +56,8 @@ const SOURCE_DIRECTORY_HYBRID_HANDOFF_EXPORT_PREPARE_PATH = `${SOURCE_DIRECTORY_
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/download/prepare`;
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status';
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver';
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/download/provider-private-signed-url/prepare`;
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION = 'prepare_source_directory_hybrid_provider_private_signed_url';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RENDERED_MODE = 'rendered_source_directory_hybrid_internal_webhook_dispatch_control';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_USE_CASE = 'operator_dispatches_source_directory_hybrid_internal_webhook_from_server_configured_destination';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RESPONSE_AUTHORITY = 'State.sourceDirectoryHybridInternalWebhookDispatch + State.sessionSummary.internal_webhook_dispatch';
@@ -2193,6 +2195,12 @@ function providerPrivateSignedUrlPrepareRequestId() {
     return State.providerPrivateSignedUrlPrepareClientRequestId;
 }
 
+function providerPrivateSignedUrlPreparePath() {
+    return isSourceDirectoryHybridExternalExportDownloadPrepareState()
+        ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH
+        : '/handoff/export/download/provider-private-signed-url/prepare';
+}
+
 function clearExternalExportDownloadPrepareState() {
     State.externalExportDownloadPrepare = null;
     State.externalExportDownloadPrepareError = null;
@@ -2853,6 +2861,22 @@ function isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external
         || external.source_gate === '812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE';
 }
 
+function sourceDirectoryHybridExternalExportDownloadPrepareState() {
+    return State.sourceDirectoryHybridMiddleLifecycle?.externalExportDownloadPrepare || null;
+}
+
+function isSourceDirectoryHybridExternalExportDownloadPrepareState(external = externalExportDownloadPrepareState() || {}) {
+    const matchesExternal = external.schema_id === SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || external.external_export_download_prepare_schema_id === SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || external.external_export_download_target === SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET;
+    if (matchesExternal) return true;
+    if (Object.keys(external).length) return false;
+    const hybridExternal = sourceDirectoryHybridExternalExportDownloadPrepareState() || {};
+    return hybridExternal.schema_id === SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || hybridExternal.external_export_download_prepare_schema_id === SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || hybridExternal.external_export_download_target === SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_TARGET;
+}
+
 function sourceDirectoryQualitativeExternalExportDownloadSelectedPackage(external = externalExportDownloadPrepareState() || {}) {
     const packages = Array.isArray(external.output_packages) ? external.output_packages : [];
     const selected = packages.find((row) => row.package_kind === 'user_facing') || packages[0] || {};
@@ -3247,7 +3271,10 @@ function recordedApsHandoffDispatch() {
 }
 
 function externalExportDownloadPrepareState() {
-    return State.externalExportDownloadPrepare || State.sessionSummary?.external_export_download || null;
+    return State.externalExportDownloadPrepare
+        || sourceDirectoryHybridExternalExportDownloadPrepareState()
+        || State.sessionSummary?.external_export_download
+        || null;
 }
 
 function externalExportDownloadStateName(state = externalExportDownloadPrepareState()) {
@@ -3501,8 +3528,33 @@ function providerPrivateSignedUrlBlocksPrepare() {
     return !PROVIDER_PRIVATE_SIGNED_URL_REPLACEABLE_STATES.has(providerPrivateSignedUrlLatestState());
 }
 
+function sourceDirectoryHybridProviderPrivateSignedUrlReady() {
+    const external = externalExportDownloadPrepareState() || {};
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull();
+    return Boolean(
+        isSourceDirectoryHybridExternalExportDownloadPrepareState(external)
+        && payload
+        && externalExportDownloadStateName(external) === 'external_export_download_prepared'
+        && external.external_export_download_record_ref === payload.external_export_download_record_ref
+        && external.export_download_descriptor_ref === payload.export_download_descriptor_ref
+        && payload.operator_decision === 'deliver_source_directory_hybrid_external_export_download'
+        && payload.delivery_mode === 'same_origin_artifact_stream'
+    );
+}
+
 function canPrepareProviderPrivateSignedUrl() {
     const external = externalExportDownloadPrepareState() || {};
+    if (isSourceDirectoryHybridExternalExportDownloadPrepareState(external)) {
+        return Boolean(
+            sourceDirectoryHybridProviderPrivateSignedUrlReady()
+            && !providerPrivateSignedUrlBlocksPrepare()
+            && !State.externalExportDownloadPreparePending
+            && !State.externalExportDownloadDeliveryPending
+            && !State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending
+            && !State.sourceDirectoryHybridExternalExportDownloadDeliveryPending
+            && !State.providerPrivateSignedUrlPending
+        );
+    }
     return Boolean(
         recordedExternalExportDownloadPrepare()
         && externalExportDownloadDeliveryUiAdmitted(external)
@@ -9413,6 +9465,9 @@ function providerPrivateSignedUrlPanelState() {
     if (stateName === 'provider_private_signed_url_prepared') {
         return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt is prepared; use remains closed for this lane.' };
     }
+    if (sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
+        return { label: 'provider_private_signed_url_ui_ready', pill: 'ready', message: 'Ready to prepare a redacted provider-private signed URL receipt from source-directory hybrid delivery authority.' };
+    }
     if (recordedExternalExportDownloadPrepare() && externalExportDownloadDeliveryUiAdmitted()) {
         return { label: 'provider_private_signed_url_ui_ready', pill: 'ready', message: 'Ready to prepare a redacted provider-private signed URL receipt.' };
     }
@@ -9445,6 +9500,7 @@ function renderProviderPrivateSignedUrlPanel() {
         audit_receipt_id: audit.audit_event_id || audit.provider_private_signed_url_audit_event_id,
         audit_reason_code: audit.reason_code,
         next_allowed_actions: provider.next_allowed_actions,
+        prepare_route: providerPrivateSignedUrlPreparePath(),
         use_route: 'closed_not_implemented',
     };
     elements.providerPrivateSignedUrlPanel.innerHTML = `
@@ -9640,6 +9696,11 @@ function setGateControls() {
         && !State.externalExportDownloadSignedReferencePending
         && !State.externalExportDownloadSignedReferenceUsePending
     );
+    const providerPrivateSignedUrlControlsEnabled = Boolean(
+        externalExportDownloadSignedReferenceControlsEnabled
+        || sourceDirectoryHybridProviderPrivateSignedUrlReady()
+        || providerPrivateSignedUrlReceiptId()
+    );
     elements.gateBSubmit.disabled = !(State.materialPreview?.material_candidates || []).length;
     if (elements.rawMixedMaterialize) {
         elements.rawMixedMaterialize.disabled = !canMaterializeRawMixed();
@@ -9682,9 +9743,9 @@ function setGateControls() {
     elements.sourceDirectoryHybridInternalWebhookSubmit.disabled = !canSubmitSourceDirectoryHybridInternalWebhook();
     elements.externalExportDownloadSignedReferenceGenerate.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canGenerateExternalExportDownloadSignedReference();
     elements.externalExportDownloadSignedReferenceUse.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canUseExternalExportDownloadSignedReference();
-    elements.providerPrivateSignedUrlPrepare.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canPrepareProviderPrivateSignedUrl();
-    elements.providerPrivateSignedUrlStatus.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canInspectProviderPrivateSignedUrl();
-    elements.providerPrivateSignedUrlRevoke.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canRevokeProviderPrivateSignedUrl();
+    elements.providerPrivateSignedUrlPrepare.disabled = !providerPrivateSignedUrlControlsEnabled || !canPrepareProviderPrivateSignedUrl();
+    elements.providerPrivateSignedUrlStatus.disabled = !providerPrivateSignedUrlControlsEnabled || !canInspectProviderPrivateSignedUrl();
+    elements.providerPrivateSignedUrlRevoke.disabled = !providerPrivateSignedUrlControlsEnabled || !canRevokeProviderPrivateSignedUrl();
     elements.providerPublicUrlPrepare.disabled = !canPrepareProviderPublicUrl();
     elements.providerPublicUrlStatus.disabled = !canInspectProviderPublicUrl();
     elements.providerPublicUrlUse.disabled = !canUseProviderPublicUrl();
@@ -10469,6 +10530,18 @@ function externalExportDownloadSignedReferencePayload(authority = selectedResult
 }
 
 function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthority()) {
+    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+        const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
+        return {
+            ...payload,
+            client_request_id: providerPrivateSignedUrlPrepareRequestId(),
+            delivery_mode: 'provider_private_signed_url',
+            operator_decision: SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION,
+            recipient_scope: 'external_downstream_recipient_private_artifact_delivery',
+            requested_ttl_seconds: 300,
+            decision_notes: 'Rendered source-directory hybrid provider-private bridge; provider-private use remains closed.',
+        };
+    }
     const external = externalExportDownloadPrepareState() || {};
     const externalPayload = externalExportDownloadDeliveryPayload(authority);
     return {
@@ -11448,8 +11521,8 @@ function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {
     const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayloadOrNull() || {};
     const panelState = sourceDirectoryHybridExternalExportDownloadDeliveryPanelState();
     const downstream = [
-        'provider_public_delivery',
-        'provider_private_signed_url',
+        'provider_public_raw_delivery',
+        'provider_private_direct_use',
         'connector_dispatch',
         'destination_write',
         'network_egress',
@@ -11494,6 +11567,17 @@ function renderSourceDirectoryHybridExternalExportDownloadDeliveryPanel() {
                     ${fieldItem('streaming performed', status.delivery_streaming_performed)}
                     ${fieldItem('source gate', status.source_gate)}
                     ${fieldItem('validated source gate', status.validated_delivery_source_gate)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Provider Redacted Bridge</strong>
+                <ul>
+                    ${fieldItem('provider-private prepare ready', sourceDirectoryHybridProviderPrivateSignedUrlReady())}
+                    ${fieldItem('provider-private route', SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH)}
+                    ${fieldItem('provider-private receipt', providerPrivateSignedUrlReceiptId(), { code: true })}
+                    ${fieldItem('provider-public receipt', providerPublicUrlReceiptId(), { code: true })}
+                    ${fieldItem('provider-public use decision', State.providerPublicUrlUse?.delivery_use_decision)}
+                    ${fieldItem('raw provider URL exposed', 'blocked')}
                 </ul>
             </section>
             <section class="result-review-card">
@@ -12240,6 +12324,7 @@ async function submitSourceDirectoryHybridMiddleLifecycle(event) {
     elements.sourceDirectoryPackageSupersessionPreviewAuthority.value = '';
     clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
+    clearProviderPrivateSignedUrlState();
     renderAll();
     setBusy(elements.sourceDirectoryHybridMiddleLifecycleSubmit, true, 'Prepare Hybrid Handoff');
     try {
@@ -12929,7 +13014,7 @@ async function submitProviderPrivateSignedUrlPrepare(event) {
     setBusy(elements.providerPrivateSignedUrlPrepare, true, 'Prepare Provider-Private Receipt');
     try {
         State.providerPrivateSignedUrlPrepare = await postJson(
-            '/handoff/export/download/provider-private-signed-url/prepare',
+            providerPrivateSignedUrlPreparePath(),
             providerPrivateSignedUrlPreparePayload(),
         );
         persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlPrepare);
