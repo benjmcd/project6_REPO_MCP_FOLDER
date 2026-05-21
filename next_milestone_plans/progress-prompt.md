@@ -933,3 +933,21 @@ Current Layer 3 source-directory package supersession preview rendered control c
 - preserve synced state owner `State.sourceDirectoryPackageSupersessionPreview`
 - treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior introduced by sync, production UI behavior introduced by sync, replacement package-set authority, replacement artifact materialization, package supersession commit, package replacement activation, package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve next posture as `select_next_blocker_retirement_lane_after_source_directory_package_supersession_preview_rendered_control_current_main_sync`
+
+Current Layer 3 source-directory replacement package-set authority rendered control freeze to preserve when present:
+- `922_SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_CONTROL_FREEZE.md` records a no-runtime/no-rendered freeze for the next package lifecycle target after Doc `921`
+- classify it as `source_directory_replacement_package_set_authority_rendered_control_frozen`
+- preserve predecessor current-main sync doc `921_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_CURRENT_MAIN_SYNC.md`
+- preserve current-main checkpoint before freeze `6ab8a141ea2ab50d1c330a32edfa122086987aac`
+- preserve freeze branch `codex/l3-next-target-freeze`
+- preserve selected target `source_directory_replacement_package_set_authority_rendered_control`
+- preserve selected target classification `live_server_authoritative_action`
+- preserve selected activation target class `single_existing_rendered_control_extension`
+- preserve selected source state `State.sourceDirectoryPackageSupersessionPreview`
+- preserve downstream states `State.replacementPackageArtifactMaterialization` and `State.replacementPackageSetAuthority`, subject to future implementation proof that shared downstream state remains unambiguous
+- preserve selected routes `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`
+- preserve owner services `backend/app/services/layer3_replacement_package_materialization.py` and `backend/app/services/layer3_replacement_package_set_authority.py`
+- preserve selected implementation action after freeze sync `implement_source_directory_replacement_package_set_authority_rendered_control_after_freeze_sync`
+- preserve stop action `source_directory_replacement_package_set_authority_route_state_gap_freeze`
+- treat this freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior change, executable test behavior, production UI behavior, implementation-entry admission by itself, package supersession commit, package replacement activation, source package row mutation, source package payload write/rewrite, caller-entered replacement refs, browser-generated replacement artifacts, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve next posture as `current_main_sync_source_directory_replacement_package_set_authority_rendered_control_freeze_then_implement_rendered_control`
