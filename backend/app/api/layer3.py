@@ -996,6 +996,75 @@ class Layer3ReplacementPackageSetAuthorityFromCorrectedArtifactSetRequest(BaseMo
     cancel: Any | None = None
 
 
+class Layer3SourceDirectoryReplacementPackageSetAuthorityRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    package_supersession_preview_hash: str | None = None
+    source_package_set_hash: str | None = None
+    operator_decision: str | None = None
+    source_output_package_ids: Any | None = None
+    source_package_kinds: Any | None = None
+    source_payload_refs: Any | None = None
+    source_payload_hashes: Any | None = None
+    replacement_package_set_id: Any | None = None
+    replacement_package_set_hash: Any | None = None
+    replacement_package_kinds: Any | None = None
+    replacement_payload_refs: Any | None = None
+    replacement_payload_hashes: Any | None = None
+    authority_basis_hash: Any | None = None
+    materialization_basis_hash: Any | None = None
+    replacement_package_set_authority_id: Any | None = None
+    commit_basis_hash: Any | None = None
+    downstream_dependency_hash: Any | None = None
+    frontend_state: Any | None = None
+    browser_state: Any | None = None
+    rendered_control_state: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_package_payloads: Any | None = None
+    edited_package_content: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_payload_ref: Any | None = None
+    update_payload_hash: Any | None = None
+    package_supersession_commit: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_rewrite: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff: Any | None = None
+    export: Any | None = None
+    connector_key: Any | None = None
+    connector_run_id: Any | None = None
+    destination_id: Any | None = None
+    destination_url: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    source_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_vector_index: Any | None = None
+    runtime_db_write: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_planning: Any | None = None
+    schema_migration: Any | None = None
+    approved_plan_supersession: Any | None = None
+    retry: Any | None = None
+    rerun: Any | None = None
+    cancel: Any | None = None
+
+
 class Layer3CorrectedPackageArtifactSetRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -1213,6 +1282,70 @@ class Layer3PackageSupersessionCommitFromCorrectedArtifactSetRequest(BaseModel):
     ui_control: Any | None = None
     frontend_state: Any | None = None
     browser_state: Any | None = None
+
+
+class Layer3SourceDirectoryPackageSupersessionCommitRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    reconciliation_record_id: str | None = None
+    package_supersession_preview_hash: str | None = None
+    source_package_set_hash: str | None = None
+    replacement_package_set_authority_id: str | None = None
+    replacement_authority_basis_hash: str | None = None
+    operator_decision: str | None = None
+    source_output_package_ids: Any | None = None
+    source_package_kinds: Any | None = None
+    source_payload_refs: Any | None = None
+    source_payload_hashes: Any | None = None
+    replacement_package_set_id: Any | None = None
+    replacement_package_set_hash: Any | None = None
+    replacement_package_kinds: Any | None = None
+    replacement_payload_refs: Any | None = None
+    replacement_payload_hashes: Any | None = None
+    downstream_dependency_hash: Any | None = None
+    commit_basis_hash: Any | None = None
+    authority_basis_hash: Any | None = None
+    materialization_basis_hash: Any | None = None
+    package_payload: Any | None = None
+    package_variant_content: Any | None = None
+    replacement_output_package_ids: Any | None = None
+    replacement_package_payloads: Any | None = None
+    edited_package_content: Any | None = None
+    rewrite_output: Any | None = None
+    rebuild_package: Any | None = None
+    mutate_package: Any | None = None
+    replace_package: Any | None = None
+    delete_package: Any | None = None
+    update_package_row: Any | None = None
+    package_row_mutation: Any | None = None
+    package_payload_rewrite: Any | None = None
+    artifact_manifest: Any | None = None
+    analysis_artifact: Any | None = None
+    handoff_package: Any | None = None
+    export_package: Any | None = None
+    connector_key: Any | None = None
+    connector_payload: Any | None = None
+    destination_id: Any | None = None
+    provider_public_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    source_upload: Any | None = None
+    local_directory: Any | None = None
+    rag_plan: Any | None = None
+    qualitative_plan: Any | None = None
+    hybrid_execution: Any | None = None
+    rag_execution: Any | None = None
+    hidden_llm_plan: Any | None = None
+    ui_control: Any | None = None
+    auth_context: Any | None = None
+    security_context: Any | None = None
+    frontend_state: Any | None = None
+    browser_state: Any | None = None
+    rendered_control_state: Any | None = None
 
 
 class Layer3ReplacementPackageArtifactManifestRequest(BaseModel):
@@ -8510,6 +8643,49 @@ def post_source_directory_qualitative_analysis_package_supersession_preview(
         layer3_source_directory_text_retrieval.SourceDirectoryTextRetrievalError,
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/"
+        "package/replacement-set/record-from-supersession-preview"
+    ),
+    response_model=Layer3ReplacementPackageSetAuthorityResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_qualitative_analysis_package_replacement_set_record(
+    payload: Layer3SourceDirectoryReplacementPackageSetAuthorityRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: (
+            layer3_replacement_package_set_authority
+            .record_replacement_package_set_authority_from_source_directory_supersession_preview(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    )
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/"
+        "package/supersession/commit"
+    ),
+    response_model=Layer3PackageSupersessionCommitResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_qualitative_analysis_package_supersession_commit(
+    payload: Layer3SourceDirectoryPackageSupersessionCommitRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_package_supersession_commit.commit_package_supersession_from_source_directory_lifecycle(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    )
 
 
 @router.post(
