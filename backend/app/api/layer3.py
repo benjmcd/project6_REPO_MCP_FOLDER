@@ -8477,17 +8477,23 @@ def post_source_directory_hybrid_context_packet_qualitative_analysis_external_ex
     response_model=None,
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver(
-    payload: Layer3SourceDirectoryHybridContextQualitativeAnalysisExternalExportDownloadDeliverRequest,
+async def post_source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver(
+    request: Request,
     db: Session = Depends(get_db),
 ) -> FileResponse | JSONResponse:
     try:
+        payload = await _payload_from_request(request)
         delivery = (
             layer3_source_directory_hybrid_analysis
             .source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver(
                 db,
-                payload.model_dump(exclude_unset=True),
+                payload,
             )
+        )
+    except Layer3WorkbenchError as exc:
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=workbench_error_response(exc),
         )
     except (
         layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
@@ -8774,17 +8780,23 @@ def post_source_directory_qualitative_analysis_external_export_download_delivery
     response_model=None,
     responses=_workbench_error_responses(400, 404, 409),
 )
-def post_source_directory_qualitative_analysis_external_export_download_deliver(
-    payload: Layer3SourceDirectoryQualitativeAnalysisExternalExportDownloadDeliverRequest,
+async def post_source_directory_qualitative_analysis_external_export_download_deliver(
+    request: Request,
     db: Session = Depends(get_db),
 ) -> FileResponse | JSONResponse:
     try:
+        payload = await _payload_from_request(request)
         delivery = (
             layer3_source_directory_qualitative_analysis
             .source_directory_qualitative_analysis_external_export_download_deliver(
                 db,
-                payload.model_dump(exclude_unset=True),
+                payload,
             )
+        )
+    except Layer3WorkbenchError as exc:
+        return JSONResponse(
+            status_code=exc.http_status,
+            content=workbench_error_response(exc),
         )
     except (
         layer3_source_directory_context_packet.SourceDirectoryContextPacketError,
