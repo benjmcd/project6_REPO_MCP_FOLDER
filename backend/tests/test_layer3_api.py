@@ -499,16 +499,17 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
     )
     assert (
         bootstrap_body["mockup_activation_readiness"]["selected_projection_slice"]
-        == "sublayer_3c_execution_lanes_read_only_live_projection_contract"
+        == "analysis_environment_read_only_live_projection_contract"
     )
     assert bootstrap_body["mockup_activation_readiness"]["selected_projection_slices"] == [
         "pdf_location_read_only_live_projection_contract",
         "sublayers_3a_3b_read_only_live_projection_contract",
         "sublayer_3c_execution_lanes_read_only_live_projection_contract",
+        "analysis_environment_read_only_live_projection_contract",
     ]
     assert bootstrap_body["mockup_activation_readiness"]["journey_counts"] == {
         "interactive_live": 2,
-        "read_only": 3,
+        "read_only": 4,
         "intentionally_excluded": 0,
         "blocked": 1,
     }
@@ -557,6 +558,29 @@ def test_layer3_bootstrap_readiness_openapi_contracts(client: TestClient) -> Non
     assert "State.resultStatus" in sublayer_3c_projection_contract["status_projection"]
     assert "execution_start_side_effect" in sublayer_3c_projection_contract["negative_boundaries"]
     assert "package_construction_or_mutation" in sublayer_3c_projection_contract["negative_boundaries"]
+    analysis_environment_projection_contract = activation_journeys[
+        "analysis_environment_projection"
+    ]["projection_contract"]
+    assert activation_journeys["analysis_environment_projection"]["classification"] == "read_only"
+    assert (
+        analysis_environment_projection_contract["contract_id"]
+        == "analysis_environment_read_only_live_projection_contract"
+    )
+    assert (
+        analysis_environment_projection_contract["schema_id"]
+        == "layer3.analysis_environment_projection.v1"
+    )
+    assert (
+        analysis_environment_projection_contract["server_authority_contract"]
+        == "read_only_session_summary_analysis_environment_plane_projection"
+    )
+    assert (
+        "State.sessionSummary.analysis_environment_projection"
+        in analysis_environment_projection_contract["status_projection"]
+    )
+    assert "State.resultReview" in analysis_environment_projection_contract["status_projection"]
+    assert "analysis_run_mutation" in analysis_environment_projection_contract["negative_boundaries"]
+    assert "full_mockup_program_activation" in analysis_environment_projection_contract["negative_boundaries"]
     assert bootstrap_body["mockup_activation_readiness"]["full_mockup_activation_enabled"] is False
     assert bootstrap_body["mockup_activation_readiness"]["frontend_only_durable_authority_enabled"] is False
     assert readiness_body["authority_matrix_contract"]["schema_id"] == "layer3.authority_matrix_contract.v1"

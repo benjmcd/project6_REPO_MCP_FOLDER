@@ -10,6 +10,7 @@ MOCKUP_NEXT_ADMITTED_SLICE = "output_review_package_handoff_interactive_live_con
 MOCKUP_PDF_LOCATION_PROJECTION_SLICE = "pdf_location_read_only_live_projection_contract"
 MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE = "sublayers_3a_3b_read_only_live_projection_contract"
 MOCKUP_SUBLAYER_3C_PROJECTION_SLICE = "sublayer_3c_execution_lanes_read_only_live_projection_contract"
+MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE = "analysis_environment_read_only_live_projection_contract"
 
 _NO_GO_BOUNDARIES = (
     "frontend_only_durable_authority",
@@ -185,6 +186,56 @@ _JOURNEYS = (
         "next_allowed_action": "select_exact_execution_lane_control_before_interactive_activation",
     },
     {
+        "journey_id": "analysis_environment_projection",
+        "label": "Analysis Environment projection",
+        "classification": "read_only",
+        "activation_slice": None,
+        "projection_slice": MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE,
+        "server_authority": "session summary analysis_environment_projection plane readiness",
+        "rendered_surface": ".analysis-environment-projection",
+        "evidence": (
+            "analysis environment projection renders per-plane readiness as read-only server state",
+            "rendered projection has no controls and no runtime request behavior",
+        ),
+        "projection_contract": {
+            "contract_id": MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE,
+            "schema_id": "layer3.analysis_environment_projection.v1",
+            "server_authority_contract": "read_only_session_summary_analysis_environment_plane_projection",
+            "status_projection": (
+                "State.sessionSummary.analysis_environment_projection",
+                "State.sessionSummary.sublayer_visualization",
+                "State.planPreview",
+                "State.planApproval",
+                "State.executionSelection",
+                "State.executionStart",
+                "State.resultStatus",
+                "State.resultReview",
+            ),
+            "rendered_surface": ".analysis-environment-projection",
+            "read_only_controls_absent": (
+                "button",
+                "input",
+                "select",
+                "textarea",
+                "a[href]",
+            ),
+            "negative_boundaries": (
+                "execution_start_side_effect",
+                "analysis_run_mutation",
+                "raw_execution_payload_exposure",
+                "output_payload_ref_exposure",
+                "diagnostics_ref_exposure",
+                "package_construction_or_mutation",
+                "connector_provider_write",
+                "provider_or_object_store_url_exposure",
+                "frontend_only_durable_authority",
+                "runtime_request_widening",
+                "full_mockup_program_activation",
+            ),
+        },
+        "next_allowed_action": "record_bounded_trial_checkpoint_before_any_analysis_environment_interactivity",
+    },
+    {
         "journey_id": "output_review_package_handoff",
         "label": "Output review/package/handoff",
         "classification": "interactive_live",
@@ -280,11 +331,12 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "phase": MOCKUP_ACTIVATION_READINESS_PHASE,
         "selected_first_slice": MOCKUP_FIRST_ADMITTED_SLICE,
         "selected_next_slice": MOCKUP_NEXT_ADMITTED_SLICE,
-        "selected_projection_slice": MOCKUP_SUBLAYER_3C_PROJECTION_SLICE,
+        "selected_projection_slice": MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE,
         "selected_projection_slices": [
             MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
             MOCKUP_SUBLAYERS_AB_PROJECTION_SLICE,
             MOCKUP_SUBLAYER_3C_PROJECTION_SLICE,
+            MOCKUP_ANALYSIS_ENVIRONMENT_PROJECTION_SLICE,
         ],
         "classification_mode": "server_owned_next_phase_activation_readiness",
         "journeys": journeys,
@@ -302,5 +354,5 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "connector_provider_write_enabled": False,
         "broad_source_model_rag_expansion_enabled": False,
         "mutates_runtime_state": False,
-        "next_posture": "prove_analysis_environment_mockup_projection_after_sublayer_3c_read_only_projection_contract",
+        "next_posture": "record_bounded_trial_checkpoint_after_analysis_environment_projection_contract",
     }
