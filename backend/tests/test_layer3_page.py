@@ -499,6 +499,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function renderMockupActivationReadinessPanel" in js.text
     assert "query_source_setup_interactive_live_classification" in js.text
     assert "output_review_package_handoff_interactive_live_contract" in js.text
+    assert "selected projection slice" in js.text
+    assert "projection.contract_id" in js.text
+    assert "projection.schema_id" in js.text
+    assert "projection.status_projection" in js.text
+    assert "projection.negative_boundaries" in js.text
     assert "selected next slice" in js.text
     assert "unapproved_provider_object_or_network_write" in js.text
     assert "broad_source_family_expansion" in js.text

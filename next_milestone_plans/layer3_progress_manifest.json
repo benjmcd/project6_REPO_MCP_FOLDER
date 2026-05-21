@@ -41301,8 +41301,8 @@
   "latest_layer3_next_phase_activation_readiness_package_doc": "next_milestone_plans/Layer3_planning_docs/945-activation-readiness-package.md",
   "latest_layer3_next_phase_activation_readiness_package_status": "current_main_activation_readiness_package_merged",
   "latest_layer3_next_phase_activation_readiness_package_selected_first_slice": "query_source_setup_interactive_live_classification",
-  "latest_layer3_next_phase_activation_readiness_package_next_posture": "select_next_current_main_admitted_read_only_projection_contract",
-  "latest_layer3_next_phase_activation_readiness_package_summary": "After PR #1571 and doc 947 current-main sync, the activation-readiness package has current-main output review/package/handoff interactive-live authority recorded. The next useful pass is to choose the next current-main-admitted read-only projection contract; PDF-location is the narrowest candidate if it remains grounded in State.sessionSummary.pdf_location_projection and is not over-claimed as interactive.",
+  "latest_layer3_next_phase_activation_readiness_package_next_posture": "publish_pdf_location_projection_contract_then_select_sublayers_ab_or_3c_read_only_projection_contract",
+  "latest_layer3_next_phase_activation_readiness_package_summary": "Doc 948 adds a branch-local activation-readiness projection contract for PDF-location evidence. The pdf_location journey remains read_only and is grounded in State.sessionSummary.pdf_location_projection, layer3.pdf_location_projection.v1, aps_content_document_chunk_page_refs_and_citation_highlight_spans, and #mockup-pdf-location-projection. It adds no interactive controls, runtime route/model/migration behavior, raw PDF/provider exposure, connector/provider writes, frontend durable authority, or full mockup activation.",
   "layer3_output_review_package_handoff_activation_contract": {
     "status": "branch_local_output_review_package_handoff_activation_contract_implemented",
     "doc": "next_milestone_plans/Layer3_planning_docs/946-output-review-package-handoff-activation-contract.md",
@@ -41405,7 +41405,76 @@
   "latest_layer3_output_review_package_handoff_activation_contract_current_main_sync_current_main_authority": "project6-origin/main at 1f3c47f560b300c902f698889fe4ed2a666e24c4 (1f3c47f5 Merge pull request #1571 from benjmcd/codex/l3-next-operator-path-proof)",
   "latest_layer3_output_review_package_handoff_activation_contract_current_main_sync_source_pr": "#1571",
   "latest_layer3_output_review_package_handoff_activation_contract_current_main_sync_merge_commit": "1f3c47f560b300c902f698889fe4ed2a666e24c4",
-  "latest_layer3_output_review_package_handoff_activation_contract_current_main_sync_next_posture": "select_next_current_main_admitted_read_only_projection_contract",
+  "latest_layer3_output_review_package_handoff_activation_contract_current_main_sync_next_posture": "publish_pdf_location_projection_contract_then_select_sublayers_ab_or_3c_read_only_projection_contract",
   "latest_layer3_output_review_package_handoff_activation_contract_current_main_sync_summary": "Doc 947 syncs PR #1571 to current main at 1f3c47f560b300c902f698889fe4ed2a666e24c4. The output review/package/handoff activation-readiness contract is now current-main truth, while pdf_location, sublayers_3a_3b, and sublayer_3c_execution_lanes remain read-only, full_mockup_program remains blocked, and no runtime route, model, migration, rendered control, connector/provider write, frontend durable authority, or full mockup activation is added.",
-  "latest_layer3_output_review_package_handoff_activation_contract_current_main_authority": "project6-origin/main at 1f3c47f560b300c902f698889fe4ed2a666e24c4 (1f3c47f5 Merge pull request #1571 from benjmcd/codex/l3-next-operator-path-proof)"
+  "latest_layer3_output_review_package_handoff_activation_contract_current_main_authority": "project6-origin/main at 1f3c47f560b300c902f698889fe4ed2a666e24c4 (1f3c47f5 Merge pull request #1571 from benjmcd/codex/l3-next-operator-path-proof)",
+  "layer3_pdf_location_read_only_projection_contract": {
+    "status": "branch_local_pdf_location_read_only_projection_contract_implemented",
+    "doc": "next_milestone_plans/Layer3_planning_docs/948-pdf-location-read-only-projection-contract.md",
+    "predecessor_sync_doc": "next_milestone_plans/Layer3_planning_docs/947-output-review-package-handoff-activation-current-main-sync.md",
+    "implementation_branch": "codex/l3-pdf-location-projection-contract",
+    "base_current_main_authority": "project6-origin/main at f2c6100d904dda20b51fc3b467db5ed160136792 (f2c6100d Sync output handoff activation contract)",
+    "schema_id": "layer3.mockup_activation_readiness.v1",
+    "selected_projection_slice": "pdf_location_read_only_live_projection_contract",
+    "projection_schema_id": "layer3.pdf_location_projection.v1",
+    "journey_classification": {
+      "query_source_setup": "interactive_live",
+      "pdf_location": "read_only",
+      "sublayers_3a_3b": "read_only",
+      "sublayer_3c_execution_lanes": "read_only",
+      "output_review_package_handoff": "interactive_live",
+      "full_mockup_program": "blocked"
+    },
+    "projection_contract": {
+      "contract_id": "pdf_location_read_only_live_projection_contract",
+      "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+      "status_projection": [
+        "State.sessionSummary.pdf_location_projection"
+      ],
+      "rendered_surface": "#mockup-pdf-location-projection",
+      "read_only_controls_absent": [
+        "button",
+        "input",
+        "select",
+        "textarea",
+        "a[href]"
+      ]
+    },
+    "blocked_boundaries": [
+      "browser_owned_authoritative_pdf_location",
+      "raw_pdf_blob_streaming",
+      "pdf_byte_download",
+      "provider_or_object_store_url_exposure",
+      "frontend_only_durable_authority",
+      "full_mockup_program_activation"
+    ],
+    "runtime_behavior_change_introduced_by_contract": false,
+    "rendered_behavior_change_introduced_by_contract": true,
+    "backend_behavior_change_introduced_by_contract": true,
+    "route_api_dto_model_migration_service_behavior_change_introduced_by_contract": false,
+    "executable_test_behavior_change_introduced_by_contract": true,
+    "production_ui_behavior_change_introduced_by_contract": true,
+    "frontend_durable_authority_enabled": false,
+    "full_mockup_program_activation_selected": false,
+    "validation": [
+      "python -m py_compile ./backend/app/services/layer3_mockup_activation_readiness.py PASS",
+      "node --check ./backend/app/review_ui/static/layer3.js PASS",
+      "python -m pytest ./backend/tests/test_layer3_mockup_activation_readiness.py ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts ./backend/tests/test_layer3_page.py::test_layer3_static_assets_are_mounted -q PASS",
+      "headless Chromium activation-readiness dashboard proof PASS",
+      "headed Chromium activation-readiness dashboard proof PASS",
+      "headless Chromium PDF-location projection proof PASS",
+      "headed Chromium PDF-location projection proof PASS",
+      "python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json PASS",
+      "python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json PASS",
+      "python ./tools/l3-progress-check.py PASS"
+    ],
+    "next_posture": "publish_pdf_location_projection_contract_then_select_sublayers_ab_or_3c_read_only_projection_contract",
+    "summary": "Doc 948 adds a branch-local activation-readiness projection contract for PDF-location evidence. The pdf_location journey remains read_only and is grounded in State.sessionSummary.pdf_location_projection, layer3.pdf_location_projection.v1, aps_content_document_chunk_page_refs_and_citation_highlight_spans, and #mockup-pdf-location-projection. It adds no interactive controls, runtime route/model/migration behavior, raw PDF/provider exposure, connector/provider writes, frontend durable authority, or full mockup activation."
+  },
+  "latest_layer3_pdf_location_read_only_projection_contract_doc": "next_milestone_plans/Layer3_planning_docs/948-pdf-location-read-only-projection-contract.md",
+  "latest_layer3_pdf_location_read_only_projection_contract_status": "branch_local_pdf_location_read_only_projection_contract_implemented",
+  "latest_layer3_pdf_location_read_only_projection_contract_selected_projection_slice": "pdf_location_read_only_live_projection_contract",
+  "latest_layer3_pdf_location_read_only_projection_contract_projection_schema_id": "layer3.pdf_location_projection.v1",
+  "latest_layer3_pdf_location_read_only_projection_contract_next_posture": "publish_pdf_location_projection_contract_then_select_sublayers_ab_or_3c_read_only_projection_contract",
+  "latest_layer3_pdf_location_read_only_projection_contract_summary": "Doc 948 adds a branch-local activation-readiness projection contract for PDF-location evidence. The pdf_location journey remains read_only and is grounded in State.sessionSummary.pdf_location_projection, layer3.pdf_location_projection.v1, aps_content_document_chunk_page_refs_and_citation_highlight_spans, and #mockup-pdf-location-projection. It adds no interactive controls, runtime route/model/migration behavior, raw PDF/provider exposure, connector/provider writes, frontend durable authority, or full mockup activation."
 }

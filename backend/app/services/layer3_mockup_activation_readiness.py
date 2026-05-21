@@ -7,6 +7,7 @@ MOCKUP_ACTIVATION_READINESS_SCHEMA_ID = "layer3.mockup_activation_readiness.v1"
 MOCKUP_ACTIVATION_READINESS_PHASE = "next_phase_activation_readiness"
 MOCKUP_FIRST_ADMITTED_SLICE = "query_source_setup_interactive_live_classification"
 MOCKUP_NEXT_ADMITTED_SLICE = "output_review_package_handoff_interactive_live_contract"
+MOCKUP_PDF_LOCATION_PROJECTION_SLICE = "pdf_location_read_only_live_projection_contract"
 
 _NO_GO_BOUNDARIES = (
     "frontend_only_durable_authority",
@@ -48,12 +49,38 @@ _JOURNEYS = (
         "label": "PDF-location evidence",
         "classification": "read_only",
         "activation_slice": None,
+        "projection_slice": MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
         "server_authority": "session summary pdf_location_projection",
         "rendered_surface": "#mockup-pdf-location-projection",
         "evidence": (
             "server PDF-location projection renders bounded location items when available",
             "projection remains unavailable without session summary authority",
+            "projection exposes no browser-owned PDF-location authority or raw PDF/provider URL surface",
         ),
+        "projection_contract": {
+            "contract_id": MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
+            "schema_id": "layer3.pdf_location_projection.v1",
+            "server_authority_contract": "aps_content_document_chunk_page_refs_and_citation_highlight_spans",
+            "status_projection": (
+                "State.sessionSummary.pdf_location_projection",
+            ),
+            "rendered_surface": "#mockup-pdf-location-projection",
+            "read_only_controls_absent": (
+                "button",
+                "input",
+                "select",
+                "textarea",
+                "a[href]",
+            ),
+            "negative_boundaries": (
+                "browser_owned_authoritative_pdf_location",
+                "raw_pdf_blob_streaming",
+                "pdf_byte_download",
+                "provider_or_object_store_url_exposure",
+                "frontend_only_durable_authority",
+                "full_mockup_program_activation",
+            ),
+        },
         "next_allowed_action": "select_a_write_or_navigation_authority_before_interactive_activation",
     },
     {
@@ -162,11 +189,12 @@ _JOURNEYS = (
 def _journey_response(row: dict[str, Any]) -> dict[str, Any]:
     response = dict(row)
     response["evidence"] = list(row["evidence"])
-    if isinstance(row.get("interaction_contract"), dict):
-        response["interaction_contract"] = {
-            key: list(value) if isinstance(value, tuple) else value
-            for key, value in row["interaction_contract"].items()
-        }
+    for contract_key in ("interaction_contract", "projection_contract"):
+        if isinstance(row.get(contract_key), dict):
+            response[contract_key] = {
+                key: list(value) if isinstance(value, tuple) else value
+                for key, value in row[contract_key].items()
+            }
     return response
 
 
@@ -177,6 +205,7 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "phase": MOCKUP_ACTIVATION_READINESS_PHASE,
         "selected_first_slice": MOCKUP_FIRST_ADMITTED_SLICE,
         "selected_next_slice": MOCKUP_NEXT_ADMITTED_SLICE,
+        "selected_projection_slice": MOCKUP_PDF_LOCATION_PROJECTION_SLICE,
         "classification_mode": "server_owned_next_phase_activation_readiness",
         "journeys": journeys,
         "journey_counts": {
@@ -193,5 +222,5 @@ def mockup_activation_readiness_contract() -> dict[str, Any]:
         "connector_provider_write_enabled": False,
         "broad_source_model_rag_expansion_enabled": False,
         "mutates_runtime_state": False,
-        "next_posture": "prove_output_review_package_handoff_existing_controls_before_selecting_next_projection_journey",
+        "next_posture": "prove_pdf_location_read_only_projection_contract_before_selecting_next_projection_journey",
     }
