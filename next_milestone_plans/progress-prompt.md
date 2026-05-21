@@ -1069,3 +1069,21 @@ Current Layer 3 source-directory package lifecycle contract freeze to preserve w
 - treat this freeze as progress/control metadata only; do not treat it as runtime behavior, rendered behavior, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior, production UI behavior, package supersession commit implementation, replacement package-set implementation, source package row mutation, source package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
 - preserve backend contract implementation entry after current-main sync as `true`, but keep rendered commit-control implementation blocked until that server-owned lifecycle contract lands and syncs
 - preserve next posture as `current_main_sync_source_directory_package_lifecycle_contract_freeze_then_backend_contract`
+
+Current Layer 3 source-directory package lifecycle contract freeze current-main sync to preserve when present:
+- `931-lifecycle-sync.md` records current-main sync for Doc `930` after PR `#1546`
+- classify it as `current_main_synced_source_directory_package_lifecycle_contract_freeze`
+- preserve predecessor contract-freeze doc `930-lifecycle-contract.md`
+- preserve source PR `#1546`, source branch `codex/l3-package-lifecycle-contract-freeze`, contract-freeze commit `056467bb7f6dc52b9799f996bf813bce21ceea20`, merge commit `7a7b7599c21168f7e7ebb043bb277370b7d7e636`, and sync branch `codex/l3-package-lifecycle-contract-sync`
+- preserve synced contract `source_directory_package_lifecycle_server_owned_contract`
+- preserve synced blocked rendered target `source_directory_package_supersession_commit_rendered_control`
+- preserve synced immediate implementation slice `implement_source_directory_package_lifecycle_server_owned_contract`
+- preserve synced rendered implementation after contract proof `implement_source_directory_package_supersession_commit_rendered_control_against_server_owned_lifecycle_contract`
+- preserve synced source-directory preview route `POST /api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview`
+- preserve synced generic replacement routes `POST /api/v1/layer3/package/replacement-artifact/materialize` and `POST /api/v1/layer3/package/replacement-set/record`
+- preserve synced generic commit route `POST /api/v1/layer3/package/supersession/commit`
+- preserve corrected-artifact precedent routes `POST /api/v1/layer3/package/replacement-set/record-from-corrected-artifact-set` and `POST /api/v1/layer3/package/supersession/commit-from-corrected-artifact-set-authority`
+- preserve GitHub checks `backend-layer3-api` and `test` as `SUCCESS` with comments `0`, reviews `0`, latestReviews `0`, reviewThreads totalCount `0`, unresolved reviewThreads totalCount `0`, and merge state `CLEAN`
+- treat this sync as progress/control metadata only; do not treat it as runtime behavior, rendered behavior introduced by sync, backend behavior, route/API/DTO/model/migration/service behavior, executable test behavior introduced by sync, production UI behavior introduced by sync, package supersession commit implementation, replacement package-set implementation, source package row mutation, source package payload write/rewrite, connector dispatch, provider delivery, source expansion, RAG/vector/model/provider runtime, auth/security behavior, browser-storage authority, frontend-only durable authority, or full mockup program activation
+- preserve backend contract implementation entry after sync as `true`, but keep rendered commit-control implementation blocked until that server-owned lifecycle contract lands and syncs
+- preserve next posture as `implement_source_directory_package_lifecycle_server_owned_contract`

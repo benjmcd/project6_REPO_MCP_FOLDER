@@ -8993,3 +8993,33 @@ Runtime behavior introduced by this freeze: `false`. Rendered behavior introduce
 Full mockup program activation selected now: `false`. Implementation-entry allowed by this freeze alone: `false`. Backend contract implementation entry allowed after current-main sync: `true`. Rendered commit-control implementation entry allowed by this freeze alone: `false`.
 
 Next exact posture: `current_main_sync_source_directory_package_lifecycle_contract_freeze_then_backend_contract`.
+
+## Source-Directory Package Lifecycle Contract Current-Main Sync
+
+Doc: `931-lifecycle-sync.md`.
+
+Status: `current_main_synced_source_directory_package_lifecycle_contract_freeze`.
+
+Predecessor contract-freeze doc: `930-lifecycle-contract.md`.
+
+Merged PR: `#1546`.
+
+Contract-freeze commit: `056467bb7f6dc52b9799f996bf813bce21ceea20`.
+
+Merge commit: `7a7b7599c21168f7e7ebb043bb277370b7d7e636`.
+
+Sync branch: `codex/l3-package-lifecycle-contract-sync`.
+
+Synced contract: `source_directory_package_lifecycle_server_owned_contract`.
+
+Synced blocked rendered target: `source_directory_package_supersession_commit_rendered_control`.
+
+Synced immediate implementation slice: `implement_source_directory_package_lifecycle_server_owned_contract`.
+
+GitHub gate: PR `#1546` merged cleanly with `backend-layer3-api` and `test` checks passing, comments `0`, reviews `0`, latestReviews `0`, reviewThreads totalCount `0`, and unresolved reviewThreads totalCount `0`.
+
+Runtime behavior introduced by this sync: `false`. Rendered behavior introduced by this sync: `false`. Backend behavior introduced by this sync: `false`. Route/API/DTO/model/migration/service behavior introduced by this sync: `false`. Executable test behavior introduced by this sync: `false`. Production UI behavior introduced by this sync: `false`.
+
+Full mockup program activation selected now: `false`. Implementation-entry allowed for full mockup activation by this sync alone: `false`. Backend contract implementation entry allowed after sync: `true`. Rendered commit-control implementation entry allowed after sync: `false`.
+
+Next exact posture: `implement_source_directory_package_lifecycle_server_owned_contract`.
