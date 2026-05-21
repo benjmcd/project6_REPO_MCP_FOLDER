@@ -136,6 +136,20 @@ const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_sou
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_USE_CASE = 'operator_commits_source_directory_package_supersession_lineage_after_replacement_package_set_authority';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview + State.replacementPackageSetAuthority';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit';
+const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_RENDERED_MODE = 'rendered_source_directory_qualitative_handoff_export_prepare_control';
+const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview + sourceDirectoryPackageSupersessionPreviewPayload';
+const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare';
+const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID = 'layer3.source_directory_qualitative_analysis_handoff_export_prepare.v1';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RENDERED_MODE = 'rendered_source_directory_qualitative_external_export_download_prepare_control';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_AUTHORITY = 'State.handoffExportPrepare + sourceDirectoryPackageSupersessionPreviewPayload';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/prepare';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID = 'layer3.source_directory_qualitative_analysis_external_export_download_prepare.v1';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET = 'source_directory_qualitative_analysis_package_download_reference';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RENDERED_MODE = 'rendered_source_directory_qualitative_external_export_download_delivery_control';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver/status';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID = 'layer3.source_directory_qualitative_analysis_external_export_download_delivery_status.v1';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/download/deliver';
+const SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID = 'layer3.source_directory_qualitative_analysis_external_export_download_delivery.v1';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_PAYLOAD_FIELDS = Object.freeze([
     'analysis_question',
     'analysis_focus',
@@ -301,6 +315,9 @@ const State = {
     externalExportDownloadDelivery: null,
     externalExportDownloadDeliveryError: null,
     externalExportDownloadDeliveryPending: false,
+    sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus: null,
+    sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError: null,
+    sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending: false,
     sourceDirectoryHybridExternalExportDownloadDeliveryStatus: null,
     sourceDirectoryHybridExternalExportDownloadDeliveryStatusError: null,
     sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending: false,
@@ -2112,6 +2129,9 @@ function clearExternalExportDownloadDeliveryState() {
     State.externalExportDownloadDelivery = null;
     State.externalExportDownloadDeliveryError = null;
     State.externalExportDownloadDeliveryPending = false;
+    State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus = null;
+    State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError = null;
+    State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending = false;
     clearExternalExportDownloadSignedReferenceState();
 }
 
@@ -2718,6 +2738,83 @@ function replacementPackageArtifactMaterializationState() {
     return State.replacementPackageArtifactMaterialization || null;
 }
 
+function sourceDirectoryQualitativePackageAuthorityPayloadOrNull() {
+    try {
+        return sourceDirectoryPackageSupersessionPreviewPayload();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function isSourceDirectoryQualitativePackageAuthoritySelected() {
+    const preview = sourceDirectoryPackageSupersessionPreviewState();
+    const payload = sourceDirectoryQualitativePackageAuthorityPayloadOrNull();
+    return Boolean(
+        preview
+        && payload
+        && preview.schema_id === SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_SCHEMA_ID
+        && preview.package_review_submit_record_ref
+        && payload.package_review_submit_record_ref === preview.package_review_submit_record_ref
+        && payload.package_review_state === 'package_review_approved'
+        && Array.isArray(payload.output_package_ids)
+        && payload.output_package_ids.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && Array.isArray(payload.package_kinds)
+        && payload.package_kinds.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+        && Array.isArray(payload.payload_hashes)
+        && payload.payload_hashes.length === PACKAGE_REVIEW_PACKAGE_KINDS.length
+    );
+}
+
+function isSourceDirectoryQualitativeHandoffExportPrepareState(handoff = handoffExportPrepareState() || {}) {
+    return handoff.schema_id === SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+        || handoff.handoff_export_prepare_schema_id === SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SCHEMA_ID
+        || handoff.source_gate === '808_SOURCE_DIRECTORY_QUALITATIVE_ANALYSIS_HANDOFF_EXPORT_PREPARE_RUNTIME_ENTRY_FREEZE';
+}
+
+function isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external = externalExportDownloadPrepareState() || {}) {
+    return external.schema_id === SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || external.external_export_download_prepare_schema_id === SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        || external.external_export_download_target === SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET
+        || external.source_gate === '812_SOURCE_DIRECTORY_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RUNTIME_ENTRY_FREEZE';
+}
+
+function sourceDirectoryQualitativeExternalExportDownloadSelectedPackage(external = externalExportDownloadPrepareState() || {}) {
+    const packages = Array.isArray(external.output_packages) ? external.output_packages : [];
+    const selected = packages.find((row) => row.package_kind === 'user_facing') || packages[0] || {};
+    const packageKinds = Array.isArray(external.package_kinds) ? external.package_kinds : [];
+    const outputPackageIds = Array.isArray(external.output_package_ids) ? external.output_package_ids : [];
+    const payloadHashes = Array.isArray(external.payload_hashes) ? external.payload_hashes : [];
+    const selectedIndex = packageKinds.includes('user_facing') ? packageKinds.indexOf('user_facing') : 0;
+    return {
+        output_package_id: selected.output_package_id || outputPackageIds[selectedIndex],
+        package_kind: selected.package_kind || packageKinds[selectedIndex],
+        package_payload_hash: selected.package_payload_hash || selected.payload_hash || payloadHashes[selectedIndex],
+    };
+}
+
+function sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusMatches(payload) {
+    const status = State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus || {};
+    return Boolean(
+        status.delivery_available === true
+        && status.schema_id === SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_SCHEMA_ID
+        && status.external_export_download_record_ref === payload.external_export_download_record_ref
+        && status.export_download_descriptor_ref === payload.export_download_descriptor_ref
+        && status.output_package_id === payload.output_package_id
+        && status.package_kind === payload.package_kind
+        && status.package_payload_hash === payload.package_payload_hash
+        && status.same_origin_delivery_enabled === true
+        && status.browser_managed_same_origin_attachment_enabled === true
+        && status.provider_public_delivery_enabled === false
+        && status.provider_private_signed_url_enabled === false
+        && status.connector_dispatch_enabled === false
+        && status.network_egress_enabled === false
+        && status.frontend_durable_authority_enabled === false
+        && status.package_payload_rewrite_enabled === false
+        && status.source_package_row_mutation_enabled === false
+        && status.raw_local_path_exposed === false
+    );
+}
+
 function replacementPackageSetAuthorityState() {
     return State.replacementPackageSetAuthority || null;
 }
@@ -3188,6 +3285,39 @@ function sourceIntakeDeliveryUiState(external = externalExportDownloadPrepareSta
     };
 }
 
+function sourceDirectoryQualitativeExternalExportDownloadDeliveryUiState(external = externalExportDownloadPrepareState() || {}) {
+    if (!isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external)) return null;
+    const selectedPackage = sourceDirectoryQualitativeExternalExportDownloadSelectedPackage(external);
+    const readinessState = externalExportDownloadStateName(external);
+    const available = Boolean(
+        readinessState === 'external_export_download_prepared'
+        && external.external_export_download_record_ref
+        && external.export_download_descriptor_ref
+        && external.prepare_record_ref
+        && external.handoff_export_envelope_ref
+        && selectedPackage.output_package_id
+        && selectedPackage.package_kind
+        && selectedPackage.package_payload_hash
+    );
+    return {
+        available,
+        state: available
+            ? 'source_directory_external_export_download_delivery_ui_ready'
+            : 'source_directory_external_export_download_delivery_ui_blocked',
+        operator_decision: 'deliver_external_export_download',
+        delivery_mode: 'same_origin_artifact_stream',
+        browser_managed_same_origin_attachment_enabled: available,
+        public_url_enabled: false,
+        signed_url_enabled: false,
+        connector_dispatch_enabled: false,
+        destination_selection_enabled: false,
+        generic_downstream_dispatch_enabled: false,
+        package_mutation_enabled: false,
+        schema_runtime_source_widening_enabled: false,
+        server_authority: SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+    };
+}
+
 function deliveryUiStateAdmitted(deliveryUi, states) {
     return Boolean(
         deliveryUi
@@ -3207,6 +3337,12 @@ function deliveryUiStateAdmitted(deliveryUi, states) {
 }
 
 function externalExportDownloadDeliveryUiAdmitted(external = externalExportDownloadPrepareState() || {}) {
+    const sourceDirectoryDeliveryUi = sourceDirectoryQualitativeExternalExportDownloadDeliveryUiState(external);
+    if (sourceDirectoryDeliveryUi) {
+        return deliveryUiStateAdmitted(sourceDirectoryDeliveryUi, [
+            'source_directory_external_export_download_delivery_ui_ready',
+        ]);
+    }
     const sourceIntakeDeliveryUi = sourceIntakeDeliveryUiState(external);
     if (sourceIntakeDeliveryUi) {
         return deliveryUiStateAdmitted(sourceIntakeDeliveryUi, [
@@ -3981,6 +4117,28 @@ function canSubmitHandoffExportPrepare() {
     const submit = packageReviewSubmitState() || {};
     const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
     const notes = elements.handoffExportPrepareNotes.value.trim();
+    if (isSourceDirectoryQualitativePackageAuthoritySelected()) {
+        const sourcePayload = sourceDirectoryQualitativeHandoffExportPreparePayloadOrNull();
+        return Boolean(
+            sourcePayload
+            && sourcePayload.package_review_state === 'package_review_approved'
+            && sourcePayload.package_review_submit_record_ref
+            && !recordedHandoffExportPrepare()
+            && !State.resultReviewPending
+            && !State.packageReviewPreviewPending
+            && !State.packageConstructionPending
+            && !State.packageReviewSubmitPending
+            && !replacementPackageSetAuthorityBusy()
+            && !packageSupersessionCommitBusy()
+            && !replacementPackageArtifactManifestBusy()
+            && !replacementPackageNamespaceBusy()
+            && !State.handoffExportPreparePending
+            && !State.apsHandoffDispatchPending
+            && !State.externalExportDownloadPreparePending
+            && !State.externalExportDownloadDeliveryPending
+            && (!handoffExportPrepareDecisionNeedsNotes() || notes)
+        );
+    }
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
@@ -4065,6 +4223,27 @@ function canSubmitExternalExportDownloadPrepare() {
     const packageReviewState = external.package_review_state || submit.package_review_state || submit.state || handoff.package_review_state;
     const prepareState = external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
     const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
+    if (isSourceDirectoryQualitativeHandoffExportPrepareState(handoff)) {
+        const sourcePayload = sourceDirectoryQualitativeExternalExportDownloadPreparePayloadOrNull();
+        return Boolean(
+            sourcePayload
+            && sourcePayload.package_review_state === 'package_review_approved'
+            && sourcePayload.prepare_record_ref
+            && sourcePayload.handoff_export_envelope_ref
+            && !recordedExternalExportDownloadPrepare()
+            && !State.resultReviewPending
+            && !State.packageReviewPreviewPending
+            && !State.packageConstructionPending
+            && !State.packageReviewSubmitPending
+            && !replacementPackageSetAuthorityBusy()
+            && !packageSupersessionCommitBusy()
+            && !replacementPackageNamespaceBusy()
+            && !State.handoffExportPreparePending
+            && !State.apsHandoffDispatchPending
+            && !State.externalExportDownloadPreparePending
+            && !State.externalExportDownloadDeliveryPending
+        );
+    }
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
@@ -4119,6 +4298,30 @@ function canSubmitExternalExportDownloadDelivery() {
     const prepareState = external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
     const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
     const readinessState = externalExportDownloadStateName(external);
+    if (isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external)) {
+        const sourcePayload = sourceDirectoryQualitativeExternalExportDownloadDeliveryPayloadOrNull();
+        return Boolean(
+            sourcePayload
+            && sourcePayload.external_export_download_state === 'external_export_download_prepared'
+            && sourcePayload.external_export_download_record_ref
+            && sourcePayload.export_download_descriptor_ref
+            && sourcePayload.output_package_id
+            && sourcePayload.package_kind
+            && sourcePayload.package_payload_hash
+            && externalExportDownloadDeliveryUiAdmitted(external)
+            && !State.resultReviewPending
+            && !State.packageReviewPreviewPending
+            && !State.packageConstructionPending
+            && !State.packageReviewSubmitPending
+            && !replacementPackageSetAuthorityBusy()
+            && !packageSupersessionCommitBusy()
+            && !replacementPackageNamespaceBusy()
+            && !State.handoffExportPreparePending
+            && !State.apsHandoffDispatchPending
+            && !State.externalExportDownloadPreparePending
+            && !State.externalExportDownloadDeliveryPending
+        );
+    }
     return Boolean(
         hasResultAuthorityIdentity(authority)
         && authority.selected
@@ -7028,6 +7231,9 @@ function handoffExportPanelState() {
     if (State.handoffExportPrepareError) {
         return { label: 'handoff_export_prepare_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest preparation action.' };
     }
+    if (isSourceDirectoryQualitativePackageAuthoritySelected()) {
+        return { label: 'source_directory_handoff_export_ready', pill: 'ok', message: 'Source-directory package review authority is ready for prepare-only handoff/export recording.' };
+    }
     if (handoff.available === true && packageReviewState === 'package_review_approved') {
         return { label: handoff.state || 'handoff_export_ready', pill: 'ok', message: 'Approved package-review submit state is ready for prepare-only recording.' };
     }
@@ -7048,12 +7254,25 @@ function renderHandoffExportPreparePanel() {
     const submit = packageReviewSubmitState() || {};
     const authority = selectedResultAuthority();
     const panelState = handoffExportPanelState();
-    const packageReviewState = submit.package_review_state || submit.state || handoff.package_review_state;
+    const sourceDirectoryMode = isSourceDirectoryQualitativePackageAuthoritySelected()
+        || isSourceDirectoryQualitativeHandoffExportPrepareState(handoff);
+    const sourceDirectoryPayload = sourceDirectoryMode
+        ? sourceDirectoryQualitativePackageAuthorityPayloadOrNull() || {}
+        : {};
+    const packageReviewState = sourceDirectoryMode
+        ? sourceDirectoryPayload.package_review_state || handoff.package_review_state || submit.package_review_state || submit.state
+        : submit.package_review_state || submit.state || handoff.package_review_state;
     const prepareState = handoff.handoff_export_state || handoff.next_state || handoff.state;
-    const packageIds = packageOutputPackageIds();
-    const packageKinds = packageKindsFromState();
-    const payloadRefs = packagePayloadRefs();
-    const payloadHashes = packagePayloadHashes();
+    const packageIds = sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.output_package_ids)
+        ? sourceDirectoryPayload.output_package_ids
+        : packageOutputPackageIds();
+    const packageKinds = sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.package_kinds)
+        ? sourceDirectoryPayload.package_kinds
+        : packageKindsFromState();
+    const payloadRefs = sourceDirectoryMode ? [] : packagePayloadRefs();
+    const payloadHashes = sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.payload_hashes)
+        ? sourceDirectoryPayload.payload_hashes
+        : packagePayloadHashes();
     const downstream = handoff.downstream_unavailable || submit.downstream_unavailable || ['aps_handoff', 'external_export', 'downstream_dispatch'];
     const envelope = handoff.handoff_export_envelope;
     const envelopeRows = envelope && typeof envelope === 'object'
@@ -7065,6 +7284,12 @@ function renderHandoffExportPreparePanel() {
         ].join('')
         : '<li>No preparation envelope has been recorded.</li>';
 
+    elements.handoffExportPreparePanel.dataset.renderedMode = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_RENDERED_MODE
+        : 'rendered_handoff_export_prepare_control';
+    elements.handoffExportPreparePanel.dataset.sourceAuthority = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SOURCE_AUTHORITY
+        : 'selectedResultAuthority + State.sessionSummary.handoff_export_prepare';
     elements.handoffExportPreparePanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
@@ -7084,6 +7309,8 @@ function renderHandoffExportPreparePanel() {
                     ${fieldItem('pass scope', handoff.pass_scope || submit.pass_scope || authority.passScope)}
                     ${fieldItem('method', handoff.method || submit.method || authority.selectedMethod)}
                     ${fieldItem('source gate', handoff.source_gate || submit.source_gate || authority.sourceGate)}
+                    ${sourceDirectoryMode ? fieldItem('source batch', sourceDirectoryPayload.source_ingestion_batch_id, { code: true }) : ''}
+                    ${sourceDirectoryMode ? fieldItem('source file', sourceDirectoryPayload.source_ingestion_file_id, { code: true }) : ''}
                     ${fieldItem('package source gate', handoff.package_construction_source_gate || submit.package_construction_source_gate)}
                 </ul>
             </section>
@@ -7091,7 +7318,7 @@ function renderHandoffExportPreparePanel() {
                 <strong>Package Review Submit</strong>
                 <ul>
                     ${fieldItem('state', packageReviewState)}
-                    ${fieldItem('submit ref', handoff.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
+                    ${fieldItem('submit ref', handoff.package_review_submit_record_ref || sourceDirectoryPayload.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
                     ${fieldItem('operator decision', submit.operator_decision)}
                     ${fieldItem('result review', handoff.result_review_record_ref || submit.result_review_record_ref, { code: true })}
                     ${fieldItem('package preview hash', handoff.package_review_preview_hash || submit.package_review_preview_hash, { code: true })}
@@ -7102,6 +7329,8 @@ function renderHandoffExportPreparePanel() {
                 <ul>
                     ${fieldItem('target', handoff.handoff_target || 'internal_export_envelope')}
                     ${fieldItem('mode', handoff.export_mode || 'prepare_only')}
+                    ${fieldItem('route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH : '/handoff/export/prepare', { code: true })}
+                    ${fieldItem('source authority', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SOURCE_AUTHORITY : 'selected_result_authority', { code: true })}
                     ${fieldItem('state', prepareState)}
                     ${fieldItem('prepare enabled', handoff.handoff_export_prepare_enabled)}
                     ${fieldItem('prepare ref', handoff.prepare_record_ref, { code: true })}
@@ -7263,6 +7492,9 @@ function externalExportDownloadPanelState() {
     if (stateName === 'external_export_download_blocked') {
         return { label: stateName, pill: 'blocked', message: external.blocked_reason || 'External export/download readiness is blocked by server authority.' };
     }
+    if (isSourceDirectoryQualitativeHandoffExportPrepareState(handoffExportPrepareState() || {})) {
+        return { label: 'source_directory_external_export_download_ready', pill: 'ok', message: 'Prepared source-directory handoff envelope is ready for reference-only external export/download readiness.' };
+    }
     if (external.available === true && stateName === 'external_export_download_ready') {
         return { label: stateName, pill: 'ok', message: 'Recorded APS handoff dispatch is ready for reference-only external export/download readiness.' };
     }
@@ -7279,13 +7511,36 @@ function renderExternalExportDownloadPreparePanel() {
     const submit = packageReviewSubmitState() || {};
     const authority = selectedResultAuthority();
     const panelState = externalExportDownloadPanelState();
-    const packageReviewState = external.package_review_state || submit.package_review_state || submit.state || handoff.package_review_state;
+    const sourceDirectoryMode = isSourceDirectoryQualitativeHandoffExportPrepareState(handoff)
+        || isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external);
+    const sourceDirectoryPayload = sourceDirectoryMode
+        ? sourceDirectoryQualitativePackageAuthorityPayloadOrNull() || {}
+        : {};
+    const packageReviewState = external.package_review_state
+        || handoff.package_review_state
+        || sourceDirectoryPayload.package_review_state
+        || submit.package_review_state
+        || submit.state;
     const prepareState = external.handoff_export_state || handoff.handoff_export_state || handoff.next_state || handoff.state;
     const apsState = external.aps_handoff_state || apsHandoffStateName(aps);
-    const packageKinds = Array.isArray(external.package_kinds) && external.package_kinds.length ? external.package_kinds : packageKindsFromState();
-    const packageIds = Array.isArray(external.output_package_ids) && external.output_package_ids.length ? external.output_package_ids : packageOutputPackageIds();
-    const payloadRefs = Array.isArray(external.payload_refs) && external.payload_refs.length ? external.payload_refs : packagePayloadRefs();
-    const payloadHashes = Array.isArray(external.payload_hashes) && external.payload_hashes.length ? external.payload_hashes : packagePayloadHashes();
+    const packageKinds = Array.isArray(external.package_kinds) && external.package_kinds.length
+        ? external.package_kinds
+        : (sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.package_kinds)
+            ? sourceDirectoryPayload.package_kinds
+            : packageKindsFromState());
+    const packageIds = Array.isArray(external.output_package_ids) && external.output_package_ids.length
+        ? external.output_package_ids
+        : (sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.output_package_ids)
+            ? sourceDirectoryPayload.output_package_ids
+            : packageOutputPackageIds());
+    const payloadRefs = sourceDirectoryMode
+        ? []
+        : (Array.isArray(external.payload_refs) && external.payload_refs.length ? external.payload_refs : packagePayloadRefs());
+    const payloadHashes = Array.isArray(external.payload_hashes) && external.payload_hashes.length
+        ? external.payload_hashes
+        : (sourceDirectoryMode && Array.isArray(sourceDirectoryPayload.payload_hashes)
+            ? sourceDirectoryPayload.payload_hashes
+            : packagePayloadHashes());
     const downstream = external.downstream_unavailable || [
         'browser_download',
         'download_url',
@@ -7305,6 +7560,12 @@ function renderExternalExportDownloadPreparePanel() {
         ].join('')
         : '<li>No readiness descriptor has been recorded.</li>';
 
+    elements.externalExportDownloadPreparePanel.dataset.renderedMode = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_RENDERED_MODE
+        : 'rendered_external_export_download_prepare_control';
+    elements.externalExportDownloadPreparePanel.dataset.sourceAuthority = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_AUTHORITY
+        : 'State.sessionSummary.external_export_download';
     elements.externalExportDownloadPreparePanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
@@ -7320,13 +7581,15 @@ function renderExternalExportDownloadPreparePanel() {
                     ${fieldItem('preview', authority.previewId, { code: true })}
                     ${fieldItem('preview hash', authority.previewHash, { code: true })}
                     ${fieldItem('result review', external.result_review_record_ref || handoff.result_review_record_ref || submit.result_review_record_ref, { code: true })}
+                    ${sourceDirectoryMode ? fieldItem('source batch', sourceDirectoryPayload.source_ingestion_batch_id, { code: true }) : ''}
+                    ${sourceDirectoryMode ? fieldItem('source file', sourceDirectoryPayload.source_ingestion_file_id, { code: true }) : ''}
                 </ul>
             </section>
             <section class="result-review-card">
                 <strong>Upstream State</strong>
                 <ul>
                     ${fieldItem('package review state', packageReviewState)}
-                    ${fieldItem('submit ref', external.package_review_submit_record_ref || handoff.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
+                    ${fieldItem('submit ref', external.package_review_submit_record_ref || handoff.package_review_submit_record_ref || sourceDirectoryPayload.package_review_submit_record_ref || submit.submit_record_ref, { code: true })}
                     ${fieldItem('prepare state', prepareState)}
                     ${fieldItem('prepare ref', external.prepare_record_ref || handoff.prepare_record_ref, { code: true })}
                     ${fieldItem('APS state', apsState)}
@@ -7336,9 +7599,11 @@ function renderExternalExportDownloadPreparePanel() {
             <section class="result-review-card">
                 <strong>Readiness Contract</strong>
                 <ul>
-                    ${fieldItem('target', external.export_download_target || 'aps_evidence_bundle_download_reference')}
+                    ${fieldItem('target', external.export_download_target || (sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET : 'aps_evidence_bundle_download_reference'))}
                     ${fieldItem('mode', external.download_mode || 'reference_only_prepare')}
-                    ${fieldItem('decision', external.operator_decision || 'prepare_external_export_download')}
+                    ${fieldItem('route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH : '/handoff/export/download/prepare', { code: true })}
+                    ${fieldItem('source authority', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SOURCE_AUTHORITY : 'State.sessionSummary.external_export_download', { code: true })}
+                    ${fieldItem('decision', external.operator_decision || (sourceDirectoryMode ? 'prepare_source_directory_external_export_download' : 'prepare_external_export_download'))}
                     ${fieldItem('state', externalExportDownloadStateName(external))}
                     ${fieldItem('prepare enabled', external.external_export_download_prepare_enabled)}
                     ${fieldItem('readiness ref', external.external_export_download_record_ref, { code: true })}
@@ -7392,9 +7657,11 @@ function renderExternalExportDownloadPreparePanel() {
 function externalExportDownloadDeliveryPanelState() {
     const external = externalExportDownloadPrepareState() || {};
     const stateName = externalExportDownloadStateName(external);
+    const sourceDirectory = isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external);
     const associatedCohort = isAssociatedCohortExternalExportDownloadState(external);
     const sourceIntake = isSourceIntakeExternalExportDownloadState(external);
-    const deliveryUi = sourceIntakeDeliveryUiState(external)
+    const deliveryUi = sourceDirectoryQualitativeExternalExportDownloadDeliveryUiState(external)
+        || sourceIntakeDeliveryUiState(external)
         || qualitativeApsDeliveryUiState(external)
         || associatedCohortDeliveryUiState(external)
         || serverExternalExportDownloadDeliveryUiState(external);
@@ -7415,6 +7682,9 @@ function externalExportDownloadDeliveryPanelState() {
     if (stateName === 'external_export_download_prepared' && canSubmitExternalExportDownloadDelivery()) {
         return { label: 'external_export_download_delivery_ui_ready', pill: 'ok', message: 'Recorded readiness can be delivered as a same-origin attachment.' };
     }
+    if (stateName === 'external_export_download_prepared' && sourceDirectory && deliveryUi?.available !== true) {
+        return { label: deliveryUi?.state || 'source_directory_external_export_download_delivery_ui_blocked', pill: 'blocked', message: 'Source-directory delivery requires complete server readiness authority before the rendered control can submit.' };
+    }
     if (stateName === 'external_export_download_prepared' && sourceIntake && deliveryUi?.available !== true) {
         return { label: deliveryUi?.state || 'source_intake_external_export_download_delivery_ui_blocked', pill: 'blocked', message: 'Source-intake delivery requires complete server prepare authority before the rendered control can submit.' };
     }
@@ -7430,7 +7700,9 @@ function externalExportDownloadDeliveryPanelState() {
 function renderExternalExportDownloadDeliveryPanel() {
     const external = externalExportDownloadPrepareState() || {};
     const panelState = externalExportDownloadDeliveryPanelState();
-    const deliveryUi = sourceIntakeDeliveryUiState(external)
+    const sourceDirectoryMode = isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external);
+    const deliveryUi = sourceDirectoryQualitativeExternalExportDownloadDeliveryUiState(external)
+        || sourceIntakeDeliveryUiState(external)
         || qualitativeApsDeliveryUiState(external)
         || associatedCohortDeliveryUiState(external)
         || serverExternalExportDownloadDeliveryUiState(external)
@@ -7443,7 +7715,14 @@ function renderExternalExportDownloadDeliveryPanel() {
         'generic_downstream_dispatch',
     ];
     const delivery = State.externalExportDownloadDelivery || {};
+    const sourceDirectoryStatus = State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus || {};
     const descriptor = external.external_export_download_descriptor || {};
+    elements.externalExportDownloadDeliveryPanel.dataset.renderedMode = sourceDirectoryMode
+        ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_RENDERED_MODE
+        : 'rendered_external_export_download_delivery_control';
+    elements.externalExportDownloadDeliveryPanel.dataset.sourceAuthority = sourceDirectoryMode
+        ? 'State.externalExportDownloadPrepare + sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus'
+        : 'State.sessionSummary.external_export_download';
     elements.externalExportDownloadDeliveryPanel.innerHTML = `
         <div class="result-review-status">
             <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
@@ -7456,10 +7735,12 @@ function renderExternalExportDownloadDeliveryPanel() {
                     ${fieldItem('readiness state', externalExportDownloadStateName(external))}
                     ${fieldItem('readiness ref', external.external_export_download_record_ref, { code: true })}
                     ${fieldItem('descriptor ref', external.export_download_descriptor_ref || descriptor.descriptor_ref, { code: true })}
-                    ${fieldItem('target', external.export_download_target || descriptor.export_download_target || 'aps_evidence_bundle_download_reference')}
+                    ${fieldItem('target', external.export_download_target || descriptor.export_download_target || (sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET : 'aps_evidence_bundle_download_reference'))}
                     ${fieldItem('download mode', external.download_mode || descriptor.download_mode || 'reference_only_prepare')}
                     ${fieldItem('delivery mode', 'same_origin_artifact_stream')}
-                    ${fieldItem('decision', 'deliver_external_export_download')}
+                    ${fieldItem('decision', sourceDirectoryMode ? 'deliver_source_directory_external_export_download' : 'deliver_external_export_download')}
+                    ${fieldItem('delivery route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH : '/handoff/export/download/deliver', { code: true })}
+                    ${fieldItem('status route', sourceDirectoryMode ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH : 'not_required_for_generic_delivery', { code: true })}
                     ${fieldItem('server UI state', deliveryUi.state)}
                     ${fieldItem('server UI available', deliveryUi.available)}
                     ${fieldItem('server UI basis', deliveryUi.server_authority)}
@@ -7493,6 +7774,8 @@ function renderExternalExportDownloadDeliveryPanel() {
                 <ul>
                     ${fieldItem('state', delivery.state)}
                     ${fieldItem('schema', delivery.schemaId)}
+                    ${fieldItem('status schema', sourceDirectoryStatus.schema_id)}
+                    ${fieldItem('status available', sourceDirectoryStatus.delivery_available)}
                     ${fieldItem('record ref', delivery.externalExportDownloadRecordRef, { code: true })}
                     ${fieldItem('source hash', delivery.sourceArtifactHash, { code: true })}
                 </ul>
@@ -7501,6 +7784,7 @@ function renderExternalExportDownloadDeliveryPanel() {
                 <strong>Disabled Downstream</strong>
                 <div class="downstream-locks">${renderDownstreamLocks(downstream)}</div>
             </section>
+            ${renderErrorCard(State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError)}
             ${renderErrorCard(State.externalExportDownloadDeliveryError)}
         </div>
     `;
@@ -8903,6 +9187,7 @@ function operationDockStatus(step) {
     case 'external':
         if (recordedExternalExportDownloadDelivery()) return { state: 'live', label: 'delivered', detail: 'Same-origin delivery has been requested.' };
         if (recordedExternalExportDownloadPrepare()) return { state: 'ready', label: 'delivery ready', detail: 'External export/download readiness can be delivered.' };
+        if (canSubmitExternalExportDownloadPrepare()) return { state: 'ready', label: 'prepare ready', detail: 'Prepared source-directory handoff can prepare external export/download readiness.' };
         if (State.sessionSummary?.external_export_download?.available === true) return { state: 'ready', label: 'prepare ready', detail: 'APS dispatch can prepare external export/download readiness.' };
         return { state: 'blocked', label: 'blocked', detail: 'Dispatch APS handoff before external export/download readiness.' };
     default:
@@ -9226,9 +9511,15 @@ function setGateControls() {
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
     );
+    const sourceDirectoryHandoffExportControlsEnabled = isSourceDirectoryQualitativePackageAuthoritySelected();
     const handoffExportControlsEnabled = Boolean(
-        State.sessionSummary?.handoff_export_prepare?.available === true
-        && (packageReviewSubmitState()?.package_review_state || packageReviewSubmitState()?.state) === 'package_review_approved'
+        (
+            (
+                State.sessionSummary?.handoff_export_prepare?.available === true
+                && (packageReviewSubmitState()?.package_review_state || packageReviewSubmitState()?.state) === 'package_review_approved'
+            )
+            || sourceDirectoryHandoffExportControlsEnabled
+        )
         && !recordedHandoffExportPrepare()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
@@ -9247,7 +9538,8 @@ function setGateControls() {
         && !State.externalExportDownloadDeliveryPending
     );
     const externalExportDownloadControlsEnabled = Boolean(
-        State.sessionSummary?.external_export_download?.available === true
+        (State.sessionSummary?.external_export_download?.available === true
+            || isSourceDirectoryQualitativeHandoffExportPrepareState(handoffExportPrepareState() || {}))
         && !recordedExternalExportDownloadPrepare()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
@@ -9587,6 +9879,90 @@ function sourceDirectoryPackageSupersessionPreviewPayload() {
 function sourceDirectoryPackageSupersessionPreviewPayloadOrNull() {
     try {
         return sourceDirectoryPackageSupersessionPreviewPayload();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function sourceDirectoryQualitativePackageReviewBasePayload() {
+    const payload = sourceDirectoryPackageSupersessionPreviewPayload();
+    return {
+        ...payload,
+        client_request_id: requestId(),
+    };
+}
+
+function sourceDirectoryQualitativeHandoffExportPreparePayload() {
+    const payload = {
+        ...sourceDirectoryQualitativePackageReviewBasePayload(),
+        operator_decision: elements.handoffExportPrepareDecision.value,
+        handoff_target: 'internal_export_envelope',
+        export_mode: 'prepare_only',
+    };
+    const notes = elements.handoffExportPrepareNotes.value.trim();
+    if (notes) {
+        payload.decision_notes = notes;
+    }
+    return payload;
+}
+
+function sourceDirectoryQualitativeHandoffExportPreparePayloadOrNull() {
+    try {
+        return sourceDirectoryQualitativeHandoffExportPreparePayload();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function sourceDirectoryQualitativeExternalExportDownloadPreparePayload() {
+    const handoff = handoffExportPrepareState() || {};
+    return {
+        ...sourceDirectoryQualitativePackageReviewBasePayload(),
+        package_review_submit_record_ref: handoff.package_review_submit_record_ref,
+        package_review_state: handoff.package_review_state,
+        operator_decision: 'prepare_source_directory_external_export_download',
+        handoff_target: handoff.handoff_target || 'internal_export_envelope',
+        export_mode: handoff.export_mode || 'prepare_only',
+        prepare_record_ref: handoff.prepare_record_ref,
+        handoff_export_state: handoff.handoff_export_state || handoff.next_state || handoff.state,
+        handoff_export_envelope_ref: handoffExportEnvelopeRef(handoff),
+        external_export_download_target: SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_TARGET,
+        download_mode: 'reference_only_prepare',
+    };
+}
+
+function sourceDirectoryQualitativeExternalExportDownloadPreparePayloadOrNull() {
+    try {
+        return sourceDirectoryQualitativeExternalExportDownloadPreparePayload();
+    } catch (_error) {
+        return null;
+    }
+}
+
+function sourceDirectoryQualitativeExternalExportDownloadDeliveryPayload() {
+    const external = externalExportDownloadPrepareState() || {};
+    const selectedPackage = sourceDirectoryQualitativeExternalExportDownloadSelectedPackage(external);
+    return {
+        ...sourceDirectoryQualitativeExternalExportDownloadPreparePayload(),
+        package_review_submit_record_ref: external.package_review_submit_record_ref,
+        package_review_state: external.package_review_state,
+        operator_decision: 'deliver_source_directory_external_export_download',
+        prepare_record_ref: external.prepare_record_ref,
+        handoff_export_state: external.handoff_export_state,
+        handoff_export_envelope_ref: external.handoff_export_envelope_ref,
+        external_export_download_record_ref: external.external_export_download_record_ref,
+        export_download_descriptor_ref: external.export_download_descriptor_ref,
+        external_export_download_state: externalExportDownloadStateName(external),
+        delivery_mode: 'same_origin_artifact_stream',
+        output_package_id: selectedPackage.output_package_id,
+        package_kind: selectedPackage.package_kind,
+        package_payload_hash: selectedPackage.package_payload_hash,
+    };
+}
+
+function sourceDirectoryQualitativeExternalExportDownloadDeliveryPayloadOrNull() {
+    try {
+        return sourceDirectoryQualitativeExternalExportDownloadDeliveryPayload();
     } catch (_error) {
         return null;
     }
@@ -10988,6 +11364,7 @@ async function submitReplacementPackageNamespace() {
 async function submitHandoffExportPrepare(event) {
     event.preventDefault();
     if (!canSubmitHandoffExportPrepare()) return;
+    const sourceDirectoryMode = isSourceDirectoryQualitativePackageAuthoritySelected();
     State.handoffExportPreparePending = true;
     State.handoffExportPrepareError = null;
     State.apsHandoffDispatch = null;
@@ -10996,11 +11373,20 @@ async function submitHandoffExportPrepare(event) {
     renderAll();
     setBusy(elements.handoffExportPrepareSubmit, true, 'Submit Preparation');
     try {
-        State.handoffExportPrepare = await postJson('/handoff/export/prepare', handoffExportPreparePayload());
+        State.handoffExportPrepare = await postJson(
+            sourceDirectoryMode
+                ? SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH
+                : '/handoff/export/prepare',
+            sourceDirectoryMode
+                ? sourceDirectoryQualitativeHandoffExportPreparePayload()
+                : handoffExportPreparePayload(),
+        );
         State.handoffExportPrepareError = null;
         State.apsHandoffDispatchError = null;
         State.externalExportDownloadPrepareError = null;
-        addEvent('Handoff/export preparation recorded.');
+        addEvent(sourceDirectoryMode
+            ? 'Source-directory handoff/export preparation recorded.'
+            : 'Handoff/export preparation recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.handoffExportPrepare.session_id)}`);
             persistSessionRecoveryAnchor('handoff_export_prepare_refresh');
@@ -11061,14 +11447,28 @@ async function submitApsHandoffDispatch(event) {
 async function submitExternalExportDownloadPrepare(event) {
     event.preventDefault();
     if (!canSubmitExternalExportDownloadPrepare()) return;
+    const sourceDirectoryMode = isSourceDirectoryQualitativeHandoffExportPrepareState(
+        handoffExportPrepareState() || {},
+    );
     State.externalExportDownloadPreparePending = true;
     State.externalExportDownloadPrepareError = null;
+    State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus = null;
+    State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError = null;
     renderAll();
     setBusy(elements.externalExportDownloadPrepareSubmit, true, 'Prepare External Readiness');
     try {
-        State.externalExportDownloadPrepare = await postJson('/handoff/export/download/prepare', externalExportDownloadPreparePayload());
+        State.externalExportDownloadPrepare = await postJson(
+            sourceDirectoryMode
+                ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_PATH
+                : '/handoff/export/download/prepare',
+            sourceDirectoryMode
+                ? sourceDirectoryQualitativeExternalExportDownloadPreparePayload()
+                : externalExportDownloadPreparePayload(),
+        );
         State.externalExportDownloadPrepareError = null;
-        addEvent('External export/download readiness recorded.');
+        addEvent(sourceDirectoryMode
+            ? 'Source-directory external export/download readiness recorded.'
+            : 'External export/download readiness recorded.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(State.externalExportDownloadPrepare.session_id)}`);
             persistSessionRecoveryAnchor('external_export_download_prepare_refresh');
@@ -11094,21 +11494,50 @@ async function submitExternalExportDownloadPrepare(event) {
 async function submitExternalExportDownloadDelivery(event) {
     event.preventDefault();
     if (!canSubmitExternalExportDownloadDelivery()) return;
+    const sourceDirectoryMode = isSourceDirectoryQualitativeExternalExportDownloadPrepareState(
+        externalExportDownloadPrepareState() || {},
+    );
+    const payload = sourceDirectoryMode
+        ? sourceDirectoryQualitativeExternalExportDownloadDeliveryPayload()
+        : externalExportDownloadDeliveryPayload();
     State.externalExportDownloadDeliveryPending = true;
     State.externalExportDownloadDeliveryError = null;
+    State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError = null;
+    let sourceDirectoryStatusValidated = false;
     renderAll();
     setBusy(elements.externalExportDownloadDeliverySubmit, true, 'Deliver External Bundle');
     try {
-        const delivery = await submitAttachmentForm('/handoff/export/download/deliver', externalExportDownloadDeliveryPayload());
+        if (sourceDirectoryMode) {
+            State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending = true;
+            State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatus = await postJson(
+                SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH,
+                payload,
+            );
+            State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending = false;
+            if (!sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusMatches(payload)) {
+                throw new Error('source_directory_external_export_download_delivery_status_mismatch');
+            }
+            sourceDirectoryStatusValidated = true;
+        }
+        const delivery = await submitAttachmentForm(
+            sourceDirectoryMode
+                ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH
+                : '/handoff/export/download/deliver',
+            payload,
+        );
         State.externalExportDownloadDelivery = {
             state: delivery.state || 'external_export_download_delivered',
-            schemaId: delivery.schemaId,
+            schemaId: sourceDirectoryMode
+                ? SOURCE_DIRECTORY_QUALITATIVE_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_SCHEMA_ID
+                : delivery.schemaId,
             filename: delivery.filename,
-            sourceArtifactHash: delivery.sourceArtifactHash,
+            sourceArtifactHash: delivery.sourceArtifactHash || payload.package_payload_hash,
             externalExportDownloadRecordRef: delivery.externalExportDownloadRecordRef,
         };
         State.externalExportDownloadDeliveryError = null;
-        addEvent('External export/download bundle submitted as browser-managed same-origin attachment.');
+        addEvent(sourceDirectoryMode
+            ? 'Source-directory external export/download package submitted as browser-managed same-origin attachment.'
+            : 'External export/download bundle submitted as browser-managed same-origin attachment.');
         try {
             State.sessionSummary = await getJson(`/session/${encodeURIComponent(currentSessionId())}`);
             persistSessionRecoveryAnchor('external_export_download_delivery_refresh');
@@ -11117,16 +11546,29 @@ async function submitExternalExportDownloadDelivery(event) {
         }
         renderAll();
     } catch (error) {
+        State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending = false;
+        if (sourceDirectoryMode && !sourceDirectoryStatusValidated) {
+            State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusError = error.payload || {
+                schema_id: 'layer3.workbench_error.v1',
+                error_code: error.message === 'source_directory_external_export_download_delivery_status_mismatch'
+                    ? error.message
+                    : 'source_directory_external_export_download_delivery_status_request_failed',
+                message: error.message,
+            };
+        }
         State.externalExportDownloadDelivery = null;
         State.externalExportDownloadDeliveryError = error.payload || {
             schema_id: 'layer3.workbench_error.v1',
-            error_code: 'external_export_download_delivery_request_failed',
+            error_code: sourceDirectoryMode
+                ? 'source_directory_external_export_download_delivery_request_failed'
+                : 'external_export_download_delivery_request_failed',
             message: error.message,
         };
         addEvent(`External export/download delivery blocked: ${error.message}`);
         renderAll();
     } finally {
         State.externalExportDownloadDeliveryPending = false;
+        State.sourceDirectoryQualitativeExternalExportDownloadDeliveryStatusPending = false;
         setBusy(elements.externalExportDownloadDeliverySubmit, false, 'Deliver External Bundle');
         renderAll();
     }
