@@ -9193,3 +9193,29 @@ Frontend-only durable authority enabled by this sync doc: `false`. Full mockup p
 Remaining whole-program gaps: source-directory package replacement/supersession proof disposition, provider-private signed URL runtime, provider-public URL runtime, broader source/RAG/model/provider behavior, auth/security expansion, observability/performance hardening, and final full mockup readiness audit.
 
 Next exact posture: `audit_source_directory_package_replacement_supersession_proof_after_hybrid_authority_current_main_sync`.
+
+## Source-Directory Package Supersession Rendered Proof
+
+Doc: `937-source-supersession-proof.md`.
+
+Status: `source_directory_package_replacement_supersession_rendered_path_branch_local_implemented`.
+
+Predecessor current-main sync doc: `936-hybrid-authority-current-main-sync.md`.
+
+Implementation branch: `codex/l3-source-supersession-proof`.
+
+Base authority: `project6-origin/main` at `2c46c06c62d2b7359c7971b2b5e2c99007783ed2`.
+
+Implemented boundary: the rendered source-directory hybrid middle-lifecycle flow now populates the existing package supersession preview authority after package-review submit, and the focused rendered E2E clicks the package supersession preview, replacement package-set authority, and package supersession commit controls in the bounded source-directory path.
+
+Backend authority bridge: package supersession preview now accepts persisted hybrid package-commit reconciliation authority without weakening the existing non-hybrid qualitative lifecycle path; replacement package-set authority and package supersession commit derive their source package set and preview hashes from server-owned reconciliation/package rows.
+
+Proof summary: static JS check passed; page pytest passed `16 passed`; focused source-directory qualitative lifecycle pytest passed; focused hybrid vector/package lifecycle pytest passed; headed and headless Chromium focused source-directory E2E each passed `1 passed`.
+
+Runtime behavior introduced by this implementation: `true`. Rendered behavior introduced by this implementation: `true`. Backend behavior introduced by this implementation: `true`. Route/API/DTO/model/migration/service behavior introduced by this implementation: `true` for service behavior only, `false` for new route/API/DTO/model/migration. Executable test behavior introduced by this implementation: `true`. Production UI behavior introduced by this implementation: `true` through existing rendered controls and existing route contracts.
+
+Frontend-only durable authority enabled by this implementation: `false`. Full mockup program activation selected now: `false`.
+
+Non-admitted: model/migration changes, new package mutation routes, package payload rewrite, source package row mutation, provider-private signed URL runtime, provider-public URL runtime, external object-store behavior, public proxy behavior, connector dispatch, destination write, caller-supplied webhook destination authority, source expansion, broader RAG/model/provider behavior, hidden LLM planning, auth/security expansion, browser-storage authority, frontend-only durable authority, and full mockup activation.
+
+Next exact posture: `publish_and_settle_source_directory_package_replacement_supersession_rendered_proof_pr`.

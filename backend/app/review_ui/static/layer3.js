@@ -10874,6 +10874,38 @@ function sourceDirectoryHybridMiddleLifecycleDeliveryAuthority(
     };
 }
 
+function sourceDirectoryHybridPackageSupersessionPreviewAuthority(
+    packet,
+    analysis,
+    commit,
+    submit,
+) {
+    return {
+        analysis_question: packet.analysis_question,
+        analysis_focus: packet.analysis_focus,
+        material_snapshot_id: packet.material_snapshot_id,
+        source_ingestion_batch_id: packet.source_ingestion_batch_id,
+        source_ingestion_file_id: packet.source_ingestion_file_id,
+        content_sha256: packet.content_sha256,
+        file_identity_hash: packet.file_identity_hash,
+        authority_basis_hash: packet.authority_basis_hash,
+        payload_hash: packet.payload_hash,
+        index_authority_hash: packet.index_authority_hash,
+        query_text: packet.query_text,
+        limit: packet.limit,
+        offset: packet.offset,
+        qualitative_analysis_hash: analysis.qualitative_analysis_hash,
+        source_directory_package_review_preview_hash: analysis.source_directory_hybrid_package_review_preview_hash,
+        construction_basis_hash: commit.construction_basis_hash,
+        reconciliation_record_id: commit.reconciliation_record_id,
+        output_package_ids: commit.output_package_ids,
+        package_kinds: commit.package_kinds,
+        payload_hashes: commit.payload_hashes,
+        package_review_submit_record_ref: submit.submit_record_ref,
+        package_review_state: submit.package_review_state,
+    };
+}
+
 function canSubmitSourceDirectoryHybridMiddleLifecycle() {
     return Boolean(
         sourceDirectoryHybridMiddleLifecycleAuthorityPacketOrNull()
@@ -12205,6 +12237,9 @@ async function submitSourceDirectoryHybridMiddleLifecycle(event) {
     State.sourceDirectoryHybridInternalWebhookStatusError = null;
     elements.sourceDirectoryHybridExternalExportDownloadDeliveryAuthority.value = '';
     elements.sourceDirectoryHybridInternalWebhookAuthority.value = '';
+    elements.sourceDirectoryPackageSupersessionPreviewAuthority.value = '';
+    clearSourceDirectoryPackageSupersessionPreviewState();
+    clearReplacementPackageSetAuthorityState();
     renderAll();
     setBusy(elements.sourceDirectoryHybridMiddleLifecycleSubmit, true, 'Prepare Hybrid Handoff');
     try {
@@ -12255,6 +12290,17 @@ async function submitSourceDirectoryHybridMiddleLifecycle(event) {
             SOURCE_DIRECTORY_HYBRID_PACKAGE_REVIEW_SUBMIT_PATH,
             packageReviewSubmitPayload,
         );
+        const sourceDirectoryPackageSupersessionAuthority = sourceDirectoryHybridPackageSupersessionPreviewAuthority(
+            packet,
+            analysis,
+            packageCommit,
+            packageReviewSubmit,
+        );
+        elements.sourceDirectoryPackageSupersessionPreviewAuthority.value = JSON.stringify(
+            sourceDirectoryPackageSupersessionAuthority,
+            null,
+            2,
+        );
         const handoffExportPreparePayload = {
             ...packageReviewSubmitPayload,
             client_request_id: requestId('source-directory-hybrid-middle-lifecycle-handoff-prepare'),
@@ -12300,6 +12346,7 @@ async function submitSourceDirectoryHybridMiddleLifecycle(event) {
             analysisStatus,
             packageCommit,
             packageReviewSubmit,
+            sourceDirectoryPackageSupersessionAuthority,
             handoffExportPrepare,
             externalExportDownloadPrepare,
             deliveryAuthority,
