@@ -12139,7 +12139,7 @@ async function prepareSourceDirectoryHybridAuthority(event) {
     State.sourceDirectoryHybridAuthorityPreparePending = true;
     clearSourceDirectoryHybridAuthorityState({ sourceSessionId: payload.session_id });
     renderAll();
-    setBusy(elements.sourceDirectoryHybridAuthorityPrepare, true, 'Prepare Hybrid Authority');
+    setBusy(elements.sourceDirectoryHybridAuthorityPrepare, true, 'Prepare Hybrid Packet');
     try {
         const authority = await postJson(SOURCE_DIRECTORY_HYBRID_AUTHORITY_PREPARE_PATH, payload);
         State.sourceDirectoryHybridAuthorityPrepare = authority;
@@ -12169,7 +12169,7 @@ async function prepareSourceDirectoryHybridAuthority(event) {
         renderAll();
     } finally {
         State.sourceDirectoryHybridAuthorityPreparePending = false;
-        setBusy(elements.sourceDirectoryHybridAuthorityPrepare, false, 'Prepare Hybrid Authority');
+        setBusy(elements.sourceDirectoryHybridAuthorityPrepare, false, 'Prepare Hybrid Packet');
         renderAll();
     }
 }
