@@ -30,6 +30,7 @@ CANDIDATE_B_RUN_ID = "candidate-b-runtime-run"
 READY_SCOPE = "candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only"
 READY_REGRESSION = "no_unacceptable_regression_against_baseline_and_candidate_a"
 READY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit"
+VISUAL_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 FULL_COVERAGE = [
     "source_directory_scan",
@@ -333,6 +334,16 @@ def _visual_lane_status_evidence(runtime_receipt_id: str) -> dict[str, Any]:
     }
 
 
+def _visual_lane_status_request(runtime_receipt_id: str) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-visual-lane-status",
+        "status_mode": "candidate_b_visual_lane_status_v1",
+        "operator_decision": "inspect_candidate_b_visual_lane_evidence_status",
+        "candidate_b_run_id": CANDIDATE_B_RUN_ID,
+        "bridge_receipt_id": runtime_receipt_id,
+    }
+
+
 def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
     return {
         "client_request_id": "candidate-b-default-readiness-001",
@@ -413,6 +424,35 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
         "monitor_candidate_b_default_selector",
         "use_explicit_baseline_document_processing_engine_for_rollback",
     ]
+    assert str(tmp_path) not in json.dumps(body, sort_keys=True)
+
+
+def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_visual_lane_status_evidence"] = visual_status_response.json()
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "ready"
+    assert body["candidate_b_default_promotion_enabled"] is True
+    assert (
+        body["candidate_b_visual_lane_status_evidence"]["bridge_receipt_hash"]
+        == visual_status_response.json()["bridge_receipt_hash"]
+    )
+    assert (
+        body["candidate_b_visual_lane_status_evidence"]["candidate_b_visual_lane_status_projection_visible"]
+        is True
+    )
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
 
 
