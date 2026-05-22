@@ -7738,6 +7738,37 @@ test('Layer 3 workbench renders authority matrix as a read-only bootstrap review
   ]);
 });
 
+test('Layer 3 workbench renders Candidate B default-promotion status contract without route calls', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  const bootstrapResponsePromise = page.waitForResponse((response) => response.url().includes('/api/v1/layer3/bootstrap'));
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const bootstrap = await expectJson(await bootstrapResponsePromise);
+
+  const readiness = bootstrap.execution_readiness || {};
+  expect(readiness.candidate_b_default_promotion_operator_status_admitted).toBe(true);
+  expect(readiness.candidate_b_default_promotion_final_proof_status_admitted).toBe(true);
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_candidate_b_default_promotion_read_only_status_surface');
+  await expect(panel).toHaveAttribute('data-status-state', 'candidate_b_default_promotion_status_contract_visible');
+  await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(panel).toContainText('operator_reviews_candidate_b_default_promotion_status_without_selector_mutation_or_dispatch');
+  await expect(panel).toContainText('State.bootstrap.execution_readiness');
+  await expect(panel).toContainText('candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only');
+  await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status');
+  await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status');
+  await expect(panel).toContainText('baseline rollback preserved');
+  await expect(panel).toContainText('selector mutation from this panel');
+  await expect(panel).toContainText('frontend durable authority');
+  await expect(panel.locator('button,input,select,textarea')).toHaveCount(0);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    '/source/ingestion/candidate-b/default-promotion/operator-status',
+    '/source/ingestion/candidate-b/default-promotion/closure-evidence',
+    '/source/ingestion/candidate-b/default-promotion/readiness-audit',
+    '/source/ingestion/candidate-b/default-promotion/final-proof',
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });

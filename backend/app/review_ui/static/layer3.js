@@ -313,6 +313,9 @@ const LAYER3_E2E_GOVERNANCE_LIFECYCLE_RESPONSE_AUTHORITY = 'existing_server_resp
 const AUTHORITY_MATRIX_REVIEW_RENDERED_MODE = 'rendered_authority_matrix_read_only_review_surface';
 const AUTHORITY_MATRIX_REVIEW_USE_CASE = 'operator_reviews_exposed_layer3_authority_matrix_in_rendered_review_surface_without_mutation_or_dispatch';
 const AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_matrix_contract';
+const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_read_only_status_surface';
+const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_USE_CASE = 'operator_reviews_candidate_b_default_promotion_status_without_selector_mutation_or_dispatch';
+const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY = 'State.bootstrap.execution_readiness';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
@@ -445,6 +448,7 @@ const elements = {
     themeSelector: document.getElementById('theme-selector'),
     authorityRail: document.getElementById('authority-rail'),
     authorityMatrixReviewPanel: document.getElementById('authority-matrix-review-panel'),
+    candidateBDefaultPromotionStatusPanel: document.getElementById('candidate-b-default-promotion-status-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
@@ -7419,6 +7423,110 @@ function renderAuthorityMatrixReviewPanel() {
     `;
 }
 
+function candidateBDefaultPromotionReadinessContract() {
+    const contract = State.bootstrap?.execution_readiness;
+    if (!contract || typeof contract !== 'object') return null;
+    if (contract.candidate_b_default_promotion_selector_scope !== 'candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only') return null;
+    return contract;
+}
+
+function candidateBDefaultPromotionStatusState(contract) {
+    if (!State.bootstrap) return { label: 'candidate_b_default_promotion_bootstrap_pending', pill: 'preview' };
+    if (!contract) return { label: 'candidate_b_default_promotion_contract_unavailable', pill: 'blocked' };
+    const required = [
+        'candidate_b_bundle_material_bridge_admitted',
+        'candidate_b_runtime_material_bridge_admitted',
+        'candidate_b_artifact_family_status_admitted',
+        'candidate_b_visual_lane_status_admitted',
+        'candidate_b_bundle_downstream_proof_admitted',
+        'candidate_b_runtime_downstream_proof_admitted',
+        'candidate_b_default_promotion_operator_status_admitted',
+        'candidate_b_default_promotion_closure_evidence_admitted',
+        'candidate_b_default_promotion_readiness_audit_admitted',
+        'candidate_b_default_promotion_final_proof_admitted',
+        'candidate_b_default_promotion_final_proof_status_admitted',
+        'candidate_b_default_promotion_selector_switch_admitted',
+    ];
+    const missing = required.filter((field) => contract[field] !== true);
+    if (missing.length) {
+        return { label: 'candidate_b_default_promotion_contract_incomplete', pill: 'blocked', missing };
+    }
+    return { label: 'candidate_b_default_promotion_status_contract_visible', pill: 'ok', missing: [] };
+}
+
+function renderCandidateBDefaultPromotionStatusPanel() {
+    if (!elements.candidateBDefaultPromotionStatusPanel) return;
+    const contract = candidateBDefaultPromotionReadinessContract();
+    const panelState = candidateBDefaultPromotionStatusState(contract);
+    const blockedScope = [
+        'frontend_durable_authority',
+        'raw_url_or_local_path_exposure',
+        'provider_object_write',
+        'connector_dispatch',
+        'rag_vector_model_runtime',
+        'full_mockup_activation',
+    ];
+    elements.candidateBDefaultPromotionStatusPanel.dataset.statusState = panelState.label;
+    elements.candidateBDefaultPromotionStatusPanel.dataset.frontendDurableAuthority = 'false';
+    elements.candidateBDefaultPromotionStatusPanel.innerHTML = `
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Candidate B</p>
+                <h2>Default-promotion status contract</h2>
+            </div>
+            <span class="status-pill ${escapeHtml(panelState.pill)}">${escapeHtml(panelState.label)}</span>
+        </div>
+        <div class="result-review-grid candidate-b-default-promotion-status-grid">
+            <section class="result-review-card">
+                <strong>Rendered Authority</strong>
+                <ul>
+                    ${fieldItem('use case', CANDIDATE_B_DEFAULT_PROMOTION_STATUS_USE_CASE, { code: true })}
+                    ${fieldItem('rendered mode', CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RENDERED_MODE, { code: true })}
+                    ${fieldItem('response authority', CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY, { code: true })}
+                    ${fieldItem('schema id', contract?.schema_id, { code: true })}
+                    ${fieldItem('eligible scope', contract?.candidate_b_default_promotion_selector_scope, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Bridge And Evidence Receipts</strong>
+                <ul>
+                    ${fieldItem('bundle bridge', contract?.candidate_b_bundle_material_bridge_endpoint, { code: true })}
+                    ${fieldItem('runtime bridge', contract?.candidate_b_runtime_material_bridge_endpoint, { code: true })}
+                    ${fieldItem('artifact status', contract?.candidate_b_artifact_family_status_endpoint, { code: true })}
+                    ${fieldItem('visual lane status', contract?.candidate_b_visual_lane_status_endpoint, { code: true })}
+                    ${fieldItem('bundle downstream proof', contract?.candidate_b_bundle_downstream_proof_endpoint, { code: true })}
+                    ${fieldItem('runtime downstream proof', contract?.candidate_b_runtime_downstream_proof_endpoint, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Promotion Closure</strong>
+                <ul>
+                    ${fieldItem('operator status', contract?.candidate_b_default_promotion_operator_status_endpoint, { code: true })}
+                    ${fieldItem('closure evidence', contract?.candidate_b_default_promotion_closure_evidence_endpoint, { code: true })}
+                    ${fieldItem('readiness audit', contract?.candidate_b_default_promotion_readiness_audit_endpoint, { code: true })}
+                    ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
+                    ${fieldItem('final proof status', contract?.candidate_b_default_promotion_final_proof_status_endpoint, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card candidate-b-default-promotion-status-rows">
+                <strong>Selector Guardrails</strong>
+                <ul>
+                    ${fieldItem('eligible PDF default admitted', contract?.candidate_b_default_promotion_selector_switch_admitted)}
+                    ${fieldItem('baseline rollback preserved', true)}
+                    ${fieldItem('Candidate A semantics changed', false)}
+                    ${fieldItem('visual lane implicit', false)}
+                    ${fieldItem('selector mutation from this panel', false)}
+                    ${fieldItem('frontend durable authority', false)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Adjacent Behavior</strong>
+                <div class="downstream-locks">${renderDownstreamLocks(blockedScope)}</div>
+            </section>
+        </div>
+    `;
+}
+
 function mockupActivationReadinessContract() {
     const contract = State.bootstrap?.mockup_activation_readiness;
     if (!contract || typeof contract !== 'object') return null;
@@ -10102,6 +10210,7 @@ function renderAll() {
     renderContext();
     renderMaterialLedger();
     renderAuthorityMatrixReviewPanel();
+    renderCandidateBDefaultPromotionStatusPanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
