@@ -3268,6 +3268,10 @@ class Layer3CandidateBDefaultPromotionOperatorStatusResponse(Layer3BaseResponse)
     runtime_bridge_receipt_hash: str
     candidate_b_visual_lane_status_hash: str
     runtime_downstream_proof_hash: str
+    runtime_delivery_artifact_authority_hash: str
+    runtime_delivery_artifact_coverage_steps: list[str]
+    runtime_delivery_artifact_projection_visible: bool
+    runtime_delivery_artifact_roles_bound: bool
     operator_visible_provenance_status: bool
     bundle_status_projection_visible: bool
     runtime_status_projection_visible: bool
@@ -3372,6 +3376,7 @@ class Layer3CandidateBDefaultPromotionFinalProofResponse(Layer3BaseResponse):
     raw_url_exposed: bool
     provider_private_token_exposed: bool
     artifact_bytes_exposed: bool
+    candidate_b_operator_status_evidence: dict[str, Any]
     candidate_b_final_operator_inspection_evidence: dict[str, Any]
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
@@ -3391,6 +3396,8 @@ class Layer3CandidateBDefaultPromotionFinalProofStatusResponse(Layer3BaseRespons
     default_selector_change_enabled: bool
     rollback_selector: str
     final_operator_inspection_complete: bool
+    operator_status_hash: str
+    candidate_b_operator_status_evidence: dict[str, Any]
     candidate_b_final_operator_inspection_evidence: dict[str, Any]
     selector_mutation_performed: bool
     raw_local_path_exposed: bool

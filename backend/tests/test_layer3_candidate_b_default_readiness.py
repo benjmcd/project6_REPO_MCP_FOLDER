@@ -803,6 +803,25 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
 
 
+def test_candidate_b_operator_delivery_projection_fields_are_declared_in_openapi(client: TestClient) -> None:
+    openapi = client.app.openapi()
+    schemas = openapi["components"]["schemas"]
+    operator_props = schemas["Layer3CandidateBDefaultPromotionOperatorStatusResponse"]["properties"]
+    final_proof_props = schemas["Layer3CandidateBDefaultPromotionFinalProofResponse"]["properties"]
+    final_status_props = schemas["Layer3CandidateBDefaultPromotionFinalProofStatusResponse"]["properties"]
+
+    for field in (
+        "runtime_delivery_artifact_authority_hash",
+        "runtime_delivery_artifact_coverage_steps",
+        "runtime_delivery_artifact_projection_visible",
+        "runtime_delivery_artifact_roles_bound",
+    ):
+        assert field in operator_props
+    assert "candidate_b_operator_status_evidence" in final_proof_props
+    assert "operator_status_hash" in final_status_props
+    assert "candidate_b_operator_status_evidence" in final_status_props
+
+
 def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
     client: TestClient,
     tmp_path: Path,
