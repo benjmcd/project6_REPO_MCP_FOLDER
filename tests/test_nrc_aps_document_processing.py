@@ -348,15 +348,18 @@ class TestNormalizeDocumentProcessingEngine:
 
 
 class TestCandidateBProcessingIntegration:
-    def test_candidate_b_requires_pdf(self):
-        with pytest.raises(ValueError, match="document_processing_engine_requires_pdf"):
-            nrc_aps_document_processing.process_document(
-                content=_fixture_bytes("mismatch_pdf_body.txt"),
-                declared_content_type="text/plain",
-                config={
-                    "document_processing_engine": "candidate_b_opendataloader_pdf",
-                },
-            )
+    def test_candidate_b_non_pdf_fails_closed_to_baseline(self):
+        result = nrc_aps_document_processing.process_document(
+            content=_fixture_bytes("mismatch_pdf_body.txt"),
+            declared_content_type="text/plain",
+            config={
+                "document_processing_engine": "candidate_b_opendataloader_pdf",
+            },
+        )
+
+        assert result["effective_content_type"] == "text/plain"
+        assert result["parser_family"] == "plain_text"
+        assert result["parser_contract_id"] == "aps_plain_text_parser_v1"
 
     def test_candidate_b_requires_artifact_storage_dir(self):
         with pytest.raises(ValueError, match="candidate_b_artifact_storage_dir_required"):

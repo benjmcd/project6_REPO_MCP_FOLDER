@@ -121,6 +121,36 @@ def _normalize_document_processing_engine(value: Any) -> str:
     return processing_engine
 
 
+def _coerce_document_processing_engine_explicit(value: Any) -> bool:
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes", "on", "explicit"}
+    return bool(value)
+
+
+def _document_processing_engine_supplied(config: dict[str, Any]) -> bool:
+    if "document_processing_engine_explicit" in config:
+        return _coerce_document_processing_engine_explicit(config.get("document_processing_engine_explicit"))
+    return bool(str(config.get("document_processing_engine") or "").strip())
+
+
+def _default_document_processing_engine_for_content_type(effective_content_type: Any) -> str:
+    if str(effective_content_type or "").strip().lower() == "application/pdf":
+        return APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+    return APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+
+
+def _resolve_document_processing_engine(config: dict[str, Any], *, effective_content_type: Any) -> str:
+    if _document_processing_engine_supplied(config):
+        processing_engine = _normalize_document_processing_engine(config.get("document_processing_engine"))
+        if (
+            processing_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+            and str(effective_content_type or "").strip().lower() != "application/pdf"
+        ):
+            return APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+        return processing_engine
+    return _default_document_processing_engine_for_content_type(effective_content_type)
+
+
 def _parser_registry_fields(config: dict[str, Any]) -> dict[str, Any]:
     entry = dict(config.get("_parser_registry_entry") or {})
     return {
@@ -299,6 +329,7 @@ def _run_candidate_a_visual_lane(
 
 
 def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[str, Any]:
+    incoming = dict(overrides or {})
     config = {
         "content_sniff_bytes": 4096,
         "content_parse_max_pages": 500,
@@ -328,8 +359,13 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
         "visual_lane_mode": "baseline",
         "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        "document_processing_engine_explicit": False,
     }
-    config.update(dict(overrides or {}))
+    config.update(incoming)
+    if "document_processing_engine_explicit" not in incoming:
+        config["document_processing_engine_explicit"] = bool(
+            str(incoming.get("document_processing_engine") or "").strip()
+        )
     return config
 
 
@@ -371,8 +407,6 @@ def process_document(
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     config = default_processing_config(config)
-    processing_engine = _normalize_document_processing_engine(config.get("document_processing_engine"))
-    config = {**config, "document_processing_engine": processing_engine}
     deadline = _deadline_from_config(config)
     detection = nrc_aps_media_detection.detect_media_type(
         content,
@@ -385,14 +419,38 @@ def process_document(
         raise ValueError(f"unsupported_content_type:{effective_type or 'unknown'}")
     if not content:
         raise ValueError("empty_content")
-    if processing_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B and effective_type != "application/pdf":
-        raise ValueError("document_processing_engine_requires_pdf")
+    processing_engine = _resolve_document_processing_engine(config, effective_content_type=effective_type)
+    processing_engine_explicit = _document_processing_engine_supplied(config)
+    config = {
+        **config,
+        "document_processing_engine": processing_engine,
+        "document_processing_engine_explicit": processing_engine_explicit,
+    }
     parser_entry = nrc_aps_parser_registry.resolve_parser(
         effective_content_type=effective_type,
         document_processing_engine=processing_engine,
         supported_for_processing=detection.get("supported_for_processing"),
     )
-    config = {**config, "_parser_registry_entry": parser_entry}
+    if (
+        parser_entry.get("parser_admission_status") != nrc_aps_parser_registry.APS_PARSER_ADMISSION_STATUS_ADMITTED
+        and processing_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+        and not processing_engine_explicit
+    ):
+        failure_code = str(parser_entry.get("parser_failure_code") or effective_type or "unknown")
+        processing_engine = APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+        parser_entry = nrc_aps_parser_registry.resolve_parser(
+            effective_content_type=effective_type,
+            document_processing_engine=processing_engine,
+            supported_for_processing=detection.get("supported_for_processing"),
+        )
+        config = {
+            **config,
+            "document_processing_engine": processing_engine,
+            "candidate_b_default_fallback_reason": f"parser_admission:{failure_code}",
+            "_parser_registry_entry": parser_entry,
+        }
+    else:
+        config = {**config, "_parser_registry_entry": parser_entry}
     if parser_entry.get("parser_admission_status") != nrc_aps_parser_registry.APS_PARSER_ADMISSION_STATUS_ADMITTED:
         failure_code = str(parser_entry.get("parser_failure_code") or effective_type or "unknown")
         raise ValueError(f"unsupported_parser:{failure_code}")
@@ -409,7 +467,23 @@ def process_document(
         return _process_plain_text(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type == "application/pdf":
         if processing_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B:
-            return _process_pdf_candidate_b(content=content, detection=detection, config=config, deadline=deadline)
+            try:
+                return _process_pdf_candidate_b(content=content, detection=detection, config=config, deadline=deadline)
+            except ValueError as exc:
+                if processing_engine_explicit:
+                    raise
+                fallback_config = {
+                    **config,
+                    "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+                    "candidate_b_default_fallback_reason": str(exc),
+                }
+                fallback_parser_entry = nrc_aps_parser_registry.resolve_parser(
+                    effective_content_type=effective_type,
+                    document_processing_engine=APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+                    supported_for_processing=detection.get("supported_for_processing"),
+                )
+                fallback_config = {**fallback_config, "_parser_registry_entry": fallback_parser_entry}
+                return _process_pdf(content=content, detection=detection, config=fallback_config, deadline=deadline)
         return _process_pdf(content=content, detection=detection, config=config, deadline=deadline)
     if effective_type in APS_IMAGE_CONTENT_TYPES:
         return _process_image(content=content, detection=detection, config=config, deadline=deadline)
@@ -975,7 +1049,12 @@ def _process_zip(
                     member_result = process_document(
                         content=member_content,
                         declared_content_type=inner_declared,
-                        config={**config, "source_filename": member.filename}
+                        config={
+                            **config,
+                            "source_filename": member.filename,
+                            "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+                            "document_processing_engine_explicit": True,
+                        },
                     )
                     # Merge units
                     for unit in member_result.get("ordered_units", []):
