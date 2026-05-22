@@ -32,6 +32,7 @@ from app.services import (
     layer3_server_owned_local_outbox_target,
     layer3_server_owned_local_outbox_write,
     layer3_candidate_b_bundle_bridge,
+    layer3_candidate_b_artifact_status,
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_runtime_bridge,
     layer3_source_directory_ingestion,
@@ -130,6 +131,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     approved_plan_cancel_endpoint: str
     candidate_b_bundle_material_bridge_admitted: bool
     candidate_b_bundle_material_bridge_endpoint: str
+    candidate_b_artifact_family_status_admitted: bool
+    candidate_b_artifact_family_status_endpoint: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
@@ -2614,6 +2617,16 @@ class Layer3CandidateBRuntimeMaterialBridgeRequest(BaseModel):
     operator_confirmation: bool
 
 
+class Layer3CandidateBArtifactFamilyStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["candidate_b_retained_artifact_family_status_v1"]
+    operator_decision: Literal["inspect_candidate_b_governed_retained_artifact_family_status"]
+    candidate_b_source_kind: Literal["bundle", "runtime"]
+    bridge_receipt_id: str = Field(min_length=1)
+
+
 class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3042,6 +3055,21 @@ class Layer3CandidateBRuntimeMaterialBridgeResponse(Layer3BaseResponse):
     layer3_material_preview_compatible: bool
     gate_b_material_authority_compatible: bool
     layer3_compatibility: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBArtifactFamilyStatusResponse(Layer3BaseResponse):
+    mode: str
+    candidate_b_source_kind: str
+    bridge_receipt_id: str
+    bridge_receipt_ref: str
+    bridge_receipt_hash: str
+    governed_retained_artifact_family_hash: str
+    artifact_family_status: str
+    governed_retained_artifact_family: dict[str, Any]
+    operator_projection: dict[str, Any]
+    material_text_payload_policy: str | None
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -8618,6 +8646,22 @@ def post_candidate_b_runtime_material_bridge(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_runtime_bridge.CandidateBRuntimeBridgeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/artifact-family/status",
+    response_model=Layer3CandidateBArtifactFamilyStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_artifact_family_status(
+    payload: Layer3CandidateBArtifactFamilyStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_artifact_status.candidate_b_retained_artifact_family_status(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_artifact_status.CandidateBArtifactStatusError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
