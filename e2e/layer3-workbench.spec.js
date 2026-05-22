@@ -11483,6 +11483,44 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
   await expect(page.locator('#provider-private-signed-url-revoke')).toBeEnabled();
 
+  await page.evaluate((staleCommitBasisHash) => {
+    State.packageSupersessionCommit = {
+      ...State.packageSupersessionCommit,
+      commit_basis_hash: staleCommitBasisHash,
+    };
+    renderAll();
+  }, '0'.repeat(64));
+  const sourcePackageProviderPrivateStaleStatusRequestPromise = waitForPostRequest(sourcePackageProviderPrivateStatusPath);
+  const sourcePackageProviderPrivateStaleStatusResponsePromise = waitForPostResponse(sourcePackageProviderPrivateStatusPath);
+  await page.locator('#provider-private-signed-url-status').click();
+  const sourcePackageProviderPrivateStaleStatusPayload = (await sourcePackageProviderPrivateStaleStatusRequestPromise).postDataJSON();
+  const sourcePackageProviderPrivateStaleStatus = await expectJsonStatus(
+    await sourcePackageProviderPrivateStaleStatusResponsePromise,
+    409,
+  );
+  expectOnlyPayloadKeys(sourcePackageProviderPrivateStaleStatusPayload, sourcePackageProviderPrivateLifecyclePayloadKeys);
+  expect(sourcePackageProviderPrivateStaleStatusPayload.package_supersession_commit_basis_hash).toBe('0'.repeat(64));
+  expect(sourcePackageProviderPrivateStaleStatusPayload.provider_signed_url_receipt_id).toBe(
+    sourcePackageProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expect(sourcePackageProviderPrivateStaleStatusPayload.operator_decision).toBe(
+    'inspect_source_directory_package_supersession_provider_private_signed_url_status',
+  );
+  expectNoForbiddenPayloadKeys(sourcePackageProviderPrivateStaleStatusPayload);
+  expect(sourcePackageProviderPrivateStaleStatus.error_code).toBe(
+    'source_directory_package_supersession_provider_private_package_supersession_commit_basis_hash_mismatch',
+  );
+  await expect(providerPrivatePanel).toContainText(
+    'source_directory_package_supersession_provider_private_package_supersession_commit_basis_hash_mismatch',
+  );
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
+  await page.evaluate((commit) => {
+    State.packageSupersessionCommit = commit;
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+  }, sourceSupersessionCommit);
+
   const sourcePackageProviderPrivateStatusRequestPromise = waitForPostRequest(sourcePackageProviderPrivateStatusPath);
   const sourcePackageProviderPrivateStatusResponsePromise = waitForPostResponse(sourcePackageProviderPrivateStatusPath);
   await page.locator('#provider-private-signed-url-status').click();
@@ -11873,7 +11911,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceReplacementAuthorityPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceSupersessionCommitPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivatePreparePath)).toHaveLength(1);
-  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateStatusPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateStatusPath)).toHaveLength(2);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateUsePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateRevokePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
@@ -11910,6 +11948,14 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
-  expect(consoleErrors).toEqual([]);
+  const expectedStaleAuthorityConsoleErrors = consoleErrors.filter((message) => (
+    message.includes('Failed to load resource')
+    && message.includes('409 (Conflict)')
+  ));
+  expect(expectedStaleAuthorityConsoleErrors).toHaveLength(1);
+  expect(consoleErrors.filter((message) => !(
+    message.includes('Failed to load resource')
+    && message.includes('409 (Conflict)')
+  ))).toEqual([]);
   expect(pageErrors).toEqual([]);
 });
