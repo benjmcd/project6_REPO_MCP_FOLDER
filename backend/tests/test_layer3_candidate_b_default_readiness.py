@@ -275,6 +275,64 @@ def _proof(kind: str, receipt_id: str, *, coverage: list[str] | None = None) -> 
     }
 
 
+def _visual_lane_status_evidence(runtime_receipt_id: str) -> dict[str, Any]:
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    visual_evidence = dict(receipt["candidate_b_visual_lane_evidence"])
+    return {
+        "schema_id": "layer3.candidate_b_visual_lane_status.v1",
+        "schema_version": 1,
+        "request_id": "candidate-b-visual-lane-status",
+        "server_time": "2026-05-22T00:00:00Z",
+        "status": "available",
+        "mode": "candidate_b_visual_lane_status_v1",
+        "candidate_b_source_kind": "runtime",
+        "candidate_b_run_id": CANDIDATE_B_RUN_ID,
+        "bridge_receipt_id": runtime_receipt_id,
+        "bridge_receipt_ref": f"candidate-b-runtime-bridge://{runtime_receipt_id}/receipt.json",
+        "bridge_receipt_hash": receipt["bridge_receipt_hash"],
+        "document_processing_engine": "candidate_b_opendataloader_pdf",
+        "visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
+        "visual_lane_status": "available",
+        "candidate_b_visual_lane_evidence": visual_evidence,
+        "operator_projection": {
+            "candidate_b_visual_lane_status_projection_visible": True,
+            "candidate_b_visual_lane_selected": True,
+            "visual_ref_total": int(visual_evidence.get("visual_ref_total") or 0),
+            "candidate_b_visual_ref_total": int(visual_evidence.get("candidate_b_visual_ref_total") or 0),
+            "candidate_b_retained_source_pdf_ref_count": int(
+                visual_evidence.get("candidate_b_retained_source_pdf_ref_count") or 0
+            ),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "artifact_bytes_exposed": False,
+        },
+        "material_policy": {
+            "source_pdf_material_text_payload_enabled": False,
+            "image_material_text_payload_enabled": False,
+            "visual_lane_material_ingestion_enabled": False,
+        },
+        "negative_invariants": {
+            "baseline_default_changed": False,
+            "candidate_a_semantics_changed": False,
+            "candidate_b_default_promotion_enabled": False,
+            "candidate_b_visual_lane_material_ingestion_enabled": False,
+            "source_pdf_material_text_payload_enabled": False,
+            "image_material_text_payload_enabled": False,
+            "raw_url_exposure_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+        },
+        "next_allowed_actions": [
+            "use this status as Candidate B visual-lane operator projection evidence",
+            "run Candidate B default-promotion readiness audit after downstream proof is current",
+        ],
+    }
+
+
 def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
     return {
         "client_request_id": "candidate-b-default-readiness-001",
@@ -291,11 +349,11 @@ def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
         "operator_confirmation": True,
         "bundle_downstream_proof": _proof("bundle", bundle_receipt_id),
         "runtime_downstream_proof": _proof("runtime", runtime_receipt_id),
+        "candidate_b_visual_lane_status_evidence": _visual_lane_status_evidence(runtime_receipt_id),
         "operator_status_evidence": {
             "operator_visible_provenance_status": True,
             "bundle_status_projection_visible": True,
             "runtime_status_projection_visible": True,
-            "candidate_b_visual_lane_status_projection_visible": True,
             "default_selector_change_visible_as_enabled": True,
             "raw_local_path_exposed": False,
             "provider_private_token_exposed": False,
@@ -337,7 +395,13 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert body["authority_hashes"]["runtime"]["governed_retained_artifact_family_hash"]
     assert body["downstream_proofs"]["runtime"]["visual_lane_mode_enabled"] is True
     assert body["downstream_proofs"]["runtime"]["visual_lane_mode"] == CANDIDATE_B_VISUAL_LANE_MODE
-    assert body["operator_status_evidence"]["candidate_b_visual_lane_status_projection_visible"] is True
+    assert (
+        body["candidate_b_visual_lane_status_evidence"]["candidate_b_visual_lane_status_projection_visible"]
+        is True
+    )
+    assert body["candidate_b_visual_lane_status_evidence"]["bridge_receipt_id"] == runtime_receipt_id
+    assert body["candidate_b_visual_lane_status_evidence"]["visual_lane_mode"] == CANDIDATE_B_VISUAL_LANE_MODE
+    assert body["candidate_b_visual_lane_status_evidence"]["status_hash"]
     assert body["default_selector_change_enabled"] is True
     assert body["candidate_b_default_promotion_enabled"] is True
     assert body["negative_invariants"]["candidate_b_visual_lane_mode_enabled"] is True
@@ -354,7 +418,9 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
 
 def test_candidate_b_default_readiness_blocks_missing_runtime_receipt(client: TestClient) -> None:
     bundle_receipt_id = _write_bundle_receipt()
-    payload = _payload(bundle_receipt_id, "cb-runtime-l3-missing")
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_runtime_bridge_receipt_id"] = "cb-runtime-l3-missing"
     payload["runtime_downstream_proof"] = _proof("runtime", "cb-runtime-l3-missing")
 
     response = client.post(READY_ENDPOINT, json=payload)
@@ -417,6 +483,49 @@ def test_candidate_b_default_readiness_blocks_runtime_proof_without_visual_lane(
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_default_readiness_runtime_downstream_visual_lane_mode_not_enabled" in codes
     assert "candidate_b_default_readiness_runtime_downstream_visual_lane_mode_mismatch" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_default_readiness_blocks_missing_visual_lane_status_evidence(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload.pop("candidate_b_visual_lane_status_evidence")
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 422, response.text
+
+
+def test_candidate_b_default_readiness_blocks_stale_visual_lane_status_evidence(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_visual_lane_status_evidence"]["bridge_receipt_hash"] = "9" * 64
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_visual_lane_status_bridge_receipt_hash_mismatch" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_default_readiness_blocks_visual_lane_status_projection_exposure(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_visual_lane_status_evidence"]["operator_projection"]["raw_url_exposed"] = True
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_visual_lane_status_raw_url_exposed_not_false" in codes
     assert body["candidate_b_default_promotion_enabled"] is False
 
 
