@@ -144,6 +144,8 @@ def prepare_candidate_b_runtime_material_bridge(
     baseline_run_id = _required(fields, "baseline_run_id")
     candidate_a_run_id = _required(fields, "candidate_a_run_id")
     binding = _candidate_b_runtime_binding(candidate_b_run_id)
+    runtime_validation = _runtime_validation(binding)
+    visual_lane_mode = str(runtime_validation.get("visual_lane_mode") or "baseline")
     compare_target_set = _load_compare_target_set(
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
@@ -176,6 +178,7 @@ def prepare_candidate_b_runtime_material_bridge(
         "candidate_a_run_id": candidate_a_run_id,
         "candidate_b_source_kind": "runtime",
         "document_processing_engine": CANDIDATE_B_RUNTIME_VARIANT,
+        "visual_lane_mode": visual_lane_mode,
         "compare_target_set_hash": compare_target_set["compare_target_set_hash"],
         "runtime_review_root_storage_authority_hash": runtime_authority_hash,
         "admitted_file_subset_hash": admitted_file_subset_hash,
@@ -190,7 +193,8 @@ def prepare_candidate_b_runtime_material_bridge(
         **receipt_input,
         "bridge_receipt_id": bridge_receipt_id,
         "bridge_receipt_hash": bridge_receipt_hash,
-        "candidate_b_runtime_validation": _runtime_validation(binding),
+        "candidate_b_runtime_validation": runtime_validation,
+        "candidate_b_visual_lane_evidence": _candidate_b_visual_lane_evidence(binding),
         "compare_target_set": compare_target_set,
         "admitted_artifact_subset": _admitted_subset_summary(curated_files),
         "excluded_artifact_subset": _excluded_artifact_summary(binding),
@@ -201,12 +205,13 @@ def prepare_candidate_b_runtime_material_bridge(
             "baseline_run_id": baseline_run_id,
             "candidate_a_run_id": candidate_a_run_id,
             "document_processing_engine": CANDIDATE_B_RUNTIME_VARIANT,
+            "visual_lane_mode": visual_lane_mode,
             "source_labels_redacted": True,
             "absolute_paths_redacted": True,
             "raw_url_exposure_enabled": False,
         },
         "layer3_compatibility": _layer3_compatibility_summary(),
-        "negative_invariants": _negative_invariants(),
+        "negative_invariants": _negative_invariants(visual_lane_mode=visual_lane_mode),
     }
 
     response_status = _write_bridge_receipt(
@@ -514,6 +519,26 @@ def _runtime_validation(binding: ReviewRuntimeBinding) -> dict[str, Any]:
     }
 
 
+def _candidate_b_visual_lane_evidence(binding: ReviewRuntimeBinding) -> dict[str, Any]:
+    metadata = runtime_binding_request_metadata(binding)
+    visual_lane_mode = str(metadata.get("visual_lane_mode") or "baseline").strip().lower() or "baseline"
+    metrics = dict(binding.summary.get("advanced_metrics") or {})
+    candidate_b_visual_lane_selected = visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE
+    return {
+        "visual_lane_mode": visual_lane_mode,
+        "candidate_b_visual_lane_selected": candidate_b_visual_lane_selected,
+        "candidate_b_visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
+        "visual_ref_total": int(metrics.get("visual_ref_total") or 0),
+        "candidate_b_visual_ref_total": int(metrics.get("candidate_b_visual_ref_total") or 0),
+        "candidate_b_retained_source_pdf_ref_count": int(
+            metrics.get("candidate_b_retained_source_pdf_ref_count") or 0
+        ),
+        "source_pdf_material_text_payload_enabled": False,
+        "image_material_text_payload_enabled": False,
+        "evidence_source": "runtime_summary_advanced_metrics",
+    }
+
+
 def _excluded_artifact_summary(binding: ReviewRuntimeBinding) -> dict[str, Any]:
     extension_counts: dict[str, int] = {}
     excluded_refs: list[dict[str, Any]] = []
@@ -613,7 +638,9 @@ def _response(
         "candidate_a_run_id": receipt["candidate_a_run_id"],
         "candidate_b_source_kind": "runtime",
         "document_processing_engine": CANDIDATE_B_RUNTIME_VARIANT,
+        "visual_lane_mode": receipt["visual_lane_mode"],
         "candidate_b_runtime_validation": receipt["candidate_b_runtime_validation"],
+        "candidate_b_visual_lane_evidence": receipt["candidate_b_visual_lane_evidence"],
         "compare_target_set": receipt["compare_target_set"],
         "admitted_artifact_subset": receipt["admitted_artifact_subset"],
         "excluded_artifact_subset": receipt["excluded_artifact_subset"],
@@ -663,11 +690,12 @@ def _layer3_compatibility_summary() -> dict[str, Any]:
     }
 
 
-def _negative_invariants() -> dict[str, bool]:
+def _negative_invariants(*, visual_lane_mode: str = "baseline") -> dict[str, bool]:
     return {
         "baseline_default_changed": False,
         "candidate_a_semantics_changed": False,
-        "candidate_b_visual_lane_mode_enabled": False,
+        "candidate_b_visual_lane_mode_enabled": visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE,
+        "candidate_b_visual_lane_material_ingestion_enabled": False,
         "candidate_b_default_promotion_enabled": False,
         "candidate_b_bundle_bridge_weakened": False,
         "pdf_ingestion_enabled": False,

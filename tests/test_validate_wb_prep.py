@@ -272,7 +272,7 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
     candidate_b_binding = _make_binding(
         checkout_root,
         run_id="candidate-b-runtime-001",
-        visual_lane_mode="baseline",
+        visual_lane_mode="candidate_b_opendataloader_page_evidence_v1",
         document_processing_engine="candidate_b_opendataloader_pdf",
     )
 
@@ -326,6 +326,14 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
     assert payload["sources_snapshot"]["candidate_b_runtime_runs"][0]["review_root"].startswith(
         "backend/app/storage_test_runtime/"
     )
+    assert (
+        payload["sources_snapshot"]["candidate_b_runtime_runs"][0]["visual_lane_mode"]
+        == "candidate_b_opendataloader_page_evidence_v1"
+    )
+    assert (
+        payload["sources_snapshot"]["candidate_b_runtime_runs"][0]["document_processing_engine"]
+        == "candidate_b_opendataloader_pdf"
+    )
     expected_python = validate_wb_prep._command_path(
         validate_wb_prep.EXPECTED_INTERPRETER,
         checkout_root=checkout_root,
@@ -352,6 +360,11 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
         expected_python,
         ".\\tools\\seed_wb_compare.py",
     ]
+    candidate_b_seed_command = payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][2]["argv"]
+    assert "--document-processing-engine" in candidate_b_seed_command
+    assert "candidate_b_opendataloader_pdf" in candidate_b_seed_command
+    assert "--visual-lane-mode" in candidate_b_seed_command
+    assert "candidate_b_opendataloader_page_evidence_v1" in candidate_b_seed_command
     assert payload["operator_handoff"]["rerun_selected_validation"]["copy_paste_ready"] is True
     assert payload["operator_handoff"]["canonical_prep_sequences"]["runtime_source"][-1]["copy_paste_ready"] is True
     assert "not Candidate B Trace parity" in "\n".join(payload["operator_handoff"]["validation_boundaries"])
