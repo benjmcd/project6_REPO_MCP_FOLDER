@@ -1516,7 +1516,7 @@ def test_layer3_source_directory_package_supersession_provider_private_control_i
     ):
         assert required in base_payload_slice
     for required in (
-        "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()",
+        "providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()",
         "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION",
         "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION",
         "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION",
@@ -1524,7 +1524,7 @@ def test_layer3_source_directory_package_supersession_provider_private_control_i
         "provider_signed_url_receipt_id: providerPrivateSignedUrlReceiptId()",
     ):
         assert required in provider_payload_slice
-    assert "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()" in inspect_slice
+    assert "providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()" in inspect_slice
     assert "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()" in controls_slice
     for forbidden in (
         "raw_provider_url",
