@@ -69,6 +69,10 @@ STATUS_HASH_KEYS = (
     "runtime_bridge_receipt_hash",
     "candidate_b_visual_lane_status_hash",
     "runtime_downstream_proof_hash",
+    "runtime_delivery_artifact_authority_hash",
+    "runtime_delivery_artifact_coverage_steps",
+    "runtime_delivery_artifact_projection_visible",
+    "runtime_delivery_artifact_roles_bound",
     "operator_visible_provenance_status",
     "bundle_status_projection_visible",
     "runtime_status_projection_visible",
@@ -188,11 +192,12 @@ def candidate_b_default_promotion_operator_status(payload: Mapping[str, Any]) ->
         runtime_receipt_id=runtime_receipt_id,
         runtime_receipt_hash=runtime_hash,
     )
-    runtime_proof_hash = _validate_runtime_downstream_proof(
+    runtime_delivery_projection = _validate_runtime_downstream_proof(
         fields.get("runtime_downstream_proof"),
         candidate_b_run_id=candidate_b_run_id,
         runtime_receipt_id=runtime_receipt_id,
         runtime_receipt_hash=runtime_hash,
+        retained_artifact_family_hash=str(runtime_receipt.get("governed_retained_artifact_family_hash") or ""),
         visual_status_hash=visual_status_hash,
     )
     status_input = {
@@ -208,7 +213,15 @@ def candidate_b_default_promotion_operator_status(payload: Mapping[str, Any]) ->
         "runtime_bridge_receipt_id": runtime_receipt_id,
         "runtime_bridge_receipt_hash": runtime_hash,
         "candidate_b_visual_lane_status_hash": visual_status_hash,
-        "runtime_downstream_proof_hash": runtime_proof_hash,
+        "runtime_downstream_proof_hash": runtime_delivery_projection["runtime_downstream_proof_hash"],
+        "runtime_delivery_artifact_authority_hash": runtime_delivery_projection[
+            "runtime_delivery_artifact_authority_hash"
+        ],
+        "runtime_delivery_artifact_coverage_steps": runtime_delivery_projection[
+            "runtime_delivery_artifact_coverage_steps"
+        ],
+        "runtime_delivery_artifact_projection_visible": True,
+        "runtime_delivery_artifact_roles_bound": True,
         "operator_visible_provenance_status": True,
         "bundle_status_projection_visible": True,
         "runtime_status_projection_visible": True,
@@ -439,8 +452,9 @@ def _validate_runtime_downstream_proof(
     candidate_b_run_id: str,
     runtime_receipt_id: str,
     runtime_receipt_hash: str,
+    retained_artifact_family_hash: str,
     visual_status_hash: str,
-) -> str:
+) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise CandidateBOperatorStatusError(
             "candidate_b_operator_status_runtime_downstream_proof_missing",
@@ -478,7 +492,61 @@ def _validate_runtime_downstream_proof(
             details={"expected": expected_hash, "received": value.get("proof_hash")},
         )
     _validate_runtime_downstream_proof_receipt(runtime_receipt_id, str(value.get("proof_receipt_id") or ""), expected_hash)
-    return expected_hash
+    delivery_steps = _validate_runtime_delivery_artifact_projection(
+        value.get("coverage_evidence"),
+        retained_artifact_family_hash=retained_artifact_family_hash,
+    )
+    return {
+        "runtime_downstream_proof_hash": expected_hash,
+        "runtime_delivery_artifact_authority_hash": retained_artifact_family_hash,
+        "runtime_delivery_artifact_coverage_steps": delivery_steps,
+    }
+
+
+def _validate_runtime_delivery_artifact_projection(
+    value: Any,
+    *,
+    retained_artifact_family_hash: str,
+) -> list[str]:
+    if not isinstance(value, Mapping):
+        raise CandidateBOperatorStatusError(
+            "candidate_b_operator_status_runtime_delivery_artifact_coverage_missing",
+            "Candidate B operator status requires delivery artifact authority coverage from the runtime downstream proof.",
+            http_status=409,
+        )
+    missing = []
+    for step in sorted(layer3_candidate_b_downstream_proof.DELIVERY_ARTIFACT_AUTHORITY_COVERAGE):
+        entry = value.get(step)
+        if not isinstance(entry, Mapping):
+            missing.append(step)
+            continue
+        received_hash = str(entry.get("candidate_b_retained_artifact_family_hash") or "").strip()
+        if received_hash != retained_artifact_family_hash:
+            raise CandidateBOperatorStatusError(
+                "candidate_b_operator_status_runtime_delivery_artifact_authority_mismatch",
+                "Candidate B operator status requires delivery proof coverage to bind the retained artifact-family authority hash.",
+                http_status=409,
+                details={
+                    "coverage_step": step,
+                    "expected": retained_artifact_family_hash,
+                    "received": received_hash or None,
+                },
+            )
+        if entry.get("candidate_b_delivery_artifact_roles_bound") is not True:
+            raise CandidateBOperatorStatusError(
+                "candidate_b_operator_status_runtime_delivery_artifact_roles_not_bound",
+                "Candidate B operator status requires delivery proof coverage to bind retained delivery/product artifact roles.",
+                http_status=409,
+                details={"coverage_step": step},
+            )
+    if missing:
+        raise CandidateBOperatorStatusError(
+            "candidate_b_operator_status_runtime_delivery_artifact_coverage_incomplete",
+            "Candidate B operator status is missing delivery artifact authority coverage steps.",
+            http_status=409,
+            details={"missing_coverage": missing},
+        )
+    return sorted(layer3_candidate_b_downstream_proof.DELIVERY_ARTIFACT_AUTHORITY_COVERAGE)
 
 
 def _validate_runtime_downstream_proof_receipt(
