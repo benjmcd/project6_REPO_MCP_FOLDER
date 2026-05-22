@@ -37,6 +37,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["approved_plan_cancel"] is True
     assert direct_body["features"]["candidate_b_bundle_material_bridge"] is True
     assert direct_body["features"]["candidate_b_runtime_material_bridge"] is True
+    assert direct_body["features"]["candidate_b_default_promotion_readiness_audit"] is True
     assert direct_body["features"]["source_directory_ingestion_scan"] is True
     assert direct_body["features"]["source_directory_ingestion_status"] is True
     assert direct_body["features"]["source_directory_material_preview"] is True
@@ -90,6 +91,11 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"]["candidate_b_runtime_material_bridge_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge"
     )
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_readiness_audit_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_readiness_audit_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_selector_switch_admitted"] is False
     assert direct_body["execution_readiness"]["source_directory_ingestion_scan_admitted"] is True
     assert direct_body["execution_readiness"]["source_directory_ingestion_scan_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/scan"

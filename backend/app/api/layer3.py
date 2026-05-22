@@ -32,6 +32,7 @@ from app.services import (
     layer3_server_owned_local_outbox_target,
     layer3_server_owned_local_outbox_write,
     layer3_candidate_b_bundle_bridge,
+    layer3_candidate_b_default_readiness,
     layer3_candidate_b_runtime_bridge,
     layer3_source_directory_ingestion,
     layer3_source_directory_material_admission,
@@ -2613,6 +2614,26 @@ class Layer3CandidateBRuntimeMaterialBridgeRequest(BaseModel):
     operator_confirmation: bool
 
 
+class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    readiness_mode: Literal["candidate_b_default_promotion_readiness_audit_v1"]
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    candidate_b_bundle_id: str = Field(min_length=1)
+    candidate_b_run_id: str = Field(min_length=1)
+    candidate_b_bundle_bridge_receipt_id: str = Field(min_length=1)
+    candidate_b_runtime_bridge_receipt_id: str = Field(min_length=1)
+    eligible_corpus_scope: str = Field(min_length=1)
+    regression_disposition: str = Field(min_length=1)
+    rollback_to_baseline_confirmation: bool
+    operator_confirmation: bool
+    bundle_downstream_proof: dict[str, Any]
+    runtime_downstream_proof: dict[str, Any]
+    operator_status_evidence: dict[str, Any]
+
+
 class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3019,6 +3040,31 @@ class Layer3CandidateBRuntimeMaterialBridgeResponse(Layer3BaseResponse):
     layer3_material_preview_compatible: bool
     gate_b_material_authority_compatible: bool
     layer3_compatibility: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBDefaultPromotionReadinessAuditResponse(Layer3BaseResponse):
+    mode: str
+    readiness_state: str
+    readiness_audit_id: str
+    readiness_audit_hash: str
+    blocked_reasons: list[dict[str, Any]]
+    baseline_current_default_evidence: dict[str, Any]
+    candidate_a_admitted_variant_evidence: dict[str, Any]
+    candidate_b_selector_evidence: dict[str, Any]
+    selected_evidence: dict[str, Any]
+    bridge_receipts: dict[str, Any]
+    compare_target_sets: dict[str, Any]
+    authority_hashes: dict[str, Any]
+    downstream_proofs: dict[str, Any]
+    operator_status_evidence: dict[str, Any]
+    rollback_to_baseline: dict[str, Any]
+    regression_disposition: str
+    fail_closed_behavior: dict[str, bool]
+    default_selector_change_enabled: bool
+    candidate_b_default_promotion_enabled: bool
+    selector_mutation_performed: bool
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -8570,6 +8616,22 @@ def post_candidate_b_runtime_material_bridge(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_runtime_bridge.CandidateBRuntimeBridgeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/default-promotion/readiness-audit",
+    response_model=Layer3CandidateBDefaultPromotionReadinessAuditResponse,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_candidate_b_default_promotion_readiness_audit(
+    payload: Layer3CandidateBDefaultPromotionReadinessAuditRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_default_readiness.evaluate_candidate_b_default_promotion_readiness(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_default_readiness.CandidateBDefaultReadinessError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
