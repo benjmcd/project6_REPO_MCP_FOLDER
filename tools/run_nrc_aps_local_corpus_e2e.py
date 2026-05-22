@@ -42,6 +42,14 @@ DOCUMENT_PROCESSING_ENGINE_CHOICES = (
     DOCUMENT_PROCESSING_ENGINE_BASELINE,
     DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
 )
+VISUAL_LANE_MODE_BASELINE = "baseline"
+VISUAL_LANE_MODE_CANDIDATE_A = "candidate_a_page_evidence_v1"
+VISUAL_LANE_MODE_CANDIDATE_B = "candidate_b_opendataloader_page_evidence_v1"
+VISUAL_LANE_MODE_CHOICES = (
+    VISUAL_LANE_MODE_BASELINE,
+    VISUAL_LANE_MODE_CANDIDATE_A,
+    VISUAL_LANE_MODE_CANDIDATE_B,
+)
 CANDIDATE_B_PACKAGE_NAME = "opendataloader-pdf"
 CANDIDATE_B_PACKAGE_IMPORT_NAME = "opendataloader_pdf"
 CANDIDATE_B_PACKAGE_EXPECTED_VERSION = "2.0.0"
@@ -312,12 +320,37 @@ def _assert(condition: bool, message: str) -> None:
 
 
 def _normalize_document_processing_engine(value: str) -> str:
-    normalized = str(value or "").strip()
+    normalized = str(value or "").strip().lower() or DOCUMENT_PROCESSING_ENGINE_BASELINE
     _assert(
         normalized in DOCUMENT_PROCESSING_ENGINE_CHOICES,
         f"unsupported document_processing_engine: {value!r}",
     )
     return normalized
+
+
+def _normalize_visual_lane_mode(value: str) -> str:
+    normalized = str(value or "").strip().lower() or VISUAL_LANE_MODE_BASELINE
+    _assert(
+        normalized in VISUAL_LANE_MODE_CHOICES,
+        f"unsupported visual_lane_mode: {value!r}",
+    )
+    return normalized
+
+
+def _validate_processing_modes(*, document_processing_engine: str, visual_lane_mode: str) -> tuple[str, str]:
+    normalized_engine = _normalize_document_processing_engine(document_processing_engine)
+    normalized_lane = _normalize_visual_lane_mode(visual_lane_mode)
+    _assert(
+        normalized_lane != VISUAL_LANE_MODE_CANDIDATE_B
+        or normalized_engine == DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+        "candidate_b_visual_lane_requires_candidate_b_document_processing_engine",
+    )
+    _assert(
+        normalized_lane != VISUAL_LANE_MODE_CANDIDATE_A
+        or normalized_engine != DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+        "candidate_a_visual_lane_cannot_use_candidate_b_document_processing_engine",
+    )
+    return normalized_engine, normalized_lane
 
 
 def _candidate_b_package_preflight() -> dict[str, Any]:
@@ -927,13 +960,19 @@ def _summarize_advanced_metrics(
     per_target: list[dict[str, Any]],
     *,
     document_processing_engine: str,
+    visual_lane_mode: str = VISUAL_LANE_MODE_BASELINE,
     unknown_doc_type_failures: list[str],
     unresolved_visual_refs: list[str],
 ) -> dict[str, Any]:
     document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
+    visual_lane_mode = _normalize_visual_lane_mode(visual_lane_mode)
     ocr_file_count = sum(1 for row in per_target if bool(row["ocr_exercised"]))
     table_file_count = sum(1 for row in per_target if int(row["table_unit_count"]) > 0)
     visual_ref_total = sum(int(row["visual_ref_count"]) for row in per_target)
+    candidate_b_visual_ref_total = sum(int(row.get("candidate_b_visual_ref_count") or 0) for row in per_target)
+    candidate_b_retained_source_pdf_ref_count = sum(
+        int(row.get("candidate_b_retained_source_pdf_ref_count") or 0) for row in per_target
+    )
     candidate_b_extractor_file_count = sum(
         1
         for row in per_target
@@ -952,6 +991,15 @@ def _summarize_advanced_metrics(
             candidate_b_ordered_unit_total > 0,
             "Candidate B local-corpus run produced no ordered units",
         )
+        if visual_lane_mode == VISUAL_LANE_MODE_CANDIDATE_B:
+            _assert(
+                candidate_b_visual_ref_total > 0,
+                "Candidate B visual-lane proof produced no Candidate B retained page-evidence refs",
+            )
+            _assert(
+                candidate_b_retained_source_pdf_ref_count > 0,
+                "Candidate B visual-lane proof did not retain source PDF artifact refs",
+            )
     else:
         _assert(ocr_file_count >= 1, "no persisted local-corpus file exercised OCR-assisted extraction")
         _assert(table_file_count >= 1, "no persisted local-corpus file produced a pdf_table ordered unit")
@@ -960,12 +1008,15 @@ def _summarize_advanced_metrics(
 
     return {
         "document_processing_engine": document_processing_engine,
+        "visual_lane_mode": visual_lane_mode,
         "ocr_file_count": ocr_file_count,
         "table_file_count": table_file_count,
         "candidate_b_extractor_file_count": candidate_b_extractor_file_count,
         "candidate_b_ordered_unit_file_count": candidate_b_ordered_unit_file_count,
         "candidate_b_ordered_unit_total": candidate_b_ordered_unit_total,
         "visual_ref_total": visual_ref_total,
+        "candidate_b_visual_ref_total": candidate_b_visual_ref_total,
+        "candidate_b_retained_source_pdf_ref_count": candidate_b_retained_source_pdf_ref_count,
     }
 
 
@@ -975,10 +1026,12 @@ def _collect_advanced_metrics(
     docs: list[LocalCorpusDocument],
     *,
     document_processing_engine: str = DOCUMENT_PROCESSING_ENGINE_BASELINE,
+    visual_lane_mode: str = VISUAL_LANE_MODE_BASELINE,
 ) -> dict[str, Any]:
     from app.models import ConnectorRunTarget  # noqa: WPS433
 
     document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
+    visual_lane_mode = _normalize_visual_lane_mode(visual_lane_mode)
     session = runtime.session_factory()
     try:
         target_rows = (
@@ -1009,6 +1062,11 @@ def _collect_advanced_metrics(
         page_summaries = [dict(item) for item in (diagnostics_payload.get("page_summaries") or []) if isinstance(item, dict)]
         ordered_units = [dict(item) for item in (diagnostics_payload.get("ordered_units") or []) if isinstance(item, dict)]
         visual_refs = [dict(item) for item in (diagnostics_payload.get("visual_page_refs") or []) if isinstance(item, dict)]
+        candidate_b_retained_refs = [
+            dict(item)
+            for item in (diagnostics_payload.get("candidate_b_retained_artifact_refs") or [])
+            if isinstance(item, dict)
+        ]
         reported_ocr_page_count = int(diagnostics_payload.get("ocr_page_count") or extraction.get("ocr_page_count") or 0)
         fallback_ocr_page_count = sum(1 for item in page_summaries if str(item.get("source") or "").strip() == "ocr")
         ocr_attempted_page_count = sum(1 for item in page_summaries if bool(item.get("ocr_attempted")))
@@ -1031,6 +1089,26 @@ def _collect_advanced_metrics(
             resolved_visual_path = _resolve_visual_artifact_path(artifact_storage_dir, visual_artifact_ref)
             if not resolved_visual_path.exists():
                 unresolved_visual_refs.append(str(resolved_visual_path))
+        candidate_b_visual_refs = [
+            row
+            for row in visual_refs
+            if str(row.get("visual_lane_mode") or "").strip().lower() == VISUAL_LANE_MODE_CANDIDATE_B
+            and str(row.get("document_processing_engine") or "").strip().lower()
+            == DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+        ]
+        candidate_b_retained_source_pdf_refs = []
+        for row in candidate_b_retained_refs:
+            if str(row.get("artifact_role") or "").strip() == "source_pdf" and row.get("material_text_payload") is False:
+                candidate_b_retained_source_pdf_refs.append(row)
+        for visual_row in candidate_b_visual_refs:
+            for retained in visual_row.get("retained_artifact_refs") or []:
+                if not isinstance(retained, dict):
+                    continue
+                if (
+                    str(retained.get("artifact_role") or "").strip() == "source_pdf"
+                    and retained.get("material_text_payload") is False
+                ):
+                    candidate_b_retained_source_pdf_refs.append(retained)
         normalized = dict(source_reference.get("aps_normalized") or {})
         document_type_known = normalized.get("document_type_known")
         accession_number = str(target_row.sciencebase_item_id or target_payload.get("accession_number") or "").strip()
@@ -1055,6 +1133,8 @@ def _collect_advanced_metrics(
                 "table_unit_count": table_unit_count,
                 "ordered_unit_count": len(ordered_units),
                 "visual_ref_count": len(visual_refs),
+                "candidate_b_visual_ref_count": len(candidate_b_visual_refs),
+                "candidate_b_retained_source_pdf_ref_count": len(candidate_b_retained_source_pdf_refs),
                 "extractor_family": extractor_family,
                 "extractor_id": extractor_id,
                 "diagnostics_ref": diagnostics_ref,
@@ -1065,6 +1145,7 @@ def _collect_advanced_metrics(
     summary = _summarize_advanced_metrics(
         per_target,
         document_processing_engine=document_processing_engine,
+        visual_lane_mode=visual_lane_mode,
         unknown_doc_type_failures=unknown_doc_type_failures,
         unresolved_visual_refs=unresolved_visual_refs,
     )
@@ -1117,9 +1198,13 @@ def _build_submit_payload(
     docs: list[LocalCorpusDocument],
     *,
     document_processing_engine: str,
+    visual_lane_mode: str,
     idempotency_key: str,
 ) -> dict[str, Any]:
-    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
+    document_processing_engine, visual_lane_mode = _validate_processing_modes(
+        document_processing_engine=document_processing_engine,
+        visual_lane_mode=visual_lane_mode,
+    )
     total_docs = len(docs)
     page_size = 10
     corpus_total_bytes = sum(_safe_local_stat(doc.file_path).st_size for doc in docs)
@@ -1141,6 +1226,8 @@ def _build_submit_payload(
     }
     if document_processing_engine != DOCUMENT_PROCESSING_ENGINE_BASELINE:
         submit_payload["document_processing_engine"] = document_processing_engine
+    if visual_lane_mode != VISUAL_LANE_MODE_BASELINE:
+        submit_payload["visual_lane_mode"] = visual_lane_mode
     return submit_payload
 
 
@@ -1151,17 +1238,22 @@ def _execute_proof(
     fake_client: LocalCorpusNrcClient,
     *,
     document_processing_engine: str = DOCUMENT_PROCESSING_ENGINE_BASELINE,
+    visual_lane_mode: str = VISUAL_LANE_MODE_BASELINE,
 ) -> dict[str, Any]:
     from app.models import ConnectorRunTarget  # noqa: WPS433
 
     execution_stamp = runtime_root.name
     idempotency_key = f"local-corpus-e2e-{execution_stamp}"
-    document_processing_engine = _normalize_document_processing_engine(document_processing_engine)
+    document_processing_engine, visual_lane_mode = _validate_processing_modes(
+        document_processing_engine=document_processing_engine,
+        visual_lane_mode=visual_lane_mode,
+    )
     total_docs = len(docs)
     page_size = 10
     submit_payload = _build_submit_payload(
         docs,
         document_processing_engine=document_processing_engine,
+        visual_lane_mode=visual_lane_mode,
         idempotency_key=idempotency_key,
     )
     submitted = _post_json(runtime.client, "/api/v1/connectors/nrc-adams-aps/runs", submit_payload, headers={"Idempotency-Key": idempotency_key})
@@ -1251,6 +1343,7 @@ def _execute_proof(
         run_id,
         docs,
         document_processing_engine=document_processing_engine,
+        visual_lane_mode=visual_lane_mode,
     )
 
     session = runtime.session_factory()
@@ -1288,6 +1381,7 @@ def _execute_proof(
             "poll_url": submitted.get("poll_url"),
             "idempotency_key": idempotency_key,
             "document_processing_engine": document_processing_engine,
+            "visual_lane_mode": visual_lane_mode,
         },
         "run_detail": detail_after_chain,
         "search_smoke": {"token": token, "hit_count": int(search_payload.get("total") or 0)},
@@ -1327,12 +1421,24 @@ def build_parser() -> argparse.ArgumentParser:
             "Defaults to baseline; candidate_b_opendataloader_pdf requires the pinned Candidate B runtime."
         ),
     )
+    parser.add_argument(
+        "--visual-lane-mode",
+        choices=VISUAL_LANE_MODE_CHOICES,
+        default=VISUAL_LANE_MODE_BASELINE,
+        help=(
+            "Visual/page evidence lane for the submitted run. "
+            "candidate_b_opendataloader_page_evidence_v1 requires candidate_b_opendataloader_pdf."
+        ),
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    document_processing_engine = _normalize_document_processing_engine(args.document_processing_engine)
+    document_processing_engine, visual_lane_mode = _validate_processing_modes(
+        document_processing_engine=args.document_processing_engine,
+        visual_lane_mode=args.visual_lane_mode,
+    )
     runtime_root = _resolve_runtime_root(args.runtime_root)
     summary_path = runtime_root / "local_corpus_e2e_summary.json"
     summary: dict[str, Any] = {
@@ -1346,6 +1452,7 @@ def main(argv: list[str] | None = None) -> int:
         "storage_dir": None,
         "interpreter_path": str(Path(sys.executable).resolve()),
         "document_processing_engine": document_processing_engine,
+        "visual_lane_mode": visual_lane_mode,
         "run_id": None,
         "corpus_root": str(DEFAULT_CORPUS_ROOT),
         "corpus_pdf_count": 0,
@@ -1384,6 +1491,7 @@ def main(argv: list[str] | None = None) -> int:
                 runtime_root,
                 fake_client,
                 document_processing_engine=document_processing_engine,
+                visual_lane_mode=visual_lane_mode,
             )
             summary.update(proof_payload)
             summary["run_id"] = proof_payload["run_id"]

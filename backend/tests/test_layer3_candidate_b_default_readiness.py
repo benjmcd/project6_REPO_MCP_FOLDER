@@ -76,6 +76,7 @@ def _negative_invariants() -> dict[str, bool]:
         "baseline_default_changed": False,
         "candidate_a_semantics_changed": False,
         "candidate_b_visual_lane_mode_enabled": False,
+        "candidate_b_visual_lane_material_ingestion_enabled": False,
         "candidate_b_default_promotion_enabled": False,
         "provider_object_writes_enabled": False,
         "connector_dispatch_enabled": False,
