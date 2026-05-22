@@ -34,6 +34,7 @@ VISUAL_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/visual-lan
 BUNDLE_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof"
 DOWNSTREAM_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof"
 OPERATOR_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status"
+CLOSURE_EVIDENCE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 FULL_COVERAGE = [
     "source_directory_scan",
@@ -494,6 +495,33 @@ def _operator_status_request(
     }
 
 
+def _closure_evidence_request(
+    bundle_receipt_id: str,
+    runtime_receipt_id: str,
+    bundle_downstream_proof: dict[str, Any],
+    runtime_downstream_proof: dict[str, Any],
+    operator_status: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-closure-evidence",
+        "closure_mode": "candidate_b_default_promotion_closure_evidence_v1",
+        "operator_decision": "record_candidate_b_default_promotion_closure_evidence",
+        "baseline_run_id": BASELINE_RUN_ID,
+        "candidate_a_run_id": CANDIDATE_A_RUN_ID,
+        "candidate_b_bundle_id": CANDIDATE_B_BUNDLE_ID,
+        "candidate_b_run_id": CANDIDATE_B_RUN_ID,
+        "candidate_b_bundle_bridge_receipt_id": bundle_receipt_id,
+        "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "eligible_corpus_scope": READY_SCOPE,
+        "regression_disposition": READY_REGRESSION,
+        "rollback_to_baseline_confirmation": True,
+        "operator_confirmation": True,
+        "bundle_downstream_proof": bundle_downstream_proof,
+        "runtime_downstream_proof": runtime_downstream_proof,
+        "operator_status_evidence": operator_status,
+    }
+
+
 def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
     return {
         "client_request_id": "candidate-b-default-readiness-001",
@@ -518,6 +546,12 @@ def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
             "default_selector_change_visible_as_enabled": True,
             "raw_local_path_exposed": False,
             "provider_private_token_exposed": False,
+        },
+        "closure_evidence": {
+            "eligible_corpus_scope": READY_SCOPE,
+            "regression_disposition": READY_REGRESSION,
+            "rollback_to_baseline_confirmation": True,
+            "operator_confirmation": True,
         },
     }
 
@@ -552,11 +586,23 @@ def _payload_with_live_runtime_proof(
         json=_operator_status_request(bundle_receipt_id, runtime_receipt_id, status, proof_response.json()),
     )
     assert operator_status_response.status_code == 200, operator_status_response.text
+    closure_response = client.post(
+        CLOSURE_EVIDENCE_ENDPOINT,
+        json=_closure_evidence_request(
+            bundle_receipt_id,
+            runtime_receipt_id,
+            bundle_proof_response.json(),
+            proof_response.json(),
+            operator_status_response.json(),
+        ),
+    )
+    assert closure_response.status_code == 200, closure_response.text
     payload = _payload(bundle_receipt_id, runtime_receipt_id)
     payload["bundle_downstream_proof"] = bundle_proof_response.json()
     payload["candidate_b_visual_lane_status_evidence"] = status
     payload["runtime_downstream_proof"] = proof_response.json()
     payload["operator_status_evidence"] = operator_status_response.json()
+    payload["closure_evidence"] = closure_response.json()
     return payload
 
 
@@ -720,12 +766,25 @@ def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_res
         json=_operator_status_request(bundle_receipt_id, runtime_receipt_id, visual_status_response.json(), proof),
     )
     assert operator_status_response.status_code == 200, operator_status_response.text
+    closure_response = client.post(
+        CLOSURE_EVIDENCE_ENDPOINT,
+        json=_closure_evidence_request(
+            bundle_receipt_id,
+            runtime_receipt_id,
+            bundle_proof,
+            proof,
+            operator_status_response.json(),
+        ),
+    )
+    assert closure_response.status_code == 200, closure_response.text
     payload["operator_status_evidence"] = operator_status_response.json()
+    payload["closure_evidence"] = closure_response.json()
     response = client.post(READY_ENDPOINT, json=payload)
 
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["status"] == "ready"
+    assert body["closure_evidence"]["closure_evidence_hash"] == closure_response.json()["closure_evidence_hash"]
     assert body["downstream_proofs"]["bundle"]["proof_hash"] == bundle_proof["proof_hash"]
     assert body["downstream_proofs"]["runtime"]["proof_hash"] == proof["proof_hash"]
     assert body["candidate_b_default_promotion_enabled"] is True
@@ -754,6 +813,28 @@ def test_candidate_b_default_readiness_blocks_loose_operator_status_evidence(cli
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_default_readiness_operator_status_schema_id_mismatch" in codes
     assert "candidate_b_default_readiness_operator_status_authority_field_missing" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_default_readiness_blocks_loose_closure_evidence(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    payload["closure_evidence"] = {
+        "eligible_corpus_scope": READY_SCOPE,
+        "regression_disposition": READY_REGRESSION,
+        "rollback_to_baseline_confirmation": True,
+        "operator_confirmation": True,
+    }
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_closure_schema_id_mismatch" in codes
+    assert "candidate_b_default_readiness_closure_authority_field_missing" in codes
     assert body["candidate_b_default_promotion_enabled"] is False
 
 

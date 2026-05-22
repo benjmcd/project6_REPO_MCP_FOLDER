@@ -37,6 +37,7 @@ from app.services import (
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_operator_status,
+    layer3_candidate_b_promotion_closure,
     layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
     layer3_source_directory_ingestion,
@@ -143,6 +144,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_runtime_downstream_proof_endpoint: str
     candidate_b_default_promotion_operator_status_admitted: bool
     candidate_b_default_promotion_operator_status_endpoint: str
+    candidate_b_default_promotion_closure_evidence_admitted: bool
+    candidate_b_default_promotion_closure_evidence_endpoint: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
@@ -2688,6 +2691,27 @@ class Layer3CandidateBDefaultPromotionOperatorStatusRequest(BaseModel):
     runtime_downstream_proof: dict[str, Any]
 
 
+class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    closure_mode: Literal["candidate_b_default_promotion_closure_evidence_v1"]
+    operator_decision: Literal["record_candidate_b_default_promotion_closure_evidence"]
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    candidate_b_bundle_id: str = Field(min_length=1)
+    candidate_b_run_id: str = Field(min_length=1)
+    candidate_b_bundle_bridge_receipt_id: str = Field(min_length=1)
+    candidate_b_runtime_bridge_receipt_id: str = Field(min_length=1)
+    eligible_corpus_scope: str = Field(min_length=1)
+    regression_disposition: str = Field(min_length=1)
+    rollback_to_baseline_confirmation: bool
+    operator_confirmation: bool
+    bundle_downstream_proof: dict[str, Any]
+    runtime_downstream_proof: dict[str, Any]
+    operator_status_evidence: dict[str, Any]
+
+
 class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2707,6 +2731,7 @@ class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     runtime_downstream_proof: dict[str, Any]
     candidate_b_visual_lane_status_evidence: dict[str, Any]
     operator_status_evidence: dict[str, Any]
+    closure_evidence: dict[str, Any]
 
 
 class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
@@ -3235,6 +3260,36 @@ class Layer3CandidateBDefaultPromotionOperatorStatusResponse(Layer3BaseResponse)
     next_allowed_actions: list[str]
 
 
+class Layer3CandidateBDefaultPromotionClosureEvidenceResponse(Layer3BaseResponse):
+    mode: str
+    baseline_run_id: str
+    candidate_a_run_id: str
+    candidate_b_bundle_id: str
+    candidate_b_run_id: str
+    bundle_bridge_receipt_id: str
+    bundle_bridge_receipt_hash: str
+    runtime_bridge_receipt_id: str
+    runtime_bridge_receipt_hash: str
+    bundle_downstream_proof_hash: str
+    runtime_downstream_proof_hash: str
+    operator_status_hash: str
+    eligible_corpus_scope: str
+    regression_disposition: str
+    rollback_to_baseline_confirmation: bool
+    operator_confirmation: bool
+    closure_evidence_hash: str
+    closure_receipt_id: str
+    closure_receipt_ref: str
+    rollback_selector: str
+    selector_mutation_performed: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    provider_private_token_exposed: bool
+    artifact_bytes_exposed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
 class Layer3CandidateBDefaultPromotionReadinessAuditResponse(Layer3BaseResponse):
     mode: str
     readiness_state: str
@@ -3251,6 +3306,7 @@ class Layer3CandidateBDefaultPromotionReadinessAuditResponse(Layer3BaseResponse)
     downstream_proofs: dict[str, Any]
     candidate_b_visual_lane_status_evidence: dict[str, Any]
     operator_status_evidence: dict[str, Any]
+    closure_evidence: dict[str, Any]
     rollback_to_baseline: dict[str, Any]
     regression_disposition: str
     fail_closed_behavior: dict[str, bool]
@@ -8888,6 +8944,22 @@ def post_candidate_b_default_promotion_operator_status(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_operator_status.CandidateBOperatorStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/default-promotion/closure-evidence",
+    response_model=Layer3CandidateBDefaultPromotionClosureEvidenceResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_default_promotion_closure_evidence(
+    payload: Layer3CandidateBDefaultPromotionClosureEvidenceRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_promotion_closure.candidate_b_default_promotion_closure_evidence(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_promotion_closure.CandidateBPromotionClosureError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
