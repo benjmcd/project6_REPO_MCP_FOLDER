@@ -9748,7 +9748,13 @@ function handleOperationDockKeydown(event) {
 
 function providerPrivateSignedUrlPanelState() {
     if (State.providerPrivateSignedUrlError) {
-        return { label: State.providerPrivateSignedUrlError.error_code || 'provider_private_signed_url_blocked', pill: 'blocked', message: State.providerPrivateSignedUrlError.message || 'Provider-private signed URL control is blocked.' };
+        const errorCode = State.providerPrivateSignedUrlError.error_code
+            || State.providerPrivateSignedUrlError.error?.code
+            || 'provider_private_signed_url_blocked';
+        const errorMessage = State.providerPrivateSignedUrlError.message
+            || State.providerPrivateSignedUrlError.error?.message
+            || 'Provider-private signed URL control is blocked.';
+        return { label: errorCode, pill: 'blocked', message: errorMessage };
     }
     const stateName = providerPrivateSignedUrlLatestState();
     if (stateName === 'provider_private_signed_url_revoked') {
