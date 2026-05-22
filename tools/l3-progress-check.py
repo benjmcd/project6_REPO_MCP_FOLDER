@@ -2578,6 +2578,9 @@ LAYER3_OUTPUT_REVIEW_PACKAGE_HANDOFF_ACTIVATION_ENTRY_FREEZE = (
 LAYER3_BOUNDED_TRIAL_READINESS_CLOSURE_SYNC = (
     PLANNING_DOCS / "957-trial-readiness-sync.md"
 )
+LAYER3_PRODUCT_AUTHORITY_INTAKE = (
+    PLANNING_DOCS / "958-product-authority-intake.md"
+)
 LAYER3_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE = (
     PLANNING_DOCS
     / "918_SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PREVIEW_RENDERED_CONTROL_FREEZE.md"
@@ -87198,6 +87201,58 @@ def _check_bounded_trial_readiness_closure_sync(errors: list[str]) -> None:
                 errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms missing {term}")
 
 
+def _check_product_authority_intake(errors: list[str]) -> None:
+    closure_text = _read_required_text(
+        LAYER3_BOUNDED_TRIAL_READINESS_CLOSURE_SYNC,
+        errors,
+    )
+    intake_text = _read_required_text(LAYER3_PRODUCT_AUTHORITY_INTAKE, errors)
+    next_posture = (
+        "await_product_authority_for_named_layer3_next_phase_or_stop_at_bounded_trial_checkpoint"
+    )
+
+    if "Post-runbook authority intake checkpoint: `958-product-authority-intake.md`." not in closure_text:
+        errors.append(
+            f"{_rel(LAYER3_BOUNDED_TRIAL_READINESS_CLOSURE_SYNC)} "
+            "must link the product authority intake checkpoint"
+        )
+
+    for term in (
+        "958-product-authority-intake.md",
+        "Status: no-runtime product-authority intake checkpoint after the current-main bounded trial evidence refresh.",
+        "Current-main authority before this branch: `project6-origin/main` at `8a0a3027 Record Layer 3 runbook evidence refresh (#1583)`.",
+        "Decision: do not select a new implementation slice from this checkpoint alone.",
+        "Runtime behavior introduced by this checkpoint: `false`.",
+        "Rendered behavior introduced by this checkpoint: `false`.",
+        "Backend behavior introduced by this checkpoint: `false`.",
+        "Route/API/DTO/model/migration/service behavior introduced by this checkpoint: `false`.",
+        "Executable test behavior introduced by this checkpoint: `false`.",
+        "Implementation-entry allowed by this checkpoint alone: `false`.",
+        "Full mockup program activation selected now: `false`.",
+        "Frontend-only durable authority selected now: `false`.",
+        "the next useful work is a product-authority decision, not speculative runtime implementation",
+        "Full mockup activation is selected as the next phase.",
+        "One named read-only journey is selected for a journey-specific interactive authority freeze.",
+        "One named already-live journey is selected for a bounded extension of existing server-owned controls.",
+        "A separate product objective outside blanket full mockup activation is selected.",
+        "No new product phase is selected; the bounded trial checkpoint remains the stop state.",
+        "Reject these by default unless a later product-authority record explicitly admits them with rollback and proof:",
+        "frontend-only durable authority;",
+        "browser storage as authority;",
+        "full mockup activation by inference;",
+        "read-only projection controls without a named server-owned route/API contract.",
+        "Stop before implementation if:",
+        "the product-authority answer is missing, ambiguous, or names more than one next implementation target;",
+        "rollback cannot return to the bounded trial state recorded by `957-trial-readiness-sync.md`;",
+        f"Next exact posture: `{next_posture}`.",
+    ):
+        if term not in intake_text:
+            errors.append(
+                f"{_rel(LAYER3_PRODUCT_AUTHORITY_INTAKE)} "
+                f"missing product authority intake term: {term}"
+            )
+
+
 def _check_source_directory_package_supersession_preview_rendered_control_freeze(
     errors: list[str],
 ) -> None:
@@ -91133,6 +91188,7 @@ def main() -> int:
     _check_query_source_setup_activation_entry_freeze(errors)
     _check_output_review_package_handoff_activation_entry_freeze(errors)
     _check_bounded_trial_readiness_closure_sync(errors)
+    _check_product_authority_intake(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze(errors)
     _check_source_directory_package_supersession_preview_rendered_control_freeze_current_main_sync(errors)
     _check_source_directory_package_supersession_preview_rendered_control(errors)
