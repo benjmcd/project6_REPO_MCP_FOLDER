@@ -59,6 +59,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["candidate_b_visual_lane_status_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status"
     )
+    assert direct["candidate_b_bundle_downstream_proof_admitted"] is True
+    assert direct["candidate_b_bundle_downstream_proof_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof"
+    )
     assert direct["candidate_b_runtime_downstream_proof_admitted"] is True
     assert direct["candidate_b_runtime_downstream_proof_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof"

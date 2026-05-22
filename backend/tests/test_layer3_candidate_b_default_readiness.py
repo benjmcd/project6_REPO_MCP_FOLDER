@@ -31,6 +31,7 @@ READY_SCOPE = "candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_onl
 READY_REGRESSION = "no_unacceptable_regression_against_baseline_and_candidate_a"
 READY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit"
 VISUAL_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status"
+BUNDLE_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof"
 DOWNSTREAM_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof"
 OPERATOR_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
@@ -460,6 +461,18 @@ def _downstream_proof_request(runtime_receipt_id: str, visual_lane_status: dict[
     }
 
 
+def _bundle_downstream_proof_request(bundle_receipt_id: str, *, coverage: list[str] | None = None) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-bundle-downstream-proof",
+        "proof_mode": "candidate_b_bundle_downstream_e2e_proof_v1",
+        "operator_decision": "record_candidate_b_bundle_downstream_e2e_proof",
+        "candidate_b_bundle_id": CANDIDATE_B_BUNDLE_ID,
+        "bridge_receipt_id": bundle_receipt_id,
+        "coverage_evidence": _coverage_evidence(coverage),
+        "operator_confirmation": True,
+    }
+
+
 def _operator_status_request(
     bundle_receipt_id: str,
     runtime_receipt_id: str,
@@ -516,6 +529,11 @@ def _payload_with_live_runtime_proof(
     *,
     visual_status: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    bundle_proof_response = client.post(
+        BUNDLE_PROOF_ENDPOINT,
+        json=_bundle_downstream_proof_request(bundle_receipt_id),
+    )
+    assert bundle_proof_response.status_code == 200, bundle_proof_response.text
     status = visual_status
     if status is None:
         visual_status_response = client.post(
@@ -535,6 +553,7 @@ def _payload_with_live_runtime_proof(
     )
     assert operator_status_response.status_code == 200, operator_status_response.text
     payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["bundle_downstream_proof"] = bundle_proof_response.json()
     payload["candidate_b_visual_lane_status_evidence"] = status
     payload["runtime_downstream_proof"] = proof_response.json()
     payload["operator_status_evidence"] = operator_status_response.json()
@@ -603,6 +622,15 @@ def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
 ) -> None:
     bundle_receipt_id = _write_bundle_receipt()
     runtime_receipt_id = _write_runtime_receipt()
+    bundle_proof_response = client.post(
+        BUNDLE_PROOF_ENDPOINT,
+        json=_bundle_downstream_proof_request(bundle_receipt_id),
+    )
+    assert bundle_proof_response.status_code == 200, bundle_proof_response.text
+    bundle_proof = bundle_proof_response.json()
+    assert bundle_proof["status"] == "proven"
+    assert bundle_proof["candidate_b_source_kind"] == "bundle"
+    assert bundle_proof["visual_lane_mode_enabled"] is False
     visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
     assert visual_status_response.status_code == 200, visual_status_response.text
 
@@ -650,6 +678,15 @@ def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_res
 ) -> None:
     bundle_receipt_id = _write_bundle_receipt()
     runtime_receipt_id = _write_runtime_receipt()
+    bundle_proof_response = client.post(
+        BUNDLE_PROOF_ENDPOINT,
+        json=_bundle_downstream_proof_request(bundle_receipt_id),
+    )
+    assert bundle_proof_response.status_code == 200, bundle_proof_response.text
+    bundle_proof = bundle_proof_response.json()
+    assert bundle_proof["status"] == "proven"
+    assert bundle_proof["candidate_b_source_kind"] == "bundle"
+    assert bundle_proof["visual_lane_mode_enabled"] is False
     visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
     assert visual_status_response.status_code == 200, visual_status_response.text
 
@@ -675,6 +712,7 @@ def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_res
     assert proof_receipt_path.is_file()
 
     payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["bundle_downstream_proof"] = bundle_proof
     payload["candidate_b_visual_lane_status_evidence"] = visual_status_response.json()
     payload["runtime_downstream_proof"] = proof
     operator_status_response = client.post(
@@ -688,6 +726,7 @@ def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_res
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["status"] == "ready"
+    assert body["downstream_proofs"]["bundle"]["proof_hash"] == bundle_proof["proof_hash"]
     assert body["downstream_proofs"]["runtime"]["proof_hash"] == proof["proof_hash"]
     assert body["candidate_b_default_promotion_enabled"] is True
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
@@ -743,6 +782,20 @@ def test_candidate_b_runtime_downstream_proof_rejects_nested_path_authority(clie
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_downstream_proof_forbidden_request_fields"
+    assert "coverage_evidence.gate_b.local_path" in body["error"]["details"]["blocked_nested_fields"]
+
+
+def test_candidate_b_bundle_downstream_proof_rejects_nested_path_authority(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    payload = _bundle_downstream_proof_request(bundle_receipt_id)
+    payload["coverage_evidence"]["gate_b"]["local_path"] = "C:/private/source.pdf"
+
+    response = client.post(BUNDLE_PROOF_ENDPOINT, json=payload)
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_bundle_downstream_proof_forbidden_request_fields"
     assert "coverage_evidence.gate_b.local_path" in body["error"]["details"]["blocked_nested_fields"]
 
 
