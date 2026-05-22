@@ -62,6 +62,8 @@ remote_pr_1596_checks:
 
 ## What Comes Next
 
+Current-main follow-up: `962-provider-private-runbook-refresh.md` records the bounded operator runbook recheck after this checkpoint landed on current main.
+
 Immediate next pass:
 
 1. Run the bounded operator runbook from `952-bounded-trial-checkpoint-runbook.md` against current main if a full readiness recheck is needed.
