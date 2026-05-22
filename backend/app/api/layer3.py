@@ -149,6 +149,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_default_promotion_closure_evidence_endpoint: str
     candidate_b_default_promotion_final_proof_admitted: bool
     candidate_b_default_promotion_final_proof_endpoint: str
+    candidate_b_default_promotion_final_proof_status_admitted: bool
+    candidate_b_default_promotion_final_proof_status_endpoint: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
@@ -2747,6 +2749,16 @@ class Layer3CandidateBDefaultPromotionFinalProofRequest(BaseModel):
     operator_confirmation: bool
 
 
+class Layer3CandidateBDefaultPromotionFinalProofStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["candidate_b_default_promotion_final_proof_status_v1"]
+    operator_decision: Literal["inspect_candidate_b_default_promotion_final_proof_status"]
+    candidate_b_runtime_bridge_receipt_id: str = Field(min_length=1)
+    proof_receipt_id: str = Field(min_length=1)
+
+
 class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3353,6 +3365,29 @@ class Layer3CandidateBDefaultPromotionFinalProofResponse(Layer3BaseResponse):
     proof_receipt_id: str
     proof_receipt_ref: str
     proof_state: str
+    selector_mutation_performed: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    provider_private_token_exposed: bool
+    artifact_bytes_exposed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBDefaultPromotionFinalProofStatusResponse(Layer3BaseResponse):
+    mode: str
+    proof_state: str
+    proof_hash: str
+    proof_receipt_id: str
+    proof_receipt_ref: str
+    readiness_audit_id: str
+    readiness_audit_hash: str
+    candidate_b_run_id: str
+    candidate_b_bundle_id: str
+    candidate_b_default_promotion_enabled: bool
+    default_selector_change_enabled: bool
+    rollback_selector: str
+    final_operator_inspection_complete: bool
     selector_mutation_performed: bool
     raw_local_path_exposed: bool
     raw_url_exposed: bool
@@ -9034,6 +9069,22 @@ def post_candidate_b_default_promotion_final_proof(
 ) -> dict[str, Any] | JSONResponse:
     try:
         return layer3_candidate_b_final_proof.candidate_b_default_promotion_final_proof(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_final_proof.CandidateBFinalProofError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/default-promotion/final-proof/status",
+    response_model=Layer3CandidateBDefaultPromotionFinalProofStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_default_promotion_final_proof_status(
+    payload: Layer3CandidateBDefaultPromotionFinalProofStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_final_proof.candidate_b_default_promotion_final_proof_status(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_final_proof.CandidateBFinalProofError as exc:
