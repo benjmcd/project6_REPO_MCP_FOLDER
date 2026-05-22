@@ -17,6 +17,7 @@ READY_STATE = "candidate_b_default_promotion_ready_for_separate_selection"
 BLOCKED_STATE = "candidate_b_default_promotion_readiness_blocked"
 CANDIDATE_A_VARIANT = "candidate_a_page_evidence_v1"
 CANDIDATE_B_ENGINE = "candidate_b_opendataloader_pdf"
+CANDIDATE_B_VISUAL_LANE_MODE = layer3_candidate_b_runtime_bridge.CANDIDATE_B_VISUAL_LANE_MODE
 ELIGIBLE_CORPUS_SCOPE = "candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only"
 REGRESSION_DISPOSITION_READY = "no_unacceptable_regression_against_baseline_and_candidate_a"
 
@@ -45,6 +46,7 @@ _RUNTIME_HASH_KEYS = (
     "candidate_a_run_id",
     "candidate_b_source_kind",
     "document_processing_engine",
+    "visual_lane_mode",
     "compare_target_set_hash",
     "runtime_review_root_storage_authority_hash",
     "admitted_file_subset_hash",
@@ -254,9 +256,14 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         },
         "candidate_b_selector_evidence": {
             "candidate_b_family": CANDIDATE_B_ENGINE,
-            "candidate_b_is_visual_lane_mode": False,
+            "candidate_b_is_visual_lane_mode": True,
+            "candidate_b_visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
+            "candidate_b_visual_lane_mode_admitted": True,
+            "candidate_b_is_default_visual_lane_mode": False,
+            "candidate_b_visual_lane_selector_is_explicit": True,
             "candidate_b_default_for_eligible_pdf_when_engine_omitted": True,
             "candidate_b_runtime_selector_is_opt_in": True,
+            "candidate_b_visual_lane_material_ingestion_enabled": False,
         },
         "selected_evidence": {
             "baseline_run_id": baseline_run_id,
@@ -355,6 +362,7 @@ def _validate_receipt(*, kind: str, receipt_id: str, expected: Mapping[str, str]
         _receipt_equals(blocked, kind, receipt, field, expected_value)
     if kind == "runtime":
         _receipt_equals(blocked, kind, receipt, "document_processing_engine", CANDIDATE_B_ENGINE)
+        _receipt_equals(blocked, kind, receipt, "visual_lane_mode", CANDIDATE_B_VISUAL_LANE_MODE)
 
     keys = _BUNDLE_HASH_KEYS if kind == "bundle" else _RUNTIME_HASH_KEYS
     missing = [key for key in keys if key not in receipt]
@@ -380,6 +388,8 @@ def _validate_receipt(*, kind: str, receipt_id: str, expected: Mapping[str, str]
         blocked.append(_reason(f"candidate_b_default_readiness_{kind}_compare_target_set_empty"))
     _validate_receipt_invariants(kind=kind, receipt=receipt, blocked=blocked)
     artifact_family = _validate_governed_artifact_family(kind=kind, receipt=receipt, blocked=blocked)
+    if kind == "runtime":
+        _validate_runtime_visual_lane_evidence(receipt=receipt, blocked=blocked)
     return _receipt_result(
         kind=kind,
         receipt_id=receipt_id,
@@ -480,6 +490,7 @@ def _receipt_result(
             ),
             "raw_local_path_exposed": False,
             "governed_retained_artifact_family_hash": receipt.get("governed_retained_artifact_family_hash"),
+            **_runtime_visual_lane_summary(kind=kind, receipt=receipt),
         },
         "compare_target_set": {
             key: target_set.get(key)
@@ -498,6 +509,51 @@ def _receipt_result(
         "authority_hashes": _authority_hashes(kind=kind, receipt=receipt),
         "governed_retained_artifact_family": _artifact_family_summary(artifact_family),
     }
+
+
+def _runtime_visual_lane_summary(*, kind: str, receipt: Mapping[str, Any]) -> dict[str, Any]:
+    if kind != "runtime":
+        return {}
+    evidence = receipt.get("candidate_b_visual_lane_evidence")
+    if not isinstance(evidence, dict):
+        evidence = {}
+    return {
+        "visual_lane_mode": receipt.get("visual_lane_mode"),
+        "candidate_b_visual_lane_evidence": {
+            "visual_lane_mode": evidence.get("visual_lane_mode"),
+            "candidate_b_visual_lane_selected": evidence.get("candidate_b_visual_lane_selected") is True,
+            "candidate_b_visual_ref_total": int(evidence.get("candidate_b_visual_ref_total") or 0),
+            "candidate_b_retained_source_pdf_ref_count": int(
+                evidence.get("candidate_b_retained_source_pdf_ref_count") or 0
+            ),
+            "source_pdf_material_text_payload_enabled": evidence.get("source_pdf_material_text_payload_enabled") is True,
+            "image_material_text_payload_enabled": evidence.get("image_material_text_payload_enabled") is True,
+        },
+    }
+
+
+def _validate_runtime_visual_lane_evidence(
+    *,
+    receipt: Mapping[str, Any],
+    blocked: list[dict[str, Any]],
+) -> None:
+    evidence = receipt.get("candidate_b_visual_lane_evidence")
+    if not isinstance(evidence, dict):
+        blocked.append(_reason("candidate_b_default_readiness_runtime_visual_lane_evidence_missing"))
+        return
+    if str(evidence.get("visual_lane_mode") or "").strip() != CANDIDATE_B_VISUAL_LANE_MODE:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_runtime_visual_lane_evidence_mode_mismatch",
+                expected=CANDIDATE_B_VISUAL_LANE_MODE,
+                received=evidence.get("visual_lane_mode"),
+            )
+        )
+    if evidence.get("candidate_b_visual_lane_selected") is not True:
+        blocked.append(_reason("candidate_b_default_readiness_runtime_visual_lane_not_selected"))
+    for field in ("source_pdf_material_text_payload_enabled", "image_material_text_payload_enabled"):
+        if evidence.get(field) is not False:
+            blocked.append(_reason(f"candidate_b_default_readiness_runtime_visual_lane_{field}_not_false", field=field))
 
 
 def _validate_governed_artifact_family(
@@ -608,10 +664,32 @@ def _validate_downstream_proof(proof: Any, *, source_kind: str, bridge_receipt_i
         "provider_object_writes_enabled",
         "connector_dispatch_enabled",
         "candidate_b_default_promotion_enabled",
-        "visual_lane_mode_enabled",
     ):
         if proof.get(field) is not False:
             blocked.append(_reason(f"candidate_b_default_readiness_{source_kind}_downstream_{field}_not_false", field=field))
+    if source_kind == "runtime":
+        if proof.get("visual_lane_mode_enabled") is not True:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_runtime_downstream_visual_lane_mode_not_enabled",
+                    field="visual_lane_mode_enabled",
+                )
+            )
+        if str(proof.get("visual_lane_mode") or "").strip() != CANDIDATE_B_VISUAL_LANE_MODE:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_runtime_downstream_visual_lane_mode_mismatch",
+                    expected=CANDIDATE_B_VISUAL_LANE_MODE,
+                    received=proof.get("visual_lane_mode"),
+                )
+            )
+    elif proof.get("visual_lane_mode_enabled") is not False:
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{source_kind}_downstream_visual_lane_mode_enabled_not_false",
+                field="visual_lane_mode_enabled",
+            )
+        )
     coverage = _coverage_values(proof.get("coverage"))
     missing = sorted(_REQUIRED_COVERAGE.difference(coverage))
     if missing:
@@ -631,6 +709,8 @@ def _validate_downstream_proof(proof: Any, *, source_kind: str, bridge_receipt_i
             "missing_coverage": missing,
             "raw_local_path_exposed": proof.get("raw_local_path_exposed") is True,
             "provider_private_token_exposed": proof.get("provider_private_token_exposed") is True,
+            "visual_lane_mode_enabled": proof.get("visual_lane_mode_enabled") is True,
+            "visual_lane_mode": proof.get("visual_lane_mode"),
         },
     }
 
@@ -655,6 +735,7 @@ def _validate_operator_status(value: Any) -> dict[str, Any]:
         "operator_visible_provenance_status",
         "bundle_status_projection_visible",
         "runtime_status_projection_visible",
+        "candidate_b_visual_lane_status_projection_visible",
         "default_selector_change_visible_as_enabled",
     )
     summary = {key: evidence.get(key) is True for key in required_true}
@@ -673,7 +754,9 @@ def _negative_invariants() -> dict[str, bool]:
     return {
         "baseline_non_pdf_default_changed": False,
         "candidate_a_semantics_changed": False,
-        "candidate_b_visual_lane_mode_enabled": False,
+        "candidate_b_visual_lane_mode_enabled": True,
+        "candidate_b_visual_lane_default_enabled": False,
+        "candidate_b_visual_lane_material_ingestion_enabled": False,
         "candidate_b_default_promotion_outside_eligible_pdf_enabled": False,
         "default_selector_changed_outside_eligible_pdf": False,
         "runtime_db_expansion_enabled": False,
