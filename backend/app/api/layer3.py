@@ -34,6 +34,7 @@ from app.services import (
     layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_artifact_status,
     layer3_candidate_b_default_readiness,
+    layer3_candidate_b_downstream_proof,
     layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
     layer3_source_directory_ingestion,
@@ -134,6 +135,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_bundle_material_bridge_endpoint: str
     candidate_b_artifact_family_status_admitted: bool
     candidate_b_artifact_family_status_endpoint: str
+    candidate_b_runtime_downstream_proof_admitted: bool
+    candidate_b_runtime_downstream_proof_endpoint: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
@@ -2638,6 +2641,19 @@ class Layer3CandidateBVisualLaneStatusRequest(BaseModel):
     bridge_receipt_id: str = Field(min_length=1)
 
 
+class Layer3CandidateBRuntimeDownstreamProofRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    proof_mode: Literal["candidate_b_visual_lane_runtime_downstream_e2e_proof_v1"]
+    operator_decision: Literal["record_candidate_b_visual_lane_runtime_downstream_e2e_proof"]
+    candidate_b_run_id: str = Field(min_length=1)
+    bridge_receipt_id: str = Field(min_length=1)
+    candidate_b_visual_lane_status_evidence: dict[str, Any]
+    coverage_evidence: dict[str, Any]
+    operator_confirmation: bool
+
+
 class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3099,6 +3115,33 @@ class Layer3CandidateBVisualLaneStatusResponse(Layer3BaseResponse):
     candidate_b_visual_lane_evidence: dict[str, Any]
     operator_projection: dict[str, Any]
     material_policy: dict[str, bool]
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBRuntimeDownstreamProofResponse(Layer3BaseResponse):
+    mode: str
+    candidate_b_source_kind: str
+    candidate_b_run_id: str
+    bridge_receipt_id: str
+    bridge_receipt_hash: str
+    document_processing_engine: str
+    visual_lane_mode: str
+    candidate_b_visual_lane_status_hash: str
+    proof_state: str
+    proof_hash: str
+    proof_receipt_id: str
+    proof_receipt_ref: str
+    coverage: list[str]
+    coverage_evidence: dict[str, Any]
+    coverage_evidence_hash: str
+    raw_local_path_exposed: bool
+    provider_private_token_exposed: bool
+    provider_public_url_enabled: bool
+    provider_object_writes_enabled: bool
+    connector_dispatch_enabled: bool
+    candidate_b_default_promotion_enabled: bool
+    visual_lane_mode_enabled: bool
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -8708,6 +8751,22 @@ def post_candidate_b_visual_lane_status(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_visual_lane_status.CandidateBVisualLaneStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/runtime/downstream-proof",
+    response_model=Layer3CandidateBRuntimeDownstreamProofResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_runtime_downstream_proof(
+    payload: Layer3CandidateBRuntimeDownstreamProofRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_downstream_proof.candidate_b_runtime_downstream_proof(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_downstream_proof.CandidateBDownstreamProofError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

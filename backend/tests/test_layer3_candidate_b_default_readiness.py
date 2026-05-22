@@ -31,6 +31,7 @@ READY_SCOPE = "candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_onl
 READY_REGRESSION = "no_unacceptable_regression_against_baseline_and_candidate_a"
 READY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit"
 VISUAL_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status"
+DOWNSTREAM_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 FULL_COVERAGE = [
     "source_directory_scan",
@@ -258,6 +259,8 @@ def _write_runtime_receipt(*, visual_lane_mode: str = CANDIDATE_B_VISUAL_LANE_MO
 
 
 def _proof(kind: str, receipt_id: str, *, coverage: list[str] | None = None) -> dict[str, Any]:
+    if kind == "runtime":
+        return _runtime_downstream_proof(receipt_id, coverage=coverage)
     visual_lane_enabled = kind == "runtime"
     return {
         "candidate_b_source_kind": kind,
@@ -273,6 +276,105 @@ def _proof(kind: str, receipt_id: str, *, coverage: list[str] | None = None) -> 
         "candidate_b_default_promotion_enabled": False,
         "visual_lane_mode_enabled": visual_lane_enabled,
         "visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE if visual_lane_enabled else "baseline",
+    }
+
+
+def _coverage_evidence(coverage: list[str] | None = None) -> dict[str, Any]:
+    steps = FULL_COVERAGE if coverage is None else coverage
+    return {
+        step: {
+            "status": "proven",
+            "evidence_ref": f"candidate-b-downstream-proof://{step}",
+            "evidence_hash": _stable_hash({"step": step, "status": "proven"}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+        }
+        for step in steps
+    }
+
+
+def _downstream_negative_invariants() -> dict[str, bool]:
+    return {
+        "baseline_default_changed": False,
+        "candidate_a_semantics_changed": False,
+        "source_expansion_enabled": False,
+        "candidate_b_default_promotion_enabled": False,
+        "candidate_b_visual_lane_material_ingestion_enabled": False,
+        "source_pdf_material_text_payload_enabled": False,
+        "image_material_text_payload_enabled": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposure_enabled": False,
+        "provider_private_token_exposed": False,
+        "provider_public_url_enabled": False,
+        "provider_object_writes_enabled": False,
+        "connector_dispatch_enabled": False,
+        "rag_vector_model_runtime_enabled": False,
+        "browser_storage_authority_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "full_mockup_activation_enabled": False,
+    }
+
+
+def _runtime_downstream_proof(
+    runtime_receipt_id: str,
+    *,
+    coverage: list[str] | None = None,
+    visual_lane_status: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    coverage_evidence = _coverage_evidence(coverage)
+    negative_invariants = _downstream_negative_invariants()
+    status_evidence = visual_lane_status or _visual_lane_status_evidence(runtime_receipt_id)
+    proof_input = {
+        "schema_id": "layer3.candidate_b_runtime_downstream_proof.v1",
+        "schema_version": 1,
+        "mode": "candidate_b_visual_lane_runtime_downstream_e2e_proof_v1",
+        "candidate_b_source_kind": "runtime",
+        "candidate_b_run_id": CANDIDATE_B_RUN_ID,
+        "bridge_receipt_id": runtime_receipt_id,
+        "bridge_receipt_hash": receipt["bridge_receipt_hash"],
+        "document_processing_engine": "candidate_b_opendataloader_pdf",
+        "visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
+        "candidate_b_visual_lane_status_hash": _stable_hash(status_evidence),
+        "coverage_evidence_hash": _stable_hash(coverage_evidence),
+        "negative_invariants_hash": _stable_hash(negative_invariants),
+        "operator_confirmation": True,
+    }
+    proof_hash = _stable_hash(proof_input)
+    return {
+        **proof_input,
+        "request_id": "candidate-b-downstream-proof",
+        "server_time": "2026-05-22T00:00:00Z",
+        "status": "proven",
+        "proof_state": "candidate_b_layer3_downstream_e2e_proven",
+        "proof_hash": proof_hash,
+        "proof_receipt_id": f"cb-runtime-downstream-proof-{proof_hash[:24]}",
+        "proof_receipt_ref": (
+            f"candidate-b-runtime-downstream-proof://{runtime_receipt_id}/"
+            f"cb-runtime-downstream-proof-{proof_hash[:24]}.json"
+        ),
+        "coverage": list(FULL_COVERAGE if coverage is None else coverage),
+        "coverage_evidence": coverage_evidence,
+        "raw_local_path_exposed": False,
+        "provider_private_token_exposed": False,
+        "provider_public_url_enabled": False,
+        "provider_object_writes_enabled": False,
+        "connector_dispatch_enabled": False,
+        "candidate_b_default_promotion_enabled": False,
+        "visual_lane_mode_enabled": True,
+        "negative_invariants": negative_invariants,
+        "next_allowed_actions": [
+            "use this proof as Candidate B runtime downstream proof evidence",
+            "run Candidate B default-promotion readiness audit with the matching runtime bridge receipt",
+        ],
     }
 
 
@@ -341,6 +443,19 @@ def _visual_lane_status_request(runtime_receipt_id: str) -> dict[str, Any]:
         "operator_decision": "inspect_candidate_b_visual_lane_evidence_status",
         "candidate_b_run_id": CANDIDATE_B_RUN_ID,
         "bridge_receipt_id": runtime_receipt_id,
+    }
+
+
+def _downstream_proof_request(runtime_receipt_id: str, visual_lane_status: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-downstream-proof",
+        "proof_mode": "candidate_b_visual_lane_runtime_downstream_e2e_proof_v1",
+        "operator_decision": "record_candidate_b_visual_lane_runtime_downstream_e2e_proof",
+        "candidate_b_run_id": CANDIDATE_B_RUN_ID,
+        "bridge_receipt_id": runtime_receipt_id,
+        "candidate_b_visual_lane_status_evidence": visual_lane_status,
+        "coverage_evidence": _coverage_evidence(),
+        "operator_confirmation": True,
     }
 
 
@@ -438,6 +553,10 @@ def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
 
     payload = _payload(bundle_receipt_id, runtime_receipt_id)
     payload["candidate_b_visual_lane_status_evidence"] = visual_status_response.json()
+    payload["runtime_downstream_proof"] = _runtime_downstream_proof(
+        runtime_receipt_id,
+        visual_lane_status=visual_status_response.json(),
+    )
 
     response = client.post(READY_ENDPOINT, json=payload)
 
@@ -456,12 +575,71 @@ def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
 
 
+def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_response(
+    client: TestClient,
+    tmp_path: Path,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+
+    proof_response = client.post(
+        DOWNSTREAM_PROOF_ENDPOINT,
+        json=_downstream_proof_request(runtime_receipt_id, visual_status_response.json()),
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    assert proof["status"] == "proven"
+    assert proof["candidate_b_source_kind"] == "runtime"
+    assert proof["visual_lane_mode_enabled"] is True
+    assert proof["visual_lane_mode"] == CANDIDATE_B_VISUAL_LANE_MODE
+    assert sorted(proof["coverage"]) == sorted(FULL_COVERAGE)
+    assert proof["raw_local_path_exposed"] is False
+    assert proof["provider_public_url_enabled"] is False
+    proof_receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / runtime_receipt_id
+        / "downstream-proof"
+        / f"{proof['proof_receipt_id']}.json"
+    )
+    assert proof_receipt_path.is_file()
+
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_visual_lane_status_evidence"] = visual_status_response.json()
+    payload["runtime_downstream_proof"] = proof
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "ready"
+    assert body["downstream_proofs"]["runtime"]["proof_hash"] == proof["proof_hash"]
+    assert body["candidate_b_default_promotion_enabled"] is True
+    assert str(tmp_path) not in json.dumps(body, sort_keys=True)
+
+
+def test_candidate_b_runtime_downstream_proof_rejects_nested_path_authority(client: TestClient) -> None:
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+    payload = _downstream_proof_request(runtime_receipt_id, visual_status_response.json())
+    payload["coverage_evidence"]["gate_b"]["local_path"] = "C:/private/source.pdf"
+
+    response = client.post(DOWNSTREAM_PROOF_ENDPOINT, json=payload)
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_downstream_proof_forbidden_request_fields"
+    assert "coverage_evidence.gate_b.local_path" in body["error"]["details"]["blocked_nested_fields"]
+
+
 def test_candidate_b_default_readiness_blocks_missing_runtime_receipt(client: TestClient) -> None:
     bundle_receipt_id = _write_bundle_receipt()
     runtime_receipt_id = _write_runtime_receipt()
     payload = _payload(bundle_receipt_id, runtime_receipt_id)
     payload["candidate_b_runtime_bridge_receipt_id"] = "cb-runtime-l3-missing"
-    payload["runtime_downstream_proof"] = _proof("runtime", "cb-runtime-l3-missing")
+    payload["runtime_downstream_proof"]["bridge_receipt_id"] = "cb-runtime-l3-missing"
 
     response = client.post(READY_ENDPOINT, json=payload)
 
