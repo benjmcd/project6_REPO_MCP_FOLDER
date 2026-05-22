@@ -167,6 +167,9 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="aps-handoff-dispatch-submit"' in response.text
     assert 'id="authority-matrix-review-panel"' in response.text
     assert 'data-rendered-mode="rendered_authority_matrix_read_only_review_surface"' in response.text
+    assert 'id="candidate-b-default-promotion-status-panel"' in response.text
+    assert 'data-rendered-mode="rendered_candidate_b_default_promotion_read_only_status_surface"' in response.text
+    assert 'data-frontend-durable-authority="false"' in response.text
     assert 'id="mockup-activation-readiness-panel"' in response.text
     assert 'data-rendered-mode="rendered_mockup_activation_readiness_dashboard"' in response.text
     assert 'data-frontend-durable-authority="false"' in response.text
@@ -430,6 +433,21 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "authority_matrix_fail_closed_read_only" in js.text
     assert "additional matrix route" in js.text
     assert "/authority-matrix" not in js.text
+    assert "CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_read_only_status_surface'" in js.text
+    assert "CANDIDATE_B_DEFAULT_PROMOTION_STATUS_USE_CASE = 'operator_reviews_candidate_b_default_promotion_status_without_selector_mutation_or_dispatch'" in js.text
+    assert "CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY = 'State.bootstrap.execution_readiness'" in js.text
+    assert "function candidateBDefaultPromotionReadinessContract" in js.text
+    assert "function candidateBDefaultPromotionStatusState" in js.text
+    assert "function renderCandidateBDefaultPromotionStatusPanel" in js.text
+    assert "renderCandidateBDefaultPromotionStatusPanel()" in js.text
+    assert "candidate_b_default_promotion_status_contract_visible" in js.text
+    assert "candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only" in js.text
+    assert "selector mutation from this panel" in js.text
+    assert "State.bootstrap?.execution_readiness" in js.text
+    assert "candidate_b_default_promotion_operator_status_endpoint" in js.text
+    assert "candidate_b_default_promotion_final_proof_status_endpoint" in js.text
+    assert "/source/ingestion/candidate-b/default-promotion/operator-status" not in js.text
+    assert "/source/ingestion/candidate-b/default-promotion/final-proof/status" not in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'" in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE = 'operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch'" in js.text
     assert "function layer3E2EGovernanceLifecycleRows" in js.text
@@ -515,6 +533,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".authority-matrix-review-panel" in css.text
     assert ".authority-matrix-review-grid" in css.text
     assert ".authority-matrix-review-rows" in css.text
+    assert ".candidate-b-default-promotion-status-panel" in css.text
+    assert ".candidate-b-default-promotion-status-grid" in css.text
+    assert ".candidate-b-default-promotion-status-rows" in css.text
     assert ".mockup-activation-readiness-panel" in css.text
     assert ".mockup-activation-readiness-grid" in css.text
     assert ".mockup-activation-journey-rows" in css.text

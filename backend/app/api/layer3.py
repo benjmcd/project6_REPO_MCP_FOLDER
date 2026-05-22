@@ -137,8 +137,12 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     approved_plan_cancel_endpoint: str
     candidate_b_bundle_material_bridge_admitted: bool
     candidate_b_bundle_material_bridge_endpoint: str
+    candidate_b_runtime_material_bridge_admitted: bool
+    candidate_b_runtime_material_bridge_endpoint: str
     candidate_b_artifact_family_status_admitted: bool
     candidate_b_artifact_family_status_endpoint: str
+    candidate_b_visual_lane_status_admitted: bool
+    candidate_b_visual_lane_status_endpoint: str
     candidate_b_bundle_downstream_proof_admitted: bool
     candidate_b_bundle_downstream_proof_endpoint: str
     candidate_b_runtime_downstream_proof_admitted: bool
@@ -147,10 +151,14 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_default_promotion_operator_status_endpoint: str
     candidate_b_default_promotion_closure_evidence_admitted: bool
     candidate_b_default_promotion_closure_evidence_endpoint: str
+    candidate_b_default_promotion_readiness_audit_admitted: bool
+    candidate_b_default_promotion_readiness_audit_endpoint: str
     candidate_b_default_promotion_final_proof_admitted: bool
     candidate_b_default_promotion_final_proof_endpoint: str
     candidate_b_default_promotion_final_proof_status_admitted: bool
     candidate_b_default_promotion_final_proof_status_endpoint: str
+    candidate_b_default_promotion_selector_switch_admitted: bool
+    candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
