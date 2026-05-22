@@ -23,6 +23,28 @@ The active objective requires current-main evidence for each exact admitted pack
 
 ## Current-Main Admitted Families
 
+### Generic External Export/Download Provider-Private Signed URL Handoff
+
+Status: proved current-main generic prepare/status/revoke handoff lane; source-directory use remains intentionally not admitted for this generic route.
+
+Authority:
+
+- API routes: `/handoff/export/download/provider-private-signed-url/prepare`, `/handoff/export/download/provider-private-signed-url/status/{provider_signed_url_receipt_id}`, and `/handoff/export/download/provider-private-signed-url/revoke`.
+- Owner service: `backend/app/services/layer3_provider_private_signed_url.py`.
+- Rendered surface: default `#provider-private-signed-url-*` controls in `backend/app/review_ui/static/layer3.js`.
+- Rendered proof: `e2e/layer3-workbench.spec.js` test `Layer 3 workbench drives raw mixed rendered provider-private signed URL prepare status revoke and provider-public URL prepare status use revoke`.
+- Current-main proof doc: `247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md`.
+
+Evidence:
+
+- prepare/status/revoke are exercised from rendered external export/download authority;
+- durable provider-private receipt and audit state are tested in `backend/tests/test_layer3_api.py`;
+- stale authority and forbidden raw-token/provider-url fields fail closed in `backend/tests/test_layer3_api.py`;
+- rendered controls do not call `/handoff/export/download/provider-private-signed-url/use`;
+- `providerPrivateSignedUrlUsePath()` returns `null` unless a source-directory family is selected;
+- generic provider-private use remains `closed_not_implemented` and is not counted as a source-directory redacted use admission;
+- headed/headless rendered proof is recorded by `247_PROVIDER_PRIVATE_SIGNED_URL_RENDERED_UI_PROOF.md`.
+
 ### Source-Directory Hybrid Handoff/Export Package Artifact
 
 Status: proved current-main admitted signed-URL lifecycle.
@@ -95,6 +117,7 @@ Evidence:
 Current-main evidence preserves these non-admissions:
 
 - generic provider-private signed URL use route remains absent;
+- generic provider-private signed URL rendered controls remain prepare/status/revoke-only;
 - provider-public URL enablement remains blocked for source-directory provider-private families;
 - public proxy behavior is absent;
 - provider object write/copy/mutation is absent;
