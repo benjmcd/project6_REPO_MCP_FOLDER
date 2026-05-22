@@ -35,6 +35,7 @@ from app.services import (
     layer3_candidate_b_artifact_status,
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_runtime_bridge,
+    layer3_candidate_b_visual_lane_status,
     layer3_source_directory_ingestion,
     layer3_source_directory_material_admission,
     layer3_source_directory_context_packet,
@@ -2627,6 +2628,16 @@ class Layer3CandidateBArtifactFamilyStatusRequest(BaseModel):
     bridge_receipt_id: str = Field(min_length=1)
 
 
+class Layer3CandidateBVisualLaneStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["candidate_b_visual_lane_status_v1"]
+    operator_decision: Literal["inspect_candidate_b_visual_lane_evidence_status"]
+    candidate_b_run_id: str = Field(min_length=1)
+    bridge_receipt_id: str = Field(min_length=1)
+
+
 class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3070,6 +3081,23 @@ class Layer3CandidateBArtifactFamilyStatusResponse(Layer3BaseResponse):
     governed_retained_artifact_family: dict[str, Any]
     operator_projection: dict[str, Any]
     material_text_payload_policy: str | None
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBVisualLaneStatusResponse(Layer3BaseResponse):
+    mode: str
+    candidate_b_source_kind: str
+    candidate_b_run_id: str
+    bridge_receipt_id: str
+    bridge_receipt_ref: str
+    bridge_receipt_hash: str
+    document_processing_engine: str
+    visual_lane_mode: str
+    visual_lane_status: str
+    candidate_b_visual_lane_evidence: dict[str, Any]
+    operator_projection: dict[str, Any]
+    material_policy: dict[str, bool]
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -8662,6 +8690,22 @@ def post_candidate_b_artifact_family_status(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_artifact_status.CandidateBArtifactStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/visual-lane/status",
+    response_model=Layer3CandidateBVisualLaneStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_visual_lane_status(
+    payload: Layer3CandidateBVisualLaneStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_visual_lane_status.candidate_b_visual_lane_status(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_visual_lane_status.CandidateBVisualLaneStatusError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
