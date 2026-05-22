@@ -7,11 +7,13 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.models.models import (
+    L3PackageSupersessionCommit,
     L3ProviderPrivateSignedUrlObjectAuthority,
     L3ProviderPrivateSignedUrlReceipt,
     L3ProviderPublicUrlAuditEvent,
     L3ProviderPublicUrlObjectAuthority,
     L3ProviderPublicUrlReceipt,
+    L3ReconciliationRecord,
 )
 from app.services.layer3_provider_public_url_state import (
     PROVIDER_PUBLIC_URL_MAX_TTL_SECONDS,
@@ -37,6 +39,12 @@ PROVIDER_PUBLIC_URL_REVOKE_OPERATOR_DECISION = "revoke_provider_public_url"
 PROVIDER_PUBLIC_URL_DEFAULT_TTL_SECONDS = 300
 PROVIDER_PUBLIC_URL_FAKE_PROVIDER_AUTHORITY = "layer3_provider_public_url_fake_provider"
 PROVIDER_PRIVATE_SIGNED_URL_STATE_PREPARED = "provider_private_signed_url_prepared"
+SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_AUTHORITY_SCHEMA_ID = (
+    "layer3.source_directory_hybrid_context_packet_external_export_download_prepare_authority_basis.v1"
+)
+SOURCE_DIRECTORY_PROVIDER_PUBLIC_URL_BLOCKED_AUTHORITIES = frozenset(
+    {SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_AUTHORITY_SCHEMA_ID}
+)
 
 PROVIDER_PUBLIC_URL_PREPARE_ALLOWED_FIELDS = frozenset(
     {
@@ -224,6 +232,56 @@ def _require_private_receipt_prepared(receipt: L3ProviderPrivateSignedUrlReceipt
         )
 
 
+def _source_directory_provider_private_origin(
+    db: Session,
+    *,
+    authority: L3ProviderPrivateSignedUrlObjectAuthority,
+) -> str | None:
+    reconciliation = db.get(L3ReconciliationRecord, authority.reconciliation_record_id)
+    if reconciliation is not None:
+        summary = reconciliation.summary_json if isinstance(reconciliation.summary_json, dict) else {}
+        readiness = summary.get("external_export_download_prepare")
+        if isinstance(readiness, dict):
+            authority_basis = readiness.get("authority_basis")
+            if isinstance(authority_basis, dict):
+                schema_id = str(authority_basis.get("schema_id") or "").strip()
+                if schema_id in SOURCE_DIRECTORY_PROVIDER_PUBLIC_URL_BLOCKED_AUTHORITIES:
+                    return schema_id
+    package_commit = (
+        db.query(L3PackageSupersessionCommit)
+        .filter(
+            L3PackageSupersessionCommit.package_supersession_commit_id
+            == authority.external_export_download_record_ref,
+            L3PackageSupersessionCommit.reconciliation_record_id == authority.reconciliation_record_id,
+        )
+        .one_or_none()
+    )
+    if package_commit is not None:
+        return "layer3.source_directory_package_supersession_provider_private_artifact.v1"
+    return None
+
+
+def _require_not_source_directory_provider_private_authority(
+    db: Session,
+    *,
+    authority: L3ProviderPrivateSignedUrlObjectAuthority,
+) -> None:
+    origin = _source_directory_provider_private_origin(db, authority=authority)
+    if origin is None:
+        return
+    raise Layer3WorkbenchError(
+        "provider_public_url_source_directory_provider_private_not_admitted",
+        "Provider-public URL prepare is not admitted for source-directory provider-private delivery authority.",
+        status="conflict",
+        http_status=409,
+        blocked_fields=["provider_private_signed_url_receipt_id"],
+        next_allowed_actions=[
+            "use_source_directory_provider_private_signed_url",
+            "revoke_source_directory_provider_private_signed_url",
+        ],
+    )
+
+
 def _public_authority_basis(authority: L3ProviderPublicUrlObjectAuthority) -> dict[str, Any]:
     return {
         "session_id": authority.session_id,
@@ -264,6 +322,7 @@ def _private_authority_basis(
             blocked_fields=["provider_private_signed_url_receipt_id"],
             next_allowed_actions=["prepare_provider_private_signed_url"],
         )
+    _require_not_source_directory_provider_private_authority(db, authority=authority)
     return {
         "session_id": authority.session_id,
         "provider_private_signed_url_receipt_id": receipt.provider_private_signed_url_receipt_id,

@@ -34,6 +34,8 @@ from app.models.models import (
     L3ProviderPrivateSignedUrlObjectAuthority,
     L3ProviderPrivateSignedUrlReceipt,
     L3ProviderPrivateSignedUrlRevocation,
+    L3ProviderPublicUrlObjectAuthority,
+    L3ProviderPublicUrlReceipt,
     L3ReconciliationRecord,
     L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
@@ -1438,6 +1440,22 @@ def test_source_directory_package_supersession_provider_private_lifecycle_is_ser
     assert str(source_dir) not in prepare.text
     assert str(Path(settings.storage_dir)) not in prepare.text
 
+    provider_public = client.post(
+        "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
+        json={
+            "client_request_id": "source-directory-package-provider-public-prepare",
+            "provider_private_signed_url_receipt_id": prepare_body["provider_signed_url_receipt_id"],
+            "recipient_scope": "operator-reviewer",
+            "requested_ttl_seconds": 300,
+            "delivery_mode": "provider_public_url",
+            "operator_decision": "prepare_provider_public_url",
+        },
+    )
+    assert provider_public.status_code == 409, provider_public.text
+    assert provider_public.json()["error_code"] == (
+        "provider_public_url_source_directory_provider_private_not_admitted"
+    )
+
     lifecycle_payload = {
         **base_payload,
         "provider_signed_url_receipt_id": prepare_body["provider_signed_url_receipt_id"],
@@ -1561,6 +1579,8 @@ def test_source_directory_package_supersession_provider_private_lifecycle_is_ser
         assert db.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
         assert db.query(L3ProviderPrivateSignedUrlRevocation).count() == 1
         assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() >= 6
+        assert db.query(L3ProviderPublicUrlObjectAuthority).count() == 0
+        assert db.query(L3ProviderPublicUrlReceipt).count() == 0
         assert db.query(L3ReplacementOutputPackage).count() == 0
         assert db.query(L3PackageReplacementActivation).count() == 0
         assert db.query(ConnectorRun).count() == 0
