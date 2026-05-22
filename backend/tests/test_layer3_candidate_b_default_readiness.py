@@ -487,11 +487,38 @@ def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
     }
 
 
+def _payload_with_live_runtime_proof(
+    client: TestClient,
+    bundle_receipt_id: str,
+    runtime_receipt_id: str,
+    *,
+    visual_status: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    status = visual_status
+    if status is None:
+        visual_status_response = client.post(
+            VISUAL_STATUS_ENDPOINT,
+            json=_visual_lane_status_request(runtime_receipt_id),
+        )
+        assert visual_status_response.status_code == 200, visual_status_response.text
+        status = visual_status_response.json()
+    proof_response = client.post(
+        DOWNSTREAM_PROOF_ENDPOINT,
+        json=_downstream_proof_request(runtime_receipt_id, status),
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_visual_lane_status_evidence"] = status
+    payload["runtime_downstream_proof"] = proof_response.json()
+    return payload
+
+
 def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting(client: TestClient, tmp_path: Path) -> None:
     bundle_receipt_id = _write_bundle_receipt()
     runtime_receipt_id = _write_runtime_receipt()
 
-    response = client.post(READY_ENDPOINT, json=_payload(bundle_receipt_id, runtime_receipt_id))
+    payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    response = client.post(READY_ENDPOINT, json=payload)
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -551,11 +578,11 @@ def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
     visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
     assert visual_status_response.status_code == 200, visual_status_response.text
 
-    payload = _payload(bundle_receipt_id, runtime_receipt_id)
-    payload["candidate_b_visual_lane_status_evidence"] = visual_status_response.json()
-    payload["runtime_downstream_proof"] = _runtime_downstream_proof(
+    payload = _payload_with_live_runtime_proof(
+        client,
+        bundle_receipt_id,
         runtime_receipt_id,
-        visual_lane_status=visual_status_response.json(),
+        visual_status=visual_status_response.json(),
     )
 
     response = client.post(READY_ENDPOINT, json=payload)
@@ -573,6 +600,20 @@ def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
         is True
     )
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
+
+
+def test_candidate_b_default_readiness_blocks_unpersisted_runtime_downstream_proof(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+
+    response = client.post(READY_ENDPOINT, json=_payload(bundle_receipt_id, runtime_receipt_id))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["candidate_b_default_promotion_enabled"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_runtime_downstream_proof_receipt_missing" in codes
 
 
 def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_response(
