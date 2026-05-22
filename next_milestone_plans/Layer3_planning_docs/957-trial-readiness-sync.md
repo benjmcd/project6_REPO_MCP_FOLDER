@@ -86,6 +86,32 @@ Operator verification commands for this checkpoint are:
 - headed and headless Chromium proof for the mockup/readiness journey group before claiming rendered mockup readiness;
 - `git diff --check`.
 
+## Current-Main Evidence Refresh
+
+Evidence refresh date: `2026-05-22`.
+
+Evidence branch: `codex/l3-runbook-evidence-sync`.
+
+Current-main authority for this refresh: `project6-origin/main` at `954f169a71ad9f261b8af841b19fb29922506169`.
+
+The refresh re-ran the operator verification set from this checkpoint without adding runtime behavior, rendered controls, route/API/DTO/model/migration/service changes, frontend durable state, or full mockup activation.
+
+Refresh results:
+
+- `python -m py_compile ./tools/l3-progress-check.py`: PASS.
+- `node --check ./backend/app/review_ui/static/layer3.js`: PASS.
+- `git diff --check`: PASS before this docs-only refresh.
+- `python ./tools/l3-progress-check.py`: PASS.
+- `python -m json.tool ./next_milestone_plans/layer3_progress_manifest.json`: PASS.
+- `python -m json.tool ./next_milestone_plans/layer3_workbench_proof_manifest.json`: PASS.
+- `python -m pytest ./backend/tests/test_layer3_mockup_activation_readiness.py ./backend/tests/test_layer3_page.py::test_layer3_mockup_query_source_setup_projection_reader_is_bounded ./backend/tests/test_layer3_page.py::test_layer3_mockup_output_review_package_handoff_projection_reader_is_bounded ./backend/tests/test_layer3_page.py::test_layer3_analysis_environment_projection_rendered_reader_is_bounded ./backend/tests/test_layer3_api.py::test_layer3_bootstrap_readiness_openapi_contracts -q`: PASS, `5 passed`.
+- Headless Chromium bounded source-directory path proof, `npx playwright test e2e/layer3-workbench.spec.js --project=chromium --grep "Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path"`: PASS, `1 passed`.
+- Headed Chromium bounded source-directory path proof, `npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed --grep "Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path"`: PASS, `1 passed`.
+- Headless Chromium mockup/readiness journey group, `npx playwright test e2e/layer3-workbench.spec.js --project=chromium --grep "Layer 3 mockup (activation readiness dashboard classifies next-phase journeys from bootstrap authority|Sublayer 3C execution lanes projection renders read-only server state without runtime widening)"`: PASS, `2 passed`.
+- Headed Chromium mockup/readiness journey group, `npx playwright test e2e/layer3-workbench.spec.js --project=chromium --headed --grep "Layer 3 mockup (activation readiness dashboard classifies next-phase journeys from bootstrap authority|Sublayer 3C execution lanes projection renders read-only server state without runtime widening)"`: PASS, `2 passed`.
+
+Headed and headless browser proof did not diverge. No failed command, check, rendered proof, open PR, or review-thread blocker was found during this refresh.
+
 ## Non-Admission Boundary
 
 This sync does not admit:
