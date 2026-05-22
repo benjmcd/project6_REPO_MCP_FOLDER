@@ -11854,6 +11854,40 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   await expect(page.locator('#provider-private-signed-url-use')).toBeDisabled();
   await expect(page.locator('#provider-private-signed-url-revoke')).toBeEnabled();
 
+  await page.evaluate(() => {
+    State.providerPrivateSignedUrlUse = null;
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+  });
+  await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
+  const sourceProviderPrivateReplayUseRequestPromise = waitForPostRequest(sourceProviderPrivateUsePath);
+  const sourceProviderPrivateReplayUseResponsePromise = waitForPostResponse(sourceProviderPrivateUsePath);
+  await page.locator('#provider-private-signed-url-use').click();
+  const sourceProviderPrivateReplayUsePayload = (await sourceProviderPrivateReplayUseRequestPromise).postDataJSON();
+  const sourceProviderPrivateReplayUse = await expectJsonStatus(
+    await sourceProviderPrivateReplayUseResponsePromise,
+    409,
+  );
+  expectOnlyPayloadKeys(sourceProviderPrivateReplayUsePayload, sourceProviderPrivateUsePayloadKeys);
+  expect(withoutClientRequestId(sourceProviderPrivateReplayUsePayload)).toEqual({
+    ...withoutClientRequestId(hybridStatusPayload),
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'use_source_directory_hybrid_provider_private_signed_url',
+    provider_signed_url_receipt_id: sourceProviderPrivate.provider_signed_url_receipt_id,
+    decision_notes: 'Rendered source-directory hybrid provider-private use records only a redacted server-owned use decision.',
+  });
+  expectNoForbiddenPayloadKeys(sourceProviderPrivateReplayUsePayload);
+  expect(sourceProviderPrivateReplayUse.error.code).toBe('provider_private_signed_url_state_replay_denied');
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_state_replay_denied');
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
+  await page.evaluate((usedReceipt) => {
+    State.providerPrivateSignedUrlUse = usedReceipt;
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+  }, sourceProviderPrivateUse);
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeEnabled();
+
   const sourceProviderPrivateRevokeRequestPromise = waitForPostRequest(sourceProviderPrivateRevokePath);
   const sourceProviderPrivateRevokeResponsePromise = waitForPostResponse(sourceProviderPrivateRevokePath);
   await page.locator('#provider-private-signed-url-revoke').click();
@@ -11880,6 +11914,35 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(sourceProviderPrivateRevoke.raw_provider_private_signed_url_token_exposed).toBe(false);
   await expect(providerPrivatePanel).toContainText('provider_private_signed_url_revoked');
   await expect(page.locator('#provider-private-signed-url-revoke')).toBeDisabled();
+
+  await page.evaluate(() => {
+    State.providerPrivateSignedUrlUse = null;
+    State.providerPrivateSignedUrlRevoke = null;
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+  });
+  await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
+  const sourceProviderPrivateUseAfterRevokeRequestPromise = waitForPostRequest(sourceProviderPrivateUsePath);
+  const sourceProviderPrivateUseAfterRevokeResponsePromise = waitForPostResponse(sourceProviderPrivateUsePath);
+  await page.locator('#provider-private-signed-url-use').click();
+  const sourceProviderPrivateUseAfterRevokePayload = (await sourceProviderPrivateUseAfterRevokeRequestPromise).postDataJSON();
+  const sourceProviderPrivateUseAfterRevoke = await expectJsonStatus(
+    await sourceProviderPrivateUseAfterRevokeResponsePromise,
+    409,
+  );
+  expectOnlyPayloadKeys(sourceProviderPrivateUseAfterRevokePayload, sourceProviderPrivateUsePayloadKeys);
+  expect(withoutClientRequestId(sourceProviderPrivateUseAfterRevokePayload)).toEqual({
+    ...withoutClientRequestId(hybridStatusPayload),
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'use_source_directory_hybrid_provider_private_signed_url',
+    provider_signed_url_receipt_id: sourceProviderPrivate.provider_signed_url_receipt_id,
+    decision_notes: 'Rendered source-directory hybrid provider-private use records only a redacted server-owned use decision.',
+  });
+  expectNoForbiddenPayloadKeys(sourceProviderPrivateUseAfterRevokePayload);
+  expect(sourceProviderPrivateUseAfterRevoke.error.code).toBe('provider_private_signed_url_state_revoked');
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_state_revoked');
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
 
   const internalWebhookPanel = page.locator('#source-directory-hybrid-internal-webhook-panel');
   await internalWebhookPanel.scrollIntoViewIfNeeded();
@@ -11973,7 +12036,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivatePreparePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateStatusPath)).toHaveLength(1);
-  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateUsePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateUsePath)).toHaveLength(3);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateRevokePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicPreparePath)).toHaveLength(0);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicUsePath)).toHaveLength(0);
@@ -12003,11 +12066,11 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   }
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
-  const expectedStaleAuthorityConsoleErrors = consoleErrors.filter((message) => (
+  const expectedFailClosedConsoleErrors = consoleErrors.filter((message) => (
     message.includes('Failed to load resource')
     && message.includes('409 (Conflict)')
   ));
-  expect(expectedStaleAuthorityConsoleErrors).toHaveLength(3);
+  expect(expectedFailClosedConsoleErrors).toHaveLength(5);
   expect(consoleErrors.filter((message) => !(
     message.includes('Failed to load resource')
     && message.includes('409 (Conflict)')
