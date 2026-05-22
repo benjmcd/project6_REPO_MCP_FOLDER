@@ -9,6 +9,7 @@ from typing import Any, Mapping
 from app.core.config import settings
 from app.services import (
     layer3_candidate_b_bundle_bridge,
+    layer3_candidate_b_downstream_proof,
     layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
 )
@@ -200,16 +201,19 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         source_kind="bundle",
         bridge_receipt_id=bundle_receipt_id,
     )
-    runtime_proof = _validate_downstream_proof(
-        fields.get("runtime_downstream_proof"),
-        source_kind="runtime",
-        bridge_receipt_id=runtime_receipt_id,
-    )
     visual_lane_status = _validate_visual_lane_status_evidence(
         fields.get("candidate_b_visual_lane_status_evidence"),
         candidate_b_run_id=candidate_b_run_id,
         runtime_receipt_id=runtime_receipt_id,
         runtime_receipt_hash=runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
+    )
+    runtime_proof = _validate_downstream_proof(
+        fields.get("runtime_downstream_proof"),
+        source_kind="runtime",
+        bridge_receipt_id=runtime_receipt_id,
+        candidate_b_run_id=candidate_b_run_id,
+        bridge_receipt_hash=runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
+        visual_lane_status_hash=visual_lane_status["status_hash"],
     )
     operator_status = _validate_operator_status(fields.get("operator_status_evidence"))
     blocked.extend(bundle_receipt["blocked_reasons"])
@@ -655,7 +659,15 @@ def _authority_hashes(*, kind: str, receipt: Mapping[str, Any]) -> dict[str, str
     return {key: str(receipt[key]) for key in keys if receipt.get(key)}
 
 
-def _validate_downstream_proof(proof: Any, *, source_kind: str, bridge_receipt_id: str) -> dict[str, Any]:
+def _validate_downstream_proof(
+    proof: Any,
+    *,
+    source_kind: str,
+    bridge_receipt_id: str,
+    candidate_b_run_id: str | None = None,
+    bridge_receipt_hash: str | None = None,
+    visual_lane_status_hash: str | None = None,
+) -> dict[str, Any]:
     blocked: list[dict[str, Any]] = []
     if not isinstance(proof, dict):
         return {
@@ -681,6 +693,42 @@ def _validate_downstream_proof(proof: Any, *, source_kind: str, bridge_receipt_i
         if proof.get(field) is not False:
             blocked.append(_reason(f"candidate_b_default_readiness_{source_kind}_downstream_{field}_not_false", field=field))
     if source_kind == "runtime":
+        for field, expected in {
+            "schema_id": layer3_candidate_b_downstream_proof.SCHEMA_ID,
+            "mode": layer3_candidate_b_downstream_proof.PROOF_MODE,
+            "status": "proven",
+            "candidate_b_run_id": candidate_b_run_id,
+            "bridge_receipt_hash": bridge_receipt_hash,
+            "document_processing_engine": CANDIDATE_B_ENGINE,
+            "candidate_b_visual_lane_status_hash": visual_lane_status_hash,
+        }.items():
+            if str(proof.get(field) or "").strip() != str(expected or "").strip():
+                blocked.append(
+                    _reason(
+                        f"candidate_b_default_readiness_runtime_downstream_{field}_mismatch",
+                        field=field,
+                        expected=expected,
+                        received=proof.get(field),
+                    )
+                )
+        missing_hash_fields = [key for key in layer3_candidate_b_downstream_proof.PROOF_HASH_KEYS if key not in proof]
+        if missing_hash_fields:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_runtime_downstream_proof_authority_field_missing",
+                    missing_fields=missing_hash_fields,
+                )
+            )
+        else:
+            expected_hash = _stable_hash({key: proof[key] for key in layer3_candidate_b_downstream_proof.PROOF_HASH_KEYS})
+            if proof.get("proof_hash") != expected_hash:
+                blocked.append(
+                    _reason(
+                        "candidate_b_default_readiness_runtime_downstream_proof_hash_mismatch",
+                        expected=expected_hash,
+                        received=proof.get("proof_hash"),
+                    )
+                )
         if proof.get("visual_lane_mode_enabled") is not True:
             blocked.append(
                 _reason(
