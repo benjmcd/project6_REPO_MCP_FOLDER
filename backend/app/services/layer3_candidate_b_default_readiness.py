@@ -33,6 +33,7 @@ _BUNDLE_HASH_KEYS = (
     "bundle_raw_file_manifest_hash",
     "admitted_file_subset_source_hash",
     "admitted_file_subset_hash",
+    "governed_retained_artifact_family_hash",
     "redaction_policy_id",
 )
 _RUNTIME_HASH_KEYS = (
@@ -47,6 +48,7 @@ _RUNTIME_HASH_KEYS = (
     "compare_target_set_hash",
     "runtime_review_root_storage_authority_hash",
     "admitted_file_subset_hash",
+    "governed_retained_artifact_family_hash",
     "redaction_policy_id",
 )
 _REQUIRED_COVERAGE = frozenset(
@@ -377,7 +379,16 @@ def _validate_receipt(*, kind: str, receipt_id: str, expected: Mapping[str, str]
     if not target_set.get("fixture_ids") or int(target_set.get("target_count") or 0) <= 0:
         blocked.append(_reason(f"candidate_b_default_readiness_{kind}_compare_target_set_empty"))
     _validate_receipt_invariants(kind=kind, receipt=receipt, blocked=blocked)
-    return _receipt_result(kind=kind, receipt_id=receipt_id, blocked=blocked, receipt=receipt, validation=validation, target_set=target_set)
+    artifact_family = _validate_governed_artifact_family(kind=kind, receipt=receipt, blocked=blocked)
+    return _receipt_result(
+        kind=kind,
+        receipt_id=receipt_id,
+        blocked=blocked,
+        receipt=receipt,
+        validation=validation,
+        target_set=target_set,
+        artifact_family=artifact_family,
+    )
 
 
 def _read_receipt(*, kind: str, receipt_id: str, blocked: list[dict[str, Any]]) -> dict[str, Any] | None:
@@ -427,6 +438,8 @@ def _validate_receipt_invariants(*, kind: str, receipt: Mapping[str, Any], block
         "candidate_a_semantics_changed",
         "candidate_b_visual_lane_material_ingestion_enabled",
         "candidate_b_default_promotion_enabled",
+        "pdf_ingestion_enabled",
+        "image_ingestion_enabled",
         "provider_object_writes_enabled",
         "connector_dispatch_enabled",
         "rag_vector_model_runtime_enabled",
@@ -447,6 +460,7 @@ def _receipt_result(
     receipt: Mapping[str, Any] | None = None,
     validation: Mapping[str, Any] | None = None,
     target_set: Mapping[str, Any] | None = None,
+    artifact_family: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     receipt = receipt or {}
     target_set = target_set or {}
@@ -465,6 +479,7 @@ def _receipt_result(
                 receipt.get("layer3_compatibility", {}).get("gate_b_uses_existing_decision_basis_validation")
             ),
             "raw_local_path_exposed": False,
+            "governed_retained_artifact_family_hash": receipt.get("governed_retained_artifact_family_hash"),
         },
         "compare_target_set": {
             key: target_set.get(key)
@@ -481,6 +496,70 @@ def _receipt_result(
             if key in target_set
         },
         "authority_hashes": _authority_hashes(kind=kind, receipt=receipt),
+        "governed_retained_artifact_family": _artifact_family_summary(artifact_family),
+    }
+
+
+def _validate_governed_artifact_family(
+    *,
+    kind: str,
+    receipt: Mapping[str, Any],
+    blocked: list[dict[str, Any]],
+) -> Mapping[str, Any]:
+    artifact_family = receipt.get("governed_retained_artifact_family")
+    if not isinstance(artifact_family, dict):
+        blocked.append(_reason(f"candidate_b_default_readiness_{kind}_governed_artifact_family_missing"))
+        return {}
+    expected_hash = str(receipt.get("governed_retained_artifact_family_hash") or "").strip()
+    received_hash = str(artifact_family.get("artifact_family_hash") or "").strip()
+    if len(expected_hash) != 64 or received_hash != expected_hash:
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_governed_artifact_family_hash_mismatch",
+                expected=expected_hash or None,
+                received=received_hash or None,
+            )
+        )
+    for field in ("pdf_material_text_payload_enabled", "image_material_text_payload_enabled", "raw_url_exposure_enabled"):
+        if artifact_family.get(field) is not False:
+            blocked.append(_reason(f"candidate_b_default_readiness_{kind}_{field}_not_false", field=field))
+    roles = artifact_family.get("roles")
+    required_roles = {
+        "material_analysis_payloads",
+        "visual_page_evidence",
+        "provenance_audit_artifacts",
+        "product_inspection_artifacts",
+        "delivery_artifacts",
+    }
+    if not isinstance(roles, dict):
+        blocked.append(_reason(f"candidate_b_default_readiness_{kind}_governed_artifact_roles_missing"))
+    else:
+        missing_roles = sorted(role for role in required_roles if role not in roles)
+        if missing_roles:
+            blocked.append(
+                _reason(
+                    f"candidate_b_default_readiness_{kind}_governed_artifact_roles_incomplete",
+                    missing_roles=missing_roles,
+                )
+            )
+        if not isinstance(roles.get("material_analysis_payloads"), list) or not roles["material_analysis_payloads"]:
+            blocked.append(_reason(f"candidate_b_default_readiness_{kind}_material_payload_artifacts_missing"))
+        if not isinstance(roles.get("provenance_audit_artifacts"), list) or not roles["provenance_audit_artifacts"]:
+            blocked.append(_reason(f"candidate_b_default_readiness_{kind}_provenance_artifacts_missing"))
+    return artifact_family
+
+
+def _artifact_family_summary(artifact_family: Mapping[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(artifact_family, Mapping):
+        return {"available": False}
+    return {
+        "available": True,
+        "policy": artifact_family.get("policy"),
+        "artifact_family_hash": artifact_family.get("artifact_family_hash"),
+        "role_counts": artifact_family.get("role_counts") if isinstance(artifact_family.get("role_counts"), dict) else {},
+        "pdf_material_text_payload_enabled": artifact_family.get("pdf_material_text_payload_enabled") is True,
+        "image_material_text_payload_enabled": artifact_family.get("image_material_text_payload_enabled") is True,
+        "raw_url_exposure_enabled": artifact_family.get("raw_url_exposure_enabled") is True,
     }
 
 
@@ -493,6 +572,7 @@ def _authority_hashes(*, kind: str, receipt: Mapping[str, Any]) -> dict[str, str
             "bundle_raw_file_manifest_hash",
             "admitted_file_subset_source_hash",
             "admitted_file_subset_hash",
+            "governed_retained_artifact_family_hash",
         )
         if kind == "bundle"
         else (
@@ -500,6 +580,7 @@ def _authority_hashes(*, kind: str, receipt: Mapping[str, Any]) -> dict[str, str
             "compare_target_set_hash",
             "runtime_review_root_storage_authority_hash",
             "admitted_file_subset_hash",
+            "governed_retained_artifact_family_hash",
         )
     )
     return {key: str(receipt[key]) for key in keys if receipt.get(key)}
