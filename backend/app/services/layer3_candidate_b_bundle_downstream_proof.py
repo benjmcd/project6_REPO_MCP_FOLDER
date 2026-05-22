@@ -66,6 +66,19 @@ REQUIRED_COVERAGE = frozenset(
         "session_status_projection",
     }
 )
+DELIVERY_ARTIFACT_AUTHORITY_COVERAGE = frozenset(
+    {
+        "external_export_download_prepare",
+        "same_origin_delivery_status",
+        "same_origin_delivery",
+        "provider_private_prepare",
+        "provider_private_status",
+        "provider_private_use",
+        "provider_private_revoke",
+        "internal_webhook_dispatch",
+        "internal_webhook_status",
+    }
+)
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
     "paths",
@@ -174,7 +187,10 @@ def candidate_b_bundle_downstream_proof(payload: Mapping[str, Any]) -> dict[str,
     receipt_id = _required_storage_id(fields, "bridge_receipt_id", layer3_candidate_b_bundle_bridge.BRIDGE_RECEIPT_PREFIX)
     receipt = _read_receipt(receipt_id)
     receipt_hash = _validate_receipt(candidate_b_bundle_id, receipt_id, receipt)
-    coverage = _validate_coverage_evidence(fields.get("coverage_evidence"))
+    coverage = _validate_coverage_evidence(
+        fields.get("coverage_evidence"),
+        retained_artifact_family_hash=str(receipt.get("governed_retained_artifact_family_hash") or ""),
+    )
     negative_invariants = _negative_invariants()
     negative_invariants_hash = _stable_hash(negative_invariants)
     coverage_hash = _stable_hash(coverage)
@@ -342,7 +358,11 @@ def _validate_receipt(candidate_b_bundle_id: str, receipt_id: str, receipt: Mapp
     return expected_hash
 
 
-def _validate_coverage_evidence(value: Any) -> dict[str, dict[str, Any]]:
+def _validate_coverage_evidence(
+    value: Any,
+    *,
+    retained_artifact_family_hash: str,
+) -> dict[str, dict[str, Any]]:
     if not isinstance(value, Mapping):
         raise CandidateBBundleDownstreamProofError(
             "candidate_b_bundle_downstream_proof_coverage_missing",
@@ -355,7 +375,36 @@ def _validate_coverage_evidence(value: Any) -> dict[str, dict[str, Any]]:
         if not isinstance(entry, Mapping) or entry.get("status") != "proven":
             missing.append(step)
             continue
-        coverage[step] = {"status": "proven", "evidence_hash": _stable_hash(dict(entry))}
+        delivery_authority: dict[str, Any] = {}
+        if step in DELIVERY_ARTIFACT_AUTHORITY_COVERAGE:
+            received_artifact_hash = str(entry.get("candidate_b_retained_artifact_family_hash") or "").strip()
+            if received_artifact_hash != retained_artifact_family_hash:
+                raise CandidateBBundleDownstreamProofError(
+                    "candidate_b_bundle_downstream_proof_delivery_artifact_authority_mismatch",
+                    "Delivery-facing Candidate B bundle downstream proof must bind to the retained artifact-family authority hash.",
+                    http_status=409,
+                    details={
+                        "coverage_step": step,
+                        "expected": retained_artifact_family_hash,
+                        "received": received_artifact_hash or None,
+                    },
+                )
+            if entry.get("candidate_b_delivery_artifact_roles_bound") is not True:
+                raise CandidateBBundleDownstreamProofError(
+                    "candidate_b_bundle_downstream_proof_delivery_artifact_roles_not_bound",
+                    "Delivery-facing Candidate B bundle downstream proof must bind retained delivery/product artifact roles.",
+                    http_status=409,
+                    details={"coverage_step": step},
+                )
+            delivery_authority = {
+                "candidate_b_retained_artifact_family_hash": retained_artifact_family_hash,
+                "candidate_b_delivery_artifact_roles_bound": True,
+            }
+        coverage[step] = {
+            "status": "proven",
+            "evidence_hash": _stable_hash(dict(entry)),
+            **delivery_authority,
+        }
     if missing:
         raise CandidateBBundleDownstreamProofError(
             "candidate_b_bundle_downstream_proof_coverage_incomplete",
