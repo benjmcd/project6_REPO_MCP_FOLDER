@@ -105,7 +105,7 @@ class _FakeCompareTargets:
         }
 
 
-def _runtime_binding(tmp_path: Path) -> ReviewRuntimeBinding:
+def _runtime_binding(tmp_path: Path, *, visual_lane_mode: str = "baseline") -> ReviewRuntimeBinding:
     review_root = tmp_path / "runtime"
     storage_dir = review_root / "storage"
     storage_dir.mkdir(parents=True)
@@ -123,7 +123,7 @@ def _runtime_binding(tmp_path: Path) -> ReviewRuntimeBinding:
         "database_path": str(database_path),
         "database_url": f"sqlite:///{database_path.as_posix()}",
         "storage_dir": str(storage_dir),
-        "visual_lane_mode": "baseline",
+        "visual_lane_mode": visual_lane_mode,
         "document_processing_engine": "candidate_b_opendataloader_pdf",
         "passed": True,
         "run_detail": {"status": "completed"},
@@ -186,7 +186,7 @@ def _patch_runtime_bridge(monkeypatch, binding: ReviewRuntimeBinding, *, variant
         layer3_candidate_b_runtime_bridge,
         "runtime_binding_request_metadata",
         lambda binding_arg: {
-            "visual_lane_mode": "baseline",
+            "visual_lane_mode": str(binding.summary.get("visual_lane_mode") or "baseline"),
             "document_processing_engine": "candidate_b_opendataloader_pdf",
             "variant_kind": "candidate_b_opendataloader_pdf",
         },
@@ -344,6 +344,7 @@ def _candidate_b_runtime_external_export_download_authority(
         "offset": 0,
         "top_k": 2,
     }
+
     analysis = client.post(
         (
             "/api/v1/layer3/source/ingestion/server-configured-directory/"
@@ -472,6 +473,24 @@ def _assert_no_absolute_path_strings(value: Any, forbidden_fragment: str) -> Non
     elif isinstance(value, str):
         assert forbidden_fragment not in value
         assert "C:\\" not in value
+
+
+def test_candidate_b_runtime_bridge_accepts_admitted_candidate_b_visual_lane(
+    client: TestClient,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    assert client is not None
+    binding = _runtime_binding(tmp_path, visual_lane_mode="candidate_b_opendataloader_page_evidence_v1")
+    _patch_runtime_bridge(monkeypatch, binding)
+
+    bridge = layer3_candidate_b_runtime_bridge.prepare_candidate_b_runtime_material_bridge(_bridge_payload())
+
+    assert bridge["candidate_b_source_kind"] == "runtime"
+    assert bridge["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert bridge["candidate_b_runtime_validation"]["visual_lane_mode"] == "candidate_b_opendataloader_page_evidence_v1"
+    assert bridge["negative_invariants"]["pdf_ingestion_enabled"] is False
+    assert bridge["negative_invariants"]["image_ingestion_enabled"] is False
 
 
 def test_candidate_b_runtime_bridge_materializes_trace_text_and_reaches_gate_b(

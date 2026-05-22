@@ -62,7 +62,16 @@ APS_ZIP_MAX_MEMBER_COUNT = 200
 APS_VISUAL_CLASS_DIAGRAM = "diagram_or_visual"
 APS_VISUAL_CLASS_TEXT_HEAVY = "text_heavy_or_empty"
 
-_ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
+APS_VISUAL_LANE_MODE_BASELINE = "baseline"
+APS_VISUAL_LANE_MODE_CANDIDATE_A = "candidate_a_page_evidence_v1"
+APS_VISUAL_LANE_MODE_CANDIDATE_B = "candidate_b_opendataloader_page_evidence_v1"
+_ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset(
+    {
+        APS_VISUAL_LANE_MODE_BASELINE,
+        APS_VISUAL_LANE_MODE_CANDIDATE_A,
+        APS_VISUAL_LANE_MODE_CANDIDATE_B,
+    }
+)
 APS_DOCUMENT_PROCESSING_ENGINE_BASELINE = "baseline"
 APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = "candidate_b_opendataloader_pdf"
 _ADMITTED_DOCUMENT_PROCESSING_ENGINES: frozenset[str] = frozenset(
@@ -357,7 +366,7 @@ def default_processing_config(overrides: dict[str, Any] | None = None) -> dict[s
         "sec_edgar_parse_max_columns": 200,
         "sec_edgar_admitted_form_types": ["10-K", "10-Q", "8-K"],
         "visual_render_dpi": APS_VISUAL_RENDER_DPI_DEFAULT,
-        "visual_lane_mode": "baseline",
+        "visual_lane_mode": APS_VISUAL_LANE_MODE_BASELINE,
         "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
         "document_processing_engine_explicit": False,
     }
@@ -1294,14 +1303,14 @@ def _process_pdf(
             visual_page_class = APS_VISUAL_CLASS_TEXT_HEAVY
             visual_ref: dict[str, Any] | None = None
             visual_lane_degradation_codes: list[str] = []
-            if visual_lane_mode == "candidate_a_page_evidence_v1":
+            if visual_lane_mode == APS_VISUAL_LANE_MODE_CANDIDATE_A:
                 visual_page_class, visual_ref, visual_lane_degradation_codes = _run_candidate_a_visual_lane(
                     page=page,
                     page_number=page_number,
                     pre_branch_native_quality_status=pre_branch_native_quality_status,
                     config=config,
                 )
-            elif visual_lane_mode == "baseline":
+            elif visual_lane_mode in {APS_VISUAL_LANE_MODE_BASELINE, APS_VISUAL_LANE_MODE_CANDIDATE_B}:
                 visual_page_class, visual_ref, visual_lane_degradation_codes = _run_baseline_visual_lane(
                     page=page,
                     page_number=page_number,
@@ -1587,10 +1596,32 @@ def _process_pdf_candidate_b(
         min_chars=int(config["content_min_searchable_chars"]),
         min_tokens=int(config["content_min_searchable_tokens"]),
     )
+    visual_lane_mode = _normalize_visual_lane_mode(config.get("visual_lane_mode"))
+    visual_page_refs: list[dict[str, Any]] = []
+    retained_artifact_refs = [
+        {"relative_name": "input.pdf", "artifact_role": "source_pdf", "material_text_payload": False},
+        {"relative_name": "input.json", "artifact_role": "raw_json", "material_text_payload": True},
+    ]
     page_summaries: list[dict[str, Any]] = []
     for page_number in range(1, max(page_count, 0) + 1):
         page_text = str(page_text_by_number.get(page_number) or "")
         page_quality = _candidate_b_page_quality(page_text, config=config)
+        visual_page_class = APS_VISUAL_CLASS_TEXT_HEAVY
+        page_image_count = int(image_count_by_page.get(page_number, 0) or 0)
+        if visual_lane_mode == APS_VISUAL_LANE_MODE_CANDIDATE_B and page_image_count > 0:
+            visual_page_class = APS_VISUAL_CLASS_DIAGRAM
+            visual_page_refs.append(
+                {
+                    "page_number": page_number,
+                    "visual_lane_mode": APS_VISUAL_LANE_MODE_CANDIDATE_B,
+                    "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+                    "visual_page_class": visual_page_class,
+                    "status": "candidate_b_page_evidence_retained",
+                    "evidence_source": "opendataloader_pdf_json",
+                    "image_count": page_image_count,
+                    "retained_artifact_refs": retained_artifact_refs,
+                }
+            )
         page_summaries.append(
             {
                 "page_number": page_number,
@@ -1599,7 +1630,7 @@ def _process_pdf_candidate_b(
                 "ocr_attempted": False,
                 "quality_status": page_quality["quality_status"],
                 "searchable_chars": page_quality["char_count"],
-                "visual_page_class": APS_VISUAL_CLASS_TEXT_HEAVY,
+                "visual_page_class": visual_page_class,
             }
         )
 
@@ -1626,7 +1657,9 @@ def _process_pdf_candidate_b(
         "degradation_codes": sorted(list(dict.fromkeys(code for code in degradation_codes if code))),
         "ordered_units": _with_char_offsets(ordered_units),
         "page_summaries": page_summaries,
-        "visual_page_refs": [],
+        "visual_lane_mode": visual_lane_mode,
+        "candidate_b_retained_artifact_refs": retained_artifact_refs,
+        "visual_page_refs": visual_page_refs,
         "normalized_text": normalized_text,
         "normalized_text_sha256": hashlib.sha256(normalized_text.encode("utf-8")).hexdigest(),
         "normalized_char_count": len(normalized_text),
