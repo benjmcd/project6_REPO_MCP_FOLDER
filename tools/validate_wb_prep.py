@@ -49,6 +49,8 @@ WORKBENCH_SEED_KIND = "workbench_compare_fixture_seed"
 REQUIRED_FOLLOW_THROUGH_FIXTURES: tuple[str, ...] = ("fontish", "ml17123a319")
 MIN_SHARED_FIXTURE_COUNT = 3
 _CANDIDATE_B_RUNTIME_VARIANT = "candidate_b_opendataloader_pdf"
+_CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
+_CANDIDATE_B_RUNTIME_VISUAL_LANE_MODES = {"", "baseline", _CANDIDATE_B_VISUAL_LANE_MODE}
 _CANDIDATE_B_SOURCE_KIND_BUNDLE = "bundle"
 _CANDIDATE_B_SOURCE_KIND_RUNTIME = "runtime"
 _POWERSHELL_SAFE_CHARS = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.\\/=:")
@@ -192,7 +194,10 @@ def _binding_is_workbench_seed(
     if expected_variant == "candidate_a_page_evidence_v1":
         return summary_visual_lane == "candidate_a_page_evidence_v1" and summary_document_engine in {"", "baseline"}
     if expected_variant == _CANDIDATE_B_RUNTIME_VARIANT:
-        return summary_visual_lane in {"", "baseline"} and summary_document_engine == _CANDIDATE_B_RUNTIME_VARIANT
+        return (
+            summary_visual_lane in _CANDIDATE_B_RUNTIME_VISUAL_LANE_MODES
+            and summary_document_engine == _CANDIDATE_B_RUNTIME_VARIANT
+        )
     return summary_visual_lane in {"", "baseline"} and summary_document_engine in {"", "baseline"}
 
 
@@ -242,6 +247,9 @@ def _source_display(source: Any, *, checkout_root: Path | None = None) -> dict[s
         return {
             "run_id": source.run_id,
             "variant_kind": classify_runtime_binding_variant(source),
+            "visual_lane_mode": str(source.summary.get("visual_lane_mode") or "baseline").strip() or "baseline",
+            "document_processing_engine": str(source.summary.get("document_processing_engine") or "baseline").strip()
+            or "baseline",
             "completed_at": (
                 str(run_detail.get("completed_at") or "").strip()
                 or str(submission.get("submitted_at") or "").strip()
@@ -336,6 +344,8 @@ def _canonical_prep_sequences(*, checkout_root: Path, candidate_b_run_id: str = 
                 "seed_wb_compare.py",
                 "--document-processing-engine",
                 _CANDIDATE_B_RUNTIME_VARIANT,
+                "--visual-lane-mode",
+                _CANDIDATE_B_VISUAL_LANE_MODE,
             ),
             _command_spec(
                 _command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root),
