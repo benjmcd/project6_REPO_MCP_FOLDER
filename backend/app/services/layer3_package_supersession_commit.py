@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import time
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy.exc import IntegrityError
@@ -11,6 +14,9 @@ from app.models.models import (
     L3OutputPackage,
     L3PackageSupersessionCommit,
     L3PassRun,
+    L3ProviderPrivateSignedUrlAuditEvent,
+    L3ProviderPrivateSignedUrlObjectAuthority,
+    L3ProviderPrivateSignedUrlReceipt,
     L3ReconciliationRecord,
     L3ReplacementPackageSetAuthority,
     L3Session,
@@ -26,7 +32,22 @@ from app.services.layer3_package_entry import (
     PACKAGE_KIND_USER_FACING,
 )
 from app.services.layer3_workbench_package_state import packages_in_kind_order, packages_with_kinds
-from app.services.layer3_utils import json_clone, stable_hash, utcnow
+from app.services.layer3_provider_private_signed_url_fake_provider import (
+    PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
+    ProviderArtifactAuthority,
+    ProviderPrivateSignedUrlError,
+    ProviderPrivateSignedUrlFakeProvider,
+    ProviderPrivateSignedUrlPrepareRequest,
+)
+from app.services.layer3_provider_private_signed_url_state import (
+    INTERNAL_ARTIFACT_REF_PLACEHOLDER,
+    PROVIDER_PRIVATE_SIGNED_URL_MAX_TTL_SECONDS,
+    ProviderPrivateSignedUrlStateError,
+    record_prepared_provider_private_signed_url_receipt,
+    record_server_owned_provider_private_signed_url_receipt_use,
+    revoke_provider_private_signed_url_receipt,
+)
+from app.services.layer3_utils import json_clone, stable_hash, stable_json_bytes, utcnow
 
 
 PACKAGE_SUPERSESSION_COMMIT_SCHEMA_ID = "layer3.package_supersession_commit.v1"
@@ -47,6 +68,46 @@ SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_GATE = (
 PACKAGE_SUPERSESSION_COMMIT_OPERATOR_DECISION = "commit_package_supersession"
 PACKAGE_SUPERSESSION_COMMIT_STATE = "package_supersession_commit_recorded"
 PACKAGE_SUPERSESSION_COMMIT_STATUS = "committed"
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_DELIVERY_MODE = "provider_private_signed_url"
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REDACTED_MARKER = "provider-private-signed-url:redacted"
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_DEFAULT_TTL_SECONDS = 300
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_FIXED_FAKE_PROVIDER_EPOCH = 0
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_SCHEMA_ID = (
+    "layer3.source_directory_package_supersession_provider_private_signed_url.prepare.v1"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_STATUS_SCHEMA_ID = (
+    "layer3.source_directory_package_supersession_provider_private_signed_url.status.v1"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_USE_SCHEMA_ID = (
+    "layer3.source_directory_package_supersession_provider_private_signed_url.use.v1"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_SCHEMA_ID = (
+    "layer3.source_directory_package_supersession_provider_private_signed_url.revoke.v1"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_MODE = (
+    "source_directory_package_supersession_provider_private_signed_url_prepare_authority"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_STATUS_MODE = (
+    "source_directory_package_supersession_provider_private_signed_url_status_authority"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_USE_MODE = (
+    "source_directory_package_supersession_provider_private_signed_url_use_authority"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_MODE = (
+    "source_directory_package_supersession_provider_private_signed_url_revoke_authority"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_OPERATOR_DECISION = (
+    "prepare_source_directory_package_supersession_provider_private_signed_url"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_STATUS_OPERATOR_DECISION = (
+    "inspect_source_directory_package_supersession_provider_private_signed_url_status"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_USE_OPERATOR_DECISION = (
+    "use_source_directory_package_supersession_provider_private_signed_url"
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_OPERATOR_DECISION = (
+    "revoke_source_directory_package_supersession_provider_private_signed_url"
+)
 
 PACKAGE_SUPERSESSION_COMMIT_SOURCE_PACKAGE_KINDS = (
     PACKAGE_KIND_CANONICAL_INTERNAL,
@@ -209,6 +270,67 @@ SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_ALLOWED_FIELDS = (
     SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_REQUIRED_FIELDS
     | SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_FORBIDDEN_FIELDS
     | {"analysis_plan_id", "pass_run_id"}
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REQUIRED_FIELDS = frozenset(
+    {
+        "client_request_id",
+        "session_id",
+        "reconciliation_record_id",
+        "package_supersession_commit_id",
+        "package_supersession_commit_basis_hash",
+        "replacement_package_set_authority_id",
+        "replacement_authority_basis_hash",
+        "delivery_mode",
+        "operator_decision",
+    }
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_REQUIRED_FIELDS = (
+    SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REQUIRED_FIELDS | {"recipient_scope"}
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_LIFECYCLE_REQUIRED_FIELDS = (
+    SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REQUIRED_FIELDS | {"provider_signed_url_receipt_id"}
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_REQUIRED_FIELDS = (
+    SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_LIFECYCLE_REQUIRED_FIELDS
+    | {"idempotency_key", "revoked_by", "revocation_reason"}
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_FORBIDDEN_FIELDS = frozenset(
+    {
+        "provider_private_signed_url_token",
+        "raw_provider_private_signed_url_token",
+        "provider_credentials",
+        "provider_secret",
+        "provider_public_url",
+        "raw_public_url",
+        "raw_provider_url",
+        "public_url",
+        "signed_url",
+        "download_url",
+        "provider_object_key",
+        "provider_bucket",
+        "provider_container",
+        "package_payload",
+        "replacement_package_payloads",
+        "replacement_package_payload_bytes",
+        "source_payload_refs",
+        "replacement_payload_refs",
+        "local_path",
+        "raw_local_path",
+        "connector_run_id",
+        "destination_url",
+        "destination_id",
+        "source_expansion",
+        "rag_vector_index",
+        "model_runtime",
+        "frontend_state",
+        "browser_state",
+        "frontend_durable_authority",
+    }
+)
+SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_ALLOWED_FIELDS = (
+    SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_REQUIRED_FIELDS
+    | SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_FORBIDDEN_FIELDS
+    | {"recipient_scope", "requested_ttl_seconds", "decision_notes", "analysis_plan_id", "pass_run_id"}
 )
 PACKAGE_SUPERSESSION_COMMIT_DOWNSTREAM_UNAVAILABLE = (
     "package_row_mutation",
@@ -552,6 +674,653 @@ def _commit_response_from_source_directory_lifecycle(
     )
     response["authority_rail"] = authority_rail
     return response
+
+
+def _epoch_iso(epoch_seconds: int) -> str:
+    return datetime.fromtimestamp(epoch_seconds, timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _provider_private_receipt_state(
+    receipt: L3ProviderPrivateSignedUrlReceipt,
+    *,
+    now_epoch: int,
+) -> str:
+    if (
+        receipt.provider_private_signed_url_state == "provider_private_signed_url_prepared"
+        and now_epoch >= int(receipt.provider_private_signed_url_expires_at.timestamp())
+    ):
+        return "provider_private_signed_url_expired"
+    return receipt.provider_private_signed_url_state
+
+
+def _latest_provider_private_audit(
+    db: Session,
+    *,
+    receipt_id: str,
+) -> L3ProviderPrivateSignedUrlAuditEvent | None:
+    return (
+        db.query(L3ProviderPrivateSignedUrlAuditEvent)
+        .filter(L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_receipt_id == receipt_id)
+        .order_by(L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_audit_event_id.desc())
+        .first()
+    )
+
+
+def _provider_private_audit_receipt(
+    *,
+    receipt: L3ProviderPrivateSignedUrlReceipt,
+    authority: L3ProviderPrivateSignedUrlObjectAuthority,
+    audit: L3ProviderPrivateSignedUrlAuditEvent | None,
+) -> dict[str, Any]:
+    return {
+        "provider_private_signed_url_receipt_id": receipt.provider_private_signed_url_receipt_id,
+        "provider_private_signed_url_object_authority_id": authority.provider_private_signed_url_object_authority_id,
+        "provider_private_signed_url_audit_event_id": (
+            audit.provider_private_signed_url_audit_event_id if audit is not None else None
+        ),
+        "authority_hash": authority.authority_hash,
+        "provider_object_identity_hash": authority.provider_object_identity_hash,
+        "provider_private_signed_url_token_prefix": receipt.provider_private_signed_url_token_prefix,
+        "provider_private_signed_url_token_redacted": True,
+        "raw_provider_url_exposed": False,
+    }
+
+
+def _provider_private_error(exc: ProviderPrivateSignedUrlStateError) -> layer3_workbench.Layer3WorkbenchError:
+    http_status = 404 if exc.status == "not_found" else 409 if exc.status in {"blocked", "conflict"} else 400
+    return layer3_workbench.Layer3WorkbenchError(
+        exc.error_code,
+        exc.message,
+        status=exc.status,
+        http_status=http_status,
+        blocked_fields=list(exc.blocked_fields),
+        next_allowed_actions=list(exc.next_allowed_actions),
+    )
+
+
+def _fake_provider_error(exc: ProviderPrivateSignedUrlError) -> layer3_workbench.Layer3WorkbenchError:
+    return layer3_workbench.Layer3WorkbenchError(
+        exc.error_code,
+        exc.message,
+        status=exc.status,
+        http_status=409 if exc.status in {"provider_private_signed_url_blocked", "provider_private_signed_url_conflict"} else 400,
+        blocked_fields=list(exc.blocked_fields),
+        next_allowed_actions=list(exc.next_allowed_actions),
+    )
+
+
+def _normalise_source_directory_package_provider_private_payload(
+    payload: dict[str, Any],
+    *,
+    required_fields: frozenset[str],
+    operator_decision: str,
+) -> dict[str, Any]:
+    fields = dict(payload)
+    unknown = sorted(key for key in fields if key not in SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_ALLOWED_FIELDS)
+    forbidden = sorted(key for key in SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_FORBIDDEN_FIELDS if key in fields)
+    blocked = sorted(set(unknown) | set(forbidden))
+    if blocked:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_scope_not_admitted",
+            "Source-directory package supersession provider-private request includes non-admitted fields: "
+            + ", ".join(blocked)
+            + ".",
+            status="blocked",
+            http_status=409,
+            blocked_fields=blocked,
+            next_allowed_actions=["submit_redacted_source_directory_package_provider_private_request"],
+        )
+    missing = sorted(field for field in required_fields if not _string(fields.get(field)))
+    if missing:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "missing_source_directory_package_supersession_provider_private_fields",
+            "Source-directory package supersession provider-private request is missing required fields: "
+            + ", ".join(missing)
+            + ".",
+            status="invalid",
+            blocked_fields=missing,
+            next_allowed_actions=["submit_complete_source_directory_package_provider_private_request"],
+        )
+    if _string(fields.get("delivery_mode")) != SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_DELIVERY_MODE:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_delivery_mode_not_admitted",
+            "delivery_mode must be provider_private_signed_url.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["delivery_mode"],
+        )
+    if _string(fields.get("operator_decision")) != operator_decision:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_decision_not_admitted",
+            f"operator_decision must be {operator_decision}.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["operator_decision"],
+        )
+    return fields
+
+
+def _source_directory_package_provider_private_ttl_seconds(fields: dict[str, Any]) -> int:
+    raw_value = fields.get(
+        "requested_ttl_seconds",
+        SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_DEFAULT_TTL_SECONDS,
+    )
+    try:
+        ttl = int(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_ttl_invalid",
+            "requested_ttl_seconds must be an integer.",
+            status="invalid",
+            blocked_fields=["requested_ttl_seconds"],
+        ) from exc
+    if ttl <= 0 or ttl > PROVIDER_PRIVATE_SIGNED_URL_MAX_TTL_SECONDS:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_ttl_not_admitted",
+            "requested_ttl_seconds must be positive and within the admitted provider-private TTL bound.",
+            status="invalid",
+            blocked_fields=["requested_ttl_seconds"],
+        )
+    return ttl
+
+
+def _source_directory_package_provider_private_authority(
+    db: Session,
+    fields: dict[str, Any],
+) -> tuple[L3PackageSupersessionCommit, dict[str, Any], dict[str, Any]]:
+    commit_id = _string(fields.get("package_supersession_commit_id"))
+    commit = (
+        db.query(L3PackageSupersessionCommit)
+        .filter(L3PackageSupersessionCommit.package_supersession_commit_id == commit_id)
+        .one_or_none()
+    )
+    if commit is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_commit_not_found",
+            "Source-directory package supersession provider-private lifecycle requires an existing supersession commit.",
+            status="not_found",
+            http_status=404,
+            blocked_fields=["package_supersession_commit_id"],
+            next_allowed_actions=["commit_source_directory_package_supersession_first"],
+        )
+    snapshot = dict(commit.commit_snapshot_json or {})
+    if snapshot.get("mode") != SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_MODE:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_commit_mode_not_admitted",
+            "Supersession commit was not produced by the source-directory package lifecycle authority.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["package_supersession_commit_id"],
+        )
+    for field, expected in (
+        ("session_id", commit.session_id),
+        ("reconciliation_record_id", commit.reconciliation_record_id),
+        ("replacement_package_set_authority_id", commit.replacement_package_set_authority_id),
+        ("replacement_authority_basis_hash", commit.replacement_authority_basis_hash),
+        ("package_supersession_commit_basis_hash", commit.commit_basis_hash),
+    ):
+        if _string(fields.get(field)) != _string(expected):
+            raise layer3_workbench.Layer3WorkbenchError(
+                f"source_directory_package_supersession_provider_private_{field}_mismatch",
+                f"Supplied {field} does not match current source-directory supersession authority.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=[field],
+                next_allowed_actions=["refresh_source_directory_package_supersession_authority"],
+            )
+    authority = (
+        db.query(L3ReplacementPackageSetAuthority)
+        .filter(
+            L3ReplacementPackageSetAuthority.replacement_package_set_authority_id
+            == commit.replacement_package_set_authority_id
+        )
+        .one_or_none()
+    )
+    if authority is None or authority.authority_basis_hash != commit.replacement_authority_basis_hash:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_replacement_authority_mismatch",
+            "Current replacement package-set authority no longer matches the supersession commit.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["replacement_package_set_authority_id", "replacement_authority_basis_hash"],
+            next_allowed_actions=["refresh_source_directory_replacement_authority"],
+        )
+    authority_snapshot = dict(authority.authority_snapshot_json or {})
+    if (
+        authority.session_id != commit.session_id
+        or authority.reconciliation_record_id != commit.reconciliation_record_id
+        or authority_snapshot.get("mode")
+        != layer3_replacement_package_set_authority.SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_MODE
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_replacement_authority_not_current",
+            "Replacement package-set authority is not the current source-directory lifecycle authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["replacement_package_set_authority_id", "replacement_authority_basis_hash"],
+            next_allowed_actions=["refresh_source_directory_replacement_authority"],
+        )
+    source_refs = _redacted_commit_source_refs(commit)
+    replacement_refs = _redacted_commit_replacement_refs(commit)
+    artifact = {
+        "schema_id": "layer3.source_directory_package_supersession_provider_private_artifact.v1",
+        "mode": SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_MODE,
+        "package_supersession_commit_id": commit.package_supersession_commit_id,
+        "package_supersession_commit_basis_hash": commit.commit_basis_hash,
+        "replacement_package_set_authority_id": commit.replacement_package_set_authority_id,
+        "replacement_authority_basis_hash": commit.replacement_authority_basis_hash,
+        "source_package_set_hash": commit.source_package_set_hash,
+        "replacement_package_set_hash": commit.replacement_package_set_hash,
+        "source_package_kinds": list(commit.source_package_kinds_json or []),
+        "replacement_package_kinds": list(commit.replacement_package_kinds_json or []),
+        "source_payload_refs": source_refs,
+        "replacement_payload_refs": replacement_refs,
+        "source_payload_hashes": list(commit.source_payload_hashes_json or []),
+        "replacement_payload_hashes": list(commit.replacement_payload_hashes_json or []),
+        "raw_payload_refs_exposed": False,
+        "package_payload_bytes_exposed": False,
+        "negative_invariants": {
+            "raw_provider_url_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_write_enabled": False,
+            "provider_object_copy_enabled": False,
+            "provider_object_mutation_enabled": False,
+            "public_proxy_enabled": False,
+            "connector_dispatch_enabled": False,
+            "package_mutation_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "source_expansion_enabled": False,
+            "rag_vector_runtime_enabled": False,
+            "model_runtime_enabled": False,
+            "full_mockup_activation_enabled": False,
+        },
+    }
+    artifact_bytes = stable_json_bytes(artifact)
+    authority_basis = {
+        "session_id": commit.session_id,
+        "reconciliation_record_id": commit.reconciliation_record_id,
+        "source_artifact_ref": (
+            f"artifact://source-directory-package-supersession/{commit.package_supersession_commit_id}"
+        ),
+        "source_artifact_hash": hashlib.sha256(artifact_bytes).hexdigest(),
+        "source_artifact_size_bytes": len(artifact_bytes),
+        "external_export_download_record_ref": commit.package_supersession_commit_id,
+        "export_download_descriptor_ref": commit.replacement_package_set_authority_id,
+    }
+    return commit, artifact, authority_basis
+
+
+def _assert_source_directory_package_provider_private_authority(
+    provider_authority: L3ProviderPrivateSignedUrlObjectAuthority,
+    authority_basis: dict[str, Any],
+) -> None:
+    mismatched = [
+        field
+        for field in (
+            "session_id",
+            "reconciliation_record_id",
+            "external_export_download_record_ref",
+            "export_download_descriptor_ref",
+            "source_artifact_hash",
+            "source_artifact_size_bytes",
+        )
+        if str(getattr(provider_authority, field)) != str(authority_basis[field])
+    ]
+    if mismatched:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_authority_mismatch",
+            "Current source-directory package supersession authority no longer matches the provider-private receipt.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=mismatched,
+            next_allowed_actions=["prepare_new_source_directory_package_provider_private_signed_url"],
+        )
+
+
+def _source_directory_package_provider_private_response(
+    *,
+    schema_id: str,
+    mode: str,
+    request_id: str,
+    status: str,
+    receipt: L3ProviderPrivateSignedUrlReceipt,
+    provider_authority: L3ProviderPrivateSignedUrlObjectAuthority,
+    audit: L3ProviderPrivateSignedUrlAuditEvent | None,
+    commit: L3PackageSupersessionCommit,
+    artifact: dict[str, Any],
+    effective_now: int,
+    extra: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    expires_at_epoch = int(receipt.provider_private_signed_url_expires_at.timestamp())
+    state = _provider_private_receipt_state(receipt, now_epoch=effective_now)
+    return {
+        **layer3_workbench._base_response(schema_id, request_id=request_id, status=status),  # noqa: SLF001
+        "mode": mode,
+        "session_id": commit.session_id,
+        "reconciliation_record_id": commit.reconciliation_record_id,
+        "package_supersession_commit_id": commit.package_supersession_commit_id,
+        "package_supersession_commit_basis_hash": commit.commit_basis_hash,
+        "replacement_package_set_authority_id": commit.replacement_package_set_authority_id,
+        "replacement_authority_basis_hash": commit.replacement_authority_basis_hash,
+        "source_package_set_hash": commit.source_package_set_hash,
+        "replacement_package_set_hash": commit.replacement_package_set_hash,
+        "provider_signed_url_receipt_id": receipt.provider_private_signed_url_receipt_id,
+        "provider_private_signed_url_object_authority_id": (
+            receipt.provider_private_signed_url_object_authority_id
+        ),
+        "provider_signed_url_state": state,
+        "delivery_mode": SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_DELIVERY_MODE,
+        "provider_url_redacted": SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REDACTED_MARKER,
+        "provider_url_expires_at": _epoch_iso(expires_at_epoch),
+        "provider_url_expires_in_seconds": max(0, expires_at_epoch - effective_now),
+        "provider_url_replay_policy": receipt.provider_private_signed_url_replay_policy,
+        "provider_url_revocation_supported": True,
+        "provider_url_use_count": receipt.provider_private_signed_url_use_count,
+        "provider_url_max_use_count": receipt.provider_private_signed_url_max_use_count,
+        "provider_url_revoked": receipt.provider_private_signed_url_state == "provider_private_signed_url_revoked",
+        "source_artifact_ref": INTERNAL_ARTIFACT_REF_PLACEHOLDER,
+        "source_artifact_hash": provider_authority.source_artifact_hash,
+        "source_artifact_size_bytes": provider_authority.source_artifact_size_bytes,
+        "source_directory_package_supersession_authority": artifact,
+        "audit_receipt": _provider_private_audit_receipt(
+            receipt=receipt,
+            authority=provider_authority,
+            audit=audit,
+        ),
+        "authority_rail": {
+            "provider_authority": PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
+            "artifact_authority": SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_MODE,
+            "durable_state_authority": True,
+            "provider_url_secret_redacted": True,
+            "server_owned_use_authority": True,
+            "provider_network_enabled": False,
+            "provider_object_write_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_write_enabled": False,
+            "public_url_enabled": False,
+            "source_directory_package_lifecycle_authority": True,
+        },
+        "source_directory_package_supersession_provider_private_signed_url_enabled": True,
+        "provider_private_signed_url_enabled": True,
+        "provider_public_url_prepare_enabled": False,
+        "raw_provider_url_exposed": False,
+        "raw_provider_private_signed_url_token_exposed": False,
+        "raw_local_path_exposed": False,
+        "package_payload_bytes_exposed": False,
+        "provider_network_enabled": False,
+        "provider_object_write_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_write_enabled": False,
+        "package_mutation_enabled": False,
+        "source_expansion_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "next_allowed_actions": ["inspect_provider_private_signed_url_status"],
+        "next_state": state,
+        **dict(extra or {}),
+    }
+
+
+def source_directory_package_supersession_provider_private_signed_url_prepare(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    fake_provider: ProviderPrivateSignedUrlFakeProvider | None = None,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_source_directory_package_provider_private_payload(
+        payload,
+        required_fields=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_REQUIRED_FIELDS,
+        operator_decision=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_OPERATOR_DECISION,
+    )
+    request_id = _string(fields.get("client_request_id"))
+    ttl_seconds = _source_directory_package_provider_private_ttl_seconds(fields)
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    commit, artifact, authority_basis = _source_directory_package_provider_private_authority(db, fields)
+    provider = fake_provider or ProviderPrivateSignedUrlFakeProvider()
+    try:
+        fake_receipt = provider.prepare(
+            ProviderPrivateSignedUrlPrepareRequest(
+                client_request_id=request_id,
+                authority=ProviderArtifactAuthority(
+                    source_artifact_ref=authority_basis["source_artifact_ref"],
+                    source_artifact_hash=authority_basis["source_artifact_hash"],
+                    source_artifact_size_bytes=authority_basis["source_artifact_size_bytes"],
+                    external_export_download_record_ref=authority_basis[
+                        "external_export_download_record_ref"
+                    ],
+                    export_download_descriptor_ref=authority_basis["export_download_descriptor_ref"],
+                ),
+                recipient_scope=_string(fields.get("recipient_scope")),
+                requested_ttl_seconds=ttl_seconds,
+                now_epoch=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_FIXED_FAKE_PROVIDER_EPOCH,
+            )
+        )
+    except ProviderPrivateSignedUrlError as exc:
+        raise _fake_provider_error(exc) from exc
+    try:
+        durable_state = record_prepared_provider_private_signed_url_receipt(
+            db,
+            request_id=request_id,
+            client_request_id=request_id,
+            authority_basis=authority_basis,
+            recipient_scope=_string(fields.get("recipient_scope")),
+            requested_ttl_seconds=ttl_seconds,
+            now_epoch=effective_now,
+            provider_private_signed_url_token=fake_receipt.token_for_test,
+        )
+    except ProviderPrivateSignedUrlStateError as exc:
+        raise _provider_private_error(exc) from exc
+    receipt = db.get(L3ProviderPrivateSignedUrlReceipt, durable_state.provider_private_signed_url_receipt_id)
+    if receipt is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_receipt_missing_after_prepare",
+            "Provider-private signed URL durable receipt was not readable after prepare.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_signed_url_receipt_id"],
+        )
+    provider_authority = db.get(
+        L3ProviderPrivateSignedUrlObjectAuthority,
+        receipt.provider_private_signed_url_object_authority_id,
+    )
+    audit = db.get(
+        L3ProviderPrivateSignedUrlAuditEvent,
+        durable_state.provider_private_signed_url_audit_event_id,
+    )
+    if provider_authority is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_authority_missing_after_prepare",
+            "Provider-private signed URL durable authority was not readable after prepare.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_private_signed_url_object_authority_id"],
+        )
+    return _source_directory_package_provider_private_response(
+        schema_id=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_SCHEMA_ID,
+        mode=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_PREPARE_MODE,
+        request_id=request_id,
+        status="prepared",
+        receipt=receipt,
+        provider_authority=provider_authority,
+        audit=audit,
+        commit=commit,
+        artifact=artifact,
+        effective_now=effective_now,
+    )
+
+
+def source_directory_package_supersession_provider_private_signed_url_status(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_source_directory_package_provider_private_payload(
+        payload,
+        required_fields=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_LIFECYCLE_REQUIRED_FIELDS,
+        operator_decision=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_STATUS_OPERATOR_DECISION,
+    )
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    commit, artifact, authority_basis = _source_directory_package_provider_private_authority(db, fields)
+    receipt = db.get(L3ProviderPrivateSignedUrlReceipt, _string(fields.get("provider_signed_url_receipt_id")))
+    if receipt is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_receipt_not_found",
+            "Provider-private signed URL receipt was not found.",
+            status="not_found",
+            http_status=404,
+            blocked_fields=["provider_signed_url_receipt_id"],
+            next_allowed_actions=["prepare_source_directory_package_provider_private_signed_url"],
+        )
+    provider_authority = db.get(
+        L3ProviderPrivateSignedUrlObjectAuthority,
+        receipt.provider_private_signed_url_object_authority_id,
+    )
+    if provider_authority is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_authority_missing",
+            "Provider-private signed URL durable authority is missing.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_signed_url_receipt_id"],
+        )
+    _assert_source_directory_package_provider_private_authority(provider_authority, authority_basis)
+    return _source_directory_package_provider_private_response(
+        schema_id=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_STATUS_SCHEMA_ID,
+        mode=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_STATUS_MODE,
+        request_id=_string(fields.get("client_request_id")),
+        status="ok",
+        receipt=receipt,
+        provider_authority=provider_authority,
+        audit=_latest_provider_private_audit(
+            db,
+            receipt_id=receipt.provider_private_signed_url_receipt_id,
+        ),
+        commit=commit,
+        artifact=artifact,
+        effective_now=effective_now,
+    )
+
+
+def source_directory_package_supersession_provider_private_signed_url_use(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_source_directory_package_provider_private_payload(
+        payload,
+        required_fields=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_LIFECYCLE_REQUIRED_FIELDS,
+        operator_decision=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_USE_OPERATOR_DECISION,
+    )
+    request_id = _string(fields.get("client_request_id"))
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    commit, artifact, authority_basis = _source_directory_package_provider_private_authority(db, fields)
+    try:
+        durable_state = record_server_owned_provider_private_signed_url_receipt_use(
+            db,
+            provider_private_signed_url_receipt_id=_string(fields.get("provider_signed_url_receipt_id")),
+            authority_basis=authority_basis,
+            now_epoch=effective_now,
+            request_id=request_id,
+        )
+    except ProviderPrivateSignedUrlStateError as exc:
+        raise _provider_private_error(exc) from exc
+    receipt = db.get(L3ProviderPrivateSignedUrlReceipt, durable_state.provider_private_signed_url_receipt_id)
+    provider_authority = (
+        db.get(L3ProviderPrivateSignedUrlObjectAuthority, receipt.provider_private_signed_url_object_authority_id)
+        if receipt is not None else None
+    )
+    audit = db.get(
+        L3ProviderPrivateSignedUrlAuditEvent,
+        durable_state.provider_private_signed_url_audit_event_id,
+    )
+    if receipt is None or provider_authority is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_state_missing_after_use",
+            "Provider-private signed URL durable state was not readable after use.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_signed_url_receipt_id"],
+        )
+    return _source_directory_package_provider_private_response(
+        schema_id=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_USE_SCHEMA_ID,
+        mode=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_USE_MODE,
+        request_id=request_id,
+        status="used",
+        receipt=receipt,
+        provider_authority=provider_authority,
+        audit=audit,
+        commit=commit,
+        artifact=artifact,
+        effective_now=effective_now,
+        extra={
+            "delivery_use_decision": "allowed",
+            "delivery_use_mode": "server_owned_redacted_provider_private_use",
+        },
+    )
+
+
+def source_directory_package_supersession_provider_private_signed_url_revoke(
+    db: Session,
+    payload: dict[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_source_directory_package_provider_private_payload(
+        payload,
+        required_fields=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_REQUIRED_FIELDS,
+        operator_decision=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_OPERATOR_DECISION,
+    )
+    request_id = _string(fields.get("client_request_id"))
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    commit, artifact, authority_basis = _source_directory_package_provider_private_authority(db, fields)
+    try:
+        durable_state = revoke_provider_private_signed_url_receipt(
+            db,
+            provider_private_signed_url_receipt_id=_string(fields.get("provider_signed_url_receipt_id")),
+            idempotency_key=_string(fields.get("idempotency_key")),
+            revoked_by=_string(fields.get("revoked_by")),
+            revocation_reason=_string(fields.get("revocation_reason")),
+            now_epoch=effective_now,
+            authority_basis=authority_basis,
+            request_id=request_id,
+        )
+    except ProviderPrivateSignedUrlStateError as exc:
+        raise _provider_private_error(exc) from exc
+    receipt = db.get(L3ProviderPrivateSignedUrlReceipt, durable_state.provider_private_signed_url_receipt_id)
+    provider_authority = (
+        db.get(L3ProviderPrivateSignedUrlObjectAuthority, receipt.provider_private_signed_url_object_authority_id)
+        if receipt is not None else None
+    )
+    audit = db.get(
+        L3ProviderPrivateSignedUrlAuditEvent,
+        durable_state.provider_private_signed_url_audit_event_id,
+    )
+    if receipt is None or provider_authority is None:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "source_directory_package_supersession_provider_private_state_missing_after_revoke",
+            "Provider-private signed URL durable state was not readable after revoke.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["provider_signed_url_receipt_id"],
+        )
+    return _source_directory_package_provider_private_response(
+        schema_id=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_SCHEMA_ID,
+        mode=SOURCE_DIRECTORY_PACKAGE_PROVIDER_PRIVATE_REVOKE_MODE,
+        request_id=request_id,
+        status="revoked",
+        receipt=receipt,
+        provider_authority=provider_authority,
+        audit=audit,
+        commit=commit,
+        artifact=artifact,
+        effective_now=effective_now,
+        extra={
+            "revocation_recorded": True,
+            "revocation_idempotency_key": _string(fields.get("idempotency_key")),
+        },
+    )
 
 
 def _validate_source_directory_replacement_authority(

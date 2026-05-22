@@ -1351,6 +1351,79 @@ class Layer3SourceDirectoryPackageSupersessionCommitRequest(BaseModel):
     rendered_control_state: Any | None = None
 
 
+class Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlBaseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str | None = None
+    session_id: str | None = None
+    reconciliation_record_id: str | None = None
+    package_supersession_commit_id: str | None = None
+    package_supersession_commit_basis_hash: str | None = None
+    replacement_package_set_authority_id: str | None = None
+    replacement_authority_basis_hash: str | None = None
+    delivery_mode: str | None = None
+    operator_decision: str | None = None
+    analysis_plan_id: str | None = None
+    pass_run_id: str | None = None
+    decision_notes: str | None = None
+    provider_private_signed_url_token: Any | None = None
+    raw_provider_private_signed_url_token: Any | None = None
+    provider_credentials: Any | None = None
+    provider_secret: Any | None = None
+    provider_public_url: Any | None = None
+    raw_public_url: Any | None = None
+    raw_provider_url: Any | None = None
+    public_url: Any | None = None
+    signed_url: Any | None = None
+    download_url: Any | None = None
+    provider_object_key: Any | None = None
+    provider_bucket: Any | None = None
+    provider_container: Any | None = None
+    package_payload: Any | None = None
+    replacement_package_payloads: Any | None = None
+    replacement_package_payload_bytes: Any | None = None
+    source_payload_refs: Any | None = None
+    replacement_payload_refs: Any | None = None
+    local_path: Any | None = None
+    raw_local_path: Any | None = None
+    connector_run_id: Any | None = None
+    destination_url: Any | None = None
+    destination_id: Any | None = None
+    source_expansion: Any | None = None
+    rag_vector_index: Any | None = None
+    model_runtime: Any | None = None
+    frontend_state: Any | None = None
+    browser_state: Any | None = None
+    frontend_durable_authority: Any | None = None
+
+
+class Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlPrepareRequest(
+    Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlBaseRequest
+):
+    recipient_scope: str | None = None
+    requested_ttl_seconds: int | None = None
+
+
+class Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlStatusRequest(
+    Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlBaseRequest
+):
+    provider_signed_url_receipt_id: str | None = None
+
+
+class Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlUseRequest(
+    Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlStatusRequest
+):
+    pass
+
+
+class Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlRevokeRequest(
+    Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlStatusRequest
+):
+    idempotency_key: str | None = None
+    revoked_by: str | None = None
+    revocation_reason: str | None = None
+
+
 class Layer3ReplacementPackageArtifactManifestRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -9128,6 +9201,98 @@ def post_source_directory_qualitative_analysis_package_supersession_commit(
         lambda: layer3_package_supersession_commit.commit_package_supersession_from_source_directory_lifecycle(
             db,
             payload.model_dump(exclude_unset=True),
+        )
+    )
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/"
+        "package/supersession/provider-private-signed-url/prepare"
+    ),
+    response_model=Layer3BaseResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_package_supersession_provider_private_signed_url_prepare(
+    payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlPrepareRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: (
+            layer3_package_supersession_commit
+            .source_directory_package_supersession_provider_private_signed_url_prepare(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    )
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/"
+        "package/supersession/provider-private-signed-url/status"
+    ),
+    response_model=Layer3BaseResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_package_supersession_provider_private_signed_url_status(
+    payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlStatusRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: (
+            layer3_package_supersession_commit
+            .source_directory_package_supersession_provider_private_signed_url_status(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    )
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/"
+        "package/supersession/provider-private-signed-url/use"
+    ),
+    response_model=Layer3BaseResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_package_supersession_provider_private_signed_url_use(
+    payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlUseRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: (
+            layer3_package_supersession_commit
+            .source_directory_package_supersession_provider_private_signed_url_use(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    )
+
+
+@router.post(
+    (
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/"
+        "package/supersession/provider-private-signed-url/revoke"
+    ),
+    response_model=Layer3BaseResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_source_directory_package_supersession_provider_private_signed_url_revoke(
+    payload: Layer3SourceDirectoryPackageSupersessionProviderPrivateSignedUrlRevokeRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: (
+            layer3_package_supersession_commit
+            .source_directory_package_supersession_provider_private_signed_url_revoke(
+                db,
+                payload.model_dump(exclude_unset=True),
+            )
         )
     )
 
