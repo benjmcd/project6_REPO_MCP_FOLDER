@@ -36,6 +36,7 @@ DOWNSTREAM_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/runtime
 OPERATOR_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status"
 CLOSURE_EVIDENCE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence"
 FINAL_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof"
+FINAL_PROOF_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 FULL_COVERAGE = [
     "source_directory_scan",
@@ -533,6 +534,16 @@ def _final_proof_request(readiness_audit: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _final_proof_status_request(runtime_receipt_id: str, proof_receipt_id: str) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-final-proof-status",
+        "status_mode": "candidate_b_default_promotion_final_proof_status_v1",
+        "operator_decision": "inspect_candidate_b_default_promotion_final_proof_status",
+        "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "proof_receipt_id": proof_receipt_id,
+    }
+
+
 def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
     return {
         "client_request_id": "candidate-b-default-readiness-001",
@@ -680,6 +691,19 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert final_proof["rollback_selector"] == "baseline"
     assert final_proof["final_operator_inspection_complete"] is True
     assert final_proof["selector_mutation_performed"] is False
+    status_response = client.post(
+        FINAL_PROOF_STATUS_ENDPOINT,
+        json=_final_proof_status_request(runtime_receipt_id, final_proof["proof_receipt_id"]),
+    )
+    assert status_response.status_code == 200, status_response.text
+    final_status = status_response.json()
+    assert final_status["status"] == "available"
+    assert final_status["proof_hash"] == final_proof["proof_hash"]
+    assert final_status["candidate_b_default_promotion_enabled"] is True
+    assert final_status["rollback_selector"] == "baseline"
+    assert final_status["final_operator_inspection_complete"] is True
+    assert final_status["selector_mutation_performed"] is False
+    assert str(tmp_path) not in json.dumps(final_status, sort_keys=True)
     proof_receipt_path = (
         Path(settings.layer3_candidate_b_runtime_bridge_dir)
         / runtime_receipt_id
@@ -881,6 +905,18 @@ def test_candidate_b_final_proof_rejects_blocked_readiness_audit(client: TestCli
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_final_proof_readiness_audit_not_ready"
+
+
+def test_candidate_b_final_proof_status_rejects_path_like_receipt_id(client: TestClient) -> None:
+    response = client.post(
+        FINAL_PROOF_STATUS_ENDPOINT,
+        json=_final_proof_status_request("cb-runtime-l3-placeholder", "../proof"),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_status_proof_receipt_id_invalid"
 
 
 def test_candidate_b_operator_status_rejects_path_like_receipt_id(client: TestClient) -> None:
