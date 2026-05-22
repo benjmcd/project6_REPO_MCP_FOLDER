@@ -119,7 +119,17 @@ def _compare_target_set(kind: str) -> dict[str, Any]:
     return {**payload, "compare_target_set_hash": _stable_hash(payload["targets"])}
 
 
+def _artifact_family_hash(kind: str, payload: dict[str, Any]) -> str:
+    hash_version = (
+        layer3_candidate_b_bundle_bridge.AUTHORITY_HASH_VERSION
+        if kind == "bundle"
+        else layer3_candidate_b_runtime_bridge.AUTHORITY_HASH_VERSION
+    )
+    return _stable_hash({"hash_version": hash_version, "classification": payload})
+
+
 def _artifact_family(kind: str) -> dict[str, Any]:
+    visual_ref = "raw/annotated/fontish.pdf" if kind == "bundle" else "storage/input.pdf"
     roles = {
         "material_analysis_payloads": [
             {
@@ -134,7 +144,7 @@ def _artifact_family(kind: str) -> dict[str, Any]:
         ],
         "visual_page_evidence": [
             {
-                "source_ref": "raw/annotated/fontish.pdf" if kind == "bundle" else "storage/input.pdf",
+                "source_ref": visual_ref,
                 "artifact_role": "source_pdf",
                 "extension": ".pdf",
                 "sha256": "d" * 64,
@@ -152,8 +162,26 @@ def _artifact_family(kind: str) -> dict[str, Any]:
                 "material_text_payload": kind == "runtime",
             }
         ],
-        "product_inspection_artifacts": [],
-        "delivery_artifacts": [],
+        "product_inspection_artifacts": [
+            {
+                "source_ref": visual_ref,
+                "artifact_role": "source_pdf",
+                "extension": ".pdf",
+                "sha256": "d" * 64,
+                "size_bytes": 12,
+                "material_text_payload": False,
+            }
+        ],
+        "delivery_artifacts": [
+            {
+                "source_ref": visual_ref,
+                "artifact_role": "source_pdf",
+                "extension": ".pdf",
+                "sha256": "d" * 64,
+                "size_bytes": 12,
+                "material_text_payload": False,
+            }
+        ],
     }
     payload = {
         "policy": "candidate_b_full_artifact_family_retained_but_text_material_payload_bounded",
@@ -167,7 +195,7 @@ def _artifact_family(kind: str) -> dict[str, Any]:
         "roles": roles,
         "role_counts": {role: len(items) for role, items in roles.items()},
     }
-    return {**payload, "artifact_family_hash": _stable_hash(payload)}
+    return {**payload, "artifact_family_hash": _artifact_family_hash(kind, payload)}
 
 
 def _write_bundle_receipt() -> str:
@@ -670,6 +698,18 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert body["candidate_b_visual_lane_status_evidence"]["bridge_receipt_id"] == runtime_receipt_id
     assert body["candidate_b_visual_lane_status_evidence"]["visual_lane_mode"] == CANDIDATE_B_VISUAL_LANE_MODE
     assert body["candidate_b_visual_lane_status_evidence"]["status_hash"]
+    inspection = body["candidate_b_final_operator_inspection_evidence"]
+    assert inspection["status"] == "available"
+    assert inspection["final_operator_inspection_hash"]
+    assert inspection["bundle"]["visual_page_evidence_count"] == 1
+    assert inspection["bundle"]["product_inspection_artifact_count"] == 1
+    assert inspection["bundle"]["delivery_artifact_count"] == 1
+    assert inspection["runtime"]["visual_page_evidence_count"] == 1
+    assert inspection["runtime"]["product_inspection_artifact_count"] == 1
+    assert inspection["runtime"]["delivery_artifact_count"] == 1
+    assert inspection["raw_local_path_exposed"] is False
+    assert inspection["raw_url_exposed"] is False
+    assert inspection["artifact_bytes_exposed"] is False
     assert body["default_selector_change_enabled"] is True
     assert body["candidate_b_default_promotion_enabled"] is True
     assert body["negative_invariants"]["candidate_b_visual_lane_mode_enabled"] is True
@@ -690,6 +730,8 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert final_proof["candidate_b_default_promotion_enabled"] is True
     assert final_proof["rollback_selector"] == "baseline"
     assert final_proof["final_operator_inspection_complete"] is True
+    assert final_proof["final_operator_inspection_hash"] == inspection["final_operator_inspection_hash"]
+    assert final_proof["candidate_b_final_operator_inspection_evidence"] == inspection
     assert final_proof["selector_mutation_performed"] is False
     status_response = client.post(
         FINAL_PROOF_STATUS_ENDPOINT,
@@ -702,6 +744,7 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert final_status["candidate_b_default_promotion_enabled"] is True
     assert final_status["rollback_selector"] == "baseline"
     assert final_status["final_operator_inspection_complete"] is True
+    assert final_status["candidate_b_final_operator_inspection_evidence"] == inspection
     assert final_status["selector_mutation_performed"] is False
     assert str(tmp_path) not in json.dumps(final_status, sort_keys=True)
     proof_receipt_path = (
@@ -919,6 +962,38 @@ def test_candidate_b_final_proof_status_rejects_path_like_receipt_id(client: Tes
     assert body["error"]["code"] == "candidate_b_final_proof_status_proof_receipt_id_invalid"
 
 
+def test_candidate_b_final_proof_status_rejects_stale_operator_inspection_evidence(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    readiness_payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    readiness_response = client.post(READY_ENDPOINT, json=readiness_payload)
+    assert readiness_response.status_code == 200, readiness_response.text
+    final_proof_response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(readiness_response.json()))
+    assert final_proof_response.status_code == 200, final_proof_response.text
+    final_proof = final_proof_response.json()
+    proof_receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / runtime_receipt_id
+        / "default-promotion-final-proof"
+        / f"{final_proof['proof_receipt_id']}.json"
+    )
+    stored = json.loads(proof_receipt_path.read_text(encoding="utf-8"))
+    stored["candidate_b_final_operator_inspection_evidence"]["runtime"]["delivery_artifact_count"] = 0
+    _write_json(proof_receipt_path, stored)
+
+    response = client.post(
+        FINAL_PROOF_STATUS_ENDPOINT,
+        json=_final_proof_status_request(runtime_receipt_id, final_proof["proof_receipt_id"]),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_status_operator_inspection_hash_mismatch"
+
+
 def test_candidate_b_operator_status_rejects_path_like_receipt_id(client: TestClient) -> None:
     response = client.post(
         OPERATOR_STATUS_ENDPOINT,
@@ -995,6 +1070,56 @@ def test_candidate_b_default_readiness_blocks_missing_artifact_family(client: Te
     assert body["status"] == "blocked"
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_default_readiness_runtime_governed_artifact_family_missing" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_default_readiness_blocks_missing_runtime_inspection_delivery_artifacts(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    runtime_receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    runtime_receipt = json.loads(runtime_receipt_path.read_text(encoding="utf-8"))
+    family = runtime_receipt["governed_retained_artifact_family"]
+    family["roles"]["product_inspection_artifacts"] = []
+    family["roles"]["delivery_artifacts"] = []
+    family["role_counts"] = {role: len(items) for role, items in family["roles"].items()}
+    family_input = dict(family)
+    family_input.pop("artifact_family_hash", None)
+    family["artifact_family_hash"] = _artifact_family_hash("runtime", family_input)
+    runtime_receipt["governed_retained_artifact_family_hash"] = family["artifact_family_hash"]
+    runtime_receipt_input = {
+        key: runtime_receipt[key]
+        for key in (
+            "schema_id",
+            "schema_version",
+            "bridge_mode",
+            "candidate_b_run_id",
+            "baseline_run_id",
+            "candidate_a_run_id",
+            "candidate_b_source_kind",
+            "document_processing_engine",
+            "visual_lane_mode",
+            "compare_target_set_hash",
+            "runtime_review_root_storage_authority_hash",
+            "admitted_file_subset_hash",
+            "governed_retained_artifact_family_hash",
+            "redaction_policy_id",
+        )
+    }
+    runtime_receipt["bridge_receipt_hash"] = _stable_hash(runtime_receipt_input)
+    _write_json(runtime_receipt_path, runtime_receipt)
+
+    response = client.post(READY_ENDPOINT, json=_payload(bundle_receipt_id, runtime_receipt_id))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_runtime_product_inspection_artifacts_missing" in codes
+    assert "candidate_b_default_readiness_runtime_delivery_artifacts_missing" in codes
+    assert body["candidate_b_final_operator_inspection_evidence"]["status"] == "blocked"
+    assert body["candidate_b_final_operator_inspection_evidence"]["runtime"]["delivery_artifact_count"] == 0
     assert body["candidate_b_default_promotion_enabled"] is False
 
 
