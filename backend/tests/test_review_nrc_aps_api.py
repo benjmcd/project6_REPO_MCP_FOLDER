@@ -333,6 +333,29 @@ def test_api_runs_admit_candidate_a_page_evidence_v1_as_visible(tmp_path, monkey
     assert unapproved_run_id not in returned_run_ids
 
 
+def test_api_runs_admit_candidate_b_opendataloader_page_evidence_v1_as_visible(tmp_path, monkeypatch):
+    storage_root = tmp_path / "storage_test_runtime"
+    admitted_run_id = "00000000-0000-0000-0000-00000000b502"
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="candidate_b_visual_runtime",
+        run_id=admitted_run_id,
+        visual_lane_mode="candidate_b_opendataloader_page_evidence_v1",
+        document_processing_engine="candidate_b_opendataloader_pdf",
+        include_connector_run_row=True,
+    )
+
+    monkeypatch.setattr("app.services.review_nrc_aps_runtime.settings.storage_dir", str(storage_root))
+    response = client.get("/api/v1/review/nrc-aps/runs")
+
+    assert response.status_code == 200
+    data = response.json()
+    candidate = next(item for item in data["runs"] if item["run_id"] == admitted_run_id)
+    assert candidate["runtime_binding"]["visual_lane_mode"] == "candidate_b_opendataloader_page_evidence_v1"
+    assert candidate["runtime_binding"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert candidate["runtime_binding"]["variant_kind"] == "candidate_b_opendataloader_pdf"
+
+
 def test_api_runs_exposes_candidate_b_document_processing_engine(tmp_path, monkeypatch):
     storage_root = tmp_path / "storage_test_runtime"
     candidate_b_run_id = "00000000-0000-0000-0000-00000000b501"
