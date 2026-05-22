@@ -11546,70 +11546,8 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const providerPublicPanel = page.locator('#provider-public-url-panel');
   await providerPublicPanel.scrollIntoViewIfNeeded();
   await expect(providerPublicPanel).toContainText('provider_public_url_ui_ready');
-  await expect(page.locator('#provider-public-url-prepare')).toBeEnabled();
+  await expect(page.locator('#provider-public-url-prepare')).toBeDisabled();
   await expect(page.locator('#provider-public-url-use')).toBeDisabled();
-  const providerPublicPrepareRequestPromise = waitForPostRequest(providerPublicPreparePath);
-  const providerPublicPrepareResponsePromise = waitForPostResponse(providerPublicPreparePath);
-  await page.locator('#provider-public-url-prepare').click();
-  const providerPublicPreparePayload = (await providerPublicPrepareRequestPromise).postDataJSON();
-  const providerPublicPrepare = await expectJson(await providerPublicPrepareResponsePromise);
-  expectOnlyPayloadKeys(providerPublicPreparePayload, providerPublicPreparePayloadKeys);
-  expect(providerPublicPreparePayload.provider_private_signed_url_receipt_id).toBe(
-    sourceProviderPrivate.provider_signed_url_receipt_id,
-  );
-  expect(providerPublicPreparePayload.delivery_mode).toBe('provider_public_url');
-  expect(providerPublicPreparePayload.operator_decision).toBe('prepare_provider_public_url');
-  expect(providerPublicPreparePayload.requested_ttl_seconds).toBe(300);
-  expectNoForbiddenPayloadKeys(providerPublicPreparePayload);
-  expect(providerPublicPrepare.schema_id).toBe('layer3.provider_public_url.prepare.v1');
-  expect(providerPublicPrepare.provider_private_signed_url_receipt_id).toBe(
-    sourceProviderPrivate.provider_signed_url_receipt_id,
-  );
-  expect(providerPublicPrepare.provider_public_url_state).toBe('provider_public_url_prepared');
-  expect(providerPublicPrepare.provider_public_url_redacted).toBe('provider-public-url:redacted');
-  expect(providerPublicPrepare.raw_public_url_exposed).toBe(false);
-  expect(providerPublicPrepare.public_url_enabled).toBe(false);
-  expect(providerPublicPrepare.source_artifact_hash).toBe(sourceProviderPrivate.source_artifact_hash);
-  expect(providerPublicPrepare.source_artifact_size_bytes).toBe(sourceProviderPrivate.source_artifact_size_bytes);
-  expect(JSON.stringify(providerPublicPrepare)).not.toContain('provider-public.invalid');
-  await expect(providerPublicPanel).toContainText(providerPublicPrepare.provider_public_url_receipt_id);
-  await expect(providerPublicPanel).toContainText('provider-public-url:redacted');
-  await expect(page.locator('#provider-public-url-use')).toBeEnabled();
-
-  const providerPublicUseRequestPromise = waitForPostRequest(providerPublicUsePath);
-  const providerPublicUseResponsePromise = waitForPostResponse(providerPublicUsePath);
-  await page.locator('#provider-public-url-use').click();
-  const providerPublicUsePayload = (await providerPublicUseRequestPromise).postDataJSON();
-  const providerPublicUse = await expectJson(await providerPublicUseResponsePromise);
-  expectOnlyPayloadKeys(providerPublicUsePayload, providerPublicUsePayloadKeys);
-  expect(providerPublicUsePayload.provider_public_url_receipt_id).toBe(
-    providerPublicPrepare.provider_public_url_receipt_id,
-  );
-  expect(providerPublicUsePayload.delivery_use_mode).toBe('fake_provider_redacted_use_decision');
-  expect(providerPublicUsePayload.operator_decision).toBe('use_provider_public_url_redacted_fake_provider');
-  expect(providerPublicUsePayload.expected_authority_hash).toBe(
-    providerPublicPrepare.audit_receipt.authority_hash,
-  );
-  expect(providerPublicUsePayload.expected_source_artifact_hash).toBe(providerPublicPrepare.source_artifact_hash);
-  expect(providerPublicUsePayload.expected_source_artifact_size_bytes).toBe(
-    providerPublicPrepare.source_artifact_size_bytes,
-  );
-  expectNoForbiddenPayloadKeys(providerPublicUsePayload);
-  expect(providerPublicUse.schema_id).toBe('layer3.provider_public_url.delivery_use.v1');
-  expect(providerPublicUse.delivery_use_decision).toBe('allowed');
-  expect(providerPublicUse.provider_public_url_redacted).toBe('provider-public-url:redacted');
-  expect(providerPublicUse.raw_public_url_exposed).toBe(false);
-  expect(providerPublicUse.public_url_enabled).toBe(false);
-  expect(providerPublicUse.provider_network_enabled).toBe(false);
-  expect(providerPublicUse.provider_object_write_enabled).toBe(false);
-  expect(providerPublicUse.byte_streaming_enabled).toBe(false);
-  expect(providerPublicUse.durable_use_row_created).toBe(false);
-  expect(providerPublicUse.connector_dispatch_enabled).toBe(false);
-  expect(providerPublicUse.package_mutation_enabled).toBe(false);
-  expect(providerPublicUse.source_expansion_enabled).toBe(false);
-  expect(providerPublicUse.frontend_durable_authority_enabled).toBe(false);
-  expect(JSON.stringify(providerPublicUse)).not.toContain('provider-public.invalid');
-  await expect(providerPublicPanel).toContainText('provider_public_url_use_allowed');
 
   await providerPrivatePanel.scrollIntoViewIfNeeded();
   await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
@@ -11768,8 +11706,8 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateUsePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateRevokePath)).toHaveLength(1);
-  expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicPreparePath)).toHaveLength(1);
-  expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicUsePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicPreparePath)).toHaveLength(0);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicUsePath)).toHaveLength(0);
   expect(apiRequests.filter((apiRequest) => (
     apiRequest.path === '/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare'
   ))).toHaveLength(0);
