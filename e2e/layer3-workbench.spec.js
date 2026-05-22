@@ -5491,6 +5491,12 @@ test('Layer 3 workbench records source-directory replacement authority and super
   expect(capturedSourcePackageProviderStatusPayload.provider_signed_url_receipt_id).toBe(
     sourcePackageProviderPrivate.provider_signed_url_receipt_id,
   );
+  const sourcePackageProviderPublicPanel = page.locator('#provider-public-url-panel');
+  await sourcePackageProviderPublicPanel.scrollIntoViewIfNeeded();
+  await expect(sourcePackageProviderPublicPanel).toContainText('provider_public_url_source_directory_provider_private_not_admitted');
+  await expect(sourcePackageProviderPublicPanel).toContainText('source_directory_package_provider_private_provider_public_url_not_admitted');
+  await expect(sourcePackageProviderPublicPanel.locator('.result-review-card').filter({ hasText: 'provider public prepare enabled' }).locator('p')).toHaveText('false');
+  await expect(page.locator('#provider-public-url-prepare')).toBeDisabled();
 
   let capturedSourcePackageProviderUsePayload = null;
   await page.route(
@@ -11545,7 +11551,9 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
 
   const providerPublicPanel = page.locator('#provider-public-url-panel');
   await providerPublicPanel.scrollIntoViewIfNeeded();
-  await expect(providerPublicPanel).toContainText('provider_public_url_ui_ready');
+  await expect(providerPublicPanel).toContainText('provider_public_url_source_directory_provider_private_not_admitted');
+  await expect(providerPublicPanel).toContainText('source_directory_hybrid_provider_private_provider_public_url_not_admitted');
+  await expect(providerPublicPanel.locator('.result-review-card').filter({ hasText: 'provider public prepare enabled' }).locator('p')).toHaveText('false');
   await expect(page.locator('#provider-public-url-prepare')).toBeDisabled();
   await expect(page.locator('#provider-public-url-use')).toBeDisabled();
 
