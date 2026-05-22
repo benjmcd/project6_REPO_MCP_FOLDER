@@ -43,6 +43,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["plan_revision_recovery_endpoint"] == "/api/v1/layer3/plan/revision/recover"
     assert direct["approved_plan_cancel_admitted"] is True
     assert direct["approved_plan_cancel_endpoint"] == "/api/v1/layer3/plan/approved/cancel"
+    assert direct["candidate_b_bundle_material_bridge_admitted"] is True
+    assert direct["candidate_b_bundle_material_bridge_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/bundle/material-bridge"
+    )
     assert direct["source_directory_ingestion_scan_admitted"] is True
     assert direct["source_directory_ingestion_scan_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/scan"
