@@ -78,6 +78,8 @@ def _negative_invariants() -> dict[str, bool]:
         "candidate_b_visual_lane_mode_enabled": False,
         "candidate_b_visual_lane_material_ingestion_enabled": False,
         "candidate_b_default_promotion_enabled": False,
+        "pdf_ingestion_enabled": False,
+        "image_ingestion_enabled": False,
         "provider_object_writes_enabled": False,
         "connector_dispatch_enabled": False,
         "rag_vector_model_runtime_enabled": False,
@@ -109,7 +111,59 @@ def _compare_target_set(kind: str) -> dict[str, Any]:
     return {**payload, "compare_target_set_hash": _stable_hash(payload["targets"])}
 
 
+def _artifact_family(kind: str) -> dict[str, Any]:
+    roles = {
+        "material_analysis_payloads": [
+            {
+                "source_ref": "raw/fontish.json" if kind == "bundle" else "trace/fontish.json",
+                "artifact_role": "material_analysis_payload",
+                "category": "candidate_b_raw_json" if kind == "bundle" else "candidate_b_runtime_trace_manifest",
+                "extension": ".json",
+                "sha256": "c" * 64,
+                "size_bytes": 12,
+                "material_text_payload": True,
+            }
+        ],
+        "visual_page_evidence": [
+            {
+                "source_ref": "raw/annotated/fontish.pdf" if kind == "bundle" else "storage/input.pdf",
+                "artifact_role": "source_pdf",
+                "extension": ".pdf",
+                "sha256": "d" * 64,
+                "size_bytes": 12,
+                "material_text_payload": False,
+            }
+        ],
+        "provenance_audit_artifacts": [
+            {
+                "source_ref": "proof.json" if kind == "bundle" else "runtime-summary.json",
+                "artifact_role": "provenance_audit",
+                "extension": ".json",
+                "sha256": "e" * 64,
+                "size_bytes": 12,
+                "material_text_payload": kind == "runtime",
+            }
+        ],
+        "product_inspection_artifacts": [],
+        "delivery_artifacts": [],
+    }
+    payload = {
+        "policy": "candidate_b_full_artifact_family_retained_but_text_material_payload_bounded",
+        "candidate_b_source_kind": kind,
+        "material_text_payload_policy": "raw_json_md_and_required_reports_only"
+        if kind == "bundle"
+        else "document_trace_json_md_only",
+        "pdf_material_text_payload_enabled": False,
+        "image_material_text_payload_enabled": False,
+        "raw_url_exposure_enabled": False,
+        "roles": roles,
+        "role_counts": {role: len(items) for role, items in roles.items()},
+    }
+    return {**payload, "artifact_family_hash": _stable_hash(payload)}
+
+
 def _write_bundle_receipt() -> str:
+    artifact_family = _artifact_family("bundle")
     receipt_input = {
         "schema_id": layer3_candidate_b_bundle_bridge.SCHEMA_ID,
         "schema_version": layer3_candidate_b_bundle_bridge.SCHEMA_VERSION,
@@ -123,6 +177,7 @@ def _write_bundle_receipt() -> str:
         "bundle_raw_file_manifest_hash": "3" * 64,
         "admitted_file_subset_source_hash": "4" * 64,
         "admitted_file_subset_hash": "5" * 64,
+        "governed_retained_artifact_family_hash": artifact_family["artifact_family_hash"],
         "redaction_policy_id": layer3_candidate_b_bundle_bridge.REDACTION_POLICY_ID,
     }
     receipt_hash = _stable_hash(receipt_input)
@@ -139,6 +194,7 @@ def _write_bundle_receipt() -> str:
                 "material_preview_uses_existing_hash_checks": True,
                 "gate_b_uses_existing_decision_basis_validation": True,
             },
+            "governed_retained_artifact_family": artifact_family,
             "negative_invariants": _negative_invariants(),
         },
     )
@@ -146,6 +202,7 @@ def _write_bundle_receipt() -> str:
 
 
 def _write_runtime_receipt() -> str:
+    artifact_family = _artifact_family("runtime")
     receipt_input = {
         "schema_id": layer3_candidate_b_runtime_bridge.SCHEMA_ID,
         "schema_version": layer3_candidate_b_runtime_bridge.SCHEMA_VERSION,
@@ -158,6 +215,7 @@ def _write_runtime_receipt() -> str:
         "compare_target_set_hash": "6" * 64,
         "runtime_review_root_storage_authority_hash": "7" * 64,
         "admitted_file_subset_hash": "8" * 64,
+        "governed_retained_artifact_family_hash": artifact_family["artifact_family_hash"],
         "redaction_policy_id": layer3_candidate_b_runtime_bridge.REDACTION_POLICY_ID,
     }
     receipt_hash = _stable_hash(receipt_input)
@@ -174,6 +232,7 @@ def _write_runtime_receipt() -> str:
                 "material_preview_uses_existing_hash_checks": True,
                 "gate_b_uses_existing_decision_basis_validation": True,
             },
+            "governed_retained_artifact_family": artifact_family,
             "negative_invariants": _negative_invariants(),
         },
     )
@@ -242,6 +301,10 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert body["baseline_current_default_evidence"]["non_pdf_document_processing_engine_default"] == "baseline"
     assert body["baseline_current_default_evidence"]["explicit_baseline_rollback_preserved"] is True
     assert body["candidate_a_admitted_variant_evidence"]["visual_lane_mode"] == "candidate_a_page_evidence_v1"
+    assert body["bridge_receipts"]["bundle"]["governed_retained_artifact_family_hash"]
+    assert body["bridge_receipts"]["runtime"]["governed_retained_artifact_family_hash"]
+    assert body["authority_hashes"]["bundle"]["governed_retained_artifact_family_hash"]
+    assert body["authority_hashes"]["runtime"]["governed_retained_artifact_family_hash"]
     assert body["default_selector_change_enabled"] is True
     assert body["candidate_b_default_promotion_enabled"] is True
     assert body["selector_mutation_performed"] is False
@@ -268,6 +331,24 @@ def test_candidate_b_default_readiness_blocks_missing_runtime_receipt(client: Te
     assert body["default_selector_change_enabled"] is False
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_default_readiness_runtime_bridge_receipt_missing" in codes
+
+
+def test_candidate_b_default_readiness_blocks_missing_artifact_family(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    runtime_receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    runtime_receipt = json.loads(runtime_receipt_path.read_text(encoding="utf-8"))
+    runtime_receipt.pop("governed_retained_artifact_family")
+    _write_json(runtime_receipt_path, runtime_receipt)
+
+    response = client.post(READY_ENDPOINT, json=_payload(bundle_receipt_id, runtime_receipt_id))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_runtime_governed_artifact_family_missing" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
 
 
 def test_candidate_b_default_readiness_blocks_incomplete_downstream_and_regression(client: TestClient) -> None:
