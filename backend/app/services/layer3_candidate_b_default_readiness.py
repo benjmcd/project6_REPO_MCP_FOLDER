@@ -254,6 +254,10 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
     blocked.extend(visual_lane_status["blocked_reasons"])
     blocked.extend(operator_status["blocked_reasons"])
     blocked.extend(closure_evidence["blocked_reasons"])
+    final_operator_inspection = _final_operator_inspection_evidence(
+        bundle_receipt["governed_retained_artifact_family"],
+        runtime_receipt["governed_retained_artifact_family"],
+    )
 
     audit_hash = _stable_hash(
         {
@@ -275,6 +279,7 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
             "rollback_to_baseline_confirmation": fields.get("rollback_to_baseline_confirmation") is True,
             "operator_status_hash": operator_status["operator_status_hash"],
             "closure_evidence_hash": closure_evidence["closure_evidence_hash"],
+            "final_operator_inspection_hash": final_operator_inspection["final_operator_inspection_hash"],
         }
     )
     readiness_state = READY_STATE if not blocked else BLOCKED_STATE
@@ -331,6 +336,7 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         "candidate_b_visual_lane_status_evidence": visual_lane_status["summary"],
         "operator_status_evidence": operator_status["summary"],
         "closure_evidence": closure_evidence["summary"],
+        "candidate_b_final_operator_inspection_evidence": final_operator_inspection,
         "rollback_to_baseline": {
             "available": fields.get("rollback_to_baseline_confirmation") is True,
             "selector": "baseline",
@@ -627,6 +633,15 @@ def _validate_governed_artifact_family(
                 received=received_hash or None,
             )
         )
+    recomputed_hash = _artifact_family_hash(kind, artifact_family)
+    if recomputed_hash != expected_hash:
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_governed_artifact_family_stale",
+                expected=expected_hash or None,
+                received=recomputed_hash,
+            )
+        )
     for field in ("pdf_material_text_payload_enabled", "image_material_text_payload_enabled", "raw_url_exposure_enabled"):
         if artifact_family.get(field) is not False:
             blocked.append(_reason(f"candidate_b_default_readiness_{kind}_{field}_not_false", field=field))
@@ -653,7 +668,24 @@ def _validate_governed_artifact_family(
             blocked.append(_reason(f"candidate_b_default_readiness_{kind}_material_payload_artifacts_missing"))
         if not isinstance(roles.get("provenance_audit_artifacts"), list) or not roles["provenance_audit_artifacts"]:
             blocked.append(_reason(f"candidate_b_default_readiness_{kind}_provenance_artifacts_missing"))
+        if not isinstance(roles.get("visual_page_evidence"), list) or not roles["visual_page_evidence"]:
+            blocked.append(_reason(f"candidate_b_default_readiness_{kind}_visual_page_evidence_missing"))
+        if not isinstance(roles.get("product_inspection_artifacts"), list) or not roles["product_inspection_artifacts"]:
+            blocked.append(_reason(f"candidate_b_default_readiness_{kind}_product_inspection_artifacts_missing"))
+        if not isinstance(roles.get("delivery_artifacts"), list) or not roles["delivery_artifacts"]:
+            blocked.append(_reason(f"candidate_b_default_readiness_{kind}_delivery_artifacts_missing"))
     return artifact_family
+
+
+def _artifact_family_hash(kind: str, artifact_family: Mapping[str, Any]) -> str:
+    hash_version = (
+        layer3_candidate_b_bundle_bridge.AUTHORITY_HASH_VERSION
+        if kind == "bundle"
+        else layer3_candidate_b_runtime_bridge.AUTHORITY_HASH_VERSION
+    )
+    classification = dict(artifact_family)
+    classification.pop("artifact_family_hash", None)
+    return _stable_hash({"hash_version": hash_version, "classification": classification})
 
 
 def _artifact_family_summary(artifact_family: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -664,6 +696,76 @@ def _artifact_family_summary(artifact_family: Mapping[str, Any] | None) -> dict[
         "policy": artifact_family.get("policy"),
         "artifact_family_hash": artifact_family.get("artifact_family_hash"),
         "role_counts": artifact_family.get("role_counts") if isinstance(artifact_family.get("role_counts"), dict) else {},
+        "pdf_material_text_payload_enabled": artifact_family.get("pdf_material_text_payload_enabled") is True,
+        "image_material_text_payload_enabled": artifact_family.get("image_material_text_payload_enabled") is True,
+        "raw_url_exposure_enabled": artifact_family.get("raw_url_exposure_enabled") is True,
+    }
+
+
+def _final_operator_inspection_evidence(
+    bundle_artifact_family: Mapping[str, Any] | None,
+    runtime_artifact_family: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    bundle_summary = _final_operator_artifact_summary("bundle", bundle_artifact_family)
+    runtime_summary = _final_operator_artifact_summary("runtime", runtime_artifact_family)
+    inspection_available = _final_operator_artifact_available(bundle_summary) and _final_operator_artifact_available(
+        runtime_summary
+    )
+    evidence_input = {
+        "hash_version": "candidate_b_final_operator_inspection_evidence_hash_v1",
+        "bundle": bundle_summary,
+        "runtime": runtime_summary,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+    }
+    evidence_hash = _stable_hash(evidence_input)
+    return {
+        "status": "available" if inspection_available else "blocked",
+        "final_operator_inspection_hash": evidence_hash,
+        "bundle": bundle_summary,
+        "runtime": runtime_summary,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+    }
+
+
+def _final_operator_artifact_available(summary: Mapping[str, Any]) -> bool:
+    return (
+        summary.get("available") is True
+        and int(summary.get("visual_page_evidence_count") or 0) > 0
+        and int(summary.get("product_inspection_artifact_count") or 0) > 0
+        and int(summary.get("delivery_artifact_count") or 0) > 0
+        and summary.get("pdf_material_text_payload_enabled") is False
+        and summary.get("image_material_text_payload_enabled") is False
+        and summary.get("raw_url_exposure_enabled") is False
+    )
+
+
+def _final_operator_artifact_summary(kind: str, artifact_family: Mapping[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(artifact_family, Mapping):
+        return {
+            "candidate_b_source_kind": kind,
+            "available": False,
+            "artifact_family_hash": None,
+            "role_counts": {},
+            "visual_page_evidence_count": 0,
+            "product_inspection_artifact_count": 0,
+            "delivery_artifact_count": 0,
+            "pdf_material_text_payload_enabled": False,
+            "image_material_text_payload_enabled": False,
+            "raw_url_exposure_enabled": False,
+        }
+    role_counts = artifact_family.get("role_counts") if isinstance(artifact_family.get("role_counts"), dict) else {}
+    return {
+        "candidate_b_source_kind": kind,
+        "available": True,
+        "artifact_family_hash": artifact_family.get("artifact_family_hash"),
+        "role_counts": role_counts,
+        "visual_page_evidence_count": int(role_counts.get("visual_page_evidence") or 0),
+        "product_inspection_artifact_count": int(role_counts.get("product_inspection_artifacts") or 0),
+        "delivery_artifact_count": int(role_counts.get("delivery_artifacts") or 0),
         "pdf_material_text_payload_enabled": artifact_family.get("pdf_material_text_payload_enabled") is True,
         "image_material_text_payload_enabled": artifact_family.get("image_material_text_payload_enabled") is True,
         "raw_url_exposure_enabled": artifact_family.get("raw_url_exposure_enabled") is True,
