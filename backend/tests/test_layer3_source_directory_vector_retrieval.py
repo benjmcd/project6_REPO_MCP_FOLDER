@@ -38,6 +38,7 @@ from app.models.models import (
     L3SourceDirectoryInternalWebhookDispatchReceipt,
 )
 from app.services import layer3_internal_webhook_connector
+from app.services import layer3_source_directory_hybrid_analysis as source_hybrid_service
 from app.services.layer3_source_directory_text_index import (
     SourceDirectoryTextIndexError,
     source_directory_material_text_index,
@@ -2272,9 +2273,53 @@ def test_source_directory_hybrid_context_packet_provider_private_to_public_redac
 
     db = client.layer3_session_factory()
     try:
+        prepare_provider_private = (
+            source_hybrid_service
+            .source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_prepare
+        )
+        use_provider_private = (
+            source_hybrid_service
+            .source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_use
+        )
+        expired_prepare_body = prepare_provider_private(
+            db,
+            {
+                **delivery_authority,
+                "client_request_id": "source-directory-provider-private-expiring-prepare",
+                "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+                "delivery_mode": "provider_private_signed_url",
+                "recipient_scope": "source-directory-redacted-expiry-test",
+                "requested_ttl_seconds": 1,
+            },
+            now_epoch=1893456000,
+        )
+        assert expired_prepare_body["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+        assert expired_prepare_body["provider_url_expires_in_seconds"] == 1
+        with pytest.raises(
+            source_hybrid_service.SourceDirectoryHybridProviderPrivateSignedUrlUseError
+        ) as exc_info:
+            use_provider_private(
+                db,
+                {
+                    **delivery_authority,
+                    "client_request_id": "source-directory-provider-private-expired-use",
+                    "operator_decision": "use_source_directory_hybrid_provider_private_signed_url",
+                    "delivery_mode": "provider_private_signed_url",
+                    "provider_signed_url_receipt_id": (
+                        expired_prepare_body["provider_signed_url_receipt_id"]
+                    ),
+                },
+                now_epoch=1893456002,
+            )
+        assert exc_info.value.code == "provider_private_signed_url_state_expired"
+    finally:
+        db.close()
+
+    db = client.layer3_session_factory()
+    try:
         assert db.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
-        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 2
-        assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() == 5
+        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 3
+        assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() == 7
         assert db.query(L3ProviderPublicUrlObjectAuthority).count() == 1
         assert db.query(L3ProviderPublicUrlReceipt).count() == 1
         assert db.query(AnalysisRun).count() == 0
