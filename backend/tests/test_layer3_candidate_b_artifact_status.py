@@ -119,7 +119,15 @@ def _artifact_family(kind: str) -> dict[str, Any]:
         "roles": roles,
         "role_counts": {role: len(items) for role, items in roles.items()},
     }
-    return {**payload, "artifact_family_hash": _stable_hash(payload)}
+    hash_version = (
+        layer3_candidate_b_bundle_bridge.AUTHORITY_HASH_VERSION
+        if kind == "bundle"
+        else layer3_candidate_b_runtime_bridge.AUTHORITY_HASH_VERSION
+    )
+    return {
+        **payload,
+        "artifact_family_hash": _stable_hash({"hash_version": hash_version, "classification": payload}),
+    }
 
 
 def _write_receipt(kind: str, *, family_override: dict[str, Any] | None = None) -> str:
@@ -218,6 +226,36 @@ def test_candidate_b_runtime_artifact_family_status_fails_closed_on_stale_hash(c
 
     assert response.status_code == 409, response.text
     assert response.json()["error"]["code"] == "candidate_b_artifact_status_governed_artifact_family_hash_mismatch"
+
+
+@pytest.mark.parametrize("kind", ["bundle", "runtime"])
+def test_candidate_b_artifact_family_status_fails_closed_on_stale_roles(
+    client: TestClient, kind: str
+) -> None:
+    receipt_id = _write_receipt(kind)
+    root = (
+        Path(settings.layer3_candidate_b_bundle_bridge_dir)
+        if kind == "bundle"
+        else Path(settings.layer3_candidate_b_runtime_bridge_dir)
+    )
+    receipt_path = root / receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["governed_retained_artifact_family"]["roles"]["visual_page_evidence"].append(
+        {
+            "source_ref": "storage/extra.png",
+            "artifact_role": "extracted_image",
+            "extension": ".png",
+            "sha256": "5" * 64,
+            "size_bytes": 9,
+            "material_text_payload": False,
+        }
+    )
+    _write_json(receipt_path, receipt)
+
+    response = client.post(STATUS_ENDPOINT, json=_payload(kind, receipt_id))
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "candidate_b_artifact_status_governed_artifact_family_stale"
 
 
 def test_candidate_b_artifact_family_status_rejects_path_and_url_fields(client: TestClient) -> None:

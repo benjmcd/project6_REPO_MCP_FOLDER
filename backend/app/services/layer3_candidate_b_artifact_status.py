@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Mapping
@@ -242,6 +243,14 @@ def _validate_receipt(source_kind: str, receipt_id: str, receipt: Mapping[str, A
             http_status=409,
             details={"expected": expected_hash or None, "received": received_hash or None},
         )
+    recomputed_hash = _artifact_family_hash(source_kind, artifact_family)
+    if recomputed_hash != expected_hash:
+        raise CandidateBArtifactStatusError(
+            "candidate_b_artifact_status_governed_artifact_family_stale",
+            "The governed retained artifact-family evidence no longer matches its authority hash.",
+            http_status=409,
+            details={"expected": expected_hash, "received": recomputed_hash},
+        )
     for field in ("pdf_material_text_payload_enabled", "image_material_text_payload_enabled", "raw_url_exposure_enabled"):
         if artifact_family.get(field) is not False:
             raise CandidateBArtifactStatusError(
@@ -284,6 +293,22 @@ def _artifact_ref_preview(item: Mapping[str, Any]) -> dict[str, Any]:
         "size_bytes": item.get("size_bytes"),
         "material_text_payload": item.get("material_text_payload") is True,
     }
+
+
+def _artifact_family_hash(source_kind: str, artifact_family: Mapping[str, Any]) -> str:
+    hash_version = (
+        layer3_candidate_b_bundle_bridge.AUTHORITY_HASH_VERSION
+        if source_kind == "bundle"
+        else layer3_candidate_b_runtime_bridge.AUTHORITY_HASH_VERSION
+    )
+    classification = dict(artifact_family)
+    classification.pop("artifact_family_hash", None)
+    return _stable_hash({"hash_version": hash_version, "classification": classification})
+
+
+def _stable_hash(value: Any) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _server_time() -> str:
