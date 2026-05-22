@@ -3315,6 +3315,7 @@ class Layer3CandidateBDefaultPromotionClosureEvidenceResponse(Layer3BaseResponse
     raw_url_exposed: bool
     provider_private_token_exposed: bool
     artifact_bytes_exposed: bool
+    candidate_b_operator_status_evidence: dict[str, Any]
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 

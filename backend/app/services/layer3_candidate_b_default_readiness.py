@@ -249,6 +249,7 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         bundle_downstream_proof_hash=bundle_proof["proof_hash"],
         runtime_downstream_proof_hash=runtime_proof["proof_hash"],
         operator_status_hash=operator_status["operator_status_hash"],
+        operator_status_projection=operator_status["summary"],
     )
     blocked.extend(bundle_receipt["blocked_reasons"])
     blocked.extend(runtime_receipt["blocked_reasons"])
@@ -1243,6 +1244,7 @@ def _validate_closure_evidence(
     bundle_downstream_proof_hash: str | None,
     runtime_downstream_proof_hash: str | None,
     operator_status_hash: str | None,
+    operator_status_projection: Mapping[str, Any],
 ) -> dict[str, Any]:
     if not isinstance(value, dict):
         return {
@@ -1316,16 +1318,68 @@ def _validate_closure_evidence(
             expected_hash=closure_hash,
             blocked=blocked,
         )
+    _validate_closure_operator_status_projection(
+        evidence.get("candidate_b_operator_status_evidence"),
+        operator_status_hash=operator_status_hash,
+        expected_projection=operator_status_projection,
+        blocked=blocked,
+    )
     summary = {
         "status": evidence.get("status"),
         "closure_evidence_hash": closure_hash,
         "closure_receipt_id": evidence.get("closure_receipt_id"),
+        "candidate_b_operator_status_evidence": evidence.get("candidate_b_operator_status_evidence"),
         "regression_disposition": evidence.get("regression_disposition"),
         "rollback_to_baseline_confirmation": evidence.get("rollback_to_baseline_confirmation") is True,
         "operator_confirmation": evidence.get("operator_confirmation") is True,
         "selector_mutation_performed": evidence.get("selector_mutation_performed") is True,
     }
     return {"blocked_reasons": blocked, "summary": summary, "closure_evidence_hash": closure_hash}
+
+
+def _validate_closure_operator_status_projection(
+    value: Any,
+    *,
+    operator_status_hash: str | None,
+    expected_projection: Mapping[str, Any],
+    blocked: list[dict[str, Any]],
+) -> None:
+    if not isinstance(value, dict):
+        blocked.append(_reason("candidate_b_default_readiness_closure_operator_status_projection_missing"))
+        return
+    if str(value.get("operator_status_hash") or "").strip() != str(operator_status_hash or "").strip():
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_closure_operator_status_hash_mismatch",
+                expected=operator_status_hash,
+                received=value.get("operator_status_hash"),
+            )
+        )
+    if dict(value) != dict(expected_projection):
+        blocked.append(_reason("candidate_b_default_readiness_closure_operator_status_projection_mismatch"))
+    required_true = (
+        "runtime_delivery_artifact_projection_visible",
+        "runtime_delivery_artifact_roles_bound",
+    )
+    missing = [field for field in required_true if value.get(field) is not True]
+    if missing:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_closure_operator_status_projection_incomplete",
+                missing_fields=missing,
+            )
+        )
+    expected_delivery_steps = sorted(layer3_candidate_b_downstream_proof.DELIVERY_ARTIFACT_AUTHORITY_COVERAGE)
+    if value.get("runtime_delivery_artifact_coverage_steps") != expected_delivery_steps:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_closure_operator_status_delivery_coverage_mismatch",
+                expected=expected_delivery_steps,
+                received=value.get("runtime_delivery_artifact_coverage_steps"),
+            )
+        )
+    if not str(value.get("runtime_delivery_artifact_authority_hash") or "").strip():
+        blocked.append(_reason("candidate_b_default_readiness_closure_operator_status_delivery_authority_missing"))
 
 
 def _validate_closure_receipt(
