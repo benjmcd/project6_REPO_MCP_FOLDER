@@ -51,6 +51,7 @@ READINESS_REQUIRED_GATES = (
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-status",
     "candidate-b-artifact-family-status",
     "candidate-b-visual-lane-status",
+    "candidate-b-bundle-downstream-proof",
     "candidate-b-runtime-downstream-proof",
     "candidate-b-default-promotion-operator-status",
     "candidate-b-default-promotion-readiness-audit",
@@ -97,6 +98,7 @@ READINESS_IMPLEMENTED_GATES = (
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-status",
     "candidate-b-artifact-family-status",
     "candidate-b-visual-lane-status",
+    "candidate-b-bundle-downstream-proof",
     "candidate-b-runtime-downstream-proof",
     "candidate-b-default-promotion-operator-status",
     "candidate-b-default-promotion-readiness-audit",
@@ -186,6 +188,10 @@ def build_readiness_contract(
         "candidate_b_visual_lane_status_admitted": True,
         "candidate_b_visual_lane_status_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/visual-lane/status"
+        ),
+        "candidate_b_bundle_downstream_proof_admitted": True,
+        "candidate_b_bundle_downstream_proof_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/bundle/downstream-proof"
         ),
         "candidate_b_runtime_downstream_proof_admitted": True,
         "candidate_b_runtime_downstream_proof_endpoint": (

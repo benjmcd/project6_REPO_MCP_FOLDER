@@ -8,6 +8,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_bundle_downstream_proof,
     layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_operator_status,
@@ -201,6 +202,8 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         fields.get("bundle_downstream_proof"),
         source_kind="bundle",
         bridge_receipt_id=bundle_receipt_id,
+        candidate_b_bundle_id=candidate_b_bundle_id,
+        bridge_receipt_hash=bundle_receipt["authority_hashes"].get("bridge_receipt_hash"),
     )
     visual_lane_status = _validate_visual_lane_status_evidence(
         fields.get("candidate_b_visual_lane_status_evidence"),
@@ -677,6 +680,7 @@ def _validate_downstream_proof(
     *,
     source_kind: str,
     bridge_receipt_id: str,
+    candidate_b_bundle_id: str | None = None,
     candidate_b_run_id: str | None = None,
     bridge_receipt_hash: str | None = None,
     visual_lane_status_hash: str | None = None,
@@ -705,6 +709,51 @@ def _validate_downstream_proof(
     ):
         if proof.get(field) is not False:
             blocked.append(_reason(f"candidate_b_default_readiness_{source_kind}_downstream_{field}_not_false", field=field))
+    if source_kind == "bundle":
+        for field, expected in {
+            "schema_id": layer3_candidate_b_bundle_downstream_proof.SCHEMA_ID,
+            "mode": layer3_candidate_b_bundle_downstream_proof.PROOF_MODE,
+            "status": "proven",
+            "candidate_b_bundle_id": candidate_b_bundle_id,
+            "bridge_receipt_hash": bridge_receipt_hash,
+        }.items():
+            if str(proof.get(field) or "").strip() != str(expected or "").strip():
+                blocked.append(
+                    _reason(
+                        f"candidate_b_default_readiness_bundle_downstream_{field}_mismatch",
+                        field=field,
+                        expected=expected,
+                        received=proof.get(field),
+                    )
+                )
+        missing_hash_fields = [
+            key for key in layer3_candidate_b_bundle_downstream_proof.PROOF_HASH_KEYS if key not in proof
+        ]
+        if missing_hash_fields:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_bundle_downstream_proof_authority_field_missing",
+                    missing_fields=missing_hash_fields,
+                )
+            )
+        else:
+            expected_hash = _stable_hash(
+                {key: proof[key] for key in layer3_candidate_b_bundle_downstream_proof.PROOF_HASH_KEYS}
+            )
+            if proof.get("proof_hash") != expected_hash:
+                blocked.append(
+                    _reason(
+                        "candidate_b_default_readiness_bundle_downstream_proof_hash_mismatch",
+                        expected=expected_hash,
+                        received=proof.get("proof_hash"),
+                    )
+                )
+            _validate_bundle_downstream_proof_receipt(
+                proof=proof,
+                bridge_receipt_id=bridge_receipt_id,
+                expected_hash=expected_hash,
+                blocked=blocked,
+            )
     if source_kind == "runtime":
         for field, expected in {
             "schema_id": layer3_candidate_b_downstream_proof.SCHEMA_ID,
@@ -846,6 +895,72 @@ def _validate_runtime_downstream_proof_receipt(
         blocked.append(
             _reason(
                 "candidate_b_default_readiness_runtime_downstream_proof_receipt_hash_mismatch",
+                expected=expected_hash,
+                received=stored.get("proof_hash"),
+            )
+        )
+
+
+def _validate_bundle_downstream_proof_receipt(
+    *,
+    proof: Mapping[str, Any],
+    bridge_receipt_id: str,
+    expected_hash: str,
+    blocked: list[dict[str, Any]],
+) -> None:
+    proof_receipt_id = str(proof.get("proof_receipt_id") or "").strip()
+    if not proof_receipt_id:
+        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_receipt_id_missing"))
+        return
+    if (
+        not proof_receipt_id.startswith(f"{layer3_candidate_b_bundle_downstream_proof.PROOF_RECEIPT_PREFIX}-")
+        or "/" in proof_receipt_id
+        or "\\" in proof_receipt_id
+        or ".." in proof_receipt_id
+        or proof_receipt_id in {".", ".."}
+    ):
+        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_receipt_id_invalid"))
+        return
+    configured = settings.layer3_candidate_b_bundle_bridge_dir
+    if not str(configured or "").strip():
+        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_bridge_dir_unset"))
+        return
+    root = Path(str(configured))
+    if not root.is_absolute():
+        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_bridge_dir_not_absolute"))
+        return
+    proof_path = root / bridge_receipt_id / "downstream-proof" / f"{proof_receipt_id}.json"
+    if not proof_path.is_file():
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_bundle_downstream_proof_receipt_missing",
+                proof_receipt_id=proof_receipt_id,
+            )
+        )
+        return
+    try:
+        stored = json.loads(proof_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_bundle_downstream_proof_receipt_unreadable",
+                proof_receipt_id=proof_receipt_id,
+                reason=str(exc),
+            )
+        )
+        return
+    if not isinstance(stored, dict):
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_bundle_downstream_proof_receipt_invalid",
+                proof_receipt_id=proof_receipt_id,
+            )
+        )
+        return
+    if stored.get("proof_hash") != expected_hash:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_bundle_downstream_proof_receipt_hash_mismatch",
                 expected=expected_hash,
                 received=stored.get("proof_hash"),
             )
