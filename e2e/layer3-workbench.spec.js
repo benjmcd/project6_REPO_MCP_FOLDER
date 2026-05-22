@@ -10779,6 +10779,10 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const sourceSupersessionPreviewPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview';
   const sourceReplacementAuthorityPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview';
   const sourceSupersessionCommitPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit';
+  const sourcePackageProviderPrivatePreparePath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/prepare';
+  const sourcePackageProviderPrivateStatusPath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/status';
+  const sourcePackageProviderPrivateUsePath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/use';
+  const sourcePackageProviderPrivateRevokePath = '/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/revoke';
   const deliveryStatusPath = `${analysisPath}/handoff/export/download/deliver/status`;
   const deliveryPath = `${analysisPath}/handoff/export/download/deliver`;
   const sourceProviderPrivatePreparePath = `${analysisPath}/handoff/export/download/provider-private-signed-url/prepare`;
@@ -11087,6 +11091,43 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'session_id',
     'source_package_set_hash',
   ].sort();
+  const sourcePackageProviderPrivatePreparePayloadKeys = [
+    'analysis_plan_id',
+    'client_request_id',
+    'decision_notes',
+    'delivery_mode',
+    'operator_decision',
+    'package_supersession_commit_basis_hash',
+    'package_supersession_commit_id',
+    'pass_run_id',
+    'recipient_scope',
+    'reconciliation_record_id',
+    'replacement_authority_basis_hash',
+    'replacement_package_set_authority_id',
+    'requested_ttl_seconds',
+    'session_id',
+  ].sort();
+  const sourcePackageProviderPrivateLifecyclePayloadKeys = [
+    'analysis_plan_id',
+    'client_request_id',
+    'decision_notes',
+    'delivery_mode',
+    'operator_decision',
+    'package_supersession_commit_basis_hash',
+    'package_supersession_commit_id',
+    'pass_run_id',
+    'provider_signed_url_receipt_id',
+    'reconciliation_record_id',
+    'replacement_authority_basis_hash',
+    'replacement_package_set_authority_id',
+    'session_id',
+  ].sort();
+  const sourcePackageProviderPrivateRevokePayloadKeys = [
+    ...sourcePackageProviderPrivateLifecyclePayloadKeys,
+    'idempotency_key',
+    'revocation_reason',
+    'revoked_by',
+  ].sort();
   const waitForPostRequest = (path) => page.waitForRequest((apiRequest) => (
     new URL(apiRequest.url()).pathname === path && apiRequest.method() === 'POST'
   ));
@@ -11390,6 +11431,130 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(sourceSupersessionCommit.package_supersession_commit_id).toBeTruthy();
   expect(sourceSupersessionCommit.commit_basis_hash).toMatch(/^[a-f0-9]{64}$/);
 
+  const providerPrivatePanel = page.locator('#provider-private-signed-url-panel');
+  await page.locator('#provider-private-signed-url-artifact-family').selectOption('source_directory_package_supersession');
+  await providerPrivatePanel.scrollIntoViewIfNeeded();
+  await expect(providerPrivatePanel).toContainText('source_directory_package_supersession');
+  await expect(providerPrivatePanel).toContainText(sourcePackageProviderPrivatePreparePath.replace('/api/v1/layer3', ''));
+  await expect(page.locator('#provider-private-signed-url-prepare')).toBeEnabled();
+  const sourcePackageProviderPrivatePrepareRequestPromise = waitForPostRequest(sourcePackageProviderPrivatePreparePath);
+  const sourcePackageProviderPrivatePrepareResponsePromise = waitForPostResponse(sourcePackageProviderPrivatePreparePath);
+  await page.locator('#provider-private-signed-url-prepare').click();
+  const sourcePackageProviderPrivatePreparePayload = (await sourcePackageProviderPrivatePrepareRequestPromise).postDataJSON();
+  const sourcePackageProviderPrivate = await expectJson(await sourcePackageProviderPrivatePrepareResponsePromise);
+  expectOnlyPayloadKeys(sourcePackageProviderPrivatePreparePayload, sourcePackageProviderPrivatePreparePayloadKeys);
+  expect(sourcePackageProviderPrivatePreparePayload).toEqual({
+    client_request_id: sourcePackageProviderPrivatePreparePayload.client_request_id,
+    session_id: sourceSupersessionCommit.session_id,
+    analysis_plan_id: sourceSupersessionCommit.analysis_plan_id,
+    pass_run_id: sourceSupersessionCommit.pass_run_id,
+    reconciliation_record_id: sourceSupersessionCommit.reconciliation_record_id,
+    package_supersession_commit_id: sourceSupersessionCommit.package_supersession_commit_id,
+    package_supersession_commit_basis_hash: sourceSupersessionCommit.commit_basis_hash,
+    replacement_package_set_authority_id: sourceSupersessionCommit.replacement_package_set_authority_id,
+    replacement_authority_basis_hash: sourceSupersessionCommit.replacement_authority_basis_hash,
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'prepare_source_directory_package_supersession_provider_private_signed_url',
+    recipient_scope: 'source_directory_package_supersession_private_artifact_delivery',
+    requested_ttl_seconds: 300,
+    decision_notes: 'Rendered source-directory package supersession provider-private bridge; server-owned redacted use is admitted for this artifact family.',
+  });
+  expectNoForbiddenPayloadKeys(sourcePackageProviderPrivatePreparePayload);
+  expect(sourcePackageProviderPrivate.schema_id).toBe(
+    'layer3.source_directory_package_supersession_provider_private_signed_url.prepare.v1',
+  );
+  expect(sourcePackageProviderPrivate.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(sourcePackageProviderPrivate.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  expect(sourcePackageProviderPrivate.package_supersession_commit_id).toBe(
+    sourceSupersessionCommit.package_supersession_commit_id,
+  );
+  expect(sourcePackageProviderPrivate.raw_provider_private_signed_url_token_exposed).toBe(false);
+  expect(sourcePackageProviderPrivate.raw_provider_url_exposed).toBe(false);
+  expect(sourcePackageProviderPrivate.provider_object_write_enabled).toBe(false);
+  expect(sourcePackageProviderPrivate.connector_dispatch_enabled).toBe(false);
+  expect(sourcePackageProviderPrivate.package_mutation_enabled).toBe(false);
+  expect(sourcePackageProviderPrivate.frontend_durable_authority_enabled).toBe(false);
+  expect(sourcePackageProviderPrivate).not.toHaveProperty('provider_private_signed_url_token');
+  expect(sourcePackageProviderPrivate).not.toHaveProperty('raw_provider_private_signed_url_token');
+  expect(sourcePackageProviderPrivate.audit_receipt || {}).not.toHaveProperty('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).toContainText(sourcePackageProviderPrivate.provider_signed_url_receipt_id);
+  await expect(providerPrivatePanel).toContainText('provider-private-signed-url:redacted');
+  await expect(page.locator('#provider-private-signed-url-status')).toBeEnabled();
+  await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeEnabled();
+
+  const sourcePackageProviderPrivateStatusRequestPromise = waitForPostRequest(sourcePackageProviderPrivateStatusPath);
+  const sourcePackageProviderPrivateStatusResponsePromise = waitForPostResponse(sourcePackageProviderPrivateStatusPath);
+  await page.locator('#provider-private-signed-url-status').click();
+  const sourcePackageProviderPrivateStatusPayload = (await sourcePackageProviderPrivateStatusRequestPromise).postDataJSON();
+  const sourcePackageProviderPrivateStatus = await expectJson(await sourcePackageProviderPrivateStatusResponsePromise);
+  expectOnlyPayloadKeys(sourcePackageProviderPrivateStatusPayload, sourcePackageProviderPrivateLifecyclePayloadKeys);
+  expect(sourcePackageProviderPrivateStatusPayload.operator_decision).toBe(
+    'inspect_source_directory_package_supersession_provider_private_signed_url_status',
+  );
+  expect(sourcePackageProviderPrivateStatusPayload.provider_signed_url_receipt_id).toBe(
+    sourcePackageProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expectNoForbiddenPayloadKeys(sourcePackageProviderPrivateStatusPayload);
+  expect(sourcePackageProviderPrivateStatus.schema_id).toBe(
+    'layer3.source_directory_package_supersession_provider_private_signed_url.status.v1',
+  );
+  expect(sourcePackageProviderPrivateStatus.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(sourcePackageProviderPrivateStatus.raw_provider_private_signed_url_token_exposed).toBe(false);
+
+  const sourcePackageProviderPrivateUseRequestPromise = waitForPostRequest(sourcePackageProviderPrivateUsePath);
+  const sourcePackageProviderPrivateUseResponsePromise = waitForPostResponse(sourcePackageProviderPrivateUsePath);
+  await page.locator('#provider-private-signed-url-use').click();
+  const sourcePackageProviderPrivateUsePayload = (await sourcePackageProviderPrivateUseRequestPromise).postDataJSON();
+  const sourcePackageProviderPrivateUse = await expectJson(await sourcePackageProviderPrivateUseResponsePromise);
+  expectOnlyPayloadKeys(sourcePackageProviderPrivateUsePayload, sourcePackageProviderPrivateLifecyclePayloadKeys);
+  expect(sourcePackageProviderPrivateUsePayload.operator_decision).toBe(
+    'use_source_directory_package_supersession_provider_private_signed_url',
+  );
+  expect(sourcePackageProviderPrivateUsePayload.provider_signed_url_receipt_id).toBe(
+    sourcePackageProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expectNoForbiddenPayloadKeys(sourcePackageProviderPrivateUsePayload);
+  expect(sourcePackageProviderPrivateUse.schema_id).toBe(
+    'layer3.source_directory_package_supersession_provider_private_signed_url.use.v1',
+  );
+  expect(sourcePackageProviderPrivateUse.provider_signed_url_state).toBe('provider_private_signed_url_used');
+  expect(sourcePackageProviderPrivateUse.delivery_use_decision).toBe('allowed');
+  expect(sourcePackageProviderPrivateUse.delivery_use_mode).toBe('server_owned_redacted_provider_private_use');
+  expect(sourcePackageProviderPrivateUse.raw_provider_private_signed_url_token_exposed).toBe(false);
+  expect(sourcePackageProviderPrivateUse.raw_provider_url_exposed).toBe(false);
+  expect(sourcePackageProviderPrivateUse.provider_object_write_enabled).toBe(false);
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_use_allowed');
+
+  const sourcePackageProviderPrivateRevokeRequestPromise = waitForPostRequest(sourcePackageProviderPrivateRevokePath);
+  const sourcePackageProviderPrivateRevokeResponsePromise = waitForPostResponse(sourcePackageProviderPrivateRevokePath);
+  await page.locator('#provider-private-signed-url-revoke').click();
+  const sourcePackageProviderPrivateRevokePayload = (await sourcePackageProviderPrivateRevokeRequestPromise).postDataJSON();
+  const sourcePackageProviderPrivateRevoke = await expectJson(await sourcePackageProviderPrivateRevokeResponsePromise);
+  expectOnlyPayloadKeys(sourcePackageProviderPrivateRevokePayload, sourcePackageProviderPrivateRevokePayloadKeys);
+  expect(sourcePackageProviderPrivateRevokePayload.operator_decision).toBe(
+    'revoke_source_directory_package_supersession_provider_private_signed_url',
+  );
+  expect(sourcePackageProviderPrivateRevokePayload.provider_signed_url_receipt_id).toBe(
+    sourcePackageProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expect(sourcePackageProviderPrivateRevokePayload.idempotency_key).toBe(
+    `source-directory-package-provider-private-revoke:${sourcePackageProviderPrivate.provider_signed_url_receipt_id}`,
+  );
+  expectNoForbiddenPayloadKeys(sourcePackageProviderPrivateRevokePayload);
+  expect(sourcePackageProviderPrivateRevoke.schema_id).toBe(
+    'layer3.source_directory_package_supersession_provider_private_signed_url.revoke.v1',
+  );
+  expect(sourcePackageProviderPrivateRevoke.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
+  expect(sourcePackageProviderPrivateRevoke.provider_url_revoked).toBe(true);
+  expect(sourcePackageProviderPrivateRevoke.revocation_recorded).toBe(true);
+  expect(sourcePackageProviderPrivateRevoke.raw_provider_private_signed_url_token_exposed).toBe(false);
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_revoked');
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
+
+  await page.locator('#provider-private-signed-url-artifact-family').selectOption('auto');
+
   const summary = await expectJson(await request.get(`/api/v1/layer3/session/${gateB.session_id}`));
   expect(summary.analysis_environment_projection.schema_id).toBe('layer3.analysis_environment_projection.v1');
   expect(summary.analysis_environment_projection.no_side_effects).toBe(true);
@@ -11485,7 +11650,6 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   );
 
   await page.locator('#external-export-download-band').scrollIntoViewIfNeeded();
-  const providerPrivatePanel = page.locator('#provider-private-signed-url-panel');
   await providerPrivatePanel.scrollIntoViewIfNeeded();
   await expect(providerPrivatePanel).toContainText('provider_private_signed_url_ui_ready');
   await expect(providerPrivatePanel).toContainText(sourceProviderPrivatePreparePath.replace('/api/v1/layer3', ''));
@@ -11708,6 +11872,10 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceSupersessionPreviewPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceReplacementAuthorityPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceSupersessionCommitPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivatePreparePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateStatusPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateUsePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateRevokePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivatePreparePath)).toHaveLength(1);
