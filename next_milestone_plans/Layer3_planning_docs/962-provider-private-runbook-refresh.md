@@ -67,6 +67,8 @@ The runbook proof preserves:
 
 ## Next Posture
 
+Current-main follow-up: `963-provider-private-objective-audit.md` maps the active objective to current-main provider-private family evidence and distinguishes covered local/fake handoff substrate from blocked future real-target admission.
+
 Immediate next pass:
 
 1. Stop at the refreshed bounded runbook evidence unless a failed check, stale proof, or named current-main-admitted artifact-family gap appears.
