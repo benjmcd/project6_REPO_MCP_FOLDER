@@ -692,6 +692,224 @@ def record_used_provider_private_signed_url_receipt(
         ) from exc
 
 
+def record_server_owned_provider_private_signed_url_receipt_use(
+    db: Session,
+    *,
+    provider_private_signed_url_receipt_id: str,
+    authority_basis: dict[str, Any],
+    now_epoch: int,
+    request_id: str | None = None,
+) -> ProviderPrivateSignedUrlDurableState:
+    """Record server-owned redacted use without accepting or returning token material."""
+    now = _epoch_to_utc(now_epoch)
+    normalized_authority = _validate_authority_basis(authority_basis=authority_basis)
+    authority_hash = _authority_hash(normalized_authority)
+    try:
+        receipt = _receipt_row(db, receipt_id=provider_private_signed_url_receipt_id)
+        if receipt is None:
+            raise ProviderPrivateSignedUrlStateError(
+                "provider_private_signed_url_state_not_recorded",
+                "Provider-private signed URL receipt has no durable server-side state.",
+                status="not_found",
+                blocked_fields=("provider_private_signed_url_receipt_id",),
+                next_allowed_actions=("prepare_provider_private_signed_url",),
+            )
+
+        authority = _authority_row(
+            db,
+            authority_id=receipt.provider_private_signed_url_object_authority_id,
+        )
+        if authority is None:
+            audit = L3ProviderPrivateSignedUrlAuditEvent(
+                provider_private_signed_url_audit_event_id=uuid_str(),
+                provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                event_type="use",
+                event_status="rejected",
+                request_id=request_id,
+                authority_hash=authority_hash,
+                reason_code="authority_row_missing",
+                event_payload_json={},
+                created_at=now,
+            )
+            db.add(audit)
+            db.commit()
+            raise ProviderPrivateSignedUrlStateError(
+                "provider_private_signed_url_state_authority_missing",
+                "Provider-private signed URL durable authority row is missing.",
+                blocked_fields=("provider_private_signed_url_receipt_id",),
+                next_allowed_actions=("prepare_provider_private_signed_url",),
+            )
+        if receipt.authority_hash != authority_hash:
+            audit = L3ProviderPrivateSignedUrlAuditEvent(
+                provider_private_signed_url_audit_event_id=uuid_str(),
+                provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                event_type="use",
+                event_status="rejected",
+                request_id=request_id,
+                authority_hash=authority_hash,
+                reason_code="authority_hash_mismatch",
+                event_payload_json={"recorded_authority_hash": receipt.authority_hash},
+                created_at=now,
+            )
+            db.add(audit)
+            db.commit()
+            raise ProviderPrivateSignedUrlStateError(
+                "provider_private_signed_url_state_authority_mismatch",
+                "Current artifact authority no longer matches the provider-private signed URL durable receipt.",
+                blocked_fields=("session_id", "source_artifact_hash", "source_artifact_size_bytes"),
+                next_allowed_actions=("prepare_new_provider_private_signed_url",),
+            )
+        if _revocation_exists(db, receipt_id=receipt.provider_private_signed_url_receipt_id):
+            receipt.provider_private_signed_url_state = PROVIDER_PRIVATE_SIGNED_URL_STATE_REVOKED
+            receipt.updated_at = now
+            audit = L3ProviderPrivateSignedUrlAuditEvent(
+                provider_private_signed_url_audit_event_id=uuid_str(),
+                provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                event_type="use",
+                event_status="rejected",
+                request_id=request_id,
+                authority_hash=authority_hash,
+                reason_code="receipt_revoked",
+                event_payload_json={},
+                created_at=now,
+            )
+            db.add(audit)
+            db.commit()
+            raise ProviderPrivateSignedUrlStateError(
+                "provider_private_signed_url_state_revoked",
+                "Provider-private signed URL receipt has been revoked.",
+                blocked_fields=("provider_private_signed_url_receipt_id",),
+                next_allowed_actions=("prepare_new_provider_private_signed_url",),
+            )
+        if now >= _as_utc(receipt.provider_private_signed_url_expires_at):
+            receipt.provider_private_signed_url_state = PROVIDER_PRIVATE_SIGNED_URL_STATE_EXPIRED
+            receipt.updated_at = now
+            audit = L3ProviderPrivateSignedUrlAuditEvent(
+                provider_private_signed_url_audit_event_id=uuid_str(),
+                provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                event_type="use",
+                event_status="rejected",
+                request_id=request_id,
+                authority_hash=authority_hash,
+                reason_code="receipt_expired",
+                event_payload_json={"expires_at": _as_utc(receipt.provider_private_signed_url_expires_at).isoformat()},
+                created_at=now,
+            )
+            db.add(audit)
+            db.commit()
+            raise ProviderPrivateSignedUrlStateError(
+                "provider_private_signed_url_state_expired",
+                "Provider-private signed URL receipt has expired in durable server-side state.",
+                blocked_fields=("provider_private_signed_url_receipt_id",),
+                next_allowed_actions=("prepare_new_provider_private_signed_url",),
+            )
+        if (
+            receipt.provider_private_signed_url_use_count >= receipt.provider_private_signed_url_max_use_count
+            or receipt.provider_private_signed_url_state == PROVIDER_PRIVATE_SIGNED_URL_STATE_USED
+        ):
+            audit = L3ProviderPrivateSignedUrlAuditEvent(
+                provider_private_signed_url_audit_event_id=uuid_str(),
+                provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                event_type="use",
+                event_status="rejected",
+                request_id=request_id,
+                authority_hash=authority_hash,
+                reason_code="single_use_replay_denied",
+                event_payload_json={
+                    "provider_private_signed_url_use_count": receipt.provider_private_signed_url_use_count,
+                    "provider_private_signed_url_max_use_count": receipt.provider_private_signed_url_max_use_count,
+                },
+                created_at=now,
+            )
+            db.add(audit)
+            db.commit()
+            raise ProviderPrivateSignedUrlStateError(
+                "provider_private_signed_url_state_replay_denied",
+                "Provider-private signed URL replay is denied by durable single-use policy.",
+                blocked_fields=("provider_private_signed_url_receipt_id",),
+                next_allowed_actions=("prepare_new_provider_private_signed_url",),
+            )
+
+        consumed = (
+            db.query(L3ProviderPrivateSignedUrlReceipt)
+            .filter(
+                L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_receipt_id
+                == receipt.provider_private_signed_url_receipt_id,
+                L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_state
+                == PROVIDER_PRIVATE_SIGNED_URL_STATE_PREPARED,
+                L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_use_count
+                < L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_max_use_count,
+            )
+            .update(
+                {
+                    L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_use_count:
+                        L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_use_count + 1,
+                    L3ProviderPrivateSignedUrlReceipt.provider_private_signed_url_state:
+                        PROVIDER_PRIVATE_SIGNED_URL_STATE_USED,
+                    L3ProviderPrivateSignedUrlReceipt.last_used_at: now,
+                    L3ProviderPrivateSignedUrlReceipt.updated_at: now,
+                },
+                synchronize_session=False,
+            )
+        )
+        if consumed != 1:
+            db.rollback()
+            audit = L3ProviderPrivateSignedUrlAuditEvent(
+                provider_private_signed_url_audit_event_id=uuid_str(),
+                provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+                event_type="use",
+                event_status="rejected",
+                request_id=request_id,
+                authority_hash=authority_hash,
+                reason_code="single_use_replay_denied",
+                event_payload_json={},
+                created_at=now,
+            )
+            db.add(audit)
+            db.commit()
+            raise ProviderPrivateSignedUrlStateError(
+                "provider_private_signed_url_state_replay_denied",
+                "Provider-private signed URL replay is denied by durable single-use policy.",
+                blocked_fields=("provider_private_signed_url_receipt_id",),
+                next_allowed_actions=("prepare_new_provider_private_signed_url",),
+            )
+
+        db.flush()
+        db.refresh(receipt)
+        audit = L3ProviderPrivateSignedUrlAuditEvent(
+            provider_private_signed_url_audit_event_id=uuid_str(),
+            provider_private_signed_url_receipt_id=receipt.provider_private_signed_url_receipt_id,
+            event_type="use",
+            event_status="accepted",
+            request_id=request_id,
+            authority_hash=authority_hash,
+            reason_code="server_owned_redacted_use_accepted",
+            event_payload_json={
+                "provider_private_signed_url_use_count": receipt.provider_private_signed_url_use_count,
+                "provider_object_identity_hash": authority.provider_object_identity_hash,
+                "raw_provider_token_accepted": False,
+                "raw_provider_url_exposed": False,
+            },
+            created_at=now,
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(receipt)
+        db.refresh(audit)
+        return _state_from_rows(receipt, audit)
+    except ProviderPrivateSignedUrlStateError:
+        db.rollback()
+        raise
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise ProviderPrivateSignedUrlStateError(
+            "provider_private_signed_url_state_use_persist_failed",
+            "Provider-private signed URL durable-state use could not be recorded.",
+            blocked_fields=("provider_private_signed_url_receipt_id",),
+            next_allowed_actions=("retry_provider_private_signed_url_use",),
+        ) from exc
+
+
 def revoke_provider_private_signed_url_receipt(
     db: Session,
     *,

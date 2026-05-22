@@ -307,7 +307,8 @@ async function expectLiveThemeParityCheckpoint(page, checkpointLabel, visibleSur
     await expect(page.locator('#package-lifecycle-dashboard-panel')).toHaveCount(1);
     await expect(page.locator('#provider-private-signed-url-panel')).toHaveCount(1);
     await expect(page.locator('#provider-public-url-panel')).toHaveCount(1);
-    await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(0);
+    await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(1);
+    await expect(page.locator('#provider-private-signed-url-use')).toBeDisabled();
     await expect(page.locator('#provider-public-url-use')).toHaveCount(1);
     await expect(page.locator('#provider-public-url-use')).toBeDisabled();
     await expect(page.locator('#provider-public-url-deliver')).toHaveCount(0);
@@ -3707,7 +3708,8 @@ async function submitRenderedProviderPrivateSignedUrl(
   await expect(page.locator('#provider-private-signed-url-prepare')).toBeEnabled();
   await expect(page.locator('#provider-private-signed-url-status')).toBeDisabled();
   await expect(page.locator('#provider-private-signed-url-revoke')).toBeDisabled();
-  await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(0);
+  await expect(page.locator('#provider-private-signed-url-use')).toHaveCount(1);
+  await expect(page.locator('#provider-private-signed-url-use')).toBeDisabled();
 
   const prepareRequestPromise = page.waitForRequest((apiRequest) => (
     apiRequest.url().includes('/api/v1/layer3/handoff/export/download/provider-private-signed-url/prepare')
@@ -10588,6 +10590,9 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const deliveryStatusPath = `${analysisPath}/handoff/export/download/deliver/status`;
   const deliveryPath = `${analysisPath}/handoff/export/download/deliver`;
   const sourceProviderPrivatePreparePath = `${analysisPath}/handoff/export/download/provider-private-signed-url/prepare`;
+  const sourceProviderPrivateStatusPath = `${analysisPath}/handoff/export/download/provider-private-signed-url/status`;
+  const sourceProviderPrivateUsePath = `${analysisPath}/handoff/export/download/provider-private-signed-url/use`;
+  const sourceProviderPrivateRevokePath = `${analysisPath}/handoff/export/download/provider-private-signed-url/revoke`;
   const providerPublicPreparePath = '/api/v1/layer3/handoff/export/download/provider-public-url/prepare';
   const providerPublicUsePath = '/api/v1/layer3/handoff/export/download/provider-public-url/use';
   const internalWebhookDispatchPath = `${analysisPath}/handoff/export/internal-webhook/dispatch`;
@@ -10684,6 +10689,17 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'decision_notes',
     'recipient_scope',
     'requested_ttl_seconds',
+  ].sort();
+  const sourceProviderPrivateUsePayloadKeys = [
+    ...deliveryPayloadKeys,
+    'decision_notes',
+    'provider_signed_url_receipt_id',
+  ].sort();
+  const sourceProviderPrivateRevokePayloadKeys = [
+    ...sourceProviderPrivateUsePayloadKeys,
+    'idempotency_key',
+    'revocation_reason',
+    'revoked_by',
   ].sort();
   const providerPublicPreparePayloadKeys = [
     'client_request_id',
@@ -11294,7 +11310,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     operator_decision: 'prepare_source_directory_hybrid_provider_private_signed_url',
     recipient_scope: 'external_downstream_recipient_private_artifact_delivery',
     requested_ttl_seconds: 300,
-    decision_notes: 'Rendered source-directory hybrid provider-private bridge; provider-private use remains closed.',
+    decision_notes: 'Rendered source-directory hybrid provider-private bridge; server-owned redacted use is admitted for this artifact family.',
   });
   expectNoForbiddenPayloadKeys(sourceProviderPrivatePayload);
   expect(sourceProviderPrivate.schema_id).toBe(
@@ -11318,6 +11334,28 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   await expect(providerPrivatePanel).toContainText(sourceProviderPrivate.provider_signed_url_receipt_id);
   await expect(providerPrivatePanel).toContainText('provider-private-signed-url:redacted');
   await expect(page.locator('#provider-private-signed-url-prepare')).toBeDisabled();
+  await expect(page.locator('#provider-private-signed-url-status')).toBeEnabled();
+
+  const sourceProviderPrivateStatusRequestPromise = waitForPostRequest(sourceProviderPrivateStatusPath);
+  const sourceProviderPrivateStatusResponsePromise = waitForPostResponse(sourceProviderPrivateStatusPath);
+  await page.locator('#provider-private-signed-url-status').click();
+  const sourceProviderPrivateStatusPayload = (await sourceProviderPrivateStatusRequestPromise).postDataJSON();
+  const sourceProviderPrivateStatus = await expectJson(await sourceProviderPrivateStatusResponsePromise);
+  expectOnlyPayloadKeys(sourceProviderPrivateStatusPayload, sourceProviderPrivateUsePayloadKeys);
+  expect(withoutClientRequestId(sourceProviderPrivateStatusPayload)).toEqual({
+    ...withoutClientRequestId(hybridStatusPayload),
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'inspect_source_directory_hybrid_provider_private_signed_url_status',
+    provider_signed_url_receipt_id: sourceProviderPrivate.provider_signed_url_receipt_id,
+    decision_notes: 'Rendered source-directory hybrid provider-private status revalidates current artifact authority.',
+  });
+  expectNoForbiddenPayloadKeys(sourceProviderPrivateStatusPayload);
+  expect(sourceProviderPrivateStatus.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.status.v1',
+  );
+  expect(sourceProviderPrivateStatus.provider_signed_url_state).toBe('provider_private_signed_url_prepared');
+  expect(sourceProviderPrivateStatus.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  expect(sourceProviderPrivateStatus.raw_provider_private_signed_url_token_exposed).toBe(false);
 
   const providerPublicPanel = page.locator('#provider-public-url-panel');
   await providerPublicPanel.scrollIntoViewIfNeeded();
@@ -11386,6 +11424,73 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(providerPublicUse.frontend_durable_authority_enabled).toBe(false);
   expect(JSON.stringify(providerPublicUse)).not.toContain('provider-public.invalid');
   await expect(providerPublicPanel).toContainText('provider_public_url_use_allowed');
+
+  await providerPrivatePanel.scrollIntoViewIfNeeded();
+  await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
+  const sourceProviderPrivateUseRequestPromise = waitForPostRequest(sourceProviderPrivateUsePath);
+  const sourceProviderPrivateUseResponsePromise = waitForPostResponse(sourceProviderPrivateUsePath);
+  await page.locator('#provider-private-signed-url-use').click();
+  const sourceProviderPrivateUsePayload = (await sourceProviderPrivateUseRequestPromise).postDataJSON();
+  const sourceProviderPrivateUse = await expectJson(await sourceProviderPrivateUseResponsePromise);
+  expectOnlyPayloadKeys(sourceProviderPrivateUsePayload, sourceProviderPrivateUsePayloadKeys);
+  expect(withoutClientRequestId(sourceProviderPrivateUsePayload)).toEqual({
+    ...withoutClientRequestId(hybridStatusPayload),
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'use_source_directory_hybrid_provider_private_signed_url',
+    provider_signed_url_receipt_id: sourceProviderPrivate.provider_signed_url_receipt_id,
+    decision_notes: 'Rendered source-directory hybrid provider-private use records only a redacted server-owned use decision.',
+  });
+  expectNoForbiddenPayloadKeys(sourceProviderPrivateUsePayload);
+  expect(sourceProviderPrivateUse.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.use.v1',
+  );
+  expect(sourceProviderPrivateUse.delivery_use_decision).toBe('allowed');
+  expect(sourceProviderPrivateUse.delivery_use_mode).toBe('server_owned_redacted_provider_private_use');
+  expect(sourceProviderPrivateUse.provider_signed_url_state).toBe('provider_private_signed_url_used');
+  expect(sourceProviderPrivateUse.provider_url_redacted).toBe('provider-private-signed-url:redacted');
+  expect(sourceProviderPrivateUse.provider_url_use_count).toBe(1);
+  expect(sourceProviderPrivateUse.raw_provider_private_signed_url_token_exposed).toBe(false);
+  expect(sourceProviderPrivateUse.raw_provider_url_exposed).toBe(false);
+  expect(sourceProviderPrivateUse.provider_network_enabled).toBe(false);
+  expect(sourceProviderPrivateUse.provider_object_write_enabled).toBe(false);
+  expect(sourceProviderPrivateUse.connector_dispatch_enabled).toBe(false);
+  expect(sourceProviderPrivateUse.package_mutation_enabled).toBe(false);
+  expect(sourceProviderPrivateUse.source_expansion_enabled).toBe(false);
+  expect(sourceProviderPrivateUse.frontend_durable_authority_enabled).toBe(false);
+  expect(sourceProviderPrivateUse).not.toHaveProperty('provider_private_signed_url_token');
+  expect(sourceProviderPrivateUse).not.toHaveProperty('raw_provider_private_signed_url_token');
+  expect(sourceProviderPrivateUse.audit_receipt || {}).not.toHaveProperty('provider_private_signed_url_token');
+  expect(sourceProviderPrivateUse.audit_receipt || {}).not.toHaveProperty('raw_provider_private_signed_url_token');
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_use_allowed');
+  await expect(page.locator('#provider-private-signed-url-use')).toBeDisabled();
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeEnabled();
+
+  const sourceProviderPrivateRevokeRequestPromise = waitForPostRequest(sourceProviderPrivateRevokePath);
+  const sourceProviderPrivateRevokeResponsePromise = waitForPostResponse(sourceProviderPrivateRevokePath);
+  await page.locator('#provider-private-signed-url-revoke').click();
+  const sourceProviderPrivateRevokePayload = (await sourceProviderPrivateRevokeRequestPromise).postDataJSON();
+  const sourceProviderPrivateRevoke = await expectJson(await sourceProviderPrivateRevokeResponsePromise);
+  expectOnlyPayloadKeys(sourceProviderPrivateRevokePayload, sourceProviderPrivateRevokePayloadKeys);
+  expect(withoutClientRequestId(sourceProviderPrivateRevokePayload)).toEqual({
+    ...withoutClientRequestId(hybridStatusPayload),
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'revoke_source_directory_hybrid_provider_private_signed_url',
+    provider_signed_url_receipt_id: sourceProviderPrivate.provider_signed_url_receipt_id,
+    idempotency_key: `source-directory-provider-private-revoke:${sourceProviderPrivate.provider_signed_url_receipt_id}`,
+    revoked_by: 'layer3-rendered-workbench',
+    revocation_reason: 'operator revoked source-directory provider-private signed URL from rendered workbench',
+    decision_notes: 'Rendered source-directory hybrid provider-private revoke revalidates current artifact authority.',
+  });
+  expectNoForbiddenPayloadKeys(sourceProviderPrivateRevokePayload);
+  expect(sourceProviderPrivateRevoke.schema_id).toBe(
+    'layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.revoke.v1',
+  );
+  expect(sourceProviderPrivateRevoke.provider_signed_url_state).toBe('provider_private_signed_url_revoked');
+  expect(sourceProviderPrivateRevoke.provider_url_revoked).toBe(true);
+  expect(sourceProviderPrivateRevoke.revocation_recorded).toBe(true);
+  expect(sourceProviderPrivateRevoke.raw_provider_private_signed_url_token_exposed).toBe(false);
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_revoked');
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeDisabled();
 
   const internalWebhookPanel = page.locator('#source-directory-hybrid-internal-webhook-panel');
   await internalWebhookPanel.scrollIntoViewIfNeeded();
@@ -11474,6 +11579,9 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivatePreparePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateStatusPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateUsePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateRevokePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicPreparePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicUsePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => (
