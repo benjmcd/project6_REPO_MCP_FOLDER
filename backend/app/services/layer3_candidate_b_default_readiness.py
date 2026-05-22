@@ -232,6 +232,9 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         runtime_receipt_hash=runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
         visual_lane_status_hash=visual_lane_status["status_hash"],
         runtime_downstream_proof_hash=runtime_proof["proof_hash"],
+        runtime_retained_artifact_family_hash=runtime_receipt["authority_hashes"].get(
+            "governed_retained_artifact_family_hash"
+        ),
     )
     closure_evidence = _validate_closure_evidence(
         fields.get("closure_evidence"),
@@ -1114,6 +1117,7 @@ def _validate_operator_status(
     runtime_receipt_hash: str | None,
     visual_lane_status_hash: str | None,
     runtime_downstream_proof_hash: str | None,
+    runtime_retained_artifact_family_hash: str | None,
 ) -> dict[str, Any]:
     if not isinstance(value, dict):
         return {
@@ -1127,6 +1131,8 @@ def _validate_operator_status(
         "bundle_status_projection_visible",
         "runtime_status_projection_visible",
         "default_selector_change_visible_as_enabled",
+        "runtime_delivery_artifact_projection_visible",
+        "runtime_delivery_artifact_roles_bound",
     )
     summary = {key: evidence.get(key) is True for key in required_true}
     summary["raw_local_path_exposed"] = evidence.get("raw_local_path_exposed") is True
@@ -1146,6 +1152,7 @@ def _validate_operator_status(
         "runtime_bridge_receipt_hash": runtime_receipt_hash,
         "candidate_b_visual_lane_status_hash": visual_lane_status_hash,
         "runtime_downstream_proof_hash": runtime_downstream_proof_hash,
+        "runtime_delivery_artifact_authority_hash": runtime_retained_artifact_family_hash,
     }.items():
         if str(evidence.get(field) or "").strip() != str(expected or "").strip():
             blocked.append(
@@ -1159,6 +1166,15 @@ def _validate_operator_status(
     missing = [key for key in required_true if evidence.get(key) is not True]
     if missing:
         blocked.append(_reason("candidate_b_default_readiness_operator_status_evidence_incomplete", missing_fields=missing))
+    expected_delivery_steps = sorted(layer3_candidate_b_downstream_proof.DELIVERY_ARTIFACT_AUTHORITY_COVERAGE)
+    if evidence.get("runtime_delivery_artifact_coverage_steps") != expected_delivery_steps:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_operator_status_delivery_artifact_coverage_mismatch",
+                expected=expected_delivery_steps,
+                received=evidence.get("runtime_delivery_artifact_coverage_steps"),
+            )
+        )
     if (
         summary["raw_local_path_exposed"]
         or summary["provider_private_token_exposed"]
@@ -1199,6 +1215,12 @@ def _validate_operator_status(
             "operator_status_receipt_id": evidence.get("operator_status_receipt_id"),
             "bundle_bridge_receipt_id": evidence.get("bundle_bridge_receipt_id"),
             "runtime_bridge_receipt_id": evidence.get("runtime_bridge_receipt_id"),
+            "runtime_delivery_artifact_authority_hash": evidence.get("runtime_delivery_artifact_authority_hash"),
+            "runtime_delivery_artifact_coverage_steps": evidence.get("runtime_delivery_artifact_coverage_steps"),
+            "runtime_delivery_artifact_projection_visible": (
+                evidence.get("runtime_delivery_artifact_projection_visible") is True
+            ),
+            "runtime_delivery_artifact_roles_bound": evidence.get("runtime_delivery_artifact_roles_bound") is True,
             "raw_url_exposed": evidence.get("raw_url_exposed") is True,
             "artifact_bytes_exposed": evidence.get("artifact_bytes_exposed") is True,
             "selector_mutation_performed": evidence.get("selector_mutation_performed") is True,
