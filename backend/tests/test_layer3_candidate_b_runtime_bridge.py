@@ -559,6 +559,31 @@ def test_candidate_b_runtime_bridge_materializes_trace_text_and_reaches_gate_b(
     assert response["excluded_artifact_subset"]["excluded_extension_counts"][".pdf"] == 1
     assert response["excluded_artifact_subset"]["excluded_extension_counts"][".png"] == 1
     assert response["excluded_artifact_subset"]["excluded_extension_counts"][".txt"] == 1
+    artifact_family = response["governed_retained_artifact_family"]
+    assert artifact_family["policy"] == "candidate_b_full_artifact_family_retained_but_text_material_payload_bounded"
+    assert artifact_family["candidate_b_source_kind"] == "runtime"
+    assert artifact_family["pdf_material_text_payload_enabled"] is False
+    assert artifact_family["image_material_text_payload_enabled"] is False
+    assert response["authority_hashes"]["governed_retained_artifact_family_hash"] == artifact_family["artifact_family_hash"]
+    assert {item["artifact_role"] for item in artifact_family["roles"]["material_analysis_payloads"]} == {
+        "material_analysis_payload"
+    }
+    assert {item["artifact_role"] for item in artifact_family["roles"]["visual_page_evidence"]} == {
+        "source_pdf",
+        "extracted_image",
+    }
+    assert any(
+        item["source_ref"] == "storage/input.pdf" and item["material_text_payload"] is False
+        for item in artifact_family["roles"]["product_inspection_artifacts"]
+    )
+    assert any(
+        item["source_ref"] == "storage/input.pdf" and item["material_text_payload"] is False
+        for item in artifact_family["roles"]["provenance_audit_artifacts"]
+    )
+    assert any(
+        item["source_ref"] == "storage/image.png" and item["material_text_payload"] is False
+        for item in artifact_family["roles"]["delivery_artifacts"]
+    )
     _assert_no_absolute_path_strings(response, str(binding.review_root))
 
     curated_root = Path(settings.layer3_candidate_b_runtime_bridge_dir) / response["bridge_receipt_id"] / "curated"

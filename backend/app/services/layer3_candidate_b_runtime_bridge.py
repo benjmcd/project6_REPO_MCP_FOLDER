@@ -169,6 +169,7 @@ def prepare_candidate_b_runtime_material_bridge(
             "files": [_curated_manifest_entry(item) for item in curated_files],
         }
     )
+    governed_retained_artifact_family = _governed_retained_artifact_family(binding, curated_files)
     receipt_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -182,6 +183,7 @@ def prepare_candidate_b_runtime_material_bridge(
         "compare_target_set_hash": compare_target_set["compare_target_set_hash"],
         "runtime_review_root_storage_authority_hash": runtime_authority_hash,
         "admitted_file_subset_hash": admitted_file_subset_hash,
+        "governed_retained_artifact_family_hash": governed_retained_artifact_family["artifact_family_hash"],
         "redaction_policy_id": REDACTION_POLICY_ID,
     }
     bridge_receipt_hash = _stable_hash(receipt_input)
@@ -198,6 +200,7 @@ def prepare_candidate_b_runtime_material_bridge(
         "compare_target_set": compare_target_set,
         "admitted_artifact_subset": _admitted_subset_summary(curated_files),
         "excluded_artifact_subset": _excluded_artifact_summary(binding),
+        "governed_retained_artifact_family": governed_retained_artifact_family,
         "curated_artifact_manifest": [_curated_manifest_entry(item) for item in curated_files],
         "provenance": {
             "candidate_b_source_kind": "runtime",
@@ -556,12 +559,112 @@ def _excluded_artifact_summary(binding: ReviewRuntimeBinding) -> dict[str, Any]:
             continue
         excluded_refs.append({"path": relative_ref, "extension": extension})
     return {
-        "policy": "omit_source_pdfs_images_binaries_txt_runtime_db_and_broad_runtime_storage",
+        "policy": "not_material_text_payload_retained_in_governed_artifact_family",
         "excluded_file_count": len(excluded_refs),
         "excluded_extension_counts": dict(sorted(extension_counts.items())),
         "excluded_refs": excluded_refs[:50],
         "excluded_refs_truncated": len(excluded_refs) > 50,
     }
+
+
+def _governed_retained_artifact_family(
+    binding: ReviewRuntimeBinding,
+    curated_files: list[dict[str, Any]],
+) -> dict[str, Any]:
+    material_payloads = [
+        _curated_artifact_ref(item)
+        for item in sorted(curated_files, key=lambda item: str(item["relative_name"]))
+    ]
+    retained_runtime_refs = _retained_runtime_refs(binding)
+    visual_evidence = [
+        item
+        for item in retained_runtime_refs
+        if item["artifact_role"] in {"source_pdf", "extracted_image", "visual_page_evidence"}
+    ]
+    provenance_artifacts = material_payloads + retained_runtime_refs
+    product_artifacts = [
+        item
+        for item in retained_runtime_refs
+        if item["artifact_role"] in {"source_pdf", "extracted_image", "normalized_text_source"}
+    ]
+    delivery_artifacts = [
+        item
+        for item in retained_runtime_refs
+        if item["artifact_role"] in {"source_pdf", "extracted_image", "normalized_text_source"}
+    ]
+    classification = {
+        "policy": "candidate_b_full_artifact_family_retained_but_text_material_payload_bounded",
+        "candidate_b_source_kind": "runtime",
+        "material_text_payload_policy": "document_trace_json_md_only",
+        "pdf_material_text_payload_enabled": False,
+        "image_material_text_payload_enabled": False,
+        "raw_url_exposure_enabled": False,
+        "roles": {
+            "material_analysis_payloads": material_payloads,
+            "visual_page_evidence": visual_evidence,
+            "provenance_audit_artifacts": provenance_artifacts,
+            "product_inspection_artifacts": product_artifacts,
+            "delivery_artifacts": delivery_artifacts,
+        },
+    }
+    classification["role_counts"] = {
+        role: len(items) for role, items in classification["roles"].items()
+    }
+    classification["artifact_family_hash"] = _stable_hash(
+        {"hash_version": AUTHORITY_HASH_VERSION, "classification": classification}
+    )
+    return classification
+
+
+def _curated_artifact_ref(item: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "source_ref": item["source_ref"],
+        "relative_name": item["relative_name"],
+        "artifact_role": "material_analysis_payload",
+        "category": item["category"],
+        "extension": item["extension"],
+        "sha256": item["content_sha256"],
+        "size_bytes": item["content_size_bytes"],
+        "material_text_payload": True,
+    }
+
+
+def _retained_runtime_refs(binding: ReviewRuntimeBinding) -> list[dict[str, Any]]:
+    refs: list[dict[str, Any]] = []
+    root = binding.review_root.resolve()
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        try:
+            relative_ref = path.resolve().relative_to(root).as_posix()
+        except ValueError:
+            continue
+        extension = path.suffix.lower() or "<none>"
+        refs.append(
+            {
+                "source_ref": relative_ref,
+                "artifact_role": _runtime_artifact_role(relative_ref, extension),
+                "extension": extension,
+                "sha256": _file_sha256(path),
+                "size_bytes": path.stat().st_size,
+                "material_text_payload": False,
+            }
+        )
+    return refs
+
+
+def _runtime_artifact_role(relative_ref: str, extension: str) -> str:
+    if extension == ".pdf":
+        return "source_pdf"
+    if extension in {".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff"}:
+        return "extracted_image"
+    if extension in {".db", ".sqlite"}:
+        return "runtime_database"
+    if extension == ".txt":
+        return "normalized_text_source"
+    if relative_ref.startswith("storage/"):
+        return "runtime_storage_blob"
+    return "runtime_review_artifact"
 
 
 def _write_bridge_receipt(
@@ -644,11 +747,13 @@ def _response(
         "compare_target_set": receipt["compare_target_set"],
         "admitted_artifact_subset": receipt["admitted_artifact_subset"],
         "excluded_artifact_subset": receipt["excluded_artifact_subset"],
+        "governed_retained_artifact_family": receipt["governed_retained_artifact_family"],
         "authority_hashes": {
             "bridge_receipt_hash": receipt["bridge_receipt_hash"],
             "compare_target_set_hash": receipt["compare_target_set_hash"],
             "runtime_review_root_storage_authority_hash": receipt["runtime_review_root_storage_authority_hash"],
             "admitted_file_subset_hash": receipt["admitted_file_subset_hash"],
+            "governed_retained_artifact_family_hash": receipt["governed_retained_artifact_family_hash"],
         },
         "provenance": receipt["provenance"],
         "layer3_material_preview_compatible": True,
