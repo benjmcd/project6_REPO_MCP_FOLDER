@@ -66,6 +66,10 @@ class Settings(BaseSettings):
         default="server-configured-internal-webhook",
         alias="LAYER3_INTERNAL_WEBHOOK_DISPLAY_NAME",
     )
+    layer3_candidate_b_bundle_bridge_dir: str = Field(
+        default="",
+        alias="LAYER3_CANDIDATE_B_BUNDLE_BRIDGE_DIR",
+    )
     layer3_source_ingestion_dir: str = Field(default="", alias="LAYER3_SOURCE_INGESTION_DIR")
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
     cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
