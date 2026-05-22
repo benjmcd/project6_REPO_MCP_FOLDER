@@ -729,6 +729,12 @@ def _validate_downstream_proof(
                         received=proof.get("proof_hash"),
                     )
                 )
+            _validate_runtime_downstream_proof_receipt(
+                proof=proof,
+                bridge_receipt_id=bridge_receipt_id,
+                expected_hash=expected_hash,
+                blocked=blocked,
+            )
         if proof.get("visual_lane_mode_enabled") is not True:
             blocked.append(
                 _reason(
@@ -774,6 +780,63 @@ def _validate_downstream_proof(
             "visual_lane_mode": proof.get("visual_lane_mode"),
         },
     }
+
+
+def _validate_runtime_downstream_proof_receipt(
+    *,
+    proof: Mapping[str, Any],
+    bridge_receipt_id: str,
+    expected_hash: str,
+    blocked: list[dict[str, Any]],
+) -> None:
+    proof_receipt_id = str(proof.get("proof_receipt_id") or "").strip()
+    if not proof_receipt_id:
+        blocked.append(_reason("candidate_b_default_readiness_runtime_downstream_proof_receipt_id_missing"))
+        return
+    configured = settings.layer3_candidate_b_runtime_bridge_dir
+    if not str(configured or "").strip():
+        blocked.append(_reason("candidate_b_default_readiness_runtime_downstream_proof_bridge_dir_unset"))
+        return
+    root = Path(str(configured))
+    if not root.is_absolute():
+        blocked.append(_reason("candidate_b_default_readiness_runtime_downstream_proof_bridge_dir_not_absolute"))
+        return
+    proof_path = root / bridge_receipt_id / "downstream-proof" / f"{proof_receipt_id}.json"
+    if not proof_path.is_file():
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_runtime_downstream_proof_receipt_missing",
+                proof_receipt_id=proof_receipt_id,
+            )
+        )
+        return
+    try:
+        stored = json.loads(proof_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_runtime_downstream_proof_receipt_unreadable",
+                proof_receipt_id=proof_receipt_id,
+                reason=str(exc),
+            )
+        )
+        return
+    if not isinstance(stored, dict):
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_runtime_downstream_proof_receipt_invalid",
+                proof_receipt_id=proof_receipt_id,
+            )
+        )
+        return
+    if stored.get("proof_hash") != expected_hash:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_runtime_downstream_proof_receipt_hash_mismatch",
+                expected=expected_hash,
+                received=stored.get("proof_hash"),
+            )
+        )
 
 
 def _coverage_values(value: Any) -> set[str]:
