@@ -11785,6 +11785,55 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   await expect(page.locator('#provider-private-signed-url-prepare')).toBeDisabled();
   await expect(page.locator('#provider-private-signed-url-status')).toBeEnabled();
 
+  const sourceProviderPrivateHybridAuthorityText = await page.locator(
+    '#source-directory-hybrid-external-export-download-delivery-authority',
+  ).inputValue();
+  const sourceProviderPrivateStalePackagePayloadHash = '0'.repeat(64);
+  await page.evaluate((stalePackagePayloadHash) => {
+    const authority = document.getElementById('source-directory-hybrid-external-export-download-delivery-authority');
+    const packet = JSON.parse(authority.value);
+    const payload = packet.delivery_payload && typeof packet.delivery_payload === 'object'
+      ? packet.delivery_payload
+      : packet;
+    payload.package_payload_hash = stalePackagePayloadHash;
+    authority.value = JSON.stringify(packet);
+    authority.dispatchEvent(new Event('input', { bubbles: true }));
+    renderAll();
+  }, sourceProviderPrivateStalePackagePayloadHash);
+  const sourceProviderPrivateStaleStatusRequestPromise = waitForPostRequest(sourceProviderPrivateStatusPath);
+  const sourceProviderPrivateStaleStatusResponsePromise = waitForPostResponse(sourceProviderPrivateStatusPath);
+  await page.locator('#provider-private-signed-url-status').click();
+  const sourceProviderPrivateStaleStatusPayload = (await sourceProviderPrivateStaleStatusRequestPromise).postDataJSON();
+  const sourceProviderPrivateStaleStatus = await expectJsonStatus(
+    await sourceProviderPrivateStaleStatusResponsePromise,
+    409,
+  );
+  expectOnlyPayloadKeys(sourceProviderPrivateStaleStatusPayload, sourceProviderPrivateUsePayloadKeys);
+  expect(withoutClientRequestId(sourceProviderPrivateStaleStatusPayload)).toEqual({
+    ...withoutClientRequestId(hybridStatusPayload),
+    package_payload_hash: sourceProviderPrivateStalePackagePayloadHash,
+    delivery_mode: 'provider_private_signed_url',
+    operator_decision: 'inspect_source_directory_hybrid_provider_private_signed_url_status',
+    provider_signed_url_receipt_id: sourceProviderPrivate.provider_signed_url_receipt_id,
+    decision_notes: 'Rendered source-directory hybrid provider-private status revalidates current artifact authority.',
+  });
+  expectNoForbiddenPayloadKeys(sourceProviderPrivateStaleStatusPayload);
+  expect(sourceProviderPrivateStaleStatus.error.code).toBe(
+    'source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch',
+  );
+  await expect(providerPrivatePanel).toContainText(
+    'source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch',
+  );
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
+  await page.evaluate((authorityText) => {
+    const authority = document.getElementById('source-directory-hybrid-external-export-download-delivery-authority');
+    authority.value = authorityText;
+    authority.dispatchEvent(new Event('input', { bubbles: true }));
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+  }, sourceProviderPrivateHybridAuthorityText);
+
   const sourceProviderPrivateStatusRequestPromise = waitForPostRequest(sourceProviderPrivateStatusPath);
   const sourceProviderPrivateStatusResponsePromise = waitForPostResponse(sourceProviderPrivateStatusPath);
   await page.locator('#provider-private-signed-url-status').click();
@@ -12035,7 +12084,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivatePreparePath)).toHaveLength(1);
-  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateStatusPath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateStatusPath)).toHaveLength(2);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateUsePath)).toHaveLength(3);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceProviderPrivateRevokePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === providerPublicPreparePath)).toHaveLength(0);
@@ -12070,7 +12119,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     message.includes('Failed to load resource')
     && message.includes('409 (Conflict)')
   ));
-  expect(expectedFailClosedConsoleErrors).toHaveLength(5);
+  expect(expectedFailClosedConsoleErrors).toHaveLength(6);
   expect(consoleErrors.filter((message) => !(
     message.includes('Failed to load resource')
     && message.includes('409 (Conflict)')
