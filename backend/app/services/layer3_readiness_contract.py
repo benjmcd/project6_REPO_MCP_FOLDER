@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.services.layer3_candidate_b_default_readiness import ELIGIBLE_CORPUS_SCOPE
 from app.services.layer3_preview_contract import (
     material_preview_hash_contract,
     plan_preview_hash_contract,
@@ -174,7 +175,8 @@ def build_readiness_contract(
         "candidate_b_default_promotion_readiness_audit_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/default-promotion/readiness-audit"
         ),
-        "candidate_b_default_promotion_selector_switch_admitted": False,
+        "candidate_b_default_promotion_selector_switch_admitted": True,
+        "candidate_b_default_promotion_selector_scope": ELIGIBLE_CORPUS_SCOPE,
         "source_directory_ingestion_scan_admitted": True,
         "source_directory_ingestion_scan_endpoint": f"{api_root}/source/ingestion/server-configured-directory/scan",
         "source_directory_ingestion_status_admitted": True,
