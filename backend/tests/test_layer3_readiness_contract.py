@@ -47,6 +47,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["candidate_b_bundle_material_bridge_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/bundle/material-bridge"
     )
+    assert direct["candidate_b_runtime_material_bridge_admitted"] is True
+    assert direct["candidate_b_runtime_material_bridge_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge"
+    )
     assert direct["source_directory_ingestion_scan_admitted"] is True
     assert direct["source_directory_ingestion_scan_endpoint"] == (
         "/api/v1/layer3/source/ingestion/server-configured-directory/scan"
