@@ -183,6 +183,7 @@ def candidate_b_default_promotion_final_proof(payload: Mapping[str, Any]) -> dic
         "raw_url_exposed": False,
         "provider_private_token_exposed": False,
         "artifact_bytes_exposed": False,
+        "candidate_b_operator_status_evidence": dict(audit["operator_status_evidence"]),
         "candidate_b_final_operator_inspection_evidence": dict(
             audit["candidate_b_final_operator_inspection_evidence"]
         ),
@@ -292,6 +293,8 @@ def candidate_b_default_promotion_final_proof_status(payload: Mapping[str, Any])
         "raw_url_exposed": False,
         "provider_private_token_exposed": False,
         "artifact_bytes_exposed": False,
+        "operator_status_hash": proof["operator_status_hash"],
+        "candidate_b_operator_status_evidence": dict(proof.get("candidate_b_operator_status_evidence") or {}),
         "candidate_b_final_operator_inspection_evidence": dict(
             proof.get("candidate_b_final_operator_inspection_evidence") or {}
         ),
@@ -376,6 +379,7 @@ def _validate_stored_final_proof(proof: Mapping[str, Any], *, proof_receipt_id: 
             http_status=409,
             details={"expected": proof_hash, "received": proof.get("proof_hash")},
         )
+    _validate_operator_status_evidence(proof)
     inspection = proof.get("candidate_b_final_operator_inspection_evidence")
     if not isinstance(inspection, Mapping):
         raise CandidateBFinalProofError(
@@ -547,6 +551,46 @@ def _final_operator_inspection_hash(inspection: Mapping[str, Any]) -> str:
             "artifact_bytes_exposed": inspection.get("artifact_bytes_exposed") is True,
         }
     )
+
+
+def _validate_operator_status_evidence(proof: Mapping[str, Any]) -> None:
+    operator_status = proof.get("candidate_b_operator_status_evidence")
+    if not isinstance(operator_status, Mapping):
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_status_operator_status_missing",
+            "The selected Candidate B final proof receipt is missing operator-status evidence.",
+            http_status=409,
+        )
+    if str(operator_status.get("operator_status_hash") or "").strip() != str(proof.get("operator_status_hash") or "").strip():
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_status_operator_status_hash_mismatch",
+            "The selected Candidate B final proof receipt has stale operator-status evidence.",
+            http_status=409,
+            details={
+                "expected": proof.get("operator_status_hash"),
+                "received": operator_status.get("operator_status_hash"),
+            },
+        )
+    if not str(operator_status.get("runtime_delivery_artifact_authority_hash") or "").strip():
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_status_operator_status_delivery_authority_missing",
+            "The selected Candidate B final proof receipt is missing delivery artifact authority projection.",
+            http_status=409,
+        )
+    if not isinstance(operator_status.get("runtime_delivery_artifact_coverage_steps"), list):
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_status_operator_status_delivery_coverage_missing",
+            "The selected Candidate B final proof receipt is missing delivery artifact coverage projection.",
+            http_status=409,
+        )
+    for field in ("runtime_delivery_artifact_projection_visible", "runtime_delivery_artifact_roles_bound"):
+        if operator_status.get(field) is not True:
+            raise CandidateBFinalProofError(
+                "candidate_b_final_proof_status_operator_status_delivery_projection_missing",
+                "The selected Candidate B final proof receipt is missing delivery artifact operator projection.",
+                http_status=409,
+                details={"field": field},
+            )
 
 
 def _validate_closure_receipt(audit: Mapping[str, Any], *, runtime_receipt_id: str, closure_hash: str) -> None:
