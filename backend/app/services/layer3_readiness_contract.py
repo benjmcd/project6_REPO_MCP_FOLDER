@@ -164,6 +164,10 @@ def build_readiness_contract(
         "candidate_b_bundle_material_bridge_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/bundle/material-bridge"
         ),
+        "candidate_b_runtime_material_bridge_admitted": True,
+        "candidate_b_runtime_material_bridge_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/runtime/material-bridge"
+        ),
         "source_directory_ingestion_scan_admitted": True,
         "source_directory_ingestion_scan_endpoint": f"{api_root}/source/ingestion/server-configured-directory/scan",
         "source_directory_ingestion_status_admitted": True,

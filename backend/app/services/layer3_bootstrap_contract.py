@@ -33,6 +33,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "plan_revision_recovery": True,
     "approved_plan_cancel": True,
     "candidate_b_bundle_material_bridge": True,
+    "candidate_b_runtime_material_bridge": True,
     "source_directory_ingestion_scan": True,
     "source_directory_ingestion_status": True,
     "source_directory_material_preview": True,
@@ -152,6 +153,10 @@ def build_bootstrap_contract(
             "candidate_b_bundle_material_bridge_admitted": True,
             "candidate_b_bundle_material_bridge_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/bundle/material-bridge"
+            ),
+            "candidate_b_runtime_material_bridge_admitted": True,
+            "candidate_b_runtime_material_bridge_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/runtime/material-bridge"
             ),
             "source_directory_ingestion_scan_admitted": True,
             "source_directory_ingestion_scan_endpoint": (
