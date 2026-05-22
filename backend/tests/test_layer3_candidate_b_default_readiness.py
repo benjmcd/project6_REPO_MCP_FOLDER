@@ -32,6 +32,7 @@ READY_REGRESSION = "no_unacceptable_regression_against_baseline_and_candidate_a"
 READY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit"
 VISUAL_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status"
 DOWNSTREAM_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof"
+OPERATOR_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 FULL_COVERAGE = [
     "source_directory_scan",
@@ -459,6 +460,27 @@ def _downstream_proof_request(runtime_receipt_id: str, visual_lane_status: dict[
     }
 
 
+def _operator_status_request(
+    bundle_receipt_id: str,
+    runtime_receipt_id: str,
+    visual_lane_status: dict[str, Any],
+    runtime_downstream_proof: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-operator-status",
+        "status_mode": "candidate_b_default_promotion_operator_status_v1",
+        "operator_decision": "inspect_candidate_b_default_promotion_operator_status",
+        "baseline_run_id": BASELINE_RUN_ID,
+        "candidate_a_run_id": CANDIDATE_A_RUN_ID,
+        "candidate_b_bundle_id": CANDIDATE_B_BUNDLE_ID,
+        "candidate_b_run_id": CANDIDATE_B_RUN_ID,
+        "candidate_b_bundle_bridge_receipt_id": bundle_receipt_id,
+        "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "candidate_b_visual_lane_status_evidence": visual_lane_status,
+        "runtime_downstream_proof": runtime_downstream_proof,
+    }
+
+
 def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
     return {
         "client_request_id": "candidate-b-default-readiness-001",
@@ -507,9 +529,15 @@ def _payload_with_live_runtime_proof(
         json=_downstream_proof_request(runtime_receipt_id, status),
     )
     assert proof_response.status_code == 200, proof_response.text
+    operator_status_response = client.post(
+        OPERATOR_STATUS_ENDPOINT,
+        json=_operator_status_request(bundle_receipt_id, runtime_receipt_id, status, proof_response.json()),
+    )
+    assert operator_status_response.status_code == 200, operator_status_response.text
     payload = _payload(bundle_receipt_id, runtime_receipt_id)
     payload["candidate_b_visual_lane_status_evidence"] = status
     payload["runtime_downstream_proof"] = proof_response.json()
+    payload["operator_status_evidence"] = operator_status_response.json()
     return payload
 
 
@@ -649,6 +677,12 @@ def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_res
     payload = _payload(bundle_receipt_id, runtime_receipt_id)
     payload["candidate_b_visual_lane_status_evidence"] = visual_status_response.json()
     payload["runtime_downstream_proof"] = proof
+    operator_status_response = client.post(
+        OPERATOR_STATUS_ENDPOINT,
+        json=_operator_status_request(bundle_receipt_id, runtime_receipt_id, visual_status_response.json(), proof),
+    )
+    assert operator_status_response.status_code == 200, operator_status_response.text
+    payload["operator_status_evidence"] = operator_status_response.json()
     response = client.post(READY_ENDPOINT, json=payload)
 
     assert response.status_code == 200, response.text
@@ -657,6 +691,43 @@ def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_res
     assert body["downstream_proofs"]["runtime"]["proof_hash"] == proof["proof_hash"]
     assert body["candidate_b_default_promotion_enabled"] is True
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
+
+
+def test_candidate_b_default_readiness_blocks_loose_operator_status_evidence(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+    proof_response = client.post(
+        DOWNSTREAM_PROOF_ENDPOINT,
+        json=_downstream_proof_request(runtime_receipt_id, visual_status_response.json()),
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_visual_lane_status_evidence"] = visual_status_response.json()
+    payload["runtime_downstream_proof"] = proof_response.json()
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_operator_status_schema_id_mismatch" in codes
+    assert "candidate_b_default_readiness_operator_status_authority_field_missing" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_operator_status_rejects_path_like_receipt_id(client: TestClient) -> None:
+    response = client.post(
+        OPERATOR_STATUS_ENDPOINT,
+        json=_operator_status_request("../bundle", "cb-runtime-bridge-placeholder", {}, {}),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_operator_status_storage_id_invalid"
 
 
 def test_candidate_b_runtime_downstream_proof_rejects_nested_path_authority(client: TestClient) -> None:
