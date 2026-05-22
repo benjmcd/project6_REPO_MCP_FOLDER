@@ -31,6 +31,7 @@ from app.services import (
     layer3_provider_public_url_delivery_use,
     layer3_server_owned_local_outbox_target,
     layer3_server_owned_local_outbox_write,
+    layer3_candidate_b_bundle_bridge,
     layer3_source_directory_ingestion,
     layer3_source_directory_material_admission,
     layer3_source_directory_context_packet,
@@ -125,6 +126,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     plan_revision_recovery_endpoint: str
     approved_plan_cancel_admitted: bool
     approved_plan_cancel_endpoint: str
+    candidate_b_bundle_material_bridge_admitted: bool
+    candidate_b_bundle_material_bridge_endpoint: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
@@ -2587,6 +2590,17 @@ class Layer3SourceDirectoryIngestionScanRequest(BaseModel):
     ingestion_mode: Literal["server_configured_operator_directory_text_table_ingestion"] | None = None
 
 
+class Layer3CandidateBBundleMaterialBridgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    bridge_mode: Literal["candidate_b_bundle_curated_json_md_to_layer3_material_authority_v1"]
+    candidate_b_bundle_id: str = Field(min_length=1)
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    operator_confirmation: bool
+
+
 class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -2940,6 +2954,33 @@ class Layer3SourceDirectoryIngestionResponse(Layer3BaseResponse):
     files: list[dict[str, Any]]
     next_allowed_actions: list[str]
     negative_invariants: dict[str, bool]
+
+
+class Layer3CandidateBBundleMaterialBridgeResponse(Layer3BaseResponse):
+    mode: str
+    bridge_receipt_id: str
+    bridge_receipt_ref: str
+    curated_material_root_ref: str
+    curated_root_absolute_path_exposed: bool
+    bridge_config_authority: str
+    source_ingestion_config_authority: str
+    source_ingestion_required_root_ref: str
+    source_ingestion_mode: str
+    candidate_b_bundle_id: str
+    baseline_run_id: str
+    candidate_a_run_id: str
+    candidate_b_source_kind: str
+    candidate_b_bundle_validation: dict[str, Any]
+    compare_target_set: dict[str, Any]
+    admitted_artifact_subset: dict[str, Any]
+    excluded_artifact_subset: dict[str, Any]
+    authority_hashes: dict[str, str]
+    provenance: dict[str, Any]
+    layer3_material_preview_compatible: bool
+    gate_b_material_authority_compatible: bool
+    layer3_compatibility: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
 
 
 class Layer3SourceDirectoryMaterialPreviewResponse(Layer3BaseResponse):
@@ -8457,6 +8498,22 @@ def get_source_intake_material_preview(
             max_chars=max_chars,
         )
     except layer3_source_intake.SourceIntakeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/bundle/material-bridge",
+    response_model=Layer3CandidateBBundleMaterialBridgeResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_bundle_material_bridge(
+    payload: Layer3CandidateBBundleMaterialBridgeRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_bundle_bridge.prepare_candidate_b_bundle_material_bridge(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_bundle_bridge.CandidateBBundleBridgeError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
