@@ -85,7 +85,7 @@ def candidate_b_retained_artifact_family_status(payload: Mapping[str, Any]) -> d
             "Candidate B artifact status only admits bundle or runtime bridge receipts.",
             details={"received_candidate_b_source_kind": source_kind},
         )
-    receipt_id = _required(fields, "bridge_receipt_id")
+    receipt_id = _required_receipt_id(fields, "bridge_receipt_id", _receipt_prefix(source_kind))
     receipt = _read_receipt(source_kind, receipt_id)
     _validate_receipt(source_kind, receipt_id, receipt)
     artifact_family = receipt["governed_retained_artifact_family"]
@@ -153,6 +153,26 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
             details={"field": key},
         )
     return value
+
+
+def _required_receipt_id(fields: Mapping[str, Any], key: str, prefix: str) -> str:
+    value = _required(fields, key)
+    if not value.startswith(f"{prefix}-") or "/" in value or "\\" in value or ".." in value or value in {".", ".."}:
+        raise CandidateBArtifactStatusError(
+            "candidate_b_artifact_status_bridge_receipt_id_invalid",
+            "Candidate B artifact status requires a server-owned bridge receipt identifier.",
+            http_status=409,
+            details={"expected_prefix": prefix},
+        )
+    return value
+
+
+def _receipt_prefix(source_kind: str) -> str:
+    return (
+        layer3_candidate_b_bundle_bridge.BRIDGE_RECEIPT_PREFIX
+        if source_kind == "bundle"
+        else layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX
+    )
 
 
 def _read_receipt(source_kind: str, receipt_id: str) -> dict[str, Any]:
