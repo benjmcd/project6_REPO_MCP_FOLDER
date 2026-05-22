@@ -10,6 +10,7 @@ from app.core.config import settings
 from app.services import (
     layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_downstream_proof,
+    layer3_candidate_b_operator_status,
     layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
 )
@@ -215,7 +216,19 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         bridge_receipt_hash=runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
         visual_lane_status_hash=visual_lane_status["status_hash"],
     )
-    operator_status = _validate_operator_status(fields.get("operator_status_evidence"))
+    operator_status = _validate_operator_status(
+        fields.get("operator_status_evidence"),
+        baseline_run_id=baseline_run_id,
+        candidate_a_run_id=candidate_a_run_id,
+        candidate_b_bundle_id=candidate_b_bundle_id,
+        candidate_b_run_id=candidate_b_run_id,
+        bundle_receipt_id=bundle_receipt_id,
+        bundle_receipt_hash=bundle_receipt["authority_hashes"].get("bridge_receipt_hash"),
+        runtime_receipt_id=runtime_receipt_id,
+        runtime_receipt_hash=runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
+        visual_lane_status_hash=visual_lane_status["status_hash"],
+        runtime_downstream_proof_hash=runtime_proof["proof_hash"],
+    )
     blocked.extend(bundle_receipt["blocked_reasons"])
     blocked.extend(runtime_receipt["blocked_reasons"])
     blocked.extend(bundle_proof["blocked_reasons"])
@@ -853,8 +866,27 @@ def _coverage_values(value: Any) -> set[str]:
     return out
 
 
-def _validate_operator_status(value: Any) -> dict[str, Any]:
-    evidence = value if isinstance(value, dict) else {}
+def _validate_operator_status(
+    value: Any,
+    *,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+    candidate_b_bundle_id: str,
+    candidate_b_run_id: str,
+    bundle_receipt_id: str,
+    bundle_receipt_hash: str | None,
+    runtime_receipt_id: str,
+    runtime_receipt_hash: str | None,
+    visual_lane_status_hash: str | None,
+    runtime_downstream_proof_hash: str | None,
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        return {
+            "blocked_reasons": [_reason("candidate_b_default_readiness_operator_status_evidence_missing")],
+            "summary": {"status": "missing"},
+            "operator_status_hash": None,
+        }
+    evidence = value
     required_true = (
         "operator_visible_provenance_status",
         "bundle_status_projection_visible",
@@ -865,12 +897,126 @@ def _validate_operator_status(value: Any) -> dict[str, Any]:
     summary["raw_local_path_exposed"] = evidence.get("raw_local_path_exposed") is True
     summary["provider_private_token_exposed"] = evidence.get("provider_private_token_exposed") is True
     blocked = []
+    for field, expected in {
+        "schema_id": layer3_candidate_b_operator_status.SCHEMA_ID,
+        "mode": layer3_candidate_b_operator_status.STATUS_MODE,
+        "status": "available",
+        "baseline_run_id": baseline_run_id,
+        "candidate_a_run_id": candidate_a_run_id,
+        "candidate_b_bundle_id": candidate_b_bundle_id,
+        "candidate_b_run_id": candidate_b_run_id,
+        "bundle_bridge_receipt_id": bundle_receipt_id,
+        "bundle_bridge_receipt_hash": bundle_receipt_hash,
+        "runtime_bridge_receipt_id": runtime_receipt_id,
+        "runtime_bridge_receipt_hash": runtime_receipt_hash,
+        "candidate_b_visual_lane_status_hash": visual_lane_status_hash,
+        "runtime_downstream_proof_hash": runtime_downstream_proof_hash,
+    }.items():
+        if str(evidence.get(field) or "").strip() != str(expected or "").strip():
+            blocked.append(
+                _reason(
+                    f"candidate_b_default_readiness_operator_status_{field}_mismatch",
+                    field=field,
+                    expected=expected,
+                    received=evidence.get(field),
+                )
+            )
     missing = [key for key in required_true if evidence.get(key) is not True]
     if missing:
         blocked.append(_reason("candidate_b_default_readiness_operator_status_evidence_incomplete", missing_fields=missing))
-    if summary["raw_local_path_exposed"] or summary["provider_private_token_exposed"]:
+    if (
+        summary["raw_local_path_exposed"]
+        or summary["provider_private_token_exposed"]
+        or evidence.get("raw_url_exposed") is not False
+        or evidence.get("artifact_bytes_exposed") is not False
+        or evidence.get("selector_mutation_performed") is not False
+    ):
         blocked.append(_reason("candidate_b_default_readiness_operator_status_exposes_sensitive_authority"))
-    return {"blocked_reasons": blocked, "summary": summary, "operator_status_hash": _stable_hash(summary)}
+    missing_hash_fields = [key for key in layer3_candidate_b_operator_status.STATUS_HASH_KEYS if key not in evidence]
+    if missing_hash_fields:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_operator_status_authority_field_missing",
+                missing_fields=missing_hash_fields,
+            )
+        )
+        operator_status_hash = None
+    else:
+        operator_status_hash = _stable_hash({key: evidence[key] for key in layer3_candidate_b_operator_status.STATUS_HASH_KEYS})
+        if evidence.get("operator_status_hash") != operator_status_hash:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_operator_status_hash_mismatch",
+                    expected=operator_status_hash,
+                    received=evidence.get("operator_status_hash"),
+                )
+            )
+        _validate_operator_status_receipt(
+            evidence=evidence,
+            runtime_receipt_id=runtime_receipt_id,
+            expected_hash=operator_status_hash,
+            blocked=blocked,
+        )
+    summary.update(
+        {
+            "status": evidence.get("status"),
+            "operator_status_hash": operator_status_hash,
+            "operator_status_receipt_id": evidence.get("operator_status_receipt_id"),
+            "bundle_bridge_receipt_id": evidence.get("bundle_bridge_receipt_id"),
+            "runtime_bridge_receipt_id": evidence.get("runtime_bridge_receipt_id"),
+            "raw_url_exposed": evidence.get("raw_url_exposed") is True,
+            "artifact_bytes_exposed": evidence.get("artifact_bytes_exposed") is True,
+            "selector_mutation_performed": evidence.get("selector_mutation_performed") is True,
+        }
+    )
+    return {"blocked_reasons": blocked, "summary": summary, "operator_status_hash": operator_status_hash}
+
+
+def _validate_operator_status_receipt(
+    *,
+    evidence: Mapping[str, Any],
+    runtime_receipt_id: str,
+    expected_hash: str,
+    blocked: list[dict[str, Any]],
+) -> None:
+    receipt_id = str(evidence.get("operator_status_receipt_id") or "").strip()
+    if not receipt_id:
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_receipt_id_missing"))
+        return
+    if (
+        not receipt_id.startswith(f"{layer3_candidate_b_operator_status.STATUS_RECEIPT_PREFIX}-")
+        or "/" in receipt_id
+        or "\\" in receipt_id
+        or ".." in receipt_id
+        or receipt_id in {".", ".."}
+    ):
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_receipt_id_invalid"))
+        return
+    configured = settings.layer3_candidate_b_runtime_bridge_dir
+    if not str(configured or "").strip():
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_bridge_dir_unset"))
+        return
+    root = Path(str(configured))
+    if not root.is_absolute():
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_bridge_dir_not_absolute"))
+        return
+    path = root / runtime_receipt_id / "operator-status" / f"{receipt_id}.json"
+    if not path.is_file():
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_receipt_missing", receipt_id=receipt_id))
+        return
+    try:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_receipt_unreadable", reason=str(exc)))
+        return
+    if not isinstance(stored, dict) or stored.get("operator_status_hash") != expected_hash:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_operator_status_receipt_hash_mismatch",
+                expected=expected_hash,
+                received=stored.get("operator_status_hash") if isinstance(stored, dict) else None,
+            )
+        )
 
 
 def _validate_visual_lane_status_evidence(
