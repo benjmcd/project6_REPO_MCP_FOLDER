@@ -54,6 +54,7 @@ READINESS_REQUIRED_GATES = (
     "candidate-b-bundle-downstream-proof",
     "candidate-b-runtime-downstream-proof",
     "candidate-b-default-promotion-operator-status",
+    "candidate-b-default-promotion-closure-evidence",
     "candidate-b-default-promotion-readiness-audit",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
@@ -101,6 +102,7 @@ READINESS_IMPLEMENTED_GATES = (
     "candidate-b-bundle-downstream-proof",
     "candidate-b-runtime-downstream-proof",
     "candidate-b-default-promotion-operator-status",
+    "candidate-b-default-promotion-closure-evidence",
     "candidate-b-default-promotion-readiness-audit",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
@@ -200,6 +202,10 @@ def build_readiness_contract(
         "candidate_b_default_promotion_operator_status_admitted": True,
         "candidate_b_default_promotion_operator_status_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/default-promotion/operator-status"
+        ),
+        "candidate_b_default_promotion_closure_evidence_admitted": True,
+        "candidate_b_default_promotion_closure_evidence_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/default-promotion/closure-evidence"
         ),
         "candidate_b_default_promotion_readiness_audit_admitted": True,
         "candidate_b_default_promotion_readiness_audit_endpoint": (
