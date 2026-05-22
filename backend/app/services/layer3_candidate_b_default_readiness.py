@@ -7,7 +7,11 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from app.core.config import settings
-from app.services import layer3_candidate_b_bundle_bridge, layer3_candidate_b_runtime_bridge
+from app.services import (
+    layer3_candidate_b_bundle_bridge,
+    layer3_candidate_b_runtime_bridge,
+    layer3_candidate_b_visual_lane_status,
+)
 
 
 SCHEMA_ID = "layer3.candidate_b_default_promotion_readiness_audit.v1"
@@ -201,11 +205,18 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         source_kind="runtime",
         bridge_receipt_id=runtime_receipt_id,
     )
+    visual_lane_status = _validate_visual_lane_status_evidence(
+        fields.get("candidate_b_visual_lane_status_evidence"),
+        candidate_b_run_id=candidate_b_run_id,
+        runtime_receipt_id=runtime_receipt_id,
+        runtime_receipt_hash=runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
+    )
     operator_status = _validate_operator_status(fields.get("operator_status_evidence"))
     blocked.extend(bundle_receipt["blocked_reasons"])
     blocked.extend(runtime_receipt["blocked_reasons"])
     blocked.extend(bundle_proof["blocked_reasons"])
     blocked.extend(runtime_proof["blocked_reasons"])
+    blocked.extend(visual_lane_status["blocked_reasons"])
     blocked.extend(operator_status["blocked_reasons"])
 
     audit_hash = _stable_hash(
@@ -222,6 +233,7 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
             "runtime_bridge_receipt_hash": runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
             "bundle_downstream_proof_hash": bundle_proof["proof_hash"],
             "runtime_downstream_proof_hash": runtime_proof["proof_hash"],
+            "candidate_b_visual_lane_status_hash": visual_lane_status["status_hash"],
             "eligible_corpus_scope": fields.get("eligible_corpus_scope"),
             "regression_disposition": fields.get("regression_disposition"),
             "rollback_to_baseline_confirmation": fields.get("rollback_to_baseline_confirmation") is True,
@@ -279,6 +291,7 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         },
         "authority_hashes": {"bundle": bundle_receipt["authority_hashes"], "runtime": runtime_receipt["authority_hashes"]},
         "downstream_proofs": {"bundle": bundle_proof["summary"], "runtime": runtime_proof["summary"]},
+        "candidate_b_visual_lane_status_evidence": visual_lane_status["summary"],
         "operator_status_evidence": operator_status["summary"],
         "rollback_to_baseline": {
             "available": fields.get("rollback_to_baseline_confirmation") is True,
@@ -735,7 +748,6 @@ def _validate_operator_status(value: Any) -> dict[str, Any]:
         "operator_visible_provenance_status",
         "bundle_status_projection_visible",
         "runtime_status_projection_visible",
-        "candidate_b_visual_lane_status_projection_visible",
         "default_selector_change_visible_as_enabled",
     )
     summary = {key: evidence.get(key) is True for key in required_true}
@@ -748,6 +760,129 @@ def _validate_operator_status(value: Any) -> dict[str, Any]:
     if summary["raw_local_path_exposed"] or summary["provider_private_token_exposed"]:
         blocked.append(_reason("candidate_b_default_readiness_operator_status_exposes_sensitive_authority"))
     return {"blocked_reasons": blocked, "summary": summary, "operator_status_hash": _stable_hash(summary)}
+
+
+def _validate_visual_lane_status_evidence(
+    value: Any,
+    *,
+    candidate_b_run_id: str,
+    runtime_receipt_id: str,
+    runtime_receipt_hash: str | None,
+) -> dict[str, Any]:
+    blocked: list[dict[str, Any]] = []
+    if not isinstance(value, dict):
+        return {
+            "blocked_reasons": [_reason("candidate_b_default_readiness_visual_lane_status_evidence_missing")],
+            "status_hash": None,
+            "summary": {"status": "missing"},
+        }
+    for field, expected in {
+        "schema_id": layer3_candidate_b_visual_lane_status.SCHEMA_ID,
+        "mode": layer3_candidate_b_visual_lane_status.STATUS_MODE,
+        "status": "available",
+        "candidate_b_source_kind": "runtime",
+        "candidate_b_run_id": candidate_b_run_id,
+        "bridge_receipt_id": runtime_receipt_id,
+        "bridge_receipt_hash": runtime_receipt_hash,
+        "document_processing_engine": CANDIDATE_B_ENGINE,
+        "visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
+        "visual_lane_status": "available",
+    }.items():
+        if str(value.get(field) or "").strip() != str(expected or "").strip():
+            blocked.append(
+                _reason(
+                    f"candidate_b_default_readiness_visual_lane_status_{field}_mismatch",
+                    field=field,
+                    expected=expected,
+                    received=value.get(field),
+                )
+            )
+
+    visual_evidence = value.get("candidate_b_visual_lane_evidence")
+    if not isinstance(visual_evidence, dict):
+        blocked.append(_reason("candidate_b_default_readiness_visual_lane_status_evidence_detail_missing"))
+        visual_evidence = {}
+    if str(visual_evidence.get("visual_lane_mode") or "").strip() != CANDIDATE_B_VISUAL_LANE_MODE:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_visual_lane_status_evidence_mode_mismatch",
+                expected=CANDIDATE_B_VISUAL_LANE_MODE,
+                received=visual_evidence.get("visual_lane_mode"),
+            )
+        )
+    if visual_evidence.get("candidate_b_visual_lane_selected") is not True:
+        blocked.append(_reason("candidate_b_default_readiness_visual_lane_status_not_selected"))
+    for field in ("source_pdf_material_text_payload_enabled", "image_material_text_payload_enabled"):
+        if visual_evidence.get(field) is not False:
+            blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_{field}_not_false", field=field))
+
+    operator_projection = value.get("operator_projection")
+    if not isinstance(operator_projection, dict):
+        blocked.append(_reason("candidate_b_default_readiness_visual_lane_status_operator_projection_missing"))
+        operator_projection = {}
+    for field in ("candidate_b_visual_lane_status_projection_visible", "candidate_b_visual_lane_selected"):
+        if operator_projection.get(field) is not True:
+            blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_{field}_not_true", field=field))
+    for field in ("raw_local_path_exposed", "raw_url_exposed", "artifact_bytes_exposed"):
+        if operator_projection.get(field) is not False:
+            blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_{field}_not_false", field=field))
+
+    material_policy = value.get("material_policy")
+    if not isinstance(material_policy, dict):
+        blocked.append(_reason("candidate_b_default_readiness_visual_lane_status_material_policy_missing"))
+        material_policy = {}
+    for field in (
+        "source_pdf_material_text_payload_enabled",
+        "image_material_text_payload_enabled",
+        "visual_lane_material_ingestion_enabled",
+    ):
+        if material_policy.get(field) is not False:
+            blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_material_{field}_not_false", field=field))
+
+    invariants = value.get("negative_invariants")
+    if not isinstance(invariants, dict):
+        blocked.append(_reason("candidate_b_default_readiness_visual_lane_status_negative_invariants_missing"))
+        invariants = {}
+    for field in (
+        "candidate_b_default_promotion_enabled",
+        "candidate_b_visual_lane_material_ingestion_enabled",
+        "source_pdf_material_text_payload_enabled",
+        "image_material_text_payload_enabled",
+        "raw_url_exposure_enabled",
+        "provider_object_writes_enabled",
+        "connector_dispatch_enabled",
+        "rag_vector_model_runtime_enabled",
+        "browser_storage_authority_enabled",
+        "frontend_durable_authority_enabled",
+    ):
+        if invariants.get(field) is not False:
+            blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_negative_{field}_not_false", field=field))
+
+    status_hash = _stable_hash(value)
+    return {
+        "blocked_reasons": blocked,
+        "status_hash": status_hash,
+        "summary": {
+            "status": value.get("status"),
+            "mode": value.get("mode"),
+            "candidate_b_run_id": value.get("candidate_b_run_id"),
+            "bridge_receipt_id": value.get("bridge_receipt_id"),
+            "bridge_receipt_hash": value.get("bridge_receipt_hash"),
+            "visual_lane_mode": value.get("visual_lane_mode"),
+            "visual_lane_status": value.get("visual_lane_status"),
+            "candidate_b_visual_lane_status_projection_visible": (
+                operator_projection.get("candidate_b_visual_lane_status_projection_visible") is True
+            ),
+            "candidate_b_visual_ref_total": int(operator_projection.get("candidate_b_visual_ref_total") or 0),
+            "candidate_b_retained_source_pdf_ref_count": int(
+                operator_projection.get("candidate_b_retained_source_pdf_ref_count") or 0
+            ),
+            "raw_local_path_exposed": operator_projection.get("raw_local_path_exposed") is True,
+            "raw_url_exposed": operator_projection.get("raw_url_exposed") is True,
+            "artifact_bytes_exposed": operator_projection.get("artifact_bytes_exposed") is True,
+            "status_hash": status_hash,
+        },
+    }
 
 
 def _negative_invariants() -> dict[str, bool]:
