@@ -74,7 +74,16 @@ APS_DEFAULT_DIALECT_PROBE_ORDER = ("shape_a", "guide_native", "shape_b")
 APS_KNOWN_BAD_FORCED_DIALECTS = {"guide_native", "shape_b"}
 APS_SYNC_WATERMARK_FIELD = "DateAddedTimestamp"
 APS_SYNC_MODES = {"full_scan", "incremental", "reconciliation"}
-_APS_ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
+APS_VISUAL_LANE_MODE_BASELINE = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_VISUAL_LANE_MODE_BASELINE
+APS_VISUAL_LANE_MODE_CANDIDATE_A = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_VISUAL_LANE_MODE_CANDIDATE_A
+APS_VISUAL_LANE_MODE_CANDIDATE_B = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_VISUAL_LANE_MODE_CANDIDATE_B
+_APS_ADMITTED_VISUAL_LANE_MODES: frozenset[str] = frozenset(
+    {
+        APS_VISUAL_LANE_MODE_BASELINE,
+        APS_VISUAL_LANE_MODE_CANDIDATE_A,
+        APS_VISUAL_LANE_MODE_CANDIDATE_B,
+    }
+)
 APS_DOCUMENT_PROCESSING_ENGINE_BASELINE = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
 APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
 _APS_ADMITTED_DOCUMENT_PROCESSING_ENGINES: frozenset[str] = frozenset(

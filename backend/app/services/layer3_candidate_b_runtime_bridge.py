@@ -27,6 +27,8 @@ SCHEMA_ID = "layer3.candidate_b_runtime_material_authority_bridge.v1"
 SCHEMA_VERSION = 1
 BRIDGE_MODE = "candidate_b_runtime_source_to_layer3_material_authority_v1"
 CANDIDATE_B_RUNTIME_VARIANT = "candidate_b_opendataloader_pdf"
+CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
+_ADMITTED_CANDIDATE_B_RUNTIME_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", CANDIDATE_B_VISUAL_LANE_MODE})
 CONFIG_AUTHORITY = "LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR"
 SOURCE_INGESTION_CONFIG_AUTHORITY = "LAYER3_SOURCE_INGESTION_DIR"
 SOURCE_INGESTION_MODE = layer3_source_directory_ingestion.MODE
@@ -308,10 +310,11 @@ def _candidate_b_runtime_binding(run_id: str) -> ReviewRuntimeBinding:
             details={"candidate_b_run_id": run_id, "required_variant": CANDIDATE_B_RUNTIME_VARIANT},
         )
     metadata = runtime_binding_request_metadata(binding)
-    if metadata.get("visual_lane_mode") != "baseline":
+    metadata_visual_lane = str(metadata.get("visual_lane_mode") or "baseline").strip().lower()
+    if metadata_visual_lane not in _ADMITTED_CANDIDATE_B_RUNTIME_VISUAL_LANE_MODES:
         raise CandidateBRuntimeBridgeError(
             "candidate_b_runtime_bridge_visual_lane_mode_not_admitted",
-            "Candidate B runtime runs must not reinterpret Candidate B as a visual-lane mode.",
+            "Candidate B runtime runs may only use baseline or the admitted Candidate B page-evidence visual lane.",
             http_status=409,
             details={"candidate_b_run_id": run_id, "visual_lane_mode": metadata.get("visual_lane_mode")},
         )
@@ -331,7 +334,7 @@ def _candidate_b_runtime_binding(run_id: str) -> ReviewRuntimeBinding:
         )
     summary_visual_lane = str(binding.summary.get("visual_lane_mode") or "baseline").strip().lower()
     summary_engine = str(binding.summary.get("document_processing_engine") or "").strip().lower()
-    if summary_visual_lane != "baseline" or summary_engine != CANDIDATE_B_RUNTIME_VARIANT:
+    if summary_visual_lane not in _ADMITTED_CANDIDATE_B_RUNTIME_VISUAL_LANE_MODES or summary_engine != CANDIDATE_B_RUNTIME_VARIANT:
         raise CandidateBRuntimeBridgeError(
             "candidate_b_runtime_bridge_summary_metadata_invalid",
             "The selected Candidate B runtime summary does not match the admitted runtime-source posture.",
@@ -496,6 +499,7 @@ def _runtime_authority_hash(binding: ReviewRuntimeBinding, material_files: list[
 
 
 def _runtime_validation(binding: ReviewRuntimeBinding) -> dict[str, Any]:
+    metadata = runtime_binding_request_metadata(binding)
     return {
         "status": "passed",
         "validated_by": [
@@ -506,7 +510,7 @@ def _runtime_validation(binding: ReviewRuntimeBinding) -> dict[str, Any]:
         ],
         "candidate_b_run_id": binding.run_id,
         "document_processing_engine": CANDIDATE_B_RUNTIME_VARIANT,
-        "visual_lane_mode": "baseline",
+        "visual_lane_mode": metadata.get("visual_lane_mode", "baseline"),
     }
 
 
