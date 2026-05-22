@@ -35,6 +35,7 @@ from app.services import (
     layer3_candidate_b_artifact_status,
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
+    layer3_candidate_b_operator_status,
     layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
     layer3_source_directory_ingestion,
@@ -137,6 +138,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_artifact_family_status_endpoint: str
     candidate_b_runtime_downstream_proof_admitted: bool
     candidate_b_runtime_downstream_proof_endpoint: str
+    candidate_b_default_promotion_operator_status_admitted: bool
+    candidate_b_default_promotion_operator_status_endpoint: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
@@ -2654,6 +2657,22 @@ class Layer3CandidateBRuntimeDownstreamProofRequest(BaseModel):
     operator_confirmation: bool
 
 
+class Layer3CandidateBDefaultPromotionOperatorStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["candidate_b_default_promotion_operator_status_v1"]
+    operator_decision: Literal["inspect_candidate_b_default_promotion_operator_status"]
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    candidate_b_bundle_id: str = Field(min_length=1)
+    candidate_b_run_id: str = Field(min_length=1)
+    candidate_b_bundle_bridge_receipt_id: str = Field(min_length=1)
+    candidate_b_runtime_bridge_receipt_id: str = Field(min_length=1)
+    candidate_b_visual_lane_status_evidence: dict[str, Any]
+    runtime_downstream_proof: dict[str, Any]
+
+
 class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3142,6 +3161,35 @@ class Layer3CandidateBRuntimeDownstreamProofResponse(Layer3BaseResponse):
     connector_dispatch_enabled: bool
     candidate_b_default_promotion_enabled: bool
     visual_lane_mode_enabled: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBDefaultPromotionOperatorStatusResponse(Layer3BaseResponse):
+    mode: str
+    baseline_run_id: str
+    candidate_a_run_id: str
+    candidate_b_bundle_id: str
+    candidate_b_run_id: str
+    bundle_bridge_receipt_id: str
+    bundle_bridge_receipt_hash: str
+    runtime_bridge_receipt_id: str
+    runtime_bridge_receipt_hash: str
+    candidate_b_visual_lane_status_hash: str
+    runtime_downstream_proof_hash: str
+    operator_visible_provenance_status: bool
+    bundle_status_projection_visible: bool
+    runtime_status_projection_visible: bool
+    default_selector_change_visible_as_enabled: bool
+    operator_status_hash: str
+    operator_status_receipt_id: str
+    operator_status_receipt_ref: str
+    candidate_b_source_kind: str
+    raw_local_path_exposed: bool
+    provider_private_token_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -8767,6 +8815,22 @@ def post_candidate_b_runtime_downstream_proof(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_downstream_proof.CandidateBDownstreamProofError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/default-promotion/operator-status",
+    response_model=Layer3CandidateBDefaultPromotionOperatorStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_default_promotion_operator_status(
+    payload: Layer3CandidateBDefaultPromotionOperatorStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_operator_status.candidate_b_default_promotion_operator_status(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_operator_status.CandidateBOperatorStatusError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
