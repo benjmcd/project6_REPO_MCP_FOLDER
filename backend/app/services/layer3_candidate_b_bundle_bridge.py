@@ -206,6 +206,7 @@ def prepare_candidate_b_bundle_material_bridge(
             "files": [_curated_manifest_entry(item) for item in curated_files],
         }
     )
+    governed_retained_artifact_family = _governed_retained_artifact_family(raw_inventory, curated_files)
 
     receipt_input = {
         "schema_id": SCHEMA_ID,
@@ -220,6 +221,7 @@ def prepare_candidate_b_bundle_material_bridge(
         "bundle_raw_file_manifest_hash": bundle_raw_file_manifest_hash,
         "admitted_file_subset_source_hash": admitted_file_subset_source_hash,
         "admitted_file_subset_hash": admitted_file_subset_hash,
+        "governed_retained_artifact_family_hash": governed_retained_artifact_family["artifact_family_hash"],
         "redaction_policy_id": REDACTION_POLICY_ID,
     }
     bridge_receipt_hash = _stable_hash(receipt_input)
@@ -245,6 +247,7 @@ def prepare_candidate_b_bundle_material_bridge(
         "compare_target_set": compare_target_set,
         "admitted_artifact_subset": _admitted_subset_summary(curated_files),
         "excluded_artifact_subset": excluded_artifacts,
+        "governed_retained_artifact_family": governed_retained_artifact_family,
         "source_artifact_manifest": [_manifest_entry(source) for source in all_sources],
         "curated_artifact_manifest": [_curated_manifest_entry(item) for item in curated_files],
         "provenance": {
@@ -788,6 +791,7 @@ def _response(
         "compare_target_set": receipt["compare_target_set"],
         "admitted_artifact_subset": receipt["admitted_artifact_subset"],
         "excluded_artifact_subset": receipt["excluded_artifact_subset"],
+        "governed_retained_artifact_family": receipt["governed_retained_artifact_family"],
         "authority_hashes": {
             "bridge_receipt_hash": receipt["bridge_receipt_hash"],
             "compare_target_set_hash": receipt["compare_target_set_hash"],
@@ -795,6 +799,7 @@ def _response(
             "bundle_raw_file_manifest_hash": receipt["bundle_raw_file_manifest_hash"],
             "admitted_file_subset_source_hash": receipt["admitted_file_subset_source_hash"],
             "admitted_file_subset_hash": receipt["admitted_file_subset_hash"],
+            "governed_retained_artifact_family_hash": receipt["governed_retained_artifact_family_hash"],
         },
         "provenance": receipt["provenance"],
         "layer3_material_preview_compatible": True,
@@ -839,12 +844,96 @@ def _excluded_artifact_summary(raw_inventory: list[dict[str, Any]]) -> dict[str,
             excluded.append({"path": source_ref, "category": category, "extension": extension or None})
     excluded.sort(key=lambda item: item["path"])
     return {
-        "policy": "omit_pdfs_images_binaries_nested_runtime_rows_and_broad_raw_root",
+        "policy": "not_material_text_payload_retained_in_governed_artifact_family",
         "excluded_file_count": len(excluded),
         "excluded_extension_counts": dict(sorted(extension_counts.items())),
         "excluded_category_counts": dict(sorted(category_counts.items())),
         "excluded_refs": excluded[:50],
         "excluded_refs_truncated": len(excluded) > 50,
+    }
+
+
+def _governed_retained_artifact_family(
+    raw_inventory: list[dict[str, Any]],
+    curated_files: list[dict[str, Any]],
+) -> dict[str, Any]:
+    material_payloads = [
+        _artifact_ref(item, source_ref_key="source_ref", relative_key="relative_name")
+        for item in sorted(curated_files, key=lambda item: str(item["relative_name"]))
+        if str(item["relative_name"]).startswith("raw/")
+    ]
+    provenance_artifacts = [
+        _artifact_ref(item, source_ref_key="source_ref", relative_key="relative_name")
+        for item in sorted(curated_files, key=lambda item: str(item["relative_name"]))
+        if not str(item["relative_name"]).startswith("raw/")
+    ]
+    retained_inventory_refs: list[dict[str, Any]] = []
+    visual_evidence: list[dict[str, Any]] = []
+    product_artifacts: list[dict[str, Any]] = []
+    delivery_artifacts: list[dict[str, Any]] = []
+    for item in _normalised_inventory(raw_inventory):
+        ref = _retained_inventory_ref(item)
+        retained_inventory_refs.append(ref)
+        category = str(item.get("category") or "")
+        extension = str(ref.get("extension") or "")
+        if category in {"candidate_b_annotated_pdf", "candidate_b_extracted_image", "candidate_b_source_pdf"}:
+            visual_evidence.append(ref)
+        if extension in {".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff", ".json", ".md"}:
+            product_artifacts.append(ref)
+        if extension in {".pdf", ".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff", ".json", ".md"}:
+            delivery_artifacts.append(ref)
+    classification = {
+        "policy": "candidate_b_full_artifact_family_retained_but_text_material_payload_bounded",
+        "candidate_b_source_kind": "bundle",
+        "material_text_payload_policy": "raw_json_md_and_required_reports_only",
+        "pdf_material_text_payload_enabled": False,
+        "image_material_text_payload_enabled": False,
+        "raw_url_exposure_enabled": False,
+        "roles": {
+            "material_analysis_payloads": material_payloads,
+            "visual_page_evidence": sorted(visual_evidence, key=lambda item: item["source_ref"]),
+            "provenance_audit_artifacts": provenance_artifacts
+            + sorted(retained_inventory_refs, key=lambda item: item["source_ref"]),
+            "product_inspection_artifacts": sorted(product_artifacts, key=lambda item: item["source_ref"]),
+            "delivery_artifacts": sorted(delivery_artifacts, key=lambda item: item["source_ref"]),
+        },
+    }
+    classification["role_counts"] = {
+        role: len(items) for role, items in classification["roles"].items()
+    }
+    classification["artifact_family_hash"] = _stable_hash(
+        {"hash_version": AUTHORITY_HASH_VERSION, "classification": classification}
+    )
+    return classification
+
+
+def _artifact_ref(
+    item: Mapping[str, Any],
+    *,
+    source_ref_key: str,
+    relative_key: str,
+) -> dict[str, Any]:
+    return {
+        "source_ref": item[source_ref_key],
+        "relative_name": item[relative_key],
+        "category": item["category"],
+        "extension": item["extension"],
+        "sha256": item["content_sha256"],
+        "size_bytes": item["content_size_bytes"],
+        "material_text_payload": True,
+    }
+
+
+def _retained_inventory_ref(item: Mapping[str, Any]) -> dict[str, Any]:
+    source_ref = str(item.get("path") or "")
+    extension = Path(source_ref).suffix.lower() or None
+    return {
+        "source_ref": source_ref,
+        "category": item.get("category") or "unknown",
+        "extension": extension,
+        "sha256": item.get("sha256") or "",
+        "size_bytes": item.get("size_bytes"),
+        "material_text_payload": extension in ADMITTED_RAW_EXTENSIONS,
     }
 
 
