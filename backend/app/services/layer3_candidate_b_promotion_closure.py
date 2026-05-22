@@ -212,7 +212,7 @@ def candidate_b_default_promotion_closure_evidence(payload: Mapping[str, Any]) -
         receipt_id=runtime_receipt_id,
         receipt_hash=runtime_hash,
     )
-    operator_status_hash = _validate_operator_status(
+    operator_status = _validate_operator_status(
         fields.get("operator_status_evidence"),
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
@@ -224,6 +224,7 @@ def candidate_b_default_promotion_closure_evidence(payload: Mapping[str, Any]) -
         runtime_hash=runtime_hash,
         runtime_proof_hash=runtime_proof_hash,
     )
+    operator_status_hash = operator_status["operator_status_hash"]
     closure_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -260,6 +261,7 @@ def candidate_b_default_promotion_closure_evidence(payload: Mapping[str, Any]) -
         "raw_url_exposed": False,
         "provider_private_token_exposed": False,
         "artifact_bytes_exposed": False,
+        "candidate_b_operator_status_evidence": operator_status["candidate_b_operator_status_evidence"],
         "negative_invariants": {
             "baseline_rollback_preserved": True,
             "candidate_a_semantics_changed": False,
@@ -436,7 +438,7 @@ def _validate_runtime_proof(value: Any, *, candidate_b_run_id: str, receipt_id: 
     )
 
 
-def _validate_operator_status(value: Any, **expected: str) -> str:
+def _validate_operator_status(value: Any, **expected: str) -> dict[str, Any]:
     evidence = _require_mapping(value, "candidate_b_default_closure_operator_status_missing")
     checks = {
         "schema_id": layer3_candidate_b_operator_status.SCHEMA_ID,
@@ -477,7 +479,43 @@ def _validate_operator_status(value: Any, **expected: str) -> str:
     )
     path = Path(str(settings.layer3_candidate_b_runtime_bridge_dir)) / expected["runtime_receipt_id"] / "operator-status" / f"{receipt_id}.json"
     _validate_stored_hash(path, hash_field="operator_status_hash", expected_hash=status_hash, code_prefix="candidate_b_default_closure_operator_status")
-    return status_hash
+    return {
+        "operator_status_hash": status_hash,
+        "candidate_b_operator_status_evidence": _operator_status_projection(evidence, status_hash),
+    }
+
+
+def _operator_status_projection(evidence: Mapping[str, Any], status_hash: str) -> dict[str, Any]:
+    required_true = (
+        "operator_visible_provenance_status",
+        "bundle_status_projection_visible",
+        "runtime_status_projection_visible",
+        "default_selector_change_visible_as_enabled",
+        "runtime_delivery_artifact_projection_visible",
+        "runtime_delivery_artifact_roles_bound",
+    )
+    projection = {key: evidence.get(key) is True for key in required_true}
+    projection.update(
+        {
+            "raw_local_path_exposed": evidence.get("raw_local_path_exposed") is True,
+            "provider_private_token_exposed": evidence.get("provider_private_token_exposed") is True,
+            "status": evidence.get("status"),
+            "operator_status_hash": status_hash,
+            "operator_status_receipt_id": evidence.get("operator_status_receipt_id"),
+            "bundle_bridge_receipt_id": evidence.get("bundle_bridge_receipt_id"),
+            "runtime_bridge_receipt_id": evidence.get("runtime_bridge_receipt_id"),
+            "runtime_delivery_artifact_authority_hash": evidence.get("runtime_delivery_artifact_authority_hash"),
+            "runtime_delivery_artifact_coverage_steps": evidence.get("runtime_delivery_artifact_coverage_steps"),
+            "runtime_delivery_artifact_projection_visible": (
+                evidence.get("runtime_delivery_artifact_projection_visible") is True
+            ),
+            "runtime_delivery_artifact_roles_bound": evidence.get("runtime_delivery_artifact_roles_bound") is True,
+            "raw_url_exposed": evidence.get("raw_url_exposed") is True,
+            "artifact_bytes_exposed": evidence.get("artifact_bytes_exposed") is True,
+            "selector_mutation_performed": evidence.get("selector_mutation_performed") is True,
+        }
+    )
+    return projection
 
 
 def _validate_proof(
