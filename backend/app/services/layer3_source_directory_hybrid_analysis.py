@@ -37,6 +37,8 @@ from app.services.layer3_provider_private_signed_url_state import (
     PROVIDER_PRIVATE_SIGNED_URL_MAX_TTL_SECONDS,
     ProviderPrivateSignedUrlStateError,
     record_prepared_provider_private_signed_url_receipt,
+    record_server_owned_provider_private_signed_url_receipt_use,
+    revoke_provider_private_signed_url_receipt,
 )
 from app.services.layer3_source_directory_hybrid_context import (
     CONTRACT_ID as HYBRID_CONTEXT_CONTRACT_ID,
@@ -213,6 +215,33 @@ SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_MODE = (
 SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION = (
     "prepare_source_directory_hybrid_provider_private_signed_url"
 )
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_SCHEMA_ID = (
+    "layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.use.v1"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_MODE = (
+    "source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_use_authority"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION = (
+    "use_source_directory_hybrid_provider_private_signed_url"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_SCHEMA_ID = (
+    "layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.status.v1"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_MODE = (
+    "source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_status_authority"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION = (
+    "inspect_source_directory_hybrid_provider_private_signed_url_status"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_SCHEMA_ID = (
+    "layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.revoke.v1"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_MODE = (
+    "source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_revoke_authority"
+)
+SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION = (
+    "revoke_source_directory_hybrid_provider_private_signed_url"
+)
 SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_DEFAULT_TTL_SECONDS = 300
 SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_FIXED_FAKE_PROVIDER_EPOCH = 0
 EXTERNAL_EXPORT_DOWNLOAD_DELIVERED_STATE = "external_export_download_delivered"
@@ -285,6 +314,32 @@ _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_ALLOWED_FIELDS = (
     _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REQUIRED_FIELDS
     | _OPTIONAL_FIELDS
     | {"decision_notes", "requested_ttl_seconds"}
+)
+_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_REQUIRED_FIELDS = (
+    _EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS
+    | {"provider_signed_url_receipt_id"}
+)
+_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_ALLOWED_FIELDS = (
+    _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_REQUIRED_FIELDS
+    | _OPTIONAL_FIELDS
+    | {"decision_notes"}
+)
+_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_REQUIRED_FIELDS = (
+    _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_REQUIRED_FIELDS
+)
+_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_ALLOWED_FIELDS = (
+    _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_REQUIRED_FIELDS
+    | _OPTIONAL_FIELDS
+    | {"decision_notes"}
+)
+_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_REQUIRED_FIELDS = (
+    _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_REQUIRED_FIELDS
+    | {"idempotency_key", "revoked_by", "revocation_reason"}
+)
+_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_ALLOWED_FIELDS = (
+    _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_REQUIRED_FIELDS
+    | _OPTIONAL_FIELDS
+    | {"decision_notes"}
 )
 
 _HYBRID_CONTEXT_FIELDS = (
@@ -570,6 +625,87 @@ class SourceDirectoryHybridProviderPrivateSignedUrlPrepareError(Exception):
             "request_id": "source-directory-hybrid-provider-private-signed-url-prepare-error",
             "server_time": _server_time(),
             "mode": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_MODE,
+            "status": "blocked",
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class SourceDirectoryHybridProviderPrivateSignedUrlUseError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = details or {}
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-hybrid-provider-private-signed-url-use-error",
+            "server_time": _server_time(),
+            "mode": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_MODE,
+            "status": "blocked",
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class SourceDirectoryHybridProviderPrivateSignedUrlStatusError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = details or {}
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-hybrid-provider-private-signed-url-status-error",
+            "server_time": _server_time(),
+            "mode": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_MODE,
+            "status": "blocked",
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        http_status: int = 400,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.http_status = http_status
+        self.details = details or {}
+
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_SCHEMA_ID,
+            "schema_version": 1,
+            "request_id": "source-directory-hybrid-provider-private-signed-url-revoke-error",
+            "server_time": _server_time(),
+            "mode": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_MODE,
             "status": "blocked",
             "error": {"code": self.code, "message": self.message, "details": self.details},
         }
@@ -2385,6 +2521,361 @@ def source_directory_hybrid_context_packet_qualitative_analysis_provider_private
     }
 
 
+def source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_use(
+    db: Session,
+    payload: Mapping[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_source_directory_provider_private_signed_url_use_payload(payload)
+    request_id = _source_directory_provider_private_use_field(fields, "client_request_id")
+    if (
+        str(fields.get("operator_decision") or "").strip()
+        != SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION
+    ):
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_use_decision_not_admitted",
+            "operator_decision must be use_source_directory_hybrid_provider_private_signed_url.",
+            http_status=409,
+            details={"blocked_fields": ["operator_decision"]},
+        )
+    if str(fields.get("delivery_mode") or "").strip() != PROVIDER_PRIVATE_SIGNED_URL_DELIVERY_MODE:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_use_delivery_mode_not_admitted",
+            "delivery_mode must be provider_private_signed_url.",
+            http_status=409,
+            details={"blocked_fields": ["delivery_mode"]},
+        )
+
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    delivery_payload = _source_directory_provider_private_use_delivery_payload(db, fields)
+    try:
+        delivery = source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver(
+            db,
+            delivery_payload,
+        )
+    except SourceDirectoryHybridExternalExportDownloadDeliveryError as exc:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            exc.code,
+            exc.message,
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+    authority = _json_clone(delivery.authority)
+    artifact_path = Path(delivery.artifact_path)
+    authority_basis = {
+        "session_id": str(authority.get("session_id") or "").strip(),
+        "reconciliation_record_id": str(authority.get("reconciliation_record_id") or "").strip(),
+        "source_artifact_ref": str(artifact_path),
+        "source_artifact_hash": str(authority.get("package_payload_hash") or "").strip().lower(),
+        "source_artifact_size_bytes": artifact_path.stat().st_size,
+        "external_export_download_record_ref": str(
+            authority.get("external_export_download_record_ref") or ""
+        ).strip(),
+        "export_download_descriptor_ref": str(authority.get("export_download_descriptor_ref") or "").strip(),
+    }
+    receipt_id = _source_directory_provider_private_use_field(fields, "provider_signed_url_receipt_id")
+    try:
+        durable_state = record_server_owned_provider_private_signed_url_receipt_use(
+            db,
+            provider_private_signed_url_receipt_id=receipt_id,
+            authority_basis=authority_basis,
+            now_epoch=effective_now,
+            request_id=request_id,
+        )
+    except ProviderPrivateSignedUrlStateError as exc:
+        raise _source_directory_provider_private_use_state_error(exc) from exc
+
+    receipt = db.get(
+        L3ProviderPrivateSignedUrlReceipt,
+        durable_state.provider_private_signed_url_receipt_id,
+    )
+    if receipt is None:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_receipt_missing_after_use",
+            "Provider-private signed URL durable receipt was not readable after source-directory use.",
+            http_status=409,
+            details={"blocked_fields": ["provider_signed_url_receipt_id"]},
+        )
+    provider_authority = db.get(
+        L3ProviderPrivateSignedUrlObjectAuthority,
+        receipt.provider_private_signed_url_object_authority_id,
+    )
+    audit = db.get(
+        L3ProviderPrivateSignedUrlAuditEvent,
+        durable_state.provider_private_signed_url_audit_event_id,
+    )
+    if provider_authority is None:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_authority_missing_after_use",
+            "Provider-private signed URL durable authority was not readable after source-directory use.",
+            http_status=409,
+            details={"blocked_fields": ["provider_private_signed_url_object_authority_id"]},
+        )
+
+    expires_at_epoch = _source_directory_provider_private_datetime_epoch(
+        receipt.provider_private_signed_url_expires_at
+    )
+    state = _source_directory_provider_private_state(receipt, now_epoch=effective_now)
+    return {
+        "schema_id": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_SCHEMA_ID,
+        "schema_version": 1,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "status": "used",
+        "mode": SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_MODE,
+        "session_id": provider_authority.session_id,
+        "reconciliation_record_id": provider_authority.reconciliation_record_id,
+        "external_export_download_record_ref": provider_authority.external_export_download_record_ref,
+        "export_download_descriptor_ref": provider_authority.export_download_descriptor_ref,
+        "output_package_id": authority.get("output_package_id"),
+        "package_kind": authority.get("package_kind"),
+        "package_payload_hash": authority.get("package_payload_hash"),
+        "provider_signed_url_receipt_id": receipt.provider_private_signed_url_receipt_id,
+        "provider_private_signed_url_object_authority_id": (
+            receipt.provider_private_signed_url_object_authority_id
+        ),
+        "provider_signed_url_state": state,
+        "delivery_mode": PROVIDER_PRIVATE_SIGNED_URL_DELIVERY_MODE,
+        "delivery_use_decision": "allowed",
+        "delivery_use_mode": "server_owned_redacted_provider_private_use",
+        "provider_url_redacted": PROVIDER_PRIVATE_SIGNED_URL_REDACTED_MARKER,
+        "provider_url_expires_at": _source_directory_provider_private_epoch_iso(expires_at_epoch),
+        "provider_url_expires_in_seconds": max(0, expires_at_epoch - effective_now),
+        "provider_url_replay_policy": receipt.provider_private_signed_url_replay_policy,
+        "provider_url_revocation_supported": True,
+        "provider_url_use_count": receipt.provider_private_signed_url_use_count,
+        "provider_url_max_use_count": receipt.provider_private_signed_url_max_use_count,
+        "provider_url_revoked": (
+            receipt.provider_private_signed_url_state == "provider_private_signed_url_revoked"
+        ),
+        "source_artifact_ref": INTERNAL_ARTIFACT_REF_PLACEHOLDER,
+        "source_artifact_hash": provider_authority.source_artifact_hash,
+        "source_artifact_size_bytes": provider_authority.source_artifact_size_bytes,
+        "source_directory_delivery_authority": authority,
+        "audit_receipt": _source_directory_provider_private_audit_receipt(
+            receipt=receipt,
+            authority=provider_authority,
+            audit=audit,
+        ),
+        "authority_rail": {
+            "provider_authority": PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
+            "artifact_authority": "source_directory_hybrid_external_export_download_delivery_authority",
+            "durable_state_authority": True,
+            "provider_url_secret_redacted": True,
+            "server_owned_use_authority": True,
+            "provider_network_enabled": False,
+            "provider_object_write_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_write_enabled": False,
+            "public_url_enabled": False,
+            "same_origin_delivery_changed": False,
+        },
+        "source_directory_provider_private_signed_url_enabled": True,
+        "provider_private_signed_url_enabled": True,
+        "provider_public_url_prepare_enabled": False,
+        "same_origin_delivery_changed": False,
+        "raw_local_path_exposed": False,
+        "raw_provider_url_exposed": False,
+        "raw_provider_private_signed_url_token_exposed": False,
+        "provider_network_enabled": False,
+        "provider_object_write_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_write_enabled": False,
+        "package_mutation_enabled": False,
+        "source_expansion_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "next_allowed_actions": ["inspect_provider_private_signed_url_status"],
+        "next_state": state,
+    }
+
+
+def source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_status(
+    db: Session,
+    payload: Mapping[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_source_directory_provider_private_signed_url_status_payload(payload)
+    request_id = _source_directory_provider_private_status_field(fields, "client_request_id")
+    if (
+        str(fields.get("operator_decision") or "").strip()
+        != SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION
+    ):
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            "source_directory_hybrid_provider_private_signed_url_status_decision_not_admitted",
+            "operator_decision must be inspect_source_directory_hybrid_provider_private_signed_url_status.",
+            http_status=409,
+            details={"blocked_fields": ["operator_decision"]},
+        )
+    if str(fields.get("delivery_mode") or "").strip() != PROVIDER_PRIVATE_SIGNED_URL_DELIVERY_MODE:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            "source_directory_hybrid_provider_private_signed_url_status_delivery_mode_not_admitted",
+            "delivery_mode must be provider_private_signed_url.",
+            http_status=409,
+            details={"blocked_fields": ["delivery_mode"]},
+        )
+
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    authority, authority_basis = _source_directory_provider_private_current_authority_for_status(
+        db,
+        fields,
+    )
+    receipt_id = _source_directory_provider_private_status_field(fields, "provider_signed_url_receipt_id")
+    receipt = db.get(L3ProviderPrivateSignedUrlReceipt, receipt_id)
+    if receipt is None:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            "provider_private_signed_url_receipt_not_found",
+            "Provider-private signed URL receipt was not found.",
+            http_status=404,
+            details={
+                "blocked_fields": ["provider_signed_url_receipt_id"],
+                "next_allowed_actions": ["prepare_provider_private_signed_url"],
+            },
+        )
+    provider_authority = db.get(
+        L3ProviderPrivateSignedUrlObjectAuthority,
+        receipt.provider_private_signed_url_object_authority_id,
+    )
+    if provider_authority is None:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            "provider_private_signed_url_authority_missing",
+            "Provider-private signed URL receipt is missing durable object authority.",
+            http_status=409,
+            details={"blocked_fields": ["provider_signed_url_receipt_id"]},
+        )
+    _assert_source_directory_provider_private_current_authority(
+        provider_authority,
+        authority_basis,
+        SourceDirectoryHybridProviderPrivateSignedUrlStatusError,
+    )
+    audit = (
+        db.query(L3ProviderPrivateSignedUrlAuditEvent)
+        .filter(
+            L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_receipt_id
+            == receipt.provider_private_signed_url_receipt_id
+        )
+        .order_by(L3ProviderPrivateSignedUrlAuditEvent.created_at.desc())
+        .first()
+    )
+    return _source_directory_provider_private_response(
+        schema_id=SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_SCHEMA_ID,
+        mode=SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_MODE,
+        request_id=request_id,
+        status="ok",
+        receipt=receipt,
+        provider_authority=provider_authority,
+        audit=audit,
+        source_directory_delivery_authority=authority,
+        effective_now=effective_now,
+    )
+
+
+def source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url_revoke(
+    db: Session,
+    payload: Mapping[str, Any],
+    *,
+    now_epoch: int | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_source_directory_provider_private_signed_url_revoke_payload(payload)
+    request_id = _source_directory_provider_private_revoke_field(fields, "client_request_id")
+    if (
+        str(fields.get("operator_decision") or "").strip()
+        != SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION
+    ):
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            "source_directory_hybrid_provider_private_signed_url_revoke_decision_not_admitted",
+            "operator_decision must be revoke_source_directory_hybrid_provider_private_signed_url.",
+            http_status=409,
+            details={"blocked_fields": ["operator_decision"]},
+        )
+    if str(fields.get("delivery_mode") or "").strip() != PROVIDER_PRIVATE_SIGNED_URL_DELIVERY_MODE:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            "source_directory_hybrid_provider_private_signed_url_revoke_delivery_mode_not_admitted",
+            "delivery_mode must be provider_private_signed_url.",
+            http_status=409,
+            details={"blocked_fields": ["delivery_mode"]},
+        )
+
+    effective_now = int(time.time() if now_epoch is None else now_epoch)
+    authority, authority_basis = _source_directory_provider_private_current_authority_for_revoke(
+        db,
+        fields,
+    )
+    receipt_id = _source_directory_provider_private_revoke_field(fields, "provider_signed_url_receipt_id")
+    receipt = db.get(L3ProviderPrivateSignedUrlReceipt, receipt_id)
+    if receipt is not None:
+        provider_authority = db.get(
+            L3ProviderPrivateSignedUrlObjectAuthority,
+            receipt.provider_private_signed_url_object_authority_id,
+        )
+        if provider_authority is not None:
+            _assert_source_directory_provider_private_current_authority(
+                provider_authority,
+                authority_basis,
+                SourceDirectoryHybridProviderPrivateSignedUrlRevokeError,
+            )
+    try:
+        durable_state = revoke_provider_private_signed_url_receipt(
+            db,
+            provider_private_signed_url_receipt_id=receipt_id,
+            idempotency_key=_source_directory_provider_private_revoke_field(fields, "idempotency_key"),
+            revoked_by=_source_directory_provider_private_revoke_field(fields, "revoked_by"),
+            revocation_reason=_source_directory_provider_private_revoke_field(fields, "revocation_reason"),
+            authority_basis=authority_basis,
+            now_epoch=effective_now,
+            request_id=request_id,
+        )
+    except ProviderPrivateSignedUrlStateError as exc:
+        raise _source_directory_provider_private_revoke_state_error(exc) from exc
+
+    receipt = db.get(
+        L3ProviderPrivateSignedUrlReceipt,
+        durable_state.provider_private_signed_url_receipt_id,
+    )
+    if receipt is None:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            "source_directory_hybrid_provider_private_signed_url_receipt_missing_after_revoke",
+            "Provider-private signed URL durable receipt was not readable after source-directory revoke.",
+            http_status=409,
+            details={"blocked_fields": ["provider_signed_url_receipt_id"]},
+        )
+    provider_authority = db.get(
+        L3ProviderPrivateSignedUrlObjectAuthority,
+        receipt.provider_private_signed_url_object_authority_id,
+    )
+    audit = db.get(
+        L3ProviderPrivateSignedUrlAuditEvent,
+        durable_state.provider_private_signed_url_audit_event_id,
+    )
+    if provider_authority is None:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            "source_directory_hybrid_provider_private_signed_url_authority_missing_after_revoke",
+            "Provider-private signed URL durable authority was not readable after source-directory revoke.",
+            http_status=409,
+            details={"blocked_fields": ["provider_private_signed_url_object_authority_id"]},
+        )
+    return _source_directory_provider_private_response(
+        schema_id=SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_SCHEMA_ID,
+        mode=SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_MODE,
+        request_id=request_id,
+        status="revoked",
+        receipt=receipt,
+        provider_authority=provider_authority,
+        audit=audit,
+        source_directory_delivery_authority=authority,
+        effective_now=effective_now,
+        extra={
+            "revocation_recorded": True,
+            "revocation_idempotency_key": _source_directory_provider_private_revoke_field(
+                fields,
+                "idempotency_key",
+            ),
+        },
+    )
+
+
 def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
     forbidden = sorted(set(fields) & _FORBIDDEN_FIELDS)
@@ -2561,12 +3052,114 @@ def _normalise_source_directory_provider_private_signed_url_payload(
     return fields
 
 
+def _normalise_source_directory_provider_private_signed_url_use_payload(
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_FIELDS)
+    if forbidden:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_use_forbidden_field_not_admitted",
+            "The source-directory hybrid provider-private signed URL use request includes deferred or forbidden fields.",
+            details={"forbidden_fields": forbidden},
+        )
+    unknown = sorted(set(fields) - _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_ALLOWED_FIELDS)
+    if unknown:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_use_unknown_field",
+            "The source-directory hybrid provider-private signed URL use request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    for field in sorted(_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_USE_REQUIRED_FIELDS):
+        _source_directory_provider_private_use_field(fields, field)
+    return fields
+
+
+def _normalise_source_directory_provider_private_signed_url_status_payload(
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_FIELDS)
+    if forbidden:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            "source_directory_hybrid_provider_private_signed_url_status_forbidden_field_not_admitted",
+            "The source-directory hybrid provider-private signed URL status request includes deferred or forbidden fields.",
+            details={"forbidden_fields": forbidden},
+        )
+    unknown = sorted(set(fields) - _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_ALLOWED_FIELDS)
+    if unknown:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            "source_directory_hybrid_provider_private_signed_url_status_unknown_field",
+            "The source-directory hybrid provider-private signed URL status request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    for field in sorted(_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_STATUS_REQUIRED_FIELDS):
+        _source_directory_provider_private_status_field(fields, field)
+    return fields
+
+
+def _normalise_source_directory_provider_private_signed_url_revoke_payload(
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    forbidden = sorted(set(fields) & _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_FORBIDDEN_FIELDS)
+    if forbidden:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            "source_directory_hybrid_provider_private_signed_url_revoke_forbidden_field_not_admitted",
+            "The source-directory hybrid provider-private signed URL revoke request includes deferred or forbidden fields.",
+            details={"forbidden_fields": forbidden},
+        )
+    unknown = sorted(set(fields) - _SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_ALLOWED_FIELDS)
+    if unknown:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            "source_directory_hybrid_provider_private_signed_url_revoke_unknown_field",
+            "The source-directory hybrid provider-private signed URL revoke request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
+        )
+    for field in sorted(_SOURCE_DIRECTORY_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_REQUIRED_FIELDS):
+        _source_directory_provider_private_revoke_field(fields, field)
+    return fields
+
+
 def _source_directory_provider_private_field(fields: Mapping[str, Any], key: str) -> str:
     value = str(fields.get(key) or "").strip()
     if not value:
         raise SourceDirectoryHybridProviderPrivateSignedUrlPrepareError(
             "source_directory_hybrid_provider_private_signed_url_required_field_missing",
             "A required source-directory hybrid provider-private signed URL field is missing or empty.",
+            details={"field": key},
+        )
+    return value
+
+
+def _source_directory_provider_private_use_field(fields: Mapping[str, Any], key: str) -> str:
+    value = str(fields.get(key) or "").strip()
+    if not value:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_use_required_field_missing",
+            "A required source-directory hybrid provider-private signed URL use field is missing or empty.",
+            details={"field": key},
+        )
+    return value
+
+
+def _source_directory_provider_private_status_field(fields: Mapping[str, Any], key: str) -> str:
+    value = str(fields.get(key) or "").strip()
+    if not value:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            "source_directory_hybrid_provider_private_signed_url_status_required_field_missing",
+            "A required source-directory hybrid provider-private signed URL status field is missing or empty.",
+            details={"field": key},
+        )
+    return value
+
+
+def _source_directory_provider_private_revoke_field(fields: Mapping[str, Any], key: str) -> str:
+    value = str(fields.get(key) or "").strip()
+    if not value:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            "source_directory_hybrid_provider_private_signed_url_revoke_required_field_missing",
+            "A required source-directory hybrid provider-private signed URL revoke field is missing or empty.",
             details={"field": key},
         )
     return value
@@ -2628,11 +3221,315 @@ def _source_directory_provider_private_delivery_payload(
     return delivery_payload
 
 
+def _source_directory_provider_private_use_delivery_payload(
+    db: Session,
+    fields: Mapping[str, Any],
+) -> dict[str, Any]:
+    reconciliation_record_id = _source_directory_provider_private_use_field(fields, "reconciliation_record_id")
+    reconciliation = db.get(L3ReconciliationRecord, reconciliation_record_id)
+    if reconciliation is None:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_use_reconciliation_not_found",
+            "No source-directory hybrid reconciliation record exists for the supplied provider-private use authority.",
+            http_status=404,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+    readiness = _json_clone(reconciliation.summary_json or {}).get("external_export_download_prepare")
+    if not isinstance(readiness, dict):
+        raise SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+            "source_directory_hybrid_provider_private_signed_url_use_requires_prepare",
+            "Provider-private signed URL use requires source-directory external export/download prepare authority.",
+            http_status=409,
+            details={"blocked_fields": ["external_export_download_state"]},
+        )
+    delivery_payload = {
+        field: fields[field]
+        for field in sorted(_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS | _OPTIONAL_FIELDS)
+        if field in fields
+    }
+    delivery_payload["client_request_id"] = str(
+        readiness.get("client_request_id") or fields.get("client_request_id") or ""
+    ).strip()
+    delivery_payload["operator_decision"] = EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION
+    delivery_payload["delivery_mode"] = EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE_VALUE
+    return delivery_payload
+
+
+def _source_directory_provider_private_current_authority_for_status(
+    db: Session,
+    fields: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    delivery_payload = _source_directory_provider_private_status_delivery_payload(db, fields)
+    try:
+        delivery = source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver(
+            db,
+            delivery_payload,
+        )
+    except SourceDirectoryHybridExternalExportDownloadDeliveryError as exc:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlStatusError(
+            exc.code,
+            exc.message,
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+    return _source_directory_provider_private_authority_basis_from_delivery(delivery)
+
+
+def _source_directory_provider_private_current_authority_for_revoke(
+    db: Session,
+    fields: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    delivery_payload = _source_directory_provider_private_revoke_delivery_payload(db, fields)
+    try:
+        delivery = source_directory_hybrid_context_packet_qualitative_analysis_external_export_download_deliver(
+            db,
+            delivery_payload,
+        )
+    except SourceDirectoryHybridExternalExportDownloadDeliveryError as exc:
+        raise SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
+            exc.code,
+            exc.message,
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+    return _source_directory_provider_private_authority_basis_from_delivery(delivery)
+
+
+def _source_directory_provider_private_status_delivery_payload(
+    db: Session,
+    fields: Mapping[str, Any],
+) -> dict[str, Any]:
+    return _source_directory_provider_private_delivery_payload_for_lifecycle(
+        db,
+        fields,
+        _source_directory_provider_private_status_field,
+        SourceDirectoryHybridProviderPrivateSignedUrlStatusError,
+        "status",
+    )
+
+
+def _source_directory_provider_private_revoke_delivery_payload(
+    db: Session,
+    fields: Mapping[str, Any],
+) -> dict[str, Any]:
+    return _source_directory_provider_private_delivery_payload_for_lifecycle(
+        db,
+        fields,
+        _source_directory_provider_private_revoke_field,
+        SourceDirectoryHybridProviderPrivateSignedUrlRevokeError,
+        "revoke",
+    )
+
+
+def _source_directory_provider_private_delivery_payload_for_lifecycle(
+    db: Session,
+    fields: Mapping[str, Any],
+    field_reader: Any,
+    error_type: Any,
+    operation: str,
+) -> dict[str, Any]:
+    reconciliation_record_id = field_reader(fields, "reconciliation_record_id")
+    reconciliation = db.get(L3ReconciliationRecord, reconciliation_record_id)
+    if reconciliation is None:
+        raise error_type(
+            f"source_directory_hybrid_provider_private_signed_url_{operation}_reconciliation_not_found",
+            f"No source-directory hybrid reconciliation record exists for the supplied provider-private {operation} authority.",
+            http_status=404,
+            details={"reconciliation_record_id": reconciliation_record_id},
+        )
+    readiness = _json_clone(reconciliation.summary_json or {}).get("external_export_download_prepare")
+    if not isinstance(readiness, dict):
+        raise error_type(
+            f"source_directory_hybrid_provider_private_signed_url_{operation}_requires_prepare",
+            f"Provider-private signed URL {operation} requires source-directory external export/download prepare authority.",
+            http_status=409,
+            details={"blocked_fields": ["external_export_download_state"]},
+        )
+    delivery_payload = {
+        field: fields[field]
+        for field in sorted(_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_REQUIRED_FIELDS | _OPTIONAL_FIELDS)
+        if field in fields
+    }
+    delivery_payload["client_request_id"] = str(
+        readiness.get("client_request_id") or fields.get("client_request_id") or ""
+    ).strip()
+    delivery_payload["operator_decision"] = EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION
+    delivery_payload["delivery_mode"] = EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_MODE_VALUE
+    return delivery_payload
+
+
+def _source_directory_provider_private_authority_basis_from_delivery(
+    delivery: ExternalExportDownloadDelivery,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    authority = _json_clone(delivery.authority)
+    artifact_path = Path(delivery.artifact_path)
+    authority_basis = {
+        "session_id": str(authority.get("session_id") or "").strip(),
+        "reconciliation_record_id": str(authority.get("reconciliation_record_id") or "").strip(),
+        "source_artifact_ref": str(artifact_path),
+        "source_artifact_hash": str(authority.get("package_payload_hash") or "").strip().lower(),
+        "source_artifact_size_bytes": artifact_path.stat().st_size,
+        "external_export_download_record_ref": str(
+            authority.get("external_export_download_record_ref") or ""
+        ).strip(),
+        "export_download_descriptor_ref": str(authority.get("export_download_descriptor_ref") or "").strip(),
+    }
+    return authority, authority_basis
+
+
+def _assert_source_directory_provider_private_current_authority(
+    provider_authority: L3ProviderPrivateSignedUrlObjectAuthority,
+    authority_basis: Mapping[str, Any],
+    error_type: Any,
+) -> None:
+    mismatched = [
+        field
+        for field in (
+            "session_id",
+            "reconciliation_record_id",
+            "external_export_download_record_ref",
+            "export_download_descriptor_ref",
+            "source_artifact_hash",
+            "source_artifact_size_bytes",
+        )
+        if str(getattr(provider_authority, field)) != str(authority_basis[field])
+    ]
+    if mismatched:
+        raise error_type(
+            "provider_private_signed_url_state_authority_mismatch",
+            "Current source-directory artifact authority no longer matches the provider-private signed URL durable receipt.",
+            http_status=409,
+            details={
+                "blocked_fields": mismatched,
+                "next_allowed_actions": ["prepare_new_provider_private_signed_url"],
+            },
+        )
+
+
+def _source_directory_provider_private_response(
+    *,
+    schema_id: str,
+    mode: str,
+    request_id: str,
+    status: str,
+    receipt: L3ProviderPrivateSignedUrlReceipt,
+    provider_authority: L3ProviderPrivateSignedUrlObjectAuthority,
+    audit: L3ProviderPrivateSignedUrlAuditEvent | None,
+    source_directory_delivery_authority: Mapping[str, Any],
+    effective_now: int,
+    extra: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    expires_at_epoch = _source_directory_provider_private_datetime_epoch(
+        receipt.provider_private_signed_url_expires_at
+    )
+    state = _source_directory_provider_private_state(receipt, now_epoch=effective_now)
+    return {
+        "schema_id": schema_id,
+        "schema_version": 1,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "status": status,
+        "mode": mode,
+        "session_id": provider_authority.session_id,
+        "reconciliation_record_id": provider_authority.reconciliation_record_id,
+        "external_export_download_record_ref": provider_authority.external_export_download_record_ref,
+        "export_download_descriptor_ref": provider_authority.export_download_descriptor_ref,
+        "output_package_id": source_directory_delivery_authority.get("output_package_id"),
+        "package_kind": source_directory_delivery_authority.get("package_kind"),
+        "package_payload_hash": source_directory_delivery_authority.get("package_payload_hash"),
+        "provider_signed_url_receipt_id": receipt.provider_private_signed_url_receipt_id,
+        "provider_private_signed_url_object_authority_id": (
+            receipt.provider_private_signed_url_object_authority_id
+        ),
+        "provider_signed_url_state": state,
+        "delivery_mode": PROVIDER_PRIVATE_SIGNED_URL_DELIVERY_MODE,
+        "provider_url_redacted": PROVIDER_PRIVATE_SIGNED_URL_REDACTED_MARKER,
+        "provider_url_expires_at": _source_directory_provider_private_epoch_iso(expires_at_epoch),
+        "provider_url_expires_in_seconds": max(0, expires_at_epoch - effective_now),
+        "provider_url_replay_policy": receipt.provider_private_signed_url_replay_policy,
+        "provider_url_revocation_supported": True,
+        "provider_url_use_count": receipt.provider_private_signed_url_use_count,
+        "provider_url_max_use_count": receipt.provider_private_signed_url_max_use_count,
+        "provider_url_revoked": (
+            receipt.provider_private_signed_url_state == "provider_private_signed_url_revoked"
+        ),
+        "source_artifact_ref": INTERNAL_ARTIFACT_REF_PLACEHOLDER,
+        "source_artifact_hash": provider_authority.source_artifact_hash,
+        "source_artifact_size_bytes": provider_authority.source_artifact_size_bytes,
+        "source_directory_delivery_authority": dict(source_directory_delivery_authority),
+        "audit_receipt": _source_directory_provider_private_audit_receipt(
+            receipt=receipt,
+            authority=provider_authority,
+            audit=audit,
+        ),
+        "authority_rail": {
+            "provider_authority": PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
+            "artifact_authority": "source_directory_hybrid_external_export_download_delivery_authority",
+            "durable_state_authority": True,
+            "provider_url_secret_redacted": True,
+            "server_owned_use_authority": True,
+            "provider_network_enabled": False,
+            "provider_object_write_enabled": False,
+            "connector_dispatch_enabled": False,
+            "destination_write_enabled": False,
+            "public_url_enabled": False,
+            "same_origin_delivery_changed": False,
+        },
+        "source_directory_provider_private_signed_url_enabled": True,
+        "provider_private_signed_url_enabled": True,
+        "provider_public_url_prepare_enabled": False,
+        "same_origin_delivery_changed": False,
+        "raw_local_path_exposed": False,
+        "raw_provider_url_exposed": False,
+        "raw_provider_private_signed_url_token_exposed": False,
+        "provider_network_enabled": False,
+        "provider_object_write_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_write_enabled": False,
+        "package_mutation_enabled": False,
+        "source_expansion_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "next_allowed_actions": ["inspect_provider_private_signed_url_status"],
+        "next_state": state,
+        **dict(extra or {}),
+    }
+
+
 def _source_directory_provider_private_state_error(
     exc: ProviderPrivateSignedUrlStateError,
 ) -> SourceDirectoryHybridProviderPrivateSignedUrlPrepareError:
     http_status = 404 if exc.status == "not_found" else 409 if exc.status in {"blocked", "conflict"} else 400
     return SourceDirectoryHybridProviderPrivateSignedUrlPrepareError(
+        exc.error_code,
+        exc.message,
+        http_status=http_status,
+        details={
+            "blocked_fields": list(exc.blocked_fields),
+            "next_allowed_actions": list(exc.next_allowed_actions),
+        },
+    )
+
+
+def _source_directory_provider_private_use_state_error(
+    exc: ProviderPrivateSignedUrlStateError,
+) -> SourceDirectoryHybridProviderPrivateSignedUrlUseError:
+    http_status = 404 if exc.status == "not_found" else 409 if exc.status in {"blocked", "conflict"} else 400
+    return SourceDirectoryHybridProviderPrivateSignedUrlUseError(
+        exc.error_code,
+        exc.message,
+        http_status=http_status,
+        details={
+            "blocked_fields": list(exc.blocked_fields),
+            "next_allowed_actions": list(exc.next_allowed_actions),
+        },
+    )
+
+
+def _source_directory_provider_private_revoke_state_error(
+    exc: ProviderPrivateSignedUrlStateError,
+) -> SourceDirectoryHybridProviderPrivateSignedUrlRevokeError:
+    http_status = 404 if exc.status == "not_found" else 409 if exc.status in {"blocked", "conflict"} else 400
+    return SourceDirectoryHybridProviderPrivateSignedUrlRevokeError(
         exc.error_code,
         exc.message,
         http_status=http_status,

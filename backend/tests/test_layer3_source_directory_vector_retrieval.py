@@ -2071,6 +2071,39 @@ def test_source_directory_hybrid_context_packet_provider_private_to_public_redac
         "provider_private_signed_url_state_idempotency_conflict"
     )
 
+    provider_private_status_path = (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+        "provider-private-signed-url/status"
+    )
+    provider_private_status_payload = {
+        **delivery_authority,
+        "client_request_id": "source-directory-provider-private-status",
+        "operator_decision": "inspect_source_directory_hybrid_provider_private_signed_url_status",
+        "delivery_mode": "provider_private_signed_url",
+        "provider_signed_url_receipt_id": private_body["provider_signed_url_receipt_id"],
+    }
+    stale_private_status = client.post(
+        provider_private_status_path,
+        json={**provider_private_status_payload, "package_payload_hash": "0" * 64},
+    )
+    assert stale_private_status.status_code == 409, stale_private_status.text
+    assert stale_private_status.json()["error"]["code"] == (
+        "source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch"
+    )
+    provider_private_status = client.post(provider_private_status_path, json=provider_private_status_payload)
+    assert provider_private_status.status_code == 200, provider_private_status.text
+    private_status_body = provider_private_status.json()
+    assert private_status_body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.status.v1"
+    )
+    assert private_status_body["status"] == "ok"
+    assert private_status_body["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    assert private_status_body["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert private_status_body["source_artifact_hash"] == private_body["source_artifact_hash"]
+    assert private_status_body["raw_provider_url_exposed"] is False
+    assert private_status_body["raw_provider_private_signed_url_token_exposed"] is False
+
     provider_public = client.post(
         "/api/v1/layer3/handoff/export/download/provider-public-url/prepare",
         json={
@@ -2117,11 +2150,131 @@ def test_source_directory_hybrid_context_packet_provider_private_to_public_redac
     assert use_body["source_expansion_enabled"] is False
     assert use_body["frontend_durable_authority_enabled"] is False
 
+    provider_private_use_path = (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+        "provider-private-signed-url/use"
+    )
+    provider_private_use_payload = {
+        **delivery_authority,
+        "client_request_id": "source-directory-provider-private-use",
+        "operator_decision": "use_source_directory_hybrid_provider_private_signed_url",
+        "delivery_mode": "provider_private_signed_url",
+        "provider_signed_url_receipt_id": private_body["provider_signed_url_receipt_id"],
+    }
+    forbidden_private_use = client.post(
+        provider_private_use_path,
+        json={
+            **provider_private_use_payload,
+            "client_request_id": "source-directory-provider-private-use-forbidden",
+            "raw_provider_private_signed_url_token": "must-not-be-accepted",
+        },
+    )
+    assert forbidden_private_use.status_code == 400, forbidden_private_use.text
+    assert forbidden_private_use.json()["error"]["code"] == (
+        "source_directory_hybrid_provider_private_signed_url_use_forbidden_field_not_admitted"
+    )
+
+    stale_private_use = client.post(
+        provider_private_use_path,
+        json={**provider_private_use_payload, "package_payload_hash": "0" * 64},
+    )
+    assert stale_private_use.status_code == 409, stale_private_use.text
+    assert stale_private_use.json()["error"]["code"] == (
+        "source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch"
+    )
+
+    provider_private_use = client.post(provider_private_use_path, json=provider_private_use_payload)
+    assert provider_private_use.status_code == 200, provider_private_use.text
+    private_use_body = provider_private_use.json()
+    assert private_use_body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.use.v1"
+    )
+    assert private_use_body["status"] == "used"
+    assert private_use_body["delivery_use_decision"] == "allowed"
+    assert private_use_body["delivery_use_mode"] == "server_owned_redacted_provider_private_use"
+    assert private_use_body["provider_signed_url_state"] == "provider_private_signed_url_used"
+    assert private_use_body["provider_url_use_count"] == 1
+    assert private_use_body["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert private_use_body["source_artifact_hash"] == private_body["source_artifact_hash"]
+    assert private_use_body["raw_provider_url_exposed"] is False
+    assert private_use_body["raw_provider_private_signed_url_token_exposed"] is False
+    assert private_use_body["provider_network_enabled"] is False
+    assert private_use_body["provider_object_write_enabled"] is False
+    assert private_use_body["connector_dispatch_enabled"] is False
+    assert private_use_body["package_mutation_enabled"] is False
+    assert private_use_body["source_expansion_enabled"] is False
+    assert private_use_body["frontend_durable_authority_enabled"] is False
+    assert "provider_private_signed_url_token" not in private_use_body
+    assert "raw_provider_private_signed_url_token" not in private_use_body
+    assert str(tmp_path) not in json.dumps(private_use_body, sort_keys=True)
+
+    replay_private_use = client.post(
+        provider_private_use_path,
+        json={**provider_private_use_payload, "client_request_id": "source-directory-provider-private-use-replay"},
+    )
+    assert replay_private_use.status_code == 409, replay_private_use.text
+    assert replay_private_use.json()["error"]["code"] == "provider_private_signed_url_state_replay_denied"
+
+    revoke_prepare = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_authority,
+            "client_request_id": "source-directory-provider-private-revoke-prepare",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": "source-directory-redacted-revoke-test",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert revoke_prepare.status_code == 200, revoke_prepare.text
+    revoke_prepare_body = revoke_prepare.json()
+    provider_private_revoke_path = (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/"
+        "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+        "provider-private-signed-url/revoke"
+    )
+    provider_private_revoke_payload = {
+        **delivery_authority,
+        "client_request_id": "source-directory-provider-private-revoke",
+        "operator_decision": "revoke_source_directory_hybrid_provider_private_signed_url",
+        "delivery_mode": "provider_private_signed_url",
+        "provider_signed_url_receipt_id": revoke_prepare_body["provider_signed_url_receipt_id"],
+        "idempotency_key": "source-directory-provider-private-revoke-idem",
+        "revoked_by": "layer3-test-operator",
+        "revocation_reason": "operator revoked source-directory provider-private receipt",
+    }
+    stale_private_revoke = client.post(
+        provider_private_revoke_path,
+        json={**provider_private_revoke_payload, "package_payload_hash": "0" * 64},
+    )
+    assert stale_private_revoke.status_code == 409, stale_private_revoke.text
+    assert stale_private_revoke.json()["error"]["code"] == (
+        "source_directory_hybrid_external_export_download_delivery_payload_hash_mismatch"
+    )
+    provider_private_revoke = client.post(provider_private_revoke_path, json=provider_private_revoke_payload)
+    assert provider_private_revoke.status_code == 200, provider_private_revoke.text
+    private_revoke_body = provider_private_revoke.json()
+    assert private_revoke_body["schema_id"] == (
+        "layer3.source_directory_hybrid_context_packet_qualitative_analysis_provider_private_signed_url.revoke.v1"
+    )
+    assert private_revoke_body["status"] == "revoked"
+    assert private_revoke_body["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+    assert private_revoke_body["provider_url_revoked"] is True
+    assert private_revoke_body["revocation_recorded"] is True
+    assert private_revoke_body["revocation_idempotency_key"] == "source-directory-provider-private-revoke-idem"
+    assert private_revoke_body["raw_provider_url_exposed"] is False
+    assert private_revoke_body["raw_provider_private_signed_url_token_exposed"] is False
+
     db = client.layer3_session_factory()
     try:
         assert db.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
-        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 1
-        assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() == 1
+        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 2
+        assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() == 5
         assert db.query(L3ProviderPublicUrlObjectAuthority).count() == 1
         assert db.query(L3ProviderPublicUrlReceipt).count() == 1
         assert db.query(AnalysisRun).count() == 0

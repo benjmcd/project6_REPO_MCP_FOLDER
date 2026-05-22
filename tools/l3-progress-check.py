@@ -14461,8 +14461,12 @@ def _check_provider_private_signed_url_no_deferred_routes(
     for route in (
         "/handoff/export/download/provider-private-signed-url/use",
     ):
-        if route in api_text:
+        if _has_exact_provider_private_signed_url_use_route(api_text):
             errors.append(f"{_rel(LAYER3_API)} must not expose deferred provider-private signed URL route {route} during {context}")
+
+
+def _has_exact_provider_private_signed_url_use_route(api_text: str) -> bool:
+    return '@router.post(\n    "/handoff/export/download/provider-private-signed-url/use"' in api_text
 
 
 def _check_provider_private_signed_url_use_case_selection(errors: list[str]) -> None:
@@ -16106,7 +16110,7 @@ def _check_provider_private_signed_url_route_entry_contract(errors: list[str]) -
             if term not in body:
                 errors.append(f"{_rel(path)} missing provider private signed URL prepare/status API term: {term}")
 
-    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+    if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use route in prepare/status slice")
 
     current_status = _load_json(MANIFEST, errors).get("current_status", {})
@@ -16243,7 +16247,7 @@ def _check_provider_private_signed_url_revoke_only_freeze(errors: list[str]) -> 
                 errors.append(f"{_rel(path)} missing provider private signed URL revoke-only freeze term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+    if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use before token/delivery freeze")
     if "/handoff/export/download/provider-private-signed-url/revoke" not in api_text:
         errors.append(f"{_rel(LAYER3_API)} must expose provider-private signed URL revoke after revoke API implementation")
@@ -16471,7 +16475,7 @@ def _check_provider_private_signed_url_use_authority_freeze(errors: list[str]) -
                 errors.append(f"{_rel(path)} missing provider private signed URL use-authority freeze term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+    if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use while no token/delivery model is selected")
     if "/handoff/export/download/provider-private-signed-url/revoke" not in api_text:
         errors.append(f"{_rel(LAYER3_API)} must keep provider-private signed URL revoke live before use-authority work")
@@ -16751,7 +16755,7 @@ def _check_provider_private_signed_url_use_model_closeout(errors: list[str]) -> 
                 errors.append(f"{_rel(path)} missing provider private signed URL use-model closeout term: {term}")
 
     api_text = _read_required_text(LAYER3_API, errors)
-    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+    if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use after use-model closeout")
     if "/handoff/export/download/provider-private-signed-url/revoke" not in api_text:
         errors.append(f"{_rel(LAYER3_API)} must keep provider-private signed URL revoke live after use-model closeout")
@@ -16903,7 +16907,7 @@ def _check_provider_private_signed_url_rendered_ui_freeze(errors: list[str]) -> 
     ):
         if route not in api_text:
             errors.append(f"{_rel(LAYER3_API)} missing provider-private rendered UI prerequisite route: {route}")
-    if "/handoff/export/download/provider-private-signed-url/use" in api_text:
+    if _has_exact_provider_private_signed_url_use_route(api_text):
         errors.append(f"{_rel(LAYER3_API)} must not expose provider-private signed URL use for rendered UI freeze")
 
     manifest_data = _load_json(MANIFEST, errors)

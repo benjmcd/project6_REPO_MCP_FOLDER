@@ -58,6 +58,12 @@ const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_STATUS_PATH = '/
 const SOURCE_DIRECTORY_HYBRID_EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_PATH = '/source/ingestion/server-configured-directory/hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver';
 const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/download/provider-private-signed-url/prepare`;
 const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION = 'prepare_source_directory_hybrid_provider_private_signed_url';
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/download/provider-private-signed-url/status`;
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION = 'inspect_source_directory_hybrid_provider_private_signed_url_status';
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/download/provider-private-signed-url/use`;
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION = 'use_source_directory_hybrid_provider_private_signed_url';
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH = `${SOURCE_DIRECTORY_HYBRID_ANALYSIS_PATH}/handoff/export/download/provider-private-signed-url/revoke`;
+const SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION = 'revoke_source_directory_hybrid_provider_private_signed_url';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RENDERED_MODE = 'rendered_source_directory_hybrid_internal_webhook_dispatch_control';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_USE_CASE = 'operator_dispatches_source_directory_hybrid_internal_webhook_from_server_configured_destination';
 const SOURCE_DIRECTORY_HYBRID_INTERNAL_WEBHOOK_RESPONSE_AUTHORITY = 'State.sourceDirectoryHybridInternalWebhookDispatch + State.sessionSummary.internal_webhook_dispatch';
@@ -400,6 +406,7 @@ const State = {
     externalExportDownloadSignedReferenceUsePending: false,
     providerPrivateSignedUrlPrepare: null,
     providerPrivateSignedUrlStatus: null,
+    providerPrivateSignedUrlUse: null,
     providerPrivateSignedUrlRevoke: null,
     providerPrivateSignedUrlReceiptRecovery: null,
     providerPrivateSignedUrlPrepareClientRequestId: null,
@@ -535,6 +542,7 @@ const elements = {
     providerPrivateSignedUrlPanel: document.getElementById('provider-private-signed-url-panel'),
     providerPrivateSignedUrlPrepare: document.getElementById('provider-private-signed-url-prepare'),
     providerPrivateSignedUrlStatus: document.getElementById('provider-private-signed-url-status'),
+    providerPrivateSignedUrlUse: document.getElementById('provider-private-signed-url-use'),
     providerPrivateSignedUrlRevoke: document.getElementById('provider-private-signed-url-revoke'),
     providerPublicUrlForm: document.getElementById('provider-public-url-form'),
     providerPublicUrlPanel: document.getElementById('provider-public-url-panel'),
@@ -2204,6 +2212,24 @@ function providerPrivateSignedUrlPreparePath() {
         : '/handoff/export/download/provider-private-signed-url/prepare';
 }
 
+function providerPrivateSignedUrlStatusPath() {
+    return isSourceDirectoryHybridExternalExportDownloadPrepareState()
+        ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH
+        : `/handoff/export/download/provider-private-signed-url/status/${encodeURIComponent(providerPrivateSignedUrlReceiptId())}`;
+}
+
+function providerPrivateSignedUrlUsePath() {
+    return isSourceDirectoryHybridExternalExportDownloadPrepareState()
+        ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH
+        : null;
+}
+
+function providerPrivateSignedUrlRevokePath() {
+    return isSourceDirectoryHybridExternalExportDownloadPrepareState()
+        ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH
+        : '/handoff/export/download/provider-private-signed-url/revoke';
+}
+
 function clearExternalExportDownloadPrepareState() {
     State.externalExportDownloadPrepare = null;
     State.externalExportDownloadPrepareError = null;
@@ -2233,6 +2259,7 @@ function clearExternalExportDownloadSignedReferenceState() {
 function clearProviderPrivateSignedUrlState() {
     State.providerPrivateSignedUrlPrepare = null;
     State.providerPrivateSignedUrlStatus = null;
+    State.providerPrivateSignedUrlUse = null;
     State.providerPrivateSignedUrlRevoke = null;
     State.providerPrivateSignedUrlReceiptRecovery = null;
     State.providerPrivateSignedUrlPrepareClientRequestId = null;
@@ -3511,6 +3538,7 @@ function canUseExternalExportDownloadSignedReference() {
 
 function providerPrivateSignedUrlReceiptId() {
     return State.providerPrivateSignedUrlRevoke?.provider_signed_url_receipt_id
+        || State.providerPrivateSignedUrlUse?.provider_signed_url_receipt_id
         || State.providerPrivateSignedUrlStatus?.provider_signed_url_receipt_id
         || State.providerPrivateSignedUrlPrepare?.provider_signed_url_receipt_id
         || State.providerPrivateSignedUrlReceiptRecovery?.provider_signed_url_receipt_id
@@ -3519,6 +3547,7 @@ function providerPrivateSignedUrlReceiptId() {
 
 function providerPrivateSignedUrlLatestState() {
     return State.providerPrivateSignedUrlRevoke?.provider_signed_url_state
+        || State.providerPrivateSignedUrlUse?.provider_signed_url_state
         || State.providerPrivateSignedUrlStatus?.provider_signed_url_state
         || State.providerPrivateSignedUrlPrepare?.provider_signed_url_state
         || State.providerPrivateSignedUrlReceiptRecovery?.provider_signed_url_state
@@ -3576,6 +3605,20 @@ function canInspectProviderPrivateSignedUrl() {
         providerPrivateSignedUrlReceiptId()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
+        && !State.providerPrivateSignedUrlPending
+    );
+}
+
+function canUseProviderPrivateSignedUrl() {
+    return Boolean(
+        providerPrivateSignedUrlUsePath()
+        && providerPrivateSignedUrlReceiptId()
+        && providerPrivateSignedUrlLatestState() === 'provider_private_signed_url_prepared'
+        && sourceDirectoryHybridProviderPrivateSignedUrlReady()
+        && !State.externalExportDownloadPreparePending
+        && !State.externalExportDownloadDeliveryPending
+        && !State.sourceDirectoryHybridExternalExportDownloadDeliveryStatusPending
+        && !State.sourceDirectoryHybridExternalExportDownloadDeliveryPending
         && !State.providerPrivateSignedUrlPending
     );
 }
@@ -3670,7 +3713,7 @@ function downstreamAccessLifecycleRows() {
     const external = externalExportDownloadPrepareState() || {};
     const delivery = State.externalExportDownloadDelivery || {};
     const signedReference = State.externalExportDownloadSignedReferenceUse || State.externalExportDownloadSignedReference || {};
-    const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
+    const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlUse || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
     const providerPublic = providerPublicUrlLatestSnapshot();
     const rows = [
         {
@@ -3833,7 +3876,7 @@ function layer3E2EGovernanceLifecycleRows() {
     const downstreamRows = downstreamAccessLifecycleRows();
     const downstreamState = downstreamAccessLifecycleDashboardState(downstreamRows);
     const latestDownstreamRow = [...downstreamRows].reverse().find((row) => row.state || row.record_ref || row.access_mode) || {};
-    const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
+    const providerPrivate = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlUse || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || State.providerPrivateSignedUrlReceiptRecovery || {};
     const providerPublic = providerPublicUrlLatestSnapshot();
     return [
         {
@@ -9582,8 +9625,14 @@ function providerPrivateSignedUrlPanelState() {
     if (stateName === 'provider_private_signed_url_expired') {
         return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt has expired; a replacement can be prepared.' };
     }
+    if (State.providerPrivateSignedUrlUse?.delivery_use_decision === 'allowed') {
+        return { label: 'provider_private_signed_url_use_allowed', pill: 'ready', message: 'Server recorded the redacted provider-private use decision; raw provider URL delivery remains blocked.' };
+    }
     if (stateName === 'provider_private_signed_url_prepared') {
-        return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt is prepared; use remains closed for this lane.' };
+        const message = providerPrivateSignedUrlUsePath()
+            ? 'Provider-private signed URL receipt is prepared; server-owned redacted use is available for this source-directory artifact.'
+            : 'Provider-private signed URL receipt is prepared; use remains closed for this lane.';
+        return { label: stateName, pill: 'ready', message };
     }
     if (sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
         return { label: 'provider_private_signed_url_ui_ready', pill: 'ready', message: 'Ready to prepare a redacted provider-private signed URL receipt from source-directory hybrid delivery authority.' };
@@ -9602,7 +9651,7 @@ function providerPrivateSignedUrlDisplayValue(value) {
 }
 
 function renderProviderPrivateSignedUrlPanel() {
-    const provider = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || {};
+    const provider = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlUse || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || {};
     const panelState = providerPrivateSignedUrlPanelState();
     const audit = provider.audit_receipt || {};
     const rows = {
@@ -9615,13 +9664,17 @@ function renderProviderPrivateSignedUrlPanel() {
         use_count: provider.provider_url_use_count,
         max_use_count: provider.provider_url_max_use_count,
         revoked: provider.provider_url_revoked,
+        delivery_use_decision: provider.delivery_use_decision,
+        delivery_use_mode: provider.delivery_use_mode,
         source_artifact_hash: provider.source_artifact_hash,
         source_artifact_size_bytes: provider.source_artifact_size_bytes,
         audit_receipt_id: audit.audit_event_id || audit.provider_private_signed_url_audit_event_id,
         audit_reason_code: audit.reason_code,
         next_allowed_actions: provider.next_allowed_actions,
         prepare_route: providerPrivateSignedUrlPreparePath(),
-        use_route: 'closed_not_implemented',
+        status_route: providerPrivateSignedUrlStatusPath(),
+        use_route: providerPrivateSignedUrlUsePath() || 'closed_not_implemented',
+        revoke_route: providerPrivateSignedUrlRevokePath(),
     };
     elements.providerPrivateSignedUrlPanel.innerHTML = `
         <div class="result-review-status">
@@ -9639,6 +9692,7 @@ function renderProviderPrivateSignedUrlPanel() {
     `;
     elements.providerPrivateSignedUrlPrepare.disabled = !canPrepareProviderPrivateSignedUrl();
     elements.providerPrivateSignedUrlStatus.disabled = !canInspectProviderPrivateSignedUrl();
+    elements.providerPrivateSignedUrlUse.disabled = !canUseProviderPrivateSignedUrl();
     elements.providerPrivateSignedUrlRevoke.disabled = !canRevokeProviderPrivateSignedUrl();
 }
 
@@ -9865,6 +9919,7 @@ function setGateControls() {
     elements.externalExportDownloadSignedReferenceUse.disabled = !externalExportDownloadSignedReferenceControlsEnabled || !canUseExternalExportDownloadSignedReference();
     elements.providerPrivateSignedUrlPrepare.disabled = !providerPrivateSignedUrlControlsEnabled || !canPrepareProviderPrivateSignedUrl();
     elements.providerPrivateSignedUrlStatus.disabled = !providerPrivateSignedUrlControlsEnabled || !canInspectProviderPrivateSignedUrl();
+    elements.providerPrivateSignedUrlUse.disabled = !providerPrivateSignedUrlControlsEnabled || !canUseProviderPrivateSignedUrl();
     elements.providerPrivateSignedUrlRevoke.disabled = !providerPrivateSignedUrlControlsEnabled || !canRevokeProviderPrivateSignedUrl();
     elements.providerPublicUrlPrepare.disabled = !canPrepareProviderPublicUrl();
     elements.providerPublicUrlStatus.disabled = !canInspectProviderPublicUrl();
@@ -10660,7 +10715,7 @@ function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthor
             operator_decision: SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION,
             recipient_scope: 'external_downstream_recipient_private_artifact_delivery',
             requested_ttl_seconds: 300,
-            decision_notes: 'Rendered source-directory hybrid provider-private bridge; provider-private use remains closed.',
+            decision_notes: 'Rendered source-directory hybrid provider-private bridge; server-owned redacted use is admitted for this artifact family.',
         };
     }
     const external = externalExportDownloadPrepareState() || {};
@@ -10690,6 +10745,20 @@ function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthor
 
 function providerPrivateSignedUrlRevokePayload() {
     const receiptId = providerPrivateSignedUrlReceiptId();
+    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+        const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
+        return {
+            ...payload,
+            client_request_id: requestId(),
+            provider_signed_url_receipt_id: receiptId,
+            idempotency_key: `source-directory-provider-private-revoke:${receiptId}`,
+            revoked_by: 'layer3-rendered-workbench',
+            revocation_reason: 'operator revoked source-directory provider-private signed URL from rendered workbench',
+            delivery_mode: 'provider_private_signed_url',
+            operator_decision: SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION,
+            decision_notes: 'Rendered source-directory hybrid provider-private revoke revalidates current artifact authority.',
+        };
+    }
     return {
         client_request_id: requestId(),
         provider_signed_url_receipt_id: receiptId,
@@ -10697,7 +10766,31 @@ function providerPrivateSignedUrlRevokePayload() {
         revoked_by: 'layer3-rendered-workbench',
         revocation_reason: 'operator revoked provider-private signed URL from rendered workbench',
         operator_decision: 'revoke_provider_private_signed_url',
-        decision_notes: 'Rendered workbench revoke lane; provider-private use remains closed.',
+        decision_notes: 'Rendered workbench revoke lane; only source-directory server-owned redacted use is admitted.',
+    };
+}
+
+function providerPrivateSignedUrlStatusPayload() {
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
+    return {
+        ...payload,
+        client_request_id: requestId(),
+        provider_signed_url_receipt_id: providerPrivateSignedUrlReceiptId(),
+        delivery_mode: 'provider_private_signed_url',
+        operator_decision: SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION,
+        decision_notes: 'Rendered source-directory hybrid provider-private status revalidates current artifact authority.',
+    };
+}
+
+function providerPrivateSignedUrlUsePayload() {
+    const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
+    return {
+        ...payload,
+        client_request_id: requestId(),
+        provider_signed_url_receipt_id: providerPrivateSignedUrlReceiptId(),
+        delivery_mode: 'provider_private_signed_url',
+        operator_decision: SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION,
+        decision_notes: 'Rendered source-directory hybrid provider-private use records only a redacted server-owned use decision.',
     };
 }
 
@@ -13130,6 +13223,7 @@ async function submitProviderPrivateSignedUrlPrepare(event) {
     State.providerPrivateSignedUrlPending = true;
     State.providerPrivateSignedUrlError = null;
     State.providerPrivateSignedUrlStatus = null;
+    State.providerPrivateSignedUrlUse = null;
     State.providerPrivateSignedUrlRevoke = null;
     renderAll();
     setBusy(elements.providerPrivateSignedUrlPrepare, true, 'Prepare Provider-Private Receipt');
@@ -13161,9 +13255,9 @@ async function inspectProviderPrivateSignedUrlStatus() {
     renderAll();
     setBusy(elements.providerPrivateSignedUrlStatus, true, 'Inspect Provider-Private Status');
     try {
-        State.providerPrivateSignedUrlStatus = await getJson(
-            `/handoff/export/download/provider-private-signed-url/status/${encodeURIComponent(receiptId)}`,
-        );
+        State.providerPrivateSignedUrlStatus = isSourceDirectoryHybridExternalExportDownloadPrepareState()
+            ? await postJson(providerPrivateSignedUrlStatusPath(), providerPrivateSignedUrlStatusPayload())
+            : await getJson(providerPrivateSignedUrlStatusPath());
         persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlStatus);
         addEvent('Provider-private signed URL status inspected with redacted state.');
         renderAll();
@@ -13178,6 +13272,31 @@ async function inspectProviderPrivateSignedUrlStatus() {
     }
 }
 
+async function useProviderPrivateSignedUrl() {
+    if (!canUseProviderPrivateSignedUrl()) return;
+    State.providerPrivateSignedUrlPending = true;
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+    setBusy(elements.providerPrivateSignedUrlUse, true, 'Use Redacted Receipt');
+    try {
+        State.providerPrivateSignedUrlUse = await postJson(
+            providerPrivateSignedUrlUsePath(),
+            providerPrivateSignedUrlUsePayload(),
+        );
+        persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlUse);
+        addEvent('Provider-private signed URL redacted use recorded by the server.');
+        renderAll();
+    } catch (error) {
+        State.providerPrivateSignedUrlError = error.payload || { error_code: 'provider_private_signed_url_use_failed', message: error.message };
+        addEvent(`Provider-private signed URL use blocked: ${error.message}`);
+        renderAll();
+    } finally {
+        State.providerPrivateSignedUrlPending = false;
+        setBusy(elements.providerPrivateSignedUrlUse, false, 'Use Redacted Receipt');
+        setGateControls();
+    }
+}
+
 async function revokeProviderPrivateSignedUrl() {
     if (!canRevokeProviderPrivateSignedUrl()) return;
     State.providerPrivateSignedUrlPending = true;
@@ -13186,7 +13305,7 @@ async function revokeProviderPrivateSignedUrl() {
     setBusy(elements.providerPrivateSignedUrlRevoke, true, 'Revoke Provider-Private Receipt');
     try {
         State.providerPrivateSignedUrlRevoke = await postJson(
-            '/handoff/export/download/provider-private-signed-url/revoke',
+            providerPrivateSignedUrlRevokePath(),
             providerPrivateSignedUrlRevokePayload(),
         );
         persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlRevoke);
@@ -13453,6 +13572,7 @@ elements.externalExportDownloadSignedReferenceForm.addEventListener('submit', su
 elements.externalExportDownloadSignedReferenceUse.addEventListener('click', useExternalExportDownloadSignedReference);
 elements.providerPrivateSignedUrlForm.addEventListener('submit', submitProviderPrivateSignedUrlPrepare);
 elements.providerPrivateSignedUrlStatus.addEventListener('click', inspectProviderPrivateSignedUrlStatus);
+elements.providerPrivateSignedUrlUse.addEventListener('click', useProviderPrivateSignedUrl);
 elements.providerPrivateSignedUrlRevoke.addEventListener('click', revokeProviderPrivateSignedUrl);
 elements.providerPublicUrlForm.addEventListener('submit', submitProviderPublicUrlPrepare);
 elements.providerPublicUrlStatus.addEventListener('click', inspectProviderPublicUrlStatus);
