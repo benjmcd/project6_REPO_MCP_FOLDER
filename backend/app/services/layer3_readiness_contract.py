@@ -50,6 +50,7 @@ READINESS_REQUIRED_GATES = (
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-dispatch",
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-status",
     "candidate-b-artifact-family-status",
+    "candidate-b-visual-lane-status",
     "candidate-b-default-promotion-readiness-audit",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
@@ -93,6 +94,7 @@ READINESS_IMPLEMENTED_GATES = (
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-dispatch",
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-status",
     "candidate-b-artifact-family-status",
+    "candidate-b-visual-lane-status",
     "candidate-b-default-promotion-readiness-audit",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
@@ -176,6 +178,10 @@ def build_readiness_contract(
         "candidate_b_artifact_family_status_admitted": True,
         "candidate_b_artifact_family_status_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/artifact-family/status"
+        ),
+        "candidate_b_visual_lane_status_admitted": True,
+        "candidate_b_visual_lane_status_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/visual-lane/status"
         ),
         "candidate_b_default_promotion_readiness_audit_admitted": True,
         "candidate_b_default_promotion_readiness_audit_endpoint": (
