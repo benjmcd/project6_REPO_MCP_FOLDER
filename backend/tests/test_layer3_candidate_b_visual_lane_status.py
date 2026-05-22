@@ -143,6 +143,16 @@ def test_candidate_b_visual_lane_status_fails_closed_on_stale_hash(client: TestC
     assert response.json()["error"]["code"] == "candidate_b_visual_lane_status_bridge_receipt_hash_mismatch"
 
 
+@pytest.mark.parametrize("receipt_id", ["../cb-runtime-l3-proof", "cb-bundle-l3-wrong-prefix"])
+def test_candidate_b_visual_lane_status_rejects_path_like_or_wrong_prefix_receipt_id(
+    client: TestClient, receipt_id: str
+) -> None:
+    response = client.post(STATUS_ENDPOINT, json=_payload(receipt_id))
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "candidate_b_visual_lane_status_bridge_receipt_id_invalid"
+
+
 def test_candidate_b_visual_lane_status_rejects_selector_path_and_url_fields(client: TestClient) -> None:
     receipt_id = _write_runtime_receipt()
     response = client.post(

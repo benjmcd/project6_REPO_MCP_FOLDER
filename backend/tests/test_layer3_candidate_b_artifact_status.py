@@ -258,6 +258,22 @@ def test_candidate_b_artifact_family_status_fails_closed_on_stale_roles(
     assert response.json()["error"]["code"] == "candidate_b_artifact_status_governed_artifact_family_stale"
 
 
+@pytest.mark.parametrize(
+    ("kind", "receipt_id"),
+    [
+        ("bundle", "../cb-bundle-l3-proof"),
+        ("runtime", "cb-bundle-l3-wrong-prefix"),
+    ],
+)
+def test_candidate_b_artifact_family_status_rejects_path_like_or_wrong_prefix_receipt_id(
+    client: TestClient, kind: str, receipt_id: str
+) -> None:
+    response = client.post(STATUS_ENDPOINT, json=_payload(kind, receipt_id))
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "candidate_b_artifact_status_bridge_receipt_id_invalid"
+
+
 def test_candidate_b_artifact_family_status_rejects_path_and_url_fields(client: TestClient) -> None:
     receipt_id = _write_receipt("bundle")
     response = client.post(
