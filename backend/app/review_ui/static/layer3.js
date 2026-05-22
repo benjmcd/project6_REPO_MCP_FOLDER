@@ -3749,13 +3749,18 @@ function providerPublicUrlBlocksPrepare() {
     return !PROVIDER_PUBLIC_URL_REPLACEABLE_STATES.has(providerPublicUrlLatestState());
 }
 
+function sourceDirectoryProviderPublicUrlBlockReason() {
+    if (isSourceDirectoryHybridExternalExportDownloadPrepareState() || sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
+        return 'source_directory_hybrid_provider_private_provider_public_url_not_admitted';
+    }
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return 'source_directory_package_provider_private_provider_public_url_not_admitted';
+    }
+    return null;
+}
+
 function sourceDirectoryProviderPrivateBlocksProviderPublicUrlPrepare() {
-    return Boolean(
-        isSourceDirectoryHybridExternalExportDownloadPrepareState()
-        || sourceDirectoryHybridProviderPrivateSignedUrlReady()
-        || isSourceDirectoryPackageSupersessionProviderPrivateState()
-        || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()
-    );
+    return Boolean(sourceDirectoryProviderPublicUrlBlockReason());
 }
 
 function canPrepareProviderPublicUrl() {
@@ -9808,6 +9813,18 @@ function providerPublicUrlPanelState() {
     if (stateName === 'provider_public_url_prepared') {
         return { label: stateName, pill: 'ready', message: 'Provider-public URL receipt is prepared; the redacted use-decision control is available while raw public URL exposure remains closed.' };
     }
+    const sourceDirectoryBlockReason = sourceDirectoryProviderPublicUrlBlockReason();
+    if (
+        providerPrivateSignedUrlReceiptId()
+        && providerPrivateSignedUrlLatestState() === 'provider_private_signed_url_prepared'
+        && sourceDirectoryBlockReason
+    ) {
+        return {
+            label: 'provider_public_url_source_directory_provider_private_not_admitted',
+            pill: 'blocked',
+            message: `Provider-public URL prepare is not admitted for this source-directory provider-private authority: ${sourceDirectoryBlockReason}.`,
+        };
+    }
     if (providerPrivateSignedUrlReceiptId() && providerPrivateSignedUrlLatestState() === 'provider_private_signed_url_prepared') {
         return { label: 'provider_public_url_ui_ready', pill: 'ready', message: 'Ready to prepare a server-redacted provider-public URL receipt.' };
     }
@@ -9825,10 +9842,13 @@ function renderProviderPublicUrlPanel() {
     const provider = providerPublicUrlLatestSnapshot();
     const panelState = providerPublicUrlPanelState();
     const audit = provider.audit_receipt || {};
+    const sourceDirectoryBlockReason = sourceDirectoryProviderPublicUrlBlockReason();
     const rows = {
         receipt_id: provider.provider_public_url_receipt_id,
         provider_public_state: provider.provider_public_url_state,
         provider_private_receipt_id: provider.provider_private_signed_url_receipt_id || providerPrivateSignedUrlReceiptId(),
+        provider_public_prepare_enabled: canPrepareProviderPublicUrl(),
+        provider_public_prepare_block_reason: sourceDirectoryBlockReason,
         delivery_mode: provider.delivery_mode || 'provider_public_url',
         delivery_use_mode: provider.delivery_use_mode,
         delivery_use_decision: provider.delivery_use_decision,
