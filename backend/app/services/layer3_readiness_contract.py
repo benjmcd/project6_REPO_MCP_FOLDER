@@ -160,6 +160,10 @@ def build_readiness_contract(
         "plan_revision_recovery_endpoint": f"{api_root}/plan/revision/recover",
         "approved_plan_cancel_admitted": True,
         "approved_plan_cancel_endpoint": f"{api_root}/plan/approved/cancel",
+        "candidate_b_bundle_material_bridge_admitted": True,
+        "candidate_b_bundle_material_bridge_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/bundle/material-bridge"
+        ),
         "source_directory_ingestion_scan_admitted": True,
         "source_directory_ingestion_scan_endpoint": f"{api_root}/source/ingestion/server-configured-directory/scan",
         "source_directory_ingestion_status_admitted": True,
