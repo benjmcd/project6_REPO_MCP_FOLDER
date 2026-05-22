@@ -312,10 +312,28 @@ def _proof(kind: str, receipt_id: str, *, coverage: list[str] | None = None) -> 
     }
 
 
-def _coverage_evidence(coverage: list[str] | None = None) -> dict[str, Any]:
+DELIVERY_ARTIFACT_AUTHORITY_COVERAGE = {
+    "external_export_download_prepare",
+    "same_origin_delivery_status",
+    "same_origin_delivery",
+    "provider_private_prepare",
+    "provider_private_status",
+    "provider_private_use",
+    "provider_private_revoke",
+    "internal_webhook_dispatch",
+    "internal_webhook_status",
+}
+
+
+def _coverage_evidence(
+    coverage: list[str] | None = None,
+    *,
+    retained_artifact_family_hash: str | None = None,
+) -> dict[str, Any]:
     steps = FULL_COVERAGE if coverage is None else coverage
-    return {
-        step: {
+    result = {}
+    for step in steps:
+        entry = {
             "status": "proven",
             "evidence_ref": f"candidate-b-downstream-proof://{step}",
             "evidence_hash": _stable_hash({"step": step, "status": "proven"}),
@@ -329,8 +347,11 @@ def _coverage_evidence(coverage: list[str] | None = None) -> dict[str, Any]:
             "browser_storage_authority_enabled": False,
             "frontend_durable_authority_enabled": False,
         }
-        for step in steps
-    }
+        if step in DELIVERY_ARTIFACT_AUTHORITY_COVERAGE:
+            entry["candidate_b_retained_artifact_family_hash"] = retained_artifact_family_hash or "f" * 64
+            entry["candidate_b_delivery_artifact_roles_bound"] = True
+        result[step] = entry
+    return result
 
 
 def _downstream_negative_invariants() -> dict[str, bool]:
@@ -363,7 +384,10 @@ def _runtime_downstream_proof(
 ) -> dict[str, Any]:
     receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-    coverage_evidence = _coverage_evidence(coverage)
+    coverage_evidence = _coverage_evidence(
+        coverage,
+        retained_artifact_family_hash=receipt["governed_retained_artifact_family_hash"],
+    )
     negative_invariants = _downstream_negative_invariants()
     status_evidence = visual_lane_status or _visual_lane_status_evidence(runtime_receipt_id)
     proof_input = {
@@ -480,6 +504,8 @@ def _visual_lane_status_request(runtime_receipt_id: str) -> dict[str, Any]:
 
 
 def _downstream_proof_request(runtime_receipt_id: str, visual_lane_status: dict[str, Any]) -> dict[str, Any]:
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     return {
         "client_request_id": "candidate-b-downstream-proof",
         "proof_mode": "candidate_b_visual_lane_runtime_downstream_e2e_proof_v1",
@@ -487,19 +513,26 @@ def _downstream_proof_request(runtime_receipt_id: str, visual_lane_status: dict[
         "candidate_b_run_id": CANDIDATE_B_RUN_ID,
         "bridge_receipt_id": runtime_receipt_id,
         "candidate_b_visual_lane_status_evidence": visual_lane_status,
-        "coverage_evidence": _coverage_evidence(),
+        "coverage_evidence": _coverage_evidence(
+            retained_artifact_family_hash=receipt["governed_retained_artifact_family_hash"]
+        ),
         "operator_confirmation": True,
     }
 
 
 def _bundle_downstream_proof_request(bundle_receipt_id: str, *, coverage: list[str] | None = None) -> dict[str, Any]:
+    receipt_path = Path(settings.layer3_candidate_b_bundle_bridge_dir) / bundle_receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     return {
         "client_request_id": "candidate-b-bundle-downstream-proof",
         "proof_mode": "candidate_b_bundle_downstream_e2e_proof_v1",
         "operator_decision": "record_candidate_b_bundle_downstream_e2e_proof",
         "candidate_b_bundle_id": CANDIDATE_B_BUNDLE_ID,
         "bridge_receipt_id": bundle_receipt_id,
-        "coverage_evidence": _coverage_evidence(coverage),
+        "coverage_evidence": _coverage_evidence(
+            coverage,
+            retained_artifact_family_hash=receipt["governed_retained_artifact_family_hash"],
+        ),
         "operator_confirmation": True,
     }
 
@@ -1034,6 +1067,40 @@ def test_candidate_b_bundle_downstream_proof_rejects_nested_path_authority(clien
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_bundle_downstream_proof_forbidden_request_fields"
     assert "coverage_evidence.gate_b.local_path" in body["error"]["details"]["blocked_nested_fields"]
+
+
+def test_candidate_b_runtime_downstream_proof_rejects_unbound_delivery_artifact_authority(
+    client: TestClient,
+) -> None:
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+    payload = _downstream_proof_request(runtime_receipt_id, visual_status_response.json())
+    payload["coverage_evidence"]["provider_private_use"].pop("candidate_b_retained_artifact_family_hash")
+
+    response = client.post(DOWNSTREAM_PROOF_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_downstream_proof_delivery_artifact_authority_mismatch"
+    assert body["error"]["details"]["coverage_step"] == "provider_private_use"
+
+
+def test_candidate_b_bundle_downstream_proof_rejects_unbound_delivery_artifact_roles(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    payload = _bundle_downstream_proof_request(bundle_receipt_id)
+    payload["coverage_evidence"]["internal_webhook_dispatch"]["candidate_b_delivery_artifact_roles_bound"] = False
+
+    response = client.post(BUNDLE_PROOF_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_bundle_downstream_proof_delivery_artifact_roles_not_bound"
+    assert body["error"]["details"]["coverage_step"] == "internal_webhook_dispatch"
 
 
 def test_candidate_b_default_readiness_blocks_missing_runtime_receipt(client: TestClient) -> None:
