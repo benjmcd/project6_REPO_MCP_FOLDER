@@ -861,6 +861,13 @@
                         <div class="empty-panel">Prepare external export/download readiness before provider-private signed URL receipt controls.</div>
                     </div>
                     <div class="result-review-controls external-export-download-controls" aria-label="Provider-private signed URL controls">
+                        <label class="field-label" for="provider-private-signed-url-artifact-family">Artifact family</label>
+                        <select id="provider-private-signed-url-artifact-family">
+                            <option value="auto">Auto</option>
+                            <option value="source_directory_hybrid_handoff_export_download">Source Hybrid Handoff</option>
+                            <option value="source_directory_package_supersession">Source Package Supersession</option>
+                            <option value="handoff_export_download">Handoff Export Download</option>
+                        </select>
                         <button id="provider-private-signed-url-prepare" class="primary-btn" type="submit" disabled>Prepare Provider-Private Receipt</button>
                         <button id="provider-private-signed-url-status" class="secondary-btn" type="button" disabled>Inspect Provider-Private Status</button>
                         <button id="provider-private-signed-url-use" class="secondary-btn" type="button" disabled>Use Redacted Receipt</button>

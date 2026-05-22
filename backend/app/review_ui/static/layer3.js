@@ -205,6 +205,10 @@ const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION = 'inspect_source_directory_package_supersession_provider_private_signed_url_status';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION = 'use_source_directory_package_supersession_provider_private_signed_url';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION = 'revoke_source_directory_package_supersession_provider_private_signed_url';
+const PROVIDER_PRIVATE_ARTIFACT_FAMILY_AUTO = 'auto';
+const PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_HYBRID = 'source_directory_hybrid_handoff_export_download';
+const PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_PACKAGE = 'source_directory_package_supersession';
+const PROVIDER_PRIVATE_ARTIFACT_FAMILY_HANDOFF_EXPORT_DOWNLOAD = 'handoff_export_download';
 const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_RENDERED_MODE = 'rendered_source_directory_qualitative_handoff_export_prepare_control';
 const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview + sourceDirectoryPackageSupersessionPreviewPayload';
 const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare';
@@ -549,6 +553,7 @@ const elements = {
     internalWebhookDispatchPanel: document.getElementById('internal-webhook-dispatch-panel'),
     providerPrivateSignedUrlForm: document.getElementById('provider-private-signed-url-form'),
     providerPrivateSignedUrlPanel: document.getElementById('provider-private-signed-url-panel'),
+    providerPrivateSignedUrlArtifactFamily: document.getElementById('provider-private-signed-url-artifact-family'),
     providerPrivateSignedUrlPrepare: document.getElementById('provider-private-signed-url-prepare'),
     providerPrivateSignedUrlStatus: document.getElementById('provider-private-signed-url-status'),
     providerPrivateSignedUrlUse: document.getElementById('provider-private-signed-url-use'),
@@ -2216,40 +2221,40 @@ function providerPrivateSignedUrlPrepareRequestId() {
 }
 
 function providerPrivateSignedUrlPreparePath() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         return SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH;
     }
-    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH;
     }
     return '/handoff/export/download/provider-private-signed-url/prepare';
 }
 
 function providerPrivateSignedUrlStatusPath() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         return SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH;
     }
-    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH;
     }
     return `/handoff/export/download/provider-private-signed-url/status/${encodeURIComponent(providerPrivateSignedUrlReceiptId())}`;
 }
 
 function providerPrivateSignedUrlUsePath() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         return SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH;
     }
-    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH;
     }
     return null;
 }
 
 function providerPrivateSignedUrlRevokePath() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         return SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH;
     }
-    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH;
     }
     return '/handoff/export/download/provider-private-signed-url/revoke';
@@ -2991,6 +2996,39 @@ function providerPrivateSignedUrlAuthorityState() {
         || null;
 }
 
+function providerPrivateSignedUrlSelectedArtifactFamily() {
+    const value = elements.providerPrivateSignedUrlArtifactFamily?.value || PROVIDER_PRIVATE_ARTIFACT_FAMILY_AUTO;
+    return [
+        PROVIDER_PRIVATE_ARTIFACT_FAMILY_AUTO,
+        PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_HYBRID,
+        PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_PACKAGE,
+        PROVIDER_PRIVATE_ARTIFACT_FAMILY_HANDOFF_EXPORT_DOWNLOAD,
+    ].includes(value) ? value : PROVIDER_PRIVATE_ARTIFACT_FAMILY_AUTO;
+}
+
+function providerPrivateSignedUrlActiveArtifactFamily() {
+    const selected = providerPrivateSignedUrlSelectedArtifactFamily();
+    if (selected !== PROVIDER_PRIVATE_ARTIFACT_FAMILY_AUTO) return selected;
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState()) {
+        return PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_PACKAGE;
+    }
+    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+        return PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_HYBRID;
+    }
+    if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_PACKAGE;
+    }
+    return PROVIDER_PRIVATE_ARTIFACT_FAMILY_HANDOFF_EXPORT_DOWNLOAD;
+}
+
+function providerPrivateSignedUrlUsesSourceDirectoryHybridFamily() {
+    return providerPrivateSignedUrlActiveArtifactFamily() === PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_HYBRID;
+}
+
+function providerPrivateSignedUrlUsesSourceDirectoryPackageFamily() {
+    return providerPrivateSignedUrlActiveArtifactFamily() === PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_PACKAGE;
+}
+
 function isSourceDirectoryPackageSupersessionProviderPrivateState(provider = providerPrivateSignedUrlAuthorityState() || {}) {
     return provider.source_directory_package_supersession_provider_private_signed_url_enabled === true
         || provider.authority_rail?.artifact_authority === 'source_directory_package_lifecycle_package_supersession_commit_authority'
@@ -3635,7 +3673,7 @@ function sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady() {
 
 function canPrepareProviderPrivateSignedUrl() {
     const external = externalExportDownloadPrepareState() || {};
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState(external)) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         return Boolean(
             sourceDirectoryHybridProviderPrivateSignedUrlReady()
             && !providerPrivateSignedUrlBlocksPrepare()
@@ -3646,9 +3684,10 @@ function canPrepareProviderPrivateSignedUrl() {
             && !State.providerPrivateSignedUrlPending
         );
     }
-    if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return Boolean(
-            !providerPrivateSignedUrlBlocksPrepare()
+            sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()
+            && !providerPrivateSignedUrlBlocksPrepare()
             && !State.packageSupersessionCommitPending
             && !State.providerPrivateSignedUrlPending
         );
@@ -3676,7 +3715,7 @@ function canInspectProviderPrivateSignedUrl() {
 }
 
 function canUseProviderPrivateSignedUrl() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         return Boolean(
             providerPrivateSignedUrlUsePath()
             && providerPrivateSignedUrlReceiptId()
@@ -3689,7 +3728,7 @@ function canUseProviderPrivateSignedUrl() {
             && !State.providerPrivateSignedUrlPending
         );
     }
-    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return Boolean(
             providerPrivateSignedUrlReceiptId()
             && providerPrivateSignedUrlLatestState() === 'provider_private_signed_url_prepared'
@@ -3750,10 +3789,10 @@ function providerPublicUrlBlocksPrepare() {
 }
 
 function sourceDirectoryProviderPublicUrlBlockReason() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState() || sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         return 'source_directory_hybrid_provider_private_provider_public_url_not_admitted';
     }
-    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return 'source_directory_package_provider_private_provider_public_url_not_admitted';
     }
     return null;
@@ -9727,10 +9766,10 @@ function providerPrivateSignedUrlPanelState() {
             : 'Provider-private signed URL receipt is prepared; use remains closed for this lane.';
         return { label: stateName, pill: 'ready', message };
     }
-    if (sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily() && sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
         return { label: 'provider_private_signed_url_ui_ready', pill: 'ready', message: 'Ready to prepare a redacted provider-private signed URL receipt from source-directory hybrid delivery authority.' };
     }
-    if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily() && sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
         return { label: 'provider_private_signed_url_ui_ready', pill: 'ready', message: 'Ready to prepare a redacted provider-private signed URL receipt from source-directory package supersession authority.' };
     }
     if (recordedExternalExportDownloadPrepare() && externalExportDownloadDeliveryUiAdmitted()) {
@@ -9751,6 +9790,8 @@ function renderProviderPrivateSignedUrlPanel() {
     const panelState = providerPrivateSignedUrlPanelState();
     const audit = provider.audit_receipt || {};
     const rows = {
+        selected_artifact_family: providerPrivateSignedUrlSelectedArtifactFamily(),
+        active_artifact_family: providerPrivateSignedUrlActiveArtifactFamily(),
         receipt_id: provider.provider_signed_url_receipt_id,
         provider_private_state: provider.provider_signed_url_state,
         delivery_mode: provider.delivery_mode,
@@ -10833,7 +10874,7 @@ function sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload()
 }
 
 function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthority()) {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
         return {
             ...payload,
@@ -10845,7 +10886,7 @@ function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthor
             decision_notes: 'Rendered source-directory hybrid provider-private bridge; server-owned redacted use is admitted for this artifact family.',
         };
     }
-    if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return {
             ...sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload(),
             client_request_id: providerPrivateSignedUrlPrepareRequestId(),
@@ -10882,7 +10923,7 @@ function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthor
 
 function providerPrivateSignedUrlRevokePayload() {
     const receiptId = providerPrivateSignedUrlReceiptId();
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
         return {
             ...payload,
@@ -10896,7 +10937,7 @@ function providerPrivateSignedUrlRevokePayload() {
             decision_notes: 'Rendered source-directory hybrid provider-private revoke revalidates current artifact authority.',
         };
     }
-    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
         return {
             ...sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload(),
             client_request_id: requestId(),
@@ -10920,7 +10961,7 @@ function providerPrivateSignedUrlRevokePayload() {
 }
 
 function providerPrivateSignedUrlStatusPayload() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
         return {
             ...payload,
@@ -10941,7 +10982,7 @@ function providerPrivateSignedUrlStatusPayload() {
 }
 
 function providerPrivateSignedUrlUsePayload() {
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
         const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
         return {
             ...payload,
@@ -13424,9 +13465,8 @@ async function inspectProviderPrivateSignedUrlStatus() {
     setBusy(elements.providerPrivateSignedUrlStatus, true, 'Inspect Provider-Private Status');
     try {
         State.providerPrivateSignedUrlStatus = (
-            isSourceDirectoryPackageSupersessionProviderPrivateState()
-            || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()
-            || isSourceDirectoryHybridExternalExportDownloadPrepareState()
+            providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()
+            || providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()
         )
             ? await postJson(providerPrivateSignedUrlStatusPath(), providerPrivateSignedUrlStatusPayload())
             : await getJson(providerPrivateSignedUrlStatusPath());
@@ -13743,6 +13783,10 @@ elements.sourceDirectoryHybridInternalWebhookAuthority.addEventListener('input',
 elements.externalExportDownloadSignedReferenceForm.addEventListener('submit', submitExternalExportDownloadSignedReference);
 elements.externalExportDownloadSignedReferenceUse.addEventListener('click', useExternalExportDownloadSignedReference);
 elements.providerPrivateSignedUrlForm.addEventListener('submit', submitProviderPrivateSignedUrlPrepare);
+elements.providerPrivateSignedUrlArtifactFamily.addEventListener('change', () => {
+    clearProviderPrivateSignedUrlState();
+    renderAll();
+});
 elements.providerPrivateSignedUrlStatus.addEventListener('click', inspectProviderPrivateSignedUrlStatus);
 elements.providerPrivateSignedUrlUse.addEventListener('click', useProviderPrivateSignedUrl);
 elements.providerPrivateSignedUrlRevoke.addEventListener('click', revokeProviderPrivateSignedUrl);
