@@ -2500,7 +2500,7 @@ def source_directory_hybrid_context_packet_qualitative_analysis_provider_private
         },
         "source_directory_provider_private_signed_url_enabled": True,
         "provider_private_signed_url_enabled": True,
-        "provider_public_url_prepare_enabled": True,
+        "provider_public_url_prepare_enabled": False,
         "same_origin_delivery_changed": False,
         "raw_local_path_exposed": False,
         "raw_provider_url_exposed": False,
@@ -2513,7 +2513,6 @@ def source_directory_hybrid_context_packet_qualitative_analysis_provider_private
         "source_expansion_enabled": False,
         "frontend_durable_authority_enabled": False,
         "next_allowed_actions": [
-            "prepare_provider_public_url",
             "inspect_provider_private_signed_url_status",
             "revoke_provider_private_signed_url",
         ],

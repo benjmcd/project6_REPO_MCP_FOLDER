@@ -2021,7 +2021,7 @@ def test_source_directory_hybrid_context_packet_provider_private_to_public_redac
     assert private_body["source_artifact_ref"] == "artifact://provider-private-signed-url-redacted"
     assert private_body["output_package_id"] == selected_package["output_package_id"]
     assert private_body["provider_private_signed_url_enabled"] is True
-    assert private_body["provider_public_url_prepare_enabled"] is True
+    assert private_body["provider_public_url_prepare_enabled"] is False
     assert private_body["provider_network_enabled"] is False
     assert private_body["provider_object_write_enabled"] is False
     assert private_body["connector_dispatch_enabled"] is False
@@ -2116,40 +2116,10 @@ def test_source_directory_hybrid_context_packet_provider_private_to_public_redac
             "operator_decision": "prepare_provider_public_url",
         },
     )
-    assert provider_public.status_code == 200, provider_public.text
-    public_body = provider_public.json()
-    assert public_body["status"] == "prepared"
-    assert public_body["provider_public_url_state"] == "provider_public_url_prepared"
-    assert public_body["provider_private_signed_url_receipt_id"] == (
-        private_body["provider_signed_url_receipt_id"]
+    assert provider_public.status_code == 409, provider_public.text
+    assert provider_public.json()["error_code"] == (
+        "provider_public_url_source_directory_provider_private_not_admitted"
     )
-    assert public_body["source_artifact_hash"] == private_body["source_artifact_hash"]
-    assert public_body["source_artifact_size_bytes"] == private_body["source_artifact_size_bytes"]
-    assert public_body["raw_public_url_exposed"] is False
-    assert public_body["public_url_enabled"] is False
-
-    delivery_use = client.post(
-        "/api/v1/layer3/handoff/export/download/provider-public-url/use",
-        json={
-            "client_request_id": "source-directory-provider-public-use",
-            "provider_public_url_receipt_id": public_body["provider_public_url_receipt_id"],
-            "expected_source_artifact_hash": private_body["source_artifact_hash"],
-            "expected_source_artifact_size_bytes": private_body["source_artifact_size_bytes"],
-            "delivery_use_mode": "fake_provider_redacted_use_decision",
-            "operator_decision": "use_provider_public_url_redacted_fake_provider",
-        },
-    )
-    assert delivery_use.status_code == 200, delivery_use.text
-    use_body = delivery_use.json()
-    assert use_body["delivery_use_decision"] == "allowed"
-    assert use_body["raw_public_url_exposed"] is False
-    assert use_body["provider_network_enabled"] is False
-    assert use_body["byte_streaming_enabled"] is False
-    assert use_body["durable_use_row_created"] is False
-    assert use_body["connector_dispatch_enabled"] is False
-    assert use_body["package_mutation_enabled"] is False
-    assert use_body["source_expansion_enabled"] is False
-    assert use_body["frontend_durable_authority_enabled"] is False
 
     provider_private_use_path = (
         "/api/v1/layer3/source/ingestion/server-configured-directory/"
@@ -2320,8 +2290,8 @@ def test_source_directory_hybrid_context_packet_provider_private_to_public_redac
         assert db.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
         assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 3
         assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() == 7
-        assert db.query(L3ProviderPublicUrlObjectAuthority).count() == 1
-        assert db.query(L3ProviderPublicUrlReceipt).count() == 1
+        assert db.query(L3ProviderPublicUrlObjectAuthority).count() == 0
+        assert db.query(L3ProviderPublicUrlReceipt).count() == 0
         assert db.query(AnalysisRun).count() == 0
         assert db.query(ConnectorRun).count() == 0
         assert db.query(ConnectorRunTarget).count() == 0

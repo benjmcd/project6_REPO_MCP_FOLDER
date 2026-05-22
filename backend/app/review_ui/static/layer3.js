@@ -3749,11 +3749,21 @@ function providerPublicUrlBlocksPrepare() {
     return !PROVIDER_PUBLIC_URL_REPLACEABLE_STATES.has(providerPublicUrlLatestState());
 }
 
+function sourceDirectoryProviderPrivateBlocksProviderPublicUrlPrepare() {
+    return Boolean(
+        isSourceDirectoryHybridExternalExportDownloadPrepareState()
+        || sourceDirectoryHybridProviderPrivateSignedUrlReady()
+        || isSourceDirectoryPackageSupersessionProviderPrivateState()
+        || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()
+    );
+}
+
 function canPrepareProviderPublicUrl() {
     return Boolean(
         providerPrivateSignedUrlReceiptId()
         && providerPrivateSignedUrlLatestState() === 'provider_private_signed_url_prepared'
         && !providerPublicUrlBlocksPrepare()
+        && !sourceDirectoryProviderPrivateBlocksProviderPublicUrlPrepare()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.providerPrivateSignedUrlPending
