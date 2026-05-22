@@ -35,7 +35,11 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "approved_plan_cancel": True,
     "candidate_b_bundle_material_bridge": True,
     "candidate_b_runtime_material_bridge": True,
+    "candidate_b_default_promotion_operator_status": True,
+    "candidate_b_default_promotion_closure_evidence": True,
     "candidate_b_default_promotion_readiness_audit": True,
+    "candidate_b_default_promotion_final_proof": True,
+    "candidate_b_default_promotion_final_proof_status": True,
     "source_directory_ingestion_scan": True,
     "source_directory_ingestion_status": True,
     "source_directory_material_preview": True,
@@ -160,9 +164,41 @@ def build_bootstrap_contract(
             "candidate_b_runtime_material_bridge_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/runtime/material-bridge"
             ),
+            "candidate_b_artifact_family_status_admitted": True,
+            "candidate_b_artifact_family_status_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/artifact-family/status"
+            ),
+            "candidate_b_visual_lane_status_admitted": True,
+            "candidate_b_visual_lane_status_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/visual-lane/status"
+            ),
+            "candidate_b_bundle_downstream_proof_admitted": True,
+            "candidate_b_bundle_downstream_proof_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/bundle/downstream-proof"
+            ),
+            "candidate_b_runtime_downstream_proof_admitted": True,
+            "candidate_b_runtime_downstream_proof_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/runtime/downstream-proof"
+            ),
+            "candidate_b_default_promotion_operator_status_admitted": True,
+            "candidate_b_default_promotion_operator_status_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/default-promotion/operator-status"
+            ),
+            "candidate_b_default_promotion_closure_evidence_admitted": True,
+            "candidate_b_default_promotion_closure_evidence_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/default-promotion/closure-evidence"
+            ),
             "candidate_b_default_promotion_readiness_audit_admitted": True,
             "candidate_b_default_promotion_readiness_audit_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/default-promotion/readiness-audit"
+            ),
+            "candidate_b_default_promotion_final_proof_admitted": True,
+            "candidate_b_default_promotion_final_proof_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/default-promotion/final-proof"
+            ),
+            "candidate_b_default_promotion_final_proof_status_admitted": True,
+            "candidate_b_default_promotion_final_proof_status_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/default-promotion/final-proof/status"
             ),
             "candidate_b_default_promotion_selector_switch_admitted": True,
             "candidate_b_default_promotion_selector_scope": ELIGIBLE_CORPUS_SCOPE,

@@ -37,7 +37,11 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["approved_plan_cancel"] is True
     assert direct_body["features"]["candidate_b_bundle_material_bridge"] is True
     assert direct_body["features"]["candidate_b_runtime_material_bridge"] is True
+    assert direct_body["features"]["candidate_b_default_promotion_operator_status"] is True
+    assert direct_body["features"]["candidate_b_default_promotion_closure_evidence"] is True
     assert direct_body["features"]["candidate_b_default_promotion_readiness_audit"] is True
+    assert direct_body["features"]["candidate_b_default_promotion_final_proof"] is True
+    assert direct_body["features"]["candidate_b_default_promotion_final_proof_status"] is True
     assert direct_body["features"]["source_directory_ingestion_scan"] is True
     assert direct_body["features"]["source_directory_ingestion_status"] is True
     assert direct_body["features"]["source_directory_material_preview"] is True
@@ -91,9 +95,41 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"]["candidate_b_runtime_material_bridge_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge"
     )
+    assert direct_body["execution_readiness"]["candidate_b_artifact_family_status_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_artifact_family_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/artifact-family/status"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_visual_lane_status_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_visual_lane_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_bundle_downstream_proof_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_bundle_downstream_proof_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_runtime_downstream_proof_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_runtime_downstream_proof_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_operator_status_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_operator_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_closure_evidence_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_closure_evidence_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence"
+    )
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_readiness_audit_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_readiness_audit_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_status_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status"
     )
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_selector_switch_admitted"] is True
     assert (
