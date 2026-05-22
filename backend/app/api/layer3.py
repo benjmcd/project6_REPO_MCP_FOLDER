@@ -2655,6 +2655,7 @@ class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     operator_confirmation: bool
     bundle_downstream_proof: dict[str, Any]
     runtime_downstream_proof: dict[str, Any]
+    candidate_b_visual_lane_status_evidence: dict[str, Any]
     operator_status_evidence: dict[str, Any]
 
 
@@ -3116,6 +3117,7 @@ class Layer3CandidateBDefaultPromotionReadinessAuditResponse(Layer3BaseResponse)
     compare_target_sets: dict[str, Any]
     authority_hashes: dict[str, Any]
     downstream_proofs: dict[str, Any]
+    candidate_b_visual_lane_status_evidence: dict[str, Any]
     operator_status_evidence: dict[str, Any]
     rollback_to_baseline: dict[str, Any]
     regression_disposition: str
