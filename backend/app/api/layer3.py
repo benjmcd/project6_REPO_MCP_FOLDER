@@ -3332,6 +3332,7 @@ class Layer3CandidateBDefaultPromotionReadinessAuditResponse(Layer3BaseResponse)
     candidate_b_visual_lane_status_evidence: dict[str, Any]
     operator_status_evidence: dict[str, Any]
     closure_evidence: dict[str, Any]
+    candidate_b_final_operator_inspection_evidence: dict[str, Any]
     rollback_to_baseline: dict[str, Any]
     regression_disposition: str
     fail_closed_behavior: dict[str, bool]
@@ -3357,6 +3358,7 @@ class Layer3CandidateBDefaultPromotionFinalProofResponse(Layer3BaseResponse):
     candidate_b_visual_lane_status_hash: str
     operator_status_hash: str
     closure_evidence_hash: str
+    final_operator_inspection_hash: str
     default_selector_change_enabled: bool
     candidate_b_default_promotion_enabled: bool
     rollback_selector: str
@@ -3370,6 +3372,7 @@ class Layer3CandidateBDefaultPromotionFinalProofResponse(Layer3BaseResponse):
     raw_url_exposed: bool
     provider_private_token_exposed: bool
     artifact_bytes_exposed: bool
+    candidate_b_final_operator_inspection_evidence: dict[str, Any]
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -3388,6 +3391,7 @@ class Layer3CandidateBDefaultPromotionFinalProofStatusResponse(Layer3BaseRespons
     default_selector_change_enabled: bool
     rollback_selector: str
     final_operator_inspection_complete: bool
+    candidate_b_final_operator_inspection_evidence: dict[str, Any]
     selector_mutation_performed: bool
     raw_local_path_exposed: bool
     raw_url_exposed: bool

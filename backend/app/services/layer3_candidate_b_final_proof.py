@@ -40,6 +40,7 @@ PROOF_HASH_KEYS = (
     "candidate_b_visual_lane_status_hash",
     "operator_status_hash",
     "closure_evidence_hash",
+    "final_operator_inspection_hash",
     "default_selector_change_enabled",
     "candidate_b_default_promotion_enabled",
     "rollback_selector",
@@ -158,6 +159,9 @@ def candidate_b_default_promotion_final_proof(payload: Mapping[str, Any]) -> dic
         "candidate_b_visual_lane_status_hash": audit["candidate_b_visual_lane_status_evidence"]["status_hash"],
         "operator_status_hash": audit["operator_status_evidence"]["operator_status_hash"],
         "closure_evidence_hash": closure_hash,
+        "final_operator_inspection_hash": audit["candidate_b_final_operator_inspection_evidence"][
+            "final_operator_inspection_hash"
+        ],
         "default_selector_change_enabled": True,
         "candidate_b_default_promotion_enabled": True,
         "rollback_selector": "baseline",
@@ -179,6 +183,9 @@ def candidate_b_default_promotion_final_proof(payload: Mapping[str, Any]) -> dic
         "raw_url_exposed": False,
         "provider_private_token_exposed": False,
         "artifact_bytes_exposed": False,
+        "candidate_b_final_operator_inspection_evidence": dict(
+            audit["candidate_b_final_operator_inspection_evidence"]
+        ),
         "negative_invariants": {
             "baseline_rollback_preserved": True,
             "candidate_a_semantics_changed": False,
@@ -285,6 +292,9 @@ def candidate_b_default_promotion_final_proof_status(payload: Mapping[str, Any])
         "raw_url_exposed": False,
         "provider_private_token_exposed": False,
         "artifact_bytes_exposed": False,
+        "candidate_b_final_operator_inspection_evidence": dict(
+            proof.get("candidate_b_final_operator_inspection_evidence") or {}
+        ),
         "negative_invariants": dict(proof.get("negative_invariants") or {}),
         "next_allowed_actions": list(proof.get("next_allowed_actions") or []),
     }
@@ -366,6 +376,23 @@ def _validate_stored_final_proof(proof: Mapping[str, Any], *, proof_receipt_id: 
             http_status=409,
             details={"expected": proof_hash, "received": proof.get("proof_hash")},
         )
+    inspection = proof.get("candidate_b_final_operator_inspection_evidence")
+    if not isinstance(inspection, Mapping):
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_status_operator_inspection_missing",
+            "The selected Candidate B final proof receipt is missing retained artifact inspection evidence.",
+            http_status=409,
+        )
+    if _final_operator_inspection_hash(inspection) != proof.get("final_operator_inspection_hash"):
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_status_operator_inspection_hash_mismatch",
+            "The selected Candidate B final proof receipt has stale retained artifact inspection evidence.",
+            http_status=409,
+            details={
+                "expected": proof.get("final_operator_inspection_hash"),
+                "received": _final_operator_inspection_hash(inspection),
+            },
+        )
 
 
 def _validate_ready_audit(audit: Mapping[str, Any]) -> None:
@@ -410,6 +437,7 @@ def _validate_ready_audit(audit: Mapping[str, Any]) -> None:
         "candidate_b_visual_lane_status_evidence",
         "operator_status_evidence",
         "closure_evidence",
+        "candidate_b_final_operator_inspection_evidence",
         "selected_evidence",
     ):
         if not isinstance(audit.get(field), Mapping):
@@ -419,6 +447,54 @@ def _validate_ready_audit(audit: Mapping[str, Any]) -> None:
                 http_status=409,
                 details={"field": field},
             )
+    inspection = audit["candidate_b_final_operator_inspection_evidence"]
+    if inspection.get("status") != "available":
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_operator_inspection_not_available",
+            "Candidate B final proof requires available retained artifact inspection evidence.",
+            http_status=409,
+        )
+    if str(inspection.get("final_operator_inspection_hash") or "").strip() != _final_operator_inspection_hash(
+        inspection
+    ):
+        raise CandidateBFinalProofError(
+            "candidate_b_final_proof_operator_inspection_hash_mismatch",
+            "Candidate B final operator inspection evidence hash is stale or invalid.",
+            http_status=409,
+        )
+    for source_kind in ("bundle", "runtime"):
+        summary = inspection.get(source_kind)
+        if not isinstance(summary, Mapping):
+            raise CandidateBFinalProofError(
+                "candidate_b_final_proof_operator_inspection_source_missing",
+                "Candidate B final operator inspection evidence is missing a source summary.",
+                http_status=409,
+                details={"candidate_b_source_kind": source_kind},
+            )
+        for field in (
+            "visual_page_evidence_count",
+            "product_inspection_artifact_count",
+            "delivery_artifact_count",
+        ):
+            if int(summary.get(field) or 0) <= 0:
+                raise CandidateBFinalProofError(
+                    "candidate_b_final_proof_operator_inspection_artifact_count_missing",
+                    "Candidate B final operator inspection evidence is missing retained visual/product/delivery artifacts.",
+                    http_status=409,
+                    details={"candidate_b_source_kind": source_kind, "field": field},
+                )
+        for field in (
+            "pdf_material_text_payload_enabled",
+            "image_material_text_payload_enabled",
+            "raw_url_exposure_enabled",
+        ):
+            if summary.get(field) is not False:
+                raise CandidateBFinalProofError(
+                    "candidate_b_final_proof_operator_inspection_invariant_failed",
+                    "Candidate B final operator inspection evidence enables a non-admitted material or URL authority.",
+                    http_status=409,
+                    details={"candidate_b_source_kind": source_kind, "field": field},
+                )
 
 
 def _compute_readiness_hash(audit: Mapping[str, Any]) -> str:
@@ -445,6 +521,9 @@ def _compute_readiness_hash(audit: Mapping[str, Any]) -> str:
             "rollback_to_baseline_confirmation": audit.get("rollback_to_baseline", {}).get("available") is True,
             "operator_status_hash": audit.get("operator_status_evidence", {}).get("operator_status_hash"),
             "closure_evidence_hash": audit.get("closure_evidence", {}).get("closure_evidence_hash"),
+            "final_operator_inspection_hash": audit.get("candidate_b_final_operator_inspection_evidence", {}).get(
+                "final_operator_inspection_hash"
+            ),
         }
     )
 
@@ -455,6 +534,19 @@ def _bundle_receipt_id(audit: Mapping[str, Any]) -> str:
 
 def _runtime_receipt_id(audit: Mapping[str, Any]) -> str:
     return str(audit.get("bridge_receipts", {}).get("runtime", {}).get("bridge_receipt_id") or "").strip()
+
+
+def _final_operator_inspection_hash(inspection: Mapping[str, Any]) -> str:
+    return _stable_hash(
+        {
+            "hash_version": "candidate_b_final_operator_inspection_evidence_hash_v1",
+            "bundle": inspection.get("bundle"),
+            "runtime": inspection.get("runtime"),
+            "raw_local_path_exposed": inspection.get("raw_local_path_exposed") is True,
+            "raw_url_exposed": inspection.get("raw_url_exposed") is True,
+            "artifact_bytes_exposed": inspection.get("artifact_bytes_exposed") is True,
+        }
+    )
 
 
 def _validate_closure_receipt(audit: Mapping[str, Any], *, runtime_receipt_id: str, closure_hash: str) -> None:
