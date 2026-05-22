@@ -740,6 +740,14 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     )
     assert body["operator_status_evidence"]["runtime_delivery_artifact_projection_visible"] is True
     assert body["operator_status_evidence"]["runtime_delivery_artifact_roles_bound"] is True
+    assert (
+        body["closure_evidence"]["candidate_b_operator_status_evidence"]
+        == body["operator_status_evidence"]
+    )
+    assert (
+        body["closure_evidence"]["candidate_b_operator_status_evidence"]["runtime_delivery_artifact_authority_hash"]
+        == body["authority_hashes"]["runtime"]["governed_retained_artifact_family_hash"]
+    )
     inspection = body["candidate_b_final_operator_inspection_evidence"]
     assert inspection["status"] == "available"
     assert inspection["final_operator_inspection_hash"]
@@ -820,6 +828,8 @@ def test_candidate_b_operator_delivery_projection_fields_are_declared_in_openapi
     assert "candidate_b_operator_status_evidence" in final_proof_props
     assert "operator_status_hash" in final_status_props
     assert "candidate_b_operator_status_evidence" in final_status_props
+    closure_props = schemas["Layer3CandidateBDefaultPromotionClosureEvidenceResponse"]["properties"]
+    assert "candidate_b_operator_status_evidence" in closure_props
 
 
 def test_candidate_b_default_readiness_accepts_live_visual_lane_status_response(
@@ -995,6 +1005,44 @@ def test_candidate_b_default_readiness_blocks_loose_closure_evidence(client: Tes
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_default_readiness_closure_schema_id_mismatch" in codes
     assert "candidate_b_default_readiness_closure_authority_field_missing" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_default_readiness_blocks_stale_closure_operator_status_projection(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    payload["closure_evidence"]["candidate_b_operator_status_evidence"]["runtime_delivery_artifact_roles_bound"] = False
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_closure_operator_status_projection_incomplete" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_default_readiness_blocks_mismatched_closure_operator_status_authority(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    payload["closure_evidence"]["candidate_b_operator_status_evidence"][
+        "runtime_delivery_artifact_authority_hash"
+    ] = "stale-authority-hash"
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_closure_operator_status_projection_mismatch" in codes
     assert body["candidate_b_default_promotion_enabled"] is False
 
 
