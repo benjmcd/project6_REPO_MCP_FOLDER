@@ -48,6 +48,7 @@ READINESS_REQUIRED_GATES = (
     "source-directory-hybrid-context-packet-qualitative-analysis-provider-private-signed-url-prepare",
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-dispatch",
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-status",
+    "candidate-b-default-promotion-readiness-audit",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -89,6 +90,7 @@ READINESS_IMPLEMENTED_GATES = (
     "source-directory-hybrid-context-packet-qualitative-analysis-provider-private-signed-url-prepare",
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-dispatch",
     "source-directory-hybrid-context-packet-qualitative-analysis-internal-webhook-status",
+    "candidate-b-default-promotion-readiness-audit",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -168,6 +170,11 @@ def build_readiness_contract(
         "candidate_b_runtime_material_bridge_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/runtime/material-bridge"
         ),
+        "candidate_b_default_promotion_readiness_audit_admitted": True,
+        "candidate_b_default_promotion_readiness_audit_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/default-promotion/readiness-audit"
+        ),
+        "candidate_b_default_promotion_selector_switch_admitted": False,
         "source_directory_ingestion_scan_admitted": True,
         "source_directory_ingestion_scan_endpoint": f"{api_root}/source/ingestion/server-configured-directory/scan",
         "source_directory_ingestion_status_admitted": True,
