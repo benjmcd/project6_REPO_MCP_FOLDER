@@ -125,11 +125,11 @@ npx playwright test e2e/layer3-workbench.spec.js -g "Layer 3 workbench proves so
 
 ## Remaining Work
 
-This is the first provider-private redacted lifecycle slice for one exact artifact family, not the completed long-term delivery program.
+This is the first provider-private redacted lifecycle slice for one exact artifact family, not the completed long-term delivery program. Current-main follow-up through `961-provider-private-sync.md` records that package replacement/supersession and hybrid rendered stale/replay/revoked proof have since landed.
 
 Remaining passes:
 
-- package replacement/supersession provider-private lifecycle proof;
-- runbook/checkpoint update after the branch is merged to current main;
+- any further provider-private artifact family only through a separate freeze;
+- bounded operator runbook recheck when a full readiness refresh is needed;
 - broader artifact-family expansion only after a separate freeze;
 - real provider, public URL, proxy, connector, RAG/vector/model runtime, auth/security, and full mockup activation only after separate authority freezes.

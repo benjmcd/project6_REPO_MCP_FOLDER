@@ -56,15 +56,14 @@ remote_pr_checks:
 
 ## Remaining Work
 
-Immediate next pass: select whether the next provider-private lifecycle proof should follow package replacement/supersession artifacts or remain on source-directory package review/handoff/export operator ergonomics.
+Current-main follow-up: `961-provider-private-sync.md` records that the package replacement/supersession provider-private lifecycle proof and hybrid stale/replay/revoked rendered proof have since landed through PRs `#1592` through `#1596`.
 
-Recommended next implementation slice: package replacement/supersession provider-private lifecycle proof, bounded to one exact artifact family and one current-main-admitted route/control path.
+Immediate next pass: run the bounded operator runbook from `952-bounded-trial-checkpoint-runbook.md` when a full readiness recheck is needed, or stop until product authority selects a new exact artifact family or journey-specific extension.
 
 Mid-term remaining passes:
 
-- extend provider-private lifecycle proof to the next admitted package/handoff artifact family;
-- prove package replacement/supersession prepare/status/use/revoke behavior with stale-authority rejection;
-- update the operator runbook for the bounded source-directory package/handoff lifecycle;
+- admit any next provider-private artifact family only through a separate freeze;
+- keep the operator runbook synchronized with current-main proof;
 - preserve same-origin and redacted-provider delivery boundaries while adding any new controls;
 - re-run headed/headless rendered proof after each operator-path extension.
 
