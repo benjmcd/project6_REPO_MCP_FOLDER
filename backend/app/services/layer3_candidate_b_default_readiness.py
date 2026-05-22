@@ -425,7 +425,7 @@ def _validate_receipt_invariants(*, kind: str, receipt: Mapping[str, Any], block
     required_false = {
         "baseline_default_changed",
         "candidate_a_semantics_changed",
-        "candidate_b_visual_lane_mode_enabled",
+        "candidate_b_visual_lane_material_ingestion_enabled",
         "candidate_b_default_promotion_enabled",
         "provider_object_writes_enabled",
         "connector_dispatch_enabled",

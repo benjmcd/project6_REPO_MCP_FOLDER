@@ -29,21 +29,26 @@ def test_build_fixture_documents_uses_frozen_pdf_fixture_set() -> None:
     assert corpus_shape["ocr_required_fixture_ids"] == ["scanned", "mixed"]
 
 
-def test_inject_visual_lane_mode_only_marks_candidate_a() -> None:
+def test_inject_visual_lane_mode_marks_nonbaseline_lanes() -> None:
     baseline_payload = seed_wb_compare._inject_visual_lane_mode({"mode": "strict_builder"}, "baseline")
     candidate_payload = seed_wb_compare._inject_visual_lane_mode({"mode": "strict_builder"}, "candidate_a_page_evidence_v1")
+    candidate_b_payload = seed_wb_compare._inject_visual_lane_mode(
+        {"mode": "strict_builder"},
+        seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
+    )
 
     assert "visual_lane_mode" not in baseline_payload
     assert candidate_payload["visual_lane_mode"] == "candidate_a_page_evidence_v1"
+    assert candidate_b_payload["visual_lane_mode"] == seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
 
 
-def test_candidate_b_document_processing_requires_baseline_visual_lane() -> None:
+def test_candidate_b_document_processing_accepts_candidate_b_visual_lane() -> None:
     visual_lane_mode, document_processing_engine = seed_wb_compare._validate_seed_modes(
-        visual_lane_mode="baseline",
+        visual_lane_mode=seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
         document_processing_engine="candidate_b_opendataloader_pdf",
     )
 
-    assert visual_lane_mode == "baseline"
+    assert visual_lane_mode == seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
     assert document_processing_engine == "candidate_b_opendataloader_pdf"
 
     with pytest.raises(seed_wb_compare.local_corpus_e2e.ProofError) as exc_info:
@@ -52,7 +57,15 @@ def test_candidate_b_document_processing_requires_baseline_visual_lane() -> None
             document_processing_engine="candidate_b_opendataloader_pdf",
         )
 
-    assert "candidate_b_document_processing_engine_requires_baseline_visual_lane" in str(exc_info.value)
+    assert "candidate_a_visual_lane_cannot_use_candidate_b_document_processing_engine" in str(exc_info.value)
+
+    with pytest.raises(seed_wb_compare.local_corpus_e2e.ProofError) as cb_exc_info:
+        seed_wb_compare._validate_seed_modes(
+            visual_lane_mode=seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
+            document_processing_engine="baseline",
+        )
+
+    assert "candidate_b_visual_lane_requires_candidate_b_document_processing_engine" in str(cb_exc_info.value)
 
 
 def test_main_writes_summary_for_candidate_a_seed(tmp_path: Path, monkeypatch) -> None:
@@ -162,18 +175,20 @@ def test_main_writes_summary_for_candidate_b_runtime_seed(tmp_path: Path, monkey
             str(runtime_root),
             "--document-processing-engine",
             "candidate_b_opendataloader_pdf",
+            "--visual-lane-mode",
+            seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
         ]
     )
 
     assert exit_code == 0
     assert observed == {
-        "visual_lane_mode": "baseline",
+        "visual_lane_mode": seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
         "document_processing_engine": "candidate_b_opendataloader_pdf",
     }
     summary = json.loads((runtime_root / "local_corpus_e2e_summary.json").read_text(encoding="utf-8"))
     assert summary["passed"] is True
     assert summary["run_id"] == "candidate-b-runtime-001"
-    assert summary["visual_lane_mode"] == "baseline"
+    assert summary["visual_lane_mode"] == seed_wb_compare.local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
     assert summary["document_processing_engine"] == "candidate_b_opendataloader_pdf"
     assert summary["corpus_fixture_ids"] == list(seed_wb_compare.FROZEN_FIXTURE_IDS)
 

@@ -46,7 +46,11 @@ from support_nrc_aps_doc_corpus import corpus_ocr_available, fixture_path, manif
 FIXTURE_DOCUMENT_TYPE = "Inspection Report"
 FIXTURE_FOLDER_NAME = "fixture_compare_documents_for_testing"
 FIXTURE_FOLDER_SLUG = "fixture-compare"
-_SUPPORTED_VISUAL_LANE_MODES = {"baseline", "candidate_a_page_evidence_v1"}
+_SUPPORTED_VISUAL_LANE_MODES = {
+    "baseline",
+    "candidate_a_page_evidence_v1",
+    local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
+}
 _SUPPORTED_DOCUMENT_PROCESSING_ENGINES = set(DOCUMENT_PROCESSING_ENGINE_CHOICES)
 
 
@@ -222,8 +226,14 @@ def _validate_seed_modes(*, visual_lane_mode: str, document_processing_engine: s
     normalized_lane = _normalize_visual_lane_mode(visual_lane_mode)
     normalized_engine = _normalize_document_processing_engine(document_processing_engine)
     _assert(
-        normalized_engine == DOCUMENT_PROCESSING_ENGINE_BASELINE or normalized_lane == "baseline",
-        "candidate_b_document_processing_engine_requires_baseline_visual_lane",
+        normalized_lane != local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
+        or normalized_engine == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+        "candidate_b_visual_lane_requires_candidate_b_document_processing_engine",
+    )
+    _assert(
+        normalized_lane != "candidate_a_page_evidence_v1"
+        or normalized_engine == DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        "candidate_a_visual_lane_cannot_use_candidate_b_document_processing_engine",
     )
     return normalized_lane, normalized_engine
 
@@ -231,7 +241,7 @@ def _validate_seed_modes(*, visual_lane_mode: str, document_processing_engine: s
 def _inject_visual_lane_mode(payload: dict[str, Any], visual_lane_mode: str) -> dict[str, Any]:
     normalized = _normalize_visual_lane_mode(visual_lane_mode)
     outbound = dict(payload)
-    if normalized == "candidate_a_page_evidence_v1":
+    if normalized != "baseline":
         outbound["visual_lane_mode"] = normalized
     else:
         outbound.pop("visual_lane_mode", None)
@@ -273,6 +283,7 @@ def execute_seed(
             runtime_root,
             fake_client,
             document_processing_engine=document_processing_engine,
+            visual_lane_mode=visual_lane_mode,
         )
 
 
@@ -292,7 +303,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--visual-lane-mode",
         choices=sorted(_SUPPORTED_VISUAL_LANE_MODES),
         default="baseline",
-        help="Seed either a baseline or Candidate A review runtime for the fixed workbench-compare fixture set.",
+        help="Seed baseline, Candidate A, or Candidate B visual-lane review runtime evidence for the fixed fixture set.",
     )
     parser.add_argument(
         "--document-processing-engine",
@@ -300,7 +311,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=DOCUMENT_PROCESSING_ENGINE_BASELINE,
         help=(
             "Document processing engine for the fixed workbench-compare fixture seed. "
-            "Use candidate_b_opendataloader_pdf with baseline visual lane to create a Candidate B runtime source."
+            "Use candidate_b_opendataloader_pdf with baseline or Candidate B visual lane to create a Candidate B runtime source."
         ),
     )
     return parser

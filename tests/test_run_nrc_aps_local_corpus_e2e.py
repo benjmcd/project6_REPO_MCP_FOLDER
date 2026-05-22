@@ -46,9 +46,28 @@ def test_document_processing_engine_parser_accepts_candidate_b() -> None:
     assert args.document_processing_engine == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
 
 
+def test_visual_lane_mode_parser_accepts_candidate_b_page_evidence() -> None:
+    args = local_corpus_e2e.build_parser().parse_args(
+        ["--visual-lane-mode", local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B]
+    )
+
+    assert args.visual_lane_mode == local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
+
+
 def test_document_processing_engine_parser_rejects_invalid() -> None:
     with pytest.raises(SystemExit):
         local_corpus_e2e.build_parser().parse_args(["--document-processing-engine", "other"])
+
+
+def test_candidate_b_visual_lane_requires_candidate_b_engine() -> None:
+    with pytest.raises(
+        local_corpus_e2e.ProofError,
+        match="candidate_b_visual_lane_requires_candidate_b_document_processing_engine",
+    ):
+        local_corpus_e2e._validate_processing_modes(
+            document_processing_engine=local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_BASELINE,
+            visual_lane_mode=local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
+        )
 
 
 def test_candidate_b_package_pin_matches_runtime_processor_contract() -> None:
@@ -100,6 +119,7 @@ def test_build_submit_payload_preserves_baseline_default(tmp_path: Path) -> None
     payload = local_corpus_e2e._build_submit_payload(
         [doc],
         document_processing_engine=local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_BASELINE,
+        visual_lane_mode=local_corpus_e2e.VISUAL_LANE_MODE_BASELINE,
         idempotency_key="local-corpus-e2e-test",
     )
 
@@ -114,10 +134,25 @@ def test_build_submit_payload_propagates_candidate_b(tmp_path: Path) -> None:
     payload = local_corpus_e2e._build_submit_payload(
         [doc],
         document_processing_engine=local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+        visual_lane_mode=local_corpus_e2e.VISUAL_LANE_MODE_BASELINE,
         idempotency_key="local-corpus-e2e-test",
     )
 
     assert payload["document_processing_engine"] == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+
+
+def test_build_submit_payload_propagates_candidate_b_visual_lane(tmp_path: Path) -> None:
+    doc = _local_doc(tmp_path / "ML26000A001.pdf")
+
+    payload = local_corpus_e2e._build_submit_payload(
+        [doc],
+        document_processing_engine=local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+        visual_lane_mode=local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
+        idempotency_key="local-corpus-e2e-test",
+    )
+
+    assert payload["document_processing_engine"] == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+    assert payload["visual_lane_mode"] == local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
 
 
 def test_main_summary_records_document_processing_engine(tmp_path: Path, monkeypatch) -> None:
@@ -136,12 +171,16 @@ def test_main_summary_records_document_processing_engine(tmp_path: Path, monkeyp
             storage_dir=actual_runtime_root / "storage",
         )
 
-    def fake_execute_proof(runtime, docs, actual_runtime_root, fake_client, *, document_processing_engine):  # noqa: ANN001
+    def fake_execute_proof(runtime, docs, actual_runtime_root, fake_client, *, document_processing_engine, visual_lane_mode):  # noqa: ANN001
         del runtime, docs, actual_runtime_root, fake_client
         observed["document_processing_engine"] = document_processing_engine
+        observed["visual_lane_mode"] = visual_lane_mode
         return {
             "run_id": "run-candidate-b",
-            "submission": {"document_processing_engine": document_processing_engine},
+            "submission": {
+                "document_processing_engine": document_processing_engine,
+                "visual_lane_mode": visual_lane_mode,
+            },
         }
 
     monkeypatch.setattr(local_corpus_e2e, "DEFAULT_RUNTIME_PARENT", runtime_parent)
@@ -159,14 +198,19 @@ def test_main_summary_records_document_processing_engine(tmp_path: Path, monkeyp
             str(runtime_root),
             "--document-processing-engine",
             local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+            "--visual-lane-mode",
+            local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B,
         ]
     )
 
     summary = json.loads((runtime_root / "local_corpus_e2e_summary.json").read_text(encoding="utf-8"))
     assert exit_code == 0
     assert observed["document_processing_engine"] == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+    assert observed["visual_lane_mode"] == local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
     assert summary["document_processing_engine"] == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+    assert summary["visual_lane_mode"] == local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
     assert summary["submission"]["document_processing_engine"] == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+    assert summary["submission"]["visual_lane_mode"] == local_corpus_e2e.VISUAL_LANE_MODE_CANDIDATE_B
 
 
 def test_candidate_b_advanced_metrics_require_candidate_b_extractor_not_ocr() -> None:

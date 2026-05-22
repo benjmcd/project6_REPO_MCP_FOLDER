@@ -125,6 +125,14 @@ def _runtime_binding(tmp_path: Path, *, visual_lane_mode: str = "baseline") -> R
         "storage_dir": str(storage_dir),
         "visual_lane_mode": visual_lane_mode,
         "document_processing_engine": "candidate_b_opendataloader_pdf",
+        "advanced_metrics": {
+            "visual_lane_mode": visual_lane_mode,
+            "visual_ref_total": 1 if visual_lane_mode == "candidate_b_opendataloader_page_evidence_v1" else 0,
+            "candidate_b_visual_ref_total": 1 if visual_lane_mode == "candidate_b_opendataloader_page_evidence_v1" else 0,
+            "candidate_b_retained_source_pdf_ref_count": (
+                1 if visual_lane_mode == "candidate_b_opendataloader_page_evidence_v1" else 0
+            ),
+        },
         "passed": True,
         "run_detail": {"status": "completed"},
     }
@@ -488,7 +496,21 @@ def test_candidate_b_runtime_bridge_accepts_admitted_candidate_b_visual_lane(
 
     assert bridge["candidate_b_source_kind"] == "runtime"
     assert bridge["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert bridge["visual_lane_mode"] == "candidate_b_opendataloader_page_evidence_v1"
     assert bridge["candidate_b_runtime_validation"]["visual_lane_mode"] == "candidate_b_opendataloader_page_evidence_v1"
+    assert bridge["candidate_b_visual_lane_evidence"] == {
+        "visual_lane_mode": "candidate_b_opendataloader_page_evidence_v1",
+        "candidate_b_visual_lane_selected": True,
+        "candidate_b_visual_lane_mode": "candidate_b_opendataloader_page_evidence_v1",
+        "visual_ref_total": 1,
+        "candidate_b_visual_ref_total": 1,
+        "candidate_b_retained_source_pdf_ref_count": 1,
+        "source_pdf_material_text_payload_enabled": False,
+        "image_material_text_payload_enabled": False,
+        "evidence_source": "runtime_summary_advanced_metrics",
+    }
+    assert bridge["negative_invariants"]["candidate_b_visual_lane_mode_enabled"] is True
+    assert bridge["negative_invariants"]["candidate_b_visual_lane_material_ingestion_enabled"] is False
     assert bridge["negative_invariants"]["pdf_ingestion_enabled"] is False
     assert bridge["negative_invariants"]["image_ingestion_enabled"] is False
 
