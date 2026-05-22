@@ -731,6 +731,15 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert body["candidate_b_visual_lane_status_evidence"]["bridge_receipt_id"] == runtime_receipt_id
     assert body["candidate_b_visual_lane_status_evidence"]["visual_lane_mode"] == CANDIDATE_B_VISUAL_LANE_MODE
     assert body["candidate_b_visual_lane_status_evidence"]["status_hash"]
+    assert (
+        body["operator_status_evidence"]["runtime_delivery_artifact_authority_hash"]
+        == body["authority_hashes"]["runtime"]["governed_retained_artifact_family_hash"]
+    )
+    assert body["operator_status_evidence"]["runtime_delivery_artifact_coverage_steps"] == sorted(
+        DELIVERY_ARTIFACT_AUTHORITY_COVERAGE
+    )
+    assert body["operator_status_evidence"]["runtime_delivery_artifact_projection_visible"] is True
+    assert body["operator_status_evidence"]["runtime_delivery_artifact_roles_bound"] is True
     inspection = body["candidate_b_final_operator_inspection_evidence"]
     assert inspection["status"] == "available"
     assert inspection["final_operator_inspection_hash"]
@@ -1037,6 +1046,33 @@ def test_candidate_b_operator_status_rejects_path_like_receipt_id(client: TestCl
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_operator_status_storage_id_invalid"
+
+
+def test_candidate_b_operator_status_rejects_unprojected_delivery_artifact_authority(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+    proof_response = client.post(
+        DOWNSTREAM_PROOF_ENDPOINT,
+        json=_downstream_proof_request(runtime_receipt_id, visual_status_response.json()),
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    proof["coverage_evidence"]["provider_private_use"].pop("candidate_b_retained_artifact_family_hash")
+
+    response = client.post(
+        OPERATOR_STATUS_ENDPOINT,
+        json=_operator_status_request(bundle_receipt_id, runtime_receipt_id, visual_status_response.json(), proof),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_operator_status_runtime_delivery_artifact_authority_mismatch"
+    assert body["error"]["details"]["coverage_step"] == "provider_private_use"
 
 
 def test_candidate_b_runtime_downstream_proof_rejects_nested_path_authority(client: TestClient) -> None:
