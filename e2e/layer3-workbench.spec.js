@@ -11564,6 +11564,33 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(sourcePackageProviderPrivateUse.provider_object_write_enabled).toBe(false);
   await expect(providerPrivatePanel).toContainText('provider_private_signed_url_use_allowed');
 
+  await page.evaluate(() => {
+    State.providerPrivateSignedUrlUse = null;
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+  });
+  await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
+  const sourcePackageProviderPrivateReplayUseRequestPromise = waitForPostRequest(sourcePackageProviderPrivateUsePath);
+  const sourcePackageProviderPrivateReplayUseResponsePromise = waitForPostResponse(sourcePackageProviderPrivateUsePath);
+  await page.locator('#provider-private-signed-url-use').click();
+  const sourcePackageProviderPrivateReplayUsePayload = (await sourcePackageProviderPrivateReplayUseRequestPromise).postDataJSON();
+  const sourcePackageProviderPrivateReplayUse = await expectJsonStatus(
+    await sourcePackageProviderPrivateReplayUseResponsePromise,
+    409,
+  );
+  expectOnlyPayloadKeys(sourcePackageProviderPrivateReplayUsePayload, sourcePackageProviderPrivateLifecyclePayloadKeys);
+  expect(sourcePackageProviderPrivateReplayUsePayload.operator_decision).toBe(
+    'use_source_directory_package_supersession_provider_private_signed_url',
+  );
+  expect(sourcePackageProviderPrivateReplayUsePayload.provider_signed_url_receipt_id).toBe(
+    sourcePackageProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expectNoForbiddenPayloadKeys(sourcePackageProviderPrivateReplayUsePayload);
+  expect(sourcePackageProviderPrivateReplayUse.error_code).toBe('provider_private_signed_url_state_replay_denied');
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_state_replay_denied');
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
+
   const sourcePackageProviderPrivateRevokeRequestPromise = waitForPostRequest(sourcePackageProviderPrivateRevokePath);
   const sourcePackageProviderPrivateRevokeResponsePromise = waitForPostResponse(sourcePackageProviderPrivateRevokePath);
   await page.locator('#provider-private-signed-url-revoke').click();
@@ -11588,6 +11615,34 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(sourcePackageProviderPrivateRevoke.revocation_recorded).toBe(true);
   expect(sourcePackageProviderPrivateRevoke.raw_provider_private_signed_url_token_exposed).toBe(false);
   await expect(providerPrivatePanel).toContainText('provider_private_signed_url_revoked');
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
+
+  await page.evaluate(() => {
+    State.providerPrivateSignedUrlUse = null;
+    State.providerPrivateSignedUrlRevoke = null;
+    State.providerPrivateSignedUrlError = null;
+    renderAll();
+  });
+  await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
+  const sourcePackageProviderPrivateUseAfterRevokeRequestPromise = waitForPostRequest(sourcePackageProviderPrivateUsePath);
+  const sourcePackageProviderPrivateUseAfterRevokeResponsePromise = waitForPostResponse(sourcePackageProviderPrivateUsePath);
+  await page.locator('#provider-private-signed-url-use').click();
+  const sourcePackageProviderPrivateUseAfterRevokePayload = (await sourcePackageProviderPrivateUseAfterRevokeRequestPromise).postDataJSON();
+  const sourcePackageProviderPrivateUseAfterRevoke = await expectJsonStatus(
+    await sourcePackageProviderPrivateUseAfterRevokeResponsePromise,
+    409,
+  );
+  expectOnlyPayloadKeys(sourcePackageProviderPrivateUseAfterRevokePayload, sourcePackageProviderPrivateLifecyclePayloadKeys);
+  expect(sourcePackageProviderPrivateUseAfterRevokePayload.operator_decision).toBe(
+    'use_source_directory_package_supersession_provider_private_signed_url',
+  );
+  expect(sourcePackageProviderPrivateUseAfterRevokePayload.provider_signed_url_receipt_id).toBe(
+    sourcePackageProviderPrivate.provider_signed_url_receipt_id,
+  );
+  expectNoForbiddenPayloadKeys(sourcePackageProviderPrivateUseAfterRevokePayload);
+  expect(sourcePackageProviderPrivateUseAfterRevoke.error_code).toBe('provider_private_signed_url_state_revoked');
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_state_revoked');
   await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
   await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
 
@@ -11912,7 +11967,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourceSupersessionCommitPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivatePreparePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateStatusPath)).toHaveLength(2);
-  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateUsePath)).toHaveLength(1);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateUsePath)).toHaveLength(3);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === sourcePackageProviderPrivateRevokePath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryStatusPath)).toHaveLength(1);
   expect(apiRequests.filter((apiRequest) => apiRequest.path === deliveryPath)).toHaveLength(1);
@@ -11952,7 +12007,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     message.includes('Failed to load resource')
     && message.includes('409 (Conflict)')
   ));
-  expect(expectedStaleAuthorityConsoleErrors).toHaveLength(1);
+  expect(expectedStaleAuthorityConsoleErrors).toHaveLength(3);
   expect(consoleErrors.filter((message) => !(
     message.includes('Failed to load resource')
     && message.includes('409 (Conflict)')
