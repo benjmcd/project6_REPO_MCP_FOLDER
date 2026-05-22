@@ -100,7 +100,11 @@ def candidate_b_visual_lane_status(payload: Mapping[str, Any]) -> dict[str, Any]
         )
 
     candidate_b_run_id = _required(fields, "candidate_b_run_id")
-    receipt_id = _required(fields, "bridge_receipt_id")
+    receipt_id = _required_receipt_id(
+        fields,
+        "bridge_receipt_id",
+        layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX,
+    )
     receipt = _read_receipt(receipt_id)
     _validate_receipt(candidate_b_run_id, receipt_id, receipt)
     visual_evidence = receipt["candidate_b_visual_lane_evidence"]
@@ -178,6 +182,18 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
             "candidate_b_visual_lane_status_required_field_missing",
             "A required Candidate B visual-lane status field is missing or empty.",
             details={"field": key},
+        )
+    return value
+
+
+def _required_receipt_id(fields: Mapping[str, Any], key: str, prefix: str) -> str:
+    value = _required(fields, key)
+    if not value.startswith(f"{prefix}-") or "/" in value or "\\" in value or ".." in value or value in {".", ".."}:
+        raise CandidateBVisualLaneStatusError(
+            "candidate_b_visual_lane_status_bridge_receipt_id_invalid",
+            "Candidate B visual-lane status requires a server-owned runtime bridge receipt identifier.",
+            http_status=409,
+            details={"expected_prefix": prefix},
         )
     return value
 
