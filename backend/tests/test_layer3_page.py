@@ -1457,6 +1457,93 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
         assert forbidden not in commit_payload_slice
 
 
+def test_layer3_source_directory_package_supersession_provider_private_control_is_bounded() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+
+    assert js.status_code == 200
+    js_text = js.text
+    constants_start = js_text.find("SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PATH")
+    ready_start = js_text.find("function sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady")
+    base_payload_start = js_text.find("function sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload")
+    base_payload_end = js_text.find("function providerPrivateSignedUrlPreparePayload")
+    provider_payload_end = js_text.find("function providerPublicUrlPrepareRequestId")
+    inspect_start = js_text.find("async function inspectProviderPrivateSignedUrlStatus")
+    use_handler_start = js_text.find("async function useProviderPrivateSignedUrl")
+    controls_start = js_text.find("const providerPrivateSignedUrlControlsEnabled")
+    controls_end = js_text.find("elements.gateBSubmit.disabled")
+    assert constants_start != -1
+    assert ready_start != -1
+    assert base_payload_start != -1
+    assert base_payload_end != -1
+    assert provider_payload_end != -1
+    assert inspect_start != -1
+    assert use_handler_start != -1
+    assert controls_start != -1
+    assert controls_end != -1
+
+    constants_slice = js_text[constants_start:ready_start]
+    ready_slice = js_text[ready_start:base_payload_start]
+    base_payload_slice = js_text[base_payload_start:base_payload_end]
+    provider_payload_slice = js_text[base_payload_end:provider_payload_end]
+    inspect_slice = js_text[inspect_start:use_handler_start]
+    controls_slice = js_text[controls_start:controls_end]
+    for required in (
+        "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH",
+        "prepare_source_directory_package_supersession_provider_private_signed_url",
+        "inspect_source_directory_package_supersession_provider_private_signed_url_status",
+        "use_source_directory_package_supersession_provider_private_signed_url",
+        "revoke_source_directory_package_supersession_provider_private_signed_url",
+    ):
+        assert required in constants_slice
+    for required in (
+        "isSourceDirectoryPackageSupersessionCommitState(commit)",
+        "commit.package_supersession_commit_id",
+        "commit.commit_basis_hash",
+        "commit.replacement_package_set_authority_id",
+        "commit.replacement_authority_basis_hash",
+    ):
+        assert required in ready_slice
+    for required in (
+        "package_supersession_commit_id: commit.package_supersession_commit_id",
+        "package_supersession_commit_basis_hash: commit.commit_basis_hash",
+        "replacement_package_set_authority_id: commit.replacement_package_set_authority_id",
+        "replacement_authority_basis_hash: commit.replacement_authority_basis_hash",
+        "delivery_mode: 'provider_private_signed_url'",
+    ):
+        assert required in base_payload_slice
+    for required in (
+        "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION",
+        "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION",
+        "provider_signed_url_receipt_id: providerPrivateSignedUrlReceiptId()",
+    ):
+        assert required in provider_payload_slice
+    assert "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()" in inspect_slice
+    assert "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()" in controls_slice
+    for forbidden in (
+        "raw_provider_url",
+        "provider_credentials",
+        "provider_secret",
+        "provider_public_url",
+        "public_url",
+        "download_url",
+        "package_payload",
+        "source_payload_refs",
+        "replacement_payload_refs",
+        "connector_run_id",
+        "destination_url",
+        "frontend_state",
+        "browser_state",
+    ):
+        assert forbidden not in base_payload_slice
+
+
 def test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded() -> None:
     response = client.get("/review/layer3")
     js = client.get("/review/layer3/static/layer3.js")

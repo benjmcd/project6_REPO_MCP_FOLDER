@@ -5373,6 +5373,181 @@ test('Layer 3 workbench records source-directory replacement authority and super
     expect(capturedSourceCommitPayload).not.toHaveProperty(forbiddenKey);
   }
   await expect(commitPanel).toHaveAttribute('data-commit-state', 'package_supersession_commit_recorded');
+  await page.locator('#theme-selector').selectOption('workbench');
+  await page.locator('[data-operation-target="external-export-download-band"]').click();
+  await expect(page.locator('#external-export-download-band')).toHaveAttribute('data-operation-active', 'true');
+  const providerPrivatePanel = page.locator('#provider-private-signed-url-panel');
+  await providerPrivatePanel.scrollIntoViewIfNeeded();
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_ui_ready');
+  await expect(providerPrivatePanel).toContainText('source-directory package supersession authority');
+  await expect(page.locator('#provider-private-signed-url-prepare')).toBeEnabled();
+  await expect(page.locator('#provider-private-signed-url-status')).toBeDisabled();
+  await expect(page.locator('#provider-private-signed-url-use')).toBeDisabled();
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeDisabled();
+
+  const sourcePackageProviderPrivate = {
+    schema_id: 'layer3.source_directory_package_supersession_provider_private_signed_url.prepare.v1',
+    status: 'prepared',
+    mode: 'source_directory_package_supersession_provider_private_signed_url_prepare_authority',
+    session_id: gateB.session_id,
+    reconciliation_record_id: commit.reconciliation_record_id,
+    package_supersession_commit_id: sourceSupersessionCommit.package_supersession_commit_id,
+    package_supersession_commit_basis_hash: sourceSupersessionCommit.commit_basis_hash,
+    replacement_package_set_authority_id: sourceSupersessionCommit.replacement_package_set_authority_id,
+    replacement_authority_basis_hash: sourceSupersessionCommit.replacement_authority_basis_hash,
+    provider_signed_url_receipt_id: 'ppsu_source_directory_package_rendered',
+    provider_signed_url_state: 'provider_private_signed_url_prepared',
+    delivery_mode: 'provider_private_signed_url',
+    provider_url_redacted: 'provider-private-signed-url:redacted',
+    provider_url_expires_at: '2030-01-01T00:05:00Z',
+    provider_url_replay_policy: 'single_use',
+    provider_url_use_count: 0,
+    provider_url_max_use_count: 1,
+    provider_url_revoked: false,
+    source_artifact_ref: 'artifact://provider-private-signed-url-redacted',
+    source_artifact_hash: '8'.repeat(64),
+    source_artifact_size_bytes: 128,
+    source_directory_package_supersession_provider_private_signed_url_enabled: true,
+    raw_provider_url_exposed: false,
+    raw_provider_private_signed_url_token_exposed: false,
+    provider_object_write_enabled: false,
+    connector_dispatch_enabled: false,
+    package_mutation_enabled: false,
+    frontend_durable_authority_enabled: false,
+    audit_receipt: {
+      provider_private_signed_url_receipt_id: 'ppsu_source_directory_package_rendered',
+      provider_private_signed_url_token_redacted: true,
+    },
+    authority_rail: {
+      artifact_authority: 'source_directory_package_lifecycle_package_supersession_commit_authority',
+      server_owned_use_authority: true,
+      provider_object_write_enabled: false,
+    },
+  };
+  let capturedSourcePackageProviderPreparePayload = null;
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/prepare',
+    async (route) => {
+      capturedSourcePackageProviderPreparePayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(sourcePackageProviderPrivate),
+      });
+    },
+  );
+  const sourcePackageProviderPrepareResponse = page.waitForResponse((response) => (
+    response.url().includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/prepare')
+  ));
+  await page.locator('#provider-private-signed-url-prepare').click();
+  await expectJson(await sourcePackageProviderPrepareResponse);
+  expectOnlyPayloadKeys(capturedSourcePackageProviderPreparePayload, [
+    'analysis_plan_id',
+    'client_request_id',
+    'decision_notes',
+    'delivery_mode',
+    'operator_decision',
+    'package_supersession_commit_basis_hash',
+    'package_supersession_commit_id',
+    'pass_run_id',
+    'recipient_scope',
+    'reconciliation_record_id',
+    'replacement_authority_basis_hash',
+    'replacement_package_set_authority_id',
+    'requested_ttl_seconds',
+    'session_id',
+  ]);
+  expect(capturedSourcePackageProviderPreparePayload.package_supersession_commit_id).toBe(
+    sourceSupersessionCommit.package_supersession_commit_id,
+  );
+  expect(capturedSourcePackageProviderPreparePayload.package_supersession_commit_basis_hash).toBe(
+    sourceSupersessionCommit.commit_basis_hash,
+  );
+  expect(capturedSourcePackageProviderPreparePayload.operator_decision).toBe(
+    'prepare_source_directory_package_supersession_provider_private_signed_url',
+  );
+  expect(capturedSourcePackageProviderPreparePayload.delivery_mode).toBe('provider_private_signed_url');
+  await expect(providerPrivatePanel).toContainText('provider-private-signed-url:redacted');
+  await expect(page.locator('#provider-private-signed-url-status')).toBeEnabled();
+  await expect(page.locator('#provider-private-signed-url-use')).toBeEnabled();
+  await expect(page.locator('#provider-private-signed-url-revoke')).toBeEnabled();
+
+  let capturedSourcePackageProviderStatusPayload = null;
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/status',
+    async (route) => {
+      capturedSourcePackageProviderStatusPayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ ...sourcePackageProviderPrivate, schema_id: 'layer3.source_directory_package_supersession_provider_private_signed_url.status.v1', status: 'ok' }),
+      });
+    },
+  );
+  await page.locator('#provider-private-signed-url-status').click();
+  expect(capturedSourcePackageProviderStatusPayload.operator_decision).toBe(
+    'inspect_source_directory_package_supersession_provider_private_signed_url_status',
+  );
+  expect(capturedSourcePackageProviderStatusPayload.provider_signed_url_receipt_id).toBe(
+    sourcePackageProviderPrivate.provider_signed_url_receipt_id,
+  );
+
+  let capturedSourcePackageProviderUsePayload = null;
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/use',
+    async (route) => {
+      capturedSourcePackageProviderUsePayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ...sourcePackageProviderPrivate,
+          schema_id: 'layer3.source_directory_package_supersession_provider_private_signed_url.use.v1',
+          status: 'used',
+          provider_signed_url_state: 'provider_private_signed_url_used',
+          provider_url_use_count: 1,
+          delivery_use_decision: 'allowed',
+          delivery_use_mode: 'server_owned_redacted_provider_private_use',
+        }),
+      });
+    },
+  );
+  await page.locator('#provider-private-signed-url-use').click();
+  expect(capturedSourcePackageProviderUsePayload.operator_decision).toBe(
+    'use_source_directory_package_supersession_provider_private_signed_url',
+  );
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_used');
+  await expect(page.locator('#provider-private-signed-url-use')).toBeDisabled();
+
+  let capturedSourcePackageProviderRevokePayload = null;
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/revoke',
+    async (route) => {
+      capturedSourcePackageProviderRevokePayload = route.request().postDataJSON();
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          ...sourcePackageProviderPrivate,
+          schema_id: 'layer3.source_directory_package_supersession_provider_private_signed_url.revoke.v1',
+          status: 'revoked',
+          provider_signed_url_state: 'provider_private_signed_url_revoked',
+          provider_url_revoked: true,
+          revocation_recorded: true,
+        }),
+      });
+    },
+  );
+  await page.locator('#provider-private-signed-url-revoke').click();
+  expect(capturedSourcePackageProviderRevokePayload.operator_decision).toBe(
+    'revoke_source_directory_package_supersession_provider_private_signed_url',
+  );
+  expect(capturedSourcePackageProviderRevokePayload.idempotency_key).toBe(
+    `source-directory-package-provider-private-revoke:${sourcePackageProviderPrivate.provider_signed_url_receipt_id}`,
+  );
+  await expect(providerPrivatePanel).toContainText('provider_private_signed_url_revoked');
+  await expect(providerPrivatePanel).not.toContainText('provider_private_signed_url_token');
+  await expect(providerPrivatePanel).not.toContainText('raw_provider_url');
   expect(layer3ApiRequests.filter((apiRequest) => (
     apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/preview')
   ))).toHaveLength(1);
@@ -5382,6 +5557,18 @@ test('Layer 3 workbench records source-directory replacement authority and super
   expect(layer3ApiRequests.filter((apiRequest) => (
     apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit')
   ))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/prepare')
+  ))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/status')
+  ))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/use')
+  ))).toHaveLength(1);
+  expect(layer3ApiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url/revoke')
+  ))).toHaveLength(1);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-artifact/materialize'))).toHaveLength(0);
   expect(layer3ApiRequests.filter((apiRequest) => apiRequest.path.includes('/package/replacement-set/record'))).toHaveLength(1);
   expectNoRequestsToLayer3Paths(layer3ApiRequests, [
@@ -5389,7 +5576,6 @@ test('Layer 3 workbench records source-directory replacement authority and super
     '/package/replacement-artifact/manifest',
     '/package/replacement-namespace',
     '/handoff/connector',
-    '/provider-private-signed-url',
     '/provider-public-url',
   ]);
 });
