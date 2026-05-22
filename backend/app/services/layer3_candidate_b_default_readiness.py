@@ -239,7 +239,11 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         "blocked_reasons": blocked,
         "baseline_current_default_evidence": {
             "default_visual_lane_mode": "baseline",
-            "document_processing_engine_default": "baseline",
+            "document_processing_engine_default": CANDIDATE_B_ENGINE,
+            "document_processing_engine_default_scope": ELIGIBLE_CORPUS_SCOPE,
+            "non_pdf_document_processing_engine_default": "baseline",
+            "explicit_baseline_rollback_preserved": True,
+            "baseline_default_scope": "visual_lane_and_non_pdf_processing",
             "baseline_default_changed": False,
         },
         "candidate_a_admitted_variant_evidence": {
@@ -249,6 +253,7 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         "candidate_b_selector_evidence": {
             "candidate_b_family": CANDIDATE_B_ENGINE,
             "candidate_b_is_visual_lane_mode": False,
+            "candidate_b_default_for_eligible_pdf_when_engine_omitted": True,
             "candidate_b_runtime_selector_is_opt_in": True,
         },
         "selected_evidence": {
@@ -279,12 +284,15 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
             "missing_rollback_confirmation_blocks_readiness": True,
             "unacceptable_regression_blocks_readiness": True,
         },
-        "default_selector_change_enabled": False,
-        "candidate_b_default_promotion_enabled": False,
+        "default_selector_change_enabled": readiness_state == READY_STATE,
+        "candidate_b_default_promotion_enabled": readiness_state == READY_STATE,
         "selector_mutation_performed": False,
         "negative_invariants": _negative_invariants(),
         "next_allowed_actions": (
-            ["select_separate_candidate_b_default_promotion_implementation_freeze"]
+            [
+                "monitor_candidate_b_default_selector",
+                "use_explicit_baseline_document_processing_engine_for_rollback",
+            ]
             if readiness_state == READY_STATE
             else [
                 "repair_or_prepare_missing_candidate_b_bridge_receipts",
@@ -566,7 +574,7 @@ def _validate_operator_status(value: Any) -> dict[str, Any]:
         "operator_visible_provenance_status",
         "bundle_status_projection_visible",
         "runtime_status_projection_visible",
-        "default_selector_change_visible_as_blocked",
+        "default_selector_change_visible_as_enabled",
     )
     summary = {key: evidence.get(key) is True for key in required_true}
     summary["raw_local_path_exposed"] = evidence.get("raw_local_path_exposed") is True
@@ -582,11 +590,11 @@ def _validate_operator_status(value: Any) -> dict[str, Any]:
 
 def _negative_invariants() -> dict[str, bool]:
     return {
-        "baseline_default_changed": False,
+        "baseline_non_pdf_default_changed": False,
         "candidate_a_semantics_changed": False,
         "candidate_b_visual_lane_mode_enabled": False,
-        "candidate_b_default_promotion_enabled": False,
-        "default_selector_changed": False,
+        "candidate_b_default_promotion_outside_eligible_pdf_enabled": False,
+        "default_selector_changed_outside_eligible_pdf": False,
         "runtime_db_expansion_enabled": False,
         "provider_object_writes_enabled": False,
         "connector_dispatch_enabled": False,

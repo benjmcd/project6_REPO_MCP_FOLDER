@@ -104,6 +104,7 @@ class TestAdvancedAdapters(unittest.TestCase):
 
     def test_ocr_adapter_weights_missing_scoped_patch(self):
         """GOAL 4: Verify weights-missing logic using module-scoped patch."""
+        nrc_aps_advanced_ocr._PADDLE_ENGINE = None
         with patch('app.services.nrc_aps_advanced_ocr.os.path.exists', return_value=False):
             with self.assertRaises(FileNotFoundError):
                 nrc_aps_advanced_ocr.run_advanced_ocr(MagicMock())
