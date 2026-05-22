@@ -196,6 +196,15 @@ const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_RENDERED_MODE = 'rendered_sou
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_USE_CASE = 'operator_commits_source_directory_package_supersession_lineage_after_replacement_package_set_authority';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview + State.replacementPackageSetAuthority';
 const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_COMMIT_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/commit';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH = `${SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PATH}/prepare`;
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH = `${SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PATH}/status`;
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH = `${SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PATH}/use`;
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH = `${SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PATH}/revoke`;
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION = 'prepare_source_directory_package_supersession_provider_private_signed_url';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION = 'inspect_source_directory_package_supersession_provider_private_signed_url_status';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION = 'use_source_directory_package_supersession_provider_private_signed_url';
+const SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION = 'revoke_source_directory_package_supersession_provider_private_signed_url';
 const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_RENDERED_MODE = 'rendered_source_directory_qualitative_handoff_export_prepare_control';
 const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview + sourceDirectoryPackageSupersessionPreviewPayload';
 const SOURCE_DIRECTORY_QUALITATIVE_HANDOFF_EXPORT_PREPARE_PATH = '/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/handoff/export/prepare';
@@ -2207,24 +2216,36 @@ function providerPrivateSignedUrlPrepareRequestId() {
 }
 
 function providerPrivateSignedUrlPreparePath() {
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH;
+    }
     return isSourceDirectoryHybridExternalExportDownloadPrepareState()
         ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH
         : '/handoff/export/download/provider-private-signed-url/prepare';
 }
 
 function providerPrivateSignedUrlStatusPath() {
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH;
+    }
     return isSourceDirectoryHybridExternalExportDownloadPrepareState()
         ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_STATUS_PATH
         : `/handoff/export/download/provider-private-signed-url/status/${encodeURIComponent(providerPrivateSignedUrlReceiptId())}`;
 }
 
 function providerPrivateSignedUrlUsePath() {
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH;
+    }
     return isSourceDirectoryHybridExternalExportDownloadPrepareState()
         ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_USE_PATH
         : null;
 }
 
 function providerPrivateSignedUrlRevokePath() {
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH;
+    }
     return isSourceDirectoryHybridExternalExportDownloadPrepareState()
         ? SOURCE_DIRECTORY_HYBRID_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_PATH
         : '/handoff/export/download/provider-private-signed-url/revoke';
@@ -2952,6 +2973,26 @@ function packageSupersessionCommitState() {
     return State.packageSupersessionCommit || null;
 }
 
+function isSourceDirectoryPackageSupersessionCommitState(commit = packageSupersessionCommitState() || {}) {
+    return commit.package_supersession_commit_mode === 'source_directory_package_lifecycle_package_supersession_commit_authority'
+        || commit.commit_snapshot?.mode === 'source_directory_package_lifecycle_package_supersession_commit_authority'
+        || commit.source_directory_package_lifecycle_authority === true;
+}
+
+function providerPrivateSignedUrlAuthorityState() {
+    return State.providerPrivateSignedUrlRevoke
+        || State.providerPrivateSignedUrlUse
+        || State.providerPrivateSignedUrlStatus
+        || State.providerPrivateSignedUrlPrepare
+        || null;
+}
+
+function isSourceDirectoryPackageSupersessionProviderPrivateState(provider = providerPrivateSignedUrlAuthorityState() || {}) {
+    return provider.source_directory_package_supersession_provider_private_signed_url_enabled === true
+        || provider.authority_rail?.artifact_authority === 'source_directory_package_lifecycle_package_supersession_commit_authority'
+        || provider.source_directory_package_supersession_authority?.mode === 'source_directory_package_lifecycle_package_supersession_commit_authority';
+}
+
 function replacementPackageArtifactManifestState() {
     return State.replacementPackageArtifactManifest || null;
 }
@@ -2997,6 +3038,7 @@ function clearPackageSupersessionCommitState() {
     State.packageSupersessionCommit = null;
     State.packageSupersessionCommitError = null;
     State.packageSupersessionCommitPending = false;
+    clearProviderPrivateSignedUrlState();
     clearReplacementPackageArtifactManifestState();
 }
 
@@ -3574,8 +3616,28 @@ function sourceDirectoryHybridProviderPrivateSignedUrlReady() {
     );
 }
 
+function sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady() {
+    const commit = packageSupersessionCommitState() || {};
+    return Boolean(
+        isSourceDirectoryPackageSupersessionCommitState(commit)
+        && commit.package_supersession_commit_id
+        && commit.commit_basis_hash
+        && commit.replacement_package_set_authority_id
+        && commit.replacement_authority_basis_hash
+        && commit.reconciliation_record_id
+        && !packageSupersessionCommitBusy()
+    );
+}
+
 function canPrepareProviderPrivateSignedUrl() {
     const external = externalExportDownloadPrepareState() || {};
+    if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return Boolean(
+            !providerPrivateSignedUrlBlocksPrepare()
+            && !State.packageSupersessionCommitPending
+            && !State.providerPrivateSignedUrlPending
+        );
+    }
     if (isSourceDirectoryHybridExternalExportDownloadPrepareState(external)) {
         return Boolean(
             sourceDirectoryHybridProviderPrivateSignedUrlReady()
@@ -3610,6 +3672,15 @@ function canInspectProviderPrivateSignedUrl() {
 }
 
 function canUseProviderPrivateSignedUrl() {
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return Boolean(
+            providerPrivateSignedUrlReceiptId()
+            && providerPrivateSignedUrlLatestState() === 'provider_private_signed_url_prepared'
+            && sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()
+            && !State.packageSupersessionCommitPending
+            && !State.providerPrivateSignedUrlPending
+        );
+    }
     return Boolean(
         providerPrivateSignedUrlUsePath()
         && providerPrivateSignedUrlReceiptId()
@@ -9634,6 +9705,9 @@ function providerPrivateSignedUrlPanelState() {
             : 'Provider-private signed URL receipt is prepared; use remains closed for this lane.';
         return { label: stateName, pill: 'ready', message };
     }
+    if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return { label: 'provider_private_signed_url_ui_ready', pill: 'ready', message: 'Ready to prepare a redacted provider-private signed URL receipt from source-directory package supersession authority.' };
+    }
     if (sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
         return { label: 'provider_private_signed_url_ui_ready', pill: 'ready', message: 'Ready to prepare a redacted provider-private signed URL receipt from source-directory hybrid delivery authority.' };
     }
@@ -9872,6 +9946,7 @@ function setGateControls() {
     );
     const providerPrivateSignedUrlControlsEnabled = Boolean(
         externalExportDownloadSignedReferenceControlsEnabled
+        || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()
         || sourceDirectoryHybridProviderPrivateSignedUrlReady()
         || providerPrivateSignedUrlReceiptId()
     );
@@ -10705,7 +10780,32 @@ function externalExportDownloadSignedReferencePayload(authority = selectedResult
     return externalExportDownloadDeliveryPayload(authority);
 }
 
+function sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload() {
+    const commit = packageSupersessionCommitState() || {};
+    return {
+        session_id: commit.session_id || currentSessionId(),
+        analysis_plan_id: commit.analysis_plan_id,
+        pass_run_id: commit.pass_run_id,
+        reconciliation_record_id: commit.reconciliation_record_id,
+        package_supersession_commit_id: commit.package_supersession_commit_id,
+        package_supersession_commit_basis_hash: commit.commit_basis_hash,
+        replacement_package_set_authority_id: commit.replacement_package_set_authority_id,
+        replacement_authority_basis_hash: commit.replacement_authority_basis_hash,
+        delivery_mode: 'provider_private_signed_url',
+    };
+}
+
 function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthority()) {
+    if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return {
+            ...sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload(),
+            client_request_id: providerPrivateSignedUrlPrepareRequestId(),
+            operator_decision: SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_OPERATOR_DECISION,
+            recipient_scope: 'source_directory_package_supersession_private_artifact_delivery',
+            requested_ttl_seconds: 300,
+            decision_notes: 'Rendered source-directory package supersession provider-private bridge; server-owned redacted use is admitted for this artifact family.',
+        };
+    }
     if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
         const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
         return {
@@ -10745,6 +10845,18 @@ function providerPrivateSignedUrlPreparePayload(authority = selectedResultAuthor
 
 function providerPrivateSignedUrlRevokePayload() {
     const receiptId = providerPrivateSignedUrlReceiptId();
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return {
+            ...sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload(),
+            client_request_id: requestId(),
+            provider_signed_url_receipt_id: receiptId,
+            idempotency_key: `source-directory-package-provider-private-revoke:${receiptId}`,
+            revoked_by: 'layer3-rendered-workbench',
+            revocation_reason: 'operator revoked source-directory package supersession provider-private signed URL from rendered workbench',
+            operator_decision: SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_REVOKE_OPERATOR_DECISION,
+            decision_notes: 'Rendered source-directory package supersession provider-private revoke revalidates current package authority.',
+        };
+    }
     if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
         const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
         return {
@@ -10771,6 +10883,15 @@ function providerPrivateSignedUrlRevokePayload() {
 }
 
 function providerPrivateSignedUrlStatusPayload() {
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return {
+            ...sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload(),
+            client_request_id: requestId(),
+            provider_signed_url_receipt_id: providerPrivateSignedUrlReceiptId(),
+            operator_decision: SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_STATUS_OPERATOR_DECISION,
+            decision_notes: 'Rendered source-directory package supersession provider-private status revalidates current package authority.',
+        };
+    }
     const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
     return {
         ...payload,
@@ -10783,6 +10904,15 @@ function providerPrivateSignedUrlStatusPayload() {
 }
 
 function providerPrivateSignedUrlUsePayload() {
+    if (isSourceDirectoryPackageSupersessionProviderPrivateState() || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
+        return {
+            ...sourceDirectoryPackageSupersessionProviderPrivateSignedUrlBasePayload(),
+            client_request_id: requestId(),
+            provider_signed_url_receipt_id: providerPrivateSignedUrlReceiptId(),
+            operator_decision: SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_USE_OPERATOR_DECISION,
+            decision_notes: 'Rendered source-directory package supersession provider-private use records only a redacted server-owned use decision.',
+        };
+    }
     const payload = sourceDirectoryHybridExternalExportDownloadDeliveryPayload();
     return {
         ...payload,
@@ -12137,6 +12267,7 @@ async function submitPackageSupersessionCommit() {
     );
     State.packageSupersessionCommitPending = true;
     State.packageSupersessionCommitError = null;
+    clearProviderPrivateSignedUrlState();
     renderAll();
     setBusy(elements.packageSupersessionCommitSubmit, true, 'Commit Supersession');
     try {
@@ -13255,7 +13386,11 @@ async function inspectProviderPrivateSignedUrlStatus() {
     renderAll();
     setBusy(elements.providerPrivateSignedUrlStatus, true, 'Inspect Provider-Private Status');
     try {
-        State.providerPrivateSignedUrlStatus = isSourceDirectoryHybridExternalExportDownloadPrepareState()
+        State.providerPrivateSignedUrlStatus = (
+            isSourceDirectoryPackageSupersessionProviderPrivateState()
+            || sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()
+            || isSourceDirectoryHybridExternalExportDownloadPrepareState()
+        )
             ? await postJson(providerPrivateSignedUrlStatusPath(), providerPrivateSignedUrlStatusPayload())
             : await getJson(providerPrivateSignedUrlStatusPath());
         persistProviderPrivateReceiptSnapshot(State.providerPrivateSignedUrlStatus);

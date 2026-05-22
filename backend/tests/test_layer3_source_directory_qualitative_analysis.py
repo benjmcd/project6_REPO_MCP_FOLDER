@@ -30,12 +30,19 @@ from app.models.models import (
     L3PackageReplacementActivation,
     L3PackageSupersessionCommit,
     L3PassRun,
+    L3ProviderPrivateSignedUrlAuditEvent,
+    L3ProviderPrivateSignedUrlObjectAuthority,
+    L3ProviderPrivateSignedUrlReceipt,
+    L3ProviderPrivateSignedUrlRevocation,
     L3ReconciliationRecord,
     L3ReplacementOutputPackage,
     L3ReplacementPackageArtifactManifest,
     L3ReplacementPackageSetAuthority,
 )
-from app.services import layer3_source_directory_qualitative_analysis as qual_service
+from app.services import (
+    layer3_package_supersession_commit as supersession_service,
+    layer3_source_directory_qualitative_analysis as qual_service,
+)
 from app.services.layer3_source_directory_context_packet import CONTEXT_PACKET_CONTRACT_ID, CONTEXT_PACKET_MODE
 from app.services.layer3_source_directory_text_index import (
     SourceDirectoryTextIndexError,
@@ -46,6 +53,7 @@ from app.services.layer3_source_directory_qualitative_analysis import (
     SourceDirectoryQualitativeAnalysisError,
     source_directory_material_context_packet_qualitative_hybrid_analysis,
 )
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 from main import app
 
 
@@ -280,6 +288,49 @@ def _source_directory_supersession_preview_flow(client: TestClient, tmp_path, mo
         "preview_payload": supersession_preview_payload,
         "preview_body": supersession_preview.json(),
     }
+
+
+def _source_directory_package_supersession_commit_flow(client: TestClient, tmp_path, monkeypatch) -> dict:
+    flow = _source_directory_supersession_preview_flow(client, tmp_path, monkeypatch)
+    preview_body = flow["preview_body"]
+    authority = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/replacement-set/record-from-supersession-preview"
+        ),
+        json={
+            "client_request_id": "source-directory-provider-private-replacement-authority",
+            "session_id": preview_body["session_id"],
+            "reconciliation_record_id": preview_body["reconciliation_record_id"],
+            "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+            "source_package_set_hash": preview_body["source_package_set_hash"],
+            "operator_decision": "record_replacement_package_set_authority",
+        },
+    )
+    assert authority.status_code == 200, authority.text
+    authority_body = authority.json()
+    commit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "qualitative-hybrid-analysis/package/supersession/commit"
+        ),
+        json={
+            "client_request_id": "source-directory-provider-private-supersession-commit",
+            "session_id": authority_body["session_id"],
+            "analysis_plan_id": authority_body["analysis_plan_id"],
+            "pass_run_id": authority_body["pass_run_id"],
+            "reconciliation_record_id": authority_body["reconciliation_record_id"],
+            "package_supersession_preview_hash": preview_body["package_supersession_preview_hash"],
+            "source_package_set_hash": preview_body["source_package_set_hash"],
+            "replacement_package_set_authority_id": authority_body["replacement_package_set_authority_id"],
+            "replacement_authority_basis_hash": authority_body["authority_basis_hash"],
+            "operator_decision": "commit_package_supersession",
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    flow["authority_body"] = authority_body
+    flow["supersession_body"] = commit.json()
+    return flow
 
 
 def test_source_directory_qualitative_analysis_returns_deterministic_extract_without_side_effects(
@@ -1307,6 +1358,213 @@ def test_source_directory_qualitative_analysis_package_lifecycle_records_authori
         assert commit_row.replacement_package_set_authority_id == (
             authority_row.replacement_package_set_authority_id
         )
+    finally:
+        db.close()
+
+
+def test_source_directory_package_supersession_provider_private_lifecycle_is_server_owned(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    flow = _source_directory_package_supersession_commit_flow(client, tmp_path, monkeypatch)
+    source_dir = flow["source_dir"]
+    supersession_body = flow["supersession_body"]
+    route = (
+        "/api/v1/layer3/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/"
+        "package/supersession/provider-private-signed-url"
+    )
+    base_payload = {
+        "session_id": supersession_body["session_id"],
+        "reconciliation_record_id": supersession_body["reconciliation_record_id"],
+        "package_supersession_commit_id": supersession_body["package_supersession_commit_id"],
+        "package_supersession_commit_basis_hash": supersession_body["commit_basis_hash"],
+        "replacement_package_set_authority_id": supersession_body["replacement_package_set_authority_id"],
+        "replacement_authority_basis_hash": supersession_body["replacement_authority_basis_hash"],
+        "delivery_mode": "provider_private_signed_url",
+    }
+    forbidden_prepare = client.post(
+        f"{route}/prepare",
+        json={
+            **base_payload,
+            "client_request_id": "source-directory-package-provider-private-forbidden",
+            "operator_decision": "prepare_source_directory_package_supersession_provider_private_signed_url",
+            "recipient_scope": "operator-reviewer",
+            "raw_provider_url": "https://provider.example/raw",
+        },
+    )
+    assert forbidden_prepare.status_code == 409, forbidden_prepare.text
+    assert forbidden_prepare.json()["error_code"] == (
+        "source_directory_package_supersession_provider_private_scope_not_admitted"
+    )
+
+    prepare = client.post(
+        f"{route}/prepare",
+        json={
+            **base_payload,
+            "client_request_id": "source-directory-package-provider-private-prepare",
+            "operator_decision": "prepare_source_directory_package_supersession_provider_private_signed_url",
+            "recipient_scope": "operator-reviewer",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    assert prepare_body["schema_id"] == (
+        "layer3.source_directory_package_supersession_provider_private_signed_url.prepare.v1"
+    )
+    assert prepare_body["status"] == "prepared"
+    assert prepare_body["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    assert prepare_body["delivery_mode"] == "provider_private_signed_url"
+    assert prepare_body["source_artifact_ref"] == "artifact://provider-private-signed-url-redacted"
+    assert len(prepare_body["source_artifact_hash"]) == 64
+    assert prepare_body["source_artifact_size_bytes"] > 0
+    assert prepare_body["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert prepare_body["raw_provider_url_exposed"] is False
+    assert prepare_body["raw_provider_private_signed_url_token_exposed"] is False
+    assert prepare_body["provider_public_url_prepare_enabled"] is False
+    assert prepare_body["provider_object_write_enabled"] is False
+    assert prepare_body["connector_dispatch_enabled"] is False
+    assert prepare_body["package_mutation_enabled"] is False
+    assert prepare_body["frontend_durable_authority_enabled"] is False
+    assert prepare_body["authority_rail"]["artifact_authority"] == (
+        "source_directory_package_lifecycle_package_supersession_commit_authority"
+    )
+    assert prepare_body["authority_rail"]["server_owned_use_authority"] is True
+    assert prepare_body["authority_rail"]["provider_object_write_enabled"] is False
+    assert prepare_body["audit_receipt"]["provider_private_signed_url_token_redacted"] is True
+    assert "provider_private_signed_url_token" not in prepare_body
+    assert "raw_provider_url" not in prepare_body
+    assert str(source_dir) not in prepare.text
+    assert str(Path(settings.storage_dir)) not in prepare.text
+
+    lifecycle_payload = {
+        **base_payload,
+        "provider_signed_url_receipt_id": prepare_body["provider_signed_url_receipt_id"],
+    }
+    status = client.post(
+        f"{route}/status",
+        json={
+            **lifecycle_payload,
+            "client_request_id": "source-directory-package-provider-private-status",
+            "operator_decision": "inspect_source_directory_package_supersession_provider_private_signed_url_status",
+        },
+    )
+    assert status.status_code == 200, status.text
+    assert status.json()["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+
+    stale_status = client.post(
+        f"{route}/status",
+        json={
+            **lifecycle_payload,
+            "client_request_id": "source-directory-package-provider-private-status-stale",
+            "package_supersession_commit_basis_hash": "0" * 64,
+            "operator_decision": "inspect_source_directory_package_supersession_provider_private_signed_url_status",
+        },
+    )
+    assert stale_status.status_code == 409, stale_status.text
+    assert stale_status.json()["error_code"] == (
+        "source_directory_package_supersession_provider_private_package_supersession_commit_basis_hash_mismatch"
+    )
+
+    use = client.post(
+        f"{route}/use",
+        json={
+            **lifecycle_payload,
+            "client_request_id": "source-directory-package-provider-private-use",
+            "operator_decision": "use_source_directory_package_supersession_provider_private_signed_url",
+        },
+    )
+    assert use.status_code == 200, use.text
+    use_body = use.json()
+    assert use_body["status"] == "used"
+    assert use_body["provider_signed_url_state"] == "provider_private_signed_url_used"
+    assert use_body["provider_url_use_count"] == 1
+    assert use_body["delivery_use_decision"] == "allowed"
+    assert use_body["delivery_use_mode"] == "server_owned_redacted_provider_private_use"
+    assert use_body["raw_provider_private_signed_url_token_exposed"] is False
+
+    replay = client.post(
+        f"{route}/use",
+        json={
+            **lifecycle_payload,
+            "client_request_id": "source-directory-package-provider-private-use-replay",
+            "operator_decision": "use_source_directory_package_supersession_provider_private_signed_url",
+        },
+    )
+    assert replay.status_code == 409, replay.text
+    assert replay.json()["error_code"] == "provider_private_signed_url_state_replay_denied"
+
+    revoke = client.post(
+        f"{route}/revoke",
+        json={
+            **lifecycle_payload,
+            "client_request_id": "source-directory-package-provider-private-revoke",
+            "operator_decision": "revoke_source_directory_package_supersession_provider_private_signed_url",
+            "idempotency_key": "source-directory-package-provider-private-revoke-1",
+            "revoked_by": "operator",
+            "revocation_reason": "operator closed package supersession provider-private delivery",
+        },
+    )
+    assert revoke.status_code == 200, revoke.text
+    assert revoke.json()["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+    assert revoke.json()["provider_url_revoked"] is True
+
+    use_after_revoke = client.post(
+        f"{route}/use",
+        json={
+            **lifecycle_payload,
+            "client_request_id": "source-directory-package-provider-private-use-after-revoke",
+            "operator_decision": "use_source_directory_package_supersession_provider_private_signed_url",
+        },
+    )
+    assert use_after_revoke.status_code == 409, use_after_revoke.text
+    assert use_after_revoke.json()["error_code"] == "provider_private_signed_url_state_revoked"
+
+    db = client.layer3_session_factory()
+    try:
+        expired_prepare_body = (
+            supersession_service.source_directory_package_supersession_provider_private_signed_url_prepare(
+                db,
+                {
+                    **base_payload,
+                    "client_request_id": "source-directory-package-provider-private-expiring-prepare",
+                    "operator_decision": (
+                        "prepare_source_directory_package_supersession_provider_private_signed_url"
+                    ),
+                    "recipient_scope": "operator-reviewer",
+                    "requested_ttl_seconds": 1,
+                },
+                now_epoch=1893456000,
+            )
+        )
+        with pytest.raises(Layer3WorkbenchError) as exc_info:
+            supersession_service.source_directory_package_supersession_provider_private_signed_url_use(
+                db,
+                {
+                    **base_payload,
+                    "client_request_id": "source-directory-package-provider-private-expired-use",
+                    "operator_decision": (
+                        "use_source_directory_package_supersession_provider_private_signed_url"
+                    ),
+                    "provider_signed_url_receipt_id": expired_prepare_body["provider_signed_url_receipt_id"],
+                },
+                now_epoch=1893456002,
+            )
+        assert exc_info.value.error_code == "provider_private_signed_url_state_expired"
+    finally:
+        db.close()
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 2
+        assert db.query(L3ProviderPrivateSignedUrlObjectAuthority).count() == 1
+        assert db.query(L3ProviderPrivateSignedUrlRevocation).count() == 1
+        assert db.query(L3ProviderPrivateSignedUrlAuditEvent).count() >= 6
+        assert db.query(L3ReplacementOutputPackage).count() == 0
+        assert db.query(L3PackageReplacementActivation).count() == 0
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
     finally:
         db.close()
 
