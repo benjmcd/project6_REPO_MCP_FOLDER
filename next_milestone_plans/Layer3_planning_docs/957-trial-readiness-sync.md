@@ -154,3 +154,5 @@ No remaining read-only or blocked journey requires a new implementation pass to 
 4. otherwise select the next product objective outside blanket full mockup activation.
 
 Next exact posture: `bounded_trial_readiness_closed_await_operator_runbook_evidence_or_product_authority`.
+
+Post-runbook authority intake checkpoint: `958-product-authority-intake.md`.
