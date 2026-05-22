@@ -929,6 +929,7 @@ def test_candidate_b_visual_lane_runtime_completes_layer3_downstream_path(
         json=delivery_payload,
     )
     assert delivery.status_code == 200, delivery.text
+    assert delivery.headers["X-Layer3-Delivery-State"] == "external_export_download_delivered"
     assert "Candidate B runtime normalized text" in delivery.text
 
     provider_private_prepare = client.post(
@@ -949,9 +950,86 @@ def test_candidate_b_visual_lane_runtime_completes_layer3_downstream_path(
     assert provider_private_prepare.status_code == 200, provider_private_prepare.text
     provider_private_body = provider_private_prepare.json()
     assert provider_private_body["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    assert provider_private_body["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert provider_private_body["source_artifact_hash"] == selected_package["payload_hash"]
     assert provider_private_body["provider_network_enabled"] is False
     assert provider_private_body["provider_object_write_enabled"] is False
     assert provider_private_body["raw_provider_private_signed_url_token_exposed"] is False
+
+    provider_private_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/status"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": "candidate-b-visual-lane-provider-private-status",
+            "operator_decision": "inspect_source_directory_hybrid_provider_private_signed_url_status",
+            "delivery_mode": "provider_private_signed_url",
+            "provider_signed_url_receipt_id": provider_private_body["provider_signed_url_receipt_id"],
+        },
+    )
+    assert provider_private_status.status_code == 200, provider_private_status.text
+    assert provider_private_status.json()["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert provider_private_status.json()["raw_provider_private_signed_url_token_exposed"] is False
+
+    provider_private_use = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/use"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": "candidate-b-visual-lane-provider-private-use",
+            "operator_decision": "use_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "provider_signed_url_receipt_id": provider_private_body["provider_signed_url_receipt_id"],
+        },
+    )
+    assert provider_private_use.status_code == 200, provider_private_use.text
+    assert provider_private_use.json()["delivery_use_mode"] == "server_owned_redacted_provider_private_use"
+    assert provider_private_use.json()["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert provider_private_use.json()["provider_network_enabled"] is False
+    assert "provider_private_signed_url_token" not in provider_private_use.json()
+
+    revoke_prepare = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": "candidate-b-visual-lane-provider-private-revoke-prepare",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": "candidate-b-visual-lane-redacted-revoke-proof",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert revoke_prepare.status_code == 200, revoke_prepare.text
+    provider_private_revoke = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/revoke"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": "candidate-b-visual-lane-provider-private-revoke",
+            "operator_decision": "revoke_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "provider_signed_url_receipt_id": revoke_prepare.json()["provider_signed_url_receipt_id"],
+            "idempotency_key": "candidate-b-visual-lane-provider-private-revoke",
+            "revoked_by": "candidate-b-visual-lane-layer3-test",
+            "revocation_reason": "Candidate B visual-lane runtime downstream proof revoke.",
+        },
+    )
+    assert provider_private_revoke.status_code == 200, provider_private_revoke.text
+    assert provider_private_revoke.json()["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+    assert provider_private_revoke.json()["raw_provider_private_signed_url_token_exposed"] is False
 
     webhook_calls: list[dict[str, Any]] = []
 
@@ -995,13 +1073,23 @@ def test_candidate_b_visual_lane_runtime_completes_layer3_downstream_path(
     assert downstream_status_body["qualitative_analysis_hash"] == analysis_body["qualitative_analysis_hash"]
     assert downstream_status_body["source_directory_hybrid_handoff_export_prepare_available"] is True
 
+    session = client.get(f"/api/v1/layer3/session/{webhook_body['session_id']}")
+    assert session.status_code == 200, session.text
+    session_body = session.json()
+    assert session_body["internal_webhook_dispatch"]["state"] == "source_directory_internal_webhook_dispatched"
+    assert session_body["internal_webhook_dispatch"]["raw_package_payload_exposed"] is False
+
     response_text = json.dumps(
         {
             "bridge": bridge,
             "delivery_status": delivery_status.json(),
             "provider_private": provider_private_body,
+            "provider_private_status": provider_private_status.json(),
+            "provider_private_use": provider_private_use.json(),
+            "provider_private_revoke": provider_private_revoke.json(),
             "webhook": webhook_body,
             "downstream_status": downstream_status_body,
+            "session": session_body,
         },
         sort_keys=True,
     )
@@ -1016,7 +1104,7 @@ def test_candidate_b_visual_lane_runtime_completes_layer3_downstream_path(
     db = client.layer3_session_factory()
     try:
         assert db.query(L3OutputPackage).count() == 3
-        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 1
+        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 2
         assert db.query(L3ProviderPublicUrlReceipt).count() == 0
         assert db.query(L3SourceDirectoryInternalWebhookDispatchReceipt).count() == 1
         assert db.query(AnalysisRun).count() == 0
