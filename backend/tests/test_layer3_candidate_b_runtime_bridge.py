@@ -291,8 +291,10 @@ def _candidate_b_runtime_external_export_download_authority(
     client: TestClient,
     tmp_path: Path,
     monkeypatch,
+    *,
+    visual_lane_mode: str = "baseline",
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], ReviewRuntimeBinding]:
-    binding = _runtime_binding(tmp_path)
+    binding = _runtime_binding(tmp_path, visual_lane_mode=visual_lane_mode)
     _patch_runtime_bridge(monkeypatch, binding)
     bridge = layer3_candidate_b_runtime_bridge.prepare_candidate_b_runtime_material_bridge(_bridge_payload())
     assert bridge["candidate_b_source_kind"] == "runtime"
@@ -300,13 +302,25 @@ def _candidate_b_runtime_external_export_download_authority(
     assert bridge["baseline_run_id"] == "baseline-run"
     assert bridge["candidate_a_run_id"] == "candidate-a-run"
     assert bridge["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert bridge["visual_lane_mode"] == visual_lane_mode
     assert bridge["layer3_material_preview_compatible"] is True
     assert bridge["gate_b_material_authority_compatible"] is True
     assert bridge["negative_invariants"]["baseline_default_changed"] is False
     assert bridge["negative_invariants"]["candidate_a_semantics_changed"] is False
     assert bridge["negative_invariants"]["candidate_b_default_promotion_enabled"] is False
-    assert bridge["negative_invariants"]["candidate_b_visual_lane_mode_enabled"] is False
+    assert bridge["negative_invariants"]["candidate_b_visual_lane_mode_enabled"] is (
+        visual_lane_mode == "candidate_b_opendataloader_page_evidence_v1"
+    )
+    assert bridge["negative_invariants"]["candidate_b_visual_lane_material_ingestion_enabled"] is False
+    assert bridge["negative_invariants"]["pdf_ingestion_enabled"] is False
+    assert bridge["negative_invariants"]["image_ingestion_enabled"] is False
     assert bridge["negative_invariants"]["broad_runtime_db_ingestion_enabled"] is False
+    if visual_lane_mode == "candidate_b_opendataloader_page_evidence_v1":
+        assert bridge["candidate_b_visual_lane_evidence"]["candidate_b_visual_lane_selected"] is True
+        assert bridge["candidate_b_visual_lane_evidence"]["candidate_b_visual_ref_total"] == 1
+        assert bridge["candidate_b_visual_lane_evidence"]["candidate_b_retained_source_pdf_ref_count"] == 1
+        assert bridge["candidate_b_visual_lane_evidence"]["source_pdf_material_text_payload_enabled"] is False
+        assert bridge["candidate_b_visual_lane_evidence"]["image_material_text_payload_enabled"] is False
 
     curated_root = Path(settings.layer3_candidate_b_runtime_bridge_dir) / bridge["bridge_receipt_id"] / "curated"
     monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(curated_root))
@@ -838,6 +852,151 @@ def test_candidate_b_runtime_curated_markdown_completes_layer3_downstream_path(
         assert reconciliation.summary_json["source_directory_internal_webhook_dispatch"]["state"] == (
             "source_directory_internal_webhook_dispatched"
         )
+    finally:
+        db.close()
+
+
+def test_candidate_b_visual_lane_runtime_completes_layer3_downstream_path(
+    client: TestClient,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_internal_webhook_url", "http://127.0.0.1/source-directory-webhook")
+    monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "candidate-b-visual-lane-runtime-webhook")
+    bridge, analysis_payload, analysis_body, prepare_payload, prepare_body, binding = (
+        _candidate_b_runtime_external_export_download_authority(
+            client,
+            tmp_path,
+            monkeypatch,
+            visual_lane_mode="candidate_b_opendataloader_page_evidence_v1",
+        )
+    )
+    selected_package = next(
+        package for package in prepare_body["output_packages"] if package["package_kind"] == "user_facing"
+    )
+    delivery_payload = {
+        **prepare_payload,
+        "operator_decision": "deliver_source_directory_hybrid_external_export_download",
+        "external_export_download_record_ref": prepare_body["external_export_download_record_ref"],
+        "export_download_descriptor_ref": prepare_body["export_download_descriptor_ref"],
+        "external_export_download_state": "external_export_download_prepared",
+        "delivery_mode": "same_origin_artifact_stream",
+        "output_package_id": selected_package["output_package_id"],
+        "package_kind": selected_package["package_kind"],
+        "package_payload_hash": selected_package["payload_hash"],
+    }
+
+    delivery_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery_status.status_code == 200, delivery_status.text
+    assert delivery_status.json()["delivery_available"] is True
+
+    delivery = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery.status_code == 200, delivery.text
+    assert "Candidate B runtime normalized text" in delivery.text
+
+    provider_private_prepare = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": "candidate-b-visual-lane-provider-private-prepare",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": "candidate-b-visual-lane-redacted-delivery-proof",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert provider_private_prepare.status_code == 200, provider_private_prepare.text
+    provider_private_body = provider_private_prepare.json()
+    assert provider_private_body["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    assert provider_private_body["provider_network_enabled"] is False
+    assert provider_private_body["provider_object_write_enabled"] is False
+    assert provider_private_body["raw_provider_private_signed_url_token_exposed"] is False
+
+    webhook_calls: list[dict[str, Any]] = []
+
+    def fake_transport(url, envelope, headers, timeout):
+        webhook_calls.append({"url": url, "envelope": envelope, "headers": headers, "timeout": timeout})
+        return 202, {"accepted": True, "receipt": "candidate-b-visual-lane-source-directory-ok"}
+
+    monkeypatch.setattr(layer3_internal_webhook_connector, "INTERNAL_WEBHOOK_TRANSPORT", fake_transport)
+    webhook_payload = _source_directory_internal_webhook_payload(
+        prepare_body,
+        prepare_payload,
+        request_id="candidate-b-visual-lane-internal-webhook-dispatch",
+    )
+    webhook = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/dispatch"
+        ),
+        json=webhook_payload,
+    )
+    assert webhook.status_code == 200, webhook.text
+    webhook_body = webhook.json()
+    assert webhook_body["source_directory_internal_webhook_dispatch_state"] == (
+        "source_directory_internal_webhook_dispatched"
+    )
+    assert webhook_body["connector_dispatch_enabled"] is False
+    assert len(webhook_calls) == 1
+
+    downstream_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
+        ),
+        json={
+            **{key: value for key, value in analysis_payload.items() if key != "client_request_id"},
+            "client_request_id": "candidate-b-visual-lane-downstream-status",
+        },
+    )
+    assert downstream_status.status_code == 200, downstream_status.text
+    downstream_status_body = downstream_status.json()
+    assert downstream_status_body["qualitative_analysis_hash"] == analysis_body["qualitative_analysis_hash"]
+    assert downstream_status_body["source_directory_hybrid_handoff_export_prepare_available"] is True
+
+    response_text = json.dumps(
+        {
+            "bridge": bridge,
+            "delivery_status": delivery_status.json(),
+            "provider_private": provider_private_body,
+            "webhook": webhook_body,
+            "downstream_status": downstream_status_body,
+        },
+        sort_keys=True,
+    )
+    assert str(binding.review_root) not in response_text
+    assert bridge["visual_lane_mode"] == "candidate_b_opendataloader_page_evidence_v1"
+    assert bridge["candidate_b_visual_lane_evidence"]["candidate_b_visual_lane_selected"] is True
+    assert bridge["negative_invariants"]["candidate_b_default_promotion_enabled"] is False
+    assert bridge["negative_invariants"]["candidate_b_visual_lane_material_ingestion_enabled"] is False
+    assert bridge["negative_invariants"]["pdf_ingestion_enabled"] is False
+    assert bridge["negative_invariants"]["image_ingestion_enabled"] is False
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3OutputPackage).count() == 3
+        assert db.query(L3ProviderPrivateSignedUrlReceipt).count() == 1
+        assert db.query(L3ProviderPublicUrlReceipt).count() == 0
+        assert db.query(L3SourceDirectoryInternalWebhookDispatchReceipt).count() == 1
+        assert db.query(AnalysisRun).count() == 0
+        assert db.query(ConnectorRun).count() == 0
+        assert db.query(ConnectorRunTarget).count() == 0
     finally:
         db.close()
 
