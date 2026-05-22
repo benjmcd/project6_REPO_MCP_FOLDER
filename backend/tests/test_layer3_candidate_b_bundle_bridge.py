@@ -524,6 +524,32 @@ def test_candidate_b_bundle_bridge_curates_json_md_and_reaches_gate_b(
     assert response["admitted_artifact_subset"]["raw_files"] == ["raw/fontish.json", "raw/fontish.md"]
     assert response["excluded_artifact_subset"]["excluded_extension_counts"][".pdf"] == 1
     assert response["excluded_artifact_subset"]["excluded_extension_counts"][".png"] == 1
+    artifact_family = response["governed_retained_artifact_family"]
+    assert artifact_family["policy"] == "candidate_b_full_artifact_family_retained_but_text_material_payload_bounded"
+    assert artifact_family["candidate_b_source_kind"] == "bundle"
+    assert artifact_family["pdf_material_text_payload_enabled"] is False
+    assert artifact_family["image_material_text_payload_enabled"] is False
+    assert response["authority_hashes"]["governed_retained_artifact_family_hash"] == artifact_family["artifact_family_hash"]
+    assert {item["category"] for item in artifact_family["roles"]["material_analysis_payloads"]} == {
+        "candidate_b_raw_json",
+        "candidate_b_raw_markdown",
+    }
+    assert {item["category"] for item in artifact_family["roles"]["visual_page_evidence"]} == {
+        "candidate_b_annotated_pdf",
+        "candidate_b_extracted_image",
+    }
+    assert any(
+        item["source_ref"].endswith("/raw/annotated/fontish.pdf") and item["material_text_payload"] is False
+        for item in artifact_family["roles"]["product_inspection_artifacts"]
+    )
+    assert any(
+        item["source_ref"].endswith("/raw/annotated/fontish.pdf") and item["material_text_payload"] is False
+        for item in artifact_family["roles"]["provenance_audit_artifacts"]
+    )
+    assert any(
+        item["source_ref"].endswith("/raw/images/fontish/imageFile1.png") and item["material_text_payload"] is False
+        for item in artifact_family["roles"]["delivery_artifacts"]
+    )
     _assert_no_absolute_path_strings(response, str(checkout_root))
 
     curated_root = Path(settings.layer3_candidate_b_bundle_bridge_dir) / response["bridge_receipt_id"] / "curated"

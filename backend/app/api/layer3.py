@@ -3007,6 +3007,7 @@ class Layer3CandidateBBundleMaterialBridgeResponse(Layer3BaseResponse):
     compare_target_set: dict[str, Any]
     admitted_artifact_subset: dict[str, Any]
     excluded_artifact_subset: dict[str, Any]
+    governed_retained_artifact_family: dict[str, Any]
     authority_hashes: dict[str, str]
     provenance: dict[str, Any]
     layer3_material_preview_compatible: bool
@@ -3035,6 +3036,7 @@ class Layer3CandidateBRuntimeMaterialBridgeResponse(Layer3BaseResponse):
     compare_target_set: dict[str, Any]
     admitted_artifact_subset: dict[str, Any]
     excluded_artifact_subset: dict[str, Any]
+    governed_retained_artifact_family: dict[str, Any]
     authority_hashes: dict[str, str]
     provenance: dict[str, Any]
     layer3_material_preview_compatible: bool
