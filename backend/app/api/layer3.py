@@ -36,6 +36,7 @@ from app.services import (
     layer3_candidate_b_bundle_downstream_proof,
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
+    layer3_candidate_b_final_proof,
     layer3_candidate_b_operator_status,
     layer3_candidate_b_promotion_closure,
     layer3_candidate_b_runtime_bridge,
@@ -146,6 +147,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_default_promotion_operator_status_endpoint: str
     candidate_b_default_promotion_closure_evidence_admitted: bool
     candidate_b_default_promotion_closure_evidence_endpoint: str
+    candidate_b_default_promotion_final_proof_admitted: bool
+    candidate_b_default_promotion_final_proof_endpoint: str
     source_directory_ingestion_scan_admitted: bool
     source_directory_ingestion_scan_endpoint: str
     source_directory_ingestion_status_admitted: bool
@@ -2734,6 +2737,16 @@ class Layer3CandidateBDefaultPromotionReadinessAuditRequest(BaseModel):
     closure_evidence: dict[str, Any]
 
 
+class Layer3CandidateBDefaultPromotionFinalProofRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    proof_mode: Literal["candidate_b_default_promotion_final_proof_v1"]
+    operator_decision: Literal["record_candidate_b_default_promotion_final_proof"]
+    readiness_audit: dict[str, Any]
+    operator_confirmation: bool
+
+
 class Layer3SourceDirectoryMaterialPreviewRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3313,6 +3326,38 @@ class Layer3CandidateBDefaultPromotionReadinessAuditResponse(Layer3BaseResponse)
     default_selector_change_enabled: bool
     candidate_b_default_promotion_enabled: bool
     selector_mutation_performed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBDefaultPromotionFinalProofResponse(Layer3BaseResponse):
+    mode: str
+    readiness_audit_id: str
+    readiness_audit_hash: str
+    baseline_run_id: str
+    candidate_a_run_id: str
+    candidate_b_bundle_id: str
+    candidate_b_run_id: str
+    bundle_bridge_receipt_hash: str
+    runtime_bridge_receipt_hash: str
+    bundle_downstream_proof_hash: str
+    runtime_downstream_proof_hash: str
+    candidate_b_visual_lane_status_hash: str
+    operator_status_hash: str
+    closure_evidence_hash: str
+    default_selector_change_enabled: bool
+    candidate_b_default_promotion_enabled: bool
+    rollback_selector: str
+    final_operator_inspection_complete: bool
+    proof_hash: str
+    proof_receipt_id: str
+    proof_receipt_ref: str
+    proof_state: str
+    selector_mutation_performed: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    provider_private_token_exposed: bool
+    artifact_bytes_exposed: bool
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -8976,6 +9021,22 @@ def post_candidate_b_default_promotion_readiness_audit(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_default_readiness.CandidateBDefaultReadinessError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/default-promotion/final-proof",
+    response_model=Layer3CandidateBDefaultPromotionFinalProofResponse,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_candidate_b_default_promotion_final_proof(
+    payload: Layer3CandidateBDefaultPromotionFinalProofRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_final_proof.candidate_b_default_promotion_final_proof(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_final_proof.CandidateBFinalProofError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

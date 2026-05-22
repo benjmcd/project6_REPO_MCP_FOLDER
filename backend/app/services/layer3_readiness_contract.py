@@ -56,6 +56,7 @@ READINESS_REQUIRED_GATES = (
     "candidate-b-default-promotion-operator-status",
     "candidate-b-default-promotion-closure-evidence",
     "candidate-b-default-promotion-readiness-audit",
+    "candidate-b-default-promotion-final-proof",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -104,6 +105,7 @@ READINESS_IMPLEMENTED_GATES = (
     "candidate-b-default-promotion-operator-status",
     "candidate-b-default-promotion-closure-evidence",
     "candidate-b-default-promotion-readiness-audit",
+    "candidate-b-default-promotion-final-proof",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -210,6 +212,10 @@ def build_readiness_contract(
         "candidate_b_default_promotion_readiness_audit_admitted": True,
         "candidate_b_default_promotion_readiness_audit_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/default-promotion/readiness-audit"
+        ),
+        "candidate_b_default_promotion_final_proof_admitted": True,
+        "candidate_b_default_promotion_final_proof_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/default-promotion/final-proof"
         ),
         "candidate_b_default_promotion_selector_switch_admitted": True,
         "candidate_b_default_promotion_selector_scope": ELIGIBLE_CORPUS_SCOPE,

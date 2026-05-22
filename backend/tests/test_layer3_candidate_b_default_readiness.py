@@ -35,6 +35,7 @@ BUNDLE_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/bundle/down
 DOWNSTREAM_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof"
 OPERATOR_STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status"
 CLOSURE_EVIDENCE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence"
+FINAL_PROOF_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 FULL_COVERAGE = [
     "source_directory_scan",
@@ -522,6 +523,16 @@ def _closure_evidence_request(
     }
 
 
+def _final_proof_request(readiness_audit: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-final-proof",
+        "proof_mode": "candidate_b_default_promotion_final_proof_v1",
+        "operator_decision": "record_candidate_b_default_promotion_final_proof",
+        "readiness_audit": readiness_audit,
+        "operator_confirmation": True,
+    }
+
+
 def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
     return {
         "client_request_id": "candidate-b-default-readiness-001",
@@ -659,6 +670,23 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
         "monitor_candidate_b_default_selector",
         "use_explicit_baseline_document_processing_engine_for_rollback",
     ]
+    final_proof_response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(body))
+    assert final_proof_response.status_code == 200, final_proof_response.text
+    final_proof = final_proof_response.json()
+    assert final_proof["status"] == "proven"
+    assert final_proof["proof_state"] == "candidate_b_default_promotion_final_proven"
+    assert final_proof["readiness_audit_hash"] == body["readiness_audit_hash"]
+    assert final_proof["candidate_b_default_promotion_enabled"] is True
+    assert final_proof["rollback_selector"] == "baseline"
+    assert final_proof["final_operator_inspection_complete"] is True
+    assert final_proof["selector_mutation_performed"] is False
+    proof_receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / runtime_receipt_id
+        / "default-promotion-final-proof"
+        / f"{final_proof['proof_receipt_id']}.json"
+    )
+    assert proof_receipt_path.is_file()
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
 
 
@@ -836,6 +864,23 @@ def test_candidate_b_default_readiness_blocks_loose_closure_evidence(client: Tes
     assert "candidate_b_default_readiness_closure_schema_id_mismatch" in codes
     assert "candidate_b_default_readiness_closure_authority_field_missing" in codes
     assert body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_final_proof_rejects_blocked_readiness_audit(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    payload["regression_disposition"] = "unacceptable_regression_found"
+    readiness_response = client.post(READY_ENDPOINT, json=payload)
+    assert readiness_response.status_code == 200, readiness_response.text
+    assert readiness_response.json()["status"] == "blocked"
+
+    response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(readiness_response.json()))
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_readiness_audit_not_ready"
 
 
 def test_candidate_b_operator_status_rejects_path_like_receipt_id(client: TestClient) -> None:
