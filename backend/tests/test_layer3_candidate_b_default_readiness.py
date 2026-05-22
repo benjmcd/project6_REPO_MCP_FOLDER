@@ -216,7 +216,7 @@ def _payload(bundle_receipt_id: str, runtime_receipt_id: str) -> dict[str, Any]:
             "operator_visible_provenance_status": True,
             "bundle_status_projection_visible": True,
             "runtime_status_projection_visible": True,
-            "default_selector_change_visible_as_blocked": True,
+            "default_selector_change_visible_as_enabled": True,
             "raw_local_path_exposed": False,
             "provider_private_token_exposed": False,
         },
@@ -235,14 +235,20 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert body["readiness_state"] == "candidate_b_default_promotion_ready_for_separate_selection"
     assert body["blocked_reasons"] == []
     assert body["candidate_b_selector_evidence"]["candidate_b_is_visual_lane_mode"] is False
+    assert body["candidate_b_selector_evidence"]["candidate_b_default_for_eligible_pdf_when_engine_omitted"] is True
     assert body["candidate_b_selector_evidence"]["candidate_b_runtime_selector_is_opt_in"] is True
     assert body["baseline_current_default_evidence"]["baseline_default_changed"] is False
+    assert body["baseline_current_default_evidence"]["non_pdf_document_processing_engine_default"] == "baseline"
+    assert body["baseline_current_default_evidence"]["explicit_baseline_rollback_preserved"] is True
     assert body["candidate_a_admitted_variant_evidence"]["visual_lane_mode"] == "candidate_a_page_evidence_v1"
-    assert body["default_selector_change_enabled"] is False
-    assert body["candidate_b_default_promotion_enabled"] is False
+    assert body["default_selector_change_enabled"] is True
+    assert body["candidate_b_default_promotion_enabled"] is True
     assert body["selector_mutation_performed"] is False
     assert body["rollback_to_baseline"]["depends_on_candidate_b_artifacts"] is False
-    assert body["next_allowed_actions"] == ["select_separate_candidate_b_default_promotion_implementation_freeze"]
+    assert body["next_allowed_actions"] == [
+        "monitor_candidate_b_default_selector",
+        "use_explicit_baseline_document_processing_engine_for_rollback",
+    ]
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
 
 
@@ -307,4 +313,8 @@ def test_candidate_b_default_readiness_rejects_forbidden_selector_and_path_field
     readiness_body = readiness.json()
     assert readiness_body["candidate_b_default_promotion_readiness_audit_admitted"] is True
     assert readiness_body["candidate_b_default_promotion_readiness_audit_endpoint"] == READY_ENDPOINT
-    assert readiness_body["candidate_b_default_promotion_selector_switch_admitted"] is False
+    assert readiness_body["candidate_b_default_promotion_selector_switch_admitted"] is True
+    assert (
+        readiness_body["candidate_b_default_promotion_selector_scope"]
+        == "candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only"
+    )

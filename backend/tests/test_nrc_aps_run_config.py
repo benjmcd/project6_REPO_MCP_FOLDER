@@ -35,6 +35,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
         self.assertEqual(config["content_min_searchable_chars"], 10)
         self.assertEqual(config["content_min_searchable_tokens"], 2)
         self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
+        self.assertTrue(config["document_processing_engine_explicit"])
 
     def test_lenient_pass_through_excludes_processing_controls_from_query_payload(self):
         config = connectors_nrc_adams._normalize_request_config(
@@ -56,6 +57,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
         self.assertEqual(config["content_parse_timeout_seconds"], 0)
         self.assertFalse(config["ocr_enabled"])
         self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
+        self.assertTrue(config["document_processing_engine_explicit"])
 
     def test_visual_lane_mode_defaults_to_baseline(self):
         """Absent visual_lane_mode must default to baseline (fail-closed)."""
@@ -159,6 +161,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
         )
 
         self.assertEqual(config["document_processing_engine"], "baseline")
+        self.assertFalse(config["document_processing_engine_explicit"])
 
     def test_document_processing_engine_preserves_candidate_b(self):
         config = connectors_nrc_adams._normalize_request_config(
@@ -171,6 +174,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
         )
 
         self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
+        self.assertTrue(config["document_processing_engine_explicit"])
 
     def test_document_processing_engine_fail_closed_for_invalid_value(self):
         config = connectors_nrc_adams._normalize_request_config(
@@ -183,6 +187,7 @@ class TestNrcApsRunConfig(unittest.TestCase):
         )
 
         self.assertEqual(config["document_processing_engine"], "baseline")
+        self.assertTrue(config["document_processing_engine_explicit"])
 
     def test_document_processing_engine_excluded_from_query_payload(self):
         config = connectors_nrc_adams._normalize_request_config(
@@ -196,4 +201,6 @@ class TestNrcApsRunConfig(unittest.TestCase):
         )
 
         self.assertEqual(config["document_processing_engine"], "candidate_b_opendataloader_pdf")
+        self.assertTrue(config["document_processing_engine_explicit"])
         self.assertNotIn("document_processing_engine", config["query_payload_inbound"])
+        self.assertNotIn("document_processing_engine_explicit", config["query_payload_inbound"])

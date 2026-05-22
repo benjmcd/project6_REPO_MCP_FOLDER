@@ -145,6 +145,13 @@ def normalization_contract_id() -> str:
 
 def processing_config_from_run_config(config: dict[str, Any] | None = None) -> dict[str, Any]:
     incoming = dict(config or {})
+    document_processing_engine_supplied = (
+        nrc_aps_document_processing._coerce_document_processing_engine_explicit(
+            incoming.get("document_processing_engine_explicit")
+        )
+        if "document_processing_engine_explicit" in incoming
+        else bool(str(incoming.get("document_processing_engine") or "").strip())
+    )
     overrides: dict[str, Any] = {
         "content_sniff_bytes": incoming.get("content_sniff_bytes", 4096),
         "content_parse_max_pages": incoming.get("content_parse_max_pages", 500),
@@ -165,11 +172,10 @@ def processing_config_from_run_config(config: dict[str, Any] | None = None) -> d
         "sec_edgar_parse_max_columns": incoming.get("sec_edgar_parse_max_columns", 200),
         "sec_edgar_admitted_form_types": incoming.get("sec_edgar_admitted_form_types", ["10-K", "10-Q", "8-K"]),
         "visual_lane_mode": incoming.get("visual_lane_mode", "baseline"),
-        "document_processing_engine": incoming.get(
-            "document_processing_engine",
-            nrc_aps_document_processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
-        ),
+        "document_processing_engine_explicit": document_processing_engine_supplied,
     }
+    if "document_processing_engine" in incoming:
+        overrides["document_processing_engine"] = incoming.get("document_processing_engine")
     if incoming.get("artifact_storage_dir"):
         overrides["artifact_storage_dir"] = incoming["artifact_storage_dir"]
     if incoming.get("source_filename"):
