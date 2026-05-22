@@ -16,7 +16,16 @@ from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_r
 
 GOLDEN_RUN_ID = "d6be0fff-bbd7-468a-9b00-7103d5995494"
 PIPELINE_ID = "nrc_aps_review_v1"
-_BASELINE_VISIBLE_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", "candidate_a_page_evidence_v1"})
+_VISUAL_LANE_MODE_BASELINE = "baseline"
+_VISUAL_LANE_MODE_CANDIDATE_A = "candidate_a_page_evidence_v1"
+_VISUAL_LANE_MODE_CANDIDATE_B = "candidate_b_opendataloader_page_evidence_v1"
+_BASELINE_VISIBLE_VISUAL_LANE_MODES: frozenset[str] = frozenset(
+    {
+        _VISUAL_LANE_MODE_BASELINE,
+        _VISUAL_LANE_MODE_CANDIDATE_A,
+        _VISUAL_LANE_MODE_CANDIDATE_B,
+    }
+)
 _DOCUMENT_PROCESSING_ENGINE_BASELINE = "baseline"
 _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = "candidate_b_opendataloader_pdf"
 _ADMITTED_DOCUMENT_PROCESSING_ENGINES: frozenset[str] = frozenset(
@@ -43,10 +52,8 @@ def _normalize_visual_lane_mode_for_visibility(value: Any) -> str:
 
 def classify_visual_lane_mode(value: Any) -> str | None:
     normalized = _normalize_visual_lane_mode_for_visibility(value)
-    if normalized == "candidate_a_page_evidence_v1":
-        return "candidate_a_page_evidence_v1"
-    if normalized == "baseline":
-        return "baseline"
+    if normalized in _BASELINE_VISIBLE_VISUAL_LANE_MODES:
+        return normalized
     return None
 
 

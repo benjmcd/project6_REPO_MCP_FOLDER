@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import io
+import json
+from pathlib import Path
+import sys
+import types
 import zipfile
 from typing import Any
 
@@ -55,6 +59,7 @@ def test_omitted_document_processing_engine_defaults_to_candidate_b_for_pdf(monk
     assert result["parser_contract_id"] == "aps_candidate_b_opendataloader_pdf_parser_v1"
     assert calls[0]["document_processing_engine"] == processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
     assert calls[0]["document_processing_engine_explicit"] is False
+    assert calls[0]["visual_lane_mode"] == processing.APS_VISUAL_LANE_MODE_BASELINE
 
 
 def test_omitted_pdf_selector_falls_closed_to_baseline_when_candidate_b_unavailable(
@@ -247,3 +252,67 @@ def test_zip_pdf_member_remains_baseline_without_explicit_candidate_b(monkeypatc
     assert result["member_summaries"][0]["status"] == "success"
     assert baseline_calls[0]["document_processing_engine"] == processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
     assert baseline_calls[0]["document_processing_engine_explicit"] is True
+
+
+def test_candidate_b_visual_lane_emits_retained_page_evidence_refs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_convert(*, input_path: str, output_dir: str, **_: Any) -> None:
+        assert Path(input_path).name == "input.pdf"
+        payload = {
+            "number of pages": 1,
+            "kids": [
+                {
+                    "type": "image",
+                    "page number": 1,
+                    "bounding box": [0, 0, 100, 100],
+                },
+                {
+                    "type": "paragraph",
+                    "page number": 1,
+                    "content": "Candidate B page evidence text",
+                    "bounding box": [1, 2, 3, 4],
+                },
+            ],
+        }
+        Path(output_dir, "input.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    module = types.ModuleType("opendataloader_pdf")
+    module.convert = fake_convert
+    monkeypatch.setitem(sys.modules, "opendataloader_pdf", module)
+    monkeypatch.setattr(
+        processing.importlib.metadata,
+        "version",
+        lambda package_name: processing.APS_ODL_PDF_EXPECTED_VERSION,
+    )
+
+    result = processing.process_document(
+        content=PDF_BYTES,
+        declared_content_type="application/pdf",
+        config={
+            "artifact_storage_dir": str(tmp_path),
+            "visual_lane_mode": processing.APS_VISUAL_LANE_MODE_CANDIDATE_B,
+        },
+    )
+
+    assert result["parser_family"] == "pdf_candidate_b_opendataloader"
+    assert result["visual_lane_mode"] == processing.APS_VISUAL_LANE_MODE_CANDIDATE_B
+    assert result["candidate_b_retained_artifact_refs"] == [
+        {"relative_name": "input.pdf", "artifact_role": "source_pdf", "material_text_payload": False},
+        {"relative_name": "input.json", "artifact_role": "raw_json", "material_text_payload": True},
+    ]
+    assert result["visual_page_refs"] == [
+        {
+            "page_number": 1,
+            "visual_lane_mode": processing.APS_VISUAL_LANE_MODE_CANDIDATE_B,
+            "document_processing_engine": processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+            "visual_page_class": processing.APS_VISUAL_CLASS_DIAGRAM,
+            "status": "candidate_b_page_evidence_retained",
+            "evidence_source": "opendataloader_pdf_json",
+            "image_count": 1,
+            "retained_artifact_refs": result["candidate_b_retained_artifact_refs"],
+        }
+    ]
+    assert list(tmp_path.rglob("input.pdf"))
+    assert list(tmp_path.rglob("input.json"))
