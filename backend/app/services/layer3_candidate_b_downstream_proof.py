@@ -71,6 +71,19 @@ REQUIRED_COVERAGE = frozenset(
         "session_status_projection",
     }
 )
+DELIVERY_ARTIFACT_AUTHORITY_COVERAGE = frozenset(
+    {
+        "external_export_download_prepare",
+        "same_origin_delivery_status",
+        "same_origin_delivery",
+        "provider_private_prepare",
+        "provider_private_status",
+        "provider_private_use",
+        "provider_private_revoke",
+        "internal_webhook_dispatch",
+        "internal_webhook_status",
+    }
+)
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
     "paths",
@@ -185,7 +198,10 @@ def candidate_b_runtime_downstream_proof(payload: Mapping[str, Any]) -> dict[str
         receipt_id=receipt_id,
         receipt_hash=receipt["bridge_receipt_hash"],
     )
-    coverage = _validate_coverage_evidence(fields.get("coverage_evidence"))
+    coverage = _validate_coverage_evidence(
+        fields.get("coverage_evidence"),
+        retained_artifact_family_hash=str(receipt.get("governed_retained_artifact_family_hash") or ""),
+    )
     negative_invariants = _negative_invariants()
     negative_invariants_hash = _stable_hash(negative_invariants)
     coverage_hash = _stable_hash(coverage)
@@ -416,7 +432,11 @@ def _validate_visual_lane_status(
     return _stable_hash(value)
 
 
-def _validate_coverage_evidence(value: Any) -> dict[str, dict[str, Any]]:
+def _validate_coverage_evidence(
+    value: Any,
+    *,
+    retained_artifact_family_hash: str,
+) -> dict[str, dict[str, Any]]:
     if not isinstance(value, dict):
         raise CandidateBDownstreamProofError(
             "candidate_b_downstream_proof_coverage_evidence_missing",
@@ -474,6 +494,31 @@ def _validate_coverage_evidence(value: Any) -> dict[str, dict[str, Any]]:
                 http_status=409,
                 details={"coverage_step": step},
             )
+        delivery_authority: dict[str, Any] = {}
+        if step in DELIVERY_ARTIFACT_AUTHORITY_COVERAGE:
+            received_artifact_hash = str(item.get("candidate_b_retained_artifact_family_hash") or "").strip()
+            if received_artifact_hash != retained_artifact_family_hash:
+                raise CandidateBDownstreamProofError(
+                    "candidate_b_downstream_proof_delivery_artifact_authority_mismatch",
+                    "Delivery-facing Candidate B downstream proof must bind to the retained artifact-family authority hash.",
+                    http_status=409,
+                    details={
+                        "coverage_step": step,
+                        "expected": retained_artifact_family_hash,
+                        "received": received_artifact_hash or None,
+                    },
+                )
+            if item.get("candidate_b_delivery_artifact_roles_bound") is not True:
+                raise CandidateBDownstreamProofError(
+                    "candidate_b_downstream_proof_delivery_artifact_roles_not_bound",
+                    "Delivery-facing Candidate B downstream proof must bind retained delivery/product artifact roles.",
+                    http_status=409,
+                    details={"coverage_step": step},
+                )
+            delivery_authority = {
+                "candidate_b_retained_artifact_family_hash": retained_artifact_family_hash,
+                "candidate_b_delivery_artifact_roles_bound": True,
+            }
         coverage[step] = {
             "status": "proven",
             "evidence_ref": evidence_ref,
@@ -483,6 +528,7 @@ def _validate_coverage_evidence(value: Any) -> dict[str, dict[str, Any]]:
             "provider_private_token_exposed": False,
             "provider_public_url_enabled": False,
             "connector_dispatch_enabled": False,
+            **delivery_authority,
         }
     return coverage
 
