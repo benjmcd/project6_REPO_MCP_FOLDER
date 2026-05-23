@@ -316,6 +316,9 @@ const AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_ma
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_read_only_status_surface';
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_USE_CASE = 'operator_reviews_candidate_b_default_promotion_status_without_selector_mutation_or_dispatch';
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY = 'State.bootstrap.execution_readiness';
+const CANDIDATE_B_OPERATOR_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_operator_status_control';
+const CANDIDATE_B_OPERATOR_STATUS_MODE = 'candidate_b_default_promotion_operator_status_v1';
+const CANDIDATE_B_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_operator_status';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_recording_control';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_MODE = 'candidate_b_default_promotion_final_proof_v1';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION = 'record_candidate_b_default_promotion_final_proof';
@@ -465,6 +468,17 @@ const State = {
     candidateBDefaultPromotionFinalProofStatusInput: {
         runtimeReceiptId: '',
         proofReceiptId: '',
+    },
+    candidateBOperatorStatus: null,
+    candidateBOperatorStatusError: null,
+    candidateBOperatorStatusPending: false,
+    candidateBOperatorStatusInput: {
+        baselineRunId: '',
+        candidateARunId: '',
+        candidateBBundleId: '',
+        candidateBRunId: '',
+        bundleReceiptId: '',
+        runtimeReceiptId: '',
     },
     candidateBArtifactFamilyStatus: null,
     candidateBArtifactFamilyStatusError: null,
@@ -7527,6 +7541,12 @@ function candidateBDefaultPromotionFinalProofStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBOperatorStatusEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_default_promotion_operator_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBArtifactFamilyStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_artifact_family_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -7755,6 +7775,31 @@ function candidateBDefaultPromotionFinalProofStatusInputValues() {
     };
 }
 
+function candidateBOperatorStatusInputValues() {
+    const baselineInput = document.getElementById('candidate-b-operator-status-baseline-run-id');
+    const candidateAInput = document.getElementById('candidate-b-operator-status-candidate-a-run-id');
+    const bundleInput = document.getElementById('candidate-b-operator-status-bundle-id');
+    const runInput = document.getElementById('candidate-b-operator-status-run-id');
+    const bundleReceiptInput = document.getElementById('candidate-b-operator-status-bundle-receipt-id');
+    const runtimeReceiptInput = document.getElementById('candidate-b-operator-status-runtime-receipt-id');
+    return {
+        baselineRunId: (baselineInput?.value || State.candidateBOperatorStatusInput.baselineRunId || '').trim(),
+        candidateARunId: (candidateAInput?.value || State.candidateBOperatorStatusInput.candidateARunId || '').trim(),
+        candidateBBundleId: (bundleInput?.value || State.candidateBOperatorStatusInput.candidateBBundleId || '').trim(),
+        candidateBRunId: (runInput?.value || State.candidateBOperatorStatusInput.candidateBRunId || '').trim(),
+        bundleReceiptId: (
+            bundleReceiptInput?.value
+            || State.candidateBOperatorStatusInput.bundleReceiptId
+            || ''
+        ).trim(),
+        runtimeReceiptId: (
+            runtimeReceiptInput?.value
+            || State.candidateBOperatorStatusInput.runtimeReceiptId
+            || ''
+        ).trim(),
+    };
+}
+
 function candidateBDefaultPromotionFinalProofPayload() {
     const values = candidateBDefaultPromotionFinalProofInputValues();
     State.candidateBDefaultPromotionFinalProofInput = values;
@@ -7779,6 +7824,24 @@ function candidateBDefaultPromotionFinalProofStatusPayload() {
     };
 }
 
+function candidateBOperatorStatusPayload() {
+    const values = candidateBOperatorStatusInputValues();
+    State.candidateBOperatorStatusInput = values;
+    return {
+        client_request_id: requestId(),
+        status_mode: CANDIDATE_B_OPERATOR_STATUS_MODE,
+        operator_decision: CANDIDATE_B_OPERATOR_STATUS_OPERATOR_DECISION,
+        baseline_run_id: values.baselineRunId,
+        candidate_a_run_id: values.candidateARunId,
+        candidate_b_bundle_id: values.candidateBBundleId,
+        candidate_b_run_id: values.candidateBRunId,
+        candidate_b_bundle_bridge_receipt_id: values.bundleReceiptId,
+        candidate_b_runtime_bridge_receipt_id: values.runtimeReceiptId,
+        candidate_b_visual_lane_status_evidence: State.candidateBVisualLaneStatus,
+        runtime_downstream_proof: State.candidateBRuntimeDownstreamProof,
+    };
+}
+
 function canRecordCandidateBDefaultPromotionFinalProof(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBDefaultPromotionFinalProofInputValues();
     return Boolean(
@@ -7797,6 +7860,23 @@ function canInspectCandidateBDefaultPromotionFinalProofStatus(contract = candida
         && values.runtimeReceiptId
         && values.proofReceiptId
         && !State.candidateBDefaultPromotionFinalProofStatusPending
+    );
+}
+
+function canInspectCandidateBOperatorStatus(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBOperatorStatusInputValues();
+    return Boolean(
+        contract?.candidate_b_default_promotion_operator_status_admitted
+        && candidateBOperatorStatusEndpointPath(contract)
+        && values.baselineRunId
+        && values.candidateARunId
+        && values.candidateBBundleId
+        && values.candidateBRunId
+        && values.bundleReceiptId
+        && values.runtimeReceiptId
+        && State.candidateBVisualLaneStatus?.status === 'available'
+        && State.candidateBRuntimeDownstreamProof?.status === 'proven'
+        && !State.candidateBOperatorStatusPending
     );
 }
 
@@ -7826,6 +7906,20 @@ function candidateBDefaultPromotionFinalProofStatusPanelState() {
         return { label: 'candidate_b_final_proof_status_available', pill: 'ok' };
     }
     return { label: 'candidate_b_final_proof_status_not_inspected', pill: 'preview' };
+}
+
+function candidateBOperatorStatusPanelState() {
+    if (State.candidateBOperatorStatusPending) {
+        return { label: 'candidate_b_operator_status_pending', pill: 'preview' };
+    }
+    if (State.candidateBOperatorStatusError) {
+        const code = State.candidateBOperatorStatusError?.payload?.error?.code;
+        return { label: code || 'candidate_b_operator_status_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBOperatorStatus?.status === 'available') {
+        return { label: 'candidate_b_operator_status_available', pill: 'ok' };
+    }
+    return { label: 'candidate_b_operator_status_not_inspected', pill: 'preview' };
 }
 
 function candidateBArtifactFamilyStatusPanelState() {
@@ -8133,6 +8227,60 @@ function candidateBDefaultPromotionFinalProofStatusRows(status) {
     `;
 }
 
+function candidateBOperatorStatusRows(status) {
+    if (!status) return '';
+    const runtimeSteps = Array.isArray(status.runtime_delivery_artifact_coverage_steps)
+        ? status.runtime_delivery_artifact_coverage_steps
+        : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Operator Status</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('status', status.status, { code: true })}
+                    ${fieldItem('operator status receipt id', status.operator_status_receipt_id, { code: true })}
+                    ${fieldItem('operator status receipt ref', status.operator_status_receipt_ref, { code: true })}
+                    ${fieldItem('operator status hash', status.operator_status_hash, { code: true })}
+                    ${fieldItem('Candidate B source kind', status.candidate_b_source_kind, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Promotion Inputs</strong>
+                <ul>
+                    ${fieldItem('baseline run id', status.baseline_run_id, { code: true })}
+                    ${fieldItem('Candidate A run id', status.candidate_a_run_id, { code: true })}
+                    ${fieldItem('Candidate B bundle id', status.candidate_b_bundle_id, { code: true })}
+                    ${fieldItem('Candidate B run id', status.candidate_b_run_id, { code: true })}
+                    ${fieldItem('bundle bridge receipt id', status.bundle_bridge_receipt_id, { code: true })}
+                    ${fieldItem('runtime bridge receipt id', status.runtime_bridge_receipt_id, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Runtime Delivery Projection</strong>
+                <ul>
+                    ${fieldItem('runtime downstream proof hash', status.runtime_downstream_proof_hash, { code: true })}
+                    ${fieldItem('runtime delivery artifact authority hash', status.runtime_delivery_artifact_authority_hash, { code: true })}
+                    ${fieldItem('runtime delivery artifact coverage steps', runtimeSteps.join(', '), { code: true })}
+                    ${fieldItem('runtime delivery projection visible', status.runtime_delivery_artifact_projection_visible)}
+                    ${fieldItem('runtime delivery artifact roles bound', status.runtime_delivery_artifact_roles_bound)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Operator Guardrails</strong>
+                <ul>
+                    ${fieldItem('raw local path exposed', status.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', status.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', status.artifact_bytes_exposed)}
+                    ${fieldItem('provider private token exposed', status.provider_private_token_exposed)}
+                    ${fieldItem('selector mutation performed', status.selector_mutation_performed)}
+                    ${fieldItem('default selector change visible as enabled', status.default_selector_change_visible_as_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofError() {
     const error = State.candidateBDefaultPromotionFinalProofError;
     if (!error) return '';
@@ -8152,6 +8300,20 @@ function candidateBDefaultPromotionFinalProofStatusError() {
     if (!error) return '';
     const detail = error.payload?.error || error.payload?.detail || {};
     const code = detail.code || 'candidate_b_final_proof_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function candidateBOperatorStatusError() {
+    const error = State.candidateBOperatorStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_operator_status_error';
     const message = detail.message || error.message;
     return `
         <div class="error-panel">
@@ -8223,6 +8385,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const panelState = candidateBDefaultPromotionStatusState(contract);
     const finalProofRecordState = candidateBDefaultPromotionFinalProofPanelState();
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
+    const operatorStatusState = candidateBOperatorStatusPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
     const visualLaneState = candidateBVisualLaneStatusPanelState();
     const bundleDownstreamProofState = candidateBBundleDownstreamProofPanelState();
@@ -8239,6 +8402,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofRecordInputs = State.candidateBDefaultPromotionFinalProofInput;
     const finalProofStatus = State.candidateBDefaultPromotionFinalProofStatus;
     const finalProofInputs = State.candidateBDefaultPromotionFinalProofStatusInput;
+    const operatorStatus = State.candidateBOperatorStatus;
+    const operatorStatusInputs = State.candidateBOperatorStatusInput;
     const artifactFamilyStatus = State.candidateBArtifactFamilyStatus;
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
@@ -8379,6 +8544,42 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBRuntimeDownstreamProofRows(runtimeDownstreamProof)}
                 ${candidateBRuntimeDownstreamProofError()}
+            </section>
+            <section class="result-review-card candidate-b-operator-status-card">
+                <strong>Default-Promotion Operator Status</strong>
+                <form id="candidate-b-operator-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_OPERATOR_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>baseline run id</span>
+                        <input id="candidate-b-operator-status-baseline-run-id" type="text" value="${escapeHtml(operatorStatusInputs.baselineRunId)}" autocomplete="off" spellcheck="false" placeholder="baseline-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate A run id</span>
+                        <input id="candidate-b-operator-status-candidate-a-run-id" type="text" value="${escapeHtml(operatorStatusInputs.candidateARunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-a-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate B bundle id</span>
+                        <input id="candidate-b-operator-status-bundle-id" type="text" value="${escapeHtml(operatorStatusInputs.candidateBBundleId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-bundle-001" />
+                    </label>
+                    <label>
+                        <span>Candidate B run id</span>
+                        <input id="candidate-b-operator-status-run-id" type="text" value="${escapeHtml(operatorStatusInputs.candidateBRunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-runtime-001" />
+                    </label>
+                    <label>
+                        <span>bundle bridge receipt id</span>
+                        <input id="candidate-b-operator-status-bundle-receipt-id" type="text" value="${escapeHtml(operatorStatusInputs.bundleReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-bundle-l3-..." />
+                    </label>
+                    <label>
+                        <span>runtime bridge receipt id</span>
+                        <input id="candidate-b-operator-status-runtime-receipt-id" type="text" value="${escapeHtml(operatorStatusInputs.runtimeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-runtime-l3-..." />
+                    </label>
+                    <button id="candidate-b-operator-status-submit" type="submit" ${contract?.candidate_b_default_promotion_operator_status_admitted && State.candidateBVisualLaneStatus?.status === 'available' && State.candidateBRuntimeDownstreamProof?.status === 'proven' && !State.candidateBOperatorStatusPending ? '' : 'disabled'}>Inspect Operator Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(operatorStatusState.pill)}">${escapeHtml(operatorStatusState.label)}</span>
+                    <span class="rail-label">Server inspects Candidate B default-promotion posture from bridge receipts, visual-lane status, and runtime downstream proof without selector mutation.</span>
+                </div>
+                ${candidateBOperatorStatusRows(operatorStatus)}
+                ${candidateBOperatorStatusError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -8576,6 +8777,36 @@ async function recordCandidateBRuntimeDownstreamProof(event) {
         addEvent(`Candidate B runtime downstream proof blocked: ${error.message}`);
     } finally {
         State.candidateBRuntimeDownstreamProofPending = false;
+        renderAll();
+    }
+}
+
+async function inspectCandidateBOperatorStatus(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canInspectCandidateBOperatorStatus(contract)) {
+        State.candidateBOperatorStatus = null;
+        State.candidateBOperatorStatusError = new Error(
+            'Candidate B operator status requires bridge ids, run ids, visual-lane status evidence, and runtime downstream proof.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBOperatorStatusEndpointPath(contract);
+    const payload = candidateBOperatorStatusPayload();
+    State.candidateBOperatorStatusPending = true;
+    State.candidateBOperatorStatusError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBOperatorStatus = await postJson(path, payload);
+        State.candidateBOperatorStatusError = null;
+        addEvent('Candidate B default-promotion operator status inspected through server bridge authority.');
+    } catch (error) {
+        State.candidateBOperatorStatus = null;
+        State.candidateBOperatorStatusError = error;
+        addEvent(`Candidate B operator-status inspection blocked: ${error.message}`);
+    } finally {
+        State.candidateBOperatorStatusPending = false;
         renderAll();
     }
 }
@@ -15052,6 +15283,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     }
     if (event.target?.id === 'candidate-b-runtime-downstream-proof-form') {
         recordCandidateBRuntimeDownstreamProof(event);
+    }
+    if (event.target?.id === 'candidate-b-operator-status-form') {
+        inspectCandidateBOperatorStatus(event);
     }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);
