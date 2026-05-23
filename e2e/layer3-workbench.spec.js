@@ -11303,7 +11303,7 @@ test('Layer 3 source-directory hybrid rendered status extension stays server-aut
   ]);
 });
 
-test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path', async ({ page, request }) => {
+async function proveSourceDirectoryScanToHybridHandoffDeliveryLiveServerPath(page, request, options = {}) {
   test.setTimeout(90000);
   const apiRequests = trackLayer3ApiRequests(page);
   const consoleErrors = [];
@@ -11472,6 +11472,12 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'operator_decision',
     'provider_public_url_receipt_id',
   ];
+  const setup = options.sourceDirectorySetup
+    ? await options.sourceDirectorySetup(request)
+    : null;
+  const expectedRelativeNames = setup?.expectedRelativeNames ?? ['vector-retrieval.txt'];
+  const preferredMaterialRelativeName = setup?.preferredMaterialRelativeName ?? expectedRelativeNames[0];
+  const requestIdPrefix = setup?.requestIdPrefix ?? 'source-directory-full-path';
 
   await page.setViewportSize({ width: 1360, height: 980 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
@@ -11485,7 +11491,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const scanResponsePromise = page.waitForResponse((response) => (
     new URL(response.url()).pathname === scanPath && response.request().method() === 'POST'
   ));
-  await page.locator('#source-directory-ingestion-client-request-id').fill(requestId('source-directory-full-path-scan'));
+  await page.locator('#source-directory-ingestion-client-request-id').fill(requestId(`${requestIdPrefix}-scan`));
   await page.locator('#source-directory-ingestion-scan-submit').click();
   const scanPayload = (await scanRequestPromise).postDataJSON();
   const scanBody = await expectJsonStatus(await scanResponsePromise, 201);
@@ -11496,10 +11502,12 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     'ingestion_mode',
   ]);
   expect(scanBody.schema_id).toBe('layer3.source_directory_ingestion_batch.v1');
-  expect(scanBody.files).toHaveLength(1);
-  expect(scanBody.files[0].relative_name).toBe('vector-retrieval.txt');
+  expect(scanBody.files.map((file) => file.relative_name).sort()).toEqual([...expectedRelativeNames].sort());
+  const selectedFileIndex = scanBody.files.findIndex((file) => file.relative_name === preferredMaterialRelativeName);
+  expect(selectedFileIndex).toBeGreaterThanOrEqual(0);
+  const selectedFile = scanBody.files[selectedFileIndex];
   expect(scanBody.source_root_absolute_path_exposed).toBe(false);
-  await expect(page.locator('#source-directory-ingestion-panel')).toContainText('vector-retrieval.txt');
+  await expect(page.locator('#source-directory-ingestion-panel')).toContainText(selectedFile.relative_name);
   await expect(page.locator('#source-directory-ingestion-panel')).not.toContainText('C:\\');
   await expect(page.locator('#source-directory-ingestion-panel')).not.toContainText('/Users/');
   expectNoForbiddenPayloadKeys(scanPayload);
@@ -11518,8 +11526,9 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   const materialResponsePromise = page.waitForResponse((response) => (
     new URL(response.url()).pathname === materialPreviewPath && response.request().method() === 'POST'
   ));
-  await expect(page.locator('.source-directory-material-preview-button')).toBeEnabled();
-  await page.locator('.source-directory-material-preview-button').first().click();
+  const materialPreviewButton = page.locator('.source-directory-material-preview-button').nth(selectedFileIndex);
+  await expect(materialPreviewButton).toBeEnabled();
+  await materialPreviewButton.click();
   const materialPayload = (await materialRequestPromise).postDataJSON();
   const materialPreview = await expectJson(await materialResponsePromise);
   expectOnlyPayloadKeys(materialPayload, [
@@ -11532,7 +11541,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   ]);
   expect(materialPreview.schema_id).toBe('layer3.source_directory_material_preview.v1');
   expect(materialPreview.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
-  expect(materialPreview.source_ingestion_file_id).toBe(scanBody.files[0].source_ingestion_file_id);
+  expect(materialPreview.source_ingestion_file_id).toBe(selectedFile.source_ingestion_file_id);
   expect(materialPreview.material_candidate.source_class).toBe('server_configured_directory_file');
   expectNoForbiddenPayloadKeys(materialPayload);
 
@@ -11713,7 +11722,7 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
   expect(authoritySetup.redaction_guards.frontend_durable_authority_enabled).toBe(false);
   const authority = authoritySetup.authority_payload;
   expect(authority.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
-  expect(authority.source_ingestion_file_id).toBe(scanBody.files[0].source_ingestion_file_id);
+  expect(authority.source_ingestion_file_id).toBe(selectedFile.source_ingestion_file_id);
   expect(authority.material_snapshot_id).toBeTruthy();
   expect(authority.index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
   expect(authority.embedding_index_authority_hash).toMatch(/^[a-f0-9]{64}$/);
@@ -12682,4 +12691,45 @@ test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery 
     && message.includes('409 (Conflict)')
   ))).toEqual([]);
   expect(pageErrors).toEqual([]);
+}
+
+test('Layer 3 workbench proves source-directory scan to hybrid handoff delivery live server path', async ({ page, request }) => {
+  await proveSourceDirectoryScanToHybridHandoffDeliveryLiveServerPath(page, request);
+});
+
+test('Layer 3 workbench proves Candidate B bundle source-directory full downstream path', async ({ page, request }) => {
+  try {
+    await proveSourceDirectoryScanToHybridHandoffDeliveryLiveServerPath(page, request, {
+      sourceDirectorySetup: async (apiRequest) => {
+        const setup = await expectJson(await apiRequest.post('/__test/layer3/candidate-b-source-directory-authority', {
+          data: { candidate_b_source_kind: 'bundle' },
+        }));
+        expect(setup.schema_id).toBe('project6.review_browser_candidate_b_source_directory_authority_setup.v1');
+        expect(setup.source_ingestion_dir_configured_from_bridge).toBe(true);
+        expect(setup.candidate_b_source_kind).toBe('bundle');
+        expect(setup.curated_root_absolute_path_exposed).toBe(false);
+        expect(setup.layer3_material_preview_compatible).toBe(true);
+        expect(setup.gate_b_material_authority_compatible).toBe(true);
+        expect(setup.artifact_role_counts.material_analysis_payloads).toBeGreaterThan(0);
+        expect(JSON.stringify(setup)).not.toContain('C:\\');
+        const subset = setup.admitted_artifact_subset;
+        const expectedRelativeNames = [
+          ...(subset.top_level_files ?? []),
+          ...(subset.raw_files ?? []),
+        ].sort();
+        expect(expectedRelativeNames).toHaveLength(setup.expected_source_directory_file_count);
+        expect(expectedRelativeNames).toContain('raw/fontish.md');
+        return {
+          expectedRelativeNames,
+          preferredMaterialRelativeName: 'raw/fontish.md',
+          requestIdPrefix: 'candidate-b-bundle-source-directory-full-path',
+        };
+      },
+    });
+  } finally {
+    const reset = await expectJson(await request.post('/__test/layer3/source-directory-fixture-reset'));
+    expect(reset.schema_id).toBe('project6.review_browser_source_directory_fixture_reset.v1');
+    expect(reset.source_ingestion_dir_restored).toBe(true);
+    expect(reset.source_root_absolute_path_exposed).toBe(false);
+  }
 });
