@@ -436,25 +436,35 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_read_only_status_surface'" in js.text
     assert "CANDIDATE_B_DEFAULT_PROMOTION_STATUS_USE_CASE = 'operator_reviews_candidate_b_default_promotion_status_without_selector_mutation_or_dispatch'" in js.text
     assert "CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY = 'State.bootstrap.execution_readiness'" in js.text
+    assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_recording_control'" in js.text
+    assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_MODE = 'candidate_b_default_promotion_final_proof_v1'" in js.text
+    assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION = 'record_candidate_b_default_promotion_final_proof'" in js.text
     assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control'" in js.text
     assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE = 'candidate_b_default_promotion_final_proof_status_v1'" in js.text
     assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_final_proof_status'" in js.text
     assert "function candidateBDefaultPromotionReadinessContract" in js.text
     assert "function candidateBDefaultPromotionStatusState" in js.text
+    assert "function candidateBDefaultPromotionFinalProofPayload" in js.text
+    assert "async function recordCandidateBDefaultPromotionFinalProof" in js.text
     assert "function candidateBDefaultPromotionFinalProofStatusPayload" in js.text
     assert "async function inspectCandidateBDefaultPromotionFinalProofStatus" in js.text
     assert "function renderCandidateBDefaultPromotionStatusPanel" in js.text
     assert "renderCandidateBDefaultPromotionStatusPanel()" in js.text
     assert "candidate_b_default_promotion_status_contract_visible" in js.text
+    assert "candidate-b-final-proof-form" in js.text
+    assert "candidate-b-final-proof-submit" in js.text
     assert "candidate-b-final-proof-status-form" in js.text
     assert "candidate-b-final-proof-status-submit" in js.text
     assert "candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only" in js.text
     assert "selector mutation from this panel" in js.text
+    assert "Server records final proof from readiness-audit authority; this control performs no selector mutation." in js.text
     assert "Server revalidates the final proof receipt; this control records no selector mutation." in js.text
     assert "State.bootstrap?.execution_readiness" in js.text
     assert "candidate_b_default_promotion_operator_status_endpoint" in js.text
+    assert "candidate_b_default_promotion_final_proof_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_status_endpoint" in js.text
     assert "/source/ingestion/candidate-b/default-promotion/operator-status" not in js.text
+    assert "/source/ingestion/candidate-b/default-promotion/final-proof" not in js.text
     assert "/source/ingestion/candidate-b/default-promotion/final-proof/status" not in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'" in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_USE_CASE = 'operator_inspects_layer3_end_to_end_governance_lifecycle_without_mutation_or_dispatch'" in js.text
@@ -545,6 +555,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert ".candidate-b-default-promotion-status-grid" in css.text
     assert ".candidate-b-final-proof-status-card" in css.text
     assert ".candidate-b-final-proof-status-form" in css.text
+    assert ".candidate-b-final-proof-status-form textarea" in css.text
     assert ".candidate-b-final-proof-status-grid" in css.text
     assert ".candidate-b-default-promotion-status-rows" in css.text
     assert ".mockup-activation-readiness-panel" in css.text
