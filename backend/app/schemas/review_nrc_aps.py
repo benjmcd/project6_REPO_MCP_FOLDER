@@ -17,6 +17,8 @@ class NrcApsReviewRuntimeBindingSummaryOut(BaseModel):
     storage_label: str | None = None
     visual_lane_mode: str | None = None
     document_processing_engine: str | None = None
+    requested_document_processing_engine: str | None = None
+    document_processing_engine_source: str | None = None
     variant_kind: str | None = None
 
 

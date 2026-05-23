@@ -49,7 +49,12 @@ def _scoped_db_override():
             app.dependency_overrides.pop(get_db, None)
 
 
-def _write_runtime_summary(runtime_dir: Path, *, run_id: str) -> None:
+def _write_runtime_summary(
+    runtime_dir: Path,
+    *,
+    run_id: str,
+    advanced_metrics: dict[str, object] | None = None,
+) -> None:
     payload = {
         "schema_id": "aps.local_corpus_e2e_summary.v1",
         "schema_version": 1,
@@ -68,6 +73,7 @@ def _write_runtime_summary(runtime_dir: Path, *, run_id: str) -> None:
                 "aps_content_index": "present",
             },
         },
+        "advanced_metrics": dict(advanced_metrics or {}),
     }
     (runtime_dir / "local_corpus_e2e_summary.json").write_text(
         json.dumps(payload, indent=2, sort_keys=True),
@@ -82,6 +88,7 @@ def _write_runtime_db(
     visual_lane_mode: str | None,
     include_connector_run_row: bool,
     document_processing_engine: str | None = None,
+    document_processing_engine_explicit: bool | None = None,
 ) -> None:
     database_path = runtime_dir / "lc.db"
     connection = sqlite3.connect(str(database_path))
@@ -106,6 +113,8 @@ def _write_runtime_db(
                 request_config["visual_lane_mode"] = visual_lane_mode
             if document_processing_engine is not None:
                 request_config["document_processing_engine"] = document_processing_engine
+            if document_processing_engine_explicit is not None:
+                request_config["document_processing_engine_explicit"] = document_processing_engine_explicit
             request_config_json = json.dumps(request_config)
             connection.execute(
                 """
@@ -127,16 +136,19 @@ def _create_temp_review_runtime(
     visual_lane_mode: str | None,
     include_connector_run_row: bool,
     document_processing_engine: str | None = None,
+    document_processing_engine_explicit: bool | None = None,
+    advanced_metrics: dict[str, object] | None = None,
 ) -> Path:
     runtime_dir = base_storage_root / "lc_e2e" / runtime_name
     runtime_dir.mkdir(parents=True, exist_ok=True)
-    _write_runtime_summary(runtime_dir, run_id=run_id)
+    _write_runtime_summary(runtime_dir, run_id=run_id, advanced_metrics=advanced_metrics)
     _write_runtime_db(
         runtime_dir,
         run_id=run_id,
         visual_lane_mode=visual_lane_mode,
         include_connector_run_row=include_connector_run_row,
         document_processing_engine=document_processing_engine,
+        document_processing_engine_explicit=document_processing_engine_explicit,
     )
     return runtime_dir
 
@@ -377,3 +389,62 @@ def test_api_runs_exposes_candidate_b_document_processing_engine(tmp_path, monke
     assert candidate["runtime_binding"]["visual_lane_mode"] == "baseline"
     assert candidate["runtime_binding"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
     assert candidate["runtime_binding"]["variant_kind"] == "candidate_b_opendataloader_pdf"
+
+
+def test_api_runs_classifies_omitted_engine_candidate_b_from_effective_summary_metrics(tmp_path, monkeypatch):
+    storage_root = tmp_path / "storage_test_runtime"
+    candidate_b_run_id = "00000000-0000-0000-0000-00000000b503"
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="candidate_b_effective_default_runtime",
+        run_id=candidate_b_run_id,
+        visual_lane_mode="baseline",
+        document_processing_engine="baseline",
+        document_processing_engine_explicit=False,
+        include_connector_run_row=True,
+        advanced_metrics={
+            "document_processing_engine": "baseline",
+            "candidate_b_extractor_file_count": 1,
+        },
+    )
+
+    monkeypatch.setattr("app.services.review_nrc_aps_runtime.settings.storage_dir", str(storage_root))
+    response = client.get("/api/v1/review/nrc-aps/runs")
+
+    assert response.status_code == 200
+    data = response.json()
+    candidate = next(item for item in data["runs"] if item["run_id"] == candidate_b_run_id)
+    assert candidate["runtime_binding"]["visual_lane_mode"] == "baseline"
+    assert candidate["runtime_binding"]["requested_document_processing_engine"] == "baseline"
+    assert candidate["runtime_binding"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert candidate["runtime_binding"]["document_processing_engine_source"] == "summary_effective_candidate_b"
+    assert candidate["runtime_binding"]["variant_kind"] == "candidate_b_opendataloader_pdf"
+
+
+def test_api_runs_preserves_explicit_baseline_rollback_over_candidate_b_summary_metrics(tmp_path, monkeypatch):
+    storage_root = tmp_path / "storage_test_runtime"
+    baseline_run_id = "00000000-0000-0000-0000-00000000b504"
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="explicit_baseline_rollback_runtime",
+        run_id=baseline_run_id,
+        visual_lane_mode="baseline",
+        document_processing_engine="baseline",
+        document_processing_engine_explicit=True,
+        include_connector_run_row=True,
+        advanced_metrics={
+            "document_processing_engine": "baseline",
+            "candidate_b_extractor_file_count": 1,
+        },
+    )
+
+    monkeypatch.setattr("app.services.review_nrc_aps_runtime.settings.storage_dir", str(storage_root))
+    response = client.get("/api/v1/review/nrc-aps/runs")
+
+    assert response.status_code == 200
+    data = response.json()
+    candidate = next(item for item in data["runs"] if item["run_id"] == baseline_run_id)
+    assert candidate["runtime_binding"]["requested_document_processing_engine"] == "baseline"
+    assert candidate["runtime_binding"]["document_processing_engine"] == "baseline"
+    assert candidate["runtime_binding"]["document_processing_engine_source"] == "request_config_explicit"
+    assert candidate["runtime_binding"]["variant_kind"] == "baseline"
