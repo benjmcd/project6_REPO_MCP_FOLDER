@@ -629,3 +629,35 @@ next_exact_posture: candidate_b_read_only_operator_status_rendered_projection_ga
 ```
 
 This acceptance treats the live HTTP runner plus full-corpus operator workflow status endpoint as the current repeatable operator surface for prepared eligible-PDF corpus runs on a configured live server. It does not admit a server-side workflow-run API, rendered run-start control, browser-storage authority, broader Candidate B default scope, or new provider/connector/model behavior. Any next UI step should be a read-only rendered status projection gap audit before implementation.
+
+## Candidate B Rendered Operator Workflow Status Proof
+
+```yaml
+milestone: candidate_b_read_only_operator_status_rendered_projection_gap_audit_v1
+current_main: 9906745bdc5ff4b94146860588159481f1b8642c
+selected_gap: rendered_full_corpus_operator_workflow_status_read_only_projection
+selected_path: prove_existing_rendered_status_control
+new_runtime_api_admitted: false
+server_side_operator_workflow_run_api_admitted_now: false
+rendered_run_start_control_admitted_now: false
+rendered_status_control_id: candidate-b-full-corpus-workflow-status-form
+rendered_status_mode: rendered_candidate_b_full_corpus_operator_workflow_status_control
+status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+status_mode: candidate_b_full_corpus_operator_workflow_status_v1
+operator_decision: inspect_candidate_b_full_corpus_operator_workflow_status
+frontend_durable_authority_enabled: false
+submitted_authority_fields_only: true
+payload_raw_url_field_submitted: false
+payload_local_path_field_submitted: false
+payload_selector_mutation_field_submitted: false
+rendered_workflow_status_visible: true
+rendered_bridge_receipt_visible: true
+rendered_downstream_proof_visible: true
+rendered_artifact_family_projection_visible: true
+rendered_visual_page_evidence_count_visible: true
+rendered_raw_local_path_guardrail_visible: true
+focused_e2e_test: e2e/layer3-workbench.spec.js::Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control
+next_exact_posture: candidate_b_operator_repeatability_completion_audit_v1
+```
+
+The rendered proof covers the existing read-only workbench status control. It does not add run-start authority or any new runtime route; it only proves the browser can inspect the server-revalidated workflow status projection from durable receipt authority.

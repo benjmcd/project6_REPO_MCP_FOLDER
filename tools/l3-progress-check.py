@@ -2695,6 +2695,9 @@ CANDIDATE_B_LIVE_HTTP_RUNTIME_PROOF_CHECKPOINT = (
 CANDIDATE_B_OPERATOR_REPEATABILITY_ACCEPTANCE_CHECKPOINT = (
     PLANNING_DOCS / "987-cb-repeatability-acceptance.md"
 )
+CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_STATUS_PROOF_CHECKPOINT = (
+    PLANNING_DOCS / "988-cb-rendered-status-proof.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91719,6 +91722,85 @@ def _check_candidate_b_operator_repeatability_acceptance(errors: list[str]) -> N
                 )
 
 
+def _check_candidate_b_rendered_operator_workflow_status_proof(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_STATUS_PROOF_CHECKPOINT: (
+            "Candidate B Rendered Operator Workflow Status Proof",
+            "milestone: candidate_b_read_only_operator_status_rendered_projection_gap_audit_v1",
+            "current_main: 9906745bdc5ff4b94146860588159481f1b8642c",
+            "selected_gap: rendered_full_corpus_operator_workflow_status_read_only_projection",
+            "selected_path: prove_existing_rendered_status_control",
+            "new_runtime_api_admitted: false",
+            "server_side_operator_workflow_run_api_admitted_now: false",
+            "rendered_run_start_control_admitted_now: false",
+            "rendered_status_control_id: candidate-b-full-corpus-workflow-status-form",
+            "rendered_status_mode: rendered_candidate_b_full_corpus_operator_workflow_status_control",
+            "status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "status_mode: candidate_b_full_corpus_operator_workflow_status_v1",
+            "operator_decision: inspect_candidate_b_full_corpus_operator_workflow_status",
+            "frontend_durable_authority_enabled: false",
+            "submitted_authority_fields_only: true",
+            "payload_raw_url_field_submitted: false",
+            "payload_local_path_field_submitted: false",
+            "payload_selector_mutation_field_submitted: false",
+            "rendered_workflow_status_visible: true",
+            "rendered_bridge_receipt_visible: true",
+            "rendered_downstream_proof_visible: true",
+            "rendered_artifact_family_projection_visible: true",
+            "rendered_visual_page_evidence_count_visible: true",
+            "rendered_raw_local_path_guardrail_visible: true",
+            "headed_chrome_required_for_rendered_behavior_change: true",
+            "headless_chrome_required_for_rendered_behavior_change: true",
+            "focused_e2e_test: e2e/layer3-workbench.spec.js::Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control",
+            "next_exact_posture: candidate_b_operator_repeatability_completion_audit_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_read_only_operator_status_rendered_projection_gap_audit_v1",
+            "selected_gap: rendered_full_corpus_operator_workflow_status_read_only_projection",
+            "rendered_status_control_id: candidate-b-full-corpus-workflow-status-form",
+            "rendered_status_mode: rendered_candidate_b_full_corpus_operator_workflow_status_control",
+            "status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "frontend_durable_authority_enabled: false",
+            "payload_raw_url_field_submitted: false",
+            "payload_local_path_field_submitted: false",
+            "payload_selector_mutation_field_submitted: false",
+            "focused_e2e_test: e2e/layer3-workbench.spec.js::Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control",
+            "next_exact_posture: candidate_b_operator_repeatability_completion_audit_v1",
+        ),
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js": (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE",
+            "rendered_candidate_b_full_corpus_operator_workflow_status_control",
+            "candidate-b-full-corpus-workflow-status-form",
+            "data-frontend-durable-authority=\"false\"",
+            "candidateBFullCorpusOperatorWorkflowStatusPayload",
+            "candidateBFullCorpusOperatorWorkflowStatusRows",
+            "inspectCandidateBFullCorpusOperatorWorkflowStatus",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control",
+            "candidate-b-full-corpus-workflow-status-form",
+            "rendered_candidate_b_full_corpus_operator_workflow_status_control",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "candidate_b_full_corpus_operator_workflow_status_v1",
+            "inspect_candidate_b_full_corpus_operator_workflow_status",
+            "cb-full-corpus-operator-rendered-proof",
+            "cb-runtime-l3-rendered-proof",
+            "cb-runtime-downstream-proof-rendered-proof",
+            "workflowStatusPayload).not.toHaveProperty('raw_url')",
+            "workflowStatusPayload).not.toHaveProperty('local_path')",
+            "workflowStatusPayload).not.toHaveProperty('selector_mutation_performed')",
+            "workflowStatusPayload).not.toHaveProperty('frontend_durable_authority')",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B rendered operator workflow status proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92554,6 +92636,7 @@ def main() -> int:
     _check_candidate_b_live_http_operator_runner(errors)
     _check_candidate_b_live_http_runtime_proof(errors)
     _check_candidate_b_operator_repeatability_acceptance(errors)
+    _check_candidate_b_rendered_operator_workflow_status_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
