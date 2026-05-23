@@ -2638,8 +2638,33 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_LIFECYCLE_CONTRACT_FREEZE_CURRENT_MAIN_SYNC = (
 LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_EXPORT_POST1550_SYNC = (
     PLANNING_DOCS / "932-post1550-sync.md"
 )
+CANDIDATE_B_VISUAL_LANE_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS / "969-cb-vlane-sync.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
+)
+NRC_APS_DOCUMENT_PROCESSING_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "nrc_aps_document_processing.py"
+)
+CONNECTORS_NRC_ADAMS_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "connectors_nrc_adams.py"
+)
+REVIEW_NRC_APS_RUNTIME_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "review_nrc_aps_runtime.py"
+)
+CANDIDATE_B_RUNTIME_BRIDGE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_runtime_bridge.py"
+)
+CANDIDATE_B_DEFAULT_SELECTOR_TEST = (
+    ROOT / "backend" / "tests" / "test_nrc_aps_document_processing_default_selector.py"
+)
+NRC_APS_RUN_CONFIG_TEST = ROOT / "backend" / "tests" / "test_nrc_aps_run_config.py"
+CANDIDATE_B_RUNTIME_BRIDGE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_runtime_bridge.py"
+)
+CANDIDATE_B_DEFAULT_READINESS_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_default_readiness.py"
 )
 LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_delivery_use.py"
@@ -90400,6 +90425,79 @@ def _check_source_directory_package_handoff_export_post1550_sync(
                 errors.append(f"{_rel(PROOF_MANIFEST)} {entry_key}.proof_terms invalid")
 
 
+def _check_candidate_b_visual_lane_current_main_sync(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_VISUAL_LANE_CURRENT_MAIN_SYNC: (
+            "Candidate B Visual-Lane Current-Main Sync",
+            "2df6e31adc8eda24bd27a964e344b80cfcf93b5b",
+            "PR `#1612` implemented explicit Candidate B visual-lane admission.",
+            "PR `#1613` proved the Candidate B visual-lane runtime path.",
+            "PR `#1654` guarded Candidate A against the Candidate B default selector.",
+            "PR `#1655` exposed effective Candidate B runtime metadata.",
+            "candidate_b_opendataloader_page_evidence_v1",
+            "candidate_b_first_class_path_completion_audit_v1",
+        ),
+        NRC_APS_DOCUMENT_PROCESSING_SERVICE: (
+            'APS_VISUAL_LANE_MODE_CANDIDATE_B = "candidate_b_opendataloader_page_evidence_v1"',
+            "APS_VISUAL_LANE_MODE_CANDIDATE_B,",
+            "APS_VISUAL_LANE_MODE_CANDIDATE_A:",
+            "_default_document_processing_engine_for_content_type",
+        ),
+        CONNECTORS_NRC_ADAMS_SERVICE: (
+            "APS_VISUAL_LANE_MODE_CANDIDATE_B = nrc_aps_artifact_ingestion.nrc_aps_document_processing.APS_VISUAL_LANE_MODE_CANDIDATE_B",
+            "APS_VISUAL_LANE_MODE_CANDIDATE_B,",
+            "_APS_ADMITTED_VISUAL_LANE_MODES",
+        ),
+        REVIEW_NRC_APS_RUNTIME_SERVICE: (
+            '_VISUAL_LANE_MODE_CANDIDATE_B = "candidate_b_opendataloader_page_evidence_v1"',
+            "_VISUAL_LANE_MODE_CANDIDATE_B,",
+            "classify_visual_lane_mode",
+            "effective_document_processing_engine",
+        ),
+        CANDIDATE_B_RUNTIME_BRIDGE_SERVICE: (
+            'CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"',
+            '_ADMITTED_CANDIDATE_B_RUNTIME_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", CANDIDATE_B_VISUAL_LANE_MODE})',
+            '"visual_lane_mode",',
+            '"document_processing_engine",',
+            '".pdf",',
+            '".png",',
+        ),
+        CANDIDATE_B_DEFAULT_SELECTOR_TEST: (
+            "test_omitted_document_processing_engine_preserves_candidate_a_visual_lane_on_baseline_pdf",
+            "test_omitted_document_processing_engine_with_candidate_b_visual_lane_keeps_candidate_b_pdf_default",
+            "test_candidate_b_visual_lane_emits_retained_page_evidence_refs",
+            "APS_VISUAL_LANE_MODE_CANDIDATE_B",
+        ),
+        NRC_APS_RUN_CONFIG_TEST: (
+            "test_visual_lane_mode_defaults_to_baseline",
+            "test_visual_lane_mode_fail_closed_for_invalid_value",
+            "test_visual_lane_mode_preserves_candidate_a_page_evidence_v1",
+            "test_visual_lane_mode_preserves_candidate_b_opendataloader_page_evidence_v1",
+        ),
+        CANDIDATE_B_RUNTIME_BRIDGE_TEST: (
+            "test_candidate_b_runtime_bridge_accepts_admitted_candidate_b_visual_lane",
+            "test_candidate_b_visual_lane_runtime_completes_layer3_downstream_path",
+            '"source_pdf_material_text_payload_enabled": False',
+            '"image_material_text_payload_enabled": False',
+            "candidate_b_retained_source_pdf_ref_count",
+        ),
+        CANDIDATE_B_DEFAULT_READINESS_TEST: (
+            "test_candidate_b_default_readiness_accepts_live_visual_lane_status_response",
+            "test_candidate_b_default_readiness_blocks_baseline_visual_lane_runtime_receipt",
+            "test_candidate_b_default_readiness_blocks_runtime_proof_without_visual_lane",
+            "test_candidate_b_default_readiness_blocks_missing_visual_lane_status_evidence",
+            "test_candidate_b_default_readiness_blocks_stale_visual_lane_status_evidence",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B visual-lane current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91216,6 +91314,7 @@ def main() -> int:
     _check_source_directory_package_lifecycle_contract_freeze(errors)
     _check_source_directory_package_lifecycle_contract_freeze_current_main_sync(errors)
     _check_source_directory_package_handoff_export_post1550_sync(errors)
+    _check_candidate_b_visual_lane_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
