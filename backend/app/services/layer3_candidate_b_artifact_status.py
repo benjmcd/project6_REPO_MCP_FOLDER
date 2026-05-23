@@ -295,17 +295,20 @@ def _artifact_family_projection(artifact_family: Mapping[str, Any]) -> dict[str,
 
 def _role_previews(artifact_family: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:
     roles = artifact_family.get("roles") if isinstance(artifact_family.get("roles"), dict) else {}
-    return {
+    previews = {
         str(role): [_artifact_ref_preview(item) for item in list(items)[:10] if isinstance(item, Mapping)]
         for role, items in roles.items()
         if isinstance(items, list)
     }
+    _validate_redacted_role_previews(previews)
+    return previews
 
 
 def _artifact_ref_preview(item: Mapping[str, Any]) -> dict[str, Any]:
+    source_ref = str(item.get("source_ref") or item.get("relative_name") or "").replace("\\", "/").strip()
+    display_ref = source_ref.rsplit("/", 1)[-1] if source_ref else None
     return {
-        "source_ref": item.get("source_ref"),
-        "relative_name": item.get("relative_name"),
+        "display_ref": display_ref,
         "artifact_role": item.get("artifact_role"),
         "category": item.get("category"),
         "extension": item.get("extension"),
@@ -313,6 +316,28 @@ def _artifact_ref_preview(item: Mapping[str, Any]) -> dict[str, Any]:
         "size_bytes": item.get("size_bytes"),
         "material_text_payload": item.get("material_text_payload") is True,
     }
+
+
+def _validate_redacted_role_previews(role_previews: Mapping[str, Any]) -> None:
+    for role, previews in role_previews.items():
+        if not isinstance(previews, list):
+            continue
+        for index, preview in enumerate(previews):
+            if not isinstance(preview, Mapping):
+                raise CandidateBArtifactStatusError(
+                    "candidate_b_artifact_status_role_preview_invalid",
+                    "Candidate B artifact-family status generated an invalid retained artifact preview.",
+                    http_status=409,
+                    details={"role": role, "index": index},
+                )
+            display_ref = str(preview.get("display_ref") or "").strip()
+            if not display_ref or "/" in display_ref or "\\" in display_ref or ".." in display_ref:
+                raise CandidateBArtifactStatusError(
+                    "candidate_b_artifact_status_role_preview_not_redacted",
+                    "Candidate B artifact-family status previews must use redacted display refs only.",
+                    http_status=409,
+                    details={"role": role, "index": index},
+                )
 
 
 def _artifact_family_hash(source_kind: str, artifact_family: Mapping[str, Any]) -> str:

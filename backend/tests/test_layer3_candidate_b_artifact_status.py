@@ -188,8 +188,10 @@ def test_candidate_b_bundle_artifact_family_status_projects_retained_roles(clien
     assert body["negative_invariants"]["image_material_text_payload_enabled"] is False
     assert body["negative_invariants"]["candidate_b_default_promotion_enabled"] is False
     visual_refs = body["operator_projection"]["role_previews"]["visual_page_evidence"]
-    assert any(item["source_ref"] == "raw/annotated/fontish.pdf" for item in visual_refs)
-    assert any(item["source_ref"] == "raw/images/fontish/imageFile1.png" for item in visual_refs)
+    assert any(item["display_ref"] == "fontish.pdf" for item in visual_refs)
+    assert any(item["display_ref"] == "imageFile1.png" for item in visual_refs)
+    assert "raw/annotated/fontish.pdf" not in json.dumps(body["operator_projection"], sort_keys=True)
+    assert "raw/images/fontish/imageFile1.png" not in json.dumps(body["operator_projection"], sort_keys=True)
     assert body["operator_projection"]["artifact_bytes_exposed"] is False
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
     assert "C:\\" not in json.dumps(body, sort_keys=True)
@@ -206,8 +208,10 @@ def test_candidate_b_runtime_artifact_family_status_projects_retained_roles(clie
     assert body["candidate_b_source_kind"] == "runtime"
     assert body["governed_retained_artifact_family"]["role_counts"]["visual_page_evidence"] == 2
     visual_refs = body["operator_projection"]["role_previews"]["visual_page_evidence"]
-    assert any(item["source_ref"] == "storage/input.pdf" for item in visual_refs)
-    assert any(item["source_ref"] == "storage/image.png" for item in visual_refs)
+    assert any(item["display_ref"] == "input.pdf" for item in visual_refs)
+    assert any(item["display_ref"] == "image.png" for item in visual_refs)
+    assert "storage/input.pdf" not in json.dumps(body["operator_projection"], sort_keys=True)
+    assert "storage/image.png" not in json.dumps(body["operator_projection"], sort_keys=True)
     assert body["negative_invariants"]["pdf_material_text_payload_enabled"] is False
     assert body["negative_invariants"]["image_material_text_payload_enabled"] is False
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
