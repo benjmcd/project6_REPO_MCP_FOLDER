@@ -72,6 +72,7 @@ STATUS_HASH_KEYS = (
     "runtime_delivery_artifact_authority_hash",
     "runtime_delivery_artifact_coverage_steps",
     "runtime_delivery_artifact_projection_visible",
+    "runtime_delivery_artifact_role_previews",
     "runtime_delivery_artifact_roles_bound",
     "operator_visible_provenance_status",
     "bundle_status_projection_visible",
@@ -200,6 +201,7 @@ def candidate_b_default_promotion_operator_status(payload: Mapping[str, Any]) ->
         retained_artifact_family_hash=str(runtime_receipt.get("governed_retained_artifact_family_hash") or ""),
         visual_status_hash=visual_status_hash,
     )
+    runtime_delivery_previews = _runtime_delivery_artifact_role_previews(runtime_receipt)
     status_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -221,6 +223,7 @@ def candidate_b_default_promotion_operator_status(payload: Mapping[str, Any]) ->
             "runtime_delivery_artifact_coverage_steps"
         ],
         "runtime_delivery_artifact_projection_visible": True,
+        "runtime_delivery_artifact_role_previews": runtime_delivery_previews,
         "runtime_delivery_artifact_roles_bound": True,
         "operator_visible_provenance_status": True,
         "bundle_status_projection_visible": True,
@@ -547,6 +550,86 @@ def _validate_runtime_delivery_artifact_projection(
             details={"missing_coverage": missing},
         )
     return sorted(layer3_candidate_b_downstream_proof.DELIVERY_ARTIFACT_AUTHORITY_COVERAGE)
+
+
+def _runtime_delivery_artifact_role_previews(receipt: Mapping[str, Any]) -> list[dict[str, Any]]:
+    artifact_family = receipt.get("governed_retained_artifact_family")
+    expected_hash = str(receipt.get("governed_retained_artifact_family_hash") or "").strip()
+    if not isinstance(artifact_family, Mapping):
+        raise CandidateBOperatorStatusError(
+            "candidate_b_operator_status_runtime_artifact_family_missing",
+            "Candidate B operator status requires the runtime governed retained artifact family.",
+            http_status=409,
+        )
+    if str(artifact_family.get("artifact_family_hash") or "").strip() != expected_hash:
+        raise CandidateBOperatorStatusError(
+            "candidate_b_operator_status_runtime_artifact_family_hash_mismatch",
+            "Candidate B runtime retained artifact-family hash does not match the bridge receipt authority hash.",
+            http_status=409,
+            details={
+                "expected": expected_hash,
+                "received": artifact_family.get("artifact_family_hash"),
+            },
+        )
+    if _runtime_artifact_family_hash(artifact_family) != expected_hash:
+        raise CandidateBOperatorStatusError(
+            "candidate_b_operator_status_runtime_artifact_family_stale",
+            "Candidate B runtime retained artifact-family content is stale for the bridge receipt authority hash.",
+            http_status=409,
+            details={"expected": expected_hash},
+        )
+    roles = artifact_family.get("roles")
+    delivery_artifacts = roles.get("delivery_artifacts") if isinstance(roles, Mapping) else None
+    if not isinstance(delivery_artifacts, list) or not delivery_artifacts:
+        raise CandidateBOperatorStatusError(
+            "candidate_b_operator_status_runtime_delivery_artifact_previews_missing",
+            "Candidate B operator status requires retained runtime delivery artifact previews.",
+            http_status=409,
+        )
+    previews = [
+        _redacted_artifact_preview(item)
+        for item in delivery_artifacts[:3]
+        if isinstance(item, Mapping)
+    ]
+    if not previews:
+        raise CandidateBOperatorStatusError(
+            "candidate_b_operator_status_runtime_delivery_artifact_previews_missing",
+            "Candidate B operator status requires retained runtime delivery artifact previews.",
+            http_status=409,
+        )
+    for preview in previews:
+        display_ref = str(preview.get("display_ref") or "").strip()
+        if not display_ref or "/" in display_ref or "\\" in display_ref or ".." in display_ref:
+            raise CandidateBOperatorStatusError(
+                "candidate_b_operator_status_runtime_delivery_artifact_preview_not_redacted",
+                "Candidate B operator-status delivery artifact previews must use redacted display refs only.",
+                http_status=409,
+            )
+    return previews
+
+
+def _runtime_artifact_family_hash(artifact_family: Mapping[str, Any]) -> str:
+    classification = dict(artifact_family)
+    classification.pop("artifact_family_hash", None)
+    return _stable_hash(
+        {
+            "hash_version": layer3_candidate_b_runtime_bridge.AUTHORITY_HASH_VERSION,
+            "classification": classification,
+        }
+    )
+
+
+def _redacted_artifact_preview(item: Mapping[str, Any]) -> dict[str, Any]:
+    source_ref = str(item.get("source_ref") or item.get("relative_name") or "").replace("\\", "/").strip()
+    display_ref = source_ref.rsplit("/", 1)[-1] if source_ref else None
+    return {
+        "display_ref": display_ref,
+        "artifact_role": str(item.get("artifact_role") or "").strip() or None,
+        "category": str(item.get("category") or "").strip() or None,
+        "extension": str(item.get("extension") or "").strip() or None,
+        "sha256": str(item.get("sha256") or "").strip() or None,
+        "material_text_payload": item.get("material_text_payload") is True,
+    }
 
 
 def _validate_runtime_downstream_proof_receipt(

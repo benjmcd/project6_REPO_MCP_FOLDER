@@ -8510,6 +8510,12 @@ function candidateBOperatorStatusRows(status) {
                     ${fieldItem('runtime delivery projection visible', status.runtime_delivery_artifact_projection_visible)}
                     ${fieldItem('runtime delivery artifact roles bound', status.runtime_delivery_artifact_roles_bound)}
                 </ul>
+                <div class="candidate-b-artifact-family-preview">
+                    <strong>Redacted runtime delivery artifact previews</strong>
+                    <ul>${candidateBArtifactPreviewRows({
+                        delivery_artifacts: status.runtime_delivery_artifact_role_previews || [],
+                    })}</ul>
+                </div>
             </section>
             <section class="result-review-card">
                 <strong>Operator Guardrails</strong>

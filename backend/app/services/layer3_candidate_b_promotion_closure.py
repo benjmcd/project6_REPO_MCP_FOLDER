@@ -506,6 +506,7 @@ def _operator_status_projection(evidence: Mapping[str, Any], status_hash: str) -
             "runtime_bridge_receipt_id": evidence.get("runtime_bridge_receipt_id"),
             "runtime_delivery_artifact_authority_hash": evidence.get("runtime_delivery_artifact_authority_hash"),
             "runtime_delivery_artifact_coverage_steps": evidence.get("runtime_delivery_artifact_coverage_steps"),
+            "runtime_delivery_artifact_role_previews": evidence.get("runtime_delivery_artifact_role_previews"),
             "runtime_delivery_artifact_projection_visible": (
                 evidence.get("runtime_delivery_artifact_projection_visible") is True
             ),
