@@ -328,6 +328,9 @@ const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_
 const CANDIDATE_B_VISUAL_LANE_STATUS_RENDERED_MODE = 'rendered_candidate_b_visual_lane_status_control';
 const CANDIDATE_B_VISUAL_LANE_STATUS_MODE = 'candidate_b_visual_lane_status_v1';
 const CANDIDATE_B_VISUAL_LANE_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_visual_lane_evidence_status';
+const CANDIDATE_B_BUNDLE_DOWNSTREAM_PROOF_RENDERED_MODE = 'rendered_candidate_b_bundle_downstream_proof_control';
+const CANDIDATE_B_BUNDLE_DOWNSTREAM_PROOF_MODE = 'candidate_b_bundle_downstream_e2e_proof_v1';
+const CANDIDATE_B_BUNDLE_DOWNSTREAM_PROOF_OPERATOR_DECISION = 'record_candidate_b_bundle_downstream_e2e_proof';
 const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_RENDERED_MODE = 'rendered_candidate_b_runtime_visual_lane_downstream_proof_control';
 const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_MODE = 'candidate_b_visual_lane_runtime_downstream_e2e_proof_v1';
 const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_OPERATOR_DECISION = 'record_candidate_b_visual_lane_runtime_downstream_e2e_proof';
@@ -476,6 +479,14 @@ const State = {
     candidateBVisualLaneStatusInput: {
         candidateBRunId: '',
         bridgeReceiptId: '',
+    },
+    candidateBBundleDownstreamProof: null,
+    candidateBBundleDownstreamProofError: null,
+    candidateBBundleDownstreamProofPending: false,
+    candidateBBundleDownstreamProofInput: {
+        candidateBBundleId: '',
+        bridgeReceiptId: '',
+        coverageEvidenceJson: '',
     },
     candidateBRuntimeDownstreamProof: null,
     candidateBRuntimeDownstreamProofError: null,
@@ -7528,6 +7539,12 @@ function candidateBVisualLaneStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBBundleDownstreamProofEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_bundle_downstream_proof_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBRuntimeDownstreamProofEndpointPath(contract) {
     const endpoint = contract?.candidate_b_runtime_downstream_proof_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -7563,6 +7580,29 @@ function candidateBVisualLaneStatusInputValues() {
         bridgeReceiptId: (
             receiptInput?.value
             || State.candidateBVisualLaneStatusInput.bridgeReceiptId
+            || ''
+        ).trim(),
+    };
+}
+
+function candidateBBundleDownstreamProofInputValues() {
+    const bundleInput = document.getElementById('candidate-b-bundle-downstream-proof-bundle-id');
+    const receiptInput = document.getElementById('candidate-b-bundle-downstream-proof-bridge-receipt-id');
+    const coverageInput = document.getElementById('candidate-b-bundle-downstream-proof-coverage-json');
+    return {
+        candidateBBundleId: (
+            bundleInput?.value
+            || State.candidateBBundleDownstreamProofInput.candidateBBundleId
+            || ''
+        ).trim(),
+        bridgeReceiptId: (
+            receiptInput?.value
+            || State.candidateBBundleDownstreamProofInput.bridgeReceiptId
+            || ''
+        ).trim(),
+        coverageEvidenceJson: (
+            coverageInput?.value
+            || State.candidateBBundleDownstreamProofInput.coverageEvidenceJson
             || ''
         ).trim(),
     };
@@ -7617,6 +7657,20 @@ function candidateBVisualLaneStatusPayload() {
     };
 }
 
+function candidateBBundleDownstreamProofPayload() {
+    const values = candidateBBundleDownstreamProofInputValues();
+    State.candidateBBundleDownstreamProofInput = values;
+    return {
+        client_request_id: requestId(),
+        proof_mode: CANDIDATE_B_BUNDLE_DOWNSTREAM_PROOF_MODE,
+        operator_decision: CANDIDATE_B_BUNDLE_DOWNSTREAM_PROOF_OPERATOR_DECISION,
+        candidate_b_bundle_id: values.candidateBBundleId,
+        bridge_receipt_id: values.bridgeReceiptId,
+        coverage_evidence: JSON.parse(values.coverageEvidenceJson),
+        operator_confirmation: true,
+    };
+}
+
 function candidateBRuntimeDownstreamProofPayload() {
     const values = candidateBRuntimeDownstreamProofInputValues();
     State.candidateBRuntimeDownstreamProofInput = values;
@@ -7651,6 +7705,18 @@ function canInspectCandidateBVisualLaneStatus(contract = candidateBDefaultPromot
         && values.candidateBRunId
         && values.bridgeReceiptId
         && !State.candidateBVisualLaneStatusPending
+    );
+}
+
+function canRecordCandidateBBundleDownstreamProof(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBBundleDownstreamProofInputValues();
+    return Boolean(
+        contract?.candidate_b_bundle_downstream_proof_admitted
+        && candidateBBundleDownstreamProofEndpointPath(contract)
+        && values.candidateBBundleId
+        && values.bridgeReceiptId
+        && values.coverageEvidenceJson
+        && !State.candidateBBundleDownstreamProofPending
     );
 }
 
@@ -7790,6 +7856,20 @@ function candidateBVisualLaneStatusPanelState() {
     return { label: 'candidate_b_visual_lane_status_not_inspected', pill: 'preview' };
 }
 
+function candidateBBundleDownstreamProofPanelState() {
+    if (State.candidateBBundleDownstreamProofPending) {
+        return { label: 'candidate_b_bundle_downstream_proof_pending', pill: 'preview' };
+    }
+    if (State.candidateBBundleDownstreamProofError) {
+        const code = State.candidateBBundleDownstreamProofError?.payload?.error?.code;
+        return { label: code || 'candidate_b_bundle_downstream_proof_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBBundleDownstreamProof?.status === 'proven') {
+        return { label: 'candidate_b_bundle_downstream_proof_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_bundle_downstream_proof_not_recorded', pill: 'preview' };
+}
+
 function candidateBRuntimeDownstreamProofPanelState() {
     if (State.candidateBRuntimeDownstreamProofPending) {
         return { label: 'candidate_b_runtime_downstream_proof_pending', pill: 'preview' };
@@ -7915,6 +7995,44 @@ function candidateBVisualLaneStatusRows(status) {
                     ${fieldItem('raw local path exposed', projection.raw_local_path_exposed)}
                     ${fieldItem('raw URL exposed', projection.raw_url_exposed)}
                     ${fieldItem('artifact bytes exposed', projection.artifact_bytes_exposed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function candidateBBundleDownstreamProofRows(proof) {
+    if (!proof) return '';
+    const coverage = Array.isArray(proof.coverage) ? proof.coverage : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Bundle Downstream Proof</strong>
+                <ul>
+                    ${fieldItem('schema id', proof.schema_id, { code: true })}
+                    ${fieldItem('proof state', proof.proof_state, { code: true })}
+                    ${fieldItem('proof receipt id', proof.proof_receipt_id, { code: true })}
+                    ${fieldItem('Candidate B bundle id', proof.candidate_b_bundle_id, { code: true })}
+                    ${fieldItem('visual lane enabled', proof.visual_lane_mode_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Coverage</strong>
+                <ul>
+                    ${fieldItem('coverage count', coverage.length)}
+                    ${fieldItem('coverage steps', coverage.join(', '), { code: true })}
+                    ${fieldItem('coverage evidence hash', proof.coverage_evidence_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Proof Guardrails</strong>
+                <ul>
+                    ${fieldItem('raw local path exposed', proof.raw_local_path_exposed)}
+                    ${fieldItem('provider private token exposed', proof.provider_private_token_exposed)}
+                    ${fieldItem('provider public URL enabled', proof.provider_public_url_enabled)}
+                    ${fieldItem('provider object writes enabled', proof.provider_object_writes_enabled)}
+                    ${fieldItem('connector dispatch enabled', proof.connector_dispatch_enabled)}
+                    ${fieldItem('Candidate B default promotion enabled', proof.candidate_b_default_promotion_enabled)}
                 </ul>
             </section>
         </div>
@@ -8071,6 +8189,20 @@ function candidateBVisualLaneStatusError() {
     `;
 }
 
+function candidateBBundleDownstreamProofError() {
+    const error = State.candidateBBundleDownstreamProofError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_bundle_downstream_proof_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBRuntimeDownstreamProofError() {
     const error = State.candidateBRuntimeDownstreamProofError;
     if (!error) return '';
@@ -8093,6 +8225,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
     const visualLaneState = candidateBVisualLaneStatusPanelState();
+    const bundleDownstreamProofState = candidateBBundleDownstreamProofPanelState();
     const runtimeDownstreamProofState = candidateBRuntimeDownstreamProofPanelState();
     const blockedScope = [
         'frontend_durable_authority',
@@ -8110,6 +8243,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
     const visualLaneInputs = State.candidateBVisualLaneStatusInput;
+    const bundleDownstreamProof = State.candidateBBundleDownstreamProof;
+    const bundleDownstreamProofInputs = State.candidateBBundleDownstreamProofInput;
     const runtimeDownstreamProof = State.candidateBRuntimeDownstreamProof;
     const runtimeDownstreamProofInputs = State.candidateBRuntimeDownstreamProofInput;
     elements.candidateBDefaultPromotionStatusPanel.dataset.statusState = panelState.label;
@@ -8196,6 +8331,30 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBVisualLaneStatusRows(visualLaneStatus)}
                 ${candidateBVisualLaneStatusError()}
+            </section>
+            <section class="result-review-card candidate-b-bundle-downstream-proof-card">
+                <strong>Bundle Downstream Proof</strong>
+                <form id="candidate-b-bundle-downstream-proof-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_BUNDLE_DOWNSTREAM_PROOF_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>Candidate B bundle id</span>
+                        <input id="candidate-b-bundle-downstream-proof-bundle-id" type="text" value="${escapeHtml(bundleDownstreamProofInputs.candidateBBundleId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-bundle-001" />
+                    </label>
+                    <label>
+                        <span>bundle bridge receipt id</span>
+                        <input id="candidate-b-bundle-downstream-proof-bridge-receipt-id" type="text" value="${escapeHtml(bundleDownstreamProofInputs.bridgeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-bundle-l3-..." />
+                    </label>
+                    <label>
+                        <span>coverage evidence JSON</span>
+                        <textarea id="candidate-b-bundle-downstream-proof-coverage-json" rows="6" autocomplete="off" spellcheck="false" placeholder="{&quot;source_directory_scan&quot;:{&quot;status&quot;:&quot;proven&quot;,...}}">${escapeHtml(bundleDownstreamProofInputs.coverageEvidenceJson)}</textarea>
+                    </label>
+                    <button id="candidate-b-bundle-downstream-proof-submit" type="submit" ${contract?.candidate_b_bundle_downstream_proof_admitted && !State.candidateBBundleDownstreamProofPending ? '' : 'disabled'}>Record Bundle Downstream Proof</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(bundleDownstreamProofState.pill)}">${escapeHtml(bundleDownstreamProofState.label)}</span>
+                    <span class="rail-label">Server records downstream proof from Candidate B bundle bridge authority while preserving retained PDFs, images, and product artifacts outside the text-material payload subset.</span>
+                </div>
+                ${candidateBBundleDownstreamProofRows(bundleDownstreamProof)}
+                ${candidateBBundleDownstreamProofError()}
             </section>
             <section class="result-review-card candidate-b-runtime-downstream-proof-card">
                 <strong>Runtime Visual-Lane Downstream Proof</strong>
@@ -8337,6 +8496,46 @@ async function inspectCandidateBVisualLaneStatus(event) {
         addEvent(`Candidate B visual-lane status blocked: ${error.message}`);
     } finally {
         State.candidateBVisualLaneStatusPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBBundleDownstreamProof(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canRecordCandidateBBundleDownstreamProof(contract)) {
+        State.candidateBBundleDownstreamProof = null;
+        State.candidateBBundleDownstreamProofError = new Error(
+            'Candidate B bundle downstream proof requires bundle id, bridge receipt id, and coverage JSON.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBBundleDownstreamProofEndpointPath(contract);
+    let payload;
+    try {
+        payload = candidateBBundleDownstreamProofPayload();
+    } catch (error) {
+        State.candidateBBundleDownstreamProof = null;
+        State.candidateBBundleDownstreamProofError = new Error(
+            `Candidate B bundle downstream coverage JSON is invalid: ${error.message}`,
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBBundleDownstreamProofPending = true;
+    State.candidateBBundleDownstreamProofError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBBundleDownstreamProof = await postJson(path, payload);
+        State.candidateBBundleDownstreamProofError = null;
+        addEvent('Candidate B bundle downstream proof recorded through server bridge authority.');
+    } catch (error) {
+        State.candidateBBundleDownstreamProof = null;
+        State.candidateBBundleDownstreamProofError = error;
+        addEvent(`Candidate B bundle downstream proof blocked: ${error.message}`);
+    } finally {
+        State.candidateBBundleDownstreamProofPending = false;
         renderAll();
     }
 }
@@ -14847,6 +15046,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     }
     if (event.target?.id === 'candidate-b-visual-lane-status-form') {
         inspectCandidateBVisualLaneStatus(event);
+    }
+    if (event.target?.id === 'candidate-b-bundle-downstream-proof-form') {
+        recordCandidateBBundleDownstreamProof(event);
     }
     if (event.target?.id === 'candidate-b-runtime-downstream-proof-form') {
         recordCandidateBRuntimeDownstreamProof(event);
