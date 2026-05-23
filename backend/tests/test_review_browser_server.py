@@ -106,8 +106,10 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     ]
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
+    assert "/__test/layer3/source-directory-fixture-reset" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-readiness-audit" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-realistic-readiness-audit" in payload["seed_routes"]
+    assert "/__test/layer3/candidate-b-source-directory-authority" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-final-proof" in payload["seed_routes"]
     windows_user_prefix = "C:" + "\\" + "Users" + "\\"
     posix_user_prefix = "/" + "Users" + "/"
@@ -200,6 +202,131 @@ def test_review_browser_server_prepares_realistic_candidate_b_readiness_audit_fr
     assert proof["rollback_selector"] == "baseline"
     assert proof["selector_mutation_performed"] is False
     assert "C:\\" not in str(proof)
+
+
+@pytest.mark.parametrize("candidate_b_source_kind", ["bundle", "runtime"])
+def test_review_browser_server_routes_candidate_b_bridge_curated_root_to_source_directory_gate_b(
+    client: TestClient,
+    candidate_b_source_kind: str,
+) -> None:
+    setup_response = client.post(
+        "/__test/layer3/candidate-b-source-directory-authority",
+        json={"candidate_b_source_kind": candidate_b_source_kind},
+    )
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_candidate_b_source_directory_authority_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["server_generated_receipts"] is True
+    assert setup["source_ingestion_dir_configured_from_bridge"] is True
+    assert setup["candidate_b_source_kind"] == candidate_b_source_kind
+    assert setup["curated_root_absolute_path_exposed"] is False
+    assert setup["layer3_material_preview_compatible"] is True
+    assert setup["gate_b_material_authority_compatible"] is True
+    assert setup["expected_source_directory_file_count"] > 0
+    assert setup["artifact_role_counts"]["material_analysis_payloads"] > 0
+    assert "C:\\" not in str(setup)
+
+    scan_response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json={
+            "client_request_id": f"candidate-b-{candidate_b_source_kind}-source-directory-scan",
+            "operator_decision": "scan_server_configured_operator_directory",
+            "source_family": "server_configured_operator_directory_text_table_source_family",
+            "ingestion_mode": "server_configured_operator_directory_text_table_ingestion",
+        },
+    )
+    assert scan_response.status_code == 201, scan_response.text
+    scan = scan_response.json()
+    assert scan["schema_id"] == "layer3.source_directory_ingestion_batch.v1"
+    assert scan["eligible_file_count"] == setup["expected_source_directory_file_count"]
+    assert len(scan["files"]) == setup["expected_source_directory_file_count"]
+    assert scan["source_root_absolute_path_exposed"] is False
+    assert "C:\\" not in str(scan)
+
+    file_record = scan["files"][0]
+    preview_response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json={
+            "client_request_id": f"candidate-b-{candidate_b_source_kind}-source-directory-preview",
+            "source_ingestion_batch_id": scan["source_ingestion_batch_id"],
+            "source_ingestion_file_id": file_record["source_ingestion_file_id"],
+            "file_identity_hash": file_record["file_identity_hash"],
+            "authority_basis_hash": file_record["authority_basis_hash"],
+            "max_chars": 1000,
+        },
+    )
+    assert preview_response.status_code == 200, preview_response.text
+    preview = preview_response.json()
+    assert preview["schema_id"] == "layer3.source_directory_material_preview.v1"
+    assert preview["status"] == "available"
+    assert preview["source_ingestion_batch_id"] == scan["source_ingestion_batch_id"]
+    assert preview["source_ingestion_file_id"] == file_record["source_ingestion_file_id"]
+    assert preview["material_candidate"]["source_class"] == "server_configured_directory_file"
+    assert preview["source_gate"]["absolute_path_exposed"] is False
+    assert preview["source_gate"]["rag_vector_index_enabled"] is False
+    assert preview["source_gate"]["package_construction_enabled"] is False
+    assert "C:\\" not in str(preview)
+
+    candidate = preview["material_candidate"]
+    gate_b_response = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "schema_id": "layer3.gate_b_decision_request.v1",
+            "client_request_id": f"candidate-b-{candidate_b_source_kind}-source-directory-gate-b",
+            "preflight_id": f"candidate-b-{candidate_b_source_kind}-source-directory-rendered-proof",
+            "source_set_id": scan["source_ingestion_batch_id"],
+            "material_preview_id": preview["material_preview_id"],
+            "material_preview_hash": preview["material_preview_hash"],
+            "actor": "operator",
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "operator_reason": "Candidate B bridge curated source-directory Gate B proof.",
+                    "decision_basis": {
+                        "source_ref": candidate["source_ref"],
+                        "query_basis": candidate["query_basis"],
+                        "provenance_ref": candidate["provenance_ref"],
+                        "source_identity": candidate["source_identity"],
+                        "source_provenance": candidate["source_provenance"],
+                        "payload": candidate["payload"],
+                        "load_summary": candidate["load_summary"],
+                    },
+                }
+            ],
+            "commit_reason": "candidate_b_bridge_source_directory_gate_b_proof",
+        },
+    )
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    gate_b = gate_b_response.json()
+    assert gate_b["schema_id"] == "layer3.gate_b_decision_result.v1"
+    assert gate_b["status"] == "ok"
+    assert gate_b["next_state"] == "gate_c_preview_ready"
+    assert gate_b["approved_candidate_ids"] == [candidate["candidate_id"]]
+    assert "C:\\" not in str(gate_b)
+
+    reset_response = client.post("/__test/layer3/source-directory-fixture-reset")
+    assert reset_response.status_code == 200, reset_response.text
+    reset = reset_response.json()
+    assert reset["schema_id"] == "project6.review_browser_source_directory_fixture_reset.v1"
+    assert reset["source_ingestion_dir_restored"] is True
+    assert reset["source_root_absolute_path_exposed"] is False
+
+    reset_scan_response = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json={
+            "client_request_id": f"candidate-b-{candidate_b_source_kind}-source-directory-reset-scan",
+            "operator_decision": "scan_server_configured_operator_directory",
+            "source_family": "server_configured_operator_directory_text_table_source_family",
+            "ingestion_mode": "server_configured_operator_directory_text_table_ingestion",
+        },
+    )
+    assert reset_scan_response.status_code == 201, reset_scan_response.text
+    reset_scan = reset_scan_response.json()
+    assert [file_record["relative_name"] for file_record in reset_scan["files"]] == ["vector-retrieval.txt"]
+    assert "C:\\" not in str(reset_scan)
 
 
 def test_review_browser_server_prepares_candidate_b_final_proof_receipt(client: TestClient) -> None:
