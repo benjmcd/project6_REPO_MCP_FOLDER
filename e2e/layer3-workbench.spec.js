@@ -8826,6 +8826,261 @@ test('Layer 3 workbench inspects Candidate B operator status from rendered downs
   ]);
 });
 
+test('Layer 3 workbench records Candidate B closure evidence from rendered proof and operator status', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-realistic-readiness-audit'));
+  const requiredCoverage = [
+    'source_directory_scan',
+    'material_preview',
+    'gate_b',
+    'hybrid_qualitative_analysis',
+    'package_commit',
+    'package_review_submit',
+    'handoff_export_prepare',
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+    'session_status_projection',
+  ];
+  const deliveryAuthoritySteps = new Set([
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+  ]);
+  const coverageEvidence = (retainedArtifactFamilyHash, refPrefix) => Object.fromEntries(requiredCoverage.map((step) => [
+    step,
+    {
+      status: 'proven',
+      evidence_ref: `${refPrefix}://${step}`,
+      evidence_hash: `${step.replace(/_/g, '-')}-${refPrefix.replace(/[^a-z0-9]/gi, '-')}`,
+      raw_local_path_exposed: false,
+      raw_url_exposed: false,
+      provider_private_token_exposed: false,
+      provider_public_url_enabled: false,
+      provider_object_writes_enabled: false,
+      connector_dispatch_enabled: false,
+      rag_vector_model_runtime_enabled: false,
+      browser_storage_authority_enabled: false,
+      frontend_durable_authority_enabled: false,
+      ...(deliveryAuthoritySteps.has(step)
+        ? {
+          candidate_b_retained_artifact_family_hash: retainedArtifactFamilyHash,
+          candidate_b_delivery_artifact_roles_bound: true,
+        }
+        : {}),
+    },
+  ]));
+  const bundleCoverage = coverageEvidence(
+    setup.bundle_authority_hashes.governed_retained_artifact_family_hash,
+    'candidate-b-rendered-closure-bundle-proof',
+  );
+  const runtimeCoverage = coverageEvidence(
+    setup.runtime_authority_hashes.governed_retained_artifact_family_hash,
+    'candidate-b-rendered-closure-runtime-proof',
+  );
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#candidate-b-closure-evidence-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_default_promotion_closure_evidence_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-closure-evidence-submit')).toBeDisabled();
+
+  await page.locator('#candidate-b-bundle-downstream-proof-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-bundle-downstream-proof-bridge-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-bundle-downstream-proof-coverage-json').fill(JSON.stringify(bundleCoverage));
+  const bundleProofResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof')
+  ));
+  await page.locator('#candidate-b-bundle-downstream-proof-submit').click();
+  const bundleProof = await expectJson(await bundleProofResponsePromise);
+  expect(bundleProof.status).toBe('proven');
+
+  await page.locator('#candidate-b-visual-lane-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-visual-lane-bridge-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
+  const visualLaneResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status')
+  ));
+  await page.locator('#candidate-b-visual-lane-status-submit').click();
+  const visualLaneStatus = await expectJson(await visualLaneResponsePromise);
+  expect(visualLaneStatus.status).toBe('available');
+
+  await page.locator('#candidate-b-runtime-downstream-proof-coverage-json').fill(JSON.stringify(runtimeCoverage));
+  const runtimeProofResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof')
+  ));
+  await page.locator('#candidate-b-runtime-downstream-proof-submit').click();
+  const runtimeProof = await expectJson(await runtimeProofResponsePromise);
+  expect(runtimeProof.status).toBe('proven');
+
+  await page.locator('#candidate-b-operator-status-baseline-run-id').fill(setup.baseline_run_id);
+  await page.locator('#candidate-b-operator-status-candidate-a-run-id').fill(setup.candidate_a_run_id);
+  await page.locator('#candidate-b-operator-status-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-operator-status-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-operator-status-bundle-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-operator-status-runtime-receipt-id').fill(
+    setup.candidate_b_runtime_bridge_receipt_id,
+  );
+  const operatorStatusResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status')
+  ));
+  await page.locator('#candidate-b-operator-status-submit').click();
+  const operatorStatus = await expectJson(await operatorStatusResponsePromise);
+  expect(operatorStatus.status).toBe('available');
+  await expect(page.locator('#candidate-b-closure-evidence-submit')).toBeEnabled();
+
+  await page.locator('#candidate-b-closure-evidence-baseline-run-id').fill(setup.baseline_run_id);
+  await page.locator('#candidate-b-closure-evidence-candidate-a-run-id').fill(setup.candidate_a_run_id);
+  await page.locator('#candidate-b-closure-evidence-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-closure-evidence-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-closure-evidence-bundle-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-closure-evidence-runtime-receipt-id').fill(
+    setup.candidate_b_runtime_bridge_receipt_id,
+  );
+  const closureRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence')
+  ));
+  const closureResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence')
+  ));
+  await page.locator('#candidate-b-closure-evidence-submit').click();
+  const closurePayload = (await closureRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(closurePayload, [
+    'client_request_id',
+    'closure_mode',
+    'operator_decision',
+    'baseline_run_id',
+    'candidate_a_run_id',
+    'candidate_b_bundle_id',
+    'candidate_b_run_id',
+    'candidate_b_bundle_bridge_receipt_id',
+    'candidate_b_runtime_bridge_receipt_id',
+    'eligible_corpus_scope',
+    'regression_disposition',
+    'rollback_to_baseline_confirmation',
+    'operator_confirmation',
+    'bundle_downstream_proof',
+    'runtime_downstream_proof',
+    'operator_status_evidence',
+  ]);
+  expect(closurePayload).toMatchObject({
+    closure_mode: 'candidate_b_default_promotion_closure_evidence_v1',
+    operator_decision: 'record_candidate_b_default_promotion_closure_evidence',
+    baseline_run_id: setup.baseline_run_id,
+    candidate_a_run_id: setup.candidate_a_run_id,
+    candidate_b_bundle_id: setup.candidate_b_bundle_id,
+    candidate_b_run_id: setup.candidate_b_run_id,
+    candidate_b_bundle_bridge_receipt_id: setup.candidate_b_bundle_bridge_receipt_id,
+    candidate_b_runtime_bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+    eligible_corpus_scope: 'candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only',
+    regression_disposition: 'no_unacceptable_regression_against_baseline_and_candidate_a',
+    rollback_to_baseline_confirmation: true,
+    operator_confirmation: true,
+  });
+  expect(closurePayload.bundle_downstream_proof).toMatchObject({
+    schema_id: 'layer3.candidate_b_bundle_downstream_proof.v1',
+    status: 'proven',
+    candidate_b_bundle_id: setup.candidate_b_bundle_id,
+    bridge_receipt_id: setup.candidate_b_bundle_bridge_receipt_id,
+  });
+  expect(closurePayload.runtime_downstream_proof).toMatchObject({
+    schema_id: 'layer3.candidate_b_runtime_downstream_proof.v1',
+    status: 'proven',
+    candidate_b_run_id: setup.candidate_b_run_id,
+    bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+  });
+  expect(closurePayload.operator_status_evidence).toMatchObject({
+    schema_id: 'layer3.candidate_b_default_promotion_operator_status.v1',
+    status: 'available',
+    baseline_run_id: setup.baseline_run_id,
+    candidate_b_run_id: setup.candidate_b_run_id,
+  });
+  for (const forbidden of [
+    'visual_lane_mode',
+    'document_processing_engine',
+    'default_selector',
+    'make_default',
+    'candidate_b_default',
+    'candidate_b_default_enabled',
+    'candidate_b_default_promotion_enabled',
+    'provider_private_url',
+    'provider_public_url',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+    'local_path',
+    'url',
+  ]) {
+    expect(closurePayload).not.toHaveProperty(forbidden);
+  }
+  const closure = await expectJson(await closureResponsePromise);
+  expect(closure.schema_id).toBe('layer3.candidate_b_default_promotion_closure_evidence.v1');
+  expect(closure.status).toBe('ready');
+  expect(closure.rollback_selector).toBe('baseline');
+  expect(closure.selector_mutation_performed).toBe(false);
+  expect(closure.raw_local_path_exposed).toBe(false);
+  expect(closure.raw_url_exposed).toBe(false);
+  expect(closure.artifact_bytes_exposed).toBe(false);
+  expect(closure.provider_private_token_exposed).toBe(false);
+  expect(closure.negative_invariants.baseline_rollback_preserved).toBe(true);
+  expect(closure.negative_invariants.candidate_a_semantics_changed).toBe(false);
+  expect(closure.negative_invariants.connector_dispatch_enabled).toBe(false);
+  expect(closure.negative_invariants.rag_vector_model_runtime_enabled).toBe(false);
+  expect(closure.negative_invariants.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(closure)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_closure_evidence_ready');
+  await expect(panel).toContainText('candidate-b-default-closure-evidence://');
+  await expect(panel).toContainText('rollback selector: baseline');
+  await expect(panel).toContainText('selector mutation performed: false');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/candidate-b/bundle/downstream-proof')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/visual-lane/status')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/runtime/downstream-proof')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/default-promotion/operator-status')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/default-promotion/closure-evidence')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence' },
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
