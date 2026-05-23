@@ -249,6 +249,21 @@ function renderVisualArtifactCard(artifact) {
                 <img class="eu-visual-preview" src="${safeEndpoint}" alt="${escapeHtml(previewAlt)}" loading="lazy">
            </a>`
         : `<div class="eu-visual-preview-fallback">${formatUnavailableMessage('Visual artifact preview', { runId: State.selectedRunId, targetId: State.selectedTargetId })}</div>`;
+    const retainedRefs = Array.isArray(artifact.retained_artifact_refs) ? artifact.retained_artifact_refs : [];
+    const retainedRefsHtml = retainedRefs.length
+        ? `<div class="eu-retained-artifacts">
+                <strong>Retained artifacts</strong>
+                <ul>
+                    ${retainedRefs.map((ref) => `
+                        <li>
+                            <span>${escapeHtml(ref.artifact_role || 'retained_artifact')}</span>
+                            <code>${escapeHtml(ref.display_ref || 'redacted-ref')}</code>
+                            <small>${ref.material_text_payload === true ? 'material text payload' : 'retained evidence'}</small>
+                        </li>
+                    `).join('')}
+                </ul>
+           </div>`
+        : '';
 
     return `
         <article class="chunk-card eu-card eu-visual-card">
@@ -258,6 +273,7 @@ function renderVisualArtifactCard(artifact) {
             </div>
             ${metaText ? `<div class="eu-card-details">${escapeHtml(metaText)}</div>` : ''}
             ${previewHtml}
+            ${retainedRefsHtml}
         </article>
     `;
 }

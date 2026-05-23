@@ -406,9 +406,29 @@ def _build_visual_artifact_items(
                 dpi=int(page_ref["visual_artifact_dpi"]) if isinstance(page_ref.get("visual_artifact_dpi"), int) else None,
                 sha256=str(page_ref.get("visual_artifact_sha256") or "").strip() or None,
                 endpoint=endpoint,
+                retained_artifact_refs=_redacted_retained_artifact_refs(page_ref.get("retained_artifact_refs")),
             )
         )
     return items
+
+
+def _redacted_retained_artifact_refs(value: object) -> list[dict[str, object]]:
+    if not isinstance(value, list):
+        return []
+    refs: list[dict[str, object]] = []
+    for item in value:
+        if not isinstance(item, dict):
+            continue
+        relative_name = str(item.get("relative_name") or "").replace("\\", "/").strip()
+        display_ref = relative_name.rsplit("/", 1)[-1] if relative_name else None
+        refs.append(
+            {
+                "artifact_role": str(item.get("artifact_role") or "").strip() or None,
+                "display_ref": display_ref,
+                "material_text_payload": item.get("material_text_payload") is True,
+            }
+        )
+    return refs
 
 
 def _as_positive_int(value) -> int | None:
