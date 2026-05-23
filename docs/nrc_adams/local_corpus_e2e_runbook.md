@@ -107,10 +107,17 @@ Then set `LAYER3_SOURCE_INGESTION_DIR` to the server-owned curated material root
 13. Candidate B visual-lane status.
 14. Candidate B runtime downstream proof with all required coverage steps.
 
-The current proven downstream receipt is:
+The historical downstream receipt guarded by the progress checker is:
 
 ```yaml
 downstream_proof_id: cb-runtime-downstream-proof-1a8c44a841830707c2168578
+coverage_count: 17
+```
+
+The latest merged-current-main downstream receipt is:
+
+```yaml
+downstream_proof_id: cb-runtime-downstream-proof-1d437ddfaaae417cf0b0f386
 coverage_count: 17
 provider_private_state: provider_private_signed_url_prepared
 provider_private_revoke_state: provider_private_signed_url_revoked
@@ -121,7 +128,34 @@ candidate_b_default_promotion_enabled: false
 For operator repeatability against current main, run the governed workflow runner from a checkout where the live baseline, Candidate A, and Candidate B full-corpus runtime roots are present:
 
 ```powershell
-py -3.12 .\tools\run_candidate_b_full_corpus_operator_workflow.py
+python .\tools\run_candidate_b_full_corpus_operator_workflow.py
+```
+
+If the three full-corpus runtime roots are not inside the proof checkout but are available under one admitted `storage_test_runtime\lc_e2e` parent, pass the three roots explicitly:
+
+```powershell
+python .\tools\run_candidate_b_full_corpus_operator_workflow.py `
+  --baseline-run-root "<baseline full-corpus runtime root>" `
+  --candidate-a-run-root "<Candidate A full-corpus runtime root>" `
+  --candidate-b-run-root "<Candidate B full-corpus runtime root>"
+```
+
+The explicit roots must all share one `storage_test_runtime\lc_e2e` or `storage\lc_e2e` parent. During the bridge call, the runner temporarily uses that parent as server-side runtime discovery authority, then restores isolated Layer 3 storage for downstream proof. The request to the Layer 3 bridge still carries only run ids, never local path fields.
+
+The merged-current-main proof checkpoint is:
+
+```yaml
+main_commit: 11d63b329fe7af253c5ec06c7817a4c65ba29580
+receipt_id: cb-full-corpus-operator-8228167a5375e8a76a00918a
+receipt_hash: 8228167a5375e8a76a00918a5f00e56dba4215993e34ad17ff66e3f57d549768
+bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979
+bridge_receipt_hash: 0110fe894c68d6a0291f997998616c7dacff8bbd2897bdcb68d5f877dbc8de62
+downstream_proof_id: cb-runtime-downstream-proof-1d437ddfaaae417cf0b0f386
+downstream_proof_hash: 1d437ddfaaae417cf0b0f386ce1a3cdd0f51ca637687a417a5fcb2143851fa80
+workflow_status: proven
+status_endpoint_status: available
+raw_local_path_exposed: false
+raw_url_exposed: false
 ```
 
 The runner emits `candidate_b.full_corpus_layer3_operator_workflow.v1` with `workflow_mode: candidate_b_full_corpus_operator_workflow_v1`. It writes one durable receipt per execution:
@@ -134,6 +168,48 @@ coverage_count: 17
 source_directory_eligible_file_count: 71
 raw_local_path_exposed: false
 raw_url_exposed: false
+```
+
+To inspect the receipt through the operator status surface, configure `LAYER3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR` or `settings.layer3_candidate_b_full_corpus_operator_workflow_dir` to the server-owned workflow receipt directory, then call:
+
+```text
+POST /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+```
+
+with:
+
+```json
+{
+  "client_request_id": "candidate-b-full-corpus-operator-status-check",
+  "status_mode": "candidate_b_full_corpus_operator_workflow_status_v1",
+  "operator_decision": "inspect_candidate_b_full_corpus_operator_workflow_status",
+  "operator_workflow_receipt_id": "cb-full-corpus-operator-8228167a5375e8a76a00918a",
+  "baseline_run_id": "7958ca0c-d163-4c6e-a0bf-2cac4e4bfe20",
+  "candidate_a_run_id": "9b09f014-95f9-41cb-820c-8f5296a993bc",
+  "candidate_b_run_id": "f644b3f6-a7a9-4889-84d9-d842f5d12e79",
+  "bridge_receipt_id": "cb-runtime-l3-0110fe894c68d6a0291f9979",
+  "downstream_proof_id": "cb-runtime-downstream-proof-1d437ddfaaae417cf0b0f386"
+}
+```
+
+Expected status output:
+
+```yaml
+status: available
+workflow_status: proven
+workflow_receipt_id: cb-full-corpus-operator-8228167a5375e8a76a00918a
+workflow_receipt_hash: 8228167a5375e8a76a00918a5f00e56dba4215993e34ad17ff66e3f57d549768
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+negative_invariants:
+  raw_local_path_exposed: false
+  raw_url_exposed: false
+  provider_public_url_enabled: false
+  provider_object_writes_enabled: false
+  connector_dispatch_enabled: false
+  rag_vector_model_runtime_enabled: false
+  frontend_durable_authority_enabled: false
+  full_mockup_activation_enabled: false
 ```
 
 Each execution may produce a new downstream proof receipt and workflow receipt. Newer executions should preserve the same schema, workflow mode, validated triplet, bridge receipt binding, coverage count, and negative invariants even when per-run receipt ids change.
