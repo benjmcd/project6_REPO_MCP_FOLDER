@@ -46,6 +46,61 @@ def test_path_ref_redacts_paths_outside_checkout(tmp_path: Path) -> None:
     assert workflow._path_ref(checkout_root, outside).startswith("redacted://sha256/")
 
 
+def test_runtime_discovery_storage_dir_uses_shared_explicit_parent(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    runtime_parent = tmp_path / "shared" / "storage_test_runtime" / "lc_e2e"
+    baseline_root = runtime_parent / "baseline-run"
+    candidate_a_root = runtime_parent / "candidate-a-run"
+    candidate_b_root = runtime_parent / "candidate-b-run"
+    for root in (checkout_root, baseline_root, candidate_a_root, candidate_b_root):
+        root.mkdir(parents=True)
+
+    storage_dir = workflow._runtime_discovery_storage_dir(
+        checkout_root=checkout_root,
+        runtime_roots=[str(baseline_root), str(candidate_a_root), str(candidate_b_root)],
+    )
+
+    assert storage_dir == runtime_parent.resolve()
+
+
+def test_runtime_discovery_storage_dir_rejects_unadmitted_parent(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    runtime_root = tmp_path / "shared" / "not-runtime-parent" / "candidate-b"
+    checkout_root.mkdir()
+    runtime_root.mkdir(parents=True)
+
+    try:
+        workflow._runtime_discovery_storage_dir(checkout_root=checkout_root, runtime_roots=[str(runtime_root)])
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "explicit_runtime_root_parent_not_admitted"
+    else:
+        raise AssertionError("unadmitted explicit runtime parent was accepted")
+
+
+def test_runtime_discovery_scope_restores_layer3_storage_dir(tmp_path: Path, monkeypatch) -> None:
+    layer3_storage_dir = tmp_path / "layer3-storage"
+    runtime_parent = tmp_path / "shared" / "storage_test_runtime" / "lc_e2e"
+    monkeypatch.setattr(workflow.settings, "storage_dir", str(layer3_storage_dir))
+
+    with workflow._runtime_discovery_scope(runtime_parent):
+        assert workflow.settings.storage_dir == str(runtime_parent)
+
+    assert workflow.settings.storage_dir == str(layer3_storage_dir)
+
+
+def test_runtime_root_ref_redacts_external_paths_and_wraps_repo_relative(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    inside_relative = "backend/app/storage_test_runtime/lc_e2e/baseline-run"
+    outside = tmp_path / "outside" / "storage_test_runtime" / "lc_e2e" / "candidate-b-run"
+    checkout_root.mkdir()
+    outside.mkdir(parents=True)
+
+    assert workflow._runtime_root_ref(checkout_root, inside_relative) == f"repo://{inside_relative}"
+    outside_ref = workflow._runtime_root_ref(checkout_root, str(outside))
+    assert outside_ref.startswith("redacted://sha256/")
+    assert str(outside) not in outside_ref
+
+
 def test_blocked_receipt_redacts_raw_paths_and_urls(tmp_path: Path) -> None:
     checkout_root = tmp_path / "checkout"
     checkout_root.mkdir()
