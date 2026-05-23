@@ -113,7 +113,7 @@ def test_candidate_b_package_preflight_rejects_version_mismatch(monkeypatch) -> 
         local_corpus_e2e._candidate_b_package_preflight()
 
 
-def test_build_submit_payload_preserves_baseline_default(tmp_path: Path) -> None:
+def test_build_submit_payload_requests_explicit_baseline_rollback(tmp_path: Path) -> None:
     doc = _local_doc(tmp_path / "ML26000A001.pdf")
 
     payload = local_corpus_e2e._build_submit_payload(
@@ -125,7 +125,7 @@ def test_build_submit_payload_preserves_baseline_default(tmp_path: Path) -> None
 
     assert payload["client_request_id"] == "local-corpus-e2e-test"
     assert payload["max_items"] == 1
-    assert "document_processing_engine" not in payload
+    assert payload["document_processing_engine"] == local_corpus_e2e.DOCUMENT_PROCESSING_ENGINE_BASELINE
 
 
 def test_build_submit_payload_propagates_candidate_b(tmp_path: Path) -> None:
