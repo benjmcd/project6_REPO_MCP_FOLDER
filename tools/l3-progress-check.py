@@ -2683,6 +2683,9 @@ CANDIDATE_B_FULL_CORPUS_CURRENT_MAIN_OPERATOR_EXECUTION_CHECKPOINT = (
 CANDIDATE_B_OPERATOR_HYBRID_AUTHORITY_API_INVOCATION_CHECKPOINT = (
     PLANNING_DOCS / "983-cb-operator-hybrid-authority-api-invocation.md"
 )
+CANDIDATE_B_LIVE_SERVER_BRIDGE_SOURCE_SCAN_CHECKPOINT = (
+    PLANNING_DOCS / "984-cb-live-server-source-scan.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91351,6 +91354,104 @@ def _check_candidate_b_operator_hybrid_authority_api_invocation(errors: list[str
             )
 
 
+def _check_candidate_b_live_server_bridge_source_scan(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_LIVE_SERVER_BRIDGE_SOURCE_SCAN_CHECKPOINT: (
+            "Candidate B Live-Server Bridge Source Scan",
+            "milestone: candidate_b_live_server_bridge_source_scan_v1",
+            "checkpoint_base_main: f283c6d2e7dc1d3b3b9fc6c526b12b06a0941021",
+            "governed_source_scan_api: /api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+            "source_scan_mode: candidate_b_runtime_bridge_curated_source_scan_v1",
+            "operator_decision: scan_candidate_b_runtime_bridge_curated_material_root",
+            "bridge_receipt_authority_required: true",
+            "settings_layer3_source_ingestion_dir_mutation_removed: true",
+            "material_preview_resolves_persisted_batch_root_ref: true",
+            "text_index_resolves_persisted_batch_root_ref: true",
+            "workflow_receipt_id: cb-full-corpus-operator-2408b420e3634bb6af6dffdd",
+            "workflow_receipt_hash: 2408b420e3634bb6af6dffddde6ef5346b40a3f73500797037cff193125d660e",
+            "workflow_status_hash: a82d24c258958bb711d2c5a068cdff2f9ea72957ad7160711ddc8266f424011e",
+            "downstream_proof_id: cb-runtime-downstream-proof-ba446008ff89a03057a122c3",
+            "status_endpoint_status: available",
+            "workflow_status: proven",
+            "coverage_count: 17",
+            "candidate_b_live_server_operator_workflow_run_api_or_http_client_decision_v1",
+            "provider_object_writes_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_live_server_bridge_source_scan_v1",
+            "governed_source_scan_api: /api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+            "settings_layer3_source_ingestion_dir_mutation_removed: true",
+            "material_preview_resolves_persisted_batch_root_ref: true",
+            "text_index_resolves_persisted_batch_root_ref: true",
+            "workflow_receipt_id: cb-full-corpus-operator-2408b420e3634bb6af6dffdd",
+            "workflow_status_hash: a82d24c258958bb711d2c5a068cdff2f9ea72957ad7160711ddc8266f424011e",
+            "status_endpoint_status: available",
+            "next_exact_posture: candidate_b_live_server_operator_workflow_run_api_or_http_client_decision_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER: (
+            '"/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan"',
+            '"source_scan_mode": "candidate_b_runtime_bridge_curated_source_scan_v1"',
+            '"operator_decision": "scan_candidate_b_runtime_bridge_curated_material_root"',
+            "def _scan_bridge_curated_source(",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST: (
+            "test_source_scan_uses_bridge_receipt_api_without_source_dir_mutation",
+            "candidate_b_runtime_bridge_curated_source_scan_v1",
+            "scan_candidate_b_runtime_bridge_curated_material_root",
+            "settings.layer3_source_ingestion_dir = str(curated_root)",
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBRuntimeBridgeSourceScanRequest",
+            '"/source/ingestion/candidate-b/runtime/material-bridge/source-scan"',
+            "scan_candidate_b_runtime_bridge_curated_source_directory",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_candidate_b_runtime_bridge.py": (
+            "SOURCE_SCAN_MODE = \"candidate_b_runtime_bridge_curated_source_scan_v1\"",
+            "SOURCE_SCAN_OPERATOR_DECISION = \"scan_candidate_b_runtime_bridge_curated_material_root\"",
+            "def scan_candidate_b_runtime_bridge_curated_source_directory(",
+            "def resolve_candidate_b_runtime_bridge_curated_root_ref(",
+            "candidate-b-runtime-bridge://{bridge_receipt_id}/curated",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py": (
+            "def scan_server_owned_directory_root(",
+            "def resolve_batch_source_root(",
+            "source_root_ref.startswith(\"candidate-b-runtime-bridge://\")",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_source_directory_material_admission.py": (
+            "resolve_batch_source_root",
+            "_read_live_file(batch, file_record",
+            "_batch_source_root_ref(batch)",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_source_directory_text_index.py": (
+            "resolve_batch_source_root",
+            "_read_live_file(batch, file_record)",
+            "The persisted source-directory root is not available for deterministic text indexing.",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B live-server bridge source scan term: {term}"
+                )
+    runner_body = _read_required_text(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER, errors)
+    forbidden_runner_terms = (
+        "settings.layer3_source_ingestion_dir = str(curated_root)",
+        '"/api/v1/layer3/source/ingestion/server-configured-directory/scan"',
+        "curated_root_missing",
+    )
+    for term in forbidden_runner_terms:
+        if term in runner_body:
+            errors.append(
+                f"{_rel(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER)} "
+                f"must not retain process-local source scan blocker term: {term}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92182,6 +92283,7 @@ def main() -> int:
     _check_candidate_b_operator_status_eligibility(errors)
     _check_candidate_b_full_corpus_current_main_operator_execution(errors)
     _check_candidate_b_operator_hybrid_authority_api_invocation(errors)
+    _check_candidate_b_live_server_bridge_source_scan(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

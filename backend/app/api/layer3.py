@@ -140,6 +140,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_bundle_material_bridge_endpoint: str
     candidate_b_runtime_material_bridge_admitted: bool
     candidate_b_runtime_material_bridge_endpoint: str
+    candidate_b_runtime_bridge_source_scan_admitted: bool
+    candidate_b_runtime_bridge_source_scan_endpoint: str
     candidate_b_artifact_family_status_admitted: bool
     candidate_b_artifact_family_status_endpoint: str
     candidate_b_visual_lane_status_admitted: bool
@@ -2647,6 +2649,21 @@ class Layer3CandidateBRuntimeMaterialBridgeRequest(BaseModel):
     baseline_run_id: str = Field(min_length=1)
     candidate_a_run_id: str = Field(min_length=1)
     operator_confirmation: bool
+
+
+class Layer3CandidateBRuntimeBridgeSourceScanRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    source_scan_mode: Literal["candidate_b_runtime_bridge_curated_source_scan_v1"]
+    operator_decision: Literal["scan_candidate_b_runtime_bridge_curated_material_root"]
+    bridge_receipt_id: str = Field(min_length=1)
+    candidate_b_run_id: str = Field(min_length=1)
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    operator_confirmation: bool
+    source_family: Literal["server_configured_operator_directory_text_table_source_family"] | None = None
+    ingestion_mode: Literal["server_configured_operator_directory_text_table_ingestion"] | None = None
 
 
 class Layer3CandidateBArtifactFamilyStatusRequest(BaseModel):
@@ -9017,6 +9034,28 @@ def post_candidate_b_runtime_material_bridge(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_runtime_bridge.CandidateBRuntimeBridgeError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+    response_model=Layer3SourceDirectoryIngestionResponse,
+    status_code=201,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_runtime_material_bridge_source_scan(
+    payload: Layer3CandidateBRuntimeBridgeSourceScanRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_runtime_bridge.scan_candidate_b_runtime_bridge_curated_source_directory(
+            db,
+            payload.model_dump(exclude_unset=True),
+        )
+    except (
+        layer3_candidate_b_runtime_bridge.CandidateBRuntimeBridgeError,
+        layer3_source_directory_ingestion.SourceDirectoryIngestionError,
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

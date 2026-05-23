@@ -15,7 +15,7 @@ from app.services.layer3_source_directory_ingestion import (
     SOURCE_FAMILY,
     STATUS_RECORDED,
     SourceDirectoryIngestionError,
-    _configured_root,
+    resolve_batch_source_root,
     _stable_hash,
 )
 
@@ -87,7 +87,7 @@ def source_directory_material_text_index(db: Session, payload: Mapping[str, Any]
 
     snapshot, batch, file_record = _load_authority(db, material_snapshot_id=material_snapshot_id, fields=fields)
     _assert_payload_authority(snapshot)
-    live_file = _read_live_file(file_record)
+    live_file = _read_live_file(batch, file_record)
     _assert_live_file_matches_authority(file_record, live_file)
 
     identity_basis = _index_identity_basis(snapshot, batch, file_record)
@@ -276,13 +276,16 @@ def _assert_payload_authority(snapshot: L3MaterialSnapshot) -> None:
         )
 
 
-def _read_live_file(file_record: L3SourceDirectoryIngestionFile) -> dict[str, Any]:
+def _read_live_file(
+    batch: L3SourceDirectoryIngestionBatch,
+    file_record: L3SourceDirectoryIngestionFile,
+) -> dict[str, Any]:
     try:
-        root = _configured_root()
+        root = resolve_batch_source_root(batch)
     except SourceDirectoryIngestionError as exc:
         raise SourceDirectoryTextIndexError(
             "source_directory_text_index_config_unavailable",
-            "The configured source-directory root is not available for deterministic text indexing.",
+            "The persisted source-directory root is not available for deterministic text indexing.",
             http_status=exc.http_status,
             details={"source_ingestion_file_id": file_record.source_ingestion_file_id, **exc.details},
         ) from exc

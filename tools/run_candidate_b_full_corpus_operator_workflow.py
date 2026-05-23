@@ -141,25 +141,13 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
                 },
             )
         bridge_receipt_id = bridge["bridge_receipt_id"]
-        curated_root = bridge_dir / bridge_receipt_id / "curated"
-        if not curated_root.is_dir():
-            raise OperatorWorkflowError(
-                "curated_root_missing",
-                "The Candidate B runtime bridge did not produce a curated source-directory root.",
-                details={"bridge_receipt_id": bridge_receipt_id},
-            )
-        settings.layer3_source_ingestion_dir = str(curated_root)
 
-        scan = _post_json(
+        scan = _scan_bridge_curated_source(
             client,
-            "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
-            {
-                "client_request_id": "candidate-b-full-corpus-operator-source-scan",
-                "operator_decision": "scan_server_configured_operator_directory",
-                "source_family": "server_configured_operator_directory_text_table_source_family",
-                "ingestion_mode": "server_configured_operator_directory_text_table_ingestion",
-            },
-            expected_status=201,
+            bridge_receipt_id=bridge_receipt_id,
+            candidate_b_run_id=candidate_b_run_id,
+            baseline_run_id=baseline_run_id,
+            candidate_a_run_id=candidate_a_run_id,
         )
         snapshot = _approve_material(client, scan, relative_name=material_relative_name)
         analysis_payload, analysis_body, prepare_payload, prepare_body = _prepare_package(
@@ -640,6 +628,33 @@ def _layer3_client(*, layer3_storage_dir: Path, bridge_dir: Path) -> Iterator[Te
         settings.layer3_internal_webhook_url = original_webhook_url
         settings.layer3_internal_webhook_display_name = original_webhook_display_name
         layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT = original_webhook_transport
+
+
+def _scan_bridge_curated_source(
+    client: TestClient,
+    *,
+    bridge_receipt_id: str,
+    candidate_b_run_id: str,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+) -> dict[str, Any]:
+    return _post_json(
+        client,
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+        {
+            "client_request_id": "candidate-b-full-corpus-operator-source-scan",
+            "source_scan_mode": "candidate_b_runtime_bridge_curated_source_scan_v1",
+            "operator_decision": "scan_candidate_b_runtime_bridge_curated_material_root",
+            "bridge_receipt_id": bridge_receipt_id,
+            "candidate_b_run_id": candidate_b_run_id,
+            "baseline_run_id": baseline_run_id,
+            "candidate_a_run_id": candidate_a_run_id,
+            "operator_confirmation": True,
+            "source_family": "server_configured_operator_directory_text_table_source_family",
+            "ingestion_mode": "server_configured_operator_directory_text_table_ingestion",
+        },
+        expected_status=201,
+    )
 
 
 def _approve_material(client: TestClient, scan: dict[str, Any], *, relative_name: str) -> dict[str, Any]:
