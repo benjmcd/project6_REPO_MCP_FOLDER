@@ -2686,6 +2686,9 @@ CANDIDATE_B_OPERATOR_HYBRID_AUTHORITY_API_INVOCATION_CHECKPOINT = (
 CANDIDATE_B_LIVE_SERVER_BRIDGE_SOURCE_SCAN_CHECKPOINT = (
     PLANNING_DOCS / "984-cb-live-server-source-scan.md"
 )
+CANDIDATE_B_LIVE_HTTP_OPERATOR_RUNNER_CHECKPOINT = (
+    PLANNING_DOCS / "985-cb-http-runner.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91452,6 +91455,97 @@ def _check_candidate_b_live_server_bridge_source_scan(errors: list[str]) -> None
             )
 
 
+def _check_candidate_b_live_http_operator_runner(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_LIVE_HTTP_OPERATOR_RUNNER_CHECKPOINT: (
+            "Candidate B Live HTTP Operator Runner",
+            "milestone: candidate_b_live_http_operator_runner_v1",
+            "selected_path: live_http_operator_runner",
+            "deferred_path: server_side_operator_workflow_run_api",
+            "execution_mode: live-http",
+            "api_base_url_required: true",
+            "readiness_gate_required: true",
+            "candidate_b_runtime_material_bridge_admitted_required: true",
+            "candidate_b_runtime_bridge_source_scan_admitted_required: true",
+            "candidate_b_runtime_downstream_proof_admitted_required: true",
+            "candidate_b_full_corpus_operator_workflow_status_admitted_required: true",
+            "internal_webhook_mode_required: configured",
+            "local_ack_webhook_transport_allowed_in_live_http: false",
+            "testclient_dependency_used_in_live_http: false",
+            "in_memory_db_used_in_live_http: false",
+            "status_endpoint_verification_required: true",
+            "local_testclient_regression_receipt_id: cb-full-corpus-operator-40cd13edeb4d8c10bd65e727",
+            "local_testclient_regression_status_hash: f126d919e9e9ce2a2766ac1a862a0e97a384edf0f685cdde8aadb4ad3dbea904",
+            "live_http_runtime_proof_status: blocked_pending_configured_server",
+            "candidate_b_live_http_operator_workflow_runtime_proof_v1",
+            "provider_object_writes_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_live_http_operator_runner_v1",
+            "selected_path: live_http_operator_runner",
+            "execution_mode: live-http",
+            "api_base_url_required: true",
+            "internal_webhook_mode_required: configured",
+            "testclient_dependency_used_in_live_http: false",
+            "in_memory_db_used_in_live_http: false",
+            "status_endpoint_verification_required: true",
+            "local_testclient_regression_receipt_id: cb-full-corpus-operator-40cd13edeb4d8c10bd65e727",
+            "live_http_runtime_proof_status: blocked_pending_configured_server",
+            "next_exact_posture: candidate_b_live_http_operator_workflow_runtime_proof_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER: (
+            'LOCAL_TESTCLIENT_EXECUTION_MODE = "local-testclient"',
+            'LIVE_HTTP_EXECUTION_MODE = "live-http"',
+            'parser.add_argument(',
+            '"--execution-mode"',
+            '"--api-base-url"',
+            "class LiveHttpLayer3Client",
+            "def _assert_operator_api_ready(",
+            "candidate_b_runtime_material_bridge_admitted",
+            "candidate_b_runtime_bridge_source_scan_admitted",
+            "candidate_b_runtime_downstream_proof_admitted",
+            "candidate_b_full_corpus_operator_workflow_status_admitted",
+            "live_http_internal_webhook_must_be_configured",
+            "live_http_layer3_api_used",
+            "testclient_dependency_used",
+            "in_memory_db_used",
+            "def _verify_live_http_workflow_status(",
+            "def _workflow_status_payload(",
+            "redacted://url/",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST: (
+            "test_live_http_mode_requires_api_base_url_and_configured_webhook",
+            "test_live_http_client_accepts_server_root_or_layer3_api_root",
+            "test_live_http_readiness_requires_candidate_b_operator_endpoints",
+            "test_workflow_status_payload_binds_live_http_receipt_ids",
+            "_FakeHttpSession",
+            "_FakeReadinessClient",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B live HTTP operator runner term: {term}"
+                )
+    runner_body = _read_required_text(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER, errors)
+    forbidden_runner_terms = (
+        "live_http_layer3_api_used\": False",
+        "api_base_url_ref\": str(",
+        "local_ack_webhook_transport_allowed_in_live_http: true",
+    )
+    for term in forbidden_runner_terms:
+        if term in runner_body:
+            errors.append(
+                f"{_rel(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER)} "
+                f"must not retain live HTTP operator runner blocker term: {term}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92284,6 +92378,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_current_main_operator_execution(errors)
     _check_candidate_b_operator_hybrid_authority_api_invocation(errors)
     _check_candidate_b_live_server_bridge_source_scan(errors)
+    _check_candidate_b_live_http_operator_runner(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

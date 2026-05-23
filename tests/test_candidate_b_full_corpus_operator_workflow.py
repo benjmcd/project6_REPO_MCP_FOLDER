@@ -10,10 +10,124 @@ def test_parser_defaults_to_operator_safe_local_ack_mode() -> None:
     args = workflow.build_parser().parse_args([])
 
     assert args.internal_webhook_mode == "local-ack"
+    assert args.execution_mode == workflow.LOCAL_TESTCLIENT_EXECUTION_MODE
+    assert args.api_base_url == ""
     assert args.material_relative_name == workflow.DEFAULT_MATERIAL_RELATIVE_NAME
     assert args.bridge_dir == str(workflow.DEFAULT_BRIDGE_DIR)
     assert args.receipt_dir == str(workflow.DEFAULT_RECEIPT_DIR)
     assert args.runtime_root_lifecycle_dir == str(workflow.DEFAULT_RUNTIME_ROOT_LIFECYCLE_DIR)
+
+
+def test_live_http_mode_requires_api_base_url_and_configured_webhook() -> None:
+    missing_url = workflow.build_parser().parse_args(["--execution-mode", "live-http"])
+    try:
+        workflow._validate_execution_contract(missing_url)
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "live_http_api_base_url_required"
+    else:
+        raise AssertionError("live-http accepted an empty API base URL")
+
+    local_ack = workflow.build_parser().parse_args(
+        ["--execution-mode", "live-http", "--api-base-url", "http://127.0.0.1:8000/api/v1/layer3"]
+    )
+    try:
+        workflow._validate_execution_contract(local_ack)
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "live_http_internal_webhook_must_be_configured"
+    else:
+        raise AssertionError("live-http accepted local-ack webhook mode")
+
+    configured = workflow.build_parser().parse_args(
+        [
+            "--execution-mode",
+            "live-http",
+            "--api-base-url",
+            "http://127.0.0.1:8000/api/v1/layer3",
+            "--internal-webhook-mode",
+            "configured",
+        ]
+    )
+    workflow._validate_execution_contract(configured)
+    assert workflow._api_base_url_ref(configured.api_base_url).startswith("redacted://url/")
+
+
+def test_live_http_client_accepts_server_root_or_layer3_api_root() -> None:
+    layer3_session = _FakeHttpSession()
+    layer3_client = workflow.LiveHttpLayer3Client(
+        "http://127.0.0.1:8000/api/v1/layer3",
+        timeout_seconds=9,
+        session=layer3_session,
+    )
+    layer3_client.post("/api/v1/layer3/readiness", json={"client_request_id": "ready"})
+    assert layer3_session.posts == [
+        ("http://127.0.0.1:8000/api/v1/layer3/readiness", {"client_request_id": "ready"}, 9)
+    ]
+
+    root_session = _FakeHttpSession()
+    root_client = workflow.LiveHttpLayer3Client("http://127.0.0.1:8000", timeout_seconds=5, session=root_session)
+    root_client.get("/api/v1/layer3/readiness")
+    assert root_session.gets == [("http://127.0.0.1:8000/api/v1/layer3/readiness", 5)]
+
+
+def test_live_http_readiness_requires_candidate_b_operator_endpoints() -> None:
+    args = workflow.build_parser().parse_args(
+        [
+            "--execution-mode",
+            "live-http",
+            "--api-base-url",
+            "http://127.0.0.1:8000/api/v1/layer3",
+            "--internal-webhook-mode",
+            "configured",
+        ]
+    )
+    ready = _FakeReadinessClient(
+        {
+            "candidate_b_runtime_material_bridge_admitted": True,
+            "candidate_b_runtime_bridge_source_scan_admitted": True,
+            "candidate_b_runtime_downstream_proof_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_status_admitted": True,
+        }
+    )
+    workflow._assert_operator_api_ready(args, ready)
+
+    blocked = _FakeReadinessClient(
+        {
+            "candidate_b_runtime_material_bridge_admitted": True,
+            "candidate_b_runtime_bridge_source_scan_admitted": False,
+            "candidate_b_runtime_downstream_proof_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_status_admitted": True,
+        }
+    )
+    try:
+        workflow._assert_operator_api_ready(args, blocked)
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "live_http_layer3_readiness_missing"
+        assert exc.details["missing_readiness"][0]["field"] == "candidate_b_runtime_bridge_source_scan_admitted"
+    else:
+        raise AssertionError("live-http accepted incomplete readiness")
+
+
+def test_workflow_status_payload_binds_live_http_receipt_ids() -> None:
+    receipt = {
+        "receipt_id": "cb-full-corpus-operator-live-http-proof",
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "bridge_receipt_id": "cb-runtime-l3-live-http-proof",
+        "downstream_proof_id": "cb-runtime-downstream-proof-live-http",
+    }
+
+    assert workflow._workflow_status_payload(receipt) == {
+        "client_request_id": "candidate-b-full-corpus-operator-live-http-status",
+        "status_mode": "candidate_b_full_corpus_operator_workflow_status_v1",
+        "operator_decision": "inspect_candidate_b_full_corpus_operator_workflow_status",
+        "operator_workflow_receipt_id": "cb-full-corpus-operator-live-http-proof",
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "bridge_receipt_id": "cb-runtime-l3-live-http-proof",
+        "downstream_proof_id": "cb-runtime-downstream-proof-live-http",
+    }
 
 
 def test_coverage_evidence_binds_delivery_artifact_authority() -> None:
@@ -289,9 +403,33 @@ class _FakeResponse:
     def __init__(self, body: dict[str, object], *, status_code: int = 200) -> None:
         self.status_code = status_code
         self._body = body
+        self.text = json.dumps(body, sort_keys=True)
 
     def json(self) -> dict[str, object]:
         return self._body
+
+
+class _FakeHttpSession:
+    def __init__(self) -> None:
+        self.posts: list[tuple[str, dict[str, object], int]] = []
+        self.gets: list[tuple[str, int]] = []
+
+    def post(self, url: str, *, json: dict[str, object], timeout: int) -> _FakeResponse:
+        self.posts.append((url, json, timeout))
+        return _FakeResponse({"ok": True})
+
+    def get(self, url: str, *, timeout: int) -> _FakeResponse:
+        self.gets.append((url, timeout))
+        return _FakeResponse({"ok": True})
+
+
+class _FakeReadinessClient:
+    def __init__(self, readiness: dict[str, object]) -> None:
+        self.readiness = readiness
+
+    def get(self, path: str) -> _FakeResponse:
+        assert path == "/api/v1/layer3/readiness"
+        return _FakeResponse(self.readiness)
 
 
 class _FakeLayer3Client:

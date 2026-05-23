@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from typing import Any, Iterator
 
+import requests
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -39,6 +40,8 @@ SCHEMA_VERSION = 1
 RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID = "candidate_b.full_corpus_runtime_root_lifecycle.v1"
 RUNTIME_ROOT_LIFECYCLE_MODE = "candidate_b_full_corpus_runtime_root_lifecycle_v1"
 WORKFLOW_MODE = "candidate_b_full_corpus_operator_workflow_v1"
+LOCAL_TESTCLIENT_EXECUTION_MODE = "local-testclient"
+LIVE_HTTP_EXECUTION_MODE = "live-http"
 BRIDGE_MODE = "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1"
 PROOF_MODE = "candidate_b_visual_lane_runtime_downstream_e2e_proof_v1"
 OPERATOR_DECISION = "record_candidate_b_visual_lane_runtime_downstream_e2e_proof"
@@ -63,6 +66,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Run the governed Candidate B full-corpus runtime evidence through Layer 3 operator workflow."
     )
+    parser.add_argument(
+        "--execution-mode",
+        choices=(LOCAL_TESTCLIENT_EXECUTION_MODE, LIVE_HTTP_EXECUTION_MODE),
+        default=LOCAL_TESTCLIENT_EXECUTION_MODE,
+        help="Use the local in-process proof harness, or call a configured live Layer 3 HTTP server.",
+    )
+    parser.add_argument(
+        "--api-base-url",
+        default="",
+        help="Live HTTP server root or Layer 3 API root. Required when --execution-mode=live-http.",
+    )
+    parser.add_argument(
+        "--http-timeout-seconds",
+        type=int,
+        default=60,
+        help="Timeout for each live HTTP API call.",
+    )
     parser.add_argument("--checkout-root", default="", help="Checkout root. Defaults to this repository.")
     parser.add_argument("--baseline-run-root", default="", help="Optional baseline full-corpus runtime root.")
     parser.add_argument("--candidate-a-run-root", default="", help="Optional Candidate A full-corpus runtime root.")
@@ -85,7 +105,66 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _execution_mode(args: argparse.Namespace) -> str:
+    mode = str(getattr(args, "execution_mode", LOCAL_TESTCLIENT_EXECUTION_MODE) or "").strip()
+    return mode or LOCAL_TESTCLIENT_EXECUTION_MODE
+
+
+def _is_live_http_mode(args: argparse.Namespace) -> bool:
+    return _execution_mode(args) == LIVE_HTTP_EXECUTION_MODE
+
+
+def _validate_execution_contract(args: argparse.Namespace) -> None:
+    if _execution_mode(args) not in {LOCAL_TESTCLIENT_EXECUTION_MODE, LIVE_HTTP_EXECUTION_MODE}:
+        raise OperatorWorkflowError(
+            "execution_mode_not_admitted",
+            "Only local-testclient and live-http execution modes are admitted.",
+            details={"execution_mode": _execution_mode(args)},
+        )
+    if _is_live_http_mode(args):
+        if not str(getattr(args, "api_base_url", "") or "").strip():
+            raise OperatorWorkflowError(
+                "live_http_api_base_url_required",
+                "Live HTTP execution requires --api-base-url so the operator runner calls a configured server.",
+            )
+        if str(getattr(args, "internal_webhook_mode", "") or "") != "configured":
+            raise OperatorWorkflowError(
+                "live_http_internal_webhook_must_be_configured",
+                "Live HTTP execution cannot install the local in-process webhook ack transport.",
+                details={"required_internal_webhook_mode": "configured"},
+            )
+
+
+class LiveHttpLayer3Client:
+    def __init__(self, api_base_url: str, *, timeout_seconds: int, session: Any | None = None) -> None:
+        base_url = str(api_base_url or "").strip().rstrip("/")
+        if not base_url:
+            raise OperatorWorkflowError(
+                "live_http_api_base_url_required",
+                "Live HTTP execution requires a non-empty API base URL.",
+            )
+        self.api_base_url = base_url
+        self.timeout_seconds = timeout_seconds
+        self.session = session or requests.Session()
+
+    def post(self, path: str, json: dict[str, Any]) -> Any:
+        return self.session.post(self._url(path), json=json, timeout=self.timeout_seconds)
+
+    def get(self, path: str) -> Any:
+        return self.session.get(self._url(path), timeout=self.timeout_seconds)
+
+    def _url(self, path: str) -> str:
+        clean_path = "/" + str(path or "").lstrip("/")
+        layer3_prefix = "/api/v1/layer3"
+        if self.api_base_url.endswith(layer3_prefix) and clean_path.startswith(layer3_prefix):
+            clean_path = clean_path[len(layer3_prefix) :]
+            if not clean_path:
+                clean_path = "/"
+        return f"{self.api_base_url}{clean_path}"
+
+
 def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
+    _validate_execution_contract(args)
     checkout_root = _checkout_root(args.checkout_root)
     bridge_dir = _resolve_dir(args.bridge_dir, checkout_root=checkout_root, field="bridge_dir")
     receipt_dir = _resolve_dir(args.receipt_dir, checkout_root=checkout_root, field="receipt_dir")
@@ -126,8 +205,9 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         runtime_root_lifecycle,
     )
 
-    with _layer3_client(layer3_storage_dir=layer3_storage_dir, bridge_dir=bridge_dir) as client:
-        with _runtime_discovery_scope(runtime_discovery_storage_dir):
+    with _operator_api_client(args, layer3_storage_dir=layer3_storage_dir, bridge_dir=bridge_dir) as client:
+        _assert_operator_api_ready(args, client)
+        if _is_live_http_mode(args):
             bridge = _post_json(
                 client,
                 "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge",
@@ -140,6 +220,20 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
                     "operator_confirmation": True,
                 },
             )
+        else:
+            with _runtime_discovery_scope(runtime_discovery_storage_dir):
+                bridge = _post_json(
+                    client,
+                    "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge",
+                    {
+                        "client_request_id": "candidate-b-full-corpus-operator-bridge",
+                        "bridge_mode": BRIDGE_MODE,
+                        "candidate_b_run_id": candidate_b_run_id,
+                        "baseline_run_id": baseline_run_id,
+                        "candidate_a_run_id": candidate_a_run_id,
+                        "operator_confirmation": True,
+                    },
+                )
         bridge_receipt_id = bridge["bridge_receipt_id"]
 
         scan = _scan_bridge_curated_source(
@@ -162,6 +256,7 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             prepare_payload=prepare_payload,
             prepare_body=prepare_body,
             internal_webhook_mode=str(args.internal_webhook_mode),
+            live_http=_is_live_http_mode(args),
         )
         visual_status = _post_json(
             client,
@@ -267,6 +362,14 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             "curated_file_count": bridge["admitted_artifact_subset"]["file_count"],
             "text_file_count": len(bridge["admitted_artifact_subset"]["text_files"]),
         },
+        "execution": {
+            "execution_mode": _execution_mode(args),
+            "live_http_layer3_api_used": _is_live_http_mode(args),
+            "testclient_dependency_used": not _is_live_http_mode(args),
+            "in_memory_db_used": not _is_live_http_mode(args),
+            "api_base_url_ref": _api_base_url_ref(str(getattr(args, "api_base_url", "") or "")),
+            "status_endpoint_verification_required": _is_live_http_mode(args),
+        },
         "negative_invariants": {
             "baseline_default_changed": False,
             "candidate_a_semantics_changed": False,
@@ -287,6 +390,8 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
     }
     receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
     receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
+    if _is_live_http_mode(args):
+        receipt["live_http_status_check"] = _verify_live_http_workflow_status(args, receipt)
     return receipt
 
 
@@ -587,6 +692,46 @@ def _runtime_discovery_scope(storage_dir: Path | None) -> Iterator[None]:
 
 
 @contextmanager
+def _operator_api_client(
+    args: argparse.Namespace,
+    *,
+    layer3_storage_dir: Path,
+    bridge_dir: Path,
+) -> Iterator[Any]:
+    if _is_live_http_mode(args):
+        yield LiveHttpLayer3Client(
+            str(args.api_base_url),
+            timeout_seconds=int(getattr(args, "http_timeout_seconds", 60) or 60),
+        )
+        return
+    with _layer3_client(layer3_storage_dir=layer3_storage_dir, bridge_dir=bridge_dir) as client:
+        yield client
+
+
+def _assert_operator_api_ready(args: argparse.Namespace, client: Any) -> None:
+    if not _is_live_http_mode(args):
+        return
+    readiness = _get_json(client, "/api/v1/layer3/readiness")
+    required_true = {
+        "candidate_b_runtime_material_bridge_admitted": True,
+        "candidate_b_runtime_bridge_source_scan_admitted": True,
+        "candidate_b_runtime_downstream_proof_admitted": True,
+        "candidate_b_full_corpus_operator_workflow_status_admitted": True,
+    }
+    missing = [
+        {"field": field, "expected": expected, "received": readiness.get(field)}
+        for field, expected in required_true.items()
+        if readiness.get(field) is not expected
+    ]
+    if missing:
+        raise OperatorWorkflowError(
+            "live_http_layer3_readiness_missing",
+            "The live Layer 3 server does not admit the required Candidate B operator workflow endpoints.",
+            details={"missing_readiness": missing},
+        )
+
+
+@contextmanager
 def _layer3_client(*, layer3_storage_dir: Path, bridge_dir: Path) -> Iterator[TestClient]:
     original_storage_dir = settings.storage_dir
     original_bridge_dir = settings.layer3_candidate_b_runtime_bridge_dir
@@ -799,6 +944,7 @@ def _prove_delivery_surfaces(
     prepare_payload: dict[str, Any],
     prepare_body: dict[str, Any],
     internal_webhook_mode: str,
+    live_http: bool = False,
 ) -> dict[str, Any]:
     selected_package = next(item for item in prepare_body["output_packages"] if item["package_kind"] == "user_facing")
     delivery_payload = {
@@ -888,6 +1034,7 @@ def _prove_delivery_surfaces(
         prepare_payload=prepare_payload,
         prepare_body=prepare_body,
         internal_webhook_mode=internal_webhook_mode,
+        live_http=live_http,
     )
     downstream_status = _post_json(
         client,
@@ -922,6 +1069,7 @@ def _dispatch_internal_webhook(
     prepare_payload: dict[str, Any],
     prepare_body: dict[str, Any],
     internal_webhook_mode: str,
+    live_http: bool = False,
 ) -> dict[str, Any]:
     if internal_webhook_mode == "local-ack":
         settings.layer3_internal_webhook_url = "http://127.0.0.1/candidate-b-full-corpus-operator-webhook"
@@ -932,7 +1080,7 @@ def _dispatch_internal_webhook(
             return 202, {"accepted": True, "receipt": "candidate-b-full-corpus-operator-local-ack"}
 
         layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT = local_ack_transport
-    elif not str(settings.layer3_internal_webhook_url or "").strip():
+    elif not live_http and not str(settings.layer3_internal_webhook_url or "").strip():
         raise OperatorWorkflowError(
             "internal_webhook_url_missing",
             "Configured internal webhook mode requires LAYER3_INTERNAL_WEBHOOK_URL.",
@@ -999,11 +1147,55 @@ def _post_json(client: TestClient, path: str, payload: dict[str, Any], *, expect
 def _get_json(client: TestClient, path: str) -> dict[str, Any]:
     response = client.get(path)
     if response.status_code != 200:
-        raise OperatorWorkflowError("api_request_failed", "Layer 3 API request failed closed.", details={"path": path})
+        raise OperatorWorkflowError(
+            "api_request_failed",
+            "Layer 3 API request failed closed.",
+            details={
+                "path": path,
+                "status_code": response.status_code,
+                "body": _safe_response_body(response.text, checkout_root=ROOT.resolve()),
+            },
+        )
     body = response.json()
     if not isinstance(body, dict):
         raise OperatorWorkflowError("api_response_invalid", "Layer 3 API response was not a JSON object.", details={"path": path})
     return body
+
+
+def _verify_live_http_workflow_status(args: argparse.Namespace, receipt: dict[str, Any]) -> dict[str, Any]:
+    with _operator_api_client(
+        args,
+        layer3_storage_dir=Path("."),
+        bridge_dir=Path("."),
+    ) as client:
+        status = _post_json(
+            client,
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            _workflow_status_payload(receipt),
+        )
+    return {
+        "status_endpoint_verified": True,
+        "workflow_status": status["workflow_status"],
+        "workflow_status_hash": status["workflow_status_hash"],
+        "workflow_status_ref": status["workflow_status_ref"],
+        "operator_projection": status["operator_projection"],
+        "raw_local_path_exposed": status["raw_local_path_exposed"],
+        "raw_url_exposed": status["raw_url_exposed"],
+    }
+
+
+def _workflow_status_payload(receipt: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-full-corpus-operator-live-http-status",
+        "status_mode": "candidate_b_full_corpus_operator_workflow_status_v1",
+        "operator_decision": "inspect_candidate_b_full_corpus_operator_workflow_status",
+        "operator_workflow_receipt_id": receipt["receipt_id"],
+        "baseline_run_id": receipt["baseline_run_id"],
+        "candidate_a_run_id": receipt["candidate_a_run_id"],
+        "candidate_b_run_id": receipt["candidate_b_run_id"],
+        "bridge_receipt_id": receipt["bridge_receipt_id"],
+        "downstream_proof_id": receipt["downstream_proof_id"],
+    }
 
 
 def _write_receipt(receipt_dir: Path, receipt_id: str, receipt: dict[str, Any]) -> Path:
@@ -1049,6 +1241,13 @@ def _path_ref(checkout_root: Path, path: Path) -> str:
         return f"repo://{resolved.relative_to(checkout_root.resolve()).as_posix()}"
     except ValueError:
         return f"redacted://sha256/{hashlib.sha256(str(resolved).encode('utf-8')).hexdigest()[:24]}"
+
+
+def _api_base_url_ref(api_base_url: str) -> str:
+    value = str(api_base_url or "").strip()
+    if not value:
+        return ""
+    return f"redacted://url/{hashlib.sha256(value.encode('utf-8')).hexdigest()[:24]}"
 
 
 def _runtime_root_ref(checkout_root: Path, value: Any) -> str:
