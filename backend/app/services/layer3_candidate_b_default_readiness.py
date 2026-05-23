@@ -1584,6 +1584,14 @@ def _validate_visual_lane_status_evidence(
         )
     if visual_evidence.get("candidate_b_visual_lane_selected") is not True:
         blocked.append(_reason("candidate_b_default_readiness_visual_lane_status_not_selected"))
+    for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
+        if int(visual_evidence.get(field) or 0) <= 0:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_visual_lane_status_evidence_count_missing",
+                    field=field,
+                )
+            )
     for field in ("source_pdf_material_text_payload_enabled", "image_material_text_payload_enabled"):
         if visual_evidence.get(field) is not False:
             blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_{field}_not_false", field=field))
@@ -1595,6 +1603,14 @@ def _validate_visual_lane_status_evidence(
     for field in ("candidate_b_visual_lane_status_projection_visible", "candidate_b_visual_lane_selected"):
         if operator_projection.get(field) is not True:
             blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_{field}_not_true", field=field))
+    for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
+        if int(operator_projection.get(field) or 0) <= 0:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_visual_lane_status_projection_count_missing",
+                    field=field,
+                )
+            )
     for field in ("raw_local_path_exposed", "raw_url_exposed", "artifact_bytes_exposed"):
         if operator_projection.get(field) is not False:
             blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_{field}_not_false", field=field))
@@ -1645,6 +1661,7 @@ def _validate_visual_lane_status_evidence(
             "candidate_b_visual_lane_status_projection_visible": (
                 operator_projection.get("candidate_b_visual_lane_status_projection_visible") is True
             ),
+            "visual_ref_total": int(operator_projection.get("visual_ref_total") or 0),
             "candidate_b_visual_ref_total": int(operator_projection.get("candidate_b_visual_ref_total") or 0),
             "candidate_b_retained_source_pdf_ref_count": int(
                 operator_projection.get("candidate_b_retained_source_pdf_ref_count") or 0
