@@ -8116,6 +8116,201 @@ test('Layer 3 workbench records then inspects Candidate B final proof from reali
   ]);
 });
 
+test('Layer 3 workbench renders Candidate B retained artifact and visual-lane status inspection', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-realistic-readiness-audit'));
+  expect(setup.schema_id).toBe('project6.review_browser_candidate_b_realistic_readiness_audit_setup.v1');
+  expect(setup.candidate_b_bundle_bridge_receipt_id).toBeTruthy();
+  expect(setup.candidate_b_runtime_bridge_receipt_id).toBeTruthy();
+  expect(setup.candidate_b_run_id).toBe('candidate-b-runtime-001');
+  expect(setup.visual_lane_mode).toBe('candidate_b_opendataloader_page_evidence_v1');
+  expect(setup.bundle_artifact_role_counts.visual_page_evidence).toBeGreaterThan(0);
+  expect(setup.bundle_artifact_role_counts.product_inspection_artifacts).toBeGreaterThan(0);
+  expect(setup.bundle_artifact_role_counts.delivery_artifacts).toBeGreaterThan(0);
+  expect(setup.runtime_artifact_role_counts.visual_page_evidence).toBeGreaterThan(0);
+  expect(setup.runtime_artifact_role_counts.product_inspection_artifacts).toBeGreaterThan(0);
+  expect(setup.runtime_artifact_role_counts.delivery_artifacts).toBeGreaterThan(0);
+
+  const forbiddenPayloadFields = [
+    'path',
+    'paths',
+    'directory',
+    'local_path',
+    'raw_local_path',
+    'url',
+    'urls',
+    'raw_url',
+    'file',
+    'files',
+    'file_bytes',
+    'provider_credentials',
+    'connector_run_id',
+    'destination_url',
+    'browser_storage_authority',
+    'frontend_durable_authority',
+  ];
+  const expectNoForbiddenPayloadFields = (payload) => {
+    for (const field of forbiddenPayloadFields) {
+      expect(payload).not.toHaveProperty(field);
+    }
+  };
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-artifact-family-status-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_retained_artifact_family_status_control',
+  );
+  await expect(page.locator('#candidate-b-visual-lane-status-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_visual_lane_status_control',
+  );
+
+  await page.locator('#candidate-b-artifact-family-source-kind').selectOption('bundle');
+  await page.locator('#candidate-b-artifact-family-bridge-receipt-id').fill(setup.candidate_b_bundle_bridge_receipt_id);
+  const bundleArtifactRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/artifact-family/status')
+  ));
+  const bundleArtifactResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/artifact-family/status')
+  ));
+  await page.locator('#candidate-b-artifact-family-status-submit').click();
+  const bundleArtifactPayload = (await bundleArtifactRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(bundleArtifactPayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'candidate_b_source_kind',
+    'bridge_receipt_id',
+  ]);
+  expect(bundleArtifactPayload).toMatchObject({
+    status_mode: 'candidate_b_retained_artifact_family_status_v1',
+    operator_decision: 'inspect_candidate_b_governed_retained_artifact_family_status',
+    candidate_b_source_kind: 'bundle',
+    bridge_receipt_id: setup.candidate_b_bundle_bridge_receipt_id,
+  });
+  expectNoForbiddenPayloadFields(bundleArtifactPayload);
+  const bundleArtifactStatus = await expectJson(await bundleArtifactResponsePromise);
+  expect(bundleArtifactStatus.schema_id).toBe('layer3.candidate_b_retained_artifact_family_status.v1');
+  expect(bundleArtifactStatus.status).toBe('available');
+  expect(bundleArtifactStatus.candidate_b_source_kind).toBe('bundle');
+  expect(bundleArtifactStatus.operator_projection.role_counts.visual_page_evidence).toBeGreaterThan(0);
+  expect(bundleArtifactStatus.operator_projection.role_counts.product_inspection_artifacts).toBeGreaterThan(0);
+  expect(bundleArtifactStatus.operator_projection.role_counts.delivery_artifacts).toBeGreaterThan(0);
+  expect(bundleArtifactStatus.operator_projection.raw_local_path_exposed).toBe(false);
+  expect(bundleArtifactStatus.operator_projection.raw_url_exposed).toBe(false);
+  expect(bundleArtifactStatus.operator_projection.artifact_bytes_exposed).toBe(false);
+  expect(bundleArtifactStatus.negative_invariants.pdf_material_text_payload_enabled).toBe(false);
+  expect(bundleArtifactStatus.negative_invariants.image_material_text_payload_enabled).toBe(false);
+  expect(JSON.stringify(bundleArtifactStatus)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_artifact_family_status_available');
+  await expect(panel).toContainText('visual page evidence');
+  await expect(panel).toContainText('product inspection artifacts');
+  await expect(panel).toContainText('delivery artifacts');
+
+  await page.locator('#candidate-b-artifact-family-source-kind').selectOption('runtime');
+  await page.locator('#candidate-b-artifact-family-bridge-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
+  const runtimeArtifactRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/artifact-family/status')
+  ));
+  const runtimeArtifactResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/artifact-family/status')
+  ));
+  await page.locator('#candidate-b-artifact-family-status-submit').click();
+  const runtimeArtifactPayload = (await runtimeArtifactRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(runtimeArtifactPayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'candidate_b_source_kind',
+    'bridge_receipt_id',
+  ]);
+  expect(runtimeArtifactPayload).toMatchObject({
+    status_mode: 'candidate_b_retained_artifact_family_status_v1',
+    operator_decision: 'inspect_candidate_b_governed_retained_artifact_family_status',
+    candidate_b_source_kind: 'runtime',
+    bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+  });
+  expectNoForbiddenPayloadFields(runtimeArtifactPayload);
+  const runtimeArtifactStatus = await expectJson(await runtimeArtifactResponsePromise);
+  expect(runtimeArtifactStatus.schema_id).toBe('layer3.candidate_b_retained_artifact_family_status.v1');
+  expect(runtimeArtifactStatus.status).toBe('available');
+  expect(runtimeArtifactStatus.candidate_b_source_kind).toBe('runtime');
+  expect(runtimeArtifactStatus.operator_projection.role_counts.visual_page_evidence).toBeGreaterThan(0);
+  expect(runtimeArtifactStatus.operator_projection.role_counts.product_inspection_artifacts).toBeGreaterThan(0);
+  expect(runtimeArtifactStatus.operator_projection.role_counts.delivery_artifacts).toBeGreaterThan(0);
+  expect(runtimeArtifactStatus.operator_projection.raw_local_path_exposed).toBe(false);
+  expect(runtimeArtifactStatus.operator_projection.raw_url_exposed).toBe(false);
+  expect(runtimeArtifactStatus.operator_projection.artifact_bytes_exposed).toBe(false);
+  expect(runtimeArtifactStatus.negative_invariants.pdf_material_text_payload_enabled).toBe(false);
+  expect(runtimeArtifactStatus.negative_invariants.image_material_text_payload_enabled).toBe(false);
+  expect(JSON.stringify(runtimeArtifactStatus)).not.toContain('C:\\');
+
+  await page.locator('#candidate-b-visual-lane-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-visual-lane-bridge-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
+  const visualLaneRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status')
+  ));
+  const visualLaneResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status')
+  ));
+  await page.locator('#candidate-b-visual-lane-status-submit').click();
+  const visualLanePayload = (await visualLaneRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(visualLanePayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'candidate_b_run_id',
+    'bridge_receipt_id',
+  ]);
+  expect(visualLanePayload).toMatchObject({
+    status_mode: 'candidate_b_visual_lane_status_v1',
+    operator_decision: 'inspect_candidate_b_visual_lane_evidence_status',
+    candidate_b_run_id: setup.candidate_b_run_id,
+    bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+  });
+  expectNoForbiddenPayloadFields(visualLanePayload);
+  const visualLaneStatus = await expectJson(await visualLaneResponsePromise);
+  expect(visualLaneStatus.schema_id).toBe('layer3.candidate_b_visual_lane_status.v1');
+  expect(visualLaneStatus.status).toBe('available');
+  expect(visualLaneStatus.visual_lane_mode).toBe('candidate_b_opendataloader_page_evidence_v1');
+  expect(visualLaneStatus.operator_projection.candidate_b_visual_lane_selected).toBe(true);
+  expect(visualLaneStatus.operator_projection.candidate_b_visual_ref_total).toBeGreaterThan(0);
+  expect(visualLaneStatus.operator_projection.candidate_b_retained_source_pdf_ref_count).toBeGreaterThan(0);
+  expect(visualLaneStatus.material_policy.source_pdf_material_text_payload_enabled).toBe(false);
+  expect(visualLaneStatus.material_policy.image_material_text_payload_enabled).toBe(false);
+  expect(visualLaneStatus.material_policy.visual_lane_material_ingestion_enabled).toBe(false);
+  expect(visualLaneStatus.operator_projection.raw_local_path_exposed).toBe(false);
+  expect(visualLaneStatus.operator_projection.raw_url_exposed).toBe(false);
+  expect(visualLaneStatus.operator_projection.artifact_bytes_exposed).toBe(false);
+  expect(JSON.stringify(visualLaneStatus)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_visual_lane_status_available');
+  await expect(panel).toContainText('candidate_b_opendataloader_page_evidence_v1');
+  await expect(panel).toContainText('retained source PDF refs');
+  await expect(panel).not.toContainText('size_bytes');
+  await expect(panel).not.toContainText('file_bytes');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/candidate-b/artifact-family/status')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/visual-lane/status')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/artifact-family/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/artifact-family/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status' },
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
