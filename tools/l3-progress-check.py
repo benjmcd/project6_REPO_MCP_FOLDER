@@ -2668,6 +2668,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER_CHECKPOINT = (
 CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_CHECKPOINT = (
     PLANNING_DOCS / "978-cb-full-corpus-runtime-root-lifecycle.md"
 )
+CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_PROOF_CHECKPOINT = (
+    PLANNING_DOCS / "979-cb-full-corpus-runtime-root-lifecycle-proof.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91029,6 +91032,43 @@ def _check_candidate_b_full_corpus_runtime_root_lifecycle(errors: list[str]) -> 
                 )
 
 
+def _check_candidate_b_full_corpus_runtime_root_lifecycle_proof(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_PROOF_CHECKPOINT: (
+            "Candidate B Full-Corpus Runtime Root Lifecycle Proof",
+            "milestone: candidate_b_full_corpus_runtime_root_lifecycle_proof_v1",
+            "current_main: 5f8c3964597bada9af993b3d835cbd06cec63256",
+            "implementation_pr: 1681",
+            "workflow_receipt_id: cb-full-corpus-operator-5be9b2dcecb9810127379140",
+            "workflow_receipt_hash: 5be9b2dcecb9810127379140f392b367976ab07800a0723d3008b626490db25e",
+            "lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "lifecycle_receipt_hash: ab3c4fd0b54ca670ada781f9d3797bda562fa53c0416399c8c2c38c20360f45d",
+            "downstream_proof_id: cb-runtime-downstream-proof-f0ea5bd2af66a9da70cc73bd",
+            "runtime_root_lifecycle_projection_visible: true",
+            "candidate_b_default_operational_acceptance_v1",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "selector_mutation_performed: false",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "main_commit: 5f8c3964597bada9af993b3d835cbd06cec63256",
+            "workflow_receipt_id: cb-full-corpus-operator-5be9b2dcecb9810127379140",
+            "runtime_root_lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "runtime_root_lifecycle_projection_visible: true",
+            "operator_projection.runtime_root_lifecycle_projection_visible: true",
+            "Older workflow receipts remain readable",
+            "selector_mutation_performed: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus runtime root lifecycle proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91855,6 +91895,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_operator_runbook_checkpoint(errors)
     _check_candidate_b_full_corpus_operator_workflow_runner(errors)
     _check_candidate_b_full_corpus_runtime_root_lifecycle(errors)
+    _check_candidate_b_full_corpus_runtime_root_lifecycle_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
