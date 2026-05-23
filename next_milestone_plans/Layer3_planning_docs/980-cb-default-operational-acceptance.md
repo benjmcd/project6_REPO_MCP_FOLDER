@@ -87,6 +87,8 @@ Immediate next pass:
 2. Re-run the focused default selector and readiness tests after any selector, visual-lane, bridge, operator workflow, or status-surface change.
 3. If a full-corpus root, dependency, bridge receipt, lifecycle receipt, or API surface is missing, stop and report the exact blocker instead of generating substitute evidence.
 
+The first post-acceptance runtime/status slice is `candidate_b_operator_status_eligibility_v1`, recorded in `981-cb-operator-status-eligibility.md`.
+
 Mid-term passes:
 
 1. Turn the operator workflow into the primary repeatable acceptance route for future Candidate B corpus runs, including clear run IDs, receipt IDs, status endpoint inspection, and rollback instructions.

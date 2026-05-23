@@ -3334,8 +3334,11 @@ class Layer3CandidateBFullCorpusOperatorWorkflowStatusResponse(Layer3BaseRespons
     downstream_proof_hash: str
     coverage_count: int
     corpus: dict[str, Any]
+    eligibility_summary: dict[str, Any]
+    baseline_rollback: dict[str, Any]
     layer3: dict[str, Any]
     artifact_family: dict[str, Any]
+    runtime_root_lifecycle: dict[str, Any]
     operator_projection: dict[str, Any]
     validate_only_triplet: bool
     artifacts_seeded_or_generated_by_triplet_validator: bool

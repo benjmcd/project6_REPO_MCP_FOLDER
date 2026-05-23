@@ -207,6 +207,12 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             },
         )
 
+    eligibility_summary = _operator_eligibility_summary(
+        corpus_pdf_count=int(triplet["corpus_pdf_count"]),
+        source_directory_eligible_file_count=int(scan["eligible_file_count"]),
+        target_status_counts=triplet["target_status_counts"],
+    )
+    baseline_rollback = _baseline_rollback_summary()
     receipt_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -236,7 +242,9 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             "eligible_file_count": scan["eligible_file_count"],
             "material_relative_name": material_relative_name,
             "target_status_counts": triplet["target_status_counts"],
+            "eligibility_summary": eligibility_summary,
         },
+        "baseline_rollback": baseline_rollback,
         "refs": {
             "baseline_runtime_root": _runtime_root_ref(checkout_root, runs["baseline"]["runtime_root"]),
             "candidate_a_runtime_root": _runtime_root_ref(checkout_root, runs["candidate_a"]["runtime_root"]),
@@ -297,6 +305,70 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
     receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
     receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
     return receipt
+
+
+def _operator_eligibility_summary(
+    *,
+    corpus_pdf_count: int,
+    source_directory_eligible_file_count: int,
+    target_status_counts: dict[str, Any],
+) -> dict[str, Any]:
+    candidate_b_counts = _candidate_b_target_status_counts(target_status_counts)
+    eligible_pdf_count = int(candidate_b_counts.get("recommended") or 0)
+    failed_pdf_count = sum(
+        count
+        for status, count in candidate_b_counts.items()
+        if status in {"failed", "error", "blocked"} or "fail" in status or "error" in status
+    )
+    skipped_pdf_count = sum(
+        count
+        for status, count in candidate_b_counts.items()
+        if status != "recommended"
+        and status not in {"failed", "error", "blocked"}
+        and "fail" not in status
+        and "error" not in status
+    )
+    skipped_pdf_count += max(corpus_pdf_count - sum(candidate_b_counts.values()), 0)
+    return {
+        "corpus_pdf_count": corpus_pdf_count,
+        "eligible_pdf_count": eligible_pdf_count,
+        "skipped_pdf_count": skipped_pdf_count,
+        "failed_pdf_count": failed_pdf_count,
+        "source_directory_eligible_file_count": source_directory_eligible_file_count,
+        "source_directory_extra_material_file_count": max(source_directory_eligible_file_count - eligible_pdf_count, 0),
+        "all_eligible_pdfs_processed": (
+            eligible_pdf_count == corpus_pdf_count
+            and skipped_pdf_count == 0
+            and failed_pdf_count == 0
+            and source_directory_eligible_file_count >= eligible_pdf_count
+        ),
+        "candidate_b_target_status_counts": candidate_b_counts,
+    }
+
+
+def _candidate_b_target_status_counts(target_status_counts: dict[str, Any]) -> dict[str, int]:
+    candidate_b = target_status_counts.get("candidate_b")
+    source = candidate_b if isinstance(candidate_b, dict) else target_status_counts
+    counts: dict[str, int] = {}
+    for key, value in source.items():
+        try:
+            count = int(value)
+        except (TypeError, ValueError):
+            continue
+        if count >= 0:
+            counts[str(key)] = count
+    return counts
+
+
+def _baseline_rollback_summary() -> dict[str, Any]:
+    return {
+        "available": True,
+        "selector": "baseline",
+        "explicit_document_processing_engine": "baseline",
+        "depends_on_candidate_b_artifacts": False,
+        "candidate_a_visual_lane_preserved": True,
+        "rollback_requires_selector_mutation": False,
+    }
 
 
 def _validate_triplet(
