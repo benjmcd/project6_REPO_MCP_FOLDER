@@ -7925,6 +7925,76 @@ test('Layer 3 workbench inspects a server-generated Candidate B final proof rece
   ]);
 });
 
+test('Layer 3 workbench records Candidate B final proof from server readiness audit authority', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-readiness-audit'));
+  expect(setup.schema_id).toBe('project6.review_browser_candidate_b_readiness_audit_setup.v1');
+  expect(setup.test_only).toBe(true);
+  expect(setup.server_generated_receipts).toBe(true);
+  expect(setup.candidate_b_runtime_bridge_receipt_id).toMatch(/^cb-runtime-l3-/);
+  expect(setup.readiness_audit.status).toBe('ready');
+  expect(setup.readiness_audit.readiness_audit_hash).toBe(setup.readiness_audit_hash);
+  expect(JSON.stringify(setup)).not.toContain('C:\\');
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const form = page.locator('#candidate-b-final-proof-form');
+  await expect(panel).toBeVisible();
+  await expect(form).toHaveAttribute('data-rendered-mode', 'rendered_candidate_b_default_promotion_final_proof_recording_control');
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#candidate-b-final-proof-readiness-audit-json').fill(JSON.stringify(setup.readiness_audit));
+
+  const proofRequestPromise = page.waitForRequest((request) => (
+    request.method() === 'POST'
+    && request.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof')
+    && !request.url().includes('/status')
+  ));
+  const proofResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof')
+    && !response.url().includes('/status')
+  ));
+  await page.locator('#candidate-b-final-proof-submit').click();
+  const proofRequest = await proofRequestPromise;
+  const proofResponse = await proofResponsePromise;
+  const proofPayload = proofRequest.postDataJSON();
+  expectOnlyPayloadKeys(proofPayload, [
+    'client_request_id',
+    'proof_mode',
+    'operator_decision',
+    'readiness_audit',
+    'operator_confirmation',
+  ]);
+  expect(proofPayload).toMatchObject({
+    proof_mode: 'candidate_b_default_promotion_final_proof_v1',
+    operator_decision: 'record_candidate_b_default_promotion_final_proof',
+    operator_confirmation: true,
+  });
+  expect(proofPayload.readiness_audit.readiness_audit_hash).toBe(setup.readiness_audit_hash);
+  expect(proofPayload).not.toHaveProperty('selector_mutation_performed');
+  expect(proofPayload).not.toHaveProperty('raw_url');
+  expect(proofPayload).not.toHaveProperty('local_path');
+
+  const proof = await expectJson(proofResponse);
+  expect(proof.status).toBe('proven');
+  expect(proof.proof_state).toBe('candidate_b_default_promotion_final_proven');
+  expect(proof.readiness_audit_hash).toBe(setup.readiness_audit_hash);
+  expect(proof.candidate_b_default_promotion_enabled).toBe(true);
+  expect(proof.rollback_selector).toBe('baseline');
+  expect(proof.selector_mutation_performed).toBe(false);
+  expect(JSON.stringify(proof)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_final_proof_recorded');
+  await expect(panel).toContainText('candidate_b_default_promotion_final_proven');
+  await expect(panel).toContainText(proof.proof_receipt_id);
+  await expect(page.locator('#candidate-b-final-proof-runtime-receipt-id')).toHaveValue(setup.candidate_b_runtime_bridge_receipt_id);
+  await expect(page.locator('#candidate-b-final-proof-receipt-id')).toHaveValue(proof.proof_receipt_id);
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/default-promotion/final-proof')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof' },
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });

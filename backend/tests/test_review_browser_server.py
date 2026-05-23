@@ -106,11 +106,46 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     ]
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
+    assert "/__test/layer3/candidate-b-readiness-audit" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-final-proof" in payload["seed_routes"]
     windows_user_prefix = "C:" + "\\" + "Users" + "\\"
     posix_user_prefix = "/" + "Users" + "/"
     assert windows_user_prefix not in str(payload)
     assert posix_user_prefix not in str(payload)
+
+
+def test_review_browser_server_prepares_candidate_b_readiness_audit(client: TestClient) -> None:
+    setup_response = client.post("/__test/layer3/candidate-b-readiness-audit")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_candidate_b_readiness_audit_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["server_generated_receipts"] is True
+    assert setup["candidate_b_runtime_bridge_receipt_id"].startswith("cb-runtime-l3-")
+    assert setup["readiness_audit_id"]
+    assert setup["readiness_audit_hash"]
+    assert setup["readiness_audit"]["status"] == "ready"
+    assert setup["readiness_audit"]["readiness_audit_hash"] == setup["readiness_audit_hash"]
+    assert setup["final_proof_request"] == {
+        "client_request_id": "candidate-b-final-proof",
+        "proof_mode": "candidate_b_default_promotion_final_proof_v1",
+        "operator_decision": "record_candidate_b_default_promotion_final_proof",
+        "readiness_audit": setup["readiness_audit"],
+        "operator_confirmation": True,
+    }
+    proof_response = client.post(
+        "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof",
+        json=setup["final_proof_request"],
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    assert proof["status"] == "proven"
+    assert proof["readiness_audit_hash"] == setup["readiness_audit_hash"]
+    assert proof["candidate_b_default_promotion_enabled"] is True
+    assert proof["rollback_selector"] == "baseline"
+    assert proof["selector_mutation_performed"] is False
+    assert "C:\\" not in str(proof)
 
 
 def test_review_browser_server_prepares_candidate_b_final_proof_receipt(client: TestClient) -> None:
