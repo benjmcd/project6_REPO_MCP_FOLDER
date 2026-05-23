@@ -316,6 +316,9 @@ const AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_ma
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_read_only_status_surface';
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_USE_CASE = 'operator_reviews_candidate_b_default_promotion_status_without_selector_mutation_or_dispatch';
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY = 'State.bootstrap.execution_readiness';
+const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control';
+const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE = 'candidate_b_default_promotion_final_proof_status_v1';
+const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_final_proof_status';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
@@ -435,6 +438,13 @@ const State = {
     providerPublicUrlPrepareClientRequestId: null,
     providerPublicUrlError: null,
     providerPublicUrlPending: false,
+    candidateBDefaultPromotionFinalProofStatus: null,
+    candidateBDefaultPromotionFinalProofStatusError: null,
+    candidateBDefaultPromotionFinalProofStatusPending: false,
+    candidateBDefaultPromotionFinalProofStatusInput: {
+        runtimeReceiptId: '',
+        proofReceiptId: '',
+    },
     gateBDecisions: {},
     gateBClientRequestId: null,
     materialFilter: '',
@@ -7454,10 +7464,104 @@ function candidateBDefaultPromotionStatusState(contract) {
     return { label: 'candidate_b_default_promotion_status_contract_visible', pill: 'ok', missing: [] };
 }
 
+function candidateBDefaultPromotionFinalProofStatusEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_default_promotion_final_proof_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBDefaultPromotionFinalProofStatusInputValues() {
+    const runtimeInput = document.getElementById('candidate-b-final-proof-runtime-receipt-id');
+    const proofInput = document.getElementById('candidate-b-final-proof-receipt-id');
+    return {
+        runtimeReceiptId: (runtimeInput?.value || State.candidateBDefaultPromotionFinalProofStatusInput.runtimeReceiptId || '').trim(),
+        proofReceiptId: (proofInput?.value || State.candidateBDefaultPromotionFinalProofStatusInput.proofReceiptId || '').trim(),
+    };
+}
+
+function candidateBDefaultPromotionFinalProofStatusPayload() {
+    const values = candidateBDefaultPromotionFinalProofStatusInputValues();
+    State.candidateBDefaultPromotionFinalProofStatusInput = values;
+    return {
+        client_request_id: requestId(),
+        status_mode: CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE,
+        operator_decision: CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION,
+        candidate_b_runtime_bridge_receipt_id: values.runtimeReceiptId,
+        proof_receipt_id: values.proofReceiptId,
+    };
+}
+
+function canInspectCandidateBDefaultPromotionFinalProofStatus(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBDefaultPromotionFinalProofStatusInputValues();
+    return Boolean(
+        contract?.candidate_b_default_promotion_final_proof_status_admitted
+        && candidateBDefaultPromotionFinalProofStatusEndpointPath(contract)
+        && values.runtimeReceiptId
+        && values.proofReceiptId
+        && !State.candidateBDefaultPromotionFinalProofStatusPending
+    );
+}
+
+function candidateBDefaultPromotionFinalProofStatusPanelState() {
+    if (State.candidateBDefaultPromotionFinalProofStatusPending) {
+        return { label: 'candidate_b_final_proof_status_pending', pill: 'preview' };
+    }
+    if (State.candidateBDefaultPromotionFinalProofStatusError) {
+        const code = State.candidateBDefaultPromotionFinalProofStatusError?.payload?.error?.code;
+        return { label: code || 'candidate_b_final_proof_status_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBDefaultPromotionFinalProofStatus?.status === 'available') {
+        return { label: 'candidate_b_final_proof_status_available', pill: 'ok' };
+    }
+    return { label: 'candidate_b_final_proof_status_not_inspected', pill: 'preview' };
+}
+
+function candidateBDefaultPromotionFinalProofStatusRows(status) {
+    if (!status) return '';
+    const rows = {
+        proof_state: status.proof_state,
+        proof_receipt_id: status.proof_receipt_id,
+        proof_hash: status.proof_hash,
+        readiness_audit_id: status.readiness_audit_id,
+        candidate_b_run_id: status.candidate_b_run_id,
+        candidate_b_bundle_id: status.candidate_b_bundle_id,
+        default_enabled: status.candidate_b_default_promotion_enabled,
+        rollback_selector: status.rollback_selector,
+        final_operator_inspection_complete: status.final_operator_inspection_complete,
+        selector_mutation_performed: status.selector_mutation_performed,
+        operator_status_hash: status.operator_status_hash,
+    };
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            ${Object.entries(rows).map(([label, value]) => `
+                <section class="result-review-card">
+                    <strong>${escapeHtml(label.replace(/_/g, ' '))}</strong>
+                    <p>${escapeHtml(value ?? 'none')}</p>
+                </section>
+            `).join('')}
+        </div>
+    `;
+}
+
+function candidateBDefaultPromotionFinalProofStatusError() {
+    const error = State.candidateBDefaultPromotionFinalProofStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_final_proof_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function renderCandidateBDefaultPromotionStatusPanel() {
     if (!elements.candidateBDefaultPromotionStatusPanel) return;
     const contract = candidateBDefaultPromotionReadinessContract();
     const panelState = candidateBDefaultPromotionStatusState(contract);
+    const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
     const blockedScope = [
         'frontend_durable_authority',
         'raw_url_or_local_path_exposure',
@@ -7466,6 +7570,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
         'rag_vector_model_runtime',
         'full_mockup_activation',
     ];
+    const finalProofStatus = State.candidateBDefaultPromotionFinalProofStatus;
+    const finalProofInputs = State.candidateBDefaultPromotionFinalProofStatusInput;
     elements.candidateBDefaultPromotionStatusPanel.dataset.statusState = panelState.label;
     elements.candidateBDefaultPromotionStatusPanel.dataset.frontendDurableAuthority = 'false';
     elements.candidateBDefaultPromotionStatusPanel.innerHTML = `
@@ -7508,6 +7614,26 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('final proof status', contract?.candidate_b_default_promotion_final_proof_status_endpoint, { code: true })}
                 </ul>
             </section>
+            <section class="result-review-card candidate-b-final-proof-status-card">
+                <strong>Final Proof Inspection</strong>
+                <form id="candidate-b-final-proof-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>runtime bridge receipt id</span>
+                        <input id="candidate-b-final-proof-runtime-receipt-id" type="text" value="${escapeHtml(finalProofInputs.runtimeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-runtime-l3-..." />
+                    </label>
+                    <label>
+                        <span>proof receipt id</span>
+                        <input id="candidate-b-final-proof-receipt-id" type="text" value="${escapeHtml(finalProofInputs.proofReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-default-final-proof-..." />
+                    </label>
+                    <button id="candidate-b-final-proof-status-submit" type="submit" ${contract?.candidate_b_default_promotion_final_proof_status_admitted && !State.candidateBDefaultPromotionFinalProofStatusPending ? '' : 'disabled'}>Inspect Final Proof Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(finalProofState.pill)}">${escapeHtml(finalProofState.label)}</span>
+                    <span class="rail-label">Server revalidates the final proof receipt; this control records no selector mutation.</span>
+                </div>
+                ${candidateBDefaultPromotionFinalProofStatusRows(finalProofStatus)}
+                ${candidateBDefaultPromotionFinalProofStatusError()}
+            </section>
             <section class="result-review-card candidate-b-default-promotion-status-rows">
                 <strong>Selector Guardrails</strong>
                 <ul>
@@ -7525,6 +7651,39 @@ function renderCandidateBDefaultPromotionStatusPanel() {
             </section>
         </div>
     `;
+}
+
+async function inspectCandidateBDefaultPromotionFinalProofStatus(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canInspectCandidateBDefaultPromotionFinalProofStatus(contract)) {
+        State.candidateBDefaultPromotionFinalProofStatus = null;
+        State.candidateBDefaultPromotionFinalProofStatusError = new Error(
+            'Candidate B final proof status inspection requires runtime and proof receipt identifiers.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBDefaultPromotionFinalProofStatusEndpointPath(contract);
+    const payload = candidateBDefaultPromotionFinalProofStatusPayload();
+    State.candidateBDefaultPromotionFinalProofStatusPending = true;
+    State.candidateBDefaultPromotionFinalProofStatusError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBDefaultPromotionFinalProofStatus = await postJson(
+            path,
+            payload,
+        );
+        State.candidateBDefaultPromotionFinalProofStatusError = null;
+        addEvent('Candidate B final proof status inspected through server receipt revalidation.');
+    } catch (error) {
+        State.candidateBDefaultPromotionFinalProofStatus = null;
+        State.candidateBDefaultPromotionFinalProofStatusError = error;
+        addEvent(`Candidate B final proof status blocked: ${error.message}`);
+    } finally {
+        State.candidateBDefaultPromotionFinalProofStatusPending = false;
+        renderAll();
+    }
 }
 
 function mockupActivationReadinessContract() {
@@ -13909,6 +14068,11 @@ elements.providerPublicUrlForm.addEventListener('submit', submitProviderPublicUr
 elements.providerPublicUrlStatus.addEventListener('click', inspectProviderPublicUrlStatus);
 elements.providerPublicUrlUse.addEventListener('click', useProviderPublicUrlDecision);
 elements.providerPublicUrlRevoke.addEventListener('click', revokeProviderPublicUrl);
+elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'candidate-b-final-proof-status-form') {
+        inspectCandidateBDefaultPromotionFinalProofStatus(event);
+    }
+});
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
 elements.packageReviewSubmitDecision.addEventListener('change', setGateControls);
