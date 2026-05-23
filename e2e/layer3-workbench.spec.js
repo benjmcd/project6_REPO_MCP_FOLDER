@@ -8167,6 +8167,19 @@ test('Layer 3 workbench renders Candidate B retained artifact and visual-lane st
     'data-rendered-mode',
     'rendered_candidate_b_visual_lane_status_control',
   );
+  const defensivePreviewHtml = await page.evaluate(() => candidateBArtifactPreviewRows({
+    delivery_artifacts: [{
+      source_ref: 'storage/input.pdf',
+      relative_name: 'storage/input.pdf',
+      display_ref: 'input.pdf',
+      artifact_role: 'delivery_artifact',
+      category: 'source_pdf',
+      extension: '.pdf',
+      material_text_payload: false,
+    }],
+  }));
+  expect(defensivePreviewHtml).toContain('input.pdf');
+  expect(defensivePreviewHtml).not.toContain('storage/input.pdf');
 
   await page.locator('#candidate-b-artifact-family-source-kind').selectOption('bundle');
   await page.locator('#candidate-b-artifact-family-bridge-receipt-id').fill(setup.candidate_b_bundle_bridge_receipt_id);

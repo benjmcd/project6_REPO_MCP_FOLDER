@@ -8192,8 +8192,8 @@ function candidateBArtifactPreviewRows(rolePreviews) {
         const renderedRefs = previewItems.length
             ? previewItems.map((item) => `
                 <li>
-                    <code>${escapeHtml(item.source_ref || item.display_ref || 'redacted-ref')}</code>
-                    <span>${escapeHtml(item.relative_name || item.display_ref || 'unnamed')}</span>
+                    <code>${escapeHtml(item.display_ref || 'redacted-ref')}</code>
+                    <span>${escapeHtml(item.display_ref || 'unnamed')}</span>
                     <small>${escapeHtml([
                         item.artifact_role,
                         item.category,
