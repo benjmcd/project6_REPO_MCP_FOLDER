@@ -700,6 +700,7 @@ def _artifact_family_summary(artifact_family: Mapping[str, Any] | None) -> dict[
         "policy": artifact_family.get("policy"),
         "artifact_family_hash": artifact_family.get("artifact_family_hash"),
         "role_counts": artifact_family.get("role_counts") if isinstance(artifact_family.get("role_counts"), dict) else {},
+        "role_previews": _final_operator_role_previews(artifact_family),
         "pdf_material_text_payload_enabled": artifact_family.get("pdf_material_text_payload_enabled") is True,
         "image_material_text_payload_enabled": artifact_family.get("image_material_text_payload_enabled") is True,
         "raw_url_exposure_enabled": artifact_family.get("raw_url_exposure_enabled") is True,
@@ -762,17 +763,52 @@ def _final_operator_artifact_summary(kind: str, artifact_family: Mapping[str, An
             "raw_url_exposure_enabled": False,
         }
     role_counts = artifact_family.get("role_counts") if isinstance(artifact_family.get("role_counts"), dict) else {}
+    role_previews = (
+        _final_operator_role_previews(artifact_family)
+        if isinstance(artifact_family.get("roles"), dict)
+        else artifact_family.get("role_previews")
+        if isinstance(artifact_family.get("role_previews"), dict)
+        else {}
+    )
     return {
         "candidate_b_source_kind": kind,
         "available": True,
         "artifact_family_hash": artifact_family.get("artifact_family_hash"),
         "role_counts": role_counts,
+        "role_previews": role_previews,
         "visual_page_evidence_count": int(role_counts.get("visual_page_evidence") or 0),
         "product_inspection_artifact_count": int(role_counts.get("product_inspection_artifacts") or 0),
         "delivery_artifact_count": int(role_counts.get("delivery_artifacts") or 0),
         "pdf_material_text_payload_enabled": artifact_family.get("pdf_material_text_payload_enabled") is True,
         "image_material_text_payload_enabled": artifact_family.get("image_material_text_payload_enabled") is True,
         "raw_url_exposure_enabled": artifact_family.get("raw_url_exposure_enabled") is True,
+    }
+
+
+def _final_operator_role_previews(artifact_family: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    roles = artifact_family.get("roles") if isinstance(artifact_family.get("roles"), dict) else {}
+    preview_roles = ("visual_page_evidence", "product_inspection_artifacts", "delivery_artifacts")
+    return {
+        role: [
+            _final_operator_artifact_preview(item)
+            for item in list(roles.get(role) or [])[:3]
+            if isinstance(item, Mapping)
+        ]
+        for role in preview_roles
+        if isinstance(roles.get(role), list)
+    }
+
+
+def _final_operator_artifact_preview(item: Mapping[str, Any]) -> dict[str, Any]:
+    source_ref = str(item.get("source_ref") or item.get("relative_name") or "").replace("\\", "/").strip()
+    display_ref = source_ref.rsplit("/", 1)[-1] if source_ref else None
+    return {
+        "display_ref": display_ref,
+        "artifact_role": str(item.get("artifact_role") or "").strip() or None,
+        "category": str(item.get("category") or "").strip() or None,
+        "extension": str(item.get("extension") or "").strip() or None,
+        "sha256": str(item.get("sha256") or "").strip() or None,
+        "material_text_payload": item.get("material_text_payload") is True,
     }
 
 

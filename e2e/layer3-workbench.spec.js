@@ -9616,10 +9616,28 @@ test('Layer 3 workbench records and inspects Candidate B final proof from render
   expect(finalStatus.rollback_selector).toBe('baseline');
   expect(finalStatus.selector_mutation_performed).toBe(false);
   expect(finalStatus.final_operator_inspection_complete).toBe(true);
+  const runtimeDeliveryPreviews = finalStatus.candidate_b_final_operator_inspection_evidence.runtime.role_previews.delivery_artifacts;
+  const runtimeSourcePdfPreview = runtimeDeliveryPreviews.find((preview) => (
+    preview.artifact_role === 'source_pdf'
+    && preview.extension === '.pdf'
+    && preview.material_text_payload === false
+  ));
+  expect(runtimeSourcePdfPreview).toBeTruthy();
+  expect(runtimeSourcePdfPreview).toMatchObject({
+    artifact_role: 'source_pdf',
+    extension: '.pdf',
+    material_text_payload: false,
+  });
+  expect(runtimeSourcePdfPreview.display_ref).toMatch(/\.pdf$/);
   expect(JSON.stringify(finalStatus)).not.toContain('C:\\');
+  expect(JSON.stringify(finalStatus)).not.toContain('storage/');
+  expect(JSON.stringify(finalStatus)).not.toContain('raw/annotated/');
   await expect(panel).toContainText('candidate_b_final_proof_status_available');
   await expect(panel).toContainText('candidate_b_default_promotion_final_proven');
   await expect(panel).toContainText(proof.proof_receipt_id);
+  await expect(panel).toContainText('Redacted retained role previews');
+  await expect(panel).toContainText('source_pdf');
+  await expect(panel).toContainText(runtimeSourcePdfPreview.display_ref);
   await expect(panel).not.toContainText('http://');
   await expect(panel).not.toContainText('https://');
   await expect(panel).not.toContainText('file://');

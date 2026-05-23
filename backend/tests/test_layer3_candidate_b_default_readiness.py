@@ -18,6 +18,7 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import settings
 from app.services import (
     layer3_candidate_b_bundle_bridge,
+    layer3_candidate_b_final_proof,
     layer3_candidate_b_runtime_bridge,
 )
 from main import app
@@ -757,6 +758,28 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert inspection["runtime"]["visual_page_evidence_count"] == 1
     assert inspection["runtime"]["product_inspection_artifact_count"] == 1
     assert inspection["runtime"]["delivery_artifact_count"] == 1
+    assert inspection["bundle"]["role_previews"]["visual_page_evidence"] == [
+        {
+            "display_ref": "fontish.pdf",
+            "artifact_role": "source_pdf",
+            "category": None,
+            "extension": ".pdf",
+            "sha256": "d" * 64,
+            "material_text_payload": False,
+        }
+    ]
+    assert inspection["runtime"]["role_previews"]["delivery_artifacts"] == [
+        {
+            "display_ref": "input.pdf",
+            "artifact_role": "source_pdf",
+            "category": None,
+            "extension": ".pdf",
+            "sha256": "d" * 64,
+            "material_text_payload": False,
+        }
+    ]
+    assert "storage/input.pdf" not in json.dumps(inspection, sort_keys=True)
+    assert "raw/annotated/fontish.pdf" not in json.dumps(inspection, sort_keys=True)
     assert inspection["raw_local_path_exposed"] is False
     assert inspection["raw_url_exposed"] is False
     assert inspection["artifact_bytes_exposed"] is False
@@ -1073,6 +1096,29 @@ def test_candidate_b_final_proof_status_rejects_path_like_receipt_id(client: Tes
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_final_proof_status_proof_receipt_id_invalid"
+
+
+def test_candidate_b_final_proof_rejects_unredacted_operator_inspection_preview(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    readiness_payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    readiness_response = client.post(READY_ENDPOINT, json=readiness_payload)
+    assert readiness_response.status_code == 200, readiness_response.text
+    readiness = readiness_response.json()
+    inspection = readiness["candidate_b_final_operator_inspection_evidence"]
+    inspection["runtime"]["role_previews"]["delivery_artifacts"][0]["display_ref"] = "storage/input.pdf"
+    inspection["final_operator_inspection_hash"] = layer3_candidate_b_final_proof._final_operator_inspection_hash(
+        inspection
+    )
+
+    response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(readiness))
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_operator_inspection_role_preview_not_redacted"
 
 
 def test_candidate_b_final_proof_status_rejects_stale_operator_inspection_evidence(
