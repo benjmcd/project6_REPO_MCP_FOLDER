@@ -2698,6 +2698,9 @@ CANDIDATE_B_OPERATOR_REPEATABILITY_ACCEPTANCE_CHECKPOINT = (
 CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_STATUS_PROOF_CHECKPOINT = (
     PLANNING_DOCS / "988-cb-rendered-status-proof.md"
 )
+CANDIDATE_B_OPERATOR_REPEATABILITY_COMPLETION_AUDIT_CHECKPOINT = (
+    PLANNING_DOCS / "989-cb-repeatability-completion-audit.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91801,6 +91804,132 @@ def _check_candidate_b_rendered_operator_workflow_status_proof(errors: list[str]
                 )
 
 
+def _check_candidate_b_operator_repeatability_completion_audit(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_REPEATABILITY_COMPLETION_AUDIT_CHECKPOINT: (
+            "Candidate B Operator Repeatability Completion Audit",
+            "milestone: candidate_b_operator_repeatability_completion_audit_v1",
+            "current_main: bf1a991740a76ef84fe64af5d5be6fea0833e80f",
+            "post_merge_open_pr_count: 0",
+            "latest_progress_check_passed: true",
+            "completion_status: complete_for_current_admitted_scope",
+            "accepted_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server",
+            "operator_surface: live_http_operator_runner_plus_status_endpoint_plus_rendered_read_only_status_control",
+            "accepted_execution_surface_checkpoint: next_milestone_plans/Layer3_planning_docs/987-cb-repeatability-acceptance.md",
+            "live_http_runtime_proof_checkpoint: next_milestone_plans/Layer3_planning_docs/986-cb-live-http-runtime-proof.md",
+            "rendered_status_proof_checkpoint: next_milestone_plans/Layer3_planning_docs/988-cb-rendered-status-proof.md",
+            "prior_current_main_no_runtime_delta_since_live_http_proof: true",
+            "workflow_receipt_id: cb-full-corpus-operator-3d717f0edcbeaba69179af15",
+            "workflow_status_hash: d38f89a59ffe13f25c4f134e633530cd1572eefb31d28aa24241cef7c70d9b0e",
+            "bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "downstream_proof_id: cb-runtime-downstream-proof-ee7d48afbe62ffc011fac4d3",
+            "runtime_root_lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "live_http_layer3_api_used: true",
+            "testclient_dependency_used: false",
+            "in_memory_db_used: false",
+            "durable_database_used: true",
+            "configured_internal_webhook_used: true",
+            "status_endpoint_verified: true",
+            "rendered_read_only_status_control_proven: true",
+            "headed_chrome_rendered_status_proof_passed: true",
+            "headless_chromium_rendered_status_proof_passed: true",
+            "eligible_pdf_count: 69",
+            "skipped_pdf_count: 0",
+            "failed_pdf_count: 0",
+            "source_directory_eligible_file_count: 71",
+            "coverage_count: 17",
+            "artifact_family_inspection_available: true",
+            "visual_page_evidence_count: 1805",
+            "baseline_rollback_available: true",
+            "baseline_default_changed: false",
+            "candidate_a_visual_lane_preserved: true",
+            "candidate_a_semantics_changed: false",
+            "candidate_b_default_broadened_beyond_eligible_pdf: false",
+            "selector_mutation_performed: false",
+            "raw_api_base_url_persisted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "provider_object_writes_enabled: false",
+            "provider_public_url_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "server_side_operator_workflow_run_api_admitted_now: false",
+            "rendered_run_start_control_admitted_now: false",
+            "validate_only_triplet: true",
+            "artifacts_seeded_or_generated_by_triplet_validator: false",
+            "next_exact_posture: candidate_b_post_repeatability_operator_workflow_expansion_selection_v1",
+            "server-side orchestration remains a later product slice",
+            "Further work should start only from a newly selected post-repeatability product slice.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_repeatability_completion_audit_v1",
+            "current_main: bf1a991740a76ef84fe64af5d5be6fea0833e80f",
+            "completion_status: complete_for_current_admitted_scope",
+            "accepted_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server",
+            "operator_surface: live_http_operator_runner_plus_status_endpoint_plus_rendered_read_only_status_control",
+            "workflow_receipt_id: cb-full-corpus-operator-3d717f0edcbeaba69179af15",
+            "workflow_status_hash: d38f89a59ffe13f25c4f134e633530cd1572eefb31d28aa24241cef7c70d9b0e",
+            "bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "downstream_proof_id: cb-runtime-downstream-proof-ee7d48afbe62ffc011fac4d3",
+            "runtime_root_lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "live_http_layer3_api_used: true",
+            "testclient_dependency_used: false",
+            "in_memory_db_used: false",
+            "rendered_read_only_status_control_proven: true",
+            "headed_chrome_rendered_status_proof_passed: true",
+            "headless_chromium_rendered_status_proof_passed: true",
+            "baseline_rollback_available: true",
+            "candidate_a_visual_lane_preserved: true",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "server_side_operator_workflow_run_api_admitted_now: false",
+            "rendered_run_start_control_admitted_now: false",
+            "next_exact_posture: candidate_b_post_repeatability_operator_workflow_expansion_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER: (
+            "LIVE_HTTP_EXECUTION_MODE = \"live-http\"",
+            "live_http_layer3_api_used",
+            "testclient_dependency_used",
+            "in_memory_db_used",
+            "_assert_operator_api_ready",
+            "_verify_live_http_workflow_status",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST: (
+            "test_live_http_mode_requires_api_base_url_and_configured_webhook",
+            "test_live_http_readiness_requires_candidate_b_operator_endpoints",
+            "test_workflow_status_payload_binds_live_http_receipt_ids",
+            "test_runtime_root_lifecycle_receipt_binds_roots_without_raw_path_leak",
+            "test_runtime_root_lifecycle_receipt_rejects_mixed_runtime_parents",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_incomplete_eligibility",
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_rollback",
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_binding",
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_raw_authority_leak",
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_invalid_runtime_root_lifecycle",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control",
+            "rendered_candidate_b_full_corpus_operator_workflow_status_control",
+            "workflowStatusPayload).not.toHaveProperty('raw_url')",
+            "workflowStatusPayload).not.toHaveProperty('local_path')",
+            "workflowStatusPayload).not.toHaveProperty('selector_mutation_performed')",
+            "workflowStatusPayload).not.toHaveProperty('frontend_durable_authority')",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B operator repeatability completion audit term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92637,6 +92766,7 @@ def main() -> int:
     _check_candidate_b_live_http_runtime_proof(errors)
     _check_candidate_b_operator_repeatability_acceptance(errors)
     _check_candidate_b_rendered_operator_workflow_status_proof(errors)
+    _check_candidate_b_operator_repeatability_completion_audit(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
