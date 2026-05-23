@@ -7995,10 +7995,20 @@ test('Layer 3 workbench records Candidate B final proof from server readiness au
   ]);
 });
 
-test('Layer 3 workbench records then inspects Candidate B final proof in one rendered operator loop', async ({ page, request }) => {
-  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-readiness-audit'));
-  expect(setup.schema_id).toBe('project6.review_browser_candidate_b_readiness_audit_setup.v1');
+test('Layer 3 workbench records then inspects Candidate B final proof from realistic bridge receipts', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-realistic-readiness-audit'));
+  expect(setup.schema_id).toBe('project6.review_browser_candidate_b_realistic_readiness_audit_setup.v1');
   expect(setup.server_generated_receipts).toBe(true);
+  expect(setup.bridge_receipts_from_fixture_sources).toBe(true);
+  expect(setup.candidate_b_bundle_id).toBe('tests/reports/cb-compare-browser-test');
+  expect(setup.candidate_b_run_id).toBe('candidate-b-runtime-001');
+  expect(setup.visual_lane_mode).toBe('candidate_b_opendataloader_page_evidence_v1');
+  expect(setup.bundle_artifact_role_counts.visual_page_evidence).toBeGreaterThan(0);
+  expect(setup.bundle_artifact_role_counts.product_inspection_artifacts).toBeGreaterThan(0);
+  expect(setup.bundle_artifact_role_counts.delivery_artifacts).toBeGreaterThan(0);
+  expect(setup.runtime_artifact_role_counts.visual_page_evidence).toBeGreaterThan(0);
+  expect(setup.runtime_artifact_role_counts.product_inspection_artifacts).toBeGreaterThan(0);
+  expect(setup.runtime_artifact_role_counts.delivery_artifacts).toBeGreaterThan(0);
   expect(setup.readiness_audit.status).toBe('ready');
   expect(setup.readiness_audit.readiness_audit_hash).toBe(setup.readiness_audit_hash);
   expect(JSON.stringify(setup)).not.toContain('C:\\');

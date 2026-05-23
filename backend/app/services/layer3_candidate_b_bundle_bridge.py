@@ -955,6 +955,7 @@ def _negative_invariants() -> dict[str, bool]:
         "baseline_default_changed": False,
         "candidate_a_semantics_changed": False,
         "candidate_b_visual_lane_mode_enabled": False,
+        "candidate_b_visual_lane_material_ingestion_enabled": False,
         "candidate_b_default_promotion_enabled": False,
         "candidate_b_runtime_db_rows_enabled": False,
         "candidate_b_runtime_storage_rows_enabled": False,
