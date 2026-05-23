@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
+import sqlite3
 import sys
 from typing import Any
 
@@ -42,7 +43,11 @@ from main import app
 
 
 BRIDGE_MODE = "candidate_b_runtime_source_to_layer3_material_authority_v1"
+FULL_CORPUS_BRIDGE_MODE = "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1"
 RUN_ID = "candidate-b-runtime-run"
+BASELINE_FULL_CORPUS_RUN_ID = "baseline-full-corpus-run"
+CANDIDATE_A_FULL_CORPUS_RUN_ID = "candidate-a-full-corpus-run"
+CANDIDATE_B_FULL_CORPUS_RUN_ID = "candidate-b-full-corpus-run"
 
 
 @pytest.fixture()
@@ -214,6 +219,203 @@ def _bridge_payload() -> dict[str, Any]:
         "candidate_a_run_id": "candidate-a-run",
         "operator_confirmation": True,
     }
+
+
+def _full_corpus_bridge_payload() -> dict[str, Any]:
+    return {
+        "client_request_id": "candidate-b-full-corpus-runtime-bridge-001",
+        "bridge_mode": FULL_CORPUS_BRIDGE_MODE,
+        "candidate_b_run_id": CANDIDATE_B_FULL_CORPUS_RUN_ID,
+        "baseline_run_id": BASELINE_FULL_CORPUS_RUN_ID,
+        "candidate_a_run_id": CANDIDATE_A_FULL_CORPUS_RUN_ID,
+        "operator_confirmation": True,
+    }
+
+
+def _full_corpus_target_outcomes(run_label: str) -> list[dict[str, Any]]:
+    return [
+        {
+            "target_id": f"{run_label}-target-{ordinal:05d}",
+            "ordinal": ordinal,
+            "status": "recommended",
+            "accession_number": f"LOCALAPS{ordinal:05d}",
+            "artifact_ref": f"{run_label}-artifact-{ordinal:05d}",
+        }
+        for ordinal in range(1, 70)
+    ]
+
+
+def _full_corpus_gate_results() -> dict[str, dict[str, bool]]:
+    return {
+        gate_name: {"passed": True}
+        for gate_name in layer3_candidate_b_runtime_bridge.REQUIRED_FULL_CORPUS_GATE_NAMES
+    }
+
+
+def _write_connector_run_db(
+    path: Path,
+    *,
+    run_id: str,
+    document_processing_engine: str,
+    visual_lane_mode: str,
+) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with sqlite3.connect(path) as connection:
+        connection.execute(
+            "create table connector_run (connector_run_id text primary key, status text, request_config_json text)"
+        )
+        connection.execute(
+            "insert into connector_run values (?, ?, ?)",
+            (
+                run_id,
+                "completed",
+                json.dumps(
+                    {
+                        "document_processing_engine": document_processing_engine,
+                        "document_processing_engine_explicit": True,
+                        "visual_lane_mode": visual_lane_mode,
+                    }
+                ),
+            ),
+        )
+
+
+def _full_corpus_runtime_binding(
+    tmp_path: Path,
+    *,
+    label: str,
+    run_id: str,
+    document_processing_engine: str,
+    visual_lane_mode: str,
+) -> ReviewRuntimeBinding:
+    review_root = tmp_path / label
+    storage_dir = review_root / "storage"
+    storage_dir.mkdir(parents=True)
+    database_path = review_root / "lc.db"
+    _write_connector_run_db(
+        database_path,
+        run_id=run_id,
+        document_processing_engine=document_processing_engine,
+        visual_lane_mode=visual_lane_mode,
+    )
+    if document_processing_engine == "candidate_b_opendataloader_pdf":
+        (storage_dir / "input.pdf").write_bytes(b"%PDF-1.4")
+        (storage_dir / "image.png").write_bytes(b"\x89PNG\r\n")
+        (storage_dir / "normalized.txt").write_text("Candidate B full-corpus normalized text", encoding="utf-8")
+        advanced_metrics = {
+            "document_processing_engine": "candidate_b_opendataloader_pdf",
+            "candidate_b_extractor_file_count": 69,
+            "candidate_b_ordered_unit_file_count": 68,
+            "candidate_b_ordered_unit_total": 52368,
+            "visual_ref_total": 1270,
+            "candidate_b_visual_ref_total": 1270,
+            "candidate_b_retained_source_pdf_ref_count": 1270,
+            "ocr_file_count": 0,
+            "table_file_count": 0,
+        }
+    else:
+        advanced_metrics = {
+            "document_processing_engine": "baseline",
+            "candidate_b_extractor_file_count": 0,
+            "candidate_b_ordered_unit_file_count": 69,
+            "candidate_b_ordered_unit_total": 216022,
+            "candidate_b_visual_ref_total": 0,
+            "candidate_b_retained_source_pdf_ref_count": 0,
+            "ocr_file_count": 47,
+            "table_file_count": 48,
+        }
+    summary = {
+        "schema_id": "aps.local_corpus_e2e_summary.v1",
+        "schema_version": 1,
+        "run_id": run_id,
+        "runtime_root": str(review_root),
+        "database_path": str(database_path),
+        "database_url": f"sqlite:///{database_path.as_posix()}",
+        "storage_dir": str(storage_dir),
+        "visual_lane_mode": visual_lane_mode,
+        "document_processing_engine": document_processing_engine,
+        "corpus_pdf_count": 69,
+        "passed": True,
+        "run_detail": {"status": "completed"},
+        "gate_results": _full_corpus_gate_results(),
+        "advanced_metrics": advanced_metrics,
+        "target_outcomes": _full_corpus_target_outcomes(label),
+    }
+    return ReviewRuntimeBinding(
+        run_id=run_id,
+        review_root=review_root,
+        summary=summary,
+        database_path=database_path,
+        storage_dir=storage_dir,
+    )
+
+
+def _patch_full_corpus_runtime_bridge(
+    monkeypatch,
+    bindings: dict[str, ReviewRuntimeBinding],
+) -> None:
+    @contextmanager
+    def fake_runtime_session(binding_arg):
+        assert binding_arg == bindings[CANDIDATE_B_FULL_CORPUS_RUN_ID]
+        yield object()
+
+    def fake_trace(session, run_id, target_id, root):
+        assert run_id == CANDIDATE_B_FULL_CORPUS_RUN_ID
+        assert target_id.startswith("candidate_b-target-")
+        assert root == bindings[CANDIDATE_B_FULL_CORPUS_RUN_ID].review_root
+        return _FakeModel(
+            {
+                "identity": {
+                    "document_title": str(root / "private-source.pdf"),
+                    "source_file_name": f"{target_id}.pdf",
+                    "accession_number": target_id,
+                },
+                "summary": {"page_count": 1, "quality_status": "ok"},
+            }
+        )
+
+    def fake_normalized(session, run_id, target_id, root):
+        return _FakeModel(
+            {
+                "available": True,
+                "run_id": run_id,
+                "target_id": target_id,
+                "text": f"Candidate B full-corpus normalized text for {target_id}",
+                "char_count": 60,
+                "mapping_precision": "best_effort",
+            }
+        )
+
+    def fail_workbench_compare(**kwargs):
+        raise AssertionError("full-corpus bridge must not use workbench fixture compare targets")
+
+    monkeypatch.setattr(layer3_candidate_b_runtime_bridge, "find_runtime_binding_for_run", bindings.get)
+    monkeypatch.setattr(
+        layer3_candidate_b_runtime_bridge,
+        "classify_runtime_binding_variant",
+        lambda binding_arg: (
+            "candidate_b_opendataloader_pdf"
+            if binding_arg.run_id == CANDIDATE_B_FULL_CORPUS_RUN_ID
+            else "baseline"
+        ),
+    )
+    monkeypatch.setattr(
+        layer3_candidate_b_runtime_bridge,
+        "runtime_binding_request_metadata",
+        lambda binding_arg: {
+            "visual_lane_mode": str(binding_arg.summary.get("visual_lane_mode") or "baseline"),
+            "document_processing_engine": str(binding_arg.summary.get("document_processing_engine") or "baseline"),
+            "variant_kind": (
+                "candidate_b_opendataloader_pdf"
+                if binding_arg.run_id == CANDIDATE_B_FULL_CORPUS_RUN_ID
+                else "baseline"
+            ),
+        },
+    )
+    monkeypatch.setattr(layer3_candidate_b_runtime_bridge, "compose_workbench_compare_targets", fail_workbench_compare)
+    monkeypatch.setattr(layer3_candidate_b_runtime_bridge, "runtime_db_session_for_binding", fake_runtime_session)
+    monkeypatch.setattr(layer3_candidate_b_runtime_bridge, "compose_trace_manifest", fake_trace)
+    monkeypatch.setattr(layer3_candidate_b_runtime_bridge, "compose_normalized_text_payload", fake_normalized)
 
 
 def _scan_payload() -> dict[str, str]:
@@ -633,6 +835,109 @@ def test_candidate_b_runtime_bridge_materializes_trace_text_and_reaches_gate_b(
         },
     )
     assert gate_b.status_code == 200
+
+
+def test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b(
+    client: TestClient,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    bindings = {
+        BASELINE_FULL_CORPUS_RUN_ID: _full_corpus_runtime_binding(
+            tmp_path,
+            label="baseline",
+            run_id=BASELINE_FULL_CORPUS_RUN_ID,
+            document_processing_engine="baseline",
+            visual_lane_mode="baseline",
+        ),
+        CANDIDATE_A_FULL_CORPUS_RUN_ID: _full_corpus_runtime_binding(
+            tmp_path,
+            label="candidate_a",
+            run_id=CANDIDATE_A_FULL_CORPUS_RUN_ID,
+            document_processing_engine="baseline",
+            visual_lane_mode="candidate_a_page_evidence_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_RUN_ID: _full_corpus_runtime_binding(
+            tmp_path,
+            label="candidate_b",
+            run_id=CANDIDATE_B_FULL_CORPUS_RUN_ID,
+            document_processing_engine="candidate_b_opendataloader_pdf",
+            visual_lane_mode="candidate_b_opendataloader_page_evidence_v1",
+        ),
+    }
+    _patch_full_corpus_runtime_bridge(monkeypatch, bindings)
+
+    response = layer3_candidate_b_runtime_bridge.prepare_candidate_b_runtime_material_bridge(
+        _full_corpus_bridge_payload()
+    )
+
+    assert response["status"] == "prepared"
+    assert response["mode"] == FULL_CORPUS_BRIDGE_MODE
+    assert response["compare_target_set"]["schema_id"] == "aps.full_corpus_compare_triplet_validation.v1"
+    assert response["compare_target_set"]["compare_scope"] == "full_corpus"
+    assert response["compare_target_set"]["target_count"] == 69
+    assert response["compare_target_set"]["compare_target_set_hash"] == (
+        "1052eea1153d6fdb21abd18384abc5c2db73497c9d34f18ecf52239f71c82a2f"
+    )
+    assert response["compare_target_set"]["targets"][0]["target_key"] == "target-00001"
+    assert response["compare_target_set"]["targets"][-1]["target_key"] == "target-00069"
+    assert "candidate_b_full_corpus_compare_triplet_v1" in response["candidate_b_runtime_validation"]["validated_by"]
+    assert response["admitted_artifact_subset"]["top_level_files"] == [
+        "compare-targets.json",
+        "runtime-summary.json",
+    ]
+    assert response["admitted_artifact_subset"]["trace_files"] == []
+    assert response["admitted_artifact_subset"]["normalized_files"] == []
+    assert len(response["admitted_artifact_subset"]["text_files"]) == 69
+    assert response["admitted_artifact_subset"]["text_files"][-1] == "text/target-00069.md"
+    assert response["negative_invariants"]["candidate_b_default_promotion_enabled"] is False
+    assert response["negative_invariants"]["broad_runtime_db_ingestion_enabled"] is False
+    assert response["negative_invariants"]["pdf_ingestion_enabled"] is False
+    assert response["negative_invariants"]["image_ingestion_enabled"] is False
+    assert response["candidate_b_visual_lane_evidence"]["candidate_b_visual_lane_selected"] is True
+    assert response["candidate_b_visual_lane_evidence"]["candidate_b_visual_ref_total"] == 1270
+    _assert_no_absolute_path_strings(response, str(bindings[CANDIDATE_B_FULL_CORPUS_RUN_ID].review_root))
+
+    curated_root = Path(settings.layer3_candidate_b_runtime_bridge_dir) / response["bridge_receipt_id"] / "curated"
+    curated_files = sorted(path.relative_to(curated_root).as_posix() for path in curated_root.rglob("*") if path.is_file())
+    assert len(curated_files) == 71
+    assert "compare-targets.json" in curated_files
+    assert "runtime-summary.json" in curated_files
+    assert "text/target-00001.md" in curated_files
+    assert "text/target-00069.md" in curated_files
+    assert "fontish" not in json.dumps(response, sort_keys=True)
+
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(curated_root))
+    scan = client.post("/api/v1/layer3/source/ingestion/server-configured-directory/scan", json=_scan_payload())
+    assert scan.status_code == 201, scan.text
+    scan_body = scan.json()
+    assert scan_body["eligible_file_count"] == 71
+
+    preview = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
+        json=_material_preview_payload(scan_body, "text/target-00001.md"),
+    )
+    assert preview.status_code == 200, preview.text
+    preview_body = preview.json()
+    candidate = preview_body["material_candidate"]
+    gate_b = client.post(
+        "/api/v1/layer3/gate-b/decision",
+        json={
+            "client_request_id": "candidate-b-full-corpus-runtime-gate-b",
+            "preflight_id": "candidate-b-full-corpus-runtime-preflight",
+            "source_set_id": scan_body["source_ingestion_batch_id"],
+            "material_preview_id": preview_body["material_preview_id"],
+            "material_preview_hash": preview_body["material_preview_hash"],
+            "candidate_decisions": [
+                {
+                    "candidate_id": candidate["candidate_id"],
+                    "decision": "approved",
+                    "decision_basis": candidate,
+                }
+            ],
+        },
+    )
+    assert gate_b.status_code == 200, gate_b.text
 
 
 def test_candidate_b_runtime_curated_markdown_completes_layer3_downstream_path(

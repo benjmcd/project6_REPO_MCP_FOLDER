@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections import Counter
 from contextlib import nullcontext
 from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path, PurePosixPath, PureWindowsPath
+import sqlite3
 from typing import Any, Mapping
 
 from app.core.config import settings
@@ -26,8 +28,12 @@ from app.services.review_nrc_aps_workbench_compare import compose_workbench_comp
 SCHEMA_ID = "layer3.candidate_b_runtime_material_authority_bridge.v1"
 SCHEMA_VERSION = 1
 BRIDGE_MODE = "candidate_b_runtime_source_to_layer3_material_authority_v1"
+FULL_CORPUS_BRIDGE_MODE = "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1"
+ADMITTED_BRIDGE_MODES: frozenset[str] = frozenset({BRIDGE_MODE, FULL_CORPUS_BRIDGE_MODE})
 CANDIDATE_B_RUNTIME_VARIANT = "candidate_b_opendataloader_pdf"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
+BASELINE_ENGINE = "baseline"
+CANDIDATE_A_VISUAL_LANE_MODE = "candidate_a_page_evidence_v1"
 _ADMITTED_CANDIDATE_B_RUNTIME_VISUAL_LANE_MODES: frozenset[str] = frozenset({"baseline", CANDIDATE_B_VISUAL_LANE_MODE})
 CONFIG_AUTHORITY = "LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR"
 SOURCE_INGESTION_CONFIG_AUTHORITY = "LAYER3_SOURCE_INGESTION_DIR"
@@ -35,6 +41,22 @@ SOURCE_INGESTION_MODE = layer3_source_directory_ingestion.MODE
 BRIDGE_RECEIPT_PREFIX = "cb-runtime-l3"
 REDACTION_POLICY_ID = "candidate_b_runtime_document_trace_redaction_v1"
 AUTHORITY_HASH_VERSION = "candidate_b_runtime_layer3_bridge_hash_v1"
+FULL_CORPUS_VALIDATION_SCHEMA_ID = "aps.full_corpus_compare_triplet_validation.v1"
+FULL_CORPUS_TARGET_COUNT = 69
+REQUIRED_FULL_CORPUS_GATE_NAMES = (
+    "artifact_ingestion",
+    "content_index",
+    "context_dossier",
+    "context_packet",
+    "deterministic_challenge_artifact",
+    "deterministic_challenge_review_packet",
+    "deterministic_insight_artifact",
+    "evidence_bundle",
+    "evidence_citation_pack",
+    "evidence_report",
+    "evidence_report_export",
+    "evidence_report_export_package",
+)
 
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
@@ -126,11 +148,11 @@ def prepare_candidate_b_runtime_material_bridge(
     fields = _normalise_payload(payload)
     request_id = _required(fields, "client_request_id")
     bridge_mode = _required(fields, "bridge_mode")
-    if bridge_mode != BRIDGE_MODE:
+    if bridge_mode not in ADMITTED_BRIDGE_MODES:
         raise CandidateBRuntimeBridgeError(
             "candidate_b_runtime_bridge_mode_not_admitted",
-            "Only the frozen Candidate B runtime-source bridge mode is admitted.",
-            details={"expected_bridge_mode": BRIDGE_MODE, "received_bridge_mode": bridge_mode},
+            "Only frozen Candidate B runtime bridge modes are admitted.",
+            details={"expected_bridge_modes": sorted(ADMITTED_BRIDGE_MODES), "received_bridge_mode": bridge_mode},
         )
     if fields.get("operator_confirmation") is not True:
         raise CandidateBRuntimeBridgeError(
@@ -144,12 +166,14 @@ def prepare_candidate_b_runtime_material_bridge(
     baseline_run_id = _required(fields, "baseline_run_id")
     candidate_a_run_id = _required(fields, "candidate_a_run_id")
     binding = _candidate_b_runtime_binding(candidate_b_run_id)
-    runtime_validation = _runtime_validation(binding)
+    runtime_validation = _runtime_validation(binding, bridge_mode=bridge_mode)
     visual_lane_mode = str(runtime_validation.get("visual_lane_mode") or "baseline")
     compare_target_set = _load_compare_target_set(
+        bridge_mode=bridge_mode,
         baseline_run_id=baseline_run_id,
         candidate_a_run_id=candidate_a_run_id,
         candidate_b_run_id=candidate_b_run_id,
+        candidate_b_binding=binding,
     )
     material_files = _material_files(binding, compare_target_set)
     if not material_files:
@@ -173,7 +197,7 @@ def prepare_candidate_b_runtime_material_bridge(
     receipt_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
-        "bridge_mode": BRIDGE_MODE,
+        "bridge_mode": bridge_mode,
         "candidate_b_run_id": candidate_b_run_id,
         "baseline_run_id": baseline_run_id,
         "candidate_a_run_id": candidate_a_run_id,
@@ -352,7 +376,21 @@ def _candidate_b_runtime_binding(run_id: str) -> ReviewRuntimeBinding:
     return binding
 
 
-def _load_compare_target_set(*, baseline_run_id: str, candidate_a_run_id: str, candidate_b_run_id: str) -> dict[str, Any]:
+def _load_compare_target_set(
+    *,
+    bridge_mode: str,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+    candidate_b_run_id: str,
+    candidate_b_binding: ReviewRuntimeBinding,
+) -> dict[str, Any]:
+    if bridge_mode == FULL_CORPUS_BRIDGE_MODE:
+        return _load_full_corpus_compare_target_set(
+            baseline_run_id=baseline_run_id,
+            candidate_a_run_id=candidate_a_run_id,
+            candidate_b_run_id=candidate_b_run_id,
+            candidate_b_binding=candidate_b_binding,
+        )
     try:
         compare_targets = compose_workbench_compare_targets(
             baseline_run_id=baseline_run_id,
@@ -400,19 +438,447 @@ def _load_compare_target_set(*, baseline_run_id: str, candidate_a_run_id: str, c
     }
 
 
+def _load_full_corpus_compare_target_set(
+    *,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+    candidate_b_run_id: str,
+    candidate_b_binding: ReviewRuntimeBinding,
+) -> dict[str, Any]:
+    baseline_binding = _runtime_binding_for_run(baseline_run_id, label="baseline")
+    candidate_a_binding = _runtime_binding_for_run(candidate_a_run_id, label="candidate_a")
+    _validate_full_corpus_binding(
+        baseline_binding,
+        label="baseline",
+        expected_engine=BASELINE_ENGINE,
+        expected_visual_lane=BASELINE_ENGINE,
+        require_candidate_b_metrics=False,
+    )
+    _validate_full_corpus_binding(
+        candidate_a_binding,
+        label="candidate_a",
+        expected_engine=BASELINE_ENGINE,
+        expected_visual_lane=CANDIDATE_A_VISUAL_LANE_MODE,
+        require_candidate_b_metrics=False,
+    )
+    _validate_full_corpus_binding(
+        candidate_b_binding,
+        label="candidate_b",
+        expected_engine=CANDIDATE_B_RUNTIME_VARIANT,
+        expected_visual_lane=CANDIDATE_B_VISUAL_LANE_MODE,
+        require_candidate_b_metrics=True,
+    )
+
+    baseline_targets = _full_corpus_targets(baseline_binding, label="baseline")
+    candidate_a_targets = _full_corpus_targets(candidate_a_binding, label="candidate_a")
+    candidate_b_targets = _full_corpus_targets(candidate_b_binding, label="candidate_b")
+    baseline_identity = _target_identity_for_hash(baseline_targets)
+    if _target_identity_for_hash(candidate_a_targets) != baseline_identity:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_full_corpus_bridge_candidate_a_target_set_mismatch",
+            "Candidate A does not share the baseline full-corpus target set.",
+            http_status=409,
+            details={"candidate_a_run_id": candidate_a_run_id},
+        )
+    if _target_identity_for_hash(candidate_b_targets) != baseline_identity:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_full_corpus_bridge_candidate_b_target_set_mismatch",
+            "Candidate B does not share the baseline full-corpus target set.",
+            http_status=409,
+            details={"candidate_b_run_id": candidate_b_run_id},
+        )
+
+    targets = []
+    for baseline_target, candidate_a_target, candidate_b_target in zip(
+        baseline_targets,
+        candidate_a_targets,
+        candidate_b_targets,
+    ):
+        target_key = f"target-{int(baseline_target['ordinal']):05d}"
+        accession_number = str(baseline_target["accession_number"])
+        targets.append(
+            {
+                "target_key": target_key,
+                "ordinal": baseline_target["ordinal"],
+                "accession_ref": _redacted_ref(accession_number),
+                "baseline_target_id": baseline_target["target_id"],
+                "candidate_a_target_id": candidate_a_target["target_id"],
+                "candidate_b_target_id": candidate_b_target["target_id"],
+                "comparability_state": "full_corpus_aligned",
+            }
+        )
+
+    target_set_hash = _stable_hash(
+        [
+            {"ordinal": item["ordinal"], "accession_number": item["accession_number"]}
+            for item in baseline_targets
+        ]
+    )
+    return {
+        "schema_id": FULL_CORPUS_VALIDATION_SCHEMA_ID,
+        "schema_version": 1,
+        "candidate_b_source_kind": "runtime",
+        "compare_scope": "full_corpus",
+        "bridge_mode": FULL_CORPUS_BRIDGE_MODE,
+        "baseline_run_id": baseline_run_id,
+        "candidate_a_run_id": candidate_a_run_id,
+        "candidate_b_run_id": candidate_b_run_id,
+        "target_count": len(targets),
+        "target_set_hash": target_set_hash,
+        "compare_target_set_hash": target_set_hash,
+        "targets": targets,
+        "accession_head_redacted": [_redacted_ref(item["accession_number"]) for item in baseline_targets[:3]],
+        "accession_tail_redacted": [_redacted_ref(item["accession_number"]) for item in baseline_targets[-3:]],
+        "validated_by": [
+            "same_checkout_runtime_discovery",
+            "local_corpus_summary_target_outcomes",
+            "connector_run_request_config_json",
+            "local_corpus_validate_only_gate_results",
+            "candidate_b_full_corpus_compare_triplet_v1",
+        ],
+    }
+
+
+def _runtime_binding_for_run(run_id: str, *, label: str) -> ReviewRuntimeBinding:
+    binding = find_runtime_binding_for_run(run_id)
+    if binding is None:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_run_unavailable",
+            "A required full-corpus comparison run is not discoverable through current-main runtime discovery.",
+            http_status=404,
+            details={"run_id": run_id, "label": label},
+        )
+    if binding.database_path is None or not binding.database_path.is_file():
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_database_missing",
+            "A required full-corpus comparison run has no available review database.",
+            http_status=409,
+            details={"run_id": run_id, "label": label},
+        )
+    if binding.storage_dir is None or not binding.storage_dir.is_dir():
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_storage_missing",
+            "A required full-corpus comparison run has no available runtime storage root.",
+            http_status=409,
+            details={"run_id": run_id, "label": label},
+        )
+    return binding
+
+
+def _validate_full_corpus_binding(
+    binding: ReviewRuntimeBinding,
+    *,
+    label: str,
+    expected_engine: str,
+    expected_visual_lane: str,
+    require_candidate_b_metrics: bool,
+) -> None:
+    summary = binding.summary
+    if str(summary.get("schema_id") or "") != "aps.local_corpus_e2e_summary.v1":
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_summary_schema_invalid",
+            "A required full-corpus comparison summary has the wrong schema.",
+            http_status=409,
+            details={"run_id": binding.run_id, "schema_id": summary.get("schema_id")},
+        )
+    if summary.get("passed") is not True:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_summary_not_passed",
+            "A required full-corpus comparison summary has not passed.",
+            http_status=409,
+            details={"run_id": binding.run_id},
+        )
+    if int(summary.get("corpus_pdf_count") or 0) != FULL_CORPUS_TARGET_COUNT:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_corpus_count_mismatch",
+            "A required full-corpus comparison summary does not cover the admitted 69-PDF corpus.",
+            http_status=409,
+            details={"run_id": binding.run_id, "corpus_pdf_count": summary.get("corpus_pdf_count")},
+        )
+    observed_engine = str(summary.get("document_processing_engine") or BASELINE_ENGINE).strip()
+    observed_visual_lane = str(summary.get("visual_lane_mode") or BASELINE_ENGINE).strip()
+    if observed_engine != expected_engine or observed_visual_lane != expected_visual_lane:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_variant_mismatch",
+            "A required full-corpus comparison summary does not match the admitted variant.",
+            http_status=409,
+            details={
+                "run_id": binding.run_id,
+                "expected_document_processing_engine": expected_engine,
+                "observed_document_processing_engine": observed_engine,
+                "expected_visual_lane_mode": expected_visual_lane,
+                "observed_visual_lane_mode": observed_visual_lane,
+            },
+        )
+    request_config = _connector_run_request_config(binding, label=label)
+    _validate_full_corpus_request_config(
+        request_config,
+        label=label,
+        run_id=binding.run_id,
+        expected_engine=expected_engine,
+        expected_visual_lane=expected_visual_lane,
+    )
+    _validate_full_corpus_gate_results(summary, label=label, run_id=binding.run_id)
+    _validate_full_corpus_metrics(
+        summary,
+        label=label,
+        run_id=binding.run_id,
+        require_candidate_b_metrics=require_candidate_b_metrics,
+    )
+
+
+def _connector_run_request_config(binding: ReviewRuntimeBinding, *, label: str) -> dict[str, Any]:
+    try:
+        with sqlite3.connect(str(binding.database_path)) as connection:
+            row = connection.execute(
+                "select status, request_config_json from connector_run where connector_run_id = ?",
+                (binding.run_id,),
+            ).fetchone()
+    except sqlite3.Error as exc:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_request_config_unreadable",
+            "A required full-corpus comparison run request config could not be read.",
+            http_status=409,
+            details={"run_id": binding.run_id, "reason": str(exc)},
+        ) from exc
+    if row is None:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_connector_run_missing",
+            "A required full-corpus comparison connector_run row is missing.",
+            http_status=409,
+            details={"run_id": binding.run_id},
+        )
+    status, raw_config = row
+    if str(status or "") != "completed":
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_connector_run_not_completed",
+            "A required full-corpus comparison connector_run is not completed.",
+            http_status=409,
+            details={"run_id": binding.run_id, "status": status},
+        )
+    try:
+        config = json.loads(raw_config) if isinstance(raw_config, str) else dict(raw_config or {})
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_request_config_invalid",
+            "A required full-corpus comparison request config is invalid.",
+            http_status=409,
+            details={"run_id": binding.run_id},
+        ) from exc
+    if not isinstance(config, dict):
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_request_config_not_object",
+            "A required full-corpus comparison request config is not an object.",
+            http_status=409,
+            details={"run_id": binding.run_id},
+        )
+    return config
+
+
+def _validate_full_corpus_request_config(
+    request_config: Mapping[str, Any],
+    *,
+    label: str,
+    run_id: str,
+    expected_engine: str,
+    expected_visual_lane: str,
+) -> None:
+    observed_engine = str(request_config.get("document_processing_engine") or BASELINE_ENGINE).strip()
+    observed_visual_lane = str(request_config.get("visual_lane_mode") or BASELINE_ENGINE).strip()
+    if observed_engine != expected_engine:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_request_engine_mismatch",
+            "A required full-corpus comparison request config has the wrong document-processing engine.",
+            http_status=409,
+            details={"run_id": run_id, "observed": observed_engine, "expected": expected_engine},
+        )
+    if request_config.get("document_processing_engine_explicit") is not True:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_request_engine_not_explicit",
+            "A required full-corpus comparison run must prove explicit document-processing engine selection.",
+            http_status=409,
+            details={"run_id": run_id},
+        )
+    if observed_visual_lane != expected_visual_lane:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_request_visual_lane_mismatch",
+            "A required full-corpus comparison request config has the wrong visual-lane mode.",
+            http_status=409,
+            details={"run_id": run_id, "observed": observed_visual_lane, "expected": expected_visual_lane},
+        )
+
+
+def _validate_full_corpus_gate_results(summary: Mapping[str, Any], *, label: str, run_id: str) -> None:
+    gate_results = summary.get("gate_results")
+    if not isinstance(gate_results, dict):
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_gate_results_missing",
+            "A required full-corpus comparison summary has no validate-only gate results.",
+            http_status=409,
+            details={"run_id": run_id},
+        )
+    missing_or_failed = [
+        gate_name
+        for gate_name in REQUIRED_FULL_CORPUS_GATE_NAMES
+        if not isinstance(gate_results.get(gate_name), dict) or gate_results[gate_name].get("passed") is not True
+    ]
+    if missing_or_failed:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_gate_results_failed",
+            "A required full-corpus comparison summary has missing or failed validate-only gates.",
+            http_status=409,
+            details={"run_id": run_id, "missing_or_failed": missing_or_failed},
+        )
+
+
+def _validate_full_corpus_metrics(
+    summary: Mapping[str, Any],
+    *,
+    label: str,
+    run_id: str,
+    require_candidate_b_metrics: bool,
+) -> None:
+    metrics = summary.get("advanced_metrics")
+    if not isinstance(metrics, dict):
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_metrics_missing",
+            "A required full-corpus comparison summary has no advanced metrics.",
+            http_status=409,
+            details={"run_id": run_id},
+        )
+    candidate_b_extractor_count = _int_metric(metrics.get("candidate_b_extractor_file_count"))
+    if require_candidate_b_metrics:
+        if candidate_b_extractor_count != FULL_CORPUS_TARGET_COUNT:
+            raise CandidateBRuntimeBridgeError(
+                "candidate_b_full_corpus_bridge_candidate_b_extractor_count_mismatch",
+                "Candidate B did not use the admitted runtime extractor for every full-corpus target.",
+                http_status=409,
+                details={"run_id": run_id, "candidate_b_extractor_file_count": candidate_b_extractor_count},
+            )
+        if _int_metric(metrics.get("candidate_b_ordered_unit_total")) <= 0:
+            raise CandidateBRuntimeBridgeError(
+                "candidate_b_full_corpus_bridge_candidate_b_ordered_units_missing",
+                "Candidate B full-corpus evidence has no ordered-unit material.",
+                http_status=409,
+                details={"run_id": run_id},
+            )
+        if _int_metric(metrics.get("candidate_b_visual_ref_total")) <= 0:
+            raise CandidateBRuntimeBridgeError(
+                "candidate_b_full_corpus_bridge_candidate_b_visual_refs_missing",
+                "Candidate B full-corpus evidence has no visual refs.",
+                http_status=409,
+                details={"run_id": run_id},
+            )
+        if _int_metric(metrics.get("candidate_b_retained_source_pdf_ref_count")) <= 0:
+            raise CandidateBRuntimeBridgeError(
+                "candidate_b_full_corpus_bridge_candidate_b_source_pdf_refs_missing",
+                "Candidate B full-corpus evidence has no retained source-PDF refs.",
+                http_status=409,
+                details={"run_id": run_id},
+            )
+    elif candidate_b_extractor_count != 0:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_candidate_b_extractor_leak",
+            "Baseline/Candidate A comparison evidence unexpectedly used Candidate B extractors.",
+            http_status=409,
+            details={"run_id": run_id, "candidate_b_extractor_file_count": candidate_b_extractor_count},
+        )
+
+
+def _full_corpus_targets(binding: ReviewRuntimeBinding, *, label: str) -> list[dict[str, Any]]:
+    raw_targets = binding.summary.get("target_outcomes")
+    if not isinstance(raw_targets, list):
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_targets_missing",
+            "A required full-corpus comparison summary has no target outcomes.",
+            http_status=409,
+            details={"run_id": binding.run_id},
+        )
+    targets: list[dict[str, Any]] = []
+    for item in raw_targets:
+        if not isinstance(item, dict):
+            raise CandidateBRuntimeBridgeError(
+                f"candidate_b_full_corpus_bridge_{label}_target_invalid",
+                "A required full-corpus comparison target outcome is invalid.",
+                http_status=409,
+                details={"run_id": binding.run_id},
+            )
+        target_id = str(item.get("target_id") or "").strip()
+        accession_number = str(item.get("accession_number") or "").strip()
+        ordinal = _optional_int(item.get("ordinal"))
+        status = str(item.get("status") or "").strip()
+        if not target_id or not accession_number or ordinal <= 0:
+            raise CandidateBRuntimeBridgeError(
+                f"candidate_b_full_corpus_bridge_{label}_target_identity_incomplete",
+                "A required full-corpus comparison target lacks target id, accession, or ordinal.",
+                http_status=409,
+                details={"run_id": binding.run_id},
+            )
+        targets.append(
+            {
+                "target_id": target_id,
+                "ordinal": ordinal,
+                "accession_number": accession_number,
+                "status": status,
+            }
+        )
+    targets.sort(key=lambda item: int(item["ordinal"]))
+    if len(targets) != FULL_CORPUS_TARGET_COUNT:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_target_count_mismatch",
+            "A required full-corpus comparison summary does not have 69 target outcomes.",
+            http_status=409,
+            details={"run_id": binding.run_id, "target_count": len(targets)},
+        )
+    status_counts = dict(sorted(Counter(item["status"] for item in targets).items()))
+    if status_counts != {"recommended": FULL_CORPUS_TARGET_COUNT}:
+        raise CandidateBRuntimeBridgeError(
+            f"candidate_b_full_corpus_bridge_{label}_target_status_mismatch",
+            "A required full-corpus comparison summary does not recommend every target.",
+            http_status=409,
+            details={"run_id": binding.run_id, "status_counts": status_counts},
+        )
+    return targets
+
+
+def _target_identity_for_hash(targets: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {"ordinal": item["ordinal"], "accession_number": item["accession_number"]}
+        for item in targets
+    ]
+
+
+def _optional_int(value: Any) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _int_metric(value: Any) -> int:
+    return _optional_int(value)
+
+
+def _redacted_ref(value: str) -> str:
+    return f"redacted://sha256/{hashlib.sha256(str(value).encode('utf-8')).hexdigest()[:24]}"
+
+
 def _material_files(binding: ReviewRuntimeBinding, compare_target_set: Mapping[str, Any]) -> list[dict[str, Any]]:
     files = [
         _json_material("runtime-summary.json", _redact_json_value(binding.summary)[0], "candidate_b_runtime_summary"),
         _json_material("compare-targets.json", compare_target_set, "candidate_b_runtime_compare_targets"),
     ]
+    full_corpus_material_subset = str(compare_target_set.get("compare_scope") or "") == "full_corpus"
     session_cm = runtime_db_session_for_binding(binding) if binding.database_path else nullcontext(None)
     with session_cm as session:
         for target in compare_target_set["targets"]:
-            fixture_id = target["fixture_id"]
+            target_key = _target_material_key(target)
             target_id = target["candidate_b_target_id"]
-            trace_payload = _redact_json_value(
-                _model_dump(compose_trace_manifest(session, binding.run_id, target_id, binding.review_root))
-            )[0]
+            trace_payload = None
+            if not full_corpus_material_subset:
+                trace_payload = _redact_json_value(
+                    _model_dump(compose_trace_manifest(session, binding.run_id, target_id, binding.review_root))
+                )[0]
             normalized_payload = _redact_json_value(
                 _model_dump(compose_normalized_text_payload(session, binding.run_id, target_id, binding.review_root))
             )[0]
@@ -421,24 +887,38 @@ def _material_files(binding: ReviewRuntimeBinding, compare_target_set: Mapping[s
                     "candidate_b_runtime_bridge_normalized_text_unavailable",
                     "A comparable Candidate B runtime target lacks normalized-text material authority.",
                     http_status=409,
-                    details={"candidate_b_run_id": binding.run_id, "fixture_id": fixture_id},
+                    details={"candidate_b_run_id": binding.run_id, "target_key": target_key},
                 )
-            files.append(_json_material(f"trace/{fixture_id}.json", trace_payload, "candidate_b_runtime_trace"))
-            files.append(
-                _json_material(
-                    f"normalized/{fixture_id}.json",
-                    normalized_payload,
-                    "candidate_b_runtime_normalized_text",
+            if not full_corpus_material_subset:
+                files.append(
+                    _json_material(f"trace/{target_key}.json", trace_payload or {}, "candidate_b_runtime_trace")
                 )
-            )
+                files.append(
+                    _json_material(
+                        f"normalized/{target_key}.json",
+                        normalized_payload,
+                        "candidate_b_runtime_normalized_text",
+                    )
+                )
             files.append(
                 _bytes_material(
-                    f"text/{fixture_id}.md",
+                    f"text/{target_key}.md",
                     _markdown_for_target(binding.run_id, target, normalized_payload).encode("utf-8"),
                     "candidate_b_runtime_text_markdown",
                 )
             )
     return files
+
+
+def _target_material_key(target: Mapping[str, Any]) -> str:
+    raw = str(target.get("fixture_id") or target.get("target_key") or "").strip()
+    if not raw:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_target_key_missing",
+            "A comparable Candidate B runtime target is missing a material key.",
+            http_status=409,
+        )
+    return raw.replace("\\", "-").replace("/", "-")
 
 
 def _json_material(relative_name: str, payload: Mapping[str, Any], category: str) -> dict[str, Any]:
@@ -459,8 +939,9 @@ def _bytes_material(relative_name: str, content: bytes, category: str) -> dict[s
 
 def _markdown_for_target(run_id: str, target: Mapping[str, Any], normalized_payload: Mapping[str, Any]) -> str:
     text = str(normalized_payload.get("text") or "")
+    target_key = _target_material_key(target)
     return (
-        f"# Candidate B runtime material: {target['fixture_id']}\n\n"
+        f"# Candidate B runtime material: {target_key}\n\n"
         f"- candidate_b_run_id: {run_id}\n"
         f"- candidate_b_target_id: {target['candidate_b_target_id']}\n"
         f"- document_processing_engine: {CANDIDATE_B_RUNTIME_VARIANT}\n"
@@ -506,16 +987,20 @@ def _runtime_authority_hash(binding: ReviewRuntimeBinding, material_files: list[
     )
 
 
-def _runtime_validation(binding: ReviewRuntimeBinding) -> dict[str, Any]:
+def _runtime_validation(binding: ReviewRuntimeBinding, *, bridge_mode: str = BRIDGE_MODE) -> dict[str, Any]:
     metadata = runtime_binding_request_metadata(binding)
+    validated_by = [
+        "current_main_runtime_discovery",
+        "candidate_b_opendataloader_pdf_variant_classification",
+        "document_trace_normalized_text_materialization",
+    ]
+    if bridge_mode == FULL_CORPUS_BRIDGE_MODE:
+        validated_by.append("candidate_b_full_corpus_compare_triplet_v1")
+    else:
+        validated_by.append("workbench_compare_target_set")
     return {
         "status": "passed",
-        "validated_by": [
-            "current_main_runtime_discovery",
-            "candidate_b_opendataloader_pdf_variant_classification",
-            "workbench_compare_target_set",
-            "document_trace_normalized_text_materialization",
-        ],
+        "validated_by": validated_by,
         "candidate_b_run_id": binding.run_id,
         "document_processing_engine": CANDIDATE_B_RUNTIME_VARIANT,
         "visual_lane_mode": metadata.get("visual_lane_mode", "baseline"),
@@ -727,7 +1212,7 @@ def _response(
         "request_id": request_id,
         "server_time": _server_time(),
         "status": response_status,
-        "mode": BRIDGE_MODE,
+        "mode": receipt["bridge_mode"],
         "bridge_receipt_id": bridge_receipt_id,
         "bridge_receipt_ref": f"candidate-b-runtime-bridge://{bridge_receipt_id}/receipt.json",
         "curated_material_root_ref": f"candidate-b-runtime-bridge://{bridge_receipt_id}/curated",

@@ -35,6 +35,10 @@ _RUNTIME_HASH_KEYS = (
     "governed_retained_artifact_family_hash",
     "redaction_policy_id",
 )
+_ADMITTED_RUNTIME_BRIDGE_MODES = (
+    layer3_candidate_b_runtime_bridge.BRIDGE_MODE,
+    layer3_candidate_b_runtime_bridge.FULL_CORPUS_BRIDGE_MODE,
+)
 PROOF_HASH_KEYS = (
     "schema_id",
     "schema_version",
@@ -317,7 +321,6 @@ def _validate_receipt(candidate_b_run_id: str, receipt_id: str, receipt: Mapping
     mismatches = []
     for field, expected in {
         "schema_id": layer3_candidate_b_runtime_bridge.SCHEMA_ID,
-        "bridge_mode": layer3_candidate_b_runtime_bridge.BRIDGE_MODE,
         "candidate_b_source_kind": "runtime",
         "candidate_b_run_id": candidate_b_run_id,
         "bridge_receipt_id": receipt_id,
@@ -332,6 +335,16 @@ def _validate_receipt(candidate_b_run_id: str, receipt_id: str, receipt: Mapping
             "The selected Candidate B runtime bridge receipt does not match the requested downstream proof target.",
             http_status=409,
             details={"mismatches": mismatches},
+        )
+    if str(receipt.get("bridge_mode") or "") not in _ADMITTED_RUNTIME_BRIDGE_MODES:
+        raise CandidateBDownstreamProofError(
+            "candidate_b_downstream_proof_bridge_mode_not_admitted",
+            "The selected Candidate B runtime bridge receipt uses an unadmitted bridge mode.",
+            http_status=409,
+            details={
+                "received_bridge_mode": receipt.get("bridge_mode"),
+                "admitted_bridge_modes": list(_ADMITTED_RUNTIME_BRIDGE_MODES),
+            },
         )
     missing = [key for key in _RUNTIME_HASH_KEYS if key not in receipt]
     if missing:

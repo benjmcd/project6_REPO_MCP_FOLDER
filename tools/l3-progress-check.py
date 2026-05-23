@@ -2653,6 +2653,9 @@ CANDIDATE_B_FULL_CORPUS_COMPARE_TRIPLET_CHECKPOINT = (
 CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_FREEZE = (
     PLANNING_DOCS / "973-cb-full-corpus-runtime-bridge-freeze.md"
 )
+CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_RUNTIME = (
+    PLANNING_DOCS / "974-cb-full-corpus-runtime-bridge.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -90759,6 +90762,61 @@ def _check_candidate_b_full_corpus_runtime_bridge_freeze(errors: list[str]) -> N
                 )
 
 
+def _check_candidate_b_full_corpus_runtime_bridge_runtime(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_RUNTIME: (
+            "Candidate B Full-Corpus Runtime Bridge Runtime",
+            "milestone: candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "current_main: b4599050419e6ceef2db3d8a6bf44e4c5111404f",
+            "implementation_status: implemented_branch_local",
+            "real_bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "compare_target_set_hash: 1052eea1153d6fdb21abd18384abc5c2db73497c9d34f18ecf52239f71c82a2f",
+            "admitted_material_file_count: 71",
+            "admitted_text_file_count: 69",
+            "source_directory_eligible_file_count: 71",
+            "gate_b_status: 200",
+            "full_downstream_package_delivery_status: not_executed_next_posture",
+            "candidate_b_full_corpus_runtime_downstream_e2e_proof_v1",
+            "does not overclaim full downstream package/delivery proof",
+        ),
+        CANDIDATE_B_RUNTIME_BRIDGE_TEST: (
+            "FULL_CORPUS_BRIDGE_MODE",
+            "test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b",
+            "full-corpus bridge must not use workbench fixture compare targets",
+            "eligible_file_count\"] == 71",
+            "text/target-00001.md",
+            "1052eea1153d6fdb21abd18384abc5c2db73497c9d34f18ecf52239f71c82a2f",
+        ),
+        CANDIDATE_B_RUNTIME_BRIDGE_SERVICE: (
+            'FULL_CORPUS_BRIDGE_MODE = "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1"',
+            "ADMITTED_BRIDGE_MODES",
+            "FULL_CORPUS_VALIDATION_SCHEMA_ID",
+            "REQUIRED_FULL_CORPUS_GATE_NAMES",
+            "_load_full_corpus_compare_target_set",
+            "_validate_full_corpus_binding",
+            "_connector_run_request_config",
+            "candidate_b_full_corpus_compare_triplet_v1",
+            "full_corpus_material_subset",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_candidate_b_downstream_proof.py": (
+            "_ADMITTED_RUNTIME_BRIDGE_MODES",
+            "FULL_CORPUS_BRIDGE_MODE",
+            "candidate_b_downstream_proof_bridge_mode_not_admitted",
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "Layer3CandidateBRuntimeMaterialBridgeRequest",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus runtime bridge runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91580,6 +91638,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_operator_run_checkpoint(errors)
     _check_candidate_b_full_corpus_compare_triplet_checkpoint(errors)
     _check_candidate_b_full_corpus_runtime_bridge_freeze(errors)
+    _check_candidate_b_full_corpus_runtime_bridge_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
