@@ -2650,6 +2650,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_RUN_CHECKPOINT = (
 CANDIDATE_B_FULL_CORPUS_COMPARE_TRIPLET_CHECKPOINT = (
     PLANNING_DOCS / "972-cb-full-corpus-triplet.md"
 )
+CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_FREEZE = (
+    PLANNING_DOCS / "973-cb-full-corpus-runtime-bridge-freeze.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -90718,6 +90721,44 @@ def _check_candidate_b_full_corpus_compare_triplet_checkpoint(errors: list[str])
                 )
 
 
+def _check_candidate_b_full_corpus_runtime_bridge_freeze(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_FREEZE: (
+            "Candidate B Full-Corpus Runtime Bridge Freeze",
+            "milestone: candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "current_main: df9a37423274f3f0590b2e943c39aaffda0d91d7",
+            "admission_result: admitted_for_next_runtime_implementation",
+            "admitted_bridge_mode: candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "admitted_compare_evidence: aps.full_corpus_compare_triplet_validation.v1",
+            "validated_triplet_hash: 1052eea1153d6fdb21abd18384abc5c2db73497c9d34f18ecf52239f71c82a2f",
+            "implementation_in_this_freeze: false",
+            "all three runs share the same ordered accession set",
+            "redacted Candidate B runtime summary JSON",
+            "redacted full-corpus compare target set JSON",
+            "normalized text JSON per admitted target",
+            "Do not use fixture-manifest workbench target selection for the full-corpus bridge.",
+            "The implementation should be a narrow extension of the existing Candidate B runtime bridge",
+        ),
+        CANDIDATE_B_FULL_CORPUS_COMPARE_TRIPLET_CHECKPOINT: (
+            "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "blocked_pending_admission",
+            "same_checkout_baseline_candidate_a_candidate_b_compare_triplet: proven",
+        ),
+        ROOT / "tools" / "validate_full_corpus_triplet.py": (
+            "candidate_b_full_corpus_compare_triplet_v1",
+            "document_processing_engine_explicit",
+            "requires_separate_current_main_admission",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus runtime bridge freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91538,6 +91579,7 @@ def main() -> int:
     _check_candidate_b_first_class_completion_audit(errors)
     _check_candidate_b_full_corpus_operator_run_checkpoint(errors)
     _check_candidate_b_full_corpus_compare_triplet_checkpoint(errors)
+    _check_candidate_b_full_corpus_runtime_bridge_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
