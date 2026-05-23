@@ -26,9 +26,14 @@ jobs:
     - name: Run focused Layer 3 backend pytest guardrail
       run: python -m pytest ./backend/tests/test_layer3_*.py -q
 
-  test:
+  playwright-shard:
+    name: test-shard-${{ matrix.shard }}/4
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-node@v6
@@ -55,13 +60,60 @@ jobs:
         npx playwright install --with-deps chromium
         echo "playwright_browser_install_seconds=$SECONDS"
     - name: Run Playwright tests
+      env:
+        PLAYWRIGHT_SHARD_INDEX: ${{ matrix.shard }}
+        PLAYWRIGHT_SHARD_TOTAL: 4
       run: |
         SECONDS=0
-        npx playwright test --project=chromium
-        echo "playwright_test_seconds=$SECONDS"
+        node <<'NODE'
+        const { execSync } = require('node:child_process');
+        const fs = require('node:fs');
+
+        const shard = Number(process.env.PLAYWRIGHT_SHARD_INDEX);
+        const total = Number(process.env.PLAYWRIGHT_SHARD_TOTAL);
+        if (!Number.isInteger(shard) || !Number.isInteger(total) || shard < 1 || shard > total) {
+          throw new Error(`Invalid Playwright shard ${shard}/${total}`);
+        }
+
+        const output = execSync('npx playwright test --list --project=chromium --reporter=json', {
+          encoding: 'utf8',
+          stdio: ['ignore', 'pipe', 'inherit'],
+        });
+        const data = JSON.parse(output);
+        const specs = [];
+        function visit(suite) {
+          for (const spec of suite.specs || []) specs.push(spec.title);
+          for (const child of suite.suites || []) visit(child);
+        }
+        for (const suite of data.suites || []) visit(suite);
+        const selected = specs.filter((_, index) => index % total === shard - 1);
+        if (!selected.length) {
+          throw new Error(`Playwright shard ${shard}/${total} selected no tests from ${specs.length} specs`);
+        }
+        const escapeRegExp = (value) => value.replace(/[|\\{}()[\]^$+*?.]/g, '\\$&');
+        fs.writeFileSync('playwright-shard-grep.txt', `(${selected.map(escapeRegExp).join('|')})`);
+        console.log(`Playwright shard ${shard}/${total} selected ${selected.length} of ${specs.length} tests.`);
+        NODE
+        npx playwright test --project=chromium --grep "$(cat playwright-shard-grep.txt)"
+        echo "playwright_test_shard_${{ matrix.shard }}_seconds=$SECONDS"
     - uses: actions/upload-artifact@v7
       if: ${{ !cancelled() }}
       with:
-        name: playwright-report
+        name: playwright-report-shard-${{ matrix.shard }}
         path: playwright-report/
         retention-days: 30
+
+  test:
+    name: test
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    needs: playwright-shard
+    if: ${{ always() }}
+    steps:
+    - name: Check Playwright shard results
+      run: |
+        if [ "${{ needs.playwright-shard.result }}" != "success" ]; then
+          echo "Playwright shard result: ${{ needs.playwright-shard.result }}"
+          exit 1
+        fi
+        echo "All Playwright shards passed."
