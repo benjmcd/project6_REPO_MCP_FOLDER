@@ -8803,13 +8803,24 @@ test('Layer 3 workbench inspects Candidate B operator status from rendered downs
   expect(operatorStatus.raw_url_exposed).toBe(false);
   expect(operatorStatus.artifact_bytes_exposed).toBe(false);
   expect(operatorStatus.provider_private_token_exposed).toBe(false);
+  const runtimeDeliveryPreview = operatorStatus.runtime_delivery_artifact_role_previews.find((preview) => (
+    preview.artifact_role === 'source_pdf'
+    && preview.extension === '.pdf'
+    && preview.material_text_payload === false
+  ));
+  expect(runtimeDeliveryPreview).toBeTruthy();
+  expect(runtimeDeliveryPreview.display_ref).toMatch(/\.pdf$/);
   expect(operatorStatus.negative_invariants.candidate_b_default_promotion_enabled).toBe(false);
   expect(operatorStatus.negative_invariants.connector_dispatch_enabled).toBe(false);
   expect(operatorStatus.negative_invariants.rag_vector_model_runtime_enabled).toBe(false);
   expect(operatorStatus.negative_invariants.frontend_durable_authority_enabled).toBe(false);
   expect(JSON.stringify(operatorStatus)).not.toContain('C:\\');
+  expect(JSON.stringify(operatorStatus)).not.toContain('storage/');
   await expect(panel).toContainText('candidate_b_operator_status_available');
   await expect(panel).toContainText('candidate-b-default-operator-status://');
+  await expect(panel).toContainText('Redacted runtime delivery artifact previews');
+  await expect(panel).toContainText('source_pdf');
+  await expect(panel).toContainText(runtimeDeliveryPreview.display_ref);
   await expect(panel).toContainText('selector mutation performed: false');
   await expect(panel).not.toContainText('http://');
   await expect(panel).not.toContainText('https://');

@@ -1220,6 +1220,7 @@ def _validate_operator_status(
         or evidence.get("selector_mutation_performed") is not False
     ):
         blocked.append(_reason("candidate_b_default_readiness_operator_status_exposes_sensitive_authority"))
+    _validate_operator_status_delivery_previews(evidence, blocked)
     missing_hash_fields = [key for key in layer3_candidate_b_operator_status.STATUS_HASH_KEYS if key not in evidence]
     if missing_hash_fields:
         blocked.append(
@@ -1254,6 +1255,7 @@ def _validate_operator_status(
             "runtime_bridge_receipt_id": evidence.get("runtime_bridge_receipt_id"),
             "runtime_delivery_artifact_authority_hash": evidence.get("runtime_delivery_artifact_authority_hash"),
             "runtime_delivery_artifact_coverage_steps": evidence.get("runtime_delivery_artifact_coverage_steps"),
+            "runtime_delivery_artifact_role_previews": evidence.get("runtime_delivery_artifact_role_previews"),
             "runtime_delivery_artifact_projection_visible": (
                 evidence.get("runtime_delivery_artifact_projection_visible") is True
             ),
@@ -1264,6 +1266,26 @@ def _validate_operator_status(
         }
     )
     return {"blocked_reasons": blocked, "summary": summary, "operator_status_hash": operator_status_hash}
+
+
+def _validate_operator_status_delivery_previews(evidence: Mapping[str, Any], blocked: list[dict[str, Any]]) -> None:
+    previews = evidence.get("runtime_delivery_artifact_role_previews")
+    if not isinstance(previews, list) or not previews:
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_delivery_previews_missing"))
+        return
+    for preview in previews:
+        if not isinstance(preview, Mapping):
+            blocked.append(_reason("candidate_b_default_readiness_operator_status_delivery_preview_invalid"))
+            return
+        display_ref = str(preview.get("display_ref") or "").strip()
+        if not display_ref or "/" in display_ref or "\\" in display_ref or ".." in display_ref:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_operator_status_delivery_preview_not_redacted",
+                    display_ref=display_ref or None,
+                )
+            )
+            return
 
 
 def _validate_closure_evidence(
