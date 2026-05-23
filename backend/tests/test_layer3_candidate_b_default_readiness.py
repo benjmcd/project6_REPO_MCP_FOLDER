@@ -739,6 +739,16 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert body["operator_status_evidence"]["runtime_delivery_artifact_coverage_steps"] == sorted(
         DELIVERY_ARTIFACT_AUTHORITY_COVERAGE
     )
+    assert body["operator_status_evidence"]["runtime_delivery_artifact_role_previews"] == [
+        {
+            "display_ref": "input.pdf",
+            "artifact_role": "source_pdf",
+            "category": None,
+            "extension": ".pdf",
+            "sha256": "d" * 64,
+            "material_text_payload": False,
+        }
+    ]
     assert body["operator_status_evidence"]["runtime_delivery_artifact_projection_visible"] is True
     assert body["operator_status_evidence"]["runtime_delivery_artifact_roles_bound"] is True
     assert (
@@ -1223,6 +1233,41 @@ def test_candidate_b_operator_status_rejects_unprojected_delivery_artifact_autho
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_operator_status_runtime_delivery_artifact_authority_mismatch"
     assert body["error"]["details"]["coverage_step"] == "provider_private_use"
+
+
+def test_candidate_b_operator_status_rejects_stale_runtime_artifact_family(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+    proof_response = client.post(
+        DOWNSTREAM_PROOF_ENDPOINT,
+        json=_downstream_proof_request(runtime_receipt_id, visual_status_response.json()),
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["governed_retained_artifact_family"]["roles"]["delivery_artifacts"][0][
+        "source_ref"
+    ] = "storage/tampered.pdf"
+    _write_json(receipt_path, receipt)
+
+    response = client.post(
+        OPERATOR_STATUS_ENDPOINT,
+        json=_operator_status_request(
+            bundle_receipt_id,
+            runtime_receipt_id,
+            visual_status_response.json(),
+            proof_response.json(),
+        ),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_operator_status_runtime_artifact_family_stale"
 
 
 def test_candidate_b_runtime_downstream_proof_rejects_nested_path_authority(client: TestClient) -> None:
