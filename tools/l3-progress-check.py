@@ -2659,6 +2659,9 @@ CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_RUNTIME = (
 CANDIDATE_B_FULL_CORPUS_RUNTIME_DOWNSTREAM_PROOF = (
     PLANNING_DOCS / "975-cb-full-corpus-runtime-downstream-proof.md"
 )
+CANDIDATE_B_FULL_CORPUS_OPERATOR_RUNBOOK_CHECKPOINT = (
+    PLANNING_DOCS / "976-cb-full-corpus-runbook-checkpoint.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -90873,6 +90876,41 @@ def _check_candidate_b_full_corpus_runtime_downstream_proof(errors: list[str]) -
                 )
 
 
+def _check_candidate_b_full_corpus_operator_runbook_checkpoint(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_RUNBOOK_CHECKPOINT: (
+            "Candidate B Full-Corpus Operator Runbook Checkpoint",
+            "milestone: candidate_b_full_corpus_operator_runbook_checkpoint_v1",
+            "current_main: b13ff594a4c0d773c6cd6d6605c67d5668d9ed35",
+            "runbook: docs/nrc_adams/local_corpus_e2e_runbook.md",
+            "bridge_mode: candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "proof_mode: candidate_b_visual_lane_runtime_downstream_e2e_proof_v1",
+            "bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "downstream_proof_id: cb-runtime-downstream-proof-1a8c44a841830707c2168578",
+            "candidate_b_full_corpus_operator_repeatability_smoke_v1",
+            "historical reports alone are not sufficient",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "Candidate B Full-Corpus Layer 3 Workflow",
+            "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "cb-runtime-downstream-proof-1a8c44a841830707c2168578",
+            "Source-directory scan over the curated root; expect 71 eligible files",
+            "Provider-private redacted prepare, status, use, and revoke",
+            "Candidate B runtime downstream proof with all required coverage steps",
+            "test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b",
+            "Do not proceed from historical reports alone",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus operator runbook checkpoint term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91696,6 +91734,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_runtime_bridge_freeze(errors)
     _check_candidate_b_full_corpus_runtime_bridge_runtime(errors)
     _check_candidate_b_full_corpus_runtime_downstream_proof(errors)
+    _check_candidate_b_full_corpus_operator_runbook_checkpoint(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

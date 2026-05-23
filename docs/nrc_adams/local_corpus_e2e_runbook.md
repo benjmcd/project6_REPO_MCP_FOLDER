@@ -46,7 +46,85 @@ After baseline, Candidate A, and Candidate B full-corpus receipts exist in the s
 ..\..\.venvs\phase7a-py311\Scripts\python.exe .\tools\validate_full_corpus_triplet.py --checkout-root .
 ```
 
-The triplet validator is intentionally validate-only. It proves `candidate_b_full_corpus_compare_triplet_v1` from existing receipts and SQLite request config, then reports that `candidate_b_full_corpus_runtime_to_layer3_material_authority_v1` still requires a separately admitted current-main bridge because the existing Layer 3 Candidate B runtime bridge remains scoped to the workbench fixture target set.
+The triplet validator is intentionally validate-only. It proves `candidate_b_full_corpus_compare_triplet_v1` from existing receipts and SQLite request config. It must not seed missing evidence or generate bridge artifacts.
+
+## Candidate B Full-Corpus Layer 3 Workflow
+
+After the triplet validates, the current admitted Layer 3 bridge mode is:
+
+```text
+candidate_b_full_corpus_runtime_to_layer3_material_authority_v1
+```
+
+The bridge request must use the validated baseline, Candidate A, and Candidate B run ids from the same checkout. The current proven triplet is:
+
+```yaml
+baseline_run_id: 7958ca0c-d163-4c6e-a0bf-2cac4e4bfe20
+candidate_a_run_id: 9b09f014-95f9-41cb-820c-8f5296a993bc
+candidate_b_run_id: f644b3f6-a7a9-4889-84d9-d842f5d12e79
+compare_target_set_hash: 1052eea1153d6fdb21abd18384abc5c2db73497c9d34f18ecf52239f71c82a2f
+```
+
+Prepare the bridge only after `LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR` points at a server-owned bridge directory outside app storage, raw storage, artifact storage, and export staging. The API payload is:
+
+```json
+{
+  "client_request_id": "candidate-b-full-corpus-runtime-bridge",
+  "bridge_mode": "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+  "candidate_b_run_id": "f644b3f6-a7a9-4889-84d9-d842f5d12e79",
+  "baseline_run_id": "7958ca0c-d163-4c6e-a0bf-2cac4e4bfe20",
+  "candidate_a_run_id": "9b09f014-95f9-41cb-820c-8f5296a993bc",
+  "operator_confirmation": true
+}
+```
+
+Expected bridge receipt from the current proven run:
+
+```yaml
+bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979
+curated_file_count: 71
+material_text_files: 69
+top_level_files:
+  - compare-targets.json
+  - runtime-summary.json
+material_file_for_smoke: text/target-00001.md
+```
+
+Then set `LAYER3_SOURCE_INGESTION_DIR` to the server-owned curated material root for that receipt and run the normal Layer 3 source-directory path:
+
+1. Source-directory scan over the curated root; expect 71 eligible files.
+2. Material preview for `text/target-00001.md`.
+3. Gate B approval for that material candidate.
+4. Hybrid qualitative analysis over the approved material snapshot.
+5. Package commit.
+6. Package review submit.
+7. Handoff/export prepare.
+8. External export download prepare.
+9. Same-origin delivery status and same-origin delivery.
+10. Provider-private redacted prepare, status, use, and revoke.
+11. Internal webhook dispatch and status.
+12. Qualitative-analysis status projection and session projection.
+13. Candidate B visual-lane status.
+14. Candidate B runtime downstream proof with all required coverage steps.
+
+The current proven downstream receipt is:
+
+```yaml
+downstream_proof_id: cb-runtime-downstream-proof-1a8c44a841830707c2168578
+coverage_count: 17
+provider_private_state: provider_private_signed_url_prepared
+provider_private_revoke_state: provider_private_signed_url_revoked
+internal_webhook_state: source_directory_internal_webhook_dispatched
+candidate_b_default_promotion_enabled: false
+```
+
+For a quick repeatability smoke against current main, run the focused test that exercises the same bridge and downstream surfaces without broadening runtime state:
+
+```powershell
+py -3.12 -m pytest .\backend\tests\test_layer3_candidate_b_runtime_bridge.py::test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b -q
+```
+
+Stop and report the exact missing runtime root, run id, bridge receipt, curated root, dependency, or API failure if any required evidence is absent. Do not proceed from historical reports alone when the live artifact roots are missing.
 
 ## What The Tool Does
 - Fails closed unless the corpus root, folder counts, PDF total, Phase 7A interpreter, `fitz`/`camelot`/`paddleocr`, Paddle model dirs, and Ghostscript all check out.
@@ -66,6 +144,8 @@ The triplet validator is intentionally validate-only. It proves `candidate_b_ful
 - Baseline mode observes at least one persisted OCR-derived file and at least one persisted table-bearing file from the generated artifacts.
 - Candidate B mode observes Candidate B / OpenDataLoader PDF extraction for every persisted target and non-empty ordered-unit evidence across the run. Candidate B is not treated as an OCR-owner-path equivalent.
 - All validate-only gates pass against the isolated runtime.
+- Candidate B full-corpus Layer 3 bridge emits a 71-file curated material root for the validated 69-target triplet without widening source-directory policy.
+- Candidate B full-corpus downstream proof reaches analysis, package/review, handoff/export, same-origin delivery, provider-private redacted lifecycle, internal webhook status, visual-lane status, and runtime downstream proof with all required coverage steps.
 
 ## Focused Test Runner Note
 The Candidate B runtime tests exercise the same package pin as the proof runner. If `python -m pytest ...` is executed with a global interpreter that has another `opendataloader-pdf` version, those tests should fail; that is environment drift, not proof that the repo widened the Candidate B contract.
