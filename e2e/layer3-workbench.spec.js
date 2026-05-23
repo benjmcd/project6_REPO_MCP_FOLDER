@@ -8311,6 +8311,176 @@ test('Layer 3 workbench renders Candidate B retained artifact and visual-lane st
   ]);
 });
 
+test('Layer 3 workbench records Candidate B runtime visual-lane downstream proof from rendered status evidence', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-realistic-readiness-audit'));
+  const requiredCoverage = [
+    'source_directory_scan',
+    'material_preview',
+    'gate_b',
+    'hybrid_qualitative_analysis',
+    'package_commit',
+    'package_review_submit',
+    'handoff_export_prepare',
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+    'session_status_projection',
+  ];
+  const deliveryAuthoritySteps = new Set([
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+  ]);
+  const runtimeArtifactFamilyHash = setup.runtime_authority_hashes.governed_retained_artifact_family_hash;
+  const coverageEvidence = Object.fromEntries(requiredCoverage.map((step) => [
+    step,
+    {
+      status: 'proven',
+      evidence_ref: `candidate-b-rendered-runtime-downstream-proof://${step}`,
+      evidence_hash: `${step.replace(/_/g, '-')}-rendered-proof`,
+      raw_local_path_exposed: false,
+      raw_url_exposed: false,
+      provider_private_token_exposed: false,
+      provider_public_url_enabled: false,
+      provider_object_writes_enabled: false,
+      connector_dispatch_enabled: false,
+      rag_vector_model_runtime_enabled: false,
+      browser_storage_authority_enabled: false,
+      frontend_durable_authority_enabled: false,
+      ...(deliveryAuthoritySteps.has(step)
+        ? {
+          candidate_b_retained_artifact_family_hash: runtimeArtifactFamilyHash,
+          candidate_b_delivery_artifact_roles_bound: true,
+        }
+        : {}),
+    },
+  ]));
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  await expect(panel).toBeVisible();
+  await expect(page.locator('#candidate-b-runtime-downstream-proof-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_runtime_visual_lane_downstream_proof_control',
+  );
+  await expect(page.locator('#candidate-b-runtime-downstream-proof-form')).toHaveAttribute(
+    'data-frontend-durable-authority',
+    'false',
+  );
+  await expect(page.locator('#candidate-b-runtime-downstream-proof-submit')).toBeDisabled();
+
+  await page.locator('#candidate-b-visual-lane-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-visual-lane-bridge-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
+  const visualLaneResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status')
+  ));
+  await page.locator('#candidate-b-visual-lane-status-submit').click();
+  const visualLaneStatus = await expectJson(await visualLaneResponsePromise);
+  expect(visualLaneStatus.status).toBe('available');
+  expect(visualLaneStatus.visual_lane_mode).toBe('candidate_b_opendataloader_page_evidence_v1');
+  await expect(page.locator('#candidate-b-runtime-downstream-proof-run-id')).toHaveValue(setup.candidate_b_run_id);
+  await expect(page.locator('#candidate-b-runtime-downstream-proof-bridge-receipt-id')).toHaveValue(
+    setup.candidate_b_runtime_bridge_receipt_id,
+  );
+  await expect(page.locator('#candidate-b-runtime-downstream-proof-submit')).toBeEnabled();
+
+  await page.locator('#candidate-b-runtime-downstream-proof-coverage-json').fill(JSON.stringify(coverageEvidence));
+  const proofRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof')
+  ));
+  const proofResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof')
+  ));
+  await page.locator('#candidate-b-runtime-downstream-proof-submit').click();
+  const proofPayload = (await proofRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(proofPayload, [
+    'client_request_id',
+    'proof_mode',
+    'operator_decision',
+    'candidate_b_run_id',
+    'bridge_receipt_id',
+    'candidate_b_visual_lane_status_evidence',
+    'coverage_evidence',
+    'operator_confirmation',
+  ]);
+  expect(proofPayload).toMatchObject({
+    proof_mode: 'candidate_b_visual_lane_runtime_downstream_e2e_proof_v1',
+    operator_decision: 'record_candidate_b_visual_lane_runtime_downstream_e2e_proof',
+    candidate_b_run_id: setup.candidate_b_run_id,
+    bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+    operator_confirmation: true,
+  });
+  expect(proofPayload.candidate_b_visual_lane_status_evidence).toMatchObject({
+    schema_id: 'layer3.candidate_b_visual_lane_status.v1',
+    status: 'available',
+    candidate_b_run_id: setup.candidate_b_run_id,
+    bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+    visual_lane_mode: 'candidate_b_opendataloader_page_evidence_v1',
+  });
+  expect(Object.keys(proofPayload.coverage_evidence).sort()).toEqual([...requiredCoverage].sort());
+  for (const forbidden of [
+    'visual_lane_mode',
+    'document_processing_engine',
+    'default_selector',
+    'make_default',
+    'provider_private_url',
+    'provider_public_url',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+    'local_path',
+    'url',
+  ]) {
+    expect(proofPayload).not.toHaveProperty(forbidden);
+  }
+  const proof = await expectJson(await proofResponsePromise);
+  expect(proof.schema_id).toBe('layer3.candidate_b_runtime_downstream_proof.v1');
+  expect(proof.status).toBe('proven');
+  expect(proof.proof_state).toBe('candidate_b_layer3_downstream_e2e_proven');
+  expect(proof.visual_lane_mode).toBe('candidate_b_opendataloader_page_evidence_v1');
+  expect(proof.visual_lane_mode_enabled).toBe(true);
+  expect(proof.coverage).toEqual([...requiredCoverage].sort());
+  expect(proof.candidate_b_default_promotion_enabled).toBe(false);
+  expect(proof.raw_local_path_exposed).toBe(false);
+  expect(proof.provider_private_token_exposed).toBe(false);
+  expect(proof.provider_public_url_enabled).toBe(false);
+  expect(proof.provider_object_writes_enabled).toBe(false);
+  expect(proof.connector_dispatch_enabled).toBe(false);
+  expect(JSON.stringify(proof)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_runtime_downstream_proof_recorded');
+  await expect(panel).toContainText('candidate_b_layer3_downstream_e2e_proven');
+  await expect(panel).toContainText('candidate_b_opendataloader_page_evidence_v1');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/candidate-b/visual-lane/status')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/runtime/downstream-proof')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof' },
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
