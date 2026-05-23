@@ -41,12 +41,17 @@ from main import app  # noqa: E402
 
 SCHEMA_ID = "candidate_b.full_corpus_layer3_operator_workflow.v1"
 SCHEMA_VERSION = 1
+RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID = "candidate_b.full_corpus_runtime_root_lifecycle.v1"
+RUNTIME_ROOT_LIFECYCLE_MODE = "candidate_b_full_corpus_runtime_root_lifecycle_v1"
 WORKFLOW_MODE = "candidate_b_full_corpus_operator_workflow_v1"
 BRIDGE_MODE = "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1"
 PROOF_MODE = "candidate_b_visual_lane_runtime_downstream_e2e_proof_v1"
 OPERATOR_DECISION = "record_candidate_b_visual_lane_runtime_downstream_e2e_proof"
 DEFAULT_BRIDGE_DIR = ROOT / "backend" / "app" / "storage_test_runtime" / "lc_e2e" / "cb-full-corpus-operator-bridge"
 DEFAULT_RECEIPT_DIR = ROOT / "backend" / "app" / "storage_test_runtime" / "lc_e2e" / "cb-full-corpus-operator-workflow"
+DEFAULT_RUNTIME_ROOT_LIFECYCLE_DIR = (
+    ROOT / "backend" / "app" / "storage_test_runtime" / "lc_e2e" / "cb-full-corpus-runtime-root-lifecycle"
+)
 DEFAULT_STORAGE_DIR = ROOT / "backend" / "app" / "storage_test_runtime" / "lc_e2e" / "cb-full-corpus-operator-layer3"
 DEFAULT_MATERIAL_RELATIVE_NAME = "text/target-00001.md"
 
@@ -69,6 +74,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--candidate-b-run-root", default="", help="Optional Candidate B full-corpus runtime root.")
     parser.add_argument("--bridge-dir", default=str(DEFAULT_BRIDGE_DIR), help="Server-owned Candidate B bridge dir.")
     parser.add_argument("--receipt-dir", default=str(DEFAULT_RECEIPT_DIR), help="Server-owned operator receipt dir.")
+    parser.add_argument(
+        "--runtime-root-lifecycle-dir",
+        default=str(DEFAULT_RUNTIME_ROOT_LIFECYCLE_DIR),
+        help="Server-owned Candidate B runtime-root lifecycle receipt dir.",
+    )
     parser.add_argument("--layer3-storage-dir", default=str(DEFAULT_STORAGE_DIR), help="Isolated Layer 3 storage dir.")
     parser.add_argument("--material-relative-name", default=DEFAULT_MATERIAL_RELATIVE_NAME)
     parser.add_argument(
@@ -84,6 +94,11 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
     checkout_root = _checkout_root(args.checkout_root)
     bridge_dir = _resolve_dir(args.bridge_dir, checkout_root=checkout_root, field="bridge_dir")
     receipt_dir = _resolve_dir(args.receipt_dir, checkout_root=checkout_root, field="receipt_dir")
+    runtime_root_lifecycle_dir = _resolve_dir(
+        args.runtime_root_lifecycle_dir,
+        checkout_root=checkout_root,
+        field="runtime_root_lifecycle_dir",
+    )
     layer3_storage_dir = _resolve_dir(args.layer3_storage_dir, checkout_root=checkout_root, field="layer3_storage_dir")
     material_relative_name = _clean_relative_name(args.material_relative_name)
 
@@ -99,7 +114,21 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
     candidate_b_run_id = runs["candidate_b"]["run_id"]
     runtime_discovery_storage_dir = _runtime_discovery_storage_dir(
         checkout_root=checkout_root,
-        runtime_roots=[args.baseline_run_root, args.candidate_a_run_root, args.candidate_b_run_root],
+        runtime_roots=[
+            runs["baseline"]["runtime_root"],
+            runs["candidate_a"]["runtime_root"],
+            runs["candidate_b"]["runtime_root"],
+        ],
+    )
+    runtime_root_lifecycle = _runtime_root_lifecycle_receipt(
+        checkout_root=checkout_root,
+        runtime_parent=runtime_discovery_storage_dir,
+        triplet=triplet,
+    )
+    runtime_root_lifecycle_path = _write_receipt(
+        runtime_root_lifecycle_dir,
+        runtime_root_lifecycle["lifecycle_receipt_id"],
+        runtime_root_lifecycle,
     )
 
     with _layer3_client(layer3_storage_dir=layer3_storage_dir, bridge_dir=bridge_dir) as client:
@@ -216,6 +245,18 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             "curated_root": f"candidate-b-runtime-bridge://{bridge_receipt_id}/curated",
             "receipt_dir": _path_ref(checkout_root, receipt_dir),
         },
+        "runtime_root_lifecycle": {
+            "schema_id": runtime_root_lifecycle["schema_id"],
+            "lifecycle_mode": runtime_root_lifecycle["lifecycle_mode"],
+            "lifecycle_receipt_id": runtime_root_lifecycle["lifecycle_receipt_id"],
+            "lifecycle_receipt_hash": runtime_root_lifecycle["lifecycle_receipt_hash"],
+            "runtime_parent_ref": runtime_root_lifecycle["runtime_parent_ref"],
+            "root_count": runtime_root_lifecycle["root_count"],
+            "receipt_file": _path_ref(checkout_root, runtime_root_lifecycle_path),
+            "validate_only_triplet": runtime_root_lifecycle["validate_only_triplet"],
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+        },
         "layer3": {
             "bridge_status": bridge["status"],
             "source_directory_scan_status": "available",
@@ -250,7 +291,7 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         },
         "next_allowed_actions": [
             "use this receipt as Candidate B full-corpus operator workflow evidence",
-            "wire an operator-visible status surface for this receipt family",
+            "inspect this receipt through the Candidate B full-corpus operator workflow status surface",
         ],
     }
     receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
@@ -301,14 +342,159 @@ def _validate_triplet(
         ) from exc
 
 
+def _runtime_root_lifecycle_receipt(
+    *,
+    checkout_root: Path,
+    runtime_parent: Path | None,
+    triplet: dict[str, Any],
+) -> dict[str, Any]:
+    runs = triplet["selected_runs"]
+    roots = {
+        label: _runtime_root_path(checkout_root, runs[label]["runtime_root"])
+        for label in ("baseline", "candidate_a", "candidate_b")
+    }
+    parent = runtime_parent or _shared_runtime_parent(roots)
+    if not _is_review_runtime_parent(parent):
+        raise OperatorWorkflowError(
+            "runtime_root_lifecycle_parent_not_admitted",
+            "Candidate B runtime-root lifecycle receipts only admit storage/lc_e2e or storage_test_runtime/lc_e2e parents.",
+            details={"runtime_parent": str(parent)},
+        )
+    if {str(root.resolve().parent) for root in roots.values()} != {str(parent.resolve())}:
+        raise OperatorWorkflowError(
+            "runtime_root_lifecycle_parent_mismatch",
+            "Candidate B runtime-root lifecycle receipts require one shared runtime parent for baseline, Candidate A, and Candidate B.",
+            details={
+                "runtime_parent": str(parent),
+                "runtime_roots": {label: str(root) for label, root in roots.items()},
+            },
+        )
+
+    root_entries = {
+        label: _runtime_root_lifecycle_entry(checkout_root, root, run_payload=runs[label])
+        for label, root in roots.items()
+    }
+    receipt_input = {
+        "schema_id": RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "lifecycle_mode": RUNTIME_ROOT_LIFECYCLE_MODE,
+        "baseline_run_id": runs["baseline"]["run_id"],
+        "candidate_a_run_id": runs["candidate_a"]["run_id"],
+        "candidate_b_run_id": runs["candidate_b"]["run_id"],
+        "compare_target_set_hash": triplet["compare_target_set"]["target_set_hash"],
+        "runtime_parent_ref": _path_ref(checkout_root, parent),
+        "root_file_hashes": {
+            label: {
+                "summary_hash": entry["summary_hash"],
+                "database_hash": entry["database_hash"],
+            }
+            for label, entry in root_entries.items()
+        },
+    }
+    receipt_hash = _stable_hash(receipt_input)
+    receipt_id = f"cb-full-corpus-runtime-roots-{receipt_hash[:24]}"
+    return {
+        **receipt_input,
+        "lifecycle_receipt_id": receipt_id,
+        "lifecycle_receipt_hash": receipt_hash,
+        "status": "validated",
+        "server_time": _utc_iso(),
+        "validate_only_triplet": triplet.get("validate_only") is True,
+        "artifacts_seeded_or_generated_by_triplet_validator": (
+            triplet.get("artifacts_seeded_or_generated") is True
+        ),
+        "root_count": len(root_entries),
+        "runtime_roots": root_entries,
+        "corpus": {
+            "corpus_pdf_count": triplet["corpus_pdf_count"],
+            "target_status_counts": triplet["target_status_counts"],
+        },
+        "negative_invariants": {
+            "baseline_default_changed": False,
+            "candidate_a_semantics_changed": False,
+            "candidate_b_default_broadened_beyond_eligible_pdf": False,
+            "runtime_roots_moved_or_copied": False,
+            "runtime_artifacts_seeded_by_lifecycle": False,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "frontend_durable_authority_enabled": False,
+        },
+        "next_allowed_actions": [
+            "use this lifecycle receipt as the runtime-root authority binding for the Candidate B full-corpus operator workflow",
+            "bridge only the validated Candidate B run id through candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+        ],
+    }
+
+
+def _runtime_root_lifecycle_entry(
+    checkout_root: Path,
+    root: Path,
+    *,
+    run_payload: dict[str, Any],
+) -> dict[str, Any]:
+    summary = root / "local_corpus_e2e_summary.json"
+    database = root / "lc.db"
+    missing = [path.name for path in (summary, database) if not path.is_file()]
+    if missing:
+        raise OperatorWorkflowError(
+            "runtime_root_lifecycle_required_file_missing",
+            "Candidate B runtime-root lifecycle validation requires summary and database files for each selected run.",
+            details={"runtime_root": str(root), "missing_files": missing},
+        )
+    return {
+        "run_id": run_payload["run_id"],
+        "runtime_root_ref": _runtime_root_ref(checkout_root, str(root)),
+        "summary_ref": _path_ref(checkout_root, summary),
+        "summary_hash": _file_hash(summary),
+        "database_ref": _path_ref(checkout_root, database),
+        "database_hash": _file_hash(database),
+        "document_processing_engine": run_payload["document_processing_engine"],
+        "visual_lane_mode": run_payload["visual_lane_mode"],
+    }
+
+
+def _runtime_root_path(checkout_root: Path, value: Any) -> Path:
+    text = str(value or "").strip()
+    if not text:
+        raise OperatorWorkflowError("runtime_root_lifecycle_root_missing", "A selected runtime root is missing.")
+    if text.startswith("redacted://"):
+        raise OperatorWorkflowError(
+            "runtime_root_lifecycle_root_unresolvable",
+            "A selected runtime root is redacted and cannot be used for lifecycle validation.",
+        )
+    if text.startswith("repo://"):
+        return (checkout_root / text.removeprefix("repo://")).resolve()
+    root = Path(text)
+    if not root.is_absolute():
+        root = checkout_root / root
+    return root.resolve()
+
+
+def _shared_runtime_parent(roots: dict[str, Path]) -> Path:
+    parents = {str(root.resolve().parent): root.resolve().parent for root in roots.values()}
+    if len(parents) != 1:
+        raise OperatorWorkflowError(
+            "runtime_root_lifecycle_parent_mismatch",
+            "Candidate B runtime-root lifecycle validation requires one shared runtime parent.",
+            details={"runtime_parents": sorted(parents)},
+        )
+    return next(iter(parents.values()))
+
+
+def _file_hash(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _runtime_discovery_storage_dir(*, checkout_root: Path, runtime_roots: list[str]) -> Path | None:
     parents: dict[str, Path] = {}
     for raw_root in runtime_roots:
         if not str(raw_root or "").strip():
             continue
-        root = Path(str(raw_root))
-        if not root.is_absolute():
-            root = checkout_root / root
+        root = _runtime_root_path(checkout_root, raw_root)
         parent = root.resolve().parent
         if not _is_review_runtime_parent(parent):
             raise OperatorWorkflowError(

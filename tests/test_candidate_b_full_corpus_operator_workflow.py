@@ -13,6 +13,7 @@ def test_parser_defaults_to_operator_safe_local_ack_mode() -> None:
     assert args.material_relative_name == workflow.DEFAULT_MATERIAL_RELATIVE_NAME
     assert args.bridge_dir == str(workflow.DEFAULT_BRIDGE_DIR)
     assert args.receipt_dir == str(workflow.DEFAULT_RECEIPT_DIR)
+    assert args.runtime_root_lifecycle_dir == str(workflow.DEFAULT_RUNTIME_ROOT_LIFECYCLE_DIR)
 
 
 def test_coverage_evidence_binds_delivery_artifact_authority() -> None:
@@ -61,6 +62,69 @@ def test_runtime_discovery_storage_dir_uses_shared_explicit_parent(tmp_path: Pat
     )
 
     assert storage_dir == runtime_parent.resolve()
+
+
+def test_runtime_root_lifecycle_receipt_binds_roots_without_raw_path_leak(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    runtime_parent = tmp_path / "shared" / "storage_test_runtime" / "lc_e2e"
+    roots = {
+        "baseline": runtime_parent / "baseline-run",
+        "candidate_a": runtime_parent / "candidate-a-run",
+        "candidate_b": runtime_parent / "candidate-b-run",
+    }
+    checkout_root.mkdir()
+    for label, root in roots.items():
+        root.mkdir(parents=True)
+        (root / "local_corpus_e2e_summary.json").write_text(f'{{"label":"{label}"}}', encoding="utf-8")
+        (root / "lc.db").write_bytes(f"{label}-database".encode("utf-8"))
+
+    receipt = workflow._runtime_root_lifecycle_receipt(
+        checkout_root=checkout_root,
+        runtime_parent=runtime_parent,
+        triplet=_lifecycle_triplet(roots),
+    )
+    serialized = json.dumps(receipt, sort_keys=True)
+
+    assert receipt["schema_id"] == workflow.RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID
+    assert receipt["lifecycle_mode"] == workflow.RUNTIME_ROOT_LIFECYCLE_MODE
+    assert receipt["lifecycle_receipt_id"].startswith("cb-full-corpus-runtime-roots-")
+    assert receipt["status"] == "validated"
+    assert receipt["root_count"] == 3
+    assert receipt["validate_only_triplet"] is True
+    assert receipt["artifacts_seeded_or_generated_by_triplet_validator"] is False
+    assert receipt["negative_invariants"]["runtime_roots_moved_or_copied"] is False
+    assert receipt["runtime_roots"]["candidate_b"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
+    assert receipt["runtime_roots"]["candidate_b"]["runtime_root_ref"].startswith("redacted://sha256/")
+    assert str(runtime_parent) not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+
+def test_runtime_root_lifecycle_receipt_rejects_mixed_runtime_parents(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    checkout_root.mkdir()
+    parent_a = tmp_path / "one" / "storage_test_runtime" / "lc_e2e"
+    parent_b = tmp_path / "two" / "storage_test_runtime" / "lc_e2e"
+    roots = {
+        "baseline": parent_a / "baseline-run",
+        "candidate_a": parent_a / "candidate-a-run",
+        "candidate_b": parent_b / "candidate-b-run",
+    }
+    for root in roots.values():
+        root.mkdir(parents=True)
+        (root / "local_corpus_e2e_summary.json").write_text("{}", encoding="utf-8")
+        (root / "lc.db").write_bytes(b"db")
+
+    try:
+        workflow._runtime_root_lifecycle_receipt(
+            checkout_root=checkout_root,
+            runtime_parent=None,
+            triplet=_lifecycle_triplet(roots),
+        )
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "runtime_root_lifecycle_parent_mismatch"
+    else:
+        raise AssertionError("mixed runtime parents were accepted")
 
 
 def test_runtime_discovery_storage_dir_rejects_unadmitted_parent(tmp_path: Path) -> None:
@@ -130,3 +194,37 @@ def test_blocked_receipt_redacts_raw_paths_and_urls(tmp_path: Path) -> None:
     assert "https://" not in serialized
     assert "repo://" in serialized
     assert "redacted://" in serialized
+
+
+def _lifecycle_triplet(roots: dict[str, Path]) -> dict[str, object]:
+    return {
+        "validate_only": True,
+        "artifacts_seeded_or_generated": False,
+        "corpus_pdf_count": 69,
+        "compare_target_set": {"target_set_hash": "1" * 64},
+        "target_status_counts": {
+            "baseline": {"recommended": 69},
+            "candidate_a": {"recommended": 69},
+            "candidate_b": {"recommended": 69},
+        },
+        "selected_runs": {
+            "baseline": {
+                "run_id": "baseline-run",
+                "runtime_root": str(roots["baseline"]),
+                "document_processing_engine": "baseline",
+                "visual_lane_mode": "baseline",
+            },
+            "candidate_a": {
+                "run_id": "candidate-a-run",
+                "runtime_root": str(roots["candidate_a"]),
+                "document_processing_engine": "baseline",
+                "visual_lane_mode": "candidate_a_page_evidence_v1",
+            },
+            "candidate_b": {
+                "run_id": "candidate-b-run",
+                "runtime_root": str(roots["candidate_b"]),
+                "document_processing_engine": "candidate_b_opendataloader_pdf",
+                "visual_lane_mode": "candidate_b_opendataloader_page_evidence_v1",
+            },
+        },
+    }
