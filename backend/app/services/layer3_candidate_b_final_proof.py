@@ -451,6 +451,10 @@ def _validate_ready_audit(audit: Mapping[str, Any]) -> None:
                 http_status=409,
                 details={"field": field},
             )
+    _validate_operator_status_delivery_previews(
+        audit["operator_status_evidence"],
+        error_prefix="candidate_b_final_proof_operator_status",
+    )
     inspection = audit["candidate_b_final_operator_inspection_evidence"]
     if inspection.get("status") != "available":
         raise CandidateBFinalProofError(
@@ -623,6 +627,40 @@ def _validate_operator_status_evidence(proof: Mapping[str, Any]) -> None:
                 "The selected Candidate B final proof receipt is missing delivery artifact operator projection.",
                 http_status=409,
                 details={"field": field},
+            )
+    _validate_operator_status_delivery_previews(
+        operator_status,
+        error_prefix="candidate_b_final_proof_status_operator_status",
+    )
+
+
+def _validate_operator_status_delivery_previews(
+    operator_status: Mapping[str, Any],
+    *,
+    error_prefix: str,
+) -> None:
+    previews = operator_status.get("runtime_delivery_artifact_role_previews")
+    if not isinstance(previews, list) or not previews:
+        raise CandidateBFinalProofError(
+            f"{error_prefix}_delivery_previews_missing",
+            "Candidate B final proof requires redacted runtime delivery artifact previews from operator-status evidence.",
+            http_status=409,
+        )
+    for index, preview in enumerate(previews):
+        if not isinstance(preview, Mapping):
+            raise CandidateBFinalProofError(
+                f"{error_prefix}_delivery_preview_invalid",
+                "Candidate B final proof contains an invalid runtime delivery artifact preview.",
+                http_status=409,
+                details={"index": index},
+            )
+        display_ref = str(preview.get("display_ref") or "").strip()
+        if not display_ref or "/" in display_ref or "\\" in display_ref or ".." in display_ref:
+            raise CandidateBFinalProofError(
+                f"{error_prefix}_delivery_preview_not_redacted",
+                "Candidate B final proof runtime delivery previews must use redacted display refs only.",
+                http_status=409,
+                details={"index": index},
             )
 
 
