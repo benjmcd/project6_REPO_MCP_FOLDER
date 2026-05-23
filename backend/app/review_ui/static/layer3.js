@@ -8297,6 +8297,31 @@ function candidateBFinalOperatorInspectionRows(inspection) {
     `;
 }
 
+function candidateBOperatorStatusDeliveryPreviewRows(operatorStatus) {
+    if (!operatorStatus || typeof operatorStatus !== 'object') return '';
+    const runtimeSteps = Array.isArray(operatorStatus.runtime_delivery_artifact_coverage_steps)
+        ? operatorStatus.runtime_delivery_artifact_coverage_steps
+        : [];
+    return `
+        <section class="result-review-card">
+            <strong>Operator Status Delivery Preview</strong>
+            <ul>
+                ${fieldItem('operator status hash', operatorStatus.operator_status_hash, { code: true })}
+                ${fieldItem('runtime delivery artifact authority hash', operatorStatus.runtime_delivery_artifact_authority_hash, { code: true })}
+                ${fieldItem('runtime delivery artifact coverage steps', runtimeSteps.join(', '), { code: true })}
+                ${fieldItem('runtime delivery projection visible', operatorStatus.runtime_delivery_artifact_projection_visible)}
+                ${fieldItem('runtime delivery artifact roles bound', operatorStatus.runtime_delivery_artifact_roles_bound)}
+            </ul>
+            <div class="candidate-b-artifact-family-preview">
+                <strong>Redacted runtime delivery artifact previews</strong>
+                <ul>${candidateBArtifactPreviewRows({
+                    delivery_artifacts: operatorStatus.runtime_delivery_artifact_role_previews || [],
+                })}</ul>
+            </div>
+        </section>
+    `;
+}
+
 function candidateBVisualLaneStatusRows(status) {
     if (!status) return '';
     const projection = status.operator_projection || {};
@@ -8439,6 +8464,7 @@ function candidateBDefaultPromotionFinalProofRows(proof) {
                     <p>${escapeHtml(value ?? 'none')}</p>
                 </section>
             `).join('')}
+            ${candidateBOperatorStatusDeliveryPreviewRows(proof.candidate_b_operator_status_evidence)}
             ${candidateBFinalOperatorInspectionRows(proof.candidate_b_final_operator_inspection_evidence)}
         </div>
     `;
@@ -8467,6 +8493,7 @@ function candidateBDefaultPromotionFinalProofStatusRows(status) {
                     <p>${escapeHtml(value ?? 'none')}</p>
                 </section>
             `).join('')}
+            ${candidateBOperatorStatusDeliveryPreviewRows(status.candidate_b_operator_status_evidence)}
             ${candidateBFinalOperatorInspectionRows(status.candidate_b_final_operator_inspection_evidence)}
         </div>
     `;

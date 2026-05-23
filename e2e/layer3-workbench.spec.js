@@ -9627,6 +9627,18 @@ test('Layer 3 workbench records and inspects Candidate B final proof from render
   expect(finalStatus.rollback_selector).toBe('baseline');
   expect(finalStatus.selector_mutation_performed).toBe(false);
   expect(finalStatus.final_operator_inspection_complete).toBe(true);
+  const operatorStatusDeliveryPreviews = (
+    finalStatus.candidate_b_operator_status_evidence.runtime_delivery_artifact_role_previews
+  );
+  const operatorStatusSourcePdfPreview = operatorStatusDeliveryPreviews.find((preview) => (
+    preview.artifact_role === 'source_pdf'
+    && preview.extension === '.pdf'
+    && preview.material_text_payload === false
+  ));
+  expect(operatorStatusSourcePdfPreview).toBeTruthy();
+  expect(operatorStatusSourcePdfPreview.display_ref).toMatch(/\.pdf$/);
+  expect(operatorStatusSourcePdfPreview.display_ref).not.toContain('/');
+  expect(operatorStatusSourcePdfPreview.display_ref).not.toContain('\\');
   const runtimeDeliveryPreviews = finalStatus.candidate_b_final_operator_inspection_evidence.runtime.role_previews.delivery_artifacts;
   const runtimeSourcePdfPreview = runtimeDeliveryPreviews.find((preview) => (
     preview.artifact_role === 'source_pdf'
@@ -9646,6 +9658,9 @@ test('Layer 3 workbench records and inspects Candidate B final proof from render
   await expect(panel).toContainText('candidate_b_final_proof_status_available');
   await expect(panel).toContainText('candidate_b_default_promotion_final_proven');
   await expect(panel).toContainText(proof.proof_receipt_id);
+  await expect(panel).toContainText('Operator Status Delivery Preview');
+  await expect(panel).toContainText('Redacted runtime delivery artifact previews');
+  await expect(panel).toContainText(operatorStatusSourcePdfPreview.display_ref);
   await expect(panel).toContainText('Redacted retained role previews');
   await expect(panel).toContainText('source_pdf');
   await expect(panel).toContainText(runtimeSourcePdfPreview.display_ref);
