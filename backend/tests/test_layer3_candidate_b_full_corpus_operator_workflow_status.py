@@ -113,6 +113,18 @@ def _write_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, 
             "curated_file_count": 71,
             "text_file_count": 71,
         },
+        "runtime_root_lifecycle": {
+            "schema_id": "candidate_b.full_corpus_runtime_root_lifecycle.v1",
+            "lifecycle_mode": "candidate_b_full_corpus_runtime_root_lifecycle_v1",
+            "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-cccccccccccccccccccccccc",
+            "lifecycle_receipt_hash": "5" * 64,
+            "runtime_parent_ref": "redacted://sha256/runtime-parent",
+            "root_count": 3,
+            "receipt_file": "repo://backend/app/storage_test_runtime/lifecycle/receipt.json",
+            "validate_only_triplet": True,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+        },
         "negative_invariants": {
             "baseline_default_changed": False,
             "candidate_a_semantics_changed": False,
@@ -170,7 +182,11 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert body["coverage_count"] == 17
     assert body["corpus"]["eligible_file_count"] == 71
     assert body["artifact_family"]["role_counts"]["delivery_artifacts"] == 69
+    assert body["runtime_root_lifecycle"]["available"] is True
+    assert body["runtime_root_lifecycle"]["lifecycle_receipt_id"].startswith("cb-full-corpus-runtime-roots-")
+    assert body["runtime_root_lifecycle"]["root_count"] == 3
     assert body["operator_projection"]["workflow_status_visible"] is True
+    assert body["operator_projection"]["runtime_root_lifecycle_projection_visible"] is True
     assert body["operator_projection"]["raw_local_path_exposed"] is False
     assert body["validate_only_triplet"] is True
     assert body["artifacts_seeded_or_generated_by_triplet_validator"] is False
@@ -210,6 +226,33 @@ def test_candidate_b_full_corpus_operator_workflow_status_rejects_raw_authority_
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_receipt_exposes_raw_authority"
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_invalid_runtime_root_lifecycle(
+    client: TestClient,
+) -> None:
+    receipt_id, _receipt = _write_receipt(
+        {
+            "runtime_root_lifecycle": {
+                "schema_id": "candidate_b.full_corpus_runtime_root_lifecycle.v1",
+                "lifecycle_mode": "candidate_b_full_corpus_runtime_root_lifecycle_v1",
+                "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-cccccccccccccccccccccccc",
+                "lifecycle_receipt_hash": "5" * 64,
+                "runtime_parent_ref": "redacted://sha256/runtime-parent",
+                "root_count": 2,
+                "validate_only_triplet": True,
+                "raw_local_path_exposed": False,
+                "raw_url_exposed": False,
+            }
+        }
+    )
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_runtime_root_lifecycle_count_invalid"
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_requires_configured_receipt_root(
