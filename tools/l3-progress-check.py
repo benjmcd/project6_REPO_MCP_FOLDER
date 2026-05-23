@@ -2644,6 +2644,10 @@ CANDIDATE_B_VISUAL_LANE_CURRENT_MAIN_SYNC = (
 CANDIDATE_B_FIRST_CLASS_COMPLETION_AUDIT = (
     PLANNING_DOCS / "970-cb-completion-audit.md"
 )
+CANDIDATE_B_FULL_CORPUS_OPERATOR_RUN_CHECKPOINT = (
+    PLANNING_DOCS / "971-cb-full-corpus-run.md"
+)
+LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -90606,6 +90610,57 @@ def _check_candidate_b_first_class_completion_audit(errors: list[str]) -> None:
                 )
 
 
+def _check_candidate_b_full_corpus_operator_run_checkpoint(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_RUN_CHECKPOINT: (
+            "Candidate B Full-Corpus Operator Run Checkpoint",
+            "milestone: candidate_b_full_corpus_operator_run_v1",
+            "current_main: 7f2d93c392f6e42ef0812c10680c209b7b1e17eb",
+            "run_id: f644b3f6-a7a9-4889-84d9-d842f5d12e79",
+            "corpus_pdf_count: 69",
+            "document_processing_engine: candidate_b_opendataloader_pdf",
+            "visual_lane_mode: candidate_b_opendataloader_page_evidence_v1",
+            "target_outcomes_recommended: 69",
+            "candidate_b_ordered_unit_total: 52368",
+            "candidate_b_visual_ref_total: 1270",
+            "validate_wb_prep_blocker: baseline_run_missing",
+            "not_executed_blocked_by_missing_same_checkout_baseline_candidate_a_compare_authority",
+            "candidate_b_full_corpus_compare_triplet_v1",
+            "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "The raw summary is an internal proof receipt and contains local runtime references by design.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "Candidate B / OpenDataLoader PDF runtime admission can be selected through the same proof tool",
+            "--document-processing-engine candidate_b_opendataloader_pdf",
+            "Candidate B mode observes Candidate B / OpenDataLoader PDF extraction for every persisted target",
+        ),
+        ROOT / "tools" / "run_nrc_aps_local_corpus_e2e.py": (
+            'DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B = "candidate_b_opendataloader_pdf"',
+            'VISUAL_LANE_MODE_CANDIDATE_B = "candidate_b_opendataloader_page_evidence_v1"',
+            "candidate_b_visual_lane_requires_candidate_b_document_processing_engine",
+            "candidate_b_retained_source_pdf_ref_count",
+        ),
+        ROOT / "tools" / "validate_wb_prep.py": (
+            'f"{label_code}_run_missing"',
+            "tools/validate_wb_prep.py is validate-only and must not seed or generate artifacts.",
+            "--candidate-b-source-kind",
+        ),
+        CANDIDATE_B_RUNTIME_BRIDGE_SERVICE: (
+            '"baseline_run_id"',
+            '"candidate_a_run_id"',
+            '"candidate_b_run_id"',
+            "compose_workbench_compare_targets",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus operator checkpoint term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91424,6 +91479,7 @@ def main() -> int:
     _check_source_directory_package_handoff_export_post1550_sync(errors)
     _check_candidate_b_visual_lane_current_main_sync(errors)
     _check_candidate_b_first_class_completion_audit(errors)
+    _check_candidate_b_full_corpus_operator_run_checkpoint(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
