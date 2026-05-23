@@ -414,6 +414,14 @@ def _validate_visual_lane_status(
             "Candidate B visual-lane status evidence does not prove Candidate B visual-lane selection.",
             http_status=409,
         )
+    for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
+        if int(visual_evidence.get(field) or 0) <= 0:
+            raise CandidateBDownstreamProofError(
+                "candidate_b_downstream_proof_visual_lane_status_evidence_count_missing",
+                "Candidate B visual-lane status evidence does not prove retained visual/page evidence.",
+                http_status=409,
+                details={"field": field},
+            )
     operator_projection = value.get("operator_projection")
     if not isinstance(operator_projection, dict):
         raise CandidateBDownstreamProofError(
@@ -421,6 +429,14 @@ def _validate_visual_lane_status(
             "Candidate B visual-lane status evidence has no operator projection.",
             http_status=409,
         )
+    for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
+        if int(operator_projection.get(field) or 0) <= 0:
+            raise CandidateBDownstreamProofError(
+                "candidate_b_downstream_proof_visual_lane_status_projection_count_missing",
+                "Candidate B visual-lane status operator projection does not show retained visual/page evidence.",
+                http_status=409,
+                details={"field": field},
+            )
     for field in ("raw_local_path_exposed", "raw_url_exposed", "artifact_bytes_exposed"):
         if operator_projection.get(field) is not False:
             raise CandidateBDownstreamProofError(

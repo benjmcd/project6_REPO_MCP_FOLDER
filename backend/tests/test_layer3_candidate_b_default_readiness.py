@@ -1007,6 +1007,32 @@ def test_candidate_b_default_readiness_accepts_live_runtime_downstream_proof_res
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"],
+)
+def test_candidate_b_runtime_downstream_proof_blocks_empty_visual_lane_status_counts(
+    client: TestClient,
+    field: str,
+) -> None:
+    runtime_receipt_id = _write_runtime_receipt()
+    visual_status_response = client.post(VISUAL_STATUS_ENDPOINT, json=_visual_lane_status_request(runtime_receipt_id))
+    assert visual_status_response.status_code == 200, visual_status_response.text
+    visual_status = visual_status_response.json()
+    visual_status["candidate_b_visual_lane_evidence"][field] = 0
+
+    response = client.post(
+        DOWNSTREAM_PROOF_ENDPOINT,
+        json=_downstream_proof_request(runtime_receipt_id, visual_status),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_downstream_proof_visual_lane_status_evidence_count_missing"
+    assert body["error"]["details"]["field"] == field
+
+
 def test_candidate_b_default_readiness_blocks_loose_operator_status_evidence(client: TestClient) -> None:
     bundle_receipt_id = _write_bundle_receipt()
     runtime_receipt_id = _write_runtime_receipt()
@@ -1526,6 +1552,31 @@ def test_candidate_b_default_readiness_blocks_stale_visual_lane_status_evidence(
     assert body["status"] == "blocked"
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_default_readiness_visual_lane_status_bridge_receipt_hash_mismatch" in codes
+    assert body["candidate_b_default_promotion_enabled"] is False
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"],
+)
+def test_candidate_b_default_readiness_blocks_empty_visual_lane_status_counts(
+    client: TestClient,
+    field: str,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    payload["candidate_b_visual_lane_status_evidence"]["candidate_b_visual_lane_evidence"][field] = 0
+    payload["candidate_b_visual_lane_status_evidence"]["operator_projection"][field] = 0
+
+    response = client.post(READY_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_visual_lane_status_evidence_count_missing" in codes
+    assert "candidate_b_default_readiness_visual_lane_status_projection_count_missing" in codes
     assert body["candidate_b_default_promotion_enabled"] is False
 
 

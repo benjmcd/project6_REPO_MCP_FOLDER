@@ -143,6 +143,28 @@ def test_candidate_b_visual_lane_status_fails_closed_on_stale_hash(client: TestC
     assert response.json()["error"]["code"] == "candidate_b_visual_lane_status_bridge_receipt_hash_mismatch"
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"],
+)
+def test_candidate_b_visual_lane_status_fails_closed_without_retained_visual_evidence(
+    client: TestClient,
+    field: str,
+) -> None:
+    receipt_id = _write_runtime_receipt()
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["candidate_b_visual_lane_evidence"][field] = 0
+    _write_json(receipt_path, receipt)
+
+    response = client.post(STATUS_ENDPOINT, json=_payload(receipt_id))
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["error"]["code"] == "candidate_b_visual_lane_status_evidence_count_missing"
+    assert body["error"]["details"]["field"] == field
+
+
 @pytest.mark.parametrize("receipt_id", ["../cb-runtime-l3-proof", "cb-bundle-l3-wrong-prefix"])
 def test_candidate_b_visual_lane_status_rejects_path_like_or_wrong_prefix_receipt_id(
     client: TestClient, receipt_id: str
