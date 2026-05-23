@@ -8630,6 +8630,202 @@ test('Layer 3 workbench records Candidate B runtime visual-lane downstream proof
   ]);
 });
 
+test('Layer 3 workbench inspects Candidate B operator status from rendered downstream evidence', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-realistic-readiness-audit'));
+  const requiredCoverage = [
+    'source_directory_scan',
+    'material_preview',
+    'gate_b',
+    'hybrid_qualitative_analysis',
+    'package_commit',
+    'package_review_submit',
+    'handoff_export_prepare',
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+    'session_status_projection',
+  ];
+  const deliveryAuthoritySteps = new Set([
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+  ]);
+  const runtimeArtifactFamilyHash = setup.runtime_authority_hashes.governed_retained_artifact_family_hash;
+  const coverageEvidence = Object.fromEntries(requiredCoverage.map((step) => [
+    step,
+    {
+      status: 'proven',
+      evidence_ref: `candidate-b-rendered-operator-status-runtime-proof://${step}`,
+      evidence_hash: `${step.replace(/_/g, '-')}-operator-status-proof`,
+      raw_local_path_exposed: false,
+      raw_url_exposed: false,
+      provider_private_token_exposed: false,
+      provider_public_url_enabled: false,
+      provider_object_writes_enabled: false,
+      connector_dispatch_enabled: false,
+      rag_vector_model_runtime_enabled: false,
+      browser_storage_authority_enabled: false,
+      frontend_durable_authority_enabled: false,
+      ...(deliveryAuthoritySteps.has(step)
+        ? {
+          candidate_b_retained_artifact_family_hash: runtimeArtifactFamilyHash,
+          candidate_b_delivery_artifact_roles_bound: true,
+        }
+        : {}),
+    },
+  ]));
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#candidate-b-operator-status-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_default_promotion_operator_status_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-operator-status-submit')).toBeDisabled();
+
+  await page.locator('#candidate-b-visual-lane-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-visual-lane-bridge-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
+  const visualLaneResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status')
+  ));
+  await page.locator('#candidate-b-visual-lane-status-submit').click();
+  const visualLaneStatus = await expectJson(await visualLaneResponsePromise);
+  expect(visualLaneStatus.status).toBe('available');
+
+  await page.locator('#candidate-b-runtime-downstream-proof-coverage-json').fill(JSON.stringify(coverageEvidence));
+  const runtimeProofResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof')
+  ));
+  await page.locator('#candidate-b-runtime-downstream-proof-submit').click();
+  const runtimeProof = await expectJson(await runtimeProofResponsePromise);
+  expect(runtimeProof.status).toBe('proven');
+  await expect(page.locator('#candidate-b-operator-status-submit')).toBeEnabled();
+
+  await page.locator('#candidate-b-operator-status-baseline-run-id').fill(setup.baseline_run_id);
+  await page.locator('#candidate-b-operator-status-candidate-a-run-id').fill(setup.candidate_a_run_id);
+  await page.locator('#candidate-b-operator-status-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-operator-status-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-operator-status-bundle-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-operator-status-runtime-receipt-id').fill(
+    setup.candidate_b_runtime_bridge_receipt_id,
+  );
+  const operatorRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status')
+  ));
+  const operatorResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status')
+  ));
+  await page.locator('#candidate-b-operator-status-submit').click();
+  const operatorPayload = (await operatorRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(operatorPayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'baseline_run_id',
+    'candidate_a_run_id',
+    'candidate_b_bundle_id',
+    'candidate_b_run_id',
+    'candidate_b_bundle_bridge_receipt_id',
+    'candidate_b_runtime_bridge_receipt_id',
+    'candidate_b_visual_lane_status_evidence',
+    'runtime_downstream_proof',
+  ]);
+  expect(operatorPayload).toMatchObject({
+    status_mode: 'candidate_b_default_promotion_operator_status_v1',
+    operator_decision: 'inspect_candidate_b_default_promotion_operator_status',
+    baseline_run_id: setup.baseline_run_id,
+    candidate_a_run_id: setup.candidate_a_run_id,
+    candidate_b_bundle_id: setup.candidate_b_bundle_id,
+    candidate_b_run_id: setup.candidate_b_run_id,
+    candidate_b_bundle_bridge_receipt_id: setup.candidate_b_bundle_bridge_receipt_id,
+    candidate_b_runtime_bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+  });
+  expect(operatorPayload.candidate_b_visual_lane_status_evidence).toMatchObject({
+    schema_id: 'layer3.candidate_b_visual_lane_status.v1',
+    status: 'available',
+    candidate_b_run_id: setup.candidate_b_run_id,
+    bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+  });
+  expect(operatorPayload.runtime_downstream_proof).toMatchObject({
+    schema_id: 'layer3.candidate_b_runtime_downstream_proof.v1',
+    status: 'proven',
+    candidate_b_run_id: setup.candidate_b_run_id,
+    bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+  });
+  for (const forbidden of [
+    'visual_lane_mode',
+    'document_processing_engine',
+    'default_selector',
+    'make_default',
+    'candidate_b_default',
+    'candidate_b_default_enabled',
+    'candidate_b_default_promotion_enabled',
+    'provider_private_url',
+    'provider_public_url',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+    'local_path',
+    'url',
+  ]) {
+    expect(operatorPayload).not.toHaveProperty(forbidden);
+  }
+  const operatorStatus = await expectJson(await operatorResponsePromise);
+  expect(operatorStatus.schema_id).toBe('layer3.candidate_b_default_promotion_operator_status.v1');
+  expect(operatorStatus.status).toBe('available');
+  expect(operatorStatus.candidate_b_source_kind).toBe('runtime');
+  expect(operatorStatus.selector_mutation_performed).toBe(false);
+  expect(operatorStatus.raw_local_path_exposed).toBe(false);
+  expect(operatorStatus.raw_url_exposed).toBe(false);
+  expect(operatorStatus.artifact_bytes_exposed).toBe(false);
+  expect(operatorStatus.provider_private_token_exposed).toBe(false);
+  expect(operatorStatus.negative_invariants.candidate_b_default_promotion_enabled).toBe(false);
+  expect(operatorStatus.negative_invariants.connector_dispatch_enabled).toBe(false);
+  expect(operatorStatus.negative_invariants.rag_vector_model_runtime_enabled).toBe(false);
+  expect(operatorStatus.negative_invariants.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(operatorStatus)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_operator_status_available');
+  await expect(panel).toContainText('candidate-b-default-operator-status://');
+  await expect(panel).toContainText('selector mutation performed: false');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/candidate-b/visual-lane/status')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/runtime/downstream-proof')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/default-promotion/operator-status')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status' },
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
