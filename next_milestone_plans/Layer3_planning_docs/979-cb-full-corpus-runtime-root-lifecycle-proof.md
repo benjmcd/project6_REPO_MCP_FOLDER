@@ -72,3 +72,5 @@ candidate_b_default_operational_acceptance_v1
 ```
 
 That pass should audit Candidate B eligible-PDF default operation against the completed full-corpus workflow evidence, lifecycle receipt, status surface, baseline rollback, Candidate A semantics, stale/missing-root fail-closed behavior, and operator repeatability. It should not broaden Candidate B beyond eligible/effective PDFs, activate full mockups, add source expansion, add provider object writes, add arbitrary connector dispatch, or add RAG/vector/model runtime unless a separate authority slice admits that work.
+
+That posture is recorded by `980-cb-default-operational-acceptance.md` once the acceptance checkpoint lands.

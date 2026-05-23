@@ -2671,6 +2671,9 @@ CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_CHECKPOINT = (
 CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_PROOF_CHECKPOINT = (
     PLANNING_DOCS / "979-cb-full-corpus-runtime-root-lifecycle-proof.md"
 )
+CANDIDATE_B_DEFAULT_OPERATIONAL_ACCEPTANCE_CHECKPOINT = (
+    PLANNING_DOCS / "980-cb-default-operational-acceptance.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91069,6 +91072,88 @@ def _check_candidate_b_full_corpus_runtime_root_lifecycle_proof(errors: list[str
                 )
 
 
+def _check_candidate_b_default_operational_acceptance(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_DEFAULT_OPERATIONAL_ACCEPTANCE_CHECKPOINT: (
+            "Candidate B Default Operational Acceptance",
+            "milestone: candidate_b_default_operational_acceptance_v1",
+            "checkpoint_base_main: 561b6e40c7559c1c88c9fb6a5932c605537e0a29",
+            "default_selector_scope: candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only",
+            "document_processing_engine_default_for_eligible_pdf: candidate_b_opendataloader_pdf",
+            "non_pdf_document_processing_engine_default: baseline",
+            "baseline_rollback_selector: baseline",
+            "candidate_a_visual_lane_mode: candidate_a_page_evidence_v1",
+            "candidate_b_visual_lane_mode: candidate_b_opendataloader_page_evidence_v1",
+            "candidate_b_visual_lane_default_enabled: false",
+            "selector_mutation_performed: false",
+            "workflow_receipt_id: cb-full-corpus-operator-5be9b2dcecb9810127379140",
+            "runtime_root_lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "runtime_bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "runtime_downstream_proof_id: cb-runtime-downstream-proof-f0ea5bd2af66a9da70cc73bd",
+            "coverage_count: 17",
+            "runtime_root_lifecycle_projection_visible: true",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_object_writes_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "Is a new selector implementation required for this checkpoint? No.",
+            "Does this checkpoint make Candidate B the default visual lane? No.",
+            "Does this checkpoint prove broader corpus expansion? No.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_default_operational_acceptance_v1",
+            "checkpoint_base_main: 561b6e40c7559c1c88c9fb6a5932c605537e0a29",
+            "document_processing_engine_default_for_eligible_pdf: candidate_b_opendataloader_pdf",
+            "non_pdf_document_processing_engine_default: baseline",
+            "baseline_rollback_selector: baseline",
+            "candidate_a_visual_lane_mode: candidate_a_page_evidence_v1",
+            "candidate_b_visual_lane_default_enabled: false",
+            "selector_mutation_performed: false",
+            "runtime_root_lifecycle_projection_visible: true",
+            "This acceptance does not create new corpus artifacts or promote any broader source family.",
+        ),
+        CANDIDATE_B_DEFAULT_SELECTOR_TEST: (
+            "test_omitted_document_processing_engine_defaults_to_candidate_b_for_pdf",
+            "test_omitted_document_processing_engine_preserves_candidate_a_visual_lane_on_baseline_pdf",
+            "test_explicit_baseline_for_pdf_forces_baseline_parser",
+            "test_default_selector_policy_keeps_non_pdf_families_on_baseline",
+            "test_zip_pdf_member_remains_baseline_without_explicit_candidate_b",
+            "test_invalid_document_processing_engine_for_pdf_fails_closed_to_baseline",
+            "test_candidate_b_visual_lane_emits_retained_page_evidence_refs",
+        ),
+        CANDIDATE_B_DEFAULT_READINESS_TEST: (
+            "test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting",
+            "test_candidate_b_final_proof_rejects_stale_runtime_bridge_receipt",
+            "test_candidate_b_final_proof_rejects_stale_bundle_bridge_receipt",
+            "test_candidate_b_final_proof_status_rejects_stale_runtime_bridge_receipt",
+            "test_candidate_b_final_proof_rejects_unredacted_operator_inspection_preview",
+            "test_candidate_b_final_proof_status_rejects_unredacted_operator_status_delivery_preview",
+            "test_candidate_b_default_readiness_blocks_missing_runtime_receipt",
+            "test_candidate_b_default_readiness_blocks_baseline_visual_lane_runtime_receipt",
+            "test_candidate_b_default_readiness_blocks_incomplete_downstream_and_regression",
+            "candidate_b_default_promotion_final_proven",
+            "selector_mutation_performed",
+            "rollback_selector",
+        ),
+        NRC_APS_DOCUMENT_PROCESSING_SERVICE: (
+            "_default_document_processing_engine_for_content_type",
+            'return APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B',
+            "return APS_DOCUMENT_PROCESSING_ENGINE_BASELINE",
+            "APS_VISUAL_LANE_MODE_CANDIDATE_A",
+            "candidate_b_default_fallback_reason",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B default operational acceptance term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91896,6 +91981,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_operator_workflow_runner(errors)
     _check_candidate_b_full_corpus_runtime_root_lifecycle(errors)
     _check_candidate_b_full_corpus_runtime_root_lifecycle_proof(errors)
+    _check_candidate_b_default_operational_acceptance(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
