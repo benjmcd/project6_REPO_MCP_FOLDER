@@ -303,6 +303,14 @@ def _validate_receipt(candidate_b_run_id: str, receipt_id: str, receipt: Mapping
                 http_status=409,
                 details={"field": field},
             )
+    for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
+        if int(visual_evidence.get(field) or 0) <= 0:
+            raise CandidateBVisualLaneStatusError(
+                "candidate_b_visual_lane_status_evidence_count_missing",
+                "The selected Candidate B runtime bridge receipt has no retained visual/page evidence.",
+                http_status=409,
+                details={"field": field},
+            )
 
 
 def _visual_evidence_projection(visual_evidence: Mapping[str, Any]) -> dict[str, Any]:
