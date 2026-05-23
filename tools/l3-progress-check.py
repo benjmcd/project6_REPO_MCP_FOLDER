@@ -11407,9 +11407,12 @@ def _check_ci_performance_observability_entry_freeze(errors: list[str]) -> None:
 
     workflow_text = _read_required_text(PLAYWRIGHT_WORKFLOW, errors)
     for term in (
+        "backend-layer3-api-shard:",
         "backend-layer3-api:",
         "timeout-minutes: 20",
-        "python -m pytest ./backend/tests/test_layer3_*.py -q",
+        '"-m", "pytest"',
+        "./backend/tests/test_layer3_*.py",
+        "PYTEST_SHARD_TOTAL: 4",
         "test:",
         "npx playwright test --project=chromium",
         "name: playwright-report",
@@ -26566,11 +26569,16 @@ def _check_ci_layer3_backend_guardrail(errors: list[str]) -> None:
         errors.append(f"missing required workflow file: {_rel(PLAYWRIGHT_WORKFLOW)}")
         return
     text = PLAYWRIGHT_WORKFLOW.read_text(encoding="utf-8")
-    required = "python -m pytest ./backend/tests/test_layer3_*.py -q"
-    if required not in text:
+    focused_glob = "./backend/tests/test_layer3_*.py"
+    invokes_pytest = "python -m pytest" in text or '"-m", "pytest"' in text
+    if focused_glob not in text or not invokes_pytest:
         errors.append(
             "backend Layer 3 CI guardrail must run the focused test_layer3_*.py family"
         )
+    if "backend-layer3-api-shard:" not in text:
+        errors.append("backend Layer 3 CI guardrail must keep the pytest shard job")
+    if "backend-layer3-api:" not in text:
+        errors.append("backend Layer 3 CI guardrail must expose the aggregate check")
     old_single_file = "python -m pytest ./backend/tests/test_layer3_api.py -q"
     if old_single_file in text:
         errors.append("backend Layer 3 CI guardrail regressed to the single API test file")
