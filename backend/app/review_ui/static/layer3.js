@@ -8192,8 +8192,8 @@ function candidateBArtifactPreviewRows(rolePreviews) {
         const renderedRefs = previewItems.length
             ? previewItems.map((item) => `
                 <li>
-                    <code>${escapeHtml(item.source_ref || 'redacted-ref')}</code>
-                    <span>${escapeHtml(item.relative_name || 'unnamed')}</span>
+                    <code>${escapeHtml(item.source_ref || item.display_ref || 'redacted-ref')}</code>
+                    <span>${escapeHtml(item.relative_name || item.display_ref || 'unnamed')}</span>
                     <small>${escapeHtml([
                         item.artifact_role,
                         item.category,
@@ -8258,6 +8258,42 @@ function candidateBArtifactFamilyStatusRows(status) {
                 <ul>${candidateBArtifactPreviewRows(projection.role_previews)}</ul>
             </section>
         </div>
+    `;
+}
+
+function candidateBFinalOperatorInspectionRows(inspection) {
+    if (!inspection || typeof inspection !== 'object') return '';
+    const sourceRows = ['bundle', 'runtime'].map((sourceKind) => {
+        const summary = inspection[sourceKind] || {};
+        return `
+            <section class="result-review-card candidate-b-final-operator-inspection-card">
+                <strong>${escapeHtml(sourceKind)} Final Inspection</strong>
+                <ul>
+                    ${fieldItem('artifact family hash', summary.artifact_family_hash, { code: true })}
+                    ${fieldItem('visual page evidence', summary.visual_page_evidence_count)}
+                    ${fieldItem('product inspection artifacts', summary.product_inspection_artifact_count)}
+                    ${fieldItem('delivery artifacts', summary.delivery_artifact_count)}
+                    ${fieldItem('PDF material text payload enabled', summary.pdf_material_text_payload_enabled)}
+                    ${fieldItem('image material text payload enabled', summary.image_material_text_payload_enabled)}
+                </ul>
+                <div class="candidate-b-artifact-family-preview">
+                    <strong>Redacted retained role previews</strong>
+                    <ul>${candidateBArtifactPreviewRows(summary.role_previews)}</ul>
+                </div>
+            </section>
+        `;
+    }).join('');
+    return `
+        ${sourceRows}
+        <section class="result-review-card">
+            <strong>Final Inspection Guardrails</strong>
+            <ul>
+                ${fieldItem('inspection hash', inspection.final_operator_inspection_hash, { code: true })}
+                ${fieldItem('raw local path exposed', inspection.raw_local_path_exposed)}
+                ${fieldItem('raw URL exposed', inspection.raw_url_exposed)}
+                ${fieldItem('artifact bytes exposed', inspection.artifact_bytes_exposed)}
+            </ul>
+        </section>
     `;
 }
 
@@ -8403,6 +8439,7 @@ function candidateBDefaultPromotionFinalProofRows(proof) {
                     <p>${escapeHtml(value ?? 'none')}</p>
                 </section>
             `).join('')}
+            ${candidateBFinalOperatorInspectionRows(proof.candidate_b_final_operator_inspection_evidence)}
         </div>
     `;
 }
@@ -8430,6 +8467,7 @@ function candidateBDefaultPromotionFinalProofStatusRows(status) {
                     <p>${escapeHtml(value ?? 'none')}</p>
                 </section>
             `).join('')}
+            ${candidateBFinalOperatorInspectionRows(status.candidate_b_final_operator_inspection_evidence)}
         </div>
     `;
 }
@@ -8588,6 +8626,7 @@ function candidateBReadinessAuditRows(readiness) {
                     ${fieldItem('frontend durable authority enabled', readiness.negative_invariants?.frontend_durable_authority_enabled)}
                 </ul>
             </section>
+            ${candidateBFinalOperatorInspectionRows(readiness.candidate_b_final_operator_inspection_evidence)}
         </div>
     `;
 }
