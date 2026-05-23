@@ -737,11 +737,14 @@ def _final_operator_inspection_evidence(
 
 
 def _final_operator_artifact_available(summary: Mapping[str, Any]) -> bool:
+    role_previews = summary.get("role_previews") if isinstance(summary.get("role_previews"), Mapping) else {}
+    preview_roles = ("visual_page_evidence", "product_inspection_artifacts", "delivery_artifacts")
     return (
         summary.get("available") is True
         and int(summary.get("visual_page_evidence_count") or 0) > 0
         and int(summary.get("product_inspection_artifact_count") or 0) > 0
         and int(summary.get("delivery_artifact_count") or 0) > 0
+        and all(isinstance(role_previews.get(role), list) and role_previews[role] for role in preview_roles)
         and summary.get("pdf_material_text_payload_enabled") is False
         and summary.get("image_material_text_payload_enabled") is False
         and summary.get("raw_url_exposure_enabled") is False
@@ -766,9 +769,7 @@ def _final_operator_artifact_summary(kind: str, artifact_family: Mapping[str, An
     role_previews = (
         _final_operator_role_previews(artifact_family)
         if isinstance(artifact_family.get("roles"), dict)
-        else artifact_family.get("role_previews")
-        if isinstance(artifact_family.get("role_previews"), dict)
-        else {}
+        else _final_operator_redacted_role_previews(artifact_family)
     )
     return {
         "candidate_b_source_kind": kind,
@@ -796,6 +797,35 @@ def _final_operator_role_previews(artifact_family: Mapping[str, Any]) -> dict[st
         ]
         for role in preview_roles
         if isinstance(roles.get(role), list)
+    }
+
+
+def _final_operator_redacted_role_previews(artifact_family: Mapping[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    role_previews = artifact_family.get("role_previews") if isinstance(artifact_family.get("role_previews"), Mapping) else {}
+    preview_roles = ("visual_page_evidence", "product_inspection_artifacts", "delivery_artifacts")
+    result: dict[str, list[dict[str, Any]]] = {}
+    for role in preview_roles:
+        previews = role_previews.get(role)
+        if not isinstance(previews, list):
+            continue
+        redacted = [_final_operator_redacted_preview(item) for item in previews[:3] if isinstance(item, Mapping)]
+        redacted = [item for item in redacted if item is not None]
+        if redacted:
+            result[role] = redacted
+    return result
+
+
+def _final_operator_redacted_preview(item: Mapping[str, Any]) -> dict[str, Any] | None:
+    display_ref = str(item.get("display_ref") or "").strip()
+    if not display_ref or "/" in display_ref or "\\" in display_ref or ".." in display_ref:
+        return None
+    return {
+        "display_ref": display_ref,
+        "artifact_role": str(item.get("artifact_role") or "").strip() or None,
+        "category": str(item.get("category") or "").strip() or None,
+        "extension": str(item.get("extension") or "").strip() or None,
+        "sha256": str(item.get("sha256") or "").strip() or None,
+        "material_text_payload": item.get("material_text_payload") is True,
     }
 
 
