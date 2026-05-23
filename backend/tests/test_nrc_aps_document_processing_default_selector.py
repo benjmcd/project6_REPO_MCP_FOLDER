@@ -62,6 +62,78 @@ def test_omitted_document_processing_engine_defaults_to_candidate_b_for_pdf(monk
     assert calls[0]["visual_lane_mode"] == processing.APS_VISUAL_LANE_MODE_BASELINE
 
 
+def test_omitted_document_processing_engine_preserves_candidate_a_visual_lane_on_baseline_pdf(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    baseline_calls: list[dict[str, Any]] = []
+
+    def forbidden_candidate_b(
+        *,
+        content: bytes,
+        detection: dict[str, Any],
+        config: dict[str, Any],
+        deadline: float | None,
+    ):
+        raise AssertionError("Candidate A visual lane must not be rerouted through Candidate B by omitted engine default")
+
+    def fake_baseline(
+        *,
+        content: bytes,
+        detection: dict[str, Any],
+        config: dict[str, Any],
+        deadline: float | None,
+    ):
+        baseline_calls.append(dict(config))
+        return _fake_pdf_result(detection=detection, config=config, extractor_family="pdf_baseline")
+
+    monkeypatch.setattr(processing, "_process_pdf_candidate_b", forbidden_candidate_b)
+    monkeypatch.setattr(processing, "_process_pdf", fake_baseline)
+
+    result = processing.process_document(
+        content=PDF_BYTES,
+        declared_content_type="application/pdf",
+        config={"visual_lane_mode": processing.APS_VISUAL_LANE_MODE_CANDIDATE_A},
+    )
+
+    assert result["parser_family"] == "pdf_document"
+    assert baseline_calls[0]["document_processing_engine"] == processing.APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+    assert baseline_calls[0]["document_processing_engine_explicit"] is False
+    assert baseline_calls[0]["visual_lane_mode"] == processing.APS_VISUAL_LANE_MODE_CANDIDATE_A
+
+
+def test_omitted_document_processing_engine_with_candidate_b_visual_lane_keeps_candidate_b_pdf_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_candidate_b(
+        *,
+        content: bytes,
+        detection: dict[str, Any],
+        config: dict[str, Any],
+        deadline: float | None,
+    ):
+        calls.append(dict(config))
+        return _fake_pdf_result(
+            detection=detection,
+            config=config,
+            extractor_family="pdf_candidate_b_opendataloader",
+        )
+
+    monkeypatch.setattr(processing, "_process_pdf_candidate_b", fake_candidate_b)
+
+    result = processing.process_document(
+        content=PDF_BYTES,
+        declared_content_type="application/pdf",
+        config={"visual_lane_mode": processing.APS_VISUAL_LANE_MODE_CANDIDATE_B},
+    )
+
+    assert result["parser_family"] == "pdf_candidate_b_opendataloader"
+    assert calls[0]["document_processing_engine"] == processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+    assert calls[0]["document_processing_engine_explicit"] is False
+    assert calls[0]["visual_lane_mode"] == processing.APS_VISUAL_LANE_MODE_CANDIDATE_B
+
+
 def test_omitted_pdf_selector_falls_closed_to_baseline_when_candidate_b_unavailable(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

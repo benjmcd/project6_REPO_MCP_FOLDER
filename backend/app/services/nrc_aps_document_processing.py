@@ -157,6 +157,8 @@ def _resolve_document_processing_engine(config: dict[str, Any], *, effective_con
         ):
             return APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
         return processing_engine
+    if _normalize_visual_lane_mode(config.get("visual_lane_mode")) == APS_VISUAL_LANE_MODE_CANDIDATE_A:
+        return APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
     return _default_document_processing_engine_for_content_type(effective_content_type)
 
 
