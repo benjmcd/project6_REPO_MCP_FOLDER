@@ -2641,6 +2641,9 @@ LAYER3_SOURCE_DIRECTORY_PACKAGE_HANDOFF_EXPORT_POST1550_SYNC = (
 CANDIDATE_B_VISUAL_LANE_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "969-cb-vlane-sync.md"
 )
+CANDIDATE_B_FIRST_CLASS_COMPLETION_AUDIT = (
+    PLANNING_DOCS / "970-cb-completion-audit.md"
+)
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
 )
@@ -2660,8 +2663,17 @@ CANDIDATE_B_DEFAULT_SELECTOR_TEST = (
     ROOT / "backend" / "tests" / "test_nrc_aps_document_processing_default_selector.py"
 )
 NRC_APS_RUN_CONFIG_TEST = ROOT / "backend" / "tests" / "test_nrc_aps_run_config.py"
+CANDIDATE_B_ARTIFACT_STATUS_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_artifact_status.py"
+)
+CANDIDATE_B_BUNDLE_BRIDGE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_bundle_bridge.py"
+)
 CANDIDATE_B_RUNTIME_BRIDGE_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_runtime_bridge.py"
+)
+CANDIDATE_B_VISUAL_LANE_STATUS_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_visual_lane_status.py"
 )
 CANDIDATE_B_DEFAULT_READINESS_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_default_readiness.py"
@@ -90498,6 +90510,102 @@ def _check_candidate_b_visual_lane_current_main_sync(errors: list[str]) -> None:
                 )
 
 
+def _check_candidate_b_first_class_completion_audit(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FIRST_CLASS_COMPLETION_AUDIT: (
+            "Candidate B First-Class Path Completion Audit",
+            "audit_mode: candidate_b_first_class_path_completion_audit_v1",
+            "audit_verdict: current_main_proves_candidate_b_first_class_path",
+            "current_main: fa0f6d0a82512b350db54425389067547a769ca9",
+            "remaining_product_blockers_identified_by_this_audit: []",
+            "goal_completion_state_after_this_audit_lands: candidate_b_first_class_path_complete_on_current_main",
+            "Preserve baseline rollback",
+            "Preserve Candidate A semantics",
+            "Candidate B eligible PDF/corpus default selection",
+            "Candidate B explicit visual-lane evidence",
+            "Retained artifact governance",
+            "Layer 3 material and analysis authority",
+            "Package and review",
+            "Handoff and export",
+            "Delivery, provider-private redacted use, revoke, internal webhook",
+            "Final operator inspection",
+            "Default-promotion readiness",
+            "High-ROI verification improvements",
+            "PR `#1667` landed deterministic Playwright sharding.",
+            "PR `#1668` landed deterministic backend Layer 3 pytest sharding.",
+            "PR `#1669` proved the current Candidate B visual-lane sync",
+            "No current flaky check or state-isolation failure is identified by this audit.",
+            "Candidate B is complete for the bounded first-class current-main path described in this audit once this audit and its checker guard land on current main.",
+        ),
+        PLAYWRIGHT_WORKFLOW: (
+            "backend-layer3-api-shard:",
+            "PYTEST_SHARD_TOTAL: 4",
+            "test-shard-${{ matrix.shard }}/4",
+            "PLAYWRIGHT_SHARD_TOTAL: 4",
+            "needs: backend-layer3-api-shard",
+            "needs: playwright-shard",
+        ),
+        CANDIDATE_B_DEFAULT_SELECTOR_TEST: (
+            "test_omitted_document_processing_engine_defaults_to_candidate_b_for_pdf",
+            "test_omitted_document_processing_engine_preserves_candidate_a_visual_lane_on_baseline_pdf",
+            "test_omitted_document_processing_engine_with_candidate_b_visual_lane_keeps_candidate_b_pdf_default",
+            "test_candidate_b_visual_lane_emits_retained_page_evidence_refs",
+        ),
+        CANDIDATE_B_ARTIFACT_STATUS_TEST: (
+            "test_candidate_b_bundle_artifact_family_status_projects_retained_roles",
+            "test_candidate_b_runtime_artifact_family_status_projects_retained_roles",
+            "test_candidate_b_runtime_artifact_family_status_fails_closed_on_stale_hash",
+            "candidate_b_full_artifact_family_retained_but_text_material_payload_bounded",
+        ),
+        CANDIDATE_B_BUNDLE_BRIDGE_TEST: (
+            "test_candidate_b_bundle_curated_markdown_completes_layer3_downstream_path",
+            "provider_private_prepare",
+            "provider_private_use",
+            "provider_private_revoke",
+            "internal_webhook_dispatch",
+            "test_candidate_b_bundle_bridge_fails_closed_on_missing_retained_raw_json",
+        ),
+        CANDIDATE_B_RUNTIME_BRIDGE_TEST: (
+            "test_candidate_b_visual_lane_runtime_completes_layer3_downstream_path",
+            "test_candidate_b_runtime_bridge_accepts_admitted_candidate_b_visual_lane",
+            "provider_private_prepare",
+            "provider_private_use",
+            "provider_private_revoke",
+            "internal_webhook_dispatch",
+            "source_pdf_material_text_payload_enabled",
+            "image_material_text_payload_enabled",
+        ),
+        CANDIDATE_B_VISUAL_LANE_STATUS_TEST: (
+            "candidate_b_visual_lane_status_v1",
+            "candidate_b_visual_lane_status_projection_visible",
+            "candidate_b_retained_source_pdf_ref_count",
+        ),
+        CANDIDATE_B_DEFAULT_READINESS_TEST: (
+            "candidate_b_default_promotion_ready_for_separate_selection",
+            "candidate_b_default_promotion_final_proven",
+            "test_candidate_b_default_readiness_blocks_missing_artifact_family",
+            "test_candidate_b_default_readiness_blocks_stale_visual_lane_status_evidence",
+            "test_candidate_b_final_proof_rejects_unredacted_operator_inspection_preview",
+            "test_candidate_b_final_proof_status_rejects_unredacted_operator_status_delivery_preview",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "candidate_b_default_promotion_ready_for_separate_selection",
+            "candidate_b_default_promotion_final_proven",
+            "rendered_candidate_b_default_promotion_final_proof_recording_control",
+            "rendered_candidate_b_default_promotion_final_proof_status_inspection_control",
+            "candidate-b-visual-lane-status-submit",
+            "candidate-b-runtime-downstream-proof-submit",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B first-class completion audit term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91315,6 +91423,7 @@ def main() -> int:
     _check_source_directory_package_lifecycle_contract_freeze_current_main_sync(errors)
     _check_source_directory_package_handoff_export_post1550_sync(errors)
     _check_candidate_b_visual_lane_current_main_sync(errors)
+    _check_candidate_b_first_class_completion_audit(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
