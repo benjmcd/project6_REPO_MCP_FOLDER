@@ -42,6 +42,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["candidate_b_default_promotion_readiness_audit"] is True
     assert direct_body["features"]["candidate_b_default_promotion_final_proof"] is True
     assert direct_body["features"]["candidate_b_default_promotion_final_proof_status"] is True
+    assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_status"] is True
     assert direct_body["features"]["source_directory_ingestion_scan"] is True
     assert direct_body["features"]["source_directory_ingestion_status"] is True
     assert direct_body["features"]["source_directory_material_preview"] is True
@@ -130,6 +131,10 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_status_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_status_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status"
+    )
+    assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_status_admitted"] is True
+    assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_status_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status"
     )
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_selector_switch_admitted"] is True
     assert (

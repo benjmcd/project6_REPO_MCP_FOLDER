@@ -37,6 +37,7 @@ from app.services import (
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_final_proof,
+    layer3_candidate_b_full_corpus_operator_workflow_status,
     layer3_candidate_b_operator_status,
     layer3_candidate_b_promotion_closure,
     layer3_candidate_b_runtime_bridge,
@@ -157,6 +158,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_default_promotion_final_proof_endpoint: str
     candidate_b_default_promotion_final_proof_status_admitted: bool
     candidate_b_default_promotion_final_proof_status_endpoint: str
+    candidate_b_full_corpus_operator_workflow_status_admitted: bool
+    candidate_b_full_corpus_operator_workflow_status_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2707,6 +2710,20 @@ class Layer3CandidateBDefaultPromotionOperatorStatusRequest(BaseModel):
     runtime_downstream_proof: dict[str, Any]
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["candidate_b_full_corpus_operator_workflow_status_v1"]
+    operator_decision: Literal["inspect_candidate_b_full_corpus_operator_workflow_status"]
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    candidate_b_run_id: str = Field(min_length=1)
+    bridge_receipt_id: str = Field(min_length=1)
+    downstream_proof_id: str = Field(min_length=1)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3293,6 +3310,36 @@ class Layer3CandidateBDefaultPromotionOperatorStatusResponse(Layer3BaseResponse)
     candidate_b_source_kind: str
     raw_local_path_exposed: bool
     provider_private_token_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowStatusResponse(Layer3BaseResponse):
+    mode: str
+    workflow_receipt_id: str
+    workflow_receipt_hash: str
+    workflow_status: str
+    workflow_status_hash: str
+    workflow_status_ref: str
+    baseline_run_id: str
+    candidate_a_run_id: str
+    candidate_b_run_id: str
+    compare_target_set_hash: str
+    bridge_receipt_id: str
+    bridge_receipt_hash: str
+    downstream_proof_id: str
+    downstream_proof_hash: str
+    coverage_count: int
+    corpus: dict[str, Any]
+    layer3: dict[str, Any]
+    artifact_family: dict[str, Any]
+    operator_projection: dict[str, Any]
+    validate_only_triplet: bool
+    artifacts_seeded_or_generated_by_triplet_validator: bool
+    raw_local_path_exposed: bool
     raw_url_exposed: bool
     artifact_bytes_exposed: bool
     selector_mutation_performed: bool
@@ -9047,6 +9094,23 @@ def post_candidate_b_default_promotion_operator_status(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_operator_status.CandidateBOperatorStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_status(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_status_service = layer3_candidate_b_full_corpus_operator_workflow_status
+    try:
+        return workflow_status_service.candidate_b_full_corpus_operator_workflow_status(
+            payload.model_dump(exclude_unset=True),
+        )
+    except workflow_status_service.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

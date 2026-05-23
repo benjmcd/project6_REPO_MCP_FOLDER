@@ -442,6 +442,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control'" in js.text
     assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE = 'candidate_b_default_promotion_final_proof_status_v1'" in js.text
     assert "CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_final_proof_status'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_status_control'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_MODE = 'candidate_b_full_corpus_operator_workflow_status_v1'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_full_corpus_operator_workflow_status'" in js.text
     assert "function candidateBDefaultPromotionReadinessContract" in js.text
     assert "function candidateBDefaultPromotionStatusState" in js.text
     assert "function candidateBDefaultPromotionFinalProofPayload" in js.text
@@ -450,7 +453,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "async function inspectCandidateBDefaultPromotionFinalProofStatus" in js.text
     assert "function candidateBFinalOperatorInspectionRows" in js.text
     assert "function candidateBOperatorStatusDeliveryPreviewRows" in js.text
+    assert "function candidateBFullCorpusOperatorWorkflowStatusRows" in js.text
+    assert "async function inspectCandidateBFullCorpusOperatorWorkflowStatus" in js.text
     assert "Operator Status Delivery Preview" in js.text
+    assert "Full-Corpus Operator Workflow Status" in js.text
     assert "Redacted retained role previews" in js.text
     assert "Redacted runtime delivery artifact previews" in js.text
     assert "function renderCandidateBDefaultPromotionStatusPanel" in js.text
@@ -466,9 +472,11 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Server revalidates the final proof receipt; this control records no selector mutation." in js.text
     assert "State.bootstrap?.execution_readiness" in js.text
     assert "candidate_b_default_promotion_operator_status_endpoint" in js.text
+    assert "candidate_b_full_corpus_operator_workflow_status_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_status_endpoint" in js.text
     assert "/source/ingestion/candidate-b/default-promotion/operator-status" not in js.text
+    assert "/source/ingestion/candidate-b/full-corpus/operator-workflow/status" not in js.text
     assert "/source/ingestion/candidate-b/default-promotion/final-proof" not in js.text
     assert "/source/ingestion/candidate-b/default-promotion/final-proof/status" not in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'" in js.text

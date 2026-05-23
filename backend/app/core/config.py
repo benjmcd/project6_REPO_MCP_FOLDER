@@ -74,6 +74,10 @@ class Settings(BaseSettings):
         default="",
         alias="LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR",
     )
+    layer3_candidate_b_full_corpus_operator_workflow_dir: str = Field(
+        default="",
+        alias="LAYER3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR",
+    )
     layer3_source_ingestion_dir: str = Field(default="", alias="LAYER3_SOURCE_INGESTION_DIR")
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
     cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
