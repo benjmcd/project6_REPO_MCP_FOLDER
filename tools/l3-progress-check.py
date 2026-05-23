@@ -2680,6 +2680,9 @@ CANDIDATE_B_OPERATOR_STATUS_ELIGIBILITY_CHECKPOINT = (
 CANDIDATE_B_FULL_CORPUS_CURRENT_MAIN_OPERATOR_EXECUTION_CHECKPOINT = (
     PLANNING_DOCS / "982-cb-full-corpus-current-main-operator-execution.md"
 )
+CANDIDATE_B_OPERATOR_HYBRID_AUTHORITY_API_INVOCATION_CHECKPOINT = (
+    PLANNING_DOCS / "983-cb-operator-hybrid-authority-api-invocation.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91278,6 +91281,76 @@ def _check_candidate_b_full_corpus_current_main_operator_execution(errors: list[
                 )
 
 
+def _check_candidate_b_operator_hybrid_authority_api_invocation(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_HYBRID_AUTHORITY_API_INVOCATION_CHECKPOINT: (
+            "Candidate B Operator Hybrid Authority API Invocation",
+            "milestone: candidate_b_operator_hybrid_authority_api_invocation_v1",
+            "checkpoint_base_main: 0b599adc9c4784ff32b6840704e28b0013f028d6",
+            "governed_authority_api: /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+            "direct_material_snapshot_query_removed: true",
+            "direct_text_index_service_call_removed: true",
+            "direct_vector_index_service_call_removed: true",
+            "client_layer3_session_factory_removed_from_runner_orchestration: true",
+            "workflow_receipt_id: cb-full-corpus-operator-95256b11fd16e84a43bb4b8b",
+            "workflow_receipt_hash: 95256b11fd16e84a43bb4b8b69dfb99b178d43e201251ae56dfb72e996592c2c",
+            "downstream_proof_id: cb-runtime-downstream-proof-4e4dfc87454f0acc66bc8111",
+            "status_endpoint_http_status: 200",
+            "workflow_status: proven",
+            "coverage_count: 17",
+            "candidate_b_live_server_invocation_surface_gap_audit_v1",
+            "provider_object_writes_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_hybrid_authority_api_invocation_v1",
+            "governed_authority_api: /api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+            "direct_material_snapshot_query_removed: true",
+            "direct_text_index_service_call_removed: true",
+            "direct_vector_index_service_call_removed: true",
+            "client_layer3_session_factory_removed_from_runner_orchestration: true",
+            "workflow_receipt_id: cb-full-corpus-operator-95256b11fd16e84a43bb4b8b",
+            "downstream_proof_id: cb-runtime-downstream-proof-4e4dfc87454f0acc66bc8111",
+            "status_endpoint_http_status: 200",
+            "workflow_status: proven",
+            "next_exact_posture: candidate_b_live_server_invocation_surface_gap_audit_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER: (
+            '"/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare"',
+            '"client_request_id": f"{request_prefix}-hybrid-authority"',
+            '"session_id": snapshot["session_id"]',
+            '**authority["authority_payload"]',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST: (
+            "test_prepare_package_uses_hybrid_authority_api_without_session_helper",
+            "hybrid-authority/prepare",
+            "not hasattr(client, \"layer3_session_factory\")",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B operator hybrid authority API invocation term: {term}"
+                )
+    runner_body = _read_required_text(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER, errors)
+    forbidden_runner_terms = (
+        "client.layer3_session_factory",
+        "L3MaterialSnapshot",
+        "source_directory_material_text_index",
+        "source_directory_material_embedding_vector_index",
+    )
+    for term in forbidden_runner_terms:
+        if term in runner_body:
+            errors.append(
+                f"{_rel(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER)} "
+                f"must not use direct session/service helper term after hybrid authority API invocation: {term}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92108,6 +92181,7 @@ def main() -> int:
     _check_candidate_b_default_operational_acceptance(errors)
     _check_candidate_b_operator_status_eligibility(errors)
     _check_candidate_b_full_corpus_current_main_operator_execution(errors)
+    _check_candidate_b_operator_hybrid_authority_api_invocation(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
