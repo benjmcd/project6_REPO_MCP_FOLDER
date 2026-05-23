@@ -7773,6 +7773,150 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   ]);
 });
 
+test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let workflowStatusPayload = null;
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status', async (route) => {
+    workflowStatusPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_status.v1',
+        schema_version: 1,
+        request_id: workflowStatusPayload.client_request_id,
+        server_time: '2026-05-23T00:00:00Z',
+        status: 'available',
+        mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+        workflow_receipt_id: workflowStatusPayload.operator_workflow_receipt_id,
+        workflow_receipt_hash: '3'.repeat(64),
+        workflow_status: 'proven',
+        workflow_status_hash: 'd'.repeat(64),
+        workflow_status_ref: 'candidate-b-full-corpus-operator-workflow-status://cb-full-corpus-operator-rendered-proof/dddddddddddddddddddddddd',
+        baseline_run_id: workflowStatusPayload.baseline_run_id,
+        candidate_a_run_id: workflowStatusPayload.candidate_a_run_id,
+        candidate_b_run_id: workflowStatusPayload.candidate_b_run_id,
+        compare_target_set_hash: '1'.repeat(64),
+        bridge_receipt_id: workflowStatusPayload.bridge_receipt_id,
+        bridge_receipt_hash: '0'.repeat(64),
+        downstream_proof_id: workflowStatusPayload.downstream_proof_id,
+        downstream_proof_hash: 'e'.repeat(64),
+        coverage_count: 17,
+        corpus: {
+          corpus_pdf_count: 69,
+          eligible_file_count: 71,
+          material_relative_name: 'text/target-00001.md',
+          eligibility_summary: {
+            all_eligible_pdfs_processed: true,
+            eligible_pdf_count: 69,
+            skipped_pdf_count: 0,
+            failed_pdf_count: 0,
+          },
+        },
+        layer3: {
+          bridge_status: 'prepared',
+          source_directory_scan_status: 'available',
+          source_directory_eligible_file_count: 71,
+          qualitative_analysis_status: 'available',
+          external_export_download_status: 'prepared',
+          same_origin_delivery_available: true,
+          provider_private_state: 'provider_private_signed_url_prepared',
+          provider_private_revoke_state: 'provider_private_signed_url_revoked',
+          internal_webhook_state: 'source_directory_internal_webhook_dispatched',
+          visual_lane_status: 'available',
+          downstream_proof_status: 'proven',
+        },
+        artifact_family: {
+          governed_retained_artifact_family_hash: 'b'.repeat(64),
+          curated_file_count: 71,
+          text_file_count: 69,
+          role_counts: {
+            delivery_artifacts: 1873,
+            visual_page_evidence: 1805,
+            product_inspection_artifacts: 1873,
+            provenance_audit_artifacts: 2542,
+            material_analysis_payloads: 71,
+          },
+        },
+        operator_projection: {
+          workflow_status_visible: true,
+          workflow_receipt_projection_visible: true,
+          bridge_receipt_projection_visible: true,
+          downstream_proof_projection_visible: true,
+          artifact_family_projection_visible: true,
+          eligibility_summary_projection_visible: true,
+          baseline_rollback_projection_visible: true,
+          runtime_root_lifecycle_projection_visible: true,
+          raw_local_path_exposed: false,
+          raw_url_exposed: false,
+          artifact_bytes_exposed: false,
+          selector_mutation_performed: false,
+          frontend_durable_authority_enabled: false,
+        },
+        validate_only_triplet: true,
+        artifacts_seeded_or_generated_by_triplet_validator: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+        negative_invariants: {
+          baseline_default_changed: false,
+          candidate_a_semantics_changed: false,
+          candidate_b_default_broadened_beyond_eligible_pdf: false,
+          frontend_durable_authority_enabled: false,
+        },
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const form = page.locator('#candidate-b-full-corpus-workflow-status-form');
+  await expect(panel).toBeVisible();
+  await expect(form).toHaveAttribute('data-rendered-mode', 'rendered_candidate_b_full_corpus_operator_workflow_status_control');
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(panel).toContainText('Server revalidates the durable Candidate B full-corpus operator workflow receipt without rerunning corpus processing or exposing raw paths and URLs.');
+
+  await page.locator('#candidate-b-full-corpus-workflow-receipt-id').fill('cb-full-corpus-operator-rendered-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-baseline-run-id').fill('baseline-rendered-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-candidate-a-run-id').fill('candidate-a-rendered-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-run-id').fill('candidate-b-rendered-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-bridge-receipt-id').fill('cb-runtime-l3-rendered-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-downstream-proof-id').fill('cb-runtime-downstream-proof-rendered-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-status-submit').click();
+
+  await expect(panel).toContainText('candidate_b_full_corpus_workflow_status_available');
+  await expect(panel).toContainText('cb-full-corpus-operator-rendered-proof');
+  await expect(panel).toContainText('cb-runtime-l3-rendered-proof');
+  await expect(panel).toContainText('cb-runtime-downstream-proof-rendered-proof');
+  await expect(panel).toContainText('workflow status');
+  await expect(panel).toContainText('proven');
+  await expect(panel).toContainText('visual page evidence');
+  await expect(panel).toContainText('1805');
+  await expect(panel).toContainText('raw local path exposed');
+  await expect(panel).toContainText('false');
+
+  expect(workflowStatusPayload).toMatchObject({
+    status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+    operator_decision: 'inspect_candidate_b_full_corpus_operator_workflow_status',
+    operator_workflow_receipt_id: 'cb-full-corpus-operator-rendered-proof',
+    baseline_run_id: 'baseline-rendered-proof',
+    candidate_a_run_id: 'candidate-a-rendered-proof',
+    candidate_b_run_id: 'candidate-b-rendered-proof',
+    bridge_receipt_id: 'cb-runtime-l3-rendered-proof',
+    downstream_proof_id: 'cb-runtime-downstream-proof-rendered-proof',
+  });
+  expect(workflowStatusPayload).not.toHaveProperty('raw_url');
+  expect(workflowStatusPayload).not.toHaveProperty('local_path');
+  expect(workflowStatusPayload).not.toHaveProperty('selector_mutation_performed');
+  expect(workflowStatusPayload).not.toHaveProperty('frontend_durable_authority');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/full-corpus/operator-workflow/status')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status' },
+  ]);
+});
+
 test('Layer 3 workbench inspects Candidate B final proof status through admitted server receipt revalidation', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let finalProofStatusPayload = null;
