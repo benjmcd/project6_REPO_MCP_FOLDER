@@ -69,6 +69,33 @@ def test_operator_eligibility_summary_records_counts_and_rollback() -> None:
     }
 
 
+def test_prepare_package_uses_hybrid_authority_api_without_session_helper() -> None:
+    client = _FakeLayer3Client()
+
+    analysis_payload, _analysis, _prepare_payload, prepare = workflow._prepare_package(
+        client,  # type: ignore[arg-type]
+        {"session_id": "gate-b-session"},
+        request_prefix="candidate-b-full-corpus-operator",
+    )
+
+    assert client.calls[0][0].endswith("/hybrid-authority/prepare")
+    assert client.calls[0][1] == {
+        "client_request_id": "candidate-b-full-corpus-operator-hybrid-authority",
+        "session_id": "gate-b-session",
+        "query_text": "Candidate B full-corpus normalized text",
+        "analysis_question": "What Candidate B runtime material is available?",
+        "analysis_focus": "Candidate B full-corpus operator workflow",
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+    assert analysis_payload["material_snapshot_id"] == "material-snapshot"
+    assert analysis_payload["index_authority_hash"] == "a" * 64
+    assert analysis_payload["embedding_index_authority_hash"] == "b" * 64
+    assert prepare["external_export_download_record_ref"] == "download-record"
+    assert not hasattr(client, "layer3_session_factory")
+
+
 def test_path_ref_redacts_paths_outside_checkout(tmp_path: Path) -> None:
     checkout_root = tmp_path / "checkout"
     inside = checkout_root / "backend" / "receipt.json"
@@ -227,6 +254,77 @@ def test_blocked_receipt_redacts_raw_paths_and_urls(tmp_path: Path) -> None:
     assert "https://" not in serialized
     assert "repo://" in serialized
     assert "redacted://" in serialized
+
+
+class _FakeResponse:
+    def __init__(self, body: dict[str, object]) -> None:
+        self.status_code = 200
+        self._body = body
+
+    def json(self) -> dict[str, object]:
+        return self._body
+
+
+class _FakeLayer3Client:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, object]]] = []
+
+    def post(self, path: str, json: dict[str, object]) -> _FakeResponse:
+        self.calls.append((path, json))
+        if path.endswith("/hybrid-authority/prepare"):
+            return _FakeResponse(
+                {
+                    "authority_payload": {
+                        "material_snapshot_id": "material-snapshot",
+                        "source_ingestion_batch_id": "source-batch",
+                        "source_ingestion_file_id": "source-file",
+                        "content_sha256": "c" * 64,
+                        "file_identity_hash": "d" * 64,
+                        "authority_basis_hash": "e" * 64,
+                        "payload_hash": "f" * 64,
+                        "index_authority_hash": "a" * 64,
+                        "embedding_index_authority_hash": "b" * 64,
+                        "query_text": "Candidate B full-corpus normalized text",
+                        "analysis_question": "What Candidate B runtime material is available?",
+                        "analysis_focus": "Candidate B full-corpus operator workflow",
+                        "limit": 2,
+                        "offset": 0,
+                        "top_k": 2,
+                    }
+                }
+            )
+        if path.endswith("/qualitative-analysis"):
+            return _FakeResponse(
+                {
+                    "qualitative_analysis_hash": "1" * 64,
+                    "source_directory_hybrid_package_review_preview_hash": "2" * 64,
+                }
+            )
+        if path.endswith("/package/commit"):
+            return _FakeResponse(
+                {
+                    "construction_basis_hash": "3" * 64,
+                    "reconciliation_record_id": "reconciliation-record",
+                    "output_package_ids": ["package-user"],
+                    "package_kinds": ["user_facing"],
+                    "payload_hashes": ["4" * 64],
+                }
+            )
+        if path.endswith("/package/review/submit"):
+            return _FakeResponse({"submit_record_ref": "submit-record"})
+        if path.endswith("/handoff/export/prepare"):
+            return _FakeResponse({"prepare_record_ref": "prepare-record", "handoff_export_envelope": {"envelope_ref": "envelope"}})
+        if path.endswith("/handoff/export/download/prepare"):
+            return _FakeResponse(
+                {
+                    "external_export_download_record_ref": "download-record",
+                    "export_download_descriptor_ref": "download-descriptor",
+                    "output_packages": [
+                        {"output_package_id": "package-user", "package_kind": "user_facing", "payload_hash": "4" * 64}
+                    ],
+                }
+            )
+        raise AssertionError(f"unexpected path: {path}")
 
 
 def _lifecycle_triplet(roots: dict[str, Path]) -> dict[str, object]:
