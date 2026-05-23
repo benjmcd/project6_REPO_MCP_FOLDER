@@ -306,7 +306,32 @@ def _seed_runtime_binding(
                     page_count=1,
                     diagnostics_ref=diagnostics_document_ref,
                     visual_page_refs_json=(
-                        json.dumps([{"page_number": 1, "artifact_ref": visual_page_ref}], sort_keys=True)
+                        json.dumps(
+                            [
+                                {
+                                    "page_number": 1,
+                                    "visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
+                                    "document_processing_engine": "candidate_b_opendataloader_pdf",
+                                    "visual_page_class": "diagram_or_visual",
+                                    "status": "candidate_b_page_evidence_retained",
+                                    "evidence_source": "review_browser_candidate_b_fixture",
+                                    "artifact_ref": visual_page_ref,
+                                    "retained_artifact_refs": [
+                                        {
+                                            "relative_name": "input.pdf",
+                                            "artifact_role": "source_pdf",
+                                            "material_text_payload": False,
+                                        },
+                                        {
+                                            "relative_name": "input.json",
+                                            "artifact_role": "raw_json",
+                                            "material_text_payload": True,
+                                        },
+                                    ],
+                                }
+                            ],
+                            sort_keys=True,
+                        )
                         if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE
                         else "[]"
                     ),

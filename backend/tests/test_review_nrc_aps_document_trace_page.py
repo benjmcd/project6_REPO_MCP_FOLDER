@@ -321,8 +321,11 @@ def test_document_trace_js_visual_artifact_extract_units_rendering_present() -> 
     assert "data.visual_artifacts" in js_content
     assert "eu-visual-preview" in js_content
     assert "artifact.endpoint" in js_content
+    assert "retained_artifact_refs" in js_content
+    assert "Retained artifacts" in js_content
     assert ".eu-visual-preview" in css_content
     assert ".eu-visual-card" in css_content
+    assert ".eu-retained-artifacts" in css_content
 
 
 def test_document_trace_js_scope_labels_present() -> None:

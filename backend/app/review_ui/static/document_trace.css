@@ -524,6 +524,39 @@
     font-size: 0.85rem;
 }
 
+.eu-retained-artifacts {
+    border-top: 1px solid var(--border-color);
+    padding-top: 10px;
+}
+
+.eu-retained-artifacts strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+}
+
+.eu-retained-artifacts ul {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.eu-retained-artifacts li {
+    display: grid;
+    grid-template-columns: minmax(90px, max-content) minmax(0, 1fr) max-content;
+    gap: 8px;
+    align-items: center;
+    color: var(--muted-text);
+    font-size: 0.78rem;
+}
+
+.eu-retained-artifacts code {
+    overflow-wrap: anywhere;
+    color: var(--text-color);
+}
+
 /* --- Scope clarity labels --- */
 
 .tab-scope-badge {

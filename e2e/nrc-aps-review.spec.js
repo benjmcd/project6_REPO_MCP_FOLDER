@@ -414,6 +414,26 @@ test('Workbench Compare can switch Candidate B from bundle source to admitted ru
   await expect(page.locator('#run-selector')).toHaveValue('candidate-b-runtime-001');
   await expect(page.locator('#doc-selector')).toHaveValue(candidateBTargetId);
   await expect(page.locator('#run-selector option:checked')).toContainText('Candidate B / OpenDataLoader PDF');
+
+  await page.getByRole('button', { name: /Extracted Units/ }).click();
+  await expect(page.locator('.eu-visual-card')).toContainText('Retained artifacts');
+  const extractedUnits = await page.evaluate(async (targetId) => {
+    const response = await fetch(`/api/v1/review/nrc-aps/runs/candidate-b-runtime-001/documents/${targetId}/extracted-units`);
+    if (!response.ok) throw new Error(`extracted units fetch failed: ${response.status}`);
+    return response.json();
+  }, candidateBTargetId);
+  expect(extractedUnits.visual_artifacts).toHaveLength(1);
+  expect(extractedUnits.visual_artifacts[0].retained_artifact_refs).toEqual([
+    { artifact_role: 'source_pdf', display_ref: 'input.pdf', material_text_payload: false },
+    { artifact_role: 'raw_json', display_ref: 'input.json', material_text_payload: true },
+  ]);
+  await expect(page.locator('.eu-visual-card')).toContainText('source_pdf');
+  await expect(page.locator('.eu-visual-card')).toContainText('input.pdf');
+  await expect(page.locator('.eu-visual-card')).toContainText('raw_json');
+  await expect(page.locator('.eu-visual-card')).toContainText('input.json');
+  await expect(page.locator('.eu-visual-card')).not.toContainText('file_bytes');
+  await expect(page.locator('.eu-visual-card')).not.toContainText('C:\\');
+  expectNoLocalPath(JSON.stringify(extractedUnits));
 });
 
 test('Workbench Compare renders effective Candidate B runtime authority metadata', async ({ page }) => {

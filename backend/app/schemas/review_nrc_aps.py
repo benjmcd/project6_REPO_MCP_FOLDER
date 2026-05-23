@@ -324,6 +324,12 @@ class NrcApsReviewExtractedUnitItemOut(BaseModel):
     mapping_precision: str = "unit"
 
 
+class NrcApsReviewRetainedArtifactRefOut(BaseModel):
+    artifact_role: str | None = None
+    display_ref: str | None = None
+    material_text_payload: bool = False
+
+
 class NrcApsReviewVisualArtifactItemOut(BaseModel):
     artifact_id: str
     page_number: int | None = None
@@ -337,6 +343,7 @@ class NrcApsReviewVisualArtifactItemOut(BaseModel):
     dpi: int | None = None
     sha256: str | None = None
     endpoint: str | None = None
+    retained_artifact_refs: list[NrcApsReviewRetainedArtifactRefOut] = Field(default_factory=list)
 
 
 class NrcApsReviewExtractedUnitsOut(BaseModel):
