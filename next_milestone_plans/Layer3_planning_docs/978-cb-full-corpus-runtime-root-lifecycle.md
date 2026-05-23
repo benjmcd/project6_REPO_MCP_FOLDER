@@ -63,4 +63,6 @@ python .\tools\l3-progress-check.py
 
 ## Remaining Work
 
-The next exact posture remains an operator-repeatability proof from a clean current-main checkout with live full-corpus roots available. If a fresh 40-50 minute corpus regeneration is required, run it only when current evidence is stale, missing, or a concrete defect appears. Do not add proof variants, broader source ingestion, provider object writes, connector dispatch, RAG/vector/model runtime, auth/security changes, browser-storage authority, frontend-only durable authority, or full mockup activation as part of this lifecycle slice.
+The current-main lifecycle proof is recorded in `979-cb-full-corpus-runtime-root-lifecycle-proof.md`. The next exact posture after that proof is `candidate_b_default_operational_acceptance_v1`.
+
+If a fresh 40-50 minute corpus regeneration is required later, run it only when current evidence is stale, missing, or a concrete defect appears. Do not add proof variants, broader source ingestion, provider object writes, connector dispatch, RAG/vector/model runtime, auth/security changes, browser-storage authority, frontend-only durable authority, or full mockup activation as part of this lifecycle slice.
