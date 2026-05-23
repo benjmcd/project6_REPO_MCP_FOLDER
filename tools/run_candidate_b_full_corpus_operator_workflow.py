@@ -97,20 +97,25 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
     baseline_run_id = runs["baseline"]["run_id"]
     candidate_a_run_id = runs["candidate_a"]["run_id"]
     candidate_b_run_id = runs["candidate_b"]["run_id"]
+    runtime_discovery_storage_dir = _runtime_discovery_storage_dir(
+        checkout_root=checkout_root,
+        runtime_roots=[args.baseline_run_root, args.candidate_a_run_root, args.candidate_b_run_root],
+    )
 
     with _layer3_client(layer3_storage_dir=layer3_storage_dir, bridge_dir=bridge_dir) as client:
-        bridge = _post_json(
-            client,
-            "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge",
-            {
-                "client_request_id": "candidate-b-full-corpus-operator-bridge",
-                "bridge_mode": BRIDGE_MODE,
-                "candidate_b_run_id": candidate_b_run_id,
-                "baseline_run_id": baseline_run_id,
-                "candidate_a_run_id": candidate_a_run_id,
-                "operator_confirmation": True,
-            },
-        )
+        with _runtime_discovery_scope(runtime_discovery_storage_dir):
+            bridge = _post_json(
+                client,
+                "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge",
+                {
+                    "client_request_id": "candidate-b-full-corpus-operator-bridge",
+                    "bridge_mode": BRIDGE_MODE,
+                    "candidate_b_run_id": candidate_b_run_id,
+                    "baseline_run_id": baseline_run_id,
+                    "candidate_a_run_id": candidate_a_run_id,
+                    "operator_confirmation": True,
+                },
+            )
         bridge_receipt_id = bridge["bridge_receipt_id"]
         curated_root = bridge_dir / bridge_receipt_id / "curated"
         if not curated_root.is_dir():
@@ -204,9 +209,9 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             "target_status_counts": triplet["target_status_counts"],
         },
         "refs": {
-            "baseline_runtime_root": runs["baseline"]["runtime_root"],
-            "candidate_a_runtime_root": runs["candidate_a"]["runtime_root"],
-            "candidate_b_runtime_root": runs["candidate_b"]["runtime_root"],
+            "baseline_runtime_root": _runtime_root_ref(checkout_root, runs["baseline"]["runtime_root"]),
+            "candidate_a_runtime_root": _runtime_root_ref(checkout_root, runs["candidate_a"]["runtime_root"]),
+            "candidate_b_runtime_root": _runtime_root_ref(checkout_root, runs["candidate_b"]["runtime_root"]),
             "bridge_dir": _path_ref(checkout_root, bridge_dir),
             "curated_root": f"candidate-b-runtime-bridge://{bridge_receipt_id}/curated",
             "receipt_dir": _path_ref(checkout_root, receipt_dir),
@@ -294,6 +299,50 @@ def _validate_triplet(
             exc.detail,
             details=_redact_value(exc.context, checkout_root=checkout_root),
         ) from exc
+
+
+def _runtime_discovery_storage_dir(*, checkout_root: Path, runtime_roots: list[str]) -> Path | None:
+    parents: dict[str, Path] = {}
+    for raw_root in runtime_roots:
+        if not str(raw_root or "").strip():
+            continue
+        root = Path(str(raw_root))
+        if not root.is_absolute():
+            root = checkout_root / root
+        parent = root.resolve().parent
+        if not _is_review_runtime_parent(parent):
+            raise OperatorWorkflowError(
+                "explicit_runtime_root_parent_not_admitted",
+                "Explicit runtime roots must live under an admitted storage_test_runtime/lc_e2e parent.",
+                details={"runtime_root": str(root), "runtime_parent": str(parent)},
+            )
+        parents[str(parent)] = parent
+    if not parents:
+        return None
+    if len(parents) != 1:
+        raise OperatorWorkflowError(
+            "explicit_runtime_roots_parent_mismatch",
+            "The full-corpus operator runner can only bridge one configured runtime-discovery parent per run.",
+            details={"runtime_parent_count": len(parents), "runtime_parents": sorted(parents)},
+        )
+    return next(iter(parents.values()))
+
+
+def _is_review_runtime_parent(path: Path) -> bool:
+    return path.name == "lc_e2e" and path.parent.name in {"storage", "storage_test_runtime"}
+
+
+@contextmanager
+def _runtime_discovery_scope(storage_dir: Path | None) -> Iterator[None]:
+    if storage_dir is None:
+        yield
+        return
+    original_storage_dir = settings.storage_dir
+    settings.storage_dir = str(storage_dir)
+    try:
+        yield
+    finally:
+        settings.storage_dir = original_storage_dir
 
 
 @contextmanager
@@ -746,6 +795,18 @@ def _path_ref(checkout_root: Path, path: Path) -> str:
         return f"repo://{resolved.relative_to(checkout_root.resolve()).as_posix()}"
     except ValueError:
         return f"redacted://sha256/{hashlib.sha256(str(resolved).encode('utf-8')).hexdigest()[:24]}"
+
+
+def _runtime_root_ref(checkout_root: Path, value: Any) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return "redacted://sha256/empty-runtime-root"
+    if text.startswith(("repo://", "redacted://")):
+        return text
+    if _looks_like_path(text):
+        return _path_ref(checkout_root, Path(text))
+    normalized = text.replace("\\", "/").lstrip("/")
+    return f"repo://{normalized}"
 
 
 def _redact_value(value: Any, *, checkout_root: Path) -> Any:
