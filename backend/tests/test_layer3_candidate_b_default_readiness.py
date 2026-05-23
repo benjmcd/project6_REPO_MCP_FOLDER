@@ -816,6 +816,16 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert final_proof["final_operator_inspection_hash"] == inspection["final_operator_inspection_hash"]
     assert final_proof["operator_status_hash"] == body["operator_status_evidence"]["operator_status_hash"]
     assert final_proof["candidate_b_operator_status_evidence"] == body["operator_status_evidence"]
+    assert final_proof["candidate_b_operator_status_evidence"]["runtime_delivery_artifact_role_previews"] == [
+        {
+            "display_ref": "input.pdf",
+            "artifact_role": "source_pdf",
+            "category": None,
+            "extension": ".pdf",
+            "sha256": "d" * 64,
+            "material_text_payload": False,
+        }
+    ]
     assert final_proof["candidate_b_final_operator_inspection_evidence"] == inspection
     assert final_proof["selector_mutation_performed"] is False
     status_response = client.post(
@@ -831,6 +841,9 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert final_status["final_operator_inspection_complete"] is True
     assert final_status["operator_status_hash"] == body["operator_status_evidence"]["operator_status_hash"]
     assert final_status["candidate_b_operator_status_evidence"] == body["operator_status_evidence"]
+    assert final_status["candidate_b_operator_status_evidence"]["runtime_delivery_artifact_role_previews"][0][
+        "display_ref"
+    ] == "input.pdf"
     assert final_status["candidate_b_final_operator_inspection_evidence"] == inspection
     assert final_status["selector_mutation_performed"] is False
     assert str(tmp_path) not in json.dumps(final_status, sort_keys=True)
@@ -1194,6 +1207,41 @@ def test_candidate_b_final_proof_status_rejects_stale_operator_status_evidence(
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_final_proof_status_operator_status_delivery_projection_missing"
     assert body["error"]["details"]["field"] == "runtime_delivery_artifact_roles_bound"
+
+
+def test_candidate_b_final_proof_status_rejects_unredacted_operator_status_delivery_preview(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    readiness_payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    readiness_response = client.post(READY_ENDPOINT, json=readiness_payload)
+    assert readiness_response.status_code == 200, readiness_response.text
+    final_proof_response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(readiness_response.json()))
+    assert final_proof_response.status_code == 200, final_proof_response.text
+    final_proof = final_proof_response.json()
+    proof_receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / runtime_receipt_id
+        / "default-promotion-final-proof"
+        / f"{final_proof['proof_receipt_id']}.json"
+    )
+    stored = json.loads(proof_receipt_path.read_text(encoding="utf-8"))
+    stored["candidate_b_operator_status_evidence"]["runtime_delivery_artifact_role_previews"][0][
+        "display_ref"
+    ] = "storage/input.pdf"
+    _write_json(proof_receipt_path, stored)
+
+    response = client.post(
+        FINAL_PROOF_STATUS_ENDPOINT,
+        json=_final_proof_status_request(runtime_receipt_id, final_proof["proof_receipt_id"]),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_status_operator_status_delivery_preview_not_redacted"
+    assert body["error"]["details"]["index"] == 0
 
 
 def test_candidate_b_operator_status_rejects_path_like_receipt_id(client: TestClient) -> None:

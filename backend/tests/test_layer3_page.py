@@ -449,6 +449,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function candidateBDefaultPromotionFinalProofStatusPayload" in js.text
     assert "async function inspectCandidateBDefaultPromotionFinalProofStatus" in js.text
     assert "function candidateBFinalOperatorInspectionRows" in js.text
+    assert "function candidateBOperatorStatusDeliveryPreviewRows" in js.text
+    assert "Operator Status Delivery Preview" in js.text
     assert "Redacted retained role previews" in js.text
     assert "Redacted runtime delivery artifact previews" in js.text
     assert "function renderCandidateBDefaultPromotionStatusPanel" in js.text
