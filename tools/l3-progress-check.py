@@ -2677,6 +2677,9 @@ CANDIDATE_B_DEFAULT_OPERATIONAL_ACCEPTANCE_CHECKPOINT = (
 CANDIDATE_B_OPERATOR_STATUS_ELIGIBILITY_CHECKPOINT = (
     PLANNING_DOCS / "981-cb-operator-status-eligibility.md"
 )
+CANDIDATE_B_FULL_CORPUS_CURRENT_MAIN_OPERATOR_EXECUTION_CHECKPOINT = (
+    PLANNING_DOCS / "982-cb-full-corpus-current-main-operator-execution.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91234,6 +91237,47 @@ def _check_candidate_b_operator_status_eligibility(errors: list[str]) -> None:
                 )
 
 
+def _check_candidate_b_full_corpus_current_main_operator_execution(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_CURRENT_MAIN_OPERATOR_EXECUTION_CHECKPOINT: (
+            "Candidate B Full-Corpus Current-Main Operator Execution",
+            "milestone: candidate_b_full_corpus_current_main_operator_execution_v1",
+            "current_main: 4659f3362f5d441f8501cb4cb5cd180eb8835ef5",
+            "workflow_receipt_id: cb-full-corpus-operator-9dbd003b8177fe6c8025cec5",
+            "workflow_receipt_hash: 9dbd003b8177fe6c8025cec5035e68ac41e7f962447e2088eb102a64e737f5f2",
+            "runtime_root_lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "downstream_proof_id: cb-runtime-downstream-proof-31c7b242d398dbf536aefc88",
+            "status_endpoint_http_status: 200",
+            "eligibility_summary_projection_visible: true",
+            "baseline_rollback_projection_visible: true",
+            "runtime_root_lifecycle_projection_visible: true",
+            "candidate_b_operator_invocation_surface_gap_audit_v1",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_current_main_operator_execution_v1",
+            "current_main: 4659f3362f5d441f8501cb4cb5cd180eb8835ef5",
+            "workflow_receipt_id: cb-full-corpus-operator-9dbd003b8177fe6c8025cec5",
+            "downstream_proof_id: cb-runtime-downstream-proof-31c7b242d398dbf536aefc88",
+            "status_endpoint_http_status: 200",
+            "eligible_pdf_count: 69",
+            "skipped_pdf_count: 0",
+            "failed_pdf_count: 0",
+            "baseline_rollback_selector: baseline",
+            "next_exact_posture: candidate_b_operator_invocation_surface_gap_audit_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus current-main operator execution term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92063,6 +92107,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_runtime_root_lifecycle_proof(errors)
     _check_candidate_b_default_operational_acceptance(errors)
     _check_candidate_b_operator_status_eligibility(errors)
+    _check_candidate_b_full_corpus_current_main_operator_execution(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
