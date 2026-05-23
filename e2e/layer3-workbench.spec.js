@@ -7857,6 +7857,74 @@ test('Layer 3 workbench inspects Candidate B final proof status through admitted
   ]);
 });
 
+test('Layer 3 workbench inspects a server-generated Candidate B final proof receipt', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-final-proof'));
+  expect(setup.schema_id).toBe('project6.review_browser_candidate_b_final_proof_setup.v1');
+  expect(setup.test_only).toBe(true);
+  expect(setup.server_generated_receipts).toBe(true);
+  expect(setup.candidate_b_runtime_bridge_receipt_id).toMatch(/^cb-runtime-l3-/);
+  expect(setup.proof_receipt_id).toMatch(/^cb-default-final-proof-/);
+  expect(setup.proof_hash).toBeTruthy();
+  expect(JSON.stringify(setup)).not.toContain('C:\\');
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const form = page.locator('#candidate-b-final-proof-status-form');
+  await expect(panel).toBeVisible();
+  await expect(form).toHaveAttribute('data-rendered-mode', 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control');
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#candidate-b-final-proof-runtime-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
+  await page.locator('#candidate-b-final-proof-receipt-id').fill(setup.proof_receipt_id);
+
+  const statusRequestPromise = page.waitForRequest((request) => (
+    request.method() === 'POST'
+    && request.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status')
+  ));
+  const statusResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status')
+  ));
+  await page.locator('#candidate-b-final-proof-status-submit').click();
+  const statusRequest = await statusRequestPromise;
+  const statusResponse = await statusResponsePromise;
+  const statusPayload = statusRequest.postDataJSON();
+  expectOnlyPayloadKeys(statusPayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'candidate_b_runtime_bridge_receipt_id',
+    'proof_receipt_id',
+  ]);
+  expect(statusPayload).toMatchObject({
+    status_mode: 'candidate_b_default_promotion_final_proof_status_v1',
+    operator_decision: 'inspect_candidate_b_default_promotion_final_proof_status',
+    candidate_b_runtime_bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+    proof_receipt_id: setup.proof_receipt_id,
+  });
+  expect(statusPayload).not.toHaveProperty('selector_mutation_performed');
+  expect(statusPayload).not.toHaveProperty('raw_url');
+  expect(statusPayload).not.toHaveProperty('local_path');
+
+  const finalStatus = await expectJson(statusResponse);
+  expect(finalStatus.status).toBe('available');
+  expect(finalStatus.proof_hash).toBe(setup.proof_hash);
+  expect(finalStatus.proof_receipt_id).toBe(setup.proof_receipt_id);
+  expect(finalStatus.candidate_b_default_promotion_enabled).toBe(true);
+  expect(finalStatus.rollback_selector).toBe('baseline');
+  expect(finalStatus.selector_mutation_performed).toBe(false);
+  expect(JSON.stringify(finalStatus)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_final_proof_status_available');
+  await expect(panel).toContainText('candidate_b_default_promotion_final_proven');
+  await expect(panel).toContainText(setup.proof_receipt_id);
+  await expect(panel).toContainText('baseline');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/default-promotion/final-proof/status')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status' },
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });

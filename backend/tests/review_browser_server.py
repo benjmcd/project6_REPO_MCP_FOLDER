@@ -45,7 +45,16 @@ from app.models.models import (
     VariableProfile,
     uuid_str,
 )
-from app.services import layer3_internal_webhook_connector
+from app.services import (
+    layer3_candidate_b_bundle_downstream_proof,
+    layer3_candidate_b_default_readiness,
+    layer3_candidate_b_downstream_proof,
+    layer3_candidate_b_final_proof,
+    layer3_candidate_b_operator_status,
+    layer3_candidate_b_promotion_closure,
+    layer3_candidate_b_visual_lane_status,
+    layer3_internal_webhook_connector,
+)
 from app.services import layer3_pass_entry as layer3_pass_entry_module
 from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
@@ -70,6 +79,18 @@ from app.services.layer3_source_directory_vector_index import (
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
 from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
+from test_layer3_candidate_b_default_readiness import (
+    _bundle_downstream_proof_request,
+    _closure_evidence_request,
+    _final_proof_request,
+    _final_proof_status_request,
+    _operator_status_request,
+    _payload,
+    _downstream_proof_request,
+    _visual_lane_status_request,
+    _write_bundle_receipt,
+    _write_runtime_receipt,
+)
 
 APS_EVIDENCE_BUNDLE_SCHEMA_ID = "aps.evidence_bundle.v2"
 APS_EVIDENCE_BUNDLE_SCHEMA_VERSION = 2
@@ -100,6 +121,56 @@ def _compute_aps_bundle_checksum(payload: dict[str, object]) -> str:
     clean.pop("_bundle_ref", None)
     clean.pop("_persisted", None)
     return hashlib.sha256(_canonical_json_bytes(clean)).hexdigest()
+
+
+def _prepare_candidate_b_final_proof_fixture() -> dict[str, object]:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    bundle_proof = layer3_candidate_b_bundle_downstream_proof.candidate_b_bundle_downstream_proof(
+        _bundle_downstream_proof_request(bundle_receipt_id)
+    )
+    visual_status = layer3_candidate_b_visual_lane_status.candidate_b_visual_lane_status(
+        _visual_lane_status_request(runtime_receipt_id)
+    )
+    runtime_proof = layer3_candidate_b_downstream_proof.candidate_b_runtime_downstream_proof(
+        _downstream_proof_request(runtime_receipt_id, visual_status)
+    )
+    operator_status = layer3_candidate_b_operator_status.candidate_b_default_promotion_operator_status(
+        _operator_status_request(bundle_receipt_id, runtime_receipt_id, visual_status, runtime_proof)
+    )
+    closure = layer3_candidate_b_promotion_closure.candidate_b_default_promotion_closure_evidence(
+        _closure_evidence_request(
+            bundle_receipt_id,
+            runtime_receipt_id,
+            bundle_proof,
+            runtime_proof,
+            operator_status,
+        )
+    )
+    readiness_payload = _payload(bundle_receipt_id, runtime_receipt_id)
+    readiness_payload["bundle_downstream_proof"] = bundle_proof
+    readiness_payload["candidate_b_visual_lane_status_evidence"] = visual_status
+    readiness_payload["runtime_downstream_proof"] = runtime_proof
+    readiness_payload["operator_status_evidence"] = operator_status
+    readiness_payload["closure_evidence"] = closure
+    readiness = layer3_candidate_b_default_readiness.evaluate_candidate_b_default_promotion_readiness(
+        readiness_payload
+    )
+    final_proof = layer3_candidate_b_final_proof.candidate_b_default_promotion_final_proof(
+        _final_proof_request(readiness)
+    )
+    return {
+        "schema_id": "project6.review_browser_candidate_b_final_proof_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "server_generated_receipts": True,
+        "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "proof_receipt_id": final_proof["proof_receipt_id"],
+        "proof_hash": final_proof["proof_hash"],
+        "readiness_audit_id": readiness["readiness_audit_id"],
+        "readiness_audit_hash": readiness["readiness_audit_hash"],
+        "status_request": _final_proof_status_request(runtime_receipt_id, final_proof["proof_receipt_id"]),
+    }
 
 
 def _install_layer3_browser_patches(temp_path: Path) -> None:
@@ -1013,6 +1084,8 @@ def create_app() -> FastAPI:
     settings.layer3_external_local_export_dir = str(temp_path / "external-local-export")
     settings.layer3_internal_webhook_url = "http://127.0.0.1/source-directory-browser-webhook"
     settings.layer3_internal_webhook_display_name = "source-directory-browser-webhook"
+    settings.layer3_candidate_b_bundle_bridge_dir = str(temp_path / "candidate-b-bundle-bridge")
+    settings.layer3_candidate_b_runtime_bridge_dir = str(temp_path / "candidate-b-runtime-bridge")
     source_dir = temp_path / "source-dir"
     _write_layer3_source_directory_fixture(source_dir)
     settings.layer3_source_ingestion_dir = str(source_dir)
@@ -1111,6 +1184,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
                 "/__test/layer3/source-directory-hybrid-authority",
+                "/__test/layer3/candidate-b-final-proof",
             ],
         }
 
@@ -1181,6 +1255,16 @@ def create_app() -> FastAPI:
             }
         finally:
             db.close()
+
+    @app.post("/__test/layer3/candidate-b-final-proof")
+    def candidate_b_final_proof_setup() -> dict[str, object]:
+        try:
+            return _prepare_candidate_b_final_proof_fixture()
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"candidate-b final proof setup failed: {exc}",
+            ) from exc
 
     @app.post("/__test/layer3/seed-quant")
     def seed_layer3_quant() -> dict[str, str]:
