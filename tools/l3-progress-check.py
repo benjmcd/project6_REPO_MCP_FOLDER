@@ -2692,6 +2692,9 @@ CANDIDATE_B_LIVE_HTTP_OPERATOR_RUNNER_CHECKPOINT = (
 CANDIDATE_B_LIVE_HTTP_RUNTIME_PROOF_CHECKPOINT = (
     PLANNING_DOCS / "986-cb-live-http-runtime-proof.md"
 )
+CANDIDATE_B_OPERATOR_REPEATABILITY_ACCEPTANCE_CHECKPOINT = (
+    PLANNING_DOCS / "987-cb-repeatability-acceptance.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91631,6 +91634,91 @@ def _check_candidate_b_live_http_runtime_proof(errors: list[str]) -> None:
                 )
 
 
+def _check_candidate_b_operator_repeatability_acceptance(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_REPEATABILITY_ACCEPTANCE_CHECKPOINT: (
+            "Candidate B Repeatability Acceptance And UI Status Decision",
+            "milestone: candidate_b_operator_repeatability_acceptance_and_ui_status_decision_v1",
+            "current_main: 8b70d2f83bfc9540b9491e34c93c7fc73f650d1d",
+            "acceptance_basis_checkpoint: next_milestone_plans/Layer3_planning_docs/986-cb-live-http-runtime-proof.md",
+            "accepted_operator_execution_surface: live_http_operator_runner_plus_status_endpoint",
+            "accepted_for_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server",
+            "server_side_operator_workflow_run_api_admitted_now: false",
+            "rendered_run_start_control_admitted_now: false",
+            "rendered_read_only_status_projection_admitted_now: false",
+            "next_rendered_status_step: candidate_b_read_only_operator_status_rendered_projection_gap_audit_v1",
+            "workflow_receipt_id: cb-full-corpus-operator-3d717f0edcbeaba69179af15",
+            "workflow_status_hash: d38f89a59ffe13f25c4f134e633530cd1572eefb31d28aa24241cef7c70d9b0e",
+            "bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "downstream_proof_id: cb-runtime-downstream-proof-ee7d48afbe62ffc011fac4d3",
+            "runtime_root_lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "live_http_layer3_api_used: true",
+            "testclient_dependency_used: false",
+            "in_memory_db_used: false",
+            "durable_database_used: true",
+            "configured_internal_webhook_used: true",
+            "status_endpoint_verified: true",
+            "status_endpoint_status: available",
+            "workflow_status: proven",
+            "eligible_pdf_count: 69",
+            "skipped_pdf_count: 0",
+            "failed_pdf_count: 0",
+            "source_directory_eligible_file_count: 71",
+            "coverage_count: 17",
+            "baseline_rollback_available: true",
+            "baseline_default_changed: false",
+            "candidate_a_visual_lane_preserved: true",
+            "candidate_a_semantics_changed: false",
+            "candidate_b_default_broadened_beyond_eligible_pdf: false",
+            "selector_mutation_performed: false",
+            "raw_api_base_url_persisted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "provider_object_writes_enabled: false",
+            "provider_public_url_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "validate_only_triplet: true",
+            "artifacts_seeded_or_generated_by_triplet_validator: false",
+            "No new server-side orchestration API is admitted in this decision.",
+            "No rendered run-start control is admitted in this decision.",
+            "Any rendered behavior change must get headed and headless proof.",
+            "candidate_b_read_only_operator_status_rendered_projection_gap_audit_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_repeatability_acceptance_and_ui_status_decision_v1",
+            "current_main: 8b70d2f83bfc9540b9491e34c93c7fc73f650d1d",
+            "accepted_operator_execution_surface: live_http_operator_runner_plus_status_endpoint",
+            "accepted_for_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server",
+            "server_side_operator_workflow_run_api_admitted_now: false",
+            "rendered_run_start_control_admitted_now: false",
+            "rendered_read_only_status_projection_admitted_now: false",
+            "next_rendered_status_step: candidate_b_read_only_operator_status_rendered_projection_gap_audit_v1",
+            "workflow_receipt_id: cb-full-corpus-operator-3d717f0edcbeaba69179af15",
+            "workflow_status_hash: d38f89a59ffe13f25c4f134e633530cd1572eefb31d28aa24241cef7c70d9b0e",
+            "testclient_dependency_used: false",
+            "in_memory_db_used: false",
+            "status_endpoint_status: available",
+            "baseline_rollback_available: true",
+            "candidate_a_visual_lane_preserved: true",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_read_only_operator_status_rendered_projection_gap_audit_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B repeatability acceptance term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92465,6 +92553,7 @@ def main() -> int:
     _check_candidate_b_live_server_bridge_source_scan(errors)
     _check_candidate_b_live_http_operator_runner(errors)
     _check_candidate_b_live_http_runtime_proof(errors)
+    _check_candidate_b_operator_repeatability_acceptance(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
