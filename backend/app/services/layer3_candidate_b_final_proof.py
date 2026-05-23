@@ -487,6 +487,39 @@ def _validate_ready_audit(audit: Mapping[str, Any]) -> None:
                     http_status=409,
                     details={"candidate_b_source_kind": source_kind, "field": field},
                 )
+        role_previews = summary.get("role_previews")
+        if not isinstance(role_previews, Mapping):
+            raise CandidateBFinalProofError(
+                "candidate_b_final_proof_operator_inspection_role_previews_missing",
+                "Candidate B final operator inspection evidence is missing redacted retained role previews.",
+                http_status=409,
+                details={"candidate_b_source_kind": source_kind},
+            )
+        for role in ("visual_page_evidence", "product_inspection_artifacts", "delivery_artifacts"):
+            previews = role_previews.get(role)
+            if not isinstance(previews, list) or not previews:
+                raise CandidateBFinalProofError(
+                    "candidate_b_final_proof_operator_inspection_role_preview_missing",
+                    "Candidate B final operator inspection evidence is missing a required redacted role preview.",
+                    http_status=409,
+                    details={"candidate_b_source_kind": source_kind, "role": role},
+                )
+            for preview in previews:
+                if not isinstance(preview, Mapping):
+                    raise CandidateBFinalProofError(
+                        "candidate_b_final_proof_operator_inspection_role_preview_invalid",
+                        "Candidate B final operator inspection evidence contains an invalid role preview.",
+                        http_status=409,
+                        details={"candidate_b_source_kind": source_kind, "role": role},
+                    )
+                display_ref = str(preview.get("display_ref") or "").strip()
+                if not display_ref or "/" in display_ref or "\\" in display_ref or ".." in display_ref:
+                    raise CandidateBFinalProofError(
+                        "candidate_b_final_proof_operator_inspection_role_preview_not_redacted",
+                        "Candidate B final operator inspection role previews must use redacted display refs only.",
+                        http_status=409,
+                        details={"candidate_b_source_kind": source_kind, "role": role},
+                    )
         for field in (
             "pdf_material_text_payload_enabled",
             "image_material_text_payload_enabled",
