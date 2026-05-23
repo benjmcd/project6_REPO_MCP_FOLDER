@@ -28,7 +28,25 @@ C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\.venvs\phase7a-py311\Sc
   --runtime-root C:\Users\benny\OneDrive\Desktop\project6_REPO_MCP_FOLDER\backend\app\storage_test_runtime\lc_e2e\<empty_dir>
 ```
 
-Allowed `--document-processing-engine` values are `baseline` and `candidate_b_opendataloader_pdf`. The default remains `baseline`.
+Allowed `--document-processing-engine` values are `baseline` and `candidate_b_opendataloader_pdf`. The runner default remains `baseline` and is sent explicitly so the proof exercises baseline rollback even though omitted eligible-PDF submissions select Candidate B in the live API.
+
+Candidate A PageEvidence comparison evidence uses the baseline processing engine with the admitted Candidate A visual lane:
+
+```powershell
+..\..\.venvs\phase7a-py311\Scripts\python.exe `
+  .\tools\run_nrc_aps_local_corpus_e2e.py `
+  --document-processing-engine baseline `
+  --visual-lane-mode candidate_a_page_evidence_v1 `
+  --runtime-root .\backend\app\storage_test_runtime\lc_e2e\<empty_dir>
+```
+
+After baseline, Candidate A, and Candidate B full-corpus receipts exist in the same checkout, validate the compare triplet without seeding or generating artifacts:
+
+```powershell
+..\..\.venvs\phase7a-py311\Scripts\python.exe .\tools\validate_full_corpus_triplet.py --checkout-root .
+```
+
+The triplet validator is intentionally validate-only. It proves `candidate_b_full_corpus_compare_triplet_v1` from existing receipts and SQLite request config, then reports that `candidate_b_full_corpus_runtime_to_layer3_material_authority_v1` still requires a separately admitted current-main bridge because the existing Layer 3 Candidate B runtime bridge remains scoped to the workbench fixture target set.
 
 ## What The Tool Does
 - Fails closed unless the corpus root, folder counts, PDF total, Phase 7A interpreter, `fitz`/`camelot`/`paddleocr`, Paddle model dirs, and Ghostscript all check out.

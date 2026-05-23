@@ -2647,6 +2647,9 @@ CANDIDATE_B_FIRST_CLASS_COMPLETION_AUDIT = (
 CANDIDATE_B_FULL_CORPUS_OPERATOR_RUN_CHECKPOINT = (
     PLANNING_DOCS / "971-cb-full-corpus-run.md"
 )
+CANDIDATE_B_FULL_CORPUS_COMPARE_TRIPLET_CHECKPOINT = (
+    PLANNING_DOCS / "972-cb-full-corpus-triplet.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -90661,6 +90664,60 @@ def _check_candidate_b_full_corpus_operator_run_checkpoint(errors: list[str]) ->
                 )
 
 
+def _check_candidate_b_full_corpus_compare_triplet_checkpoint(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_COMPARE_TRIPLET_CHECKPOINT: (
+            "Candidate B Full-Corpus Compare Triplet Validation",
+            "milestone: candidate_b_full_corpus_compare_triplet_v1",
+            "current_main: aac0817cdb7247d647cb434fbb43e1303d3f0933",
+            "validation_schema_id: aps.full_corpus_compare_triplet_validation.v1",
+            "validator: tools/validate_full_corpus_triplet.py",
+            "validator_result: passed",
+            "validate_only: true",
+            "artifacts_seeded_or_generated: false",
+            "compare_target_set_hash: 1052eea1153d6fdb21abd18384abc5c2db73497c9d34f18ecf52239f71c82a2f",
+            "baseline_run_id: 7958ca0c-d163-4c6e-a0bf-2cac4e4bfe20",
+            "candidate_a_run_id: 9b09f014-95f9-41cb-820c-8f5296a993bc",
+            "candidate_b_run_id: f644b3f6-a7a9-4889-84d9-d842f5d12e79",
+            "baseline_full_corpus_rollback: proven",
+            "candidate_a_full_corpus_page_evidence_selection: proven",
+            "same_checkout_baseline_candidate_a_candidate_b_compare_triplet: proven",
+            "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "requires_separate_current_main_admission",
+            "existing_layer3_candidate_b_runtime_bridge_scope: workbench_fixture_target_set",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "Candidate A PageEvidence comparison evidence uses the baseline processing engine",
+            "validate_full_corpus_triplet.py --checkout-root .",
+            "candidate_b_full_corpus_compare_triplet_v1",
+            "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+            "validate-only",
+        ),
+        ROOT / "tools" / "validate_full_corpus_triplet.py": (
+            'SUMMARY_SCHEMA_ID = "aps.full_corpus_compare_triplet_validation.v1"',
+            "EXPECTED_CORPUS_PDF_COUNT = 69",
+            "candidate_b_full_corpus_compare_triplet_v1",
+            "artifacts_seeded_or_generated",
+            "requires_separate_current_main_admission",
+            "document_processing_engine_explicit",
+            "existing_layer3_candidate_b_runtime_bridge_scope",
+        ),
+        ROOT / "tests" / "test_validate_full_corpus_triplet.py": (
+            "test_validate_triplet_accepts_same_checkout_full_corpus_receipts",
+            "test_main_discovers_latest_triplet_without_generating_artifacts",
+            "test_validate_triplet_fails_closed_on_implicit_baseline_engine",
+            "test_validate_triplet_fails_closed_on_target_set_mismatch",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus compare triplet term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91480,6 +91537,7 @@ def main() -> int:
     _check_candidate_b_visual_lane_current_main_sync(errors)
     _check_candidate_b_first_class_completion_audit(errors)
     _check_candidate_b_full_corpus_operator_run_checkpoint(errors)
+    _check_candidate_b_full_corpus_compare_triplet_checkpoint(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
