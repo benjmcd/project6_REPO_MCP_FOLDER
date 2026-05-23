@@ -107,6 +107,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-readiness-audit" in payload["seed_routes"]
+    assert "/__test/layer3/candidate-b-realistic-readiness-audit" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-final-proof" in payload["seed_routes"]
     windows_user_prefix = "C:" + "\\" + "Users" + "\\"
     posix_user_prefix = "/" + "Users" + "/"
@@ -134,6 +135,59 @@ def test_review_browser_server_prepares_candidate_b_readiness_audit(client: Test
         "readiness_audit": setup["readiness_audit"],
         "operator_confirmation": True,
     }
+    proof_response = client.post(
+        "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof",
+        json=setup["final_proof_request"],
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    assert proof["status"] == "proven"
+    assert proof["readiness_audit_hash"] == setup["readiness_audit_hash"]
+    assert proof["candidate_b_default_promotion_enabled"] is True
+    assert proof["rollback_selector"] == "baseline"
+    assert proof["selector_mutation_performed"] is False
+    assert "C:\\" not in str(proof)
+
+
+def test_review_browser_server_prepares_realistic_candidate_b_readiness_audit_from_fixture_sources(
+    client: TestClient,
+) -> None:
+    setup_response = client.post("/__test/layer3/candidate-b-realistic-readiness-audit")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_candidate_b_realistic_readiness_audit_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["server_generated_receipts"] is True
+    assert setup["bridge_receipts_from_fixture_sources"] is True
+    assert setup["candidate_b_bundle_id"] == "tests/reports/cb-compare-browser-test"
+    assert setup["candidate_b_run_id"] == "candidate-b-runtime-001"
+    assert setup["baseline_run_id"] == "baseline-run-001"
+    assert setup["candidate_a_run_id"] == "candidate-a-run-001"
+    assert setup["visual_lane_mode"] == "candidate_b_opendataloader_page_evidence_v1"
+    assert setup["candidate_b_bundle_bridge_receipt_id"].startswith("cb-bundle-l3-")
+    assert setup["candidate_b_runtime_bridge_receipt_id"].startswith("cb-runtime-l3-")
+    assert setup["readiness_audit"]["status"] == "ready"
+    assert setup["readiness_audit"]["readiness_audit_hash"] == setup["readiness_audit_hash"]
+    assert setup["bundle_artifact_role_counts"]["material_analysis_payloads"] > 0
+    assert setup["bundle_artifact_role_counts"]["visual_page_evidence"] > 0
+    assert setup["bundle_artifact_role_counts"]["product_inspection_artifacts"] > 0
+    assert setup["bundle_artifact_role_counts"]["delivery_artifacts"] > 0
+    assert setup["runtime_artifact_role_counts"]["material_analysis_payloads"] > 0
+    assert setup["runtime_artifact_role_counts"]["visual_page_evidence"] > 0
+    assert setup["runtime_artifact_role_counts"]["product_inspection_artifacts"] > 0
+    assert setup["runtime_artifact_role_counts"]["delivery_artifacts"] > 0
+    assert setup["bundle_authority_hashes"]["governed_retained_artifact_family_hash"]
+    assert setup["runtime_authority_hashes"]["governed_retained_artifact_family_hash"]
+    assert setup["final_proof_request"] == {
+        "client_request_id": "candidate-b-final-proof",
+        "proof_mode": "candidate_b_default_promotion_final_proof_v1",
+        "operator_decision": "record_candidate_b_default_promotion_final_proof",
+        "readiness_audit": setup["readiness_audit"],
+        "operator_confirmation": True,
+    }
+    assert "C:\\" not in str(setup)
+
     proof_response = client.post(
         "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof",
         json=setup["final_proof_request"],
@@ -196,7 +250,7 @@ def test_review_browser_server_runs_expose_candidate_b_runtime_metadata(client: 
     ]
 
     candidate_b = next(run for run in runs if run["run_id"] == "candidate-b-runtime-001")
-    assert candidate_b["runtime_binding"]["visual_lane_mode"] == "baseline"
+    assert candidate_b["runtime_binding"]["visual_lane_mode"] == "candidate_b_opendataloader_page_evidence_v1"
     assert candidate_b["runtime_binding"]["document_processing_engine"] == "candidate_b_opendataloader_pdf"
     assert candidate_b["runtime_binding"]["variant_kind"] == "candidate_b_opendataloader_pdf"
 

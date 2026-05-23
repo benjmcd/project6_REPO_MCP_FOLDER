@@ -37,6 +37,7 @@ APS_CHUNKING_CONTRACT_ID = "aps_chunking_v2"
 APS_NORMALIZATION_CONTRACT_ID = "aps_text_normalization_v2"
 APS_CONTENT_STATUS_INDEXED = "indexed"
 APS_EVIDENCE_BUNDLE_MODULE = "app.services.nrc_aps_evidence_bundle"
+CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
 _MISSING_MODULE = object()
 
 
@@ -108,15 +109,28 @@ def _load_browser_corpus_fixtures() -> tuple[_BrowserCorpusFixture, ...]:
 def _runtime_summary(
     *,
     run_id: str,
+    visual_lane_mode: str,
     submitted_at: str,
     completed_at: str,
     selected_count: int,
+    document_processing_engine: str | None = None,
 ) -> dict[str, object]:
+    candidate_b_visual_lane_selected = visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE
+    advanced_metrics = {
+        "visual_lane_mode": visual_lane_mode,
+        "visual_ref_total": selected_count if candidate_b_visual_lane_selected else 0,
+        "candidate_b_visual_ref_total": selected_count if candidate_b_visual_lane_selected else 0,
+        "candidate_b_retained_source_pdf_ref_count": selected_count if candidate_b_visual_lane_selected else 0,
+    }
+    if document_processing_engine is not None:
+        advanced_metrics["document_processing_engine"] = document_processing_engine
     return {
         "schema_id": SUMMARY_SCHEMA_ID,
         "schema_version": SUMMARY_SCHEMA_VERSION,
         "run_id": run_id,
         "passed": True,
+        "visual_lane_mode": visual_lane_mode,
+        "document_processing_engine": document_processing_engine,
         "generated_at_utc": completed_at,
         "database_path": "lc.db",
         "database_url": "sqlite:///lc.db",
@@ -135,6 +149,7 @@ def _runtime_summary(
                 "aps_content_index": "reports/aps_content_index.json",
             },
         },
+        "advanced_metrics": advanced_metrics,
     }
 
 
@@ -160,9 +175,11 @@ def _seed_runtime_binding(
 
     summary = _runtime_summary(
         run_id=run_id,
+        visual_lane_mode=visual_lane_mode,
         submitted_at=submitted_at,
         completed_at=completed_at,
         selected_count=len(corpus_fixtures),
+        document_processing_engine=document_processing_engine,
     )
     _write_json(runtime_root / "local_corpus_e2e_summary.json", summary)
 
@@ -201,6 +218,7 @@ def _seed_runtime_binding(
             normalized_ref = f"{corpus_fixture.fixture_id}/normalized.txt"
             diagnostics_linkage_ref = f"{corpus_fixture.fixture_id}/diagnostics-linkage.json"
             diagnostics_document_ref = f"{corpus_fixture.fixture_id}/diagnostics-document.json"
+            visual_page_ref = f"{corpus_fixture.fixture_id}/visual-page-1.json"
             download_ref = f"{corpus_fixture.fixture_id}/download.json"
             discovery_ref = f"{corpus_fixture.fixture_id}/discovery.json"
             selection_ref = f"{corpus_fixture.fixture_id}/selection.json"
@@ -234,6 +252,17 @@ def _seed_runtime_binding(
                     "quality_status": "strong",
                 },
             )
+            if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE:
+                _write_json(
+                    runtime_root / visual_page_ref,
+                    {
+                        "schema_id": "project6.review_browser_candidate_b_visual_page_evidence.v1",
+                        "fixture_id": corpus_fixture.fixture_id,
+                        "page_number": 1,
+                        "evidence_kind": "candidate_b_opendataloader_page_layout",
+                        "source_pdf_retained": True,
+                    },
+                )
             _write_json(runtime_root / download_ref, {"run_id": run_id, "fixture_id": corpus_fixture.fixture_id})
             _write_json(runtime_root / discovery_ref, {"fixture_id": corpus_fixture.fixture_id})
             _write_json(runtime_root / selection_ref, {"fixture_id": corpus_fixture.fixture_id})
@@ -276,7 +305,11 @@ def _seed_runtime_binding(
                     quality_status="strong",
                     page_count=1,
                     diagnostics_ref=diagnostics_document_ref,
-                    visual_page_refs_json="[]",
+                    visual_page_refs_json=(
+                        json.dumps([{"page_number": 1, "artifact_ref": visual_page_ref}], sort_keys=True)
+                        if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE
+                        else "[]"
+                    ),
                     updated_at=timestamp,
                 )
             )
@@ -439,9 +472,21 @@ def _write_candidate_b_bundle(
             "interference_check_passed": True,
         },
     )
+    durable_report_inventory = []
+    for report_name in ("baseline-summary.json", "compare.json", "proof.json"):
+        report_path = bundle_root / report_name
+        durable_report_inventory.append(
+            {
+                "path": (bundle_rel / report_name).as_posix(),
+                "category": "baseline_summary" if report_name == "baseline-summary.json" else "candidate_b_bundle_report",
+                "sha256": _sha256_bytes(report_path.read_bytes()),
+                "size_bytes": report_path.stat().st_size,
+            }
+        )
     _write_json(
         bundle_root / "retain.json",
         {
+            "durable_report_inventory": durable_report_inventory,
             "raw_file_inventory": retained_files,
             "outputs_outside_approved_roots": [],
         },
@@ -473,7 +518,7 @@ def build_review_browser_fixture(tmp_path: Path) -> ReviewBrowserFixture:
     candidate_b_binding = _seed_runtime_binding(
         tmp_path,
         run_id="candidate-b-runtime-001",
-        visual_lane_mode="baseline",
+        visual_lane_mode=CANDIDATE_B_VISUAL_LANE_MODE,
         document_processing_engine="candidate_b_opendataloader_pdf",
         accession_number="ML-BROWSER-003",
         submitted_at="2026-04-13T23:00:00Z",

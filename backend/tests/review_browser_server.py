@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import ModuleType, SimpleNamespace
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
@@ -46,12 +47,14 @@ from app.models.models import (
     uuid_str,
 )
 from app.services import (
+    layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_bundle_downstream_proof,
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_final_proof,
     layer3_candidate_b_operator_status,
     layer3_candidate_b_promotion_closure,
+    layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
     layer3_internal_webhook_connector,
 )
@@ -78,10 +81,13 @@ from app.services.layer3_source_directory_vector_index import (
     source_directory_material_embedding_vector_index,
 )
 from app.services.layer3_typing_entry import materialize_typing_entry
-from review_browser_fixture import build_review_browser_fixture, install_review_browser_patches
+from review_browser_fixture import ReviewBrowserFixture, build_review_browser_fixture, install_review_browser_patches
 from test_layer3_candidate_b_default_readiness import (
+    READY_REGRESSION,
+    READY_SCOPE,
     _bundle_downstream_proof_request,
     _closure_evidence_request,
+    _coverage_evidence,
     _final_proof_request,
     _final_proof_status_request,
     _operator_status_request,
@@ -162,6 +168,160 @@ def _prepare_candidate_b_readiness_audit_fixture() -> dict[str, object]:
         "test_only": True,
         "server_generated_receipts": True,
         "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "readiness_audit_id": readiness["readiness_audit_id"],
+        "readiness_audit_hash": readiness["readiness_audit_hash"],
+        "readiness_audit": readiness,
+        "final_proof_request": _final_proof_request(readiness),
+    }
+
+
+def _bridge_role_counts(bridge_response: dict[str, Any]) -> dict[str, int]:
+    artifact_family = bridge_response.get("governed_retained_artifact_family") or {}
+    return dict(artifact_family.get("role_counts") or {})
+
+
+def _prepare_candidate_b_realistic_readiness_audit_fixture(
+    fixture: ReviewBrowserFixture,
+) -> dict[str, object]:
+    baseline_run_id = fixture.baseline_binding.run_id
+    candidate_a_run_id = fixture.candidate_a_binding.run_id
+    candidate_b_run_id = fixture.candidate_b_binding.run_id
+    bundle_bridge = layer3_candidate_b_bundle_bridge.prepare_candidate_b_bundle_material_bridge(
+        {
+            "client_request_id": "candidate-b-realistic-bundle-bridge",
+            "bridge_mode": layer3_candidate_b_bundle_bridge.BRIDGE_MODE,
+            "candidate_b_bundle_id": fixture.bundle_id,
+            "baseline_run_id": baseline_run_id,
+            "candidate_a_run_id": candidate_a_run_id,
+            "operator_confirmation": True,
+        },
+        checkout_root=fixture.checkout_root,
+    )
+    runtime_bridge = layer3_candidate_b_runtime_bridge.prepare_candidate_b_runtime_material_bridge(
+        {
+            "client_request_id": "candidate-b-realistic-runtime-bridge",
+            "bridge_mode": layer3_candidate_b_runtime_bridge.BRIDGE_MODE,
+            "candidate_b_run_id": candidate_b_run_id,
+            "baseline_run_id": baseline_run_id,
+            "candidate_a_run_id": candidate_a_run_id,
+            "operator_confirmation": True,
+        }
+    )
+    bundle_receipt_id = str(bundle_bridge["bridge_receipt_id"])
+    runtime_receipt_id = str(runtime_bridge["bridge_receipt_id"])
+    bundle_proof = layer3_candidate_b_bundle_downstream_proof.candidate_b_bundle_downstream_proof(
+        {
+            "client_request_id": "candidate-b-realistic-bundle-downstream-proof",
+            "proof_mode": "candidate_b_bundle_downstream_e2e_proof_v1",
+            "operator_decision": "record_candidate_b_bundle_downstream_e2e_proof",
+            "candidate_b_bundle_id": fixture.bundle_id,
+            "bridge_receipt_id": bundle_receipt_id,
+            "coverage_evidence": _coverage_evidence(
+                retained_artifact_family_hash=bundle_bridge["authority_hashes"][
+                    "governed_retained_artifact_family_hash"
+                ],
+            ),
+            "operator_confirmation": True,
+        }
+    )
+    visual_status = layer3_candidate_b_visual_lane_status.candidate_b_visual_lane_status(
+        {
+            "client_request_id": "candidate-b-realistic-visual-lane-status",
+            "status_mode": "candidate_b_visual_lane_status_v1",
+            "operator_decision": "inspect_candidate_b_visual_lane_evidence_status",
+            "candidate_b_run_id": candidate_b_run_id,
+            "bridge_receipt_id": runtime_receipt_id,
+        }
+    )
+    runtime_proof = layer3_candidate_b_downstream_proof.candidate_b_runtime_downstream_proof(
+        {
+            "client_request_id": "candidate-b-realistic-runtime-downstream-proof",
+            "proof_mode": "candidate_b_visual_lane_runtime_downstream_e2e_proof_v1",
+            "operator_decision": "record_candidate_b_visual_lane_runtime_downstream_e2e_proof",
+            "candidate_b_run_id": candidate_b_run_id,
+            "bridge_receipt_id": runtime_receipt_id,
+            "candidate_b_visual_lane_status_evidence": visual_status,
+            "coverage_evidence": _coverage_evidence(
+                retained_artifact_family_hash=runtime_bridge["authority_hashes"][
+                    "governed_retained_artifact_family_hash"
+                ],
+            ),
+            "operator_confirmation": True,
+        }
+    )
+    operator_status = layer3_candidate_b_operator_status.candidate_b_default_promotion_operator_status(
+        {
+            "client_request_id": "candidate-b-realistic-operator-status",
+            "status_mode": "candidate_b_default_promotion_operator_status_v1",
+            "operator_decision": "inspect_candidate_b_default_promotion_operator_status",
+            "baseline_run_id": baseline_run_id,
+            "candidate_a_run_id": candidate_a_run_id,
+            "candidate_b_bundle_id": fixture.bundle_id,
+            "candidate_b_run_id": candidate_b_run_id,
+            "candidate_b_bundle_bridge_receipt_id": bundle_receipt_id,
+            "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+            "candidate_b_visual_lane_status_evidence": visual_status,
+            "runtime_downstream_proof": runtime_proof,
+        }
+    )
+    closure = layer3_candidate_b_promotion_closure.candidate_b_default_promotion_closure_evidence(
+        {
+            "client_request_id": "candidate-b-realistic-closure-evidence",
+            "closure_mode": "candidate_b_default_promotion_closure_evidence_v1",
+            "operator_decision": "record_candidate_b_default_promotion_closure_evidence",
+            "baseline_run_id": baseline_run_id,
+            "candidate_a_run_id": candidate_a_run_id,
+            "candidate_b_bundle_id": fixture.bundle_id,
+            "candidate_b_run_id": candidate_b_run_id,
+            "candidate_b_bundle_bridge_receipt_id": bundle_receipt_id,
+            "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+            "eligible_corpus_scope": READY_SCOPE,
+            "regression_disposition": READY_REGRESSION,
+            "rollback_to_baseline_confirmation": True,
+            "operator_confirmation": True,
+            "bundle_downstream_proof": bundle_proof,
+            "runtime_downstream_proof": runtime_proof,
+            "operator_status_evidence": operator_status,
+        }
+    )
+    readiness = layer3_candidate_b_default_readiness.evaluate_candidate_b_default_promotion_readiness(
+        {
+            "client_request_id": "candidate-b-realistic-default-readiness",
+            "readiness_mode": "candidate_b_default_promotion_readiness_audit_v1",
+            "baseline_run_id": baseline_run_id,
+            "candidate_a_run_id": candidate_a_run_id,
+            "candidate_b_bundle_id": fixture.bundle_id,
+            "candidate_b_run_id": candidate_b_run_id,
+            "candidate_b_bundle_bridge_receipt_id": bundle_receipt_id,
+            "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+            "eligible_corpus_scope": READY_SCOPE,
+            "regression_disposition": READY_REGRESSION,
+            "rollback_to_baseline_confirmation": True,
+            "operator_confirmation": True,
+            "bundle_downstream_proof": bundle_proof,
+            "candidate_b_visual_lane_status_evidence": visual_status,
+            "runtime_downstream_proof": runtime_proof,
+            "operator_status_evidence": operator_status,
+            "closure_evidence": closure,
+        }
+    )
+    return {
+        "schema_id": "project6.review_browser_candidate_b_realistic_readiness_audit_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "server_generated_receipts": True,
+        "bridge_receipts_from_fixture_sources": True,
+        "candidate_b_bundle_id": fixture.bundle_id,
+        "candidate_b_run_id": candidate_b_run_id,
+        "baseline_run_id": baseline_run_id,
+        "candidate_a_run_id": candidate_a_run_id,
+        "candidate_b_bundle_bridge_receipt_id": bundle_receipt_id,
+        "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "visual_lane_mode": runtime_bridge["visual_lane_mode"],
+        "bundle_artifact_role_counts": _bridge_role_counts(bundle_bridge),
+        "runtime_artifact_role_counts": _bridge_role_counts(runtime_bridge),
+        "bundle_authority_hashes": bundle_bridge["authority_hashes"],
+        "runtime_authority_hashes": runtime_bridge["authority_hashes"],
         "readiness_audit_id": readiness["readiness_audit_id"],
         "readiness_audit_hash": readiness["readiness_audit_hash"],
         "readiness_audit": readiness,
@@ -1204,6 +1364,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/materialize-raw-mixed",
                 "/__test/layer3/source-directory-hybrid-authority",
                 "/__test/layer3/candidate-b-readiness-audit",
+                "/__test/layer3/candidate-b-realistic-readiness-audit",
                 "/__test/layer3/candidate-b-final-proof",
             ],
         }
@@ -1294,6 +1455,16 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"candidate-b readiness audit setup failed: {exc}",
+            ) from exc
+
+    @app.post("/__test/layer3/candidate-b-realistic-readiness-audit")
+    def candidate_b_realistic_readiness_audit_setup() -> dict[str, object]:
+        try:
+            return _prepare_candidate_b_realistic_readiness_audit_fixture(fixture)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"candidate-b realistic readiness audit setup failed: {exc}",
             ) from exc
 
     @app.post("/__test/layer3/seed-quant")
