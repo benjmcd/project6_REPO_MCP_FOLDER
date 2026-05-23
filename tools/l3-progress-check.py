@@ -2701,6 +2701,9 @@ CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_STATUS_PROOF_CHECKPOINT = (
 CANDIDATE_B_OPERATOR_REPEATABILITY_COMPLETION_AUDIT_CHECKPOINT = (
     PLANNING_DOCS / "989-cb-repeatability-completion-audit.md"
 )
+CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_FREEZE = (
+    PLANNING_DOCS / "990-cb-server-run-api-freeze.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -91930,6 +91933,121 @@ def _check_candidate_b_operator_repeatability_completion_audit(errors: list[str]
                 )
 
 
+def _check_candidate_b_server_owned_workflow_run_api_freeze(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_FREEZE: (
+            "Candidate B Server-Owned Workflow Run API Freeze",
+            "milestone: candidate_b_server_owned_workflow_run_api_authority_freeze_v1",
+            "current_main: c6c0c481794098b984792bbc49ae84a63a9b2a4e",
+            "source_posture_checkpoint: next_milestone_plans/Layer3_planning_docs/989-cb-repeatability-completion-audit.md",
+            "previous_next_exact_posture: candidate_b_post_repeatability_operator_workflow_expansion_selection_v1",
+            "selected_next_slice: candidate_b_server_owned_workflow_run_api_authority_v1",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_runtime_target: candidate_b_server_owned_workflow_run_api_runtime_v1",
+            "selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "existing_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "run_mode: candidate_b_full_corpus_operator_workflow_run_v1",
+            "operator_decision: start_candidate_b_full_corpus_operator_workflow",
+            "accepted_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server",
+            "source_authority_model: server_owned_runtime_root_lifecycle_receipt_plus_compare_target_set",
+            "client_supplied_raw_runtime_roots_admitted: false",
+            "browser_supplied_runtime_roots_admitted: false",
+            "server_resolves_runtime_roots_from_receipt_authority: true",
+            "workflow_receipt_binding_required: true",
+            "runtime_root_lifecycle_receipt_required: true",
+            "baseline_run_id_required: true",
+            "candidate_a_run_id_required: true",
+            "candidate_b_run_id_required: true",
+            "compare_target_set_hash_required: true",
+            "idempotency_key_required: true",
+            "idempotency_basis: client_request_id_plus_authority_basis_hash",
+            "state_machine_required: true",
+            "required_states: accepted,running,proven,blocked,cancelled,expired",
+            "cancel_endpoint_admitted_now: contract_only",
+            "queue_scheduler_admitted_now: contract_only",
+            "rendered_run_start_control_admitted_now: false",
+            "rendered_progress_control_admitted_now: false",
+            "rendered_status_control_remains_read_only: true",
+            "status_endpoint_must_revalidate_server_receipts: true",
+            "baseline_rollback_required: true",
+            "baseline_default_changed: false",
+            "candidate_a_semantics_changed: false",
+            "candidate_b_default_broadened_beyond_eligible_pdf: false",
+            "selector_mutation_allowed: false",
+            "raw_api_base_url_persisted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "provider_object_writes_enabled: false",
+            "provider_public_url_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "broader_corpus_default_scope_enabled: false",
+            "next_exact_posture: candidate_b_server_owned_workflow_run_api_runtime_v1",
+            "Why not build rendered start UI first?",
+            "It is the authority freeze that admits the next runtime slice after current-main sync.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_server_owned_workflow_run_api_authority_freeze_v1",
+            "current_main: c6c0c481794098b984792bbc49ae84a63a9b2a4e",
+            "source_posture_checkpoint: next_milestone_plans/Layer3_planning_docs/989-cb-repeatability-completion-audit.md",
+            "selected_next_slice: candidate_b_server_owned_workflow_run_api_authority_v1",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_runtime_target: candidate_b_server_owned_workflow_run_api_runtime_v1",
+            "selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "existing_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "run_mode: candidate_b_full_corpus_operator_workflow_run_v1",
+            "operator_decision: start_candidate_b_full_corpus_operator_workflow",
+            "accepted_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server",
+            "source_authority_model: server_owned_runtime_root_lifecycle_receipt_plus_compare_target_set",
+            "client_supplied_raw_runtime_roots_admitted: false",
+            "browser_supplied_runtime_roots_admitted: false",
+            "server_resolves_runtime_roots_from_receipt_authority: true",
+            "workflow_receipt_binding_required: true",
+            "runtime_root_lifecycle_receipt_required: true",
+            "idempotency_key_required: true",
+            "state_machine_required: true",
+            "required_states: accepted,running,proven,blocked,cancelled,expired",
+            "rendered_run_start_control_admitted_now: false",
+            "rendered_progress_control_admitted_now: false",
+            "rendered_status_control_remains_read_only: true",
+            "baseline_rollback_required: true",
+            "baseline_default_changed: false",
+            "candidate_a_semantics_changed: false",
+            "candidate_b_default_broadened_beyond_eligible_pdf: false",
+            "selector_mutation_allowed: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "provider_object_writes_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "next_exact_posture: candidate_b_server_owned_workflow_run_api_runtime_v1",
+        ),
+        CANDIDATE_B_OPERATOR_REPEATABILITY_COMPLETION_AUDIT_CHECKPOINT: (
+            "next_exact_posture: candidate_b_post_repeatability_operator_workflow_expansion_selection_v1",
+            "server-owned workflow-run API",
+            "server-side orchestration remains a later product slice",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B server-owned workflow run API freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92767,6 +92885,7 @@ def main() -> int:
     _check_candidate_b_operator_repeatability_acceptance(errors)
     _check_candidate_b_rendered_operator_workflow_status_proof(errors)
     _check_candidate_b_operator_repeatability_completion_audit(errors)
+    _check_candidate_b_server_owned_workflow_run_api_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
