@@ -8458,6 +8458,10 @@ test('Layer 3 workbench records Candidate B bundle downstream proof from rendere
   expect(proof.candidate_b_source_kind).toBe('bundle');
   expect(proof.visual_lane_mode_enabled).toBe(false);
   expect(proof.coverage).toEqual([...requiredCoverage].sort());
+  expect(proof.coverage_evidence.gate_b.evidence_ref).toBe('candidate-b-rendered-bundle-downstream-proof://gate_b');
+  expect(JSON.stringify(proof.coverage_evidence)).not.toContain('http://');
+  expect(JSON.stringify(proof.coverage_evidence)).not.toContain('https://');
+  expect(JSON.stringify(proof.coverage_evidence)).not.toContain('file://');
   expect(proof.candidate_b_default_promotion_enabled).toBe(false);
   expect(proof.raw_local_path_exposed).toBe(false);
   expect(proof.provider_private_token_exposed).toBe(false);

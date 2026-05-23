@@ -1374,6 +1374,35 @@ def test_candidate_b_bundle_downstream_proof_rejects_nested_path_authority(clien
     assert "coverage_evidence.gate_b.local_path" in body["error"]["details"]["blocked_nested_fields"]
 
 
+def test_candidate_b_bundle_downstream_proof_rejects_raw_url_evidence_ref(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    payload = _bundle_downstream_proof_request(bundle_receipt_id)
+    payload["coverage_evidence"]["gate_b"]["evidence_ref"] = "https://example.test/raw-proof"
+
+    response = client.post(BUNDLE_PROOF_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_bundle_downstream_proof_coverage_exposes_forbidden_reference"
+    assert body["error"]["details"]["coverage_step"] == "gate_b"
+
+
+def test_candidate_b_bundle_downstream_proof_preserves_safe_evidence_refs(client: TestClient) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    payload = _bundle_downstream_proof_request(bundle_receipt_id)
+    payload["coverage_evidence"]["gate_b"]["evidence_ref"] = "candidate-b-bundle-downstream-proof://gate_b"
+
+    response = client.post(BUNDLE_PROOF_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "proven"
+    assert body["coverage_evidence"]["gate_b"]["evidence_ref"] == "candidate-b-bundle-downstream-proof://gate_b"
+    assert "https://" not in json.dumps(body["coverage_evidence"], sort_keys=True)
+    assert "file://" not in json.dumps(body["coverage_evidence"], sort_keys=True)
+
+
 def test_candidate_b_runtime_downstream_proof_rejects_unbound_delivery_artifact_authority(
     client: TestClient,
 ) -> None:
