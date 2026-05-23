@@ -332,6 +332,9 @@ const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION = 'record_cand
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE = 'candidate_b_default_promotion_final_proof_status_v1';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_final_proof_status';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_status_control';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_MODE = 'candidate_b_full_corpus_operator_workflow_status_v1';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_full_corpus_operator_workflow_status';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
@@ -486,6 +489,17 @@ const State = {
         candidateBRunId: '',
         bundleReceiptId: '',
         runtimeReceiptId: '',
+    },
+    candidateBFullCorpusOperatorWorkflowStatus: null,
+    candidateBFullCorpusOperatorWorkflowStatusError: null,
+    candidateBFullCorpusOperatorWorkflowStatusPending: false,
+    candidateBFullCorpusOperatorWorkflowStatusInput: {
+        workflowReceiptId: '',
+        baselineRunId: '',
+        candidateARunId: '',
+        candidateBRunId: '',
+        bridgeReceiptId: '',
+        downstreamProofId: '',
     },
     candidateBClosureEvidence: null,
     candidateBClosureEvidenceError: null,
@@ -7549,6 +7563,7 @@ function candidateBDefaultPromotionStatusState(contract) {
         'candidate_b_default_promotion_readiness_audit_admitted',
         'candidate_b_default_promotion_final_proof_admitted',
         'candidate_b_default_promotion_final_proof_status_admitted',
+        'candidate_b_full_corpus_operator_workflow_status_admitted',
         'candidate_b_default_promotion_selector_switch_admitted',
     ];
     const missing = required.filter((field) => contract[field] !== true);
@@ -7572,6 +7587,12 @@ function candidateBDefaultPromotionFinalProofStatusEndpointPath(contract) {
 
 function candidateBOperatorStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_default_promotion_operator_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBFullCorpusOperatorWorkflowStatusEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_operator_workflow_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
     return endpoint.slice(API_ROOT.length);
 }
@@ -7841,6 +7862,47 @@ function candidateBOperatorStatusInputValues() {
     };
 }
 
+function candidateBFullCorpusOperatorWorkflowStatusInputValues() {
+    const receiptInput = document.getElementById('candidate-b-full-corpus-workflow-receipt-id');
+    const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-baseline-run-id');
+    const candidateAInput = document.getElementById('candidate-b-full-corpus-workflow-candidate-a-run-id');
+    const runInput = document.getElementById('candidate-b-full-corpus-workflow-run-id');
+    const bridgeInput = document.getElementById('candidate-b-full-corpus-workflow-bridge-receipt-id');
+    const proofInput = document.getElementById('candidate-b-full-corpus-workflow-downstream-proof-id');
+    return {
+        workflowReceiptId: (
+            receiptInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.workflowReceiptId
+            || ''
+        ).trim(),
+        baselineRunId: (
+            baselineInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.baselineRunId
+            || ''
+        ).trim(),
+        candidateARunId: (
+            candidateAInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.candidateARunId
+            || ''
+        ).trim(),
+        candidateBRunId: (
+            runInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.candidateBRunId
+            || ''
+        ).trim(),
+        bridgeReceiptId: (
+            bridgeInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.bridgeReceiptId
+            || ''
+        ).trim(),
+        downstreamProofId: (
+            proofInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.downstreamProofId
+            || ''
+        ).trim(),
+    };
+}
+
 function candidateBClosureEvidenceInputValues() {
     const baselineInput = document.getElementById('candidate-b-closure-evidence-baseline-run-id');
     const candidateAInput = document.getElementById('candidate-b-closure-evidence-candidate-a-run-id');
@@ -7933,6 +7995,22 @@ function candidateBOperatorStatusPayload() {
     };
 }
 
+function candidateBFullCorpusOperatorWorkflowStatusPayload() {
+    const values = candidateBFullCorpusOperatorWorkflowStatusInputValues();
+    State.candidateBFullCorpusOperatorWorkflowStatusInput = values;
+    return {
+        client_request_id: requestId(),
+        status_mode: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_OPERATOR_DECISION,
+        operator_workflow_receipt_id: values.workflowReceiptId,
+        baseline_run_id: values.baselineRunId,
+        candidate_a_run_id: values.candidateARunId,
+        candidate_b_run_id: values.candidateBRunId,
+        bridge_receipt_id: values.bridgeReceiptId,
+        downstream_proof_id: values.downstreamProofId,
+    };
+}
+
 function candidateBClosureEvidencePayload() {
     const values = candidateBClosureEvidenceInputValues();
     State.candidateBClosureEvidenceInput = values;
@@ -8018,6 +8096,21 @@ function canInspectCandidateBOperatorStatus(contract = candidateBDefaultPromotio
     );
 }
 
+function canInspectCandidateBFullCorpusOperatorWorkflowStatus(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBFullCorpusOperatorWorkflowStatusInputValues();
+    return Boolean(
+        contract?.candidate_b_full_corpus_operator_workflow_status_admitted
+        && candidateBFullCorpusOperatorWorkflowStatusEndpointPath(contract)
+        && values.workflowReceiptId
+        && values.baselineRunId
+        && values.candidateARunId
+        && values.candidateBRunId
+        && values.bridgeReceiptId
+        && values.downstreamProofId
+        && !State.candidateBFullCorpusOperatorWorkflowStatusPending
+    );
+}
+
 function canRecordCandidateBClosureEvidence(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBClosureEvidenceInputValues();
     return Boolean(
@@ -8096,6 +8189,20 @@ function candidateBOperatorStatusPanelState() {
         return { label: 'candidate_b_operator_status_available', pill: 'ok' };
     }
     return { label: 'candidate_b_operator_status_not_inspected', pill: 'preview' };
+}
+
+function candidateBFullCorpusOperatorWorkflowStatusPanelState() {
+    if (State.candidateBFullCorpusOperatorWorkflowStatusPending) {
+        return { label: 'candidate_b_full_corpus_workflow_status_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowStatusError) {
+        const code = State.candidateBFullCorpusOperatorWorkflowStatusError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_workflow_status_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowStatus?.status === 'available') {
+        return { label: 'candidate_b_full_corpus_workflow_status_available', pill: 'ok' };
+    }
+    return { label: 'candidate_b_full_corpus_workflow_status_not_inspected', pill: 'preview' };
 }
 
 function candidateBClosureEvidencePanelState() {
@@ -8559,6 +8666,65 @@ function candidateBOperatorStatusRows(status) {
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
+    if (!status) return '';
+    const corpus = status.corpus || {};
+    const layer3 = status.layer3 || {};
+    const artifactFamily = status.artifact_family || {};
+    const roleCounts = artifactFamily.role_counts || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Full-Corpus Workflow Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('status', status.status, { code: true })}
+                    ${fieldItem('workflow status', status.workflow_status, { code: true })}
+                    ${fieldItem('workflow receipt id', status.workflow_receipt_id, { code: true })}
+                    ${fieldItem('workflow receipt hash', status.workflow_receipt_hash, { code: true })}
+                    ${fieldItem('workflow status hash', status.workflow_status_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Run And Proof Binding</strong>
+                <ul>
+                    ${fieldItem('baseline run id', status.baseline_run_id, { code: true })}
+                    ${fieldItem('Candidate A run id', status.candidate_a_run_id, { code: true })}
+                    ${fieldItem('Candidate B run id', status.candidate_b_run_id, { code: true })}
+                    ${fieldItem('bridge receipt id', status.bridge_receipt_id, { code: true })}
+                    ${fieldItem('downstream proof id', status.downstream_proof_id, { code: true })}
+                    ${fieldItem('coverage count', status.coverage_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Corpus And Layer 3</strong>
+                <ul>
+                    ${fieldItem('corpus PDF count', corpus.corpus_pdf_count)}
+                    ${fieldItem('eligible files', corpus.eligible_file_count)}
+                    ${fieldItem('material file', corpus.material_relative_name, { code: true })}
+                    ${fieldItem('bridge status', layer3.bridge_status, { code: true })}
+                    ${fieldItem('scan status', layer3.source_directory_scan_status, { code: true })}
+                    ${fieldItem('downstream proof status', layer3.downstream_proof_status, { code: true })}
+                    ${fieldItem('same-origin delivery', layer3.same_origin_delivery_available)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Artifact And Guardrail Projection</strong>
+                <ul>
+                    ${fieldItem('retained artifact-family hash', artifactFamily.governed_retained_artifact_family_hash, { code: true })}
+                    ${fieldItem('delivery artifacts', roleCounts.delivery_artifacts)}
+                    ${fieldItem('visual page evidence', roleCounts.visual_page_evidence)}
+                    ${fieldItem('validate-only triplet', status.validate_only_triplet)}
+                    ${fieldItem('triplet artifacts seeded', status.artifacts_seeded_or_generated_by_triplet_validator)}
+                    ${fieldItem('raw local path exposed', status.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', status.raw_url_exposed)}
+                    ${fieldItem('selector mutation performed', status.selector_mutation_performed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBClosureEvidenceRows(closure) {
     if (!closure) return '';
     return `
@@ -8706,6 +8872,20 @@ function candidateBOperatorStatusError() {
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowStatusError() {
+    const error = State.candidateBFullCorpusOperatorWorkflowStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_operator_workflow_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBClosureEvidenceError() {
     const error = State.candidateBClosureEvidenceError;
     if (!error) return '';
@@ -8797,6 +8977,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofRecordState = candidateBDefaultPromotionFinalProofPanelState();
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
     const operatorStatusState = candidateBOperatorStatusPanelState();
+    const fullCorpusWorkflowStatusState = candidateBFullCorpusOperatorWorkflowStatusPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
@@ -8817,6 +8998,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofInputs = State.candidateBDefaultPromotionFinalProofStatusInput;
     const operatorStatus = State.candidateBOperatorStatus;
     const operatorStatusInputs = State.candidateBOperatorStatusInput;
+    const fullCorpusWorkflowStatus = State.candidateBFullCorpusOperatorWorkflowStatus;
+    const fullCorpusWorkflowStatusInputs = State.candidateBFullCorpusOperatorWorkflowStatusInput;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
@@ -8865,6 +9048,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 <strong>Promotion Closure</strong>
                 <ul>
                     ${fieldItem('operator status', contract?.candidate_b_default_promotion_operator_status_endpoint, { code: true })}
+                    ${fieldItem('full-corpus workflow status', contract?.candidate_b_full_corpus_operator_workflow_status_endpoint, { code: true })}
                     ${fieldItem('closure evidence', contract?.candidate_b_default_promotion_closure_evidence_endpoint, { code: true })}
                     ${fieldItem('readiness audit', contract?.candidate_b_default_promotion_readiness_audit_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
@@ -8961,6 +9145,42 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBRuntimeDownstreamProofRows(runtimeDownstreamProof)}
                 ${candidateBRuntimeDownstreamProofError()}
+            </section>
+            <section class="result-review-card candidate-b-full-corpus-workflow-status-card">
+                <strong>Full-Corpus Operator Workflow Status</strong>
+                <form id="candidate-b-full-corpus-workflow-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>workflow receipt id</span>
+                        <input id="candidate-b-full-corpus-workflow-receipt-id" type="text" value="${escapeHtml(fullCorpusWorkflowStatusInputs.workflowReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-full-corpus-operator-..." />
+                    </label>
+                    <label>
+                        <span>baseline run id</span>
+                        <input id="candidate-b-full-corpus-workflow-baseline-run-id" type="text" value="${escapeHtml(fullCorpusWorkflowStatusInputs.baselineRunId)}" autocomplete="off" spellcheck="false" placeholder="baseline-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate A run id</span>
+                        <input id="candidate-b-full-corpus-workflow-candidate-a-run-id" type="text" value="${escapeHtml(fullCorpusWorkflowStatusInputs.candidateARunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-a-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate B run id</span>
+                        <input id="candidate-b-full-corpus-workflow-run-id" type="text" value="${escapeHtml(fullCorpusWorkflowStatusInputs.candidateBRunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-runtime-001" />
+                    </label>
+                    <label>
+                        <span>runtime bridge receipt id</span>
+                        <input id="candidate-b-full-corpus-workflow-bridge-receipt-id" type="text" value="${escapeHtml(fullCorpusWorkflowStatusInputs.bridgeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-runtime-l3-..." />
+                    </label>
+                    <label>
+                        <span>downstream proof id</span>
+                        <input id="candidate-b-full-corpus-workflow-downstream-proof-id" type="text" value="${escapeHtml(fullCorpusWorkflowStatusInputs.downstreamProofId)}" autocomplete="off" spellcheck="false" placeholder="cb-runtime-downstream-proof-..." />
+                    </label>
+                    <button id="candidate-b-full-corpus-workflow-status-submit" type="submit" ${contract?.candidate_b_full_corpus_operator_workflow_status_admitted && !State.candidateBFullCorpusOperatorWorkflowStatusPending ? '' : 'disabled'}>Inspect Full-Corpus Workflow</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusWorkflowStatusState.pill)}">${escapeHtml(fullCorpusWorkflowStatusState.label)}</span>
+                    <span class="rail-label">Server revalidates the durable Candidate B full-corpus operator workflow receipt without rerunning corpus processing or exposing raw paths and URLs.</span>
+                </div>
+                ${candidateBFullCorpusOperatorWorkflowStatusRows(fullCorpusWorkflowStatus)}
+                ${candidateBFullCorpusOperatorWorkflowStatusError()}
             </section>
             <section class="result-review-card candidate-b-operator-status-card">
                 <strong>Default-Promotion Operator Status</strong>
@@ -9296,6 +9516,36 @@ async function inspectCandidateBOperatorStatus(event) {
         addEvent(`Candidate B operator-status inspection blocked: ${error.message}`);
     } finally {
         State.candidateBOperatorStatusPending = false;
+        renderAll();
+    }
+}
+
+async function inspectCandidateBFullCorpusOperatorWorkflowStatus(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canInspectCandidateBFullCorpusOperatorWorkflowStatus(contract)) {
+        State.candidateBFullCorpusOperatorWorkflowStatus = null;
+        State.candidateBFullCorpusOperatorWorkflowStatusError = new Error(
+            'Candidate B full-corpus workflow status requires receipt id, run ids, bridge receipt id, and downstream proof id.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBFullCorpusOperatorWorkflowStatusEndpointPath(contract);
+    const payload = candidateBFullCorpusOperatorWorkflowStatusPayload();
+    State.candidateBFullCorpusOperatorWorkflowStatusPending = true;
+    State.candidateBFullCorpusOperatorWorkflowStatusError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBFullCorpusOperatorWorkflowStatus = await postJson(path, payload);
+        State.candidateBFullCorpusOperatorWorkflowStatusError = null;
+        addEvent('Candidate B full-corpus operator workflow status inspected through server receipt authority.');
+    } catch (error) {
+        State.candidateBFullCorpusOperatorWorkflowStatus = null;
+        State.candidateBFullCorpusOperatorWorkflowStatusError = error;
+        addEvent(`Candidate B full-corpus workflow status blocked: ${error.message}`);
+    } finally {
+        State.candidateBFullCorpusOperatorWorkflowStatusPending = false;
         renderAll();
     }
 }
@@ -15841,6 +16091,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     }
     if (event.target?.id === 'candidate-b-operator-status-form') {
         inspectCandidateBOperatorStatus(event);
+    }
+    if (event.target?.id === 'candidate-b-full-corpus-workflow-status-form') {
+        inspectCandidateBFullCorpusOperatorWorkflowStatus(event);
     }
     if (event.target?.id === 'candidate-b-closure-evidence-form') {
         recordCandidateBClosureEvidence(event);
