@@ -76,6 +76,51 @@ test('NRC APS run selectors label admitted Candidate B runtime distinctly', asyn
   await expect(page.locator('#identity-summary')).toContainText('Candidate B / OpenDataLoader PDF');
 });
 
+test('NRC APS review identity renders effective Candidate B omitted-engine metadata', async ({ page }) => {
+  await page.route('**/api/v1/review/nrc-aps/runs', async (route) => {
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        default_run_id: 'candidate-b-effective-default-001',
+        runs: [
+          {
+            run_id: 'candidate-b-effective-default-001',
+            display_label: 'Candidate B Effective Default',
+            status: 'completed',
+            submitted_at: '2026-05-23T04:00:00Z',
+            completed_at: '2026-05-23T04:05:00Z',
+            reviewable: false,
+            disabled_reason_code: 'rendered_metadata_probe',
+            summary_counters: { selected_count: 1, downloaded_count: 1, failed_count: 0 },
+            runtime_binding: {
+              runtime_label: 'effective-candidate-b-runtime',
+              database_label: 'lc.db',
+              storage_label: 'storage',
+              visual_lane_mode: 'baseline',
+              requested_document_processing_engine: 'baseline',
+              document_processing_engine: 'candidate_b_opendataloader_pdf',
+              document_processing_engine_source: 'summary_effective_candidate_b',
+              variant_kind: 'candidate_b_opendataloader_pdf',
+            },
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto('/review/nrc-aps', { waitUntil: 'domcontentloaded' });
+
+  await expect(page.locator('#run-selector option:checked')).toContainText('Candidate B / OpenDataLoader PDF');
+  const identity = page.locator('#current-run-info');
+  await expect(identity).toContainText('Candidate B / OpenDataLoader PDF');
+  await expect(identity).toContainText('Effective Engine: candidate_b_opendataloader_pdf');
+  await expect(identity).toContainText('Requested Engine: baseline');
+  await expect(identity).toContainText('Engine Source: summary_effective_candidate_b');
+  await expect(identity).toContainText('Runtime: effective-candidate-b-runtime');
+  await expect(identity).not.toContainText('C:\\');
+  await expect(identity).not.toContainText('file://');
+});
+
 test('workbench compare deep-links into Candidate B Trace and Candidate B Trace defaults to annotated PDF', async ({ page }) => {
   const { sources, targets, manifest } = await openWorkbenchCompare(page);
 
@@ -369,6 +414,164 @@ test('Workbench Compare can switch Candidate B from bundle source to admitted ru
   await expect(page.locator('#run-selector')).toHaveValue('candidate-b-runtime-001');
   await expect(page.locator('#doc-selector')).toHaveValue(candidateBTargetId);
   await expect(page.locator('#run-selector option:checked')).toContainText('Candidate B / OpenDataLoader PDF');
+});
+
+test('Workbench Compare renders effective Candidate B runtime authority metadata', async ({ page }) => {
+  const baselineBinding = {
+    runtime_label: 'baseline-runtime',
+    database_label: 'lc.db',
+    storage_label: 'storage',
+    visual_lane_mode: 'baseline',
+    requested_document_processing_engine: 'baseline',
+    document_processing_engine: 'baseline',
+    document_processing_engine_source: 'request_config_default',
+    variant_kind: 'baseline',
+  };
+  const candidateABinding = {
+    ...baselineBinding,
+    runtime_label: 'candidate-a-runtime',
+    visual_lane_mode: 'candidate_a_page_evidence_v1',
+    variant_kind: 'candidate_a_page_evidence_v1',
+  };
+  const candidateBEffectiveBinding = {
+    runtime_label: 'candidate-b-effective-runtime',
+    database_label: 'lc.db',
+    storage_label: 'storage',
+    visual_lane_mode: 'baseline',
+    requested_document_processing_engine: 'baseline',
+    document_processing_engine: 'candidate_b_opendataloader_pdf',
+    document_processing_engine_source: 'summary_effective_candidate_b',
+    variant_kind: 'candidate_b_opendataloader_pdf',
+  };
+
+  await page.route('**/api/v1/review/nrc-aps/workbench-compare/**', async (route) => {
+    const url = route.request().url();
+    if (url.includes('/sources')) {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          default_baseline_run_id: 'baseline-run-001',
+          default_candidate_a_run_id: 'candidate-a-run-001',
+          default_candidate_b_source_kind: 'runtime',
+          default_candidate_b_bundle_id: null,
+          default_candidate_b_run_id: 'candidate-b-effective-default-001',
+          baseline_runs: [{
+            run_id: 'baseline-run-001',
+            display_label: 'Baseline Run',
+            completed_at: '2026-05-23T04:00:00Z',
+            variant_kind: 'baseline',
+            runtime_binding: baselineBinding,
+          }],
+          candidate_a_runs: [{
+            run_id: 'candidate-a-run-001',
+            display_label: 'Candidate A Run',
+            completed_at: '2026-05-23T04:01:00Z',
+            variant_kind: 'candidate_a_page_evidence_v1',
+            runtime_binding: candidateABinding,
+          }],
+          candidate_b_bundles: [],
+          candidate_b_runtime_runs: [{
+            run_id: 'candidate-b-effective-default-001',
+            display_label: 'Candidate B Effective Default',
+            completed_at: '2026-05-23T04:02:00Z',
+            variant_kind: 'candidate_b_opendataloader_pdf',
+            runtime_binding: candidateBEffectiveBinding,
+          }],
+        }),
+      });
+      return;
+    }
+    if (url.includes('/manifest')) {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          fixture_id: 'fontish',
+          source_identity: {
+            fixture_id: 'fontish',
+            document_title: 'Fontish fixture',
+            document_type: 'Inspection Report',
+            source_file_name: 'fontish.pdf',
+            accession_number: 'ML000000001',
+            document_ref: 'fontish-ref',
+          },
+          variant_bindings: {
+            baseline: { run_id: 'baseline-run-001', target_id: 'baseline-target', content_id: 'baseline-content' },
+            candidate_a: { run_id: 'candidate-a-run-001', target_id: 'candidate-a-target', content_id: 'candidate-a-content' },
+            candidate_b: {
+              source_kind: 'runtime',
+              bundle_id: null,
+              run_id: 'candidate-b-effective-default-001',
+              target_id: 'candidate-b-target',
+              content_id: 'candidate-b-content',
+              candidate_b_run_id: 'candidate-b-effective-default-001',
+            },
+          },
+          summary_badges: [{ key: 'candidate_b_source', label: 'Candidate B Source', value: 'Runtime', severity: 'info' }],
+          tabs: [{ tab_id: 'summary', label: 'Summary', available: true }],
+          warnings: [],
+          limitations: [],
+          deep_links: {
+            baseline_trace: '/review/nrc-aps/document-trace?run_id=baseline-run-001',
+            candidate_a_trace: '/review/nrc-aps/document-trace?run_id=candidate-a-run-001',
+            candidate_b_trace: null,
+            candidate_b_runtime_trace: '/review/nrc-aps/document-trace?run_id=candidate-b-effective-default-001',
+          },
+        }),
+      });
+      return;
+    }
+    if (url.includes('/tabs/')) {
+      await route.fulfill({
+        contentType: 'application/json',
+        body: JSON.stringify({
+          fixture_id: 'fontish',
+          tab_id: 'summary',
+          columns: {
+            baseline: { variant_id: 'baseline', available: true, comparability_class: 'aligned', label: 'Baseline', data: {} },
+            candidate_a: { variant_id: 'candidate_a', available: true, comparability_class: 'aligned', label: 'Candidate A', data: {} },
+            candidate_b: { variant_id: 'candidate_b', available: true, comparability_class: 'aligned', label: 'Candidate B', data: {} },
+          },
+          comparability_legend: { aligned: 'Aligned' },
+          warnings: [],
+          limitations: [],
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        baseline_run_id: 'baseline-run-001',
+        candidate_a_run_id: 'candidate-a-run-001',
+        candidate_b_source_kind: 'runtime',
+        candidate_b_bundle_id: null,
+        candidate_b_run_id: 'candidate-b-effective-default-001',
+        default_fixture_id: 'fontish',
+        targets: [{
+          fixture_id: 'fontish',
+          display_label: 'Fontish fixture',
+          source_file_name: 'fontish.pdf',
+          baseline_target_id: 'baseline-target',
+          candidate_a_target_id: 'candidate-a-target',
+          candidate_b_target_id: 'candidate-b-target',
+          candidate_b_available: true,
+          comparability_state: 'aligned',
+        }],
+      }),
+    });
+  });
+
+  await page.goto('/review/nrc-aps/workbench-compare', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('#compare-workspace')).toBeVisible();
+  await expect(page.locator('#candidate-b-bundle-selector option:checked')).toContainText('Candidate B Effective Default');
+
+  const identity = page.locator('#compare-identity-summary');
+  await expect(identity).toContainText('Candidate B Runtime');
+  await expect(identity).toContainText('effective candidate_b_opendataloader_pdf');
+  await expect(identity).toContainText('requested baseline');
+  await expect(identity).toContainText('source summary_effective_candidate_b');
+  await expect(identity).not.toContainText('C:\\');
+  await expect(identity).not.toContainText('file://');
 });
 
 test('Workbench Compare keeps baseline and Candidate A trace links on Document Trace', async ({ page }) => {

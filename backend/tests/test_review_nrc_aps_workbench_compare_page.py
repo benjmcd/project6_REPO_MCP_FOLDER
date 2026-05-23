@@ -137,10 +137,16 @@ def test_workbench_compare_js_renders_required_compare_columns() -> None:
 def test_workbench_compare_js_surfaces_runtime_authority_in_identity_and_overlay() -> None:
     js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.js"
     js_content = js_path.read_text(encoding="utf-8")
+    html_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "workbench_compare.html"
+    html_content = html_path.read_text(encoding="utf-8")
 
+    assert "runtime_labels.js" in html_content
+    assert html_content.index("runtime_labels.js") < html_content.index("workbench_compare.js")
     assert "runtime_binding" in js_content
     assert "Baseline Runtime" in js_content
     assert "Candidate A Runtime" in js_content
     assert "Candidate B Source" in js_content
+    assert "Candidate B Runtime" in js_content
+    assert "runtimeBindingSummary" in js_content
     assert "Selected authorities:" in js_content
     assert "buildAuthoritySummaryText" in js_content

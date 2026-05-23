@@ -100,6 +100,9 @@ def test_review_js_exposes_runtime_binding_in_identity_bar() -> None:
     assert "NrcApsRuntimeLabels" in js_content
     assert "runOptionLabel(run)" in js_content
     assert "Variant:" in js_content
+    assert "Effective Engine:" in js_content
+    assert "Requested Engine:" in js_content
+    assert "Engine Source:" in js_content
     assert "Runtime:" in js_content
     assert "DB:" in js_content
     assert "Storage:" in js_content

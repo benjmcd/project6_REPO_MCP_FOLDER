@@ -170,6 +170,18 @@ def test_document_trace_html_semantic_containers() -> None:
     assert 'vendor/pdfjs/pdf.worker.min.mjs' in html
 
 
+def test_document_trace_js_surfaces_effective_runtime_engine_metadata() -> None:
+    js_path = Path(__file__).resolve().parents[1] / "app" / "review_ui" / "static" / "document_trace.js"
+    js_content = js_path.read_text(encoding="utf-8")
+
+    assert "effectiveDocumentProcessingEngine" in js_content
+    assert "requestedDocumentProcessingEngine" in js_content
+    assert "documentProcessingEngineSource" in js_content
+    assert "EFFECTIVE ENGINE" in js_content
+    assert "REQUESTED ENGINE" in js_content
+    assert "ENGINE SOURCE" in js_content
+
+
 def test_document_trace_vendor_pdfjs_assets_served() -> None:
     """Verify vendored PDF.js assets are actually served by the static file mount."""
     resp_main = client.get("/review/nrc-aps/static/vendor/pdfjs/pdf.min.mjs")
