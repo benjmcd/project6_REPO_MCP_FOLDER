@@ -412,7 +412,7 @@ For git worktrees under `worktrees\...`, use the checkout-relative Phase 7A pack
 
 ## Non-Goals
 - No `project6.ps1` wrapper is added here. That script is still bound to `py -3.12`, while this proof must run in `.venvs/phase7a-py311`.
-- No API/schema/DB contract changes.
+- No local-corpus submit API/schema/DB contract changes are required by this proof tool; the Candidate B live-server checkpoint below adds a bounded Layer 3 bridge source-scan API.
 - No rendered run-submission UI is added here.
 - No mutation of `tests/reports/*.json`, `backend/method_aware.db`, `backend/app/storage`, or the historical `run_20260314_010136` evidence package.
 
@@ -420,3 +420,41 @@ For git worktrees under `worktrees\...`, use the checkout-relative Phase 7A pack
 - The proof intentionally maps `technical_specification_amendment_documents_for_testing` to `Technical Specification Amendment` so the live advanced-table routing path is exercised. The current `document_types.json` vocabulary still uses `Technical Specification, Amendment`; the summary records that mismatch as observed tech debt instead of changing repo contracts here.
 - The live submit route assigns `connector_run_id` server-side, so the tool uses a runtime-stamp-derived `Idempotency-Key`. It does not modify the API just to force a caller-chosen run ID.
 - The lease TTL override is proof-local only. It is applied through the isolated runtime environment, not by changing shared repo defaults or the `project6.ps1` operator surface.
+
+## Candidate B Live-Server Bridge Source Scan Checkpoint
+
+Current milestone:
+
+```yaml
+milestone: candidate_b_live_server_bridge_source_scan_v1
+governed_source_scan_api: /api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan
+source_scan_mode: candidate_b_runtime_bridge_curated_source_scan_v1
+operator_decision: scan_candidate_b_runtime_bridge_curated_material_root
+bridge_receipt_authority_required: true
+settings_layer3_source_ingestion_dir_mutation_removed: true
+material_preview_resolves_persisted_batch_root_ref: true
+text_index_resolves_persisted_batch_root_ref: true
+workflow_receipt_id: cb-full-corpus-operator-2408b420e3634bb6af6dffdd
+workflow_receipt_hash: 2408b420e3634bb6af6dffddde6ef5346b40a3f73500797037cff193125d660e
+workflow_status_hash: a82d24c258958bb711d2c5a068cdff2f9ea72957ad7160711ddc8266f424011e
+bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979
+downstream_proof_id: cb-runtime-downstream-proof-ba446008ff89a03057a122c3
+downstream_proof_hash: ba446008ff89a03057a122c38a5cf51eb6bb941f2d1522bc270e848a0274a352
+status_endpoint_status: available
+workflow_status: proven
+coverage_count: 17
+eligible_pdf_count: 69
+skipped_pdf_count: 0
+failed_pdf_count: 0
+source_directory_eligible_file_count: 71
+source_root_ref: candidate-b-runtime-bridge://cb-runtime-l3-0110fe894c68d6a0291f9979/curated
+raw_local_path_exposed: false
+raw_url_exposed: false
+provider_object_writes_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+next_exact_posture: candidate_b_live_server_operator_workflow_run_api_or_http_client_decision_v1
+```
+
+The operator runner now continues from the Candidate B runtime material bridge by calling the Candidate B bridge source-scan API. It no longer sets `LAYER3_SOURCE_INGESTION_DIR` or mutates `settings.layer3_source_ingestion_dir` to the bridge-curated root. The server records the persisted batch root as a redacted bridge ref and material preview/text indexing resolve that batch-bound root ref for downstream Layer 3 proof.

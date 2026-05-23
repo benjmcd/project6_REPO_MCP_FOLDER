@@ -96,6 +96,35 @@ def test_prepare_package_uses_hybrid_authority_api_without_session_helper() -> N
     assert not hasattr(client, "layer3_session_factory")
 
 
+def test_source_scan_uses_bridge_receipt_api_without_source_dir_mutation() -> None:
+    client = _FakeLayer3Client()
+
+    scan = workflow._scan_bridge_curated_source(
+        client,  # type: ignore[arg-type]
+        bridge_receipt_id="cb-runtime-l3-source-scan-proof",
+        candidate_b_run_id="candidate-b-run",
+        baseline_run_id="baseline-run",
+        candidate_a_run_id="candidate-a-run",
+    )
+
+    assert client.calls[0][0].endswith("/candidate-b/runtime/material-bridge/source-scan")
+    assert client.calls[0][1] == {
+        "client_request_id": "candidate-b-full-corpus-operator-source-scan",
+        "source_scan_mode": "candidate_b_runtime_bridge_curated_source_scan_v1",
+        "operator_decision": "scan_candidate_b_runtime_bridge_curated_material_root",
+        "bridge_receipt_id": "cb-runtime-l3-source-scan-proof",
+        "candidate_b_run_id": "candidate-b-run",
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "operator_confirmation": True,
+        "source_family": "server_configured_operator_directory_text_table_source_family",
+        "ingestion_mode": "server_configured_operator_directory_text_table_ingestion",
+    }
+    assert scan["source_root_ref"] == "candidate-b-runtime-bridge://cb-runtime-l3-source-scan-proof/curated"
+    runner_source = Path(workflow.__file__).read_text(encoding="utf-8")
+    assert "settings.layer3_source_ingestion_dir = str(curated_root)" not in runner_source
+
+
 def test_path_ref_redacts_paths_outside_checkout(tmp_path: Path) -> None:
     checkout_root = tmp_path / "checkout"
     inside = checkout_root / "backend" / "receipt.json"
@@ -257,8 +286,8 @@ def test_blocked_receipt_redacts_raw_paths_and_urls(tmp_path: Path) -> None:
 
 
 class _FakeResponse:
-    def __init__(self, body: dict[str, object]) -> None:
-        self.status_code = 200
+    def __init__(self, body: dict[str, object], *, status_code: int = 200) -> None:
+        self.status_code = status_code
         self._body = body
 
     def json(self) -> dict[str, object]:
@@ -271,6 +300,16 @@ class _FakeLayer3Client:
 
     def post(self, path: str, json: dict[str, object]) -> _FakeResponse:
         self.calls.append((path, json))
+        if path.endswith("/candidate-b/runtime/material-bridge/source-scan"):
+            bridge_receipt_id = str(json["bridge_receipt_id"])
+            return _FakeResponse(
+                {
+                    "source_ingestion_batch_id": "source-batch",
+                    "source_root_ref": f"candidate-b-runtime-bridge://{bridge_receipt_id}/curated",
+                    "files": [],
+                },
+                status_code=201,
+            )
         if path.endswith("/hybrid-authority/prepare"):
             return _FakeResponse(
                 {

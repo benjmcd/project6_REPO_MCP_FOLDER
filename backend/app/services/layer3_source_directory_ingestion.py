@@ -103,6 +103,41 @@ def scan_server_configured_directory(
     db: Session,
     payload: Mapping[str, Any],
 ) -> dict[str, Any]:
+    fields = _normalise_scan_payload(payload, operator_decision=OPERATOR_DECISION)
+    root = _configured_root()
+    return _scan_observed_directory(
+        db,
+        fields,
+        root=root,
+        config_authority=CONFIG_AUTHORITY,
+        source_root_ref=_source_root_ref(),
+        source_authority={},
+    )
+
+
+def scan_server_owned_directory_root(
+    db: Session,
+    payload: Mapping[str, Any],
+    *,
+    root: Path,
+    config_authority: str,
+    source_root_ref: str,
+    operator_decision: str,
+    source_authority: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    fields = _normalise_scan_payload(payload, operator_decision=operator_decision)
+    resolved_root = _validate_server_owned_root(root, config_authority=config_authority)
+    return _scan_observed_directory(
+        db,
+        fields,
+        root=resolved_root,
+        config_authority=config_authority,
+        source_root_ref=source_root_ref,
+        source_authority=source_authority or {},
+    )
+
+
+def _normalise_scan_payload(payload: Mapping[str, Any], *, operator_decision: str) -> dict[str, str]:
     fields = _normalise_payload(payload)
     client_request_id = _required(fields, "client_request_id")
     if len(client_request_id) > 255:
@@ -111,12 +146,15 @@ def scan_server_configured_directory(
             "client_request_id must be 255 characters or fewer.",
             details={"client_request_id_length": len(client_request_id)},
         )
-    operator_decision = _required(fields, "operator_decision")
-    if operator_decision != OPERATOR_DECISION:
+    received_operator_decision = _required(fields, "operator_decision")
+    if received_operator_decision != operator_decision:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_operator_decision_not_admitted",
             "operator_decision is not admitted for server-configured directory ingestion.",
-            details={"expected_operator_decision": OPERATOR_DECISION, "received_operator_decision": operator_decision},
+            details={
+                "expected_operator_decision": operator_decision,
+                "received_operator_decision": received_operator_decision,
+            },
         )
     source_family = fields.get("source_family") or SOURCE_FAMILY
     if source_family != SOURCE_FAMILY:
@@ -132,8 +170,19 @@ def scan_server_configured_directory(
             "Only the selected server-configured directory ingestion mode is admitted.",
             details={"expected_ingestion_mode": MODE, "received_ingestion_mode": ingestion_mode},
         )
+    return fields
 
-    root = _configured_root()
+
+def _scan_observed_directory(
+    db: Session,
+    fields: Mapping[str, str],
+    *,
+    root: Path,
+    config_authority: str,
+    source_root_ref: str,
+    source_authority: Mapping[str, Any],
+) -> dict[str, Any]:
+    client_request_id = fields["client_request_id"]
     observations = _observe_recursive_files(root)
     total_size = sum(item.content_size_bytes for item in observations)
     directory_fingerprint_hash = _stable_hash(
@@ -141,8 +190,8 @@ def scan_server_configured_directory(
             "runtime_policy_id": RUNTIME_POLICY_ID,
             "mode": MODE,
             "source_family": SOURCE_FAMILY,
-            "config_authority": CONFIG_AUTHORITY,
-            "source_root_ref": _source_root_ref(),
+            "config_authority": config_authority,
+            "source_root_ref": source_root_ref,
             "allowed_extensions": list(ALLOWED_EXTENSIONS),
             "max_recursion_depth": MAX_RECURSION_DEPTH,
             "files": [
@@ -163,7 +212,8 @@ def scan_server_configured_directory(
         "runtime_policy_id": RUNTIME_POLICY_ID,
         "mode": MODE,
         "source_family": SOURCE_FAMILY,
-        "config_authority": CONFIG_AUTHORITY,
+        "config_authority": config_authority,
+        "source_root_ref": source_root_ref,
         "directory_fingerprint_hash": directory_fingerprint_hash,
     }
     authority_basis_hash = _stable_hash(authority_basis)
@@ -184,7 +234,9 @@ def scan_server_configured_directory(
         "runtime_policy_id": RUNTIME_POLICY_ID,
         "mode": MODE,
         "source_family": SOURCE_FAMILY,
-        "config_authority": CONFIG_AUTHORITY,
+        "config_authority": config_authority,
+        "source_root_ref": source_root_ref,
+        "source_root_ref_hash": _stable_hash({"source_root_ref": source_root_ref}),
         "configured_root_hash": _stable_hash({"configured_root": str(root)}),
         "direct_child_only": DIRECT_CHILD_ONLY,
         "allowed_extensions": list(ALLOWED_EXTENSIONS),
@@ -195,12 +247,13 @@ def scan_server_configured_directory(
         "caller_supplied_paths_admitted": False,
         "browser_supplied_file_bytes_admitted": False,
         "directory_fingerprint_hash": directory_fingerprint_hash,
+        "source_authority": dict(source_authority),
     }
     batch = L3SourceDirectoryIngestionBatch(
         client_request_id=client_request_id,
         source_family=SOURCE_FAMILY,
         ingestion_mode=MODE,
-        config_authority=CONFIG_AUTHORITY,
+        config_authority=config_authority,
         directory_fingerprint_hash=directory_fingerprint_hash,
         authority_basis_hash=authority_basis_hash,
         eligible_file_count=len(observations),
@@ -209,7 +262,8 @@ def scan_server_configured_directory(
         summary_json={
             "authority_basis": authority_basis,
             "negative_invariants": _negative_invariants(),
-            "source_root_ref": _source_root_ref(),
+            "source_root_ref": source_root_ref,
+            "source_authority": dict(source_authority),
             "files": [_file_summary(item) for item in observations],
         },
         status=STATUS_RECORDED,
@@ -308,20 +362,23 @@ def _configured_root() -> Path:
             http_status=409,
             details={"config_authority": CONFIG_AUTHORITY},
         )
-    root = Path(configured)
+    return _validate_server_owned_root(Path(configured), config_authority=CONFIG_AUTHORITY)
+
+
+def _validate_server_owned_root(root: Path, *, config_authority: str) -> Path:
     if not root.is_absolute():
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_dir_not_absolute",
-            f"{CONFIG_AUTHORITY} must be an absolute server-owned directory.",
+            f"{config_authority} must be an absolute server-owned directory.",
             http_status=409,
-            details={"config_authority": CONFIG_AUTHORITY},
+            details={"config_authority": config_authority},
         )
     if not root.exists() or not root.is_dir():
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_dir_unavailable",
-            f"{CONFIG_AUTHORITY} must resolve to an existing directory.",
+            f"{config_authority} must resolve to an existing directory.",
             http_status=409,
-            details={"config_authority": CONFIG_AUTHORITY},
+            details={"config_authority": config_authority},
         )
     resolved = root.resolve()
     for blocked_root in _blocked_roots():
@@ -330,7 +387,7 @@ def _configured_root() -> Path:
                 "source_directory_ingestion_dir_not_admitted",
                 "The configured source ingestion directory overlaps app-owned storage or export staging.",
                 http_status=409,
-                details={"config_authority": CONFIG_AUTHORITY, "blocked_root": blocked_root.name},
+                details={"config_authority": config_authority, "blocked_root": blocked_root.name},
             )
     return resolved
 
@@ -675,7 +732,7 @@ def _batch_response(
         "source_family": batch.source_family,
         "ingestion_mode": batch.ingestion_mode,
         "config_authority": batch.config_authority,
-        "source_root_ref": _source_root_ref(),
+        "source_root_ref": _batch_source_root_ref(batch),
         "source_root_absolute_path_exposed": False,
         "direct_child_only": authority_snapshot.get("direct_child_only", True),
         "recursive_traversal_admitted": authority_snapshot.get("recursive_traversal_admitted", False),
@@ -773,6 +830,36 @@ def _negative_invariants() -> dict[str, bool]:
 
 def _source_root_ref() -> str:
     return "server-configured://LAYER3_SOURCE_INGESTION_DIR"
+
+
+def _batch_source_root_ref(batch: L3SourceDirectoryIngestionBatch) -> str:
+    summary = batch.summary_json or {}
+    authority_snapshot = batch.authority_snapshot_json or {}
+    return str(summary.get("source_root_ref") or authority_snapshot.get("source_root_ref") or _source_root_ref())
+
+
+def resolve_batch_source_root(batch: L3SourceDirectoryIngestionBatch) -> Path:
+    source_root_ref = _batch_source_root_ref(batch)
+    if source_root_ref == _source_root_ref():
+        return _configured_root()
+    if source_root_ref.startswith("candidate-b-runtime-bridge://"):
+        from app.services import layer3_candidate_b_runtime_bridge
+
+        try:
+            return layer3_candidate_b_runtime_bridge.resolve_candidate_b_runtime_bridge_curated_root_ref(source_root_ref)
+        except layer3_candidate_b_runtime_bridge.CandidateBRuntimeBridgeError as exc:
+            raise SourceDirectoryIngestionError(
+                exc.code,
+                exc.message,
+                http_status=exc.http_status,
+                details=exc.details,
+            ) from exc
+    raise SourceDirectoryIngestionError(
+        "source_directory_ingestion_source_root_ref_not_resolvable",
+        "The persisted source-directory root reference is not admitted for live material reads.",
+        http_status=409,
+        details={"source_root_ref": source_root_ref},
+    )
 
 
 def _stable_hash(value: Any) -> str:

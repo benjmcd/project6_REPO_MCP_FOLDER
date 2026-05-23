@@ -19,9 +19,9 @@ from app.services.layer3_source_directory_ingestion import (
     SOURCE_FAMILY,
     STATUS_RECORDED,
     SourceDirectoryIngestionError,
-    _configured_root,
     _negative_invariants as _ingestion_negative_invariants,
-    _source_root_ref,
+    _batch_source_root_ref,
+    resolve_batch_source_root,
     _stable_hash,
 )
 
@@ -97,7 +97,7 @@ def source_directory_material_preview(db: Session, payload: Mapping[str, Any]) -
         expected_file_identity_hash=expected_file_identity_hash,
         expected_authority_basis_hash=expected_authority_basis_hash,
     )
-    live_file = _read_live_file(file_record, max_chars=max_chars)
+    live_file = _read_live_file(batch, file_record, max_chars=max_chars)
     _assert_live_file_matches_authority(file_record, live_file)
 
     source_ref = f"source_directory_ingestion_file:{file_record.source_ingestion_file_id}"
@@ -248,7 +248,7 @@ def validate_source_directory_gate_b_decision_basis(
         field_prefix="candidate_decisions.decision_basis.payload",
         code="source_directory_gate_b_payload_mismatch",
     )
-    _assert_live_file_matches_authority(file_record, _read_live_file(file_record, max_chars=1))
+    _assert_live_file_matches_authority(file_record, _read_live_file(batch, file_record, max_chars=1))
 
 
 def _normalise_preview_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -338,13 +338,18 @@ def _assert_expected_hashes(
         )
 
 
-def _read_live_file(file_record: L3SourceDirectoryIngestionFile, *, max_chars: int) -> dict[str, Any]:
+def _read_live_file(
+    batch: L3SourceDirectoryIngestionBatch,
+    file_record: L3SourceDirectoryIngestionFile,
+    *,
+    max_chars: int,
+) -> dict[str, Any]:
     try:
-        root = _configured_root()
+        root = resolve_batch_source_root(batch)
     except SourceDirectoryIngestionError as exc:
         raise SourceDirectoryMaterialAdmissionError(
             "source_directory_material_config_unavailable",
-            "The configured source-directory root is not available for material preview.",
+            "The persisted source-directory root is not available for material preview.",
             http_status=exc.http_status,
             details={"source_ingestion_file_id": file_record.source_ingestion_file_id, **exc.details},
         ) from exc
@@ -484,8 +489,8 @@ def _source_provenance(
         "mode": MODE,
         "runtime_policy_id": authority_snapshot.get("runtime_policy_id", RUNTIME_POLICY_ID),
         "source_ref": source_ref,
-        "config_authority": CONFIG_AUTHORITY,
-        "source_root_ref": _source_root_ref(),
+        "config_authority": batch.config_authority or CONFIG_AUTHORITY,
+        "source_root_ref": _batch_source_root_ref(batch),
         "source_root_absolute_path_exposed": False,
         "direct_child_only": authority_snapshot.get("direct_child_only", True),
         "recursive_traversal_admitted": authority_snapshot.get("recursive_traversal_admitted", False),
