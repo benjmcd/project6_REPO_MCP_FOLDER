@@ -9,9 +9,14 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 jobs:
-  backend-layer3-api:
+  backend-layer3-api-shard:
+    name: backend-layer3-api-shard-${{ matrix.shard }}/4
     timeout-minutes: 20
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
@@ -24,7 +29,78 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install -r ./backend/tests/requirements-layer3-api.txt
     - name: Run focused Layer 3 backend pytest guardrail
-      run: python -m pytest ./backend/tests/test_layer3_*.py -q
+      env:
+        PYTEST_SHARD_INDEX: ${{ matrix.shard }}
+        PYTEST_SHARD_TOTAL: 4
+      run: |
+        SECONDS=0
+        python <<'PY'
+        import glob
+        import os
+        import subprocess
+        import sys
+
+        shard = int(os.environ["PYTEST_SHARD_INDEX"])
+        total = int(os.environ["PYTEST_SHARD_TOTAL"])
+        if shard < 1 or shard > total:
+            raise SystemExit(f"Invalid backend pytest shard {shard}/{total}")
+
+        files = sorted(glob.glob("./backend/tests/test_layer3_*.py"))
+        if not files:
+            raise SystemExit("No Layer 3 backend test files found.")
+
+        collect = subprocess.run(
+            [sys.executable, "-m", "pytest", "--collect-only", "-q", *files],
+            capture_output=True,
+            text=True,
+        )
+        if collect.returncode != 0:
+            sys.stdout.write(collect.stdout)
+            sys.stderr.write(collect.stderr)
+            raise SystemExit(collect.returncode)
+
+        nodeids = [
+            line.strip()
+            for line in collect.stdout.splitlines()
+            if "::" in line and line.strip().startswith("backend/tests/")
+        ]
+        if not nodeids:
+            raise SystemExit("Layer 3 backend pytest collection produced no nodeids.")
+
+        selected = [
+            nodeid
+            for index, nodeid in enumerate(nodeids)
+            if index % total == shard - 1
+        ]
+        if not selected:
+            raise SystemExit(
+                f"Layer 3 backend pytest shard {shard}/{total} selected no tests "
+                f"from {len(nodeids)} collected tests."
+            )
+
+        print(
+            f"Layer 3 backend pytest shard {shard}/{total} selected "
+            f"{len(selected)} of {len(nodeids)} tests."
+        )
+        completed = subprocess.run([sys.executable, "-m", "pytest", *selected, "-q"])
+        raise SystemExit(completed.returncode)
+        PY
+        echo "backend_layer3_api_shard_${{ matrix.shard }}_seconds=$SECONDS"
+
+  backend-layer3-api:
+    name: backend-layer3-api
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    needs: backend-layer3-api-shard
+    if: ${{ always() }}
+    steps:
+    - name: Check backend shard results
+      run: |
+        if [ "${{ needs.backend-layer3-api-shard.result }}" != "success" ]; then
+          echo "Layer 3 backend pytest shard result: ${{ needs.backend-layer3-api-shard.result }}"
+          exit 1
+        fi
+        echo "All Layer 3 backend pytest shards passed."
 
   playwright-shard:
     name: test-shard-${{ matrix.shard }}/4
