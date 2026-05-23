@@ -8,6 +8,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_promotion_closure,
     layer3_candidate_b_runtime_bridge,
@@ -29,6 +30,8 @@ PROOF_HASH_KEYS = (
     "mode",
     "readiness_audit_id",
     "readiness_audit_hash",
+    "bundle_bridge_receipt_id",
+    "runtime_bridge_receipt_id",
     "baseline_run_id",
     "candidate_a_run_id",
     "candidate_b_bundle_id",
@@ -136,18 +139,31 @@ def candidate_b_default_promotion_final_proof(payload: Mapping[str, Any]) -> dic
             http_status=409,
             details={"expected": readiness_hash, "received": audit.get("readiness_audit_hash")},
         )
+    bundle_receipt_id = _bundle_receipt_id(audit)
     runtime_receipt_id = _runtime_receipt_id(audit)
     closure_hash = str(audit.get("closure_evidence", {}).get("closure_evidence_hash") or "").strip()
     _validate_closure_receipt(audit, runtime_receipt_id=runtime_receipt_id, closure_hash=closure_hash)
     selected = audit["selected_evidence"]
     authority = audit["authority_hashes"]
     downstream = audit["downstream_proofs"]
+    _validate_bridge_receipt_hash(
+        kind="bundle",
+        receipt_id=bundle_receipt_id,
+        expected_hash=str(authority["bundle"]["bridge_receipt_hash"] or ""),
+    )
+    _validate_bridge_receipt_hash(
+        kind="runtime",
+        receipt_id=runtime_receipt_id,
+        expected_hash=str(authority["runtime"]["bridge_receipt_hash"] or ""),
+    )
     proof_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "mode": PROOF_MODE,
         "readiness_audit_id": audit["readiness_audit_id"],
         "readiness_audit_hash": readiness_hash,
+        "bundle_bridge_receipt_id": bundle_receipt_id,
+        "runtime_bridge_receipt_id": runtime_receipt_id,
         "baseline_run_id": selected["baseline_run_id"],
         "candidate_a_run_id": selected["candidate_a_run_id"],
         "candidate_b_bundle_id": selected["candidate_b_bundle_id"],
@@ -268,7 +284,7 @@ def candidate_b_default_promotion_final_proof_status(payload: Mapping[str, Any])
             "The selected Candidate B final proof receipt is not a JSON object.",
             http_status=409,
         )
-    _validate_stored_final_proof(proof, proof_receipt_id=proof_receipt_id)
+    _validate_stored_final_proof(proof, proof_receipt_id=proof_receipt_id, runtime_receipt_id=runtime_receipt_id)
     return {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -338,13 +354,19 @@ def _required_storage_id(fields: Mapping[str, Any], key: str, prefix: str, *, co
     return value
 
 
-def _validate_stored_final_proof(proof: Mapping[str, Any], *, proof_receipt_id: str) -> None:
+def _validate_stored_final_proof(
+    proof: Mapping[str, Any],
+    *,
+    proof_receipt_id: str,
+    runtime_receipt_id: str,
+) -> None:
     expected = {
         "schema_id": SCHEMA_ID,
         "mode": PROOF_MODE,
         "status": "proven",
         "proof_state": PROOF_STATE,
         "proof_receipt_id": proof_receipt_id,
+        "runtime_bridge_receipt_id": runtime_receipt_id,
         "default_selector_change_enabled": True,
         "candidate_b_default_promotion_enabled": True,
         "rollback_selector": "baseline",
@@ -379,6 +401,16 @@ def _validate_stored_final_proof(proof: Mapping[str, Any], *, proof_receipt_id: 
             http_status=409,
             details={"expected": proof_hash, "received": proof.get("proof_hash")},
         )
+    _validate_bridge_receipt_hash(
+        kind="bundle",
+        receipt_id=str(proof.get("bundle_bridge_receipt_id") or "").strip(),
+        expected_hash=str(proof.get("bundle_bridge_receipt_hash") or "").strip(),
+    )
+    _validate_bridge_receipt_hash(
+        kind="runtime",
+        receipt_id=str(proof.get("runtime_bridge_receipt_id") or "").strip(),
+        expected_hash=str(proof.get("runtime_bridge_receipt_hash") or "").strip(),
+    )
     _validate_operator_status_evidence(proof)
     inspection = proof.get("candidate_b_final_operator_inspection_evidence")
     if not isinstance(inspection, Mapping):
@@ -700,6 +732,82 @@ def _validate_closure_receipt(audit: Mapping[str, Any], *, runtime_receipt_id: s
             "Candidate B closure receipt hash does not match the readiness audit.",
             http_status=409,
             details={"expected": closure_hash, "received": stored.get("closure_evidence_hash") if isinstance(stored, dict) else None},
+        )
+
+
+def _validate_bridge_receipt_hash(*, kind: str, receipt_id: str, expected_hash: str) -> None:
+    prefix = (
+        layer3_candidate_b_bundle_bridge.BRIDGE_RECEIPT_PREFIX
+        if kind == "bundle"
+        else layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX
+    )
+    if (
+        not receipt_id.startswith(f"{prefix}-")
+        or "/" in receipt_id
+        or "\\" in receipt_id
+        or ".." in receipt_id
+    ):
+        raise CandidateBFinalProofError(
+            f"candidate_b_final_proof_{kind}_bridge_receipt_id_invalid",
+            "Candidate B final proof requires server-owned bridge receipt ids.",
+            http_status=409,
+            details={"candidate_b_source_kind": kind, "expected_prefix": prefix},
+        )
+    if len(expected_hash) != 64:
+        raise CandidateBFinalProofError(
+            f"candidate_b_final_proof_{kind}_bridge_receipt_hash_invalid",
+            "Candidate B final proof requires a valid bridge receipt hash.",
+            http_status=409,
+            details={"candidate_b_source_kind": kind},
+        )
+    configured = (
+        settings.layer3_candidate_b_bundle_bridge_dir
+        if kind == "bundle"
+        else settings.layer3_candidate_b_runtime_bridge_dir
+    )
+    root = Path(str(configured or ""))
+    if not str(configured or "").strip() or not root.is_absolute():
+        raise CandidateBFinalProofError(
+            f"candidate_b_final_proof_{kind}_bridge_dir_invalid",
+            "Candidate B final proof requires an absolute bridge receipt directory.",
+            http_status=409,
+            details={"candidate_b_source_kind": kind},
+        )
+    path = root / receipt_id / "receipt.json"
+    if not path.is_file():
+        raise CandidateBFinalProofError(
+            f"candidate_b_final_proof_{kind}_bridge_receipt_missing",
+            "Candidate B final proof requires the current bridge receipt.",
+            http_status=409,
+            details={"candidate_b_source_kind": kind, "bridge_receipt_id": receipt_id},
+        )
+    try:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CandidateBFinalProofError(
+            f"candidate_b_final_proof_{kind}_bridge_receipt_unreadable",
+            "Candidate B final proof could not read the current bridge receipt.",
+            http_status=409,
+            details={"candidate_b_source_kind": kind, "reason": str(exc)},
+        ) from exc
+    if not isinstance(stored, Mapping):
+        raise CandidateBFinalProofError(
+            f"candidate_b_final_proof_{kind}_bridge_receipt_invalid",
+            "Candidate B final proof bridge receipt is not a JSON object.",
+            http_status=409,
+            details={"candidate_b_source_kind": kind},
+        )
+    if stored.get("bridge_receipt_id") != receipt_id or stored.get("bridge_receipt_hash") != expected_hash:
+        raise CandidateBFinalProofError(
+            f"candidate_b_final_proof_{kind}_bridge_receipt_hash_mismatch",
+            "Candidate B final proof bridge receipt authority is stale.",
+            http_status=409,
+            details={
+                "candidate_b_source_kind": kind,
+                "bridge_receipt_id": receipt_id,
+                "expected": expected_hash,
+                "received": stored.get("bridge_receipt_hash"),
+            },
         )
 
 
