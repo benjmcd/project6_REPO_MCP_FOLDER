@@ -408,6 +408,21 @@ def test_extracted_units_expose_visual_artifacts(db_session, review_root):
     assert artifact.endpoint.endswith(f"/visual-artifacts/{artifact.artifact_id}")
 
 
+def test_retained_artifact_refs_are_redacted_for_visual_artifacts():
+    refs = trace_service._redacted_retained_artifact_refs(
+        [
+            {"relative_name": "input.pdf", "artifact_role": "source_pdf", "material_text_payload": False},
+            {"relative_name": "nested/input.json", "artifact_role": "raw_json", "material_text_payload": True},
+        ]
+    )
+
+    assert refs == [
+        {"artifact_role": "source_pdf", "display_ref": "input.pdf", "material_text_payload": False},
+        {"artifact_role": "raw_json", "display_ref": "input.json", "material_text_payload": True},
+    ]
+    assert "nested/input.json" not in json.dumps(refs)
+
+
 def test_resolve_visual_artifact_info_success(db_session, review_root):
     payload = compose_extracted_units_payload(
         db_session,
