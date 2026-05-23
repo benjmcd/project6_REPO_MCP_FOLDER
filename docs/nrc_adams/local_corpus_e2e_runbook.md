@@ -458,3 +458,47 @@ next_exact_posture: candidate_b_live_server_operator_workflow_run_api_or_http_cl
 ```
 
 The operator runner now continues from the Candidate B runtime material bridge by calling the Candidate B bridge source-scan API. It no longer sets `LAYER3_SOURCE_INGESTION_DIR` or mutates `settings.layer3_source_ingestion_dir` to the bridge-curated root. The server records the persisted batch root as a redacted bridge ref and material preview/text indexing resolve that batch-bound root ref for downstream Layer 3 proof.
+
+## Candidate B Live HTTP Operator Runner
+
+```yaml
+milestone: candidate_b_live_http_operator_runner_v1
+selected_path: live_http_operator_runner
+deferred_path: server_side_operator_workflow_run_api
+execution_mode: live-http
+api_base_url_required: true
+readiness_gate_required: true
+candidate_b_runtime_material_bridge_admitted_required: true
+candidate_b_runtime_bridge_source_scan_admitted_required: true
+candidate_b_runtime_downstream_proof_admitted_required: true
+candidate_b_full_corpus_operator_workflow_status_admitted_required: true
+internal_webhook_mode_required: configured
+local_ack_webhook_transport_allowed_in_live_http: false
+testclient_dependency_used_in_live_http: false
+in_memory_db_used_in_live_http: false
+status_endpoint_verification_required: true
+operator_workflow_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+local_testclient_regression_receipt_id: cb-full-corpus-operator-40cd13edeb4d8c10bd65e727
+local_testclient_regression_receipt_hash: 40cd13edeb4d8c10bd65e727a1a8bd7c810c9809274d9f1db73a250fcc736c51
+local_testclient_regression_status_hash: f126d919e9e9ce2a2766ac1a862a0e97a384edf0f685cdde8aadb4ad3dbea904
+live_http_runtime_proof_status: blocked_pending_configured_server
+raw_api_base_url_persisted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_live_http_operator_workflow_runtime_proof_v1
+```
+
+The operator runner now supports a live HTTP execution mode:
+
+```powershell
+python .\tools\run_candidate_b_full_corpus_operator_workflow.py `
+  --execution-mode live-http `
+  --api-base-url http://127.0.0.1:8000/api/v1/layer3 `
+  --internal-webhook-mode configured `
+  --baseline-run-root <baseline-run-root> `
+  --candidate-a-run-root <candidate-a-run-root> `
+  --candidate-b-run-root <candidate-b-run-root> `
+  --receipt-dir <server-shared-operator-workflow-receipt-dir>
+```
+
+The live server must already be configured with a durable database, a runtime-discovery `STORAGE_DIR` containing the selected full-corpus baseline/Candidate A/Candidate B runtime roots, a server-owned `LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR`, the same `LAYER3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR` used by `--receipt-dir`, and `LAYER3_INTERNAL_WEBHOOK_URL`. The runner fails closed if the live readiness endpoint does not admit the required Candidate B bridge/source-scan/downstream-proof/status endpoints or if the workflow status endpoint cannot inspect the final durable receipt.
