@@ -2636,7 +2636,10 @@ class Layer3CandidateBRuntimeMaterialBridgeRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     client_request_id: str = Field(min_length=1)
-    bridge_mode: Literal["candidate_b_runtime_source_to_layer3_material_authority_v1"]
+    bridge_mode: Literal[
+        "candidate_b_runtime_source_to_layer3_material_authority_v1",
+        "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1",
+    ]
     candidate_b_run_id: str = Field(min_length=1)
     baseline_run_id: str = Field(min_length=1)
     candidate_a_run_id: str = Field(min_length=1)
