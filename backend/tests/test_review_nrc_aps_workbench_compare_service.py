@@ -68,6 +68,8 @@ def _copy_runtime_binding(
     run_id: str,
     visual_lane_mode: str | None,
     document_processing_engine: str | None = None,
+    document_processing_engine_explicit: bool | None = None,
+    advanced_metrics: dict[str, object] | None = None,
     target_id: str,
     sciencebase_basename: str,
 ) -> ReviewRuntimeBinding:
@@ -77,6 +79,8 @@ def _copy_runtime_binding(
     summary_path = copied_root / "local_corpus_e2e_summary.json"
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     summary["run_id"] = run_id
+    if advanced_metrics is not None:
+        summary["advanced_metrics"] = dict(advanced_metrics)
     summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
 
     database_path = copied_root / RUNTIME.db_path.name
@@ -85,6 +89,8 @@ def _copy_runtime_binding(
         request_config["visual_lane_mode"] = visual_lane_mode
     if document_processing_engine:
         request_config["document_processing_engine"] = document_processing_engine
+    if document_processing_engine_explicit is not None:
+        request_config["document_processing_engine_explicit"] = document_processing_engine_explicit
 
     connection = sqlite3.connect(str(database_path))
     try:
@@ -309,6 +315,62 @@ def test_discover_workbench_compare_sources_exposes_admitted_candidate_b_runtime
     assert payload.candidate_b_runtime_runs[0].runtime_binding.document_processing_engine == "candidate_b_opendataloader_pdf"
     assert candidate_b_runtime.run_id not in {item.run_id for item in payload.baseline_runs}
     assert candidate_b_runtime.run_id not in {item.run_id for item in payload.candidate_a_runs}
+
+
+def test_discover_workbench_compare_sources_uses_effective_candidate_b_default_runtime(
+    compare_runtime_fixture: dict[str, object],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest_entry = _load_unique_manifest_entry()
+    baseline_binding = compare_runtime_fixture["baseline_binding"]
+    candidate_a_binding = compare_runtime_fixture["candidate_a_binding"]
+    checkout_root = compare_runtime_fixture["checkout_root"]
+    candidate_b_runtime = _copy_runtime_binding(
+        tmp_path,
+        run_id="candidate-b-effective-default-001",
+        visual_lane_mode="baseline",
+        document_processing_engine="baseline",
+        document_processing_engine_explicit=False,
+        target_id=_source_target_id(),
+        sciencebase_basename=manifest_entry["basename"],
+    )
+    selected_count = int((candidate_b_runtime.summary.get("run_detail") or {}).get("selected_count") or 1)
+    candidate_b_runtime.summary["advanced_metrics"] = {
+        "document_processing_engine": "baseline",
+        "candidate_b_extractor_file_count": selected_count,
+    }
+    selector = NrcApsReviewRunSelectorOut(
+        default_run_id=baseline_binding.run_id,
+        runs=[
+            *compare_runtime_fixture["selector"].runs,
+            NrcApsReviewRunSelectorItemOut(
+                run_id=candidate_b_runtime.run_id,
+                display_label="Candidate B Effective Default",
+                status="completed",
+                submitted_at="2026-04-12T08:20:00Z",
+                completed_at="2026-04-12T08:25:00Z",
+                reviewable=True,
+            ),
+        ],
+    )
+
+    monkeypatch.setattr(
+        compare_service,
+        "discover_runtime_bindings",
+        lambda: [baseline_binding, candidate_a_binding, candidate_b_runtime],
+    )
+    monkeypatch.setattr(compare_service, "discover_candidate_runs", lambda: selector)
+
+    payload = compare_service.discover_workbench_compare_sources(checkout_root=checkout_root)
+
+    assert [item.run_id for item in payload.candidate_b_runtime_runs] == [candidate_b_runtime.run_id]
+    runtime_binding = payload.candidate_b_runtime_runs[0].runtime_binding
+    assert runtime_binding is not None
+    assert runtime_binding.requested_document_processing_engine == "baseline"
+    assert runtime_binding.document_processing_engine == "candidate_b_opendataloader_pdf"
+    assert runtime_binding.document_processing_engine_source == "summary_effective_candidate_b"
+    assert candidate_b_runtime.run_id not in {item.run_id for item in payload.baseline_runs}
 
 
 def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runtime_fixture: dict[str, object], monkeypatch: pytest.MonkeyPatch) -> None:

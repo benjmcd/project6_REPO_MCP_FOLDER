@@ -64,21 +64,85 @@ def _normalize_document_processing_engine_for_visibility(value: Any) -> str:
     return _DOCUMENT_PROCESSING_ENGINE_BASELINE
 
 
+def _request_config_document_processing_engine_explicit(request_config: Any) -> bool:
+    if not isinstance(request_config, dict):
+        return False
+    if "document_processing_engine_explicit" in request_config:
+        raw = request_config.get("document_processing_engine_explicit")
+        if isinstance(raw, str):
+            return raw.strip().lower() in {"1", "true", "yes", "on", "explicit"}
+        return bool(raw)
+    return bool(str(request_config.get("document_processing_engine") or "").strip())
+
+
+def _summary_selected_target_count(summary: Any) -> int:
+    if not isinstance(summary, dict):
+        return 0
+    run_detail = summary.get("run_detail") or {}
+    for value in (
+        run_detail.get("selected_count"),
+        summary.get("corpus_pdf_count"),
+    ):
+        try:
+            count = int(value or 0)
+        except (TypeError, ValueError):
+            count = 0
+        if count > 0:
+            return count
+    return 0
+
+
+def _summary_reports_effective_candidate_b(summary: Any) -> bool:
+    if not isinstance(summary, dict):
+        return False
+    metrics = summary.get("advanced_metrics") or {}
+    if not isinstance(metrics, dict):
+        return False
+    if str(metrics.get("document_processing_engine") or "").strip().lower() == _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B:
+        return True
+    try:
+        candidate_b_count = int(metrics.get("candidate_b_extractor_file_count") or 0)
+    except (TypeError, ValueError):
+        candidate_b_count = 0
+    selected_count = _summary_selected_target_count(summary)
+    return candidate_b_count > 0 and selected_count > 0 and candidate_b_count == selected_count
+
+
+def _effective_document_processing_engine(
+    *,
+    request_config: Any,
+    summary: Any,
+    requested_document_processing_engine: str,
+) -> tuple[str, str]:
+    if requested_document_processing_engine == _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B:
+        return _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B, "request_config"
+    if _request_config_document_processing_engine_explicit(request_config):
+        return requested_document_processing_engine, "request_config_explicit"
+    if _summary_reports_effective_candidate_b(summary):
+        return _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B, "summary_effective_candidate_b"
+    return requested_document_processing_engine, "request_config_default"
+
+
 def request_config_is_baseline_visible(request_config: Any) -> bool:
     if not isinstance(request_config, dict):
         return True
     return _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode")) in _BASELINE_VISIBLE_VISUAL_LANE_MODES
 
 
-def request_config_runtime_metadata(request_config: Any) -> dict[str, str]:
+def request_config_runtime_metadata(request_config: Any, *, summary: Any = None) -> dict[str, str]:
     if not isinstance(request_config, dict):
         visual_lane_mode = "baseline"
-        document_processing_engine = _DOCUMENT_PROCESSING_ENGINE_BASELINE
+        requested_document_processing_engine = _DOCUMENT_PROCESSING_ENGINE_BASELINE
     else:
         visual_lane_mode = _normalize_visual_lane_mode_for_visibility(request_config.get("visual_lane_mode"))
-        document_processing_engine = _normalize_document_processing_engine_for_visibility(
+        requested_document_processing_engine = _normalize_document_processing_engine_for_visibility(
             request_config.get("document_processing_engine")
         )
+    document_processing_engine, document_processing_engine_source = _effective_document_processing_engine(
+        request_config=request_config,
+        summary=summary,
+        requested_document_processing_engine=requested_document_processing_engine,
+    )
     variant_kind = (
         _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
         if document_processing_engine == _DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
@@ -87,6 +151,8 @@ def request_config_runtime_metadata(request_config: Any) -> dict[str, str]:
     return {
         "visual_lane_mode": visual_lane_mode,
         "document_processing_engine": document_processing_engine,
+        "requested_document_processing_engine": requested_document_processing_engine,
+        "document_processing_engine_source": document_processing_engine_source,
         "variant_kind": variant_kind or "baseline",
     }
 
@@ -169,27 +235,19 @@ def binding_is_baseline_visible(binding: ReviewRuntimeBinding) -> bool:
 
 
 def classify_runtime_binding_variant(binding: ReviewRuntimeBinding) -> str | None:
-    if binding.database_path is None:
-        return "baseline"
-    try:
-        request_config = _load_binding_request_config_json(str(binding.database_path.resolve()), binding.run_id)
-    except OSError:
-        return "baseline"
-    if request_config is None:
-        return "baseline"
-    return classify_request_config_variant(request_config)
+    return runtime_binding_request_metadata(binding)["variant_kind"]
 
 
 def runtime_binding_request_metadata(binding: ReviewRuntimeBinding) -> dict[str, str]:
     if binding.database_path is None:
-        return request_config_runtime_metadata(None)
+        return request_config_runtime_metadata(None, summary=binding.summary)
     try:
         request_config = _load_binding_request_config_json(str(binding.database_path.resolve()), binding.run_id)
     except OSError:
-        return request_config_runtime_metadata(None)
+        return request_config_runtime_metadata(None, summary=binding.summary)
     if request_config is None:
-        return request_config_runtime_metadata(None)
-    return request_config_runtime_metadata(request_config)
+        return request_config_runtime_metadata(None, summary=binding.summary)
+    return request_config_runtime_metadata(request_config, summary=binding.summary)
 
 
 def get_allowlisted_roots() -> list[Path]:
