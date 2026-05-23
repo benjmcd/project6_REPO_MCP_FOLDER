@@ -1224,8 +1224,7 @@ def _build_submit_payload(
         "report_verbosity": "standard",
         "client_request_id": idempotency_key,
     }
-    if document_processing_engine != DOCUMENT_PROCESSING_ENGINE_BASELINE:
-        submit_payload["document_processing_engine"] = document_processing_engine
+    submit_payload["document_processing_engine"] = document_processing_engine
     if visual_lane_mode != VISUAL_LANE_MODE_BASELINE:
         submit_payload["visual_lane_mode"] = visual_lane_mode
     return submit_payload
