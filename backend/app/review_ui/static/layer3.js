@@ -322,6 +322,12 @@ const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION = 'record_cand
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE = 'candidate_b_default_promotion_final_proof_status_v1';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_final_proof_status';
+const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
+const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
+const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
+const CANDIDATE_B_VISUAL_LANE_STATUS_RENDERED_MODE = 'rendered_candidate_b_visual_lane_status_control';
+const CANDIDATE_B_VISUAL_LANE_STATUS_MODE = 'candidate_b_visual_lane_status_v1';
+const CANDIDATE_B_VISUAL_LANE_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_visual_lane_evidence_status';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
@@ -453,6 +459,20 @@ const State = {
     candidateBDefaultPromotionFinalProofStatusInput: {
         runtimeReceiptId: '',
         proofReceiptId: '',
+    },
+    candidateBArtifactFamilyStatus: null,
+    candidateBArtifactFamilyStatusError: null,
+    candidateBArtifactFamilyStatusPending: false,
+    candidateBArtifactFamilyStatusInput: {
+        sourceKind: 'bundle',
+        bridgeReceiptId: '',
+    },
+    candidateBVisualLaneStatus: null,
+    candidateBVisualLaneStatusError: null,
+    candidateBVisualLaneStatusPending: false,
+    candidateBVisualLaneStatusInput: {
+        candidateBRunId: '',
+        bridgeReceiptId: '',
     },
     gateBDecisions: {},
     gateBClientRequestId: null,
@@ -7485,6 +7505,98 @@ function candidateBDefaultPromotionFinalProofStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBArtifactFamilyStatusEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_artifact_family_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBVisualLaneStatusEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_visual_lane_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBArtifactFamilyStatusInputValues() {
+    const sourceKindInput = document.getElementById('candidate-b-artifact-family-source-kind');
+    const receiptInput = document.getElementById('candidate-b-artifact-family-bridge-receipt-id');
+    return {
+        sourceKind: (
+            sourceKindInput?.value
+            || State.candidateBArtifactFamilyStatusInput.sourceKind
+            || 'bundle'
+        ).trim(),
+        bridgeReceiptId: (
+            receiptInput?.value
+            || State.candidateBArtifactFamilyStatusInput.bridgeReceiptId
+            || ''
+        ).trim(),
+    };
+}
+
+function candidateBVisualLaneStatusInputValues() {
+    const runInput = document.getElementById('candidate-b-visual-lane-run-id');
+    const receiptInput = document.getElementById('candidate-b-visual-lane-bridge-receipt-id');
+    return {
+        candidateBRunId: (
+            runInput?.value
+            || State.candidateBVisualLaneStatusInput.candidateBRunId
+            || ''
+        ).trim(),
+        bridgeReceiptId: (
+            receiptInput?.value
+            || State.candidateBVisualLaneStatusInput.bridgeReceiptId
+            || ''
+        ).trim(),
+    };
+}
+
+function candidateBArtifactFamilyStatusPayload() {
+    const values = candidateBArtifactFamilyStatusInputValues();
+    State.candidateBArtifactFamilyStatusInput = values;
+    return {
+        client_request_id: requestId(),
+        status_mode: CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE,
+        operator_decision: CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION,
+        candidate_b_source_kind: values.sourceKind,
+        bridge_receipt_id: values.bridgeReceiptId,
+    };
+}
+
+function candidateBVisualLaneStatusPayload() {
+    const values = candidateBVisualLaneStatusInputValues();
+    State.candidateBVisualLaneStatusInput = values;
+    return {
+        client_request_id: requestId(),
+        status_mode: CANDIDATE_B_VISUAL_LANE_STATUS_MODE,
+        operator_decision: CANDIDATE_B_VISUAL_LANE_STATUS_OPERATOR_DECISION,
+        candidate_b_run_id: values.candidateBRunId,
+        bridge_receipt_id: values.bridgeReceiptId,
+    };
+}
+
+function canInspectCandidateBArtifactFamilyStatus(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBArtifactFamilyStatusInputValues();
+    return Boolean(
+        contract?.candidate_b_artifact_family_status_admitted
+        && candidateBArtifactFamilyStatusEndpointPath(contract)
+        && ['bundle', 'runtime'].includes(values.sourceKind)
+        && values.bridgeReceiptId
+        && !State.candidateBArtifactFamilyStatusPending
+    );
+}
+
+function canInspectCandidateBVisualLaneStatus(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBVisualLaneStatusInputValues();
+    return Boolean(
+        contract?.candidate_b_visual_lane_status_admitted
+        && candidateBVisualLaneStatusEndpointPath(contract)
+        && values.candidateBRunId
+        && values.bridgeReceiptId
+        && !State.candidateBVisualLaneStatusPending
+    );
+}
+
 function candidateBDefaultPromotionFinalProofInputValues() {
     const readinessAuditInput = document.getElementById('candidate-b-final-proof-readiness-audit-json');
     return {
@@ -7578,6 +7690,151 @@ function candidateBDefaultPromotionFinalProofStatusPanelState() {
     return { label: 'candidate_b_final_proof_status_not_inspected', pill: 'preview' };
 }
 
+function candidateBArtifactFamilyStatusPanelState() {
+    if (State.candidateBArtifactFamilyStatusPending) {
+        return { label: 'candidate_b_artifact_family_status_pending', pill: 'preview' };
+    }
+    if (State.candidateBArtifactFamilyStatusError) {
+        const code = State.candidateBArtifactFamilyStatusError?.payload?.error?.code;
+        return { label: code || 'candidate_b_artifact_family_status_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBArtifactFamilyStatus?.status === 'available') {
+        return { label: 'candidate_b_artifact_family_status_available', pill: 'ok' };
+    }
+    return { label: 'candidate_b_artifact_family_status_not_inspected', pill: 'preview' };
+}
+
+function candidateBVisualLaneStatusPanelState() {
+    if (State.candidateBVisualLaneStatusPending) {
+        return { label: 'candidate_b_visual_lane_status_pending', pill: 'preview' };
+    }
+    if (State.candidateBVisualLaneStatusError) {
+        const code = State.candidateBVisualLaneStatusError?.payload?.error?.code;
+        return { label: code || 'candidate_b_visual_lane_status_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBVisualLaneStatus?.status === 'available') {
+        return { label: 'candidate_b_visual_lane_status_available', pill: 'ok' };
+    }
+    return { label: 'candidate_b_visual_lane_status_not_inspected', pill: 'preview' };
+}
+
+function candidateBArtifactPreviewRows(rolePreviews) {
+    if (!rolePreviews || typeof rolePreviews !== 'object') return '';
+    return Object.entries(rolePreviews).map(([role, refs]) => {
+        const previewItems = Array.isArray(refs) ? refs.slice(0, 3) : [];
+        const renderedRefs = previewItems.length
+            ? previewItems.map((item) => `
+                <li>
+                    <code>${escapeHtml(item.source_ref || 'redacted-ref')}</code>
+                    <span>${escapeHtml(item.relative_name || 'unnamed')}</span>
+                    <small>${escapeHtml([
+                        item.artifact_role,
+                        item.category,
+                        item.extension,
+                        item.material_text_payload === true ? 'material_text_payload' : 'retained_artifact',
+                    ].filter(Boolean).join(' | '))}</small>
+                </li>
+            `).join('')
+            : '<li>No retained refs returned for this role.</li>';
+        return `
+            <li>
+                <strong>${escapeHtml(role)}</strong>
+                <ul>${renderedRefs}</ul>
+            </li>
+        `;
+    }).join('');
+}
+
+function candidateBRoleCountRows(roleCounts) {
+    if (!roleCounts || typeof roleCounts !== 'object') return '<li>No retained role counts returned.</li>';
+    return Object.entries(roleCounts).map(([role, count]) => (
+        fieldItem(role.replace(/_/g, ' '), count)
+    )).join('');
+}
+
+function candidateBArtifactFamilyStatusRows(status) {
+    if (!status) return '';
+    const projection = status.operator_projection || {};
+    const roleCounts = projection.role_counts || {};
+    const policy = status.governed_retained_artifact_family || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Retained Artifact Counts</strong>
+                <ul>
+                    ${candidateBRoleCountRows(roleCounts)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Boundary</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('source kind', status.candidate_b_source_kind, { code: true })}
+                    ${fieldItem('bridge receipt id', status.bridge_receipt_id, { code: true })}
+                    ${fieldItem('artifact family hash', status.governed_retained_artifact_family_hash, { code: true })}
+                    ${fieldItem('material text policy', status.material_text_payload_policy || policy.policy, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Exposure Guardrails</strong>
+                <ul>
+                    ${fieldItem('raw local path exposed', projection.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', projection.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', projection.artifact_bytes_exposed)}
+                    ${fieldItem('PDF material text payload enabled', status.negative_invariants?.pdf_material_text_payload_enabled)}
+                    ${fieldItem('image material text payload enabled', status.negative_invariants?.image_material_text_payload_enabled)}
+                    ${fieldItem('frontend durable authority', status.negative_invariants?.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card candidate-b-artifact-family-preview">
+                <strong>Redacted Role Previews</strong>
+                <ul>${candidateBArtifactPreviewRows(projection.role_previews)}</ul>
+            </section>
+        </div>
+    `;
+}
+
+function candidateBVisualLaneStatusRows(status) {
+    if (!status) return '';
+    const projection = status.operator_projection || {};
+    const policy = status.material_policy || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Visual Lane Evidence</strong>
+                <ul>
+                    ${fieldItem('visual lane mode', status.visual_lane_mode, { code: true })}
+                    ${fieldItem('visual lane status', status.visual_lane_status, { code: true })}
+                    ${fieldItem('Candidate B selected', projection.candidate_b_visual_lane_selected)}
+                    ${fieldItem('visual refs', projection.visual_ref_total)}
+                    ${fieldItem('Candidate B visual refs', projection.candidate_b_visual_ref_total)}
+                    ${fieldItem('retained source PDF refs', projection.candidate_b_retained_source_pdf_ref_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Runtime Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('candidate B run id', status.candidate_b_run_id, { code: true })}
+                    ${fieldItem('bridge receipt id', status.bridge_receipt_id, { code: true })}
+                    ${fieldItem('document processing engine', status.document_processing_engine, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Visual Material Boundary</strong>
+                <ul>
+                    ${fieldItem('source PDF material payload enabled', policy.source_pdf_material_text_payload_enabled)}
+                    ${fieldItem('image material payload enabled', policy.image_material_text_payload_enabled)}
+                    ${fieldItem('visual lane material ingestion enabled', policy.visual_lane_material_ingestion_enabled)}
+                    ${fieldItem('raw local path exposed', projection.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', projection.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', projection.artifact_bytes_exposed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofRows(proof) {
     if (!proof) return '';
     const rows = {
@@ -7660,12 +7917,42 @@ function candidateBDefaultPromotionFinalProofStatusError() {
     `;
 }
 
+function candidateBArtifactFamilyStatusError() {
+    const error = State.candidateBArtifactFamilyStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_artifact_family_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function candidateBVisualLaneStatusError() {
+    const error = State.candidateBVisualLaneStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_visual_lane_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function renderCandidateBDefaultPromotionStatusPanel() {
     if (!elements.candidateBDefaultPromotionStatusPanel) return;
     const contract = candidateBDefaultPromotionReadinessContract();
     const panelState = candidateBDefaultPromotionStatusState(contract);
     const finalProofRecordState = candidateBDefaultPromotionFinalProofPanelState();
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
+    const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
+    const visualLaneState = candidateBVisualLaneStatusPanelState();
     const blockedScope = [
         'frontend_durable_authority',
         'raw_url_or_local_path_exposure',
@@ -7678,6 +7965,10 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofRecordInputs = State.candidateBDefaultPromotionFinalProofInput;
     const finalProofStatus = State.candidateBDefaultPromotionFinalProofStatus;
     const finalProofInputs = State.candidateBDefaultPromotionFinalProofStatusInput;
+    const artifactFamilyStatus = State.candidateBArtifactFamilyStatus;
+    const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
+    const visualLaneStatus = State.candidateBVisualLaneStatus;
+    const visualLaneInputs = State.candidateBVisualLaneStatusInput;
     elements.candidateBDefaultPromotionStatusPanel.dataset.statusState = panelState.label;
     elements.candidateBDefaultPromotionStatusPanel.dataset.frontendDurableAuthority = 'false';
     elements.candidateBDefaultPromotionStatusPanel.innerHTML = `
@@ -7719,6 +8010,49 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
                     ${fieldItem('final proof status', contract?.candidate_b_default_promotion_final_proof_status_endpoint, { code: true })}
                 </ul>
+            </section>
+            <section class="result-review-card candidate-b-artifact-family-status-card">
+                <strong>Retained Artifact Family Inspection</strong>
+                <form id="candidate-b-artifact-family-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>source kind</span>
+                        <select id="candidate-b-artifact-family-source-kind">
+                            <option value="bundle" ${artifactFamilyInputs.sourceKind === 'bundle' ? 'selected' : ''}>bundle</option>
+                            <option value="runtime" ${artifactFamilyInputs.sourceKind === 'runtime' ? 'selected' : ''}>runtime</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>bridge receipt id</span>
+                        <input id="candidate-b-artifact-family-bridge-receipt-id" type="text" value="${escapeHtml(artifactFamilyInputs.bridgeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-bundle-l3-..." />
+                    </label>
+                    <button id="candidate-b-artifact-family-status-submit" type="submit" ${contract?.candidate_b_artifact_family_status_admitted && !State.candidateBArtifactFamilyStatusPending ? '' : 'disabled'}>Inspect Retained Artifacts</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(artifactFamilyState.pill)}">${escapeHtml(artifactFamilyState.label)}</span>
+                    <span class="rail-label">Server revalidates the bridge receipt and returns redacted retained artifact refs; this control exposes no raw paths, URLs, or bytes.</span>
+                </div>
+                ${candidateBArtifactFamilyStatusRows(artifactFamilyStatus)}
+                ${candidateBArtifactFamilyStatusError()}
+            </section>
+            <section class="result-review-card candidate-b-visual-lane-status-card">
+                <strong>Visual Lane Evidence Inspection</strong>
+                <form id="candidate-b-visual-lane-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_VISUAL_LANE_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>Candidate B run id</span>
+                        <input id="candidate-b-visual-lane-run-id" type="text" value="${escapeHtml(visualLaneInputs.candidateBRunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-runtime-001" />
+                    </label>
+                    <label>
+                        <span>runtime bridge receipt id</span>
+                        <input id="candidate-b-visual-lane-bridge-receipt-id" type="text" value="${escapeHtml(visualLaneInputs.bridgeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-runtime-l3-..." />
+                    </label>
+                    <button id="candidate-b-visual-lane-status-submit" type="submit" ${contract?.candidate_b_visual_lane_status_admitted && !State.candidateBVisualLaneStatusPending ? '' : 'disabled'}>Inspect Visual Lane</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(visualLaneState.pill)}">${escapeHtml(visualLaneState.label)}</span>
+                    <span class="rail-label">Server proves Candidate B visual-lane evidence remains retained and inspectable without turning PDFs or images into text-material payloads.</span>
+                </div>
+                ${candidateBVisualLaneStatusRows(visualLaneStatus)}
+                ${candidateBVisualLaneStatusError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -7773,6 +8107,66 @@ function renderCandidateBDefaultPromotionStatusPanel() {
             </section>
         </div>
     `;
+}
+
+async function inspectCandidateBArtifactFamilyStatus(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canInspectCandidateBArtifactFamilyStatus(contract)) {
+        State.candidateBArtifactFamilyStatus = null;
+        State.candidateBArtifactFamilyStatusError = new Error(
+            'Candidate B retained artifact-family status inspection requires source kind and bridge receipt identifier.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBArtifactFamilyStatusEndpointPath(contract);
+    const payload = candidateBArtifactFamilyStatusPayload();
+    State.candidateBArtifactFamilyStatusPending = true;
+    State.candidateBArtifactFamilyStatusError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBArtifactFamilyStatus = await postJson(path, payload);
+        State.candidateBArtifactFamilyStatusError = null;
+        addEvent('Candidate B retained artifact family inspected through server bridge receipt authority.');
+    } catch (error) {
+        State.candidateBArtifactFamilyStatus = null;
+        State.candidateBArtifactFamilyStatusError = error;
+        addEvent(`Candidate B retained artifact family status blocked: ${error.message}`);
+    } finally {
+        State.candidateBArtifactFamilyStatusPending = false;
+        renderAll();
+    }
+}
+
+async function inspectCandidateBVisualLaneStatus(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canInspectCandidateBVisualLaneStatus(contract)) {
+        State.candidateBVisualLaneStatus = null;
+        State.candidateBVisualLaneStatusError = new Error(
+            'Candidate B visual-lane status inspection requires Candidate B run and runtime bridge receipt identifiers.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBVisualLaneStatusEndpointPath(contract);
+    const payload = candidateBVisualLaneStatusPayload();
+    State.candidateBVisualLaneStatusPending = true;
+    State.candidateBVisualLaneStatusError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBVisualLaneStatus = await postJson(path, payload);
+        State.candidateBVisualLaneStatusError = null;
+        addEvent('Candidate B visual-lane status inspected through server runtime bridge authority.');
+    } catch (error) {
+        State.candidateBVisualLaneStatus = null;
+        State.candidateBVisualLaneStatusError = error;
+        addEvent(`Candidate B visual-lane status blocked: ${error.message}`);
+    } finally {
+        State.candidateBVisualLaneStatusPending = false;
+        renderAll();
+    }
 }
 
 async function recordCandidateBDefaultPromotionFinalProof(event) {
@@ -14236,6 +14630,12 @@ elements.providerPublicUrlStatus.addEventListener('click', inspectProviderPublic
 elements.providerPublicUrlUse.addEventListener('click', useProviderPublicUrlDecision);
 elements.providerPublicUrlRevoke.addEventListener('click', revokeProviderPublicUrl);
 elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'candidate-b-artifact-family-status-form') {
+        inspectCandidateBArtifactFamilyStatus(event);
+    }
+    if (event.target?.id === 'candidate-b-visual-lane-status-form') {
+        inspectCandidateBVisualLaneStatus(event);
+    }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);
     }
