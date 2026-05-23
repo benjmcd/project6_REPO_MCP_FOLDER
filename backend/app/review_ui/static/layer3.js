@@ -324,6 +324,8 @@ const CANDIDATE_B_CLOSURE_EVIDENCE_MODE = 'candidate_b_default_promotion_closure
 const CANDIDATE_B_CLOSURE_EVIDENCE_OPERATOR_DECISION = 'record_candidate_b_default_promotion_closure_evidence';
 const CANDIDATE_B_DEFAULT_ELIGIBLE_CORPUS_SCOPE = 'candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only';
 const CANDIDATE_B_DEFAULT_REGRESSION_DISPOSITION = 'no_unacceptable_regression_against_baseline_and_candidate_a';
+const CANDIDATE_B_READINESS_AUDIT_RENDERED_MODE = 'rendered_candidate_b_default_promotion_readiness_audit_control';
+const CANDIDATE_B_READINESS_AUDIT_MODE = 'candidate_b_default_promotion_readiness_audit_v1';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_recording_control';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_MODE = 'candidate_b_default_promotion_final_proof_v1';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION = 'record_candidate_b_default_promotion_final_proof';
@@ -489,6 +491,17 @@ const State = {
     candidateBClosureEvidenceError: null,
     candidateBClosureEvidencePending: false,
     candidateBClosureEvidenceInput: {
+        baselineRunId: '',
+        candidateARunId: '',
+        candidateBBundleId: '',
+        candidateBRunId: '',
+        bundleReceiptId: '',
+        runtimeReceiptId: '',
+    },
+    candidateBReadinessAudit: null,
+    candidateBReadinessAuditError: null,
+    candidateBReadinessAuditPending: false,
+    candidateBReadinessAuditInput: {
         baselineRunId: '',
         candidateARunId: '',
         candidateBBundleId: '',
@@ -7569,6 +7582,12 @@ function candidateBClosureEvidenceEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBReadinessAuditEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_default_promotion_readiness_audit_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBArtifactFamilyStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_artifact_family_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -7847,6 +7866,31 @@ function candidateBClosureEvidenceInputValues() {
     };
 }
 
+function candidateBReadinessAuditInputValues() {
+    const baselineInput = document.getElementById('candidate-b-readiness-audit-baseline-run-id');
+    const candidateAInput = document.getElementById('candidate-b-readiness-audit-candidate-a-run-id');
+    const bundleInput = document.getElementById('candidate-b-readiness-audit-bundle-id');
+    const runInput = document.getElementById('candidate-b-readiness-audit-run-id');
+    const bundleReceiptInput = document.getElementById('candidate-b-readiness-audit-bundle-receipt-id');
+    const runtimeReceiptInput = document.getElementById('candidate-b-readiness-audit-runtime-receipt-id');
+    return {
+        baselineRunId: (baselineInput?.value || State.candidateBReadinessAuditInput.baselineRunId || '').trim(),
+        candidateARunId: (candidateAInput?.value || State.candidateBReadinessAuditInput.candidateARunId || '').trim(),
+        candidateBBundleId: (bundleInput?.value || State.candidateBReadinessAuditInput.candidateBBundleId || '').trim(),
+        candidateBRunId: (runInput?.value || State.candidateBReadinessAuditInput.candidateBRunId || '').trim(),
+        bundleReceiptId: (
+            bundleReceiptInput?.value
+            || State.candidateBReadinessAuditInput.bundleReceiptId
+            || ''
+        ).trim(),
+        runtimeReceiptId: (
+            runtimeReceiptInput?.value
+            || State.candidateBReadinessAuditInput.runtimeReceiptId
+            || ''
+        ).trim(),
+    };
+}
+
 function candidateBDefaultPromotionFinalProofPayload() {
     const values = candidateBDefaultPromotionFinalProofInputValues();
     State.candidateBDefaultPromotionFinalProofInput = values;
@@ -7912,6 +7956,30 @@ function candidateBClosureEvidencePayload() {
     };
 }
 
+function candidateBReadinessAuditPayload() {
+    const values = candidateBReadinessAuditInputValues();
+    State.candidateBReadinessAuditInput = values;
+    return {
+        client_request_id: requestId(),
+        readiness_mode: CANDIDATE_B_READINESS_AUDIT_MODE,
+        baseline_run_id: values.baselineRunId,
+        candidate_a_run_id: values.candidateARunId,
+        candidate_b_bundle_id: values.candidateBBundleId,
+        candidate_b_run_id: values.candidateBRunId,
+        candidate_b_bundle_bridge_receipt_id: values.bundleReceiptId,
+        candidate_b_runtime_bridge_receipt_id: values.runtimeReceiptId,
+        eligible_corpus_scope: CANDIDATE_B_DEFAULT_ELIGIBLE_CORPUS_SCOPE,
+        regression_disposition: CANDIDATE_B_DEFAULT_REGRESSION_DISPOSITION,
+        rollback_to_baseline_confirmation: true,
+        operator_confirmation: true,
+        bundle_downstream_proof: State.candidateBBundleDownstreamProof,
+        runtime_downstream_proof: State.candidateBRuntimeDownstreamProof,
+        candidate_b_visual_lane_status_evidence: State.candidateBVisualLaneStatus,
+        operator_status_evidence: State.candidateBOperatorStatus,
+        closure_evidence: State.candidateBClosureEvidence,
+    };
+}
+
 function canRecordCandidateBDefaultPromotionFinalProof(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBDefaultPromotionFinalProofInputValues();
     return Boolean(
@@ -7965,6 +8033,26 @@ function canRecordCandidateBClosureEvidence(contract = candidateBDefaultPromotio
         && State.candidateBRuntimeDownstreamProof?.status === 'proven'
         && State.candidateBOperatorStatus?.status === 'available'
         && !State.candidateBClosureEvidencePending
+    );
+}
+
+function canRunCandidateBReadinessAudit(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBReadinessAuditInputValues();
+    return Boolean(
+        contract?.candidate_b_default_promotion_readiness_audit_admitted
+        && candidateBReadinessAuditEndpointPath(contract)
+        && values.baselineRunId
+        && values.candidateARunId
+        && values.candidateBBundleId
+        && values.candidateBRunId
+        && values.bundleReceiptId
+        && values.runtimeReceiptId
+        && State.candidateBBundleDownstreamProof?.status === 'proven'
+        && State.candidateBRuntimeDownstreamProof?.status === 'proven'
+        && State.candidateBVisualLaneStatus?.status === 'available'
+        && State.candidateBOperatorStatus?.status === 'available'
+        && State.candidateBClosureEvidence?.status === 'ready'
+        && !State.candidateBReadinessAuditPending
     );
 }
 
@@ -8022,6 +8110,23 @@ function candidateBClosureEvidencePanelState() {
         return { label: 'candidate_b_closure_evidence_ready', pill: 'ok' };
     }
     return { label: 'candidate_b_closure_evidence_not_recorded', pill: 'preview' };
+}
+
+function candidateBReadinessAuditPanelState() {
+    if (State.candidateBReadinessAuditPending) {
+        return { label: 'candidate_b_readiness_audit_pending', pill: 'preview' };
+    }
+    if (State.candidateBReadinessAuditError) {
+        const code = State.candidateBReadinessAuditError?.payload?.error?.code;
+        return { label: code || 'candidate_b_readiness_audit_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBReadinessAudit?.status === 'ready') {
+        return { label: 'candidate_b_readiness_audit_ready', pill: 'ok' };
+    }
+    if (State.candidateBReadinessAudit?.status === 'blocked') {
+        return { label: 'candidate_b_readiness_audit_blocked', pill: 'blocked' };
+    }
+    return { label: 'candidate_b_readiness_audit_not_run', pill: 'preview' };
 }
 
 function candidateBArtifactFamilyStatusPanelState() {
@@ -8435,6 +8540,58 @@ function candidateBClosureEvidenceRows(closure) {
     `;
 }
 
+function candidateBReadinessAuditRows(readiness) {
+    if (!readiness) return '';
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Readiness Audit</strong>
+                <ul>
+                    ${fieldItem('schema id', readiness.schema_id, { code: true })}
+                    ${fieldItem('status', readiness.status, { code: true })}
+                    ${fieldItem('readiness state', readiness.readiness_state, { code: true })}
+                    ${fieldItem('readiness audit id', readiness.readiness_audit_id, { code: true })}
+                    ${fieldItem('readiness audit hash', readiness.readiness_audit_hash, { code: true })}
+                    ${fieldItem('blocked reason count', Array.isArray(readiness.blocked_reasons) ? readiness.blocked_reasons.length : 0)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Selector Evidence</strong>
+                <ul>
+                    ${fieldItem('eligible corpus scope', readiness.selected_evidence?.eligible_corpus_scope, { code: true })}
+                    ${fieldItem('Candidate B engine', readiness.candidate_b_selector_evidence?.candidate_b_family, { code: true })}
+                    ${fieldItem('Candidate B visual lane mode', readiness.candidate_b_selector_evidence?.candidate_b_visual_lane_mode, { code: true })}
+                    ${fieldItem('Candidate B default for eligible PDF when engine omitted', readiness.candidate_b_selector_evidence?.candidate_b_default_for_eligible_pdf_when_engine_omitted)}
+                    ${fieldItem('Candidate B default visual lane mode', readiness.candidate_b_selector_evidence?.candidate_b_is_default_visual_lane_mode)}
+                    ${fieldItem('selector mutation performed', readiness.selector_mutation_performed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Rollback And Readiness</strong>
+                <ul>
+                    ${fieldItem('rollback available', readiness.rollback_to_baseline?.available)}
+                    ${fieldItem('rollback selector', readiness.rollback_to_baseline?.selector, { code: true })}
+                    ${fieldItem('regression disposition', readiness.regression_disposition, { code: true })}
+                    ${fieldItem('default selector change enabled', readiness.default_selector_change_enabled)}
+                    ${fieldItem('Candidate B default promotion enabled', readiness.candidate_b_default_promotion_enabled)}
+                    ${fieldItem('final operator inspection hash', readiness.candidate_b_final_operator_inspection_evidence?.final_operator_inspection_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Fail-Closed Guardrails</strong>
+                <ul>
+                    ${fieldItem('missing bridge receipt blocks readiness', readiness.fail_closed_behavior?.missing_bridge_receipt_blocks_readiness)}
+                    ${fieldItem('stale bridge receipt hash blocks readiness', readiness.fail_closed_behavior?.stale_bridge_receipt_hash_blocks_readiness)}
+                    ${fieldItem('missing downstream proof blocks readiness', readiness.fail_closed_behavior?.missing_downstream_proof_blocks_readiness)}
+                    ${fieldItem('missing rollback confirmation blocks readiness', readiness.fail_closed_behavior?.missing_rollback_confirmation_blocks_readiness)}
+                    ${fieldItem('unacceptable regression blocks readiness', readiness.fail_closed_behavior?.unacceptable_regression_blocks_readiness)}
+                    ${fieldItem('frontend durable authority enabled', readiness.negative_invariants?.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofError() {
     const error = State.candidateBDefaultPromotionFinalProofError;
     if (!error) return '';
@@ -8482,6 +8639,20 @@ function candidateBClosureEvidenceError() {
     if (!error) return '';
     const detail = error.payload?.error || error.payload?.detail || {};
     const code = detail.code || 'candidate_b_closure_evidence_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function candidateBReadinessAuditError() {
+    const error = State.candidateBReadinessAuditError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_readiness_audit_error';
     const message = detail.message || error.message;
     return `
         <div class="error-panel">
@@ -8555,6 +8726,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
     const operatorStatusState = candidateBOperatorStatusPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
+    const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
     const visualLaneState = candidateBVisualLaneStatusPanelState();
     const bundleDownstreamProofState = candidateBBundleDownstreamProofPanelState();
@@ -8575,6 +8747,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const operatorStatusInputs = State.candidateBOperatorStatusInput;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
+    const readinessAudit = State.candidateBReadinessAudit;
+    const readinessAuditInputs = State.candidateBReadinessAuditInput;
     const artifactFamilyStatus = State.candidateBArtifactFamilyStatus;
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
@@ -8787,6 +8961,42 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBClosureEvidenceRows(closureEvidence)}
                 ${candidateBClosureEvidenceError()}
+            </section>
+            <section class="result-review-card candidate-b-readiness-audit-card">
+                <strong>Default-Promotion Readiness Audit</strong>
+                <form id="candidate-b-readiness-audit-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_READINESS_AUDIT_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>baseline run id</span>
+                        <input id="candidate-b-readiness-audit-baseline-run-id" type="text" value="${escapeHtml(readinessAuditInputs.baselineRunId)}" autocomplete="off" spellcheck="false" placeholder="baseline-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate A run id</span>
+                        <input id="candidate-b-readiness-audit-candidate-a-run-id" type="text" value="${escapeHtml(readinessAuditInputs.candidateARunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-a-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate B bundle id</span>
+                        <input id="candidate-b-readiness-audit-bundle-id" type="text" value="${escapeHtml(readinessAuditInputs.candidateBBundleId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-bundle-001" />
+                    </label>
+                    <label>
+                        <span>Candidate B run id</span>
+                        <input id="candidate-b-readiness-audit-run-id" type="text" value="${escapeHtml(readinessAuditInputs.candidateBRunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-runtime-001" />
+                    </label>
+                    <label>
+                        <span>bundle bridge receipt id</span>
+                        <input id="candidate-b-readiness-audit-bundle-receipt-id" type="text" value="${escapeHtml(readinessAuditInputs.bundleReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-bundle-l3-..." />
+                    </label>
+                    <label>
+                        <span>runtime bridge receipt id</span>
+                        <input id="candidate-b-readiness-audit-runtime-receipt-id" type="text" value="${escapeHtml(readinessAuditInputs.runtimeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-runtime-l3-..." />
+                    </label>
+                    <button id="candidate-b-readiness-audit-submit" type="submit" ${contract?.candidate_b_default_promotion_readiness_audit_admitted && State.candidateBBundleDownstreamProof?.status === 'proven' && State.candidateBRuntimeDownstreamProof?.status === 'proven' && State.candidateBVisualLaneStatus?.status === 'available' && State.candidateBOperatorStatus?.status === 'available' && State.candidateBClosureEvidence?.status === 'ready' && !State.candidateBReadinessAuditPending ? '' : 'disabled'}>Run Readiness Audit</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(readinessAuditState.pill)}">${escapeHtml(readinessAuditState.label)}</span>
+                    <span class="rail-label">Server evaluates readiness from current bridge, proof, visual-lane, operator-status, closure, rollback, and no-regression evidence without selector mutation.</span>
+                </div>
+                ${candidateBReadinessAuditRows(readinessAudit)}
+                ${candidateBReadinessAuditError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -9044,6 +9254,42 @@ async function recordCandidateBClosureEvidence(event) {
         addEvent(`Candidate B closure-evidence recording blocked: ${error.message}`);
     } finally {
         State.candidateBClosureEvidencePending = false;
+        renderAll();
+    }
+}
+
+async function runCandidateBReadinessAudit(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canRunCandidateBReadinessAudit(contract)) {
+        State.candidateBReadinessAudit = null;
+        State.candidateBReadinessAuditError = new Error(
+            'Candidate B readiness audit requires bundle proof, runtime proof, visual-lane status, operator status, closure evidence, run ids, and bridge receipts.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBReadinessAuditEndpointPath(contract);
+    const payload = candidateBReadinessAuditPayload();
+    State.candidateBReadinessAuditPending = true;
+    State.candidateBReadinessAuditError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        const readiness = await postJson(path, payload);
+        State.candidateBReadinessAudit = readiness;
+        State.candidateBReadinessAuditError = null;
+        if (readiness?.status === 'ready') {
+            State.candidateBDefaultPromotionFinalProofInput = {
+                readinessAuditJson: JSON.stringify(readiness),
+            };
+        }
+        addEvent('Candidate B default-promotion readiness audit evaluated through server authority.');
+    } catch (error) {
+        State.candidateBReadinessAudit = null;
+        State.candidateBReadinessAuditError = error;
+        addEvent(`Candidate B readiness-audit evaluation blocked: ${error.message}`);
+    } finally {
+        State.candidateBReadinessAuditPending = false;
         renderAll();
     }
 }
@@ -15526,6 +15772,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     }
     if (event.target?.id === 'candidate-b-closure-evidence-form') {
         recordCandidateBClosureEvidence(event);
+    }
+    if (event.target?.id === 'candidate-b-readiness-audit-form') {
+        runCandidateBReadinessAudit(event);
     }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);

@@ -9081,6 +9081,291 @@ test('Layer 3 workbench records Candidate B closure evidence from rendered proof
   ]);
 });
 
+test('Layer 3 workbench runs Candidate B readiness audit from rendered closure evidence', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/candidate-b-realistic-readiness-audit'));
+  const requiredCoverage = [
+    'source_directory_scan',
+    'material_preview',
+    'gate_b',
+    'hybrid_qualitative_analysis',
+    'package_commit',
+    'package_review_submit',
+    'handoff_export_prepare',
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+    'session_status_projection',
+  ];
+  const deliveryAuthoritySteps = new Set([
+    'external_export_download_prepare',
+    'same_origin_delivery_status',
+    'same_origin_delivery',
+    'provider_private_prepare',
+    'provider_private_status',
+    'provider_private_use',
+    'provider_private_revoke',
+    'internal_webhook_dispatch',
+    'internal_webhook_status',
+  ]);
+  const coverageEvidence = (retainedArtifactFamilyHash, refPrefix) => Object.fromEntries(requiredCoverage.map((step) => [
+    step,
+    {
+      status: 'proven',
+      evidence_ref: `${refPrefix}://${step}`,
+      evidence_hash: `${step.replace(/_/g, '-')}-${refPrefix.replace(/[^a-z0-9]/gi, '-')}`,
+      raw_local_path_exposed: false,
+      raw_url_exposed: false,
+      provider_private_token_exposed: false,
+      provider_public_url_enabled: false,
+      provider_object_writes_enabled: false,
+      connector_dispatch_enabled: false,
+      rag_vector_model_runtime_enabled: false,
+      browser_storage_authority_enabled: false,
+      frontend_durable_authority_enabled: false,
+      ...(deliveryAuthoritySteps.has(step)
+        ? {
+          candidate_b_retained_artifact_family_hash: retainedArtifactFamilyHash,
+          candidate_b_delivery_artifact_roles_bound: true,
+        }
+        : {}),
+    },
+  ]));
+  const bundleCoverage = coverageEvidence(
+    setup.bundle_authority_hashes.governed_retained_artifact_family_hash,
+    'candidate-b-rendered-readiness-bundle-proof',
+  );
+  const runtimeCoverage = coverageEvidence(
+    setup.runtime_authority_hashes.governed_retained_artifact_family_hash,
+    'candidate-b-rendered-readiness-runtime-proof',
+  );
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#candidate-b-readiness-audit-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_default_promotion_readiness_audit_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-readiness-audit-submit')).toBeDisabled();
+
+  await page.locator('#candidate-b-bundle-downstream-proof-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-bundle-downstream-proof-bridge-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-bundle-downstream-proof-coverage-json').fill(JSON.stringify(bundleCoverage));
+  const bundleProofResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof')
+  ));
+  await page.locator('#candidate-b-bundle-downstream-proof-submit').click();
+  const bundleProof = await expectJson(await bundleProofResponsePromise);
+  expect(bundleProof.status).toBe('proven');
+
+  await page.locator('#candidate-b-visual-lane-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-visual-lane-bridge-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
+  const visualLaneResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status')
+  ));
+  await page.locator('#candidate-b-visual-lane-status-submit').click();
+  const visualLaneStatus = await expectJson(await visualLaneResponsePromise);
+  expect(visualLaneStatus.status).toBe('available');
+
+  await page.locator('#candidate-b-runtime-downstream-proof-coverage-json').fill(JSON.stringify(runtimeCoverage));
+  const runtimeProofResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof')
+  ));
+  await page.locator('#candidate-b-runtime-downstream-proof-submit').click();
+  const runtimeProof = await expectJson(await runtimeProofResponsePromise);
+  expect(runtimeProof.status).toBe('proven');
+
+  await page.locator('#candidate-b-operator-status-baseline-run-id').fill(setup.baseline_run_id);
+  await page.locator('#candidate-b-operator-status-candidate-a-run-id').fill(setup.candidate_a_run_id);
+  await page.locator('#candidate-b-operator-status-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-operator-status-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-operator-status-bundle-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-operator-status-runtime-receipt-id').fill(
+    setup.candidate_b_runtime_bridge_receipt_id,
+  );
+  const operatorStatusResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status')
+  ));
+  await page.locator('#candidate-b-operator-status-submit').click();
+  const operatorStatus = await expectJson(await operatorStatusResponsePromise);
+  expect(operatorStatus.status).toBe('available');
+
+  await page.locator('#candidate-b-closure-evidence-baseline-run-id').fill(setup.baseline_run_id);
+  await page.locator('#candidate-b-closure-evidence-candidate-a-run-id').fill(setup.candidate_a_run_id);
+  await page.locator('#candidate-b-closure-evidence-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-closure-evidence-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-closure-evidence-bundle-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-closure-evidence-runtime-receipt-id').fill(
+    setup.candidate_b_runtime_bridge_receipt_id,
+  );
+  const closureResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence')
+  ));
+  await page.locator('#candidate-b-closure-evidence-submit').click();
+  const closure = await expectJson(await closureResponsePromise);
+  expect(closure.status).toBe('ready');
+  await expect(page.locator('#candidate-b-readiness-audit-submit')).toBeEnabled();
+
+  await page.locator('#candidate-b-readiness-audit-baseline-run-id').fill(setup.baseline_run_id);
+  await page.locator('#candidate-b-readiness-audit-candidate-a-run-id').fill(setup.candidate_a_run_id);
+  await page.locator('#candidate-b-readiness-audit-bundle-id').fill(setup.candidate_b_bundle_id);
+  await page.locator('#candidate-b-readiness-audit-run-id').fill(setup.candidate_b_run_id);
+  await page.locator('#candidate-b-readiness-audit-bundle-receipt-id').fill(
+    setup.candidate_b_bundle_bridge_receipt_id,
+  );
+  await page.locator('#candidate-b-readiness-audit-runtime-receipt-id').fill(
+    setup.candidate_b_runtime_bridge_receipt_id,
+  );
+  const readinessRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit')
+  ));
+  const readinessResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit')
+  ));
+  await page.locator('#candidate-b-readiness-audit-submit').click();
+  const readinessPayload = (await readinessRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(readinessPayload, [
+    'client_request_id',
+    'readiness_mode',
+    'baseline_run_id',
+    'candidate_a_run_id',
+    'candidate_b_bundle_id',
+    'candidate_b_run_id',
+    'candidate_b_bundle_bridge_receipt_id',
+    'candidate_b_runtime_bridge_receipt_id',
+    'eligible_corpus_scope',
+    'regression_disposition',
+    'rollback_to_baseline_confirmation',
+    'operator_confirmation',
+    'bundle_downstream_proof',
+    'runtime_downstream_proof',
+    'candidate_b_visual_lane_status_evidence',
+    'operator_status_evidence',
+    'closure_evidence',
+  ]);
+  expect(readinessPayload).toMatchObject({
+    readiness_mode: 'candidate_b_default_promotion_readiness_audit_v1',
+    baseline_run_id: setup.baseline_run_id,
+    candidate_a_run_id: setup.candidate_a_run_id,
+    candidate_b_bundle_id: setup.candidate_b_bundle_id,
+    candidate_b_run_id: setup.candidate_b_run_id,
+    candidate_b_bundle_bridge_receipt_id: setup.candidate_b_bundle_bridge_receipt_id,
+    candidate_b_runtime_bridge_receipt_id: setup.candidate_b_runtime_bridge_receipt_id,
+    eligible_corpus_scope: 'candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only',
+    regression_disposition: 'no_unacceptable_regression_against_baseline_and_candidate_a',
+    rollback_to_baseline_confirmation: true,
+    operator_confirmation: true,
+  });
+  expect(readinessPayload.bundle_downstream_proof).toMatchObject({
+    schema_id: 'layer3.candidate_b_bundle_downstream_proof.v1',
+    status: 'proven',
+  });
+  expect(readinessPayload.runtime_downstream_proof).toMatchObject({
+    schema_id: 'layer3.candidate_b_runtime_downstream_proof.v1',
+    status: 'proven',
+  });
+  expect(readinessPayload.candidate_b_visual_lane_status_evidence).toMatchObject({
+    schema_id: 'layer3.candidate_b_visual_lane_status.v1',
+    status: 'available',
+  });
+  expect(readinessPayload.operator_status_evidence).toMatchObject({
+    schema_id: 'layer3.candidate_b_default_promotion_operator_status.v1',
+    status: 'available',
+  });
+  expect(readinessPayload.closure_evidence).toMatchObject({
+    schema_id: 'layer3.candidate_b_default_promotion_closure_evidence.v1',
+    status: 'ready',
+  });
+  for (const forbidden of [
+    'visual_lane_mode',
+    'document_processing_engine',
+    'default_selector',
+    'make_default',
+    'candidate_b_default',
+    'candidate_b_default_enabled',
+    'candidate_b_default_promotion_enabled',
+    'provider_private_url',
+    'provider_public_url',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+    'local_path',
+    'url',
+  ]) {
+    expect(readinessPayload).not.toHaveProperty(forbidden);
+  }
+  const readiness = await expectJson(await readinessResponsePromise);
+  expect(readiness.schema_id).toBe('layer3.candidate_b_default_promotion_readiness_audit.v1');
+  expect(readiness.status).toBe('ready');
+  expect(readiness.readiness_state).toBe('candidate_b_default_promotion_ready_for_separate_selection');
+  expect(readiness.blocked_reasons).toEqual([]);
+  expect(readiness.rollback_to_baseline).toMatchObject({ available: true, selector: 'baseline' });
+  expect(readiness.default_selector_change_enabled).toBe(true);
+  expect(readiness.candidate_b_default_promotion_enabled).toBe(true);
+  expect(readiness.selector_mutation_performed).toBe(false);
+  expect(readiness.baseline_current_default_evidence.baseline_default_changed).toBe(false);
+  expect(readiness.candidate_a_admitted_variant_evidence.candidate_a_semantics_changed).toBe(false);
+  expect(readiness.candidate_b_selector_evidence.candidate_b_default_for_eligible_pdf_when_engine_omitted).toBe(true);
+  expect(readiness.candidate_b_selector_evidence.candidate_b_is_default_visual_lane_mode).toBe(false);
+  expect(readiness.fail_closed_behavior.missing_bridge_receipt_blocks_readiness).toBe(true);
+  expect(readiness.fail_closed_behavior.stale_bridge_receipt_hash_blocks_readiness).toBe(true);
+  expect(readiness.fail_closed_behavior.unacceptable_regression_blocks_readiness).toBe(true);
+  expect(readiness.negative_invariants.connector_dispatch_enabled).toBe(false);
+  expect(readiness.negative_invariants.rag_vector_model_runtime_enabled).toBe(false);
+  expect(readiness.negative_invariants.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(readiness)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_readiness_audit_ready');
+  await expect(panel).toContainText('candidate_b_default_promotion_ready_for_separate_selection');
+  await expect(panel).toContainText('rollback selector: baseline');
+  await expect(panel).toContainText('selector mutation performed: false');
+  await expect(page.locator('#candidate-b-final-proof-readiness-audit-json')).toContainText(
+    readiness.readiness_audit_id,
+  );
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/ingestion/candidate-b/bundle/downstream-proof')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/visual-lane/status')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/runtime/downstream-proof')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/default-promotion/operator-status')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/default-promotion/closure-evidence')
+    || apiRequest.path.includes('/source/ingestion/candidate-b/default-promotion/readiness-audit')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/bundle/downstream-proof' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit' },
+  ]);
+});
+
 test('Layer 3 workbench keeps unsupported-only Gate C material out of 3C routed-input state', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 820 });
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
