@@ -180,9 +180,9 @@ def _bridge_role_counts(bridge_response: dict[str, Any]) -> dict[str, int]:
     return dict(artifact_family.get("role_counts") or {})
 
 
-def _prepare_candidate_b_realistic_readiness_audit_fixture(
+def _prepare_candidate_b_realistic_bridges(
     fixture: ReviewBrowserFixture,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     baseline_run_id = fixture.baseline_binding.run_id
     candidate_a_run_id = fixture.candidate_a_binding.run_id
     candidate_b_run_id = fixture.candidate_b_binding.run_id
@@ -207,6 +207,24 @@ def _prepare_candidate_b_realistic_readiness_audit_fixture(
             "operator_confirmation": True,
         }
     )
+    return {
+        "baseline_run_id": baseline_run_id,
+        "candidate_a_run_id": candidate_a_run_id,
+        "candidate_b_run_id": candidate_b_run_id,
+        "bundle_bridge": bundle_bridge,
+        "runtime_bridge": runtime_bridge,
+    }
+
+
+def _prepare_candidate_b_realistic_readiness_audit_fixture(
+    fixture: ReviewBrowserFixture,
+) -> dict[str, object]:
+    bridge_setup = _prepare_candidate_b_realistic_bridges(fixture)
+    baseline_run_id = str(bridge_setup["baseline_run_id"])
+    candidate_a_run_id = str(bridge_setup["candidate_a_run_id"])
+    candidate_b_run_id = str(bridge_setup["candidate_b_run_id"])
+    bundle_bridge = bridge_setup["bundle_bridge"]
+    runtime_bridge = bridge_setup["runtime_bridge"]
     bundle_receipt_id = str(bundle_bridge["bridge_receipt_id"])
     runtime_receipt_id = str(runtime_bridge["bridge_receipt_id"])
     bundle_proof = layer3_candidate_b_bundle_downstream_proof.candidate_b_bundle_downstream_proof(
@@ -326,6 +344,54 @@ def _prepare_candidate_b_realistic_readiness_audit_fixture(
         "readiness_audit_hash": readiness["readiness_audit_hash"],
         "readiness_audit": readiness,
         "final_proof_request": _final_proof_request(readiness),
+    }
+
+
+def _prepare_candidate_b_source_directory_authority_fixture(
+    fixture: ReviewBrowserFixture,
+    payload: dict[str, object] | None = None,
+) -> dict[str, object]:
+    payload = payload or {}
+    candidate_b_source_kind = str(payload.get("candidate_b_source_kind") or "bundle").strip().lower()
+    if candidate_b_source_kind not in {"bundle", "runtime"}:
+        raise ValueError("candidate_b_source_kind must be bundle or runtime")
+    bridge_setup = _prepare_candidate_b_realistic_bridges(fixture)
+    bridge = bridge_setup[f"{candidate_b_source_kind}_bridge"]
+    bridge_receipt_id = str(bridge["bridge_receipt_id"])
+    bridge_base = (
+        Path(str(settings.layer3_candidate_b_bundle_bridge_dir))
+        if candidate_b_source_kind == "bundle"
+        else Path(str(settings.layer3_candidate_b_runtime_bridge_dir))
+    )
+    curated_root = bridge_base / bridge_receipt_id / "curated"
+    if not curated_root.is_dir():
+        raise ValueError(f"Candidate B {candidate_b_source_kind} curated bridge root is unavailable")
+    settings.layer3_source_ingestion_dir = str(curated_root)
+    return {
+        "schema_id": "project6.review_browser_candidate_b_source_directory_authority_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "server_generated_receipts": True,
+        "source_ingestion_dir_configured_from_bridge": True,
+        "candidate_b_source_kind": candidate_b_source_kind,
+        "candidate_b_bundle_id": fixture.bundle_id,
+        "candidate_b_run_id": bridge_setup["candidate_b_run_id"],
+        "baseline_run_id": bridge_setup["baseline_run_id"],
+        "candidate_a_run_id": bridge_setup["candidate_a_run_id"],
+        "bridge_receipt_id": bridge_receipt_id,
+        "bundle_bridge_receipt_id": bridge_setup["bundle_bridge"]["bridge_receipt_id"],
+        "runtime_bridge_receipt_id": bridge_setup["runtime_bridge"]["bridge_receipt_id"],
+        "source_ingestion_config_authority": "LAYER3_SOURCE_INGESTION_DIR",
+        "source_ingestion_required_root_ref": bridge["source_ingestion_required_root_ref"],
+        "curated_material_root_ref": bridge["curated_material_root_ref"],
+        "curated_root_absolute_path_exposed": False,
+        "expected_source_directory_file_count": bridge["admitted_artifact_subset"]["file_count"],
+        "admitted_artifact_subset": bridge["admitted_artifact_subset"],
+        "artifact_role_counts": _bridge_role_counts(bridge),
+        "authority_hashes": bridge["authority_hashes"],
+        "layer3_material_preview_compatible": bridge["layer3_material_preview_compatible"],
+        "gate_b_material_authority_compatible": bridge["gate_b_material_authority_compatible"],
+        "negative_invariants": bridge["negative_invariants"],
     }
 
 
@@ -1363,10 +1429,24 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
                 "/__test/layer3/source-directory-hybrid-authority",
+                "/__test/layer3/source-directory-fixture-reset",
                 "/__test/layer3/candidate-b-readiness-audit",
                 "/__test/layer3/candidate-b-realistic-readiness-audit",
+                "/__test/layer3/candidate-b-source-directory-authority",
                 "/__test/layer3/candidate-b-final-proof",
             ],
+        }
+
+    @app.post("/__test/layer3/source-directory-fixture-reset")
+    def source_directory_fixture_reset() -> dict[str, object]:
+        settings.layer3_source_ingestion_dir = str(source_dir)
+        return {
+            "schema_id": "project6.review_browser_source_directory_fixture_reset.v1",
+            "schema_version": 1,
+            "test_only": True,
+            "source_ingestion_dir_restored": True,
+            "source_root_absolute_path_exposed": False,
+            "expected_relative_names": ["vector-retrieval.txt"],
         }
 
     @app.post("/__test/layer3/source-directory-hybrid-authority")
@@ -1465,6 +1545,16 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"candidate-b realistic readiness audit setup failed: {exc}",
+            ) from exc
+
+    @app.post("/__test/layer3/candidate-b-source-directory-authority")
+    def candidate_b_source_directory_authority_setup(payload: dict[str, object] | None = None) -> dict[str, object]:
+        try:
+            return _prepare_candidate_b_source_directory_authority_fixture(fixture, payload)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"candidate-b source-directory authority setup failed: {exc}",
             ) from exc
 
     @app.post("/__test/layer3/seed-quant")
