@@ -886,6 +886,75 @@ def test_candidate_b_readiness_does_not_echo_role_previews_when_roles_are_missin
     assert "raw/annotated/fontish.pdf" not in json.dumps(body, sort_keys=True)
 
 
+def test_candidate_b_final_proof_rejects_stale_runtime_bridge_receipt(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    readiness_payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    readiness_response = client.post(READY_ENDPOINT, json=readiness_payload)
+    assert readiness_response.status_code == 200, readiness_response.text
+    runtime_receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    runtime_receipt = json.loads(runtime_receipt_path.read_text(encoding="utf-8"))
+    runtime_receipt["bridge_receipt_hash"] = "0" * 64
+    _write_json(runtime_receipt_path, runtime_receipt)
+
+    response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(readiness_response.json()))
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_runtime_bridge_receipt_hash_mismatch"
+
+
+def test_candidate_b_final_proof_rejects_stale_bundle_bridge_receipt(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    readiness_payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    readiness_response = client.post(READY_ENDPOINT, json=readiness_payload)
+    assert readiness_response.status_code == 200, readiness_response.text
+    bundle_receipt_path = Path(settings.layer3_candidate_b_bundle_bridge_dir) / bundle_receipt_id / "receipt.json"
+    bundle_receipt = json.loads(bundle_receipt_path.read_text(encoding="utf-8"))
+    bundle_receipt["bridge_receipt_hash"] = "0" * 64
+    _write_json(bundle_receipt_path, bundle_receipt)
+
+    response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(readiness_response.json()))
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_bundle_bridge_receipt_hash_mismatch"
+
+
+def test_candidate_b_final_proof_status_rejects_stale_runtime_bridge_receipt(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    readiness_payload = _payload_with_live_runtime_proof(client, bundle_receipt_id, runtime_receipt_id)
+    readiness_response = client.post(READY_ENDPOINT, json=readiness_payload)
+    assert readiness_response.status_code == 200, readiness_response.text
+    final_proof_response = client.post(FINAL_PROOF_ENDPOINT, json=_final_proof_request(readiness_response.json()))
+    assert final_proof_response.status_code == 200, final_proof_response.text
+    final_proof = final_proof_response.json()
+    runtime_receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / runtime_receipt_id / "receipt.json"
+    runtime_receipt = json.loads(runtime_receipt_path.read_text(encoding="utf-8"))
+    runtime_receipt["bridge_receipt_hash"] = "0" * 64
+    _write_json(runtime_receipt_path, runtime_receipt)
+
+    response = client.post(
+        FINAL_PROOF_STATUS_ENDPOINT,
+        json=_final_proof_status_request(runtime_receipt_id, final_proof["proof_receipt_id"]),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_final_proof_runtime_bridge_receipt_hash_mismatch"
+
+
 def test_candidate_b_operator_delivery_projection_fields_are_declared_in_openapi(client: TestClient) -> None:
     openapi = client.app.openapi()
     schemas = openapi["components"]["schemas"]
