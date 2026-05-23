@@ -123,7 +123,7 @@ def _compute_aps_bundle_checksum(payload: dict[str, object]) -> str:
     return hashlib.sha256(_canonical_json_bytes(clean)).hexdigest()
 
 
-def _prepare_candidate_b_final_proof_fixture() -> dict[str, object]:
+def _prepare_candidate_b_readiness_audit_fixture() -> dict[str, object]:
     bundle_receipt_id = _write_bundle_receipt()
     runtime_receipt_id = _write_runtime_receipt()
     bundle_proof = layer3_candidate_b_bundle_downstream_proof.candidate_b_bundle_downstream_proof(
@@ -156,6 +156,22 @@ def _prepare_candidate_b_final_proof_fixture() -> dict[str, object]:
     readiness = layer3_candidate_b_default_readiness.evaluate_candidate_b_default_promotion_readiness(
         readiness_payload
     )
+    return {
+        "schema_id": "project6.review_browser_candidate_b_readiness_audit_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "server_generated_receipts": True,
+        "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "readiness_audit_id": readiness["readiness_audit_id"],
+        "readiness_audit_hash": readiness["readiness_audit_hash"],
+        "readiness_audit": readiness,
+        "final_proof_request": _final_proof_request(readiness),
+    }
+
+
+def _prepare_candidate_b_final_proof_fixture() -> dict[str, object]:
+    readiness_setup = _prepare_candidate_b_readiness_audit_fixture()
+    readiness = readiness_setup["readiness_audit"]
     final_proof = layer3_candidate_b_final_proof.candidate_b_default_promotion_final_proof(
         _final_proof_request(readiness)
     )
@@ -164,12 +180,15 @@ def _prepare_candidate_b_final_proof_fixture() -> dict[str, object]:
         "schema_version": 1,
         "test_only": True,
         "server_generated_receipts": True,
-        "candidate_b_runtime_bridge_receipt_id": runtime_receipt_id,
+        "candidate_b_runtime_bridge_receipt_id": readiness_setup["candidate_b_runtime_bridge_receipt_id"],
         "proof_receipt_id": final_proof["proof_receipt_id"],
         "proof_hash": final_proof["proof_hash"],
         "readiness_audit_id": readiness["readiness_audit_id"],
         "readiness_audit_hash": readiness["readiness_audit_hash"],
-        "status_request": _final_proof_status_request(runtime_receipt_id, final_proof["proof_receipt_id"]),
+        "status_request": _final_proof_status_request(
+            readiness_setup["candidate_b_runtime_bridge_receipt_id"],
+            final_proof["proof_receipt_id"],
+        ),
     }
 
 
@@ -1184,6 +1203,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
                 "/__test/layer3/source-directory-hybrid-authority",
+                "/__test/layer3/candidate-b-readiness-audit",
                 "/__test/layer3/candidate-b-final-proof",
             ],
         }
@@ -1264,6 +1284,16 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"candidate-b final proof setup failed: {exc}",
+            ) from exc
+
+    @app.post("/__test/layer3/candidate-b-readiness-audit")
+    def candidate_b_readiness_audit_setup() -> dict[str, object]:
+        try:
+            return _prepare_candidate_b_readiness_audit_fixture()
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"candidate-b readiness audit setup failed: {exc}",
             ) from exc
 
     @app.post("/__test/layer3/seed-quant")

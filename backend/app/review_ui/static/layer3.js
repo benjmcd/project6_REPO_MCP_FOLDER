@@ -316,6 +316,9 @@ const AUTHORITY_MATRIX_REVIEW_RESPONSE_AUTHORITY = 'State.bootstrap.authority_ma
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_read_only_status_surface';
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_USE_CASE = 'operator_reviews_candidate_b_default_promotion_status_without_selector_mutation_or_dispatch';
 const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY = 'State.bootstrap.execution_readiness';
+const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_recording_control';
+const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_MODE = 'candidate_b_default_promotion_final_proof_v1';
+const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION = 'record_candidate_b_default_promotion_final_proof';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE = 'candidate_b_default_promotion_final_proof_status_v1';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_final_proof_status';
@@ -438,6 +441,12 @@ const State = {
     providerPublicUrlPrepareClientRequestId: null,
     providerPublicUrlError: null,
     providerPublicUrlPending: false,
+    candidateBDefaultPromotionFinalProof: null,
+    candidateBDefaultPromotionFinalProofError: null,
+    candidateBDefaultPromotionFinalProofPending: false,
+    candidateBDefaultPromotionFinalProofInput: {
+        readinessAuditJson: '',
+    },
     candidateBDefaultPromotionFinalProofStatus: null,
     candidateBDefaultPromotionFinalProofStatusError: null,
     candidateBDefaultPromotionFinalProofStatusPending: false,
@@ -7464,10 +7473,27 @@ function candidateBDefaultPromotionStatusState(contract) {
     return { label: 'candidate_b_default_promotion_status_contract_visible', pill: 'ok', missing: [] };
 }
 
+function candidateBDefaultPromotionFinalProofEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_default_promotion_final_proof_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBDefaultPromotionFinalProofStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_default_promotion_final_proof_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
     return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBDefaultPromotionFinalProofInputValues() {
+    const readinessAuditInput = document.getElementById('candidate-b-final-proof-readiness-audit-json');
+    return {
+        readinessAuditJson: (
+            readinessAuditInput?.value
+            || State.candidateBDefaultPromotionFinalProofInput.readinessAuditJson
+            || ''
+        ).trim(),
+    };
 }
 
 function candidateBDefaultPromotionFinalProofStatusInputValues() {
@@ -7476,6 +7502,18 @@ function candidateBDefaultPromotionFinalProofStatusInputValues() {
     return {
         runtimeReceiptId: (runtimeInput?.value || State.candidateBDefaultPromotionFinalProofStatusInput.runtimeReceiptId || '').trim(),
         proofReceiptId: (proofInput?.value || State.candidateBDefaultPromotionFinalProofStatusInput.proofReceiptId || '').trim(),
+    };
+}
+
+function candidateBDefaultPromotionFinalProofPayload() {
+    const values = candidateBDefaultPromotionFinalProofInputValues();
+    State.candidateBDefaultPromotionFinalProofInput = values;
+    return {
+        client_request_id: requestId(),
+        proof_mode: CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_MODE,
+        operator_decision: CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION,
+        readiness_audit: JSON.parse(values.readinessAuditJson),
+        operator_confirmation: true,
     };
 }
 
@@ -7491,6 +7529,16 @@ function candidateBDefaultPromotionFinalProofStatusPayload() {
     };
 }
 
+function canRecordCandidateBDefaultPromotionFinalProof(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBDefaultPromotionFinalProofInputValues();
+    return Boolean(
+        contract?.candidate_b_default_promotion_final_proof_admitted
+        && candidateBDefaultPromotionFinalProofEndpointPath(contract)
+        && values.readinessAuditJson
+        && !State.candidateBDefaultPromotionFinalProofPending
+    );
+}
+
 function canInspectCandidateBDefaultPromotionFinalProofStatus(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBDefaultPromotionFinalProofStatusInputValues();
     return Boolean(
@@ -7500,6 +7548,20 @@ function canInspectCandidateBDefaultPromotionFinalProofStatus(contract = candida
         && values.proofReceiptId
         && !State.candidateBDefaultPromotionFinalProofStatusPending
     );
+}
+
+function candidateBDefaultPromotionFinalProofPanelState() {
+    if (State.candidateBDefaultPromotionFinalProofPending) {
+        return { label: 'candidate_b_final_proof_pending', pill: 'preview' };
+    }
+    if (State.candidateBDefaultPromotionFinalProofError) {
+        const code = State.candidateBDefaultPromotionFinalProofError?.payload?.error?.code;
+        return { label: code || 'candidate_b_final_proof_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBDefaultPromotionFinalProof?.status === 'proven') {
+        return { label: 'candidate_b_final_proof_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_final_proof_not_recorded', pill: 'preview' };
 }
 
 function candidateBDefaultPromotionFinalProofStatusPanelState() {
@@ -7514,6 +7576,33 @@ function candidateBDefaultPromotionFinalProofStatusPanelState() {
         return { label: 'candidate_b_final_proof_status_available', pill: 'ok' };
     }
     return { label: 'candidate_b_final_proof_status_not_inspected', pill: 'preview' };
+}
+
+function candidateBDefaultPromotionFinalProofRows(proof) {
+    if (!proof) return '';
+    const rows = {
+        proof_state: proof.proof_state,
+        proof_receipt_id: proof.proof_receipt_id,
+        proof_hash: proof.proof_hash,
+        readiness_audit_id: proof.readiness_audit_id,
+        candidate_b_run_id: proof.candidate_b_run_id,
+        candidate_b_bundle_id: proof.candidate_b_bundle_id,
+        default_enabled: proof.candidate_b_default_promotion_enabled,
+        rollback_selector: proof.rollback_selector,
+        final_operator_inspection_complete: proof.final_operator_inspection_complete,
+        selector_mutation_performed: proof.selector_mutation_performed,
+        operator_status_hash: proof.operator_status_hash,
+    };
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            ${Object.entries(rows).map(([label, value]) => `
+                <section class="result-review-card">
+                    <strong>${escapeHtml(label.replace(/_/g, ' '))}</strong>
+                    <p>${escapeHtml(value ?? 'none')}</p>
+                </section>
+            `).join('')}
+        </div>
+    `;
 }
 
 function candidateBDefaultPromotionFinalProofStatusRows(status) {
@@ -7543,6 +7632,20 @@ function candidateBDefaultPromotionFinalProofStatusRows(status) {
     `;
 }
 
+function candidateBDefaultPromotionFinalProofError() {
+    const error = State.candidateBDefaultPromotionFinalProofError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_final_proof_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofStatusError() {
     const error = State.candidateBDefaultPromotionFinalProofStatusError;
     if (!error) return '';
@@ -7561,6 +7664,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     if (!elements.candidateBDefaultPromotionStatusPanel) return;
     const contract = candidateBDefaultPromotionReadinessContract();
     const panelState = candidateBDefaultPromotionStatusState(contract);
+    const finalProofRecordState = candidateBDefaultPromotionFinalProofPanelState();
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
     const blockedScope = [
         'frontend_durable_authority',
@@ -7570,6 +7674,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
         'rag_vector_model_runtime',
         'full_mockup_activation',
     ];
+    const finalProof = State.candidateBDefaultPromotionFinalProof;
+    const finalProofRecordInputs = State.candidateBDefaultPromotionFinalProofInput;
     const finalProofStatus = State.candidateBDefaultPromotionFinalProofStatus;
     const finalProofInputs = State.candidateBDefaultPromotionFinalProofStatusInput;
     elements.candidateBDefaultPromotionStatusPanel.dataset.statusState = panelState.label;
@@ -7615,6 +7721,22 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </ul>
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
+                <strong>Final Proof Recording</strong>
+                <form id="candidate-b-final-proof-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>readiness audit JSON</span>
+                        <textarea id="candidate-b-final-proof-readiness-audit-json" rows="7" autocomplete="off" spellcheck="false" placeholder="{&quot;schema_id&quot;:&quot;layer3.candidate_b_default_promotion_readiness_audit.v1&quot;,...}">${escapeHtml(finalProofRecordInputs.readinessAuditJson)}</textarea>
+                    </label>
+                    <button id="candidate-b-final-proof-submit" type="submit" ${contract?.candidate_b_default_promotion_final_proof_admitted && !State.candidateBDefaultPromotionFinalProofPending ? '' : 'disabled'}>Record Final Proof</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(finalProofRecordState.pill)}">${escapeHtml(finalProofRecordState.label)}</span>
+                    <span class="rail-label">Server records final proof from readiness-audit authority; this control performs no selector mutation.</span>
+                </div>
+                ${candidateBDefaultPromotionFinalProofRows(finalProof)}
+                ${candidateBDefaultPromotionFinalProofError()}
+            </section>
+            <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Inspection</strong>
                 <form id="candidate-b-final-proof-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
                     <label>
@@ -7651,6 +7773,51 @@ function renderCandidateBDefaultPromotionStatusPanel() {
             </section>
         </div>
     `;
+}
+
+async function recordCandidateBDefaultPromotionFinalProof(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canRecordCandidateBDefaultPromotionFinalProof(contract)) {
+        State.candidateBDefaultPromotionFinalProof = null;
+        State.candidateBDefaultPromotionFinalProofError = new Error(
+            'Candidate B final proof recording requires readiness-audit JSON authority.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBDefaultPromotionFinalProofEndpointPath(contract);
+    let payload;
+    try {
+        payload = candidateBDefaultPromotionFinalProofPayload();
+    } catch (error) {
+        State.candidateBDefaultPromotionFinalProof = null;
+        State.candidateBDefaultPromotionFinalProofError = new Error(
+            `Candidate B final proof readiness audit JSON is invalid: ${error.message}`,
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBDefaultPromotionFinalProofPending = true;
+    State.candidateBDefaultPromotionFinalProofError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        const proof = await postJson(path, payload);
+        State.candidateBDefaultPromotionFinalProof = proof;
+        State.candidateBDefaultPromotionFinalProofError = null;
+        State.candidateBDefaultPromotionFinalProofStatusInput = {
+            runtimeReceiptId: payload.readiness_audit?.bridge_receipts?.runtime?.bridge_receipt_id || '',
+            proofReceiptId: proof.proof_receipt_id || '',
+        };
+        addEvent('Candidate B final proof recorded through server readiness-audit authority.');
+    } catch (error) {
+        State.candidateBDefaultPromotionFinalProof = null;
+        State.candidateBDefaultPromotionFinalProofError = error;
+        addEvent(`Candidate B final proof recording blocked: ${error.message}`);
+    } finally {
+        State.candidateBDefaultPromotionFinalProofPending = false;
+        renderAll();
+    }
 }
 
 async function inspectCandidateBDefaultPromotionFinalProofStatus(event) {
@@ -14069,6 +14236,9 @@ elements.providerPublicUrlStatus.addEventListener('click', inspectProviderPublic
 elements.providerPublicUrlUse.addEventListener('click', useProviderPublicUrlDecision);
 elements.providerPublicUrlRevoke.addEventListener('click', revokeProviderPublicUrl);
 elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'candidate-b-final-proof-form') {
+        recordCandidateBDefaultPromotionFinalProof(event);
+    }
     if (event.target?.id === 'candidate-b-final-proof-status-form') {
         inspectCandidateBDefaultPromotionFinalProofStatus(event);
     }

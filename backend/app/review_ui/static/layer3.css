@@ -3717,6 +3717,11 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     min-width: 0;
 }
 
+.candidate-b-final-proof-status-form textarea {
+    min-width: 0;
+    resize: vertical;
+}
+
 .candidate-b-final-proof-status-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
