@@ -28,7 +28,10 @@ operator_workflow_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/f
 local_testclient_regression_receipt_id: cb-full-corpus-operator-40cd13edeb4d8c10bd65e727
 local_testclient_regression_receipt_hash: 40cd13edeb4d8c10bd65e727a1a8bd7c810c9809274d9f1db73a250fcc736c51
 local_testclient_regression_status_hash: f126d919e9e9ce2a2766ac1a862a0e97a384edf0f685cdde8aadb4ad3dbea904
-live_http_runtime_proof_status: blocked_pending_configured_server
+live_http_runtime_proof_status: proven
+live_http_runtime_proof_checkpoint: next_milestone_plans/Layer3_planning_docs/986-cb-live-http-runtime-proof.md
+live_http_runtime_proof_receipt_id: cb-full-corpus-operator-3d717f0edcbeaba69179af15
+live_http_runtime_proof_status_hash: d38f89a59ffe13f25c4f134e633530cd1572eefb31d28aa24241cef7c70d9b0e
 raw_api_base_url_persisted: false
 raw_local_path_exposed: false
 raw_url_exposed: false
@@ -89,9 +92,9 @@ local_testclient_regression_raw_local_path_exposed: false
 local_testclient_regression_raw_url_exposed: false
 ```
 
-## Remaining Runtime Proof
+## Runtime Proof
 
-A live run still requires an operator-configured server with:
+A live run has now been proven against an operator-configured server with:
 
 - `STORAGE_DIR` pointing at a runtime-discovery parent that contains the baseline, Candidate A, and Candidate B full-corpus runtime roots;
 - `LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR` pointing at a server-owned bridge directory outside app-owned storage;
@@ -99,10 +102,10 @@ A live run still requires an operator-configured server with:
 - a durable `DATABASE_URL`;
 - `LAYER3_INTERNAL_WEBHOOK_URL` configured for the internal webhook dispatch proof.
 
-Without those live server settings, the runner must fail closed with the exact missing server readiness, runtime-discovery, receipt-dir, or webhook blocker.
+The proven live receipt is recorded in `986-cb-live-http-runtime-proof.md`. Without those live server settings, the runner must still fail closed with the exact missing server readiness, runtime-discovery, receipt-dir, or webhook blocker.
 
 ## Next Exact Posture
 
 ```text
-candidate_b_live_http_operator_workflow_runtime_proof_v1
+candidate_b_operator_repeatability_acceptance_and_ui_status_decision_v1
 ```
