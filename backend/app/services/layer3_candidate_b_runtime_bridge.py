@@ -39,6 +39,8 @@ CONFIG_AUTHORITY = "LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR"
 SOURCE_INGESTION_CONFIG_AUTHORITY = "LAYER3_SOURCE_INGESTION_DIR"
 SOURCE_INGESTION_MODE = layer3_source_directory_ingestion.MODE
 BRIDGE_RECEIPT_PREFIX = "cb-runtime-l3"
+SOURCE_SCAN_MODE = "candidate_b_runtime_bridge_curated_source_scan_v1"
+SOURCE_SCAN_OPERATOR_DECISION = "scan_candidate_b_runtime_bridge_curated_material_root"
 REDACTION_POLICY_ID = "candidate_b_runtime_document_trace_redaction_v1"
 AUTHORITY_HASH_VERSION = "candidate_b_runtime_layer3_bridge_hash_v1"
 FULL_CORPUS_VALIDATION_SCHEMA_ID = "aps.full_corpus_compare_triplet_validation.v1"
@@ -83,6 +85,14 @@ _FORBIDDEN_REQUEST_FIELDS = {
     "connector_dispatch",
     "rag_vector_index",
     "browser_storage",
+}
+_SOURCE_SCAN_FORBIDDEN_REQUEST_FIELDS = _FORBIDDEN_REQUEST_FIELDS | {
+    "bridge_root",
+    "curated_root",
+    "source_root",
+    "source_root_ref",
+    "config_authority",
+    "receipt_path",
 }
 _SENSITIVE_KEY_PARTS = {
     "absolute",
@@ -256,6 +266,75 @@ def prepare_candidate_b_runtime_material_bridge(
     )
 
 
+def scan_candidate_b_runtime_bridge_curated_source_directory(
+    db: Any,
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = _normalise_source_scan_payload(payload)
+    request_id = _required(fields, "client_request_id")
+    source_scan_mode = _required(fields, "source_scan_mode")
+    if source_scan_mode != SOURCE_SCAN_MODE:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_source_scan_mode_not_admitted",
+            "Only the frozen Candidate B runtime bridge curated source scan mode is admitted.",
+            details={"expected_source_scan_mode": SOURCE_SCAN_MODE, "received_source_scan_mode": source_scan_mode},
+        )
+    operator_decision = _required(fields, "operator_decision")
+    if operator_decision != SOURCE_SCAN_OPERATOR_DECISION:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_source_scan_operator_decision_not_admitted",
+            "operator_decision is not admitted for Candidate B runtime bridge curated source scanning.",
+            details={
+                "expected_operator_decision": SOURCE_SCAN_OPERATOR_DECISION,
+                "received_operator_decision": operator_decision,
+            },
+        )
+    if fields.get("operator_confirmation") is not True:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_source_scan_operator_confirmation_required",
+            "operator_confirmation=true is required before scanning Candidate B bridge-curated material.",
+            details={"operator_confirmation_required": True},
+        )
+
+    bridge_receipt_id = _required(fields, "bridge_receipt_id")
+    receipt = _load_bridge_receipt(bridge_receipt_id)
+    _assert_receipt_field(receipt, "candidate_b_run_id", _required(fields, "candidate_b_run_id"))
+    _assert_receipt_field(receipt, "baseline_run_id", _required(fields, "baseline_run_id"))
+    _assert_receipt_field(receipt, "candidate_a_run_id", _required(fields, "candidate_a_run_id"))
+    source_root_ref = _curated_material_root_ref(bridge_receipt_id)
+    curated_root = _resolve_bridge_receipt_curated_root(receipt)
+    source_authority = _source_scan_authority(receipt, source_scan_mode=source_scan_mode)
+    scan_payload = {
+        "client_request_id": request_id,
+        "operator_decision": SOURCE_SCAN_OPERATOR_DECISION,
+        "source_family": str(fields.get("source_family") or layer3_source_directory_ingestion.SOURCE_FAMILY),
+        "ingestion_mode": str(fields.get("ingestion_mode") or layer3_source_directory_ingestion.MODE),
+    }
+    response = layer3_source_directory_ingestion.scan_server_owned_directory_root(
+        db,
+        scan_payload,
+        root=curated_root,
+        config_authority=CONFIG_AUTHORITY,
+        source_root_ref=source_root_ref,
+        operator_decision=SOURCE_SCAN_OPERATOR_DECISION,
+        source_authority=source_authority,
+    )
+    response["candidate_b_runtime_bridge_receipt_id"] = bridge_receipt_id
+    response["candidate_b_runtime_bridge_receipt_hash"] = receipt["bridge_receipt_hash"]
+    response["candidate_b_run_id"] = receipt["candidate_b_run_id"]
+    response["baseline_run_id"] = receipt["baseline_run_id"]
+    response["candidate_a_run_id"] = receipt["candidate_a_run_id"]
+    response["source_scan_mode"] = SOURCE_SCAN_MODE
+    response["server_owned_bridge_root_resolved"] = True
+    response["source_root_absolute_path_exposed"] = False
+    response["next_allowed_actions"] = [
+        "run source-directory material preview from persisted bridge-bound source root authority",
+        "submit Gate B material authority decision",
+        "continue Candidate B full-corpus Layer 3 downstream operator workflow",
+    ]
+    return response
+
+
 def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     fields = dict(payload)
     blocked = sorted(key for key in fields if key in _FORBIDDEN_REQUEST_FIELDS and fields.get(key) is not None)
@@ -264,6 +343,37 @@ def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             "candidate_b_runtime_bridge_forbidden_request_fields",
             "The Candidate B runtime bridge does not admit caller paths, bundles, connectors, or browser authority.",
             details={"blocked_fields": blocked},
+        )
+    return fields
+
+
+def _normalise_source_scan_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    fields = {str(key): value for key, value in dict(payload or {}).items() if value is not None}
+    blocked = sorted(key for key in fields if key in _SOURCE_SCAN_FORBIDDEN_REQUEST_FIELDS and fields.get(key) is not None)
+    if blocked:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_source_scan_forbidden_request_fields",
+            "The Candidate B runtime bridge source scan does not admit caller paths, roots, connectors, or browser authority.",
+            details={"blocked_fields": blocked},
+        )
+    allowed = {
+        "client_request_id",
+        "source_scan_mode",
+        "operator_decision",
+        "bridge_receipt_id",
+        "candidate_b_run_id",
+        "baseline_run_id",
+        "candidate_a_run_id",
+        "operator_confirmation",
+        "source_family",
+        "ingestion_mode",
+    }
+    unknown = sorted(set(fields) - allowed)
+    if unknown:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_source_scan_unknown_field",
+            "The Candidate B runtime bridge source scan request contract is intentionally scoped.",
+            details={"unknown_fields": unknown},
         )
     return fields
 
@@ -277,6 +387,17 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
             details={"field": key},
         )
     return value
+
+
+def _assert_receipt_field(receipt: Mapping[str, Any], key: str, expected: str) -> None:
+    received = str(receipt.get(key) or "").strip()
+    if received != expected:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_source_scan_receipt_mismatch",
+            "The Candidate B runtime bridge source scan request does not match the durable bridge receipt.",
+            http_status=409,
+            details={"field": key, "expected": expected, "received": received},
+        )
 
 
 def _configured_bridge_base() -> Path:
@@ -307,6 +428,156 @@ def _configured_bridge_base() -> Path:
             )
     resolved.mkdir(parents=True, exist_ok=True)
     return resolved
+
+
+def resolve_candidate_b_runtime_bridge_curated_root_ref(source_root_ref: str) -> Path:
+    ref = str(source_root_ref or "").strip()
+    prefix = "candidate-b-runtime-bridge://"
+    suffix = "/curated"
+    if not ref.startswith(prefix) or not ref.endswith(suffix):
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_curated_root_ref_not_admitted",
+            "Only Candidate B runtime bridge curated root refs are admitted for source material reads.",
+            http_status=409,
+            details={"source_root_ref": ref},
+        )
+    bridge_receipt_id = ref[len(prefix) : -len(suffix)]
+    receipt = _load_bridge_receipt(bridge_receipt_id)
+    return _resolve_bridge_receipt_curated_root(receipt)
+
+
+def _load_bridge_receipt(bridge_receipt_id: str) -> dict[str, Any]:
+    receipt_id = str(bridge_receipt_id or "").strip()
+    if (
+        not receipt_id.startswith(f"{BRIDGE_RECEIPT_PREFIX}-")
+        or "/" in receipt_id
+        or "\\" in receipt_id
+        or ".." in receipt_id
+        or Path(receipt_id).name != receipt_id
+    ):
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_receipt_id_not_admitted",
+            "Candidate B runtime bridge receipt ids must use the frozen server-owned receipt id shape.",
+            details={"bridge_receipt_id": receipt_id},
+        )
+    bridge_base = _configured_bridge_base()
+    bridge_root = bridge_base / receipt_id
+    receipt_path = bridge_root / "receipt.json"
+    if not receipt_path.is_file():
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_receipt_not_found",
+            "No durable Candidate B runtime bridge receipt exists for the requested source scan.",
+            http_status=404,
+            details={"bridge_receipt_id": receipt_id},
+        )
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_receipt_unreadable",
+            "The Candidate B runtime bridge receipt could not be read as durable JSON authority.",
+            http_status=409,
+            details={"bridge_receipt_id": receipt_id},
+        ) from exc
+    if not isinstance(receipt, dict) or receipt.get("bridge_receipt_id") != receipt_id:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_receipt_identity_mismatch",
+            "The Candidate B runtime bridge receipt identity does not match the requested receipt id.",
+            http_status=409,
+            details={"bridge_receipt_id": receipt_id},
+        )
+    return receipt
+
+
+def _resolve_bridge_receipt_curated_root(receipt: Mapping[str, Any]) -> Path:
+    bridge_receipt_id = str(receipt.get("bridge_receipt_id") or "").strip()
+    bridge_base = _configured_bridge_base()
+    curated_root = (bridge_base / bridge_receipt_id / "curated").resolve()
+    if not curated_root.is_dir():
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_curated_root_missing",
+            "The Candidate B runtime bridge curated material root is missing.",
+            http_status=409,
+            details={"bridge_receipt_id": bridge_receipt_id},
+        )
+    _assert_curated_manifest_matches_receipt(curated_root, receipt)
+    return curated_root
+
+
+def _assert_curated_manifest_matches_receipt(curated_root: Path, receipt: Mapping[str, Any]) -> None:
+    manifest = receipt.get("curated_artifact_manifest")
+    if not isinstance(manifest, list) or not manifest:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_curated_manifest_missing",
+            "The Candidate B runtime bridge receipt is missing curated material authority.",
+            http_status=409,
+            details={"bridge_receipt_id": receipt.get("bridge_receipt_id")},
+        )
+    curated_files = [dict(item) for item in manifest if isinstance(item, Mapping)]
+    if len(curated_files) != len(manifest):
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_curated_manifest_invalid",
+            "The Candidate B runtime bridge curated material manifest is not structurally valid.",
+            http_status=409,
+            details={"bridge_receipt_id": receipt.get("bridge_receipt_id")},
+        )
+    for item in curated_files:
+        relative_name = str(item.get("relative_name") or "").strip()
+        content_sha256 = str(item.get("content_sha256") or "").strip()
+        relative_parts = PurePosixPath(relative_name).parts
+        if (
+            not relative_name
+            or not content_sha256
+            or PurePosixPath(relative_name).is_absolute()
+            or any(part in {"", ".", ".."} for part in relative_parts)
+        ):
+            raise CandidateBRuntimeBridgeError(
+                "candidate_b_runtime_bridge_curated_manifest_invalid",
+                "The Candidate B runtime bridge curated material manifest is not structurally valid.",
+                http_status=409,
+                details={"bridge_receipt_id": receipt.get("bridge_receipt_id")},
+            )
+    _assert_curated_files_match(curated_root, curated_files)
+    expected = {str(item["relative_name"]) for item in curated_files}
+    actual = sorted(path.relative_to(curated_root).as_posix() for path in curated_root.rglob("*") if path.is_file())
+    if set(actual) != expected:
+        raise CandidateBRuntimeBridgeError(
+            "candidate_b_runtime_bridge_curated_file_set_mismatch",
+            "The Candidate B runtime bridge curated material root contains stale or unexpected files.",
+            http_status=409,
+            details={
+                "bridge_receipt_id": receipt.get("bridge_receipt_id"),
+                "expected_file_count": len(expected),
+                "actual_file_count": len(actual),
+            },
+        )
+
+
+def _curated_material_root_ref(bridge_receipt_id: str) -> str:
+    return f"candidate-b-runtime-bridge://{bridge_receipt_id}/curated"
+
+
+def _source_scan_authority(receipt: Mapping[str, Any], *, source_scan_mode: str) -> dict[str, Any]:
+    authority_hashes = {
+        "bridge_receipt_hash": receipt.get("bridge_receipt_hash"),
+        "compare_target_set_hash": receipt.get("compare_target_set_hash"),
+        "admitted_file_subset_hash": receipt.get("admitted_file_subset_hash"),
+        "governed_retained_artifact_family_hash": receipt.get("governed_retained_artifact_family_hash"),
+    }
+    return {
+        "source_scan_mode": source_scan_mode,
+        "bridge_receipt_id": receipt.get("bridge_receipt_id"),
+        "bridge_mode": receipt.get("bridge_mode"),
+        "candidate_b_source_kind": receipt.get("candidate_b_source_kind"),
+        "candidate_b_run_id": receipt.get("candidate_b_run_id"),
+        "baseline_run_id": receipt.get("baseline_run_id"),
+        "candidate_a_run_id": receipt.get("candidate_a_run_id"),
+        "document_processing_engine": receipt.get("document_processing_engine"),
+        "visual_lane_mode": receipt.get("visual_lane_mode"),
+        "authority_hashes": authority_hashes,
+        "absolute_paths_redacted": True,
+        "raw_url_exposure_enabled": False,
+    }
 
 
 def _blocked_roots() -> list[Path]:
@@ -1189,13 +1460,14 @@ def _write_bridge_receipt(
 
 def _assert_curated_files_match(curated_root: Path, curated_files: list[dict[str, Any]]) -> None:
     for item in curated_files:
-        target = curated_root / Path(*PurePosixPath(str(item["relative_name"])).parts)
-        if not target.is_file() or _file_sha256(target) != item["content_sha256"]:
+        relative_name = str(item.get("relative_name") or "")
+        target = curated_root / Path(*PurePosixPath(relative_name).parts)
+        if not target.is_file() or _file_sha256(target) != str(item.get("content_sha256") or ""):
             raise CandidateBRuntimeBridgeError(
                 "candidate_b_runtime_bridge_curated_file_mismatch",
                 "An existing bridge receipt has stale or missing curated material.",
                 http_status=409,
-                details={"relative_name": item["relative_name"]},
+                details={"relative_name": relative_name},
             )
 
 
@@ -1246,8 +1518,7 @@ def _response(
         "layer3_compatibility": receipt["layer3_compatibility"],
         "negative_invariants": receipt["negative_invariants"],
         "next_allowed_actions": [
-            "set LAYER3_SOURCE_INGESTION_DIR to the server-owned curated material root for this receipt",
-            "run source-directory scan",
+            "call Candidate B runtime bridge curated source scan for this receipt",
             "run source-directory material preview",
             "submit Gate B material authority decision",
         ],

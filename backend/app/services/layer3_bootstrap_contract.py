@@ -165,6 +165,10 @@ def build_bootstrap_contract(
             "candidate_b_runtime_material_bridge_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/runtime/material-bridge"
             ),
+            "candidate_b_runtime_bridge_source_scan_admitted": True,
+            "candidate_b_runtime_bridge_source_scan_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/runtime/material-bridge/source-scan"
+            ),
             "candidate_b_artifact_family_status_admitted": True,
             "candidate_b_artifact_family_status_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/artifact-family/status"

@@ -423,10 +423,23 @@ def _patch_full_corpus_runtime_bridge(
     monkeypatch.setattr(layer3_candidate_b_runtime_bridge, "compose_normalized_text_payload", fake_normalized)
 
 
-def _scan_payload() -> dict[str, str]:
+def _bridge_source_scan_payload(
+    bridge: dict[str, Any],
+    *,
+    client_request_id: str,
+    candidate_b_run_id: str,
+    baseline_run_id: str,
+    candidate_a_run_id: str,
+) -> dict[str, Any]:
     return {
-        "client_request_id": "candidate-b-runtime-bridge-source-scan",
-        "operator_decision": "scan_server_configured_operator_directory",
+        "client_request_id": client_request_id,
+        "source_scan_mode": "candidate_b_runtime_bridge_curated_source_scan_v1",
+        "operator_decision": "scan_candidate_b_runtime_bridge_curated_material_root",
+        "bridge_receipt_id": bridge["bridge_receipt_id"],
+        "candidate_b_run_id": candidate_b_run_id,
+        "baseline_run_id": baseline_run_id,
+        "candidate_a_run_id": candidate_a_run_id,
+        "operator_confirmation": True,
         "source_family": "server_configured_operator_directory_text_table_source_family",
         "ingestion_mode": "server_configured_operator_directory_text_table_ingestion",
     }
@@ -909,15 +922,20 @@ def _candidate_b_runtime_external_export_download_authority(
         assert bridge["candidate_b_visual_lane_evidence"]["source_pdf_material_text_payload_enabled"] is False
         assert bridge["candidate_b_visual_lane_evidence"]["image_material_text_payload_enabled"] is False
 
-    curated_root = Path(settings.layer3_candidate_b_runtime_bridge_dir) / bridge["bridge_receipt_id"] / "curated"
-    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(curated_root))
     scan = client.post(
-        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
-        json={**_scan_payload(), "client_request_id": "candidate-b-runtime-downstream-source-scan"},
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+        json=_bridge_source_scan_payload(
+            bridge,
+            client_request_id="candidate-b-runtime-downstream-source-scan",
+            candidate_b_run_id=RUN_ID,
+            baseline_run_id="baseline-run",
+            candidate_a_run_id="candidate-a-run",
+        ),
     )
     assert scan.status_code == 201, scan.text
     scan_body = scan.json()
     assert scan_body["eligible_file_count"] == 5
+    assert scan_body["source_root_ref"] == bridge["curated_material_root_ref"]
     assert "text/fontish.md" in {item["relative_name"] for item in scan_body["files"]}
 
     snapshot_info = _approved_candidate_b_runtime_material(client, scan_body, relative_name="text/fontish.md")
@@ -1189,11 +1207,20 @@ def test_candidate_b_runtime_bridge_materializes_trace_text_and_reaches_gate_b(
     assert curated_trace["identity"]["source_file_name"].startswith("redacted://sha256/")
     assert str(binding.review_root) not in json.dumps(curated_trace)
 
-    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(curated_root))
-    scan = client.post("/api/v1/layer3/source/ingestion/server-configured-directory/scan", json=_scan_payload())
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+        json=_bridge_source_scan_payload(
+            response,
+            client_request_id="candidate-b-runtime-bridge-source-scan",
+            candidate_b_run_id=RUN_ID,
+            baseline_run_id="baseline-run",
+            candidate_a_run_id="candidate-a-run",
+        ),
+    )
     assert scan.status_code == 201
     scan_body = scan.json()
     assert scan_body["eligible_file_count"] == 5
+    assert scan_body["source_root_ref"] == response["curated_material_root_ref"]
 
     preview = client.post(
         "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
@@ -1220,6 +1247,39 @@ def test_candidate_b_runtime_bridge_materializes_trace_text_and_reaches_gate_b(
         },
     )
     assert gate_b.status_code == 200
+
+
+def test_candidate_b_runtime_bridge_source_scan_rejects_malformed_curated_manifest(
+    client: TestClient,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    binding = _runtime_binding(tmp_path)
+    _patch_runtime_bridge(monkeypatch, binding)
+
+    response = layer3_candidate_b_runtime_bridge.prepare_candidate_b_runtime_material_bridge(_bridge_payload())
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / response["bridge_receipt_id"]
+        / "receipt.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["curated_artifact_manifest"][0].pop("relative_name")
+    receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+        json=_bridge_source_scan_payload(
+            response,
+            client_request_id="candidate-b-runtime-bridge-source-scan-malformed-manifest",
+            candidate_b_run_id=RUN_ID,
+            baseline_run_id="baseline-run",
+            candidate_a_run_id="candidate-a-run",
+        ),
+    )
+
+    assert scan.status_code == 409
+    assert scan.json()["error"]["code"] == "candidate_b_runtime_bridge_curated_manifest_invalid"
 
 
 def test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b(
@@ -1294,11 +1354,20 @@ def test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b(
     assert "text/target-00069.md" in curated_files
     assert "fontish" not in json.dumps(response, sort_keys=True)
 
-    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(curated_root))
-    scan = client.post("/api/v1/layer3/source/ingestion/server-configured-directory/scan", json=_scan_payload())
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/material-bridge/source-scan",
+        json=_bridge_source_scan_payload(
+            response,
+            client_request_id="candidate-b-full-corpus-runtime-bridge-source-scan",
+            candidate_b_run_id=CANDIDATE_B_FULL_CORPUS_RUN_ID,
+            baseline_run_id=BASELINE_FULL_CORPUS_RUN_ID,
+            candidate_a_run_id=CANDIDATE_A_FULL_CORPUS_RUN_ID,
+        ),
+    )
     assert scan.status_code == 201, scan.text
     scan_body = scan.json()
     assert scan_body["eligible_file_count"] == 71
+    assert scan_body["source_root_ref"] == response["curated_material_root_ref"]
 
     _, analysis_payload, analysis_body, prepare_payload, prepare_body = (
         _candidate_b_runtime_downstream_package_prepare(
