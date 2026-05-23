@@ -236,13 +236,7 @@ function applyCandidateBSourceSelection(selectedValue) {
 }
 
 function formatRuntimeBinding(binding) {
-    if (!binding) {
-        return 'n/a';
-    }
-    const parts = [binding.runtime_label || 'n/a'];
-    if (binding.database_label) parts.push(`db ${binding.database_label}`);
-    if (binding.storage_label) parts.push(`storage ${binding.storage_label}`);
-    return parts.join(' | ');
+    return window.NrcApsRuntimeLabels?.runtimeBindingSummary(binding) || 'n/a';
 }
 
 function buildAuthoritySummaryText() {
@@ -271,6 +265,9 @@ function renderIdentitySummary(manifest) {
     const candidateBText = candidateB
         ? `${candidateB.kind === 'runtime' ? 'Runtime' : 'Bundle'} | ${candidateB.label}`
         : 'n/a';
+    const candidateBRuntimeText = candidateB?.kind === 'runtime'
+        ? formatRuntimeBinding(candidateB.runtimeBinding)
+        : 'n/a';
     els.identitySummary.innerHTML = `
         <div class="meta-item"><span class="meta-label">Fixture</span><span>${escapeHtml(identity.fixture_id || 'n/a')}</span></div>
         <div class="meta-item"><span class="meta-label">Title</span><span>${escapeHtml(identity.document_title || 'n/a')}</span></div>
@@ -281,6 +278,7 @@ function renderIdentitySummary(manifest) {
         <div class="meta-item"><span class="meta-label">Baseline Runtime</span><span>${escapeHtml(formatRuntimeBinding(baseline?.runtime_binding || null))}</span></div>
         <div class="meta-item"><span class="meta-label">Candidate A Runtime</span><span>${escapeHtml(formatRuntimeBinding(candidateA?.runtime_binding || null))}</span></div>
         <div class="meta-item"><span class="meta-label">Candidate B Source</span><span>${escapeHtml(candidateBText)}</span></div>
+        <div class="meta-item"><span class="meta-label">Candidate B Runtime</span><span>${escapeHtml(candidateBRuntimeText)}</span></div>
     `;
 }
 
