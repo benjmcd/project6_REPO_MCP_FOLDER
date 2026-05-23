@@ -7760,12 +7760,100 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   await expect(panel).toContainText('baseline rollback preserved');
   await expect(panel).toContainText('selector mutation from this panel');
   await expect(panel).toContainText('frontend durable authority');
-  await expect(panel.locator('button,input,select,textarea')).toHaveCount(0);
+  await expect(page.locator('#candidate-b-final-proof-status-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_default_promotion_final_proof_status_inspection_control',
+  );
+  await expect(page.locator('#candidate-b-final-proof-status-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
   expectNoRequestsToLayer3Paths(apiRequests, [
     '/source/ingestion/candidate-b/default-promotion/operator-status',
     '/source/ingestion/candidate-b/default-promotion/closure-evidence',
     '/source/ingestion/candidate-b/default-promotion/readiness-audit',
     '/source/ingestion/candidate-b/default-promotion/final-proof',
+  ]);
+});
+
+test('Layer 3 workbench inspects Candidate B final proof status through admitted server receipt revalidation', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let finalProofStatusPayload = null;
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status', async (route) => {
+    finalProofStatusPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_default_promotion_final_proof.v1',
+        schema_version: 1,
+        request_id: finalProofStatusPayload.client_request_id,
+        server_time: '2026-05-22T00:00:00Z',
+        status: 'available',
+        mode: 'candidate_b_default_promotion_final_proof_status_v1',
+        proof_state: 'candidate_b_default_promotion_final_proven',
+        proof_hash: 'f'.repeat(64),
+        proof_receipt_id: finalProofStatusPayload.proof_receipt_id,
+        proof_receipt_ref: 'candidate-b-default-final-proof://cb-runtime-l3-rendered-proof/cb-default-final-proof-rendered-proof.json',
+        readiness_audit_id: 'cb-default-readiness-rendered-proof',
+        readiness_audit_hash: 'e'.repeat(64),
+        candidate_b_run_id: 'candidate-b-runtime-rendered-proof',
+        candidate_b_bundle_id: 'candidate-b-bundle-rendered-proof',
+        candidate_b_default_promotion_enabled: true,
+        default_selector_change_enabled: true,
+        rollback_selector: 'baseline',
+        final_operator_inspection_complete: true,
+        selector_mutation_performed: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        provider_private_token_exposed: false,
+        artifact_bytes_exposed: false,
+        operator_status_hash: 'd'.repeat(64),
+        candidate_b_operator_status_evidence: {
+          runtime_delivery_artifact_projection_visible: true,
+          runtime_delivery_artifact_roles_bound: true,
+        },
+        candidate_b_final_operator_inspection_evidence: {
+          final_operator_inspection_complete: true,
+          retained_artifact_projection_visible: true,
+        },
+        negative_invariants: {
+          baseline_rollback_preserved: true,
+          frontend_durable_authority_enabled: false,
+        },
+        next_allowed_actions: [
+          'monitor_candidate_b_default_selector',
+          'use_explicit_baseline_document_processing_engine_for_rollback',
+        ],
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const form = page.locator('#candidate-b-final-proof-status-form');
+  await expect(panel).toBeVisible();
+  await expect(form).toHaveAttribute('data-rendered-mode', 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control');
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#candidate-b-final-proof-runtime-receipt-id').fill('cb-runtime-l3-rendered-proof');
+  await page.locator('#candidate-b-final-proof-receipt-id').fill('cb-default-final-proof-rendered-proof');
+  await page.locator('#candidate-b-final-proof-status-submit').click();
+
+  await expect(panel).toContainText('candidate_b_final_proof_status_available');
+  await expect(panel).toContainText('candidate_b_default_promotion_final_proven');
+  await expect(panel).toContainText('cb-default-final-proof-rendered-proof');
+  await expect(panel).toContainText('baseline');
+  await expect(panel).toContainText('Server revalidates the final proof receipt; this control records no selector mutation.');
+  expect(finalProofStatusPayload).toMatchObject({
+    status_mode: 'candidate_b_default_promotion_final_proof_status_v1',
+    operator_decision: 'inspect_candidate_b_default_promotion_final_proof_status',
+    candidate_b_runtime_bridge_receipt_id: 'cb-runtime-l3-rendered-proof',
+    proof_receipt_id: 'cb-default-final-proof-rendered-proof',
+  });
+  expect(finalProofStatusPayload).not.toHaveProperty('selector_mutation_performed');
+  expect(finalProofStatusPayload).not.toHaveProperty('raw_url');
+  expect(finalProofStatusPayload).not.toHaveProperty('local_path');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/default-promotion/final-proof/status')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status' },
   ]);
 });
 

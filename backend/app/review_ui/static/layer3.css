@@ -3697,6 +3697,33 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
+.candidate-b-final-proof-status-card {
+    grid-column: span 2;
+}
+
+.candidate-b-final-proof-status-form {
+    display: grid;
+    gap: 10px;
+    margin: 8px 0 10px;
+}
+
+.candidate-b-final-proof-status-form label {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.candidate-b-final-proof-status-form input {
+    min-width: 0;
+}
+
+.candidate-b-final-proof-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+}
+
 .mockup-activation-readiness-grid {
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
@@ -3766,6 +3793,7 @@ html[data-theme="workbench"] body.layer3-page .plane-arrow::after {
     .package-lifecycle-rows,
     .downstream-access-lifecycle-rows,
     .authority-matrix-review-rows,
+    .candidate-b-final-proof-status-card,
     .candidate-b-default-promotion-status-rows,
     .mockup-activation-journey-rows,
     .layer3-e2e-governance-lifecycle-rows {
