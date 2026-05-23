@@ -30,12 +30,7 @@ import validate_full_corpus_triplet as triplet_validator  # noqa: E402
 from app.api.deps import get_db  # noqa: E402
 from app.core.config import bootstrap_storage_tree, settings  # noqa: E402
 from app.db.session import Base  # noqa: E402
-from app.models.models import L3MaterialSnapshot  # noqa: E402
 from app.services import layer3_candidate_b_downstream_proof, layer3_internal_webhook_connector  # noqa: E402
-from app.services.layer3_source_directory_text_index import source_directory_material_text_index  # noqa: E402
-from app.services.layer3_source_directory_vector_index import (  # noqa: E402
-    source_directory_material_embedding_vector_index,
-)
 from main import app  # noqa: E402
 
 
@@ -635,7 +630,6 @@ def _layer3_client(*, layer3_storage_dir: Path, bridge_dir: Path) -> Iterator[Te
     app.openapi_schema = None
     try:
         with TestClient(app) as client:
-            client.layer3_session_factory = session_local
             yield client
     finally:
         app.dependency_overrides.clear()
@@ -682,20 +676,14 @@ def _approve_material(client: TestClient, scan: dict[str, Any], *, relative_name
             ],
         },
     )
-    db = client.layer3_session_factory()
-    try:
-        snapshot = db.query(L3MaterialSnapshot).filter(L3MaterialSnapshot.session_id == gate_b["session_id"]).one()
-        return {
-            "material_snapshot_id": snapshot.material_snapshot_id,
-            "payload_hash": snapshot.payload_hash,
-            "source_ingestion_batch_id": scan["source_ingestion_batch_id"],
-            "source_ingestion_file_id": candidate["payload"]["source_ingestion_file_id"],
-            "content_sha256": candidate["payload"]["content_sha256"],
-            "file_identity_hash": candidate["payload"]["file_identity_hash"],
-            "authority_basis_hash": candidate["payload"]["authority_basis_hash"],
-        }
-    finally:
-        db.close()
+    return {
+        "session_id": gate_b["session_id"],
+        "source_ingestion_batch_id": scan["source_ingestion_batch_id"],
+        "source_ingestion_file_id": candidate["payload"]["source_ingestion_file_id"],
+        "content_sha256": candidate["payload"]["content_sha256"],
+        "file_identity_hash": candidate["payload"]["file_identity_hash"],
+        "authority_basis_hash": candidate["payload"]["authority_basis_hash"],
+    }
 
 
 def _prepare_package(
@@ -704,30 +692,23 @@ def _prepare_package(
     *,
     request_prefix: str,
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
-    db = client.layer3_session_factory()
-    try:
-        text_index = source_directory_material_text_index(db, {"client_request_id": f"{request_prefix}-text-index", **snapshot})
-        vector_index = source_directory_material_embedding_vector_index(
-            db,
-            {
-                "client_request_id": f"{request_prefix}-vector-index",
-                **snapshot,
-                "index_authority_hash": text_index["index_authority_hash"],
-            },
-        )
-    finally:
-        db.close()
+    authority = _post_json(
+        client,
+        "/api/v1/layer3/source/ingestion/server-configured-directory/hybrid-authority/prepare",
+        {
+            "client_request_id": f"{request_prefix}-hybrid-authority",
+            "session_id": snapshot["session_id"],
+            "query_text": "Candidate B full-corpus normalized text",
+            "analysis_question": "What Candidate B runtime material is available?",
+            "analysis_focus": "Candidate B full-corpus operator workflow",
+            "limit": 2,
+            "offset": 0,
+            "top_k": 2,
+        },
+    )
     analysis_payload = {
         "client_request_id": f"{request_prefix}-analysis",
-        **snapshot,
-        "index_authority_hash": text_index["index_authority_hash"],
-        "embedding_index_authority_hash": vector_index["embedding_index_authority_hash"],
-        "query_text": "Candidate B full-corpus normalized text",
-        "analysis_question": "What Candidate B runtime material is available?",
-        "analysis_focus": "Candidate B full-corpus operator workflow",
-        "limit": 2,
-        "offset": 0,
-        "top_k": 2,
+        **authority["authority_payload"],
     }
     analysis = _post_json(
         client,
