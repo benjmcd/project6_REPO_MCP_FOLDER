@@ -2674,12 +2674,21 @@ CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_PROOF_CHECKPOINT = (
 CANDIDATE_B_DEFAULT_OPERATIONAL_ACCEPTANCE_CHECKPOINT = (
     PLANNING_DOCS / "980-cb-default-operational-acceptance.md"
 )
+CANDIDATE_B_OPERATOR_STATUS_ELIGIBILITY_CHECKPOINT = (
+    PLANNING_DOCS / "981-cb-operator-status-eligibility.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST = (
     ROOT / "tests" / "test_candidate_b_full_corpus_operator_workflow.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_status.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_status.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -91154,6 +91163,77 @@ def _check_candidate_b_default_operational_acceptance(errors: list[str]) -> None
                 )
 
 
+def _check_candidate_b_operator_status_eligibility(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_STATUS_ELIGIBILITY_CHECKPOINT: (
+            "Candidate B Operator Status Eligibility",
+            "milestone: candidate_b_operator_status_eligibility_v1",
+            "checkpoint_base_main: 273cb7aa67b500235e1dfbc3a44e631f8a95fb1d",
+            "eligibility_summary_projection_visible: true",
+            "baseline_rollback_projection_visible: true",
+            "eligible_pdf_count_source: candidate_b_target_status_counts.recommended",
+            "skipped_pdf_count_required: 0",
+            "failed_pdf_count_required: 0",
+            "baseline_rollback_selector: baseline",
+            "rollback_depends_on_candidate_b_artifacts: false",
+            "candidate_a_visual_lane_preserved: true",
+            "candidate_b_operator_repeatability_status_gap_audit_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_status_eligibility_v1",
+            "eligibility_summary_projection_visible: true",
+            "baseline_rollback_projection_visible: true",
+            "eligible_pdf_count_source: candidate_b_target_status_counts.recommended",
+            "skipped_pdf_count_required: 0",
+            "failed_pdf_count_required: 0",
+            "The status endpoint fails closed if the selected workflow receipt reports incomplete Candidate B eligibility counts",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER: (
+            "_operator_eligibility_summary",
+            "_baseline_rollback_summary",
+            '"eligibility_summary": eligibility_summary',
+            '"baseline_rollback": baseline_rollback',
+            '"all_eligible_pdfs_processed"',
+            '"depends_on_candidate_b_artifacts": False',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE: (
+            "_workflow_eligibility_summary",
+            "_workflow_baseline_rollback",
+            "candidate_b_full_corpus_operator_workflow_eligibility_not_complete",
+            "candidate_b_full_corpus_operator_workflow_eligibility_summary_mismatch",
+            "candidate_b_full_corpus_operator_workflow_baseline_rollback_mismatch",
+            '"eligibility_summary_projection_visible": True',
+            '"baseline_rollback_projection_visible": True',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST: (
+            "test_operator_eligibility_summary_records_counts_and_rollback",
+            '"eligible_pdf_count": 69',
+            '"skipped_pdf_count": 0',
+            '"depends_on_candidate_b_artifacts": False',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_incomplete_eligibility",
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_rollback",
+            '"eligibility_summary_projection_visible"',
+            '"baseline_rollback_projection_visible"',
+            "candidate_b_full_corpus_operator_workflow_eligibility_not_complete",
+            "candidate_b_full_corpus_operator_workflow_baseline_rollback_mismatch",
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "eligibility_summary: dict[str, Any]",
+            "baseline_rollback: dict[str, Any]",
+            "runtime_root_lifecycle: dict[str, Any]",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B operator status eligibility term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91982,6 +92062,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_runtime_root_lifecycle(errors)
     _check_candidate_b_full_corpus_runtime_root_lifecycle_proof(errors)
     _check_candidate_b_default_operational_acceptance(errors)
+    _check_candidate_b_operator_status_eligibility(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

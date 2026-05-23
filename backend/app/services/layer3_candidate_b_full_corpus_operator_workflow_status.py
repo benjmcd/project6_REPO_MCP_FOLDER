@@ -35,6 +35,8 @@ STATUS_HASH_KEYS = (
     "downstream_proof_hash",
     "coverage_count",
     "corpus",
+    "eligibility_summary",
+    "baseline_rollback",
     "layer3",
     "artifact_family",
     "runtime_root_lifecycle",
@@ -134,6 +136,8 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
     _assert_no_raw_authority_exposure(receipt)
 
     corpus = _workflow_corpus(receipt)
+    eligibility_summary = _workflow_eligibility_summary(corpus)
+    baseline_rollback = _workflow_baseline_rollback(receipt)
     layer3 = _workflow_layer3_projection(receipt)
     artifact_family = _workflow_artifact_family(receipt)
     runtime_root_lifecycle = _workflow_runtime_root_lifecycle(receipt)
@@ -143,6 +147,8 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "bridge_receipt_projection_visible": True,
         "downstream_proof_projection_visible": True,
         "artifact_family_projection_visible": True,
+        "eligibility_summary_projection_visible": True,
+        "baseline_rollback_projection_visible": True,
         "runtime_root_lifecycle_projection_visible": runtime_root_lifecycle["available"],
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
@@ -166,6 +172,8 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "downstream_proof_hash": str(receipt["downstream_proof_hash"]),
         "coverage_count": int(receipt["coverage_count"]),
         "corpus": corpus,
+        "eligibility_summary": eligibility_summary,
+        "baseline_rollback": baseline_rollback,
         "layer3": layer3,
         "artifact_family": artifact_family,
         "runtime_root_lifecycle": runtime_root_lifecycle,
@@ -354,7 +362,113 @@ def _workflow_corpus(receipt: Mapping[str, Any]) -> dict[str, Any]:
         "eligible_file_count": _non_negative_int(corpus, "eligible_file_count"),
         "material_relative_name": str(corpus.get("material_relative_name") or ""),
         "target_status_counts": dict(corpus.get("target_status_counts") or {}),
+        "eligibility_summary": dict(corpus.get("eligibility_summary") or {}),
     }
+
+
+def _workflow_eligibility_summary(corpus: Mapping[str, Any]) -> dict[str, Any]:
+    corpus_pdf_count = _non_negative_int(corpus, "corpus_pdf_count")
+    source_directory_eligible_file_count = _non_negative_int(corpus, "eligible_file_count")
+    target_status_counts = corpus.get("target_status_counts")
+    if not isinstance(target_status_counts, Mapping):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_target_status_counts_missing",
+            "The selected workflow receipt is missing Candidate B target status counts.",
+            http_status=409,
+        )
+    candidate_b_counts = _candidate_b_target_status_counts(target_status_counts)
+    eligible_pdf_count = int(candidate_b_counts.get("recommended") or 0)
+    failed_pdf_count = sum(
+        count
+        for status, count in candidate_b_counts.items()
+        if status in {"failed", "error", "blocked"} or "fail" in status or "error" in status
+    )
+    skipped_pdf_count = sum(
+        count
+        for status, count in candidate_b_counts.items()
+        if status != "recommended"
+        and status not in {"failed", "error", "blocked"}
+        and "fail" not in status
+        and "error" not in status
+    )
+    skipped_pdf_count += max(corpus_pdf_count - sum(candidate_b_counts.values()), 0)
+    summary = {
+        "corpus_pdf_count": corpus_pdf_count,
+        "eligible_pdf_count": eligible_pdf_count,
+        "skipped_pdf_count": skipped_pdf_count,
+        "failed_pdf_count": failed_pdf_count,
+        "source_directory_eligible_file_count": source_directory_eligible_file_count,
+        "source_directory_extra_material_file_count": max(source_directory_eligible_file_count - eligible_pdf_count, 0),
+        "all_eligible_pdfs_processed": (
+            eligible_pdf_count == corpus_pdf_count
+            and skipped_pdf_count == 0
+            and failed_pdf_count == 0
+            and source_directory_eligible_file_count >= eligible_pdf_count
+        ),
+        "candidate_b_target_status_counts": candidate_b_counts,
+    }
+    supplied = corpus.get("eligibility_summary")
+    if isinstance(supplied, Mapping) and supplied:
+        mismatches = [
+            {"field": key, "expected": value, "received": supplied.get(key)}
+            for key, value in summary.items()
+            if supplied.get(key) != value
+        ]
+        if mismatches:
+            raise CandidateBFullCorpusOperatorWorkflowStatusError(
+                "candidate_b_full_corpus_operator_workflow_eligibility_summary_mismatch",
+                "The selected workflow receipt has a stale or contradictory eligibility summary.",
+                http_status=409,
+                details={"mismatches": mismatches},
+            )
+    if not summary["all_eligible_pdfs_processed"]:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_eligibility_not_complete",
+            "The selected workflow receipt does not prove all eligible PDFs were processed without skipped or failed targets.",
+            http_status=409,
+            details={"eligibility_summary": summary},
+        )
+    return summary
+
+
+def _candidate_b_target_status_counts(target_status_counts: Mapping[str, Any]) -> dict[str, int]:
+    candidate_b = target_status_counts.get("candidate_b")
+    source = candidate_b if isinstance(candidate_b, Mapping) else target_status_counts
+    counts: dict[str, int] = {}
+    for key, value in source.items():
+        try:
+            count = int(value)
+        except (TypeError, ValueError):
+            continue
+        if count >= 0:
+            counts[str(key)] = count
+    return counts
+
+
+def _workflow_baseline_rollback(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    expected = {
+        "available": True,
+        "selector": "baseline",
+        "explicit_document_processing_engine": "baseline",
+        "depends_on_candidate_b_artifacts": False,
+        "candidate_a_visual_lane_preserved": True,
+        "rollback_requires_selector_mutation": False,
+    }
+    supplied = receipt.get("baseline_rollback")
+    if isinstance(supplied, Mapping):
+        mismatches = [
+            {"field": key, "expected": value, "received": supplied.get(key)}
+            for key, value in expected.items()
+            if supplied.get(key) != value
+        ]
+        if mismatches:
+            raise CandidateBFullCorpusOperatorWorkflowStatusError(
+                "candidate_b_full_corpus_operator_workflow_baseline_rollback_mismatch",
+                "The selected workflow receipt has stale or contradictory baseline rollback evidence.",
+                http_status=409,
+                details={"mismatches": mismatches},
+            )
+    return expected
 
 
 def _workflow_layer3_projection(receipt: Mapping[str, Any]) -> dict[str, Any]:

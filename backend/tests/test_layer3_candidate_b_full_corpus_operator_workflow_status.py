@@ -78,7 +78,29 @@ def _write_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, 
             "corpus_pdf_count": 69,
             "eligible_file_count": 71,
             "material_relative_name": "text/target-00001.md",
-            "target_status_counts": {"passed": 69},
+            "target_status_counts": {
+                "baseline": {"recommended": 69},
+                "candidate_a": {"recommended": 69},
+                "candidate_b": {"recommended": 69},
+            },
+            "eligibility_summary": {
+                "corpus_pdf_count": 69,
+                "eligible_pdf_count": 69,
+                "skipped_pdf_count": 0,
+                "failed_pdf_count": 0,
+                "source_directory_eligible_file_count": 71,
+                "source_directory_extra_material_file_count": 2,
+                "all_eligible_pdfs_processed": True,
+                "candidate_b_target_status_counts": {"recommended": 69},
+            },
+        },
+        "baseline_rollback": {
+            "available": True,
+            "selector": "baseline",
+            "explicit_document_processing_engine": "baseline",
+            "depends_on_candidate_b_artifacts": False,
+            "candidate_a_visual_lane_preserved": True,
+            "rollback_requires_selector_mutation": False,
         },
         "refs": {
             "baseline_runtime_root": "repo://artifacts/baseline",
@@ -181,11 +203,15 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert body["downstream_proof_id"] == DOWNSTREAM_PROOF_ID
     assert body["coverage_count"] == 17
     assert body["corpus"]["eligible_file_count"] == 71
+    assert body["eligibility_summary"] == receipt["corpus"]["eligibility_summary"]
+    assert body["baseline_rollback"] == receipt["baseline_rollback"]
     assert body["artifact_family"]["role_counts"]["delivery_artifacts"] == 69
     assert body["runtime_root_lifecycle"]["available"] is True
     assert body["runtime_root_lifecycle"]["lifecycle_receipt_id"].startswith("cb-full-corpus-runtime-roots-")
     assert body["runtime_root_lifecycle"]["root_count"] == 3
     assert body["operator_projection"]["workflow_status_visible"] is True
+    assert body["operator_projection"]["eligibility_summary_projection_visible"] is True
+    assert body["operator_projection"]["baseline_rollback_projection_visible"] is True
     assert body["operator_projection"]["runtime_root_lifecycle_projection_visible"] is True
     assert body["operator_projection"]["raw_local_path_exposed"] is False
     assert body["validate_only_triplet"] is True
@@ -196,6 +222,57 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert "C:\\" not in serialized
     assert "file:///" not in serialized
     assert "https://" not in serialized
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_incomplete_eligibility(
+    client: TestClient,
+) -> None:
+    receipt_id, _receipt = _write_receipt(
+        {
+            "corpus": {
+                "corpus_pdf_count": 69,
+                "eligible_file_count": 71,
+                "material_relative_name": "text/target-00001.md",
+                "target_status_counts": {
+                    "baseline": {"recommended": 69},
+                    "candidate_a": {"recommended": 69},
+                    "candidate_b": {"recommended": 68, "failed": 1},
+                },
+            }
+        }
+    )
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_eligibility_not_complete"
+    assert body["error"]["details"]["eligibility_summary"]["failed_pdf_count"] == 1
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_rollback(
+    client: TestClient,
+) -> None:
+    receipt_id, _receipt = _write_receipt(
+        {
+            "baseline_rollback": {
+                "available": True,
+                "selector": "baseline",
+                "explicit_document_processing_engine": "baseline",
+                "depends_on_candidate_b_artifacts": True,
+                "candidate_a_visual_lane_preserved": True,
+                "rollback_requires_selector_mutation": False,
+            }
+        }
+    )
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_baseline_rollback_mismatch"
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_binding(client: TestClient) -> None:

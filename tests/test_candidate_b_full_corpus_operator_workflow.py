@@ -34,6 +34,39 @@ def test_coverage_evidence_binds_delivery_artifact_authority() -> None:
         if step in workflow.layer3_candidate_b_downstream_proof.DELIVERY_ARTIFACT_AUTHORITY_COVERAGE:
             assert entry["candidate_b_retained_artifact_family_hash"] == retained_hash
             assert entry["candidate_b_delivery_artifact_roles_bound"] is True
+        else:
+            assert "candidate_b_delivery_artifact_roles_bound" not in entry
+
+
+def test_operator_eligibility_summary_records_counts_and_rollback() -> None:
+    summary = workflow._operator_eligibility_summary(
+        corpus_pdf_count=69,
+        source_directory_eligible_file_count=71,
+        target_status_counts={
+            "baseline": {"recommended": 69},
+            "candidate_a": {"recommended": 69},
+            "candidate_b": {"recommended": 69},
+        },
+    )
+
+    assert summary == {
+        "corpus_pdf_count": 69,
+        "eligible_pdf_count": 69,
+        "skipped_pdf_count": 0,
+        "failed_pdf_count": 0,
+        "source_directory_eligible_file_count": 71,
+        "source_directory_extra_material_file_count": 2,
+        "all_eligible_pdfs_processed": True,
+        "candidate_b_target_status_counts": {"recommended": 69},
+    }
+    assert workflow._baseline_rollback_summary() == {
+        "available": True,
+        "selector": "baseline",
+        "explicit_document_processing_engine": "baseline",
+        "depends_on_candidate_b_artifacts": False,
+        "candidate_a_visual_lane_preserved": True,
+        "rollback_requires_selector_mutation": False,
+    }
 
 
 def test_path_ref_redacts_paths_outside_checkout(tmp_path: Path) -> None:
