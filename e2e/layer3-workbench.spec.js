@@ -8204,9 +8204,19 @@ test('Layer 3 workbench renders Candidate B retained artifact and visual-lane st
   expect(bundleArtifactStatus.operator_projection.raw_local_path_exposed).toBe(false);
   expect(bundleArtifactStatus.operator_projection.raw_url_exposed).toBe(false);
   expect(bundleArtifactStatus.operator_projection.artifact_bytes_exposed).toBe(false);
+  for (const previews of Object.values(bundleArtifactStatus.operator_projection.role_previews || {})) {
+    for (const preview of previews) {
+      expect(preview).not.toHaveProperty('source_ref');
+      expect(preview.display_ref).toBeTruthy();
+      expect(preview.display_ref).not.toContain('/');
+      expect(preview.display_ref).not.toContain('\\');
+    }
+  }
   expect(bundleArtifactStatus.negative_invariants.pdf_material_text_payload_enabled).toBe(false);
   expect(bundleArtifactStatus.negative_invariants.image_material_text_payload_enabled).toBe(false);
   expect(JSON.stringify(bundleArtifactStatus)).not.toContain('C:\\');
+  expect(JSON.stringify(bundleArtifactStatus.operator_projection)).not.toContain('raw/annotated/');
+  expect(JSON.stringify(bundleArtifactStatus.operator_projection)).not.toContain('raw/images/');
   await expect(panel).toContainText('candidate_b_artifact_family_status_available');
   await expect(panel).toContainText('visual page evidence');
   await expect(panel).toContainText('product inspection artifacts');
@@ -8248,9 +8258,18 @@ test('Layer 3 workbench renders Candidate B retained artifact and visual-lane st
   expect(runtimeArtifactStatus.operator_projection.raw_local_path_exposed).toBe(false);
   expect(runtimeArtifactStatus.operator_projection.raw_url_exposed).toBe(false);
   expect(runtimeArtifactStatus.operator_projection.artifact_bytes_exposed).toBe(false);
+  for (const previews of Object.values(runtimeArtifactStatus.operator_projection.role_previews || {})) {
+    for (const preview of previews) {
+      expect(preview).not.toHaveProperty('source_ref');
+      expect(preview.display_ref).toBeTruthy();
+      expect(preview.display_ref).not.toContain('/');
+      expect(preview.display_ref).not.toContain('\\');
+    }
+  }
   expect(runtimeArtifactStatus.negative_invariants.pdf_material_text_payload_enabled).toBe(false);
   expect(runtimeArtifactStatus.negative_invariants.image_material_text_payload_enabled).toBe(false);
   expect(JSON.stringify(runtimeArtifactStatus)).not.toContain('C:\\');
+  expect(JSON.stringify(runtimeArtifactStatus.operator_projection)).not.toContain('storage/');
 
   await page.locator('#candidate-b-visual-lane-run-id').fill(setup.candidate_b_run_id);
   await page.locator('#candidate-b-visual-lane-bridge-receipt-id').fill(setup.candidate_b_runtime_bridge_receipt_id);
