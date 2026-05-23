@@ -328,6 +328,9 @@ const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_
 const CANDIDATE_B_VISUAL_LANE_STATUS_RENDERED_MODE = 'rendered_candidate_b_visual_lane_status_control';
 const CANDIDATE_B_VISUAL_LANE_STATUS_MODE = 'candidate_b_visual_lane_status_v1';
 const CANDIDATE_B_VISUAL_LANE_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_visual_lane_evidence_status';
+const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_RENDERED_MODE = 'rendered_candidate_b_runtime_visual_lane_downstream_proof_control';
+const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_MODE = 'candidate_b_visual_lane_runtime_downstream_e2e_proof_v1';
+const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_OPERATOR_DECISION = 'record_candidate_b_visual_lane_runtime_downstream_e2e_proof';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
@@ -473,6 +476,14 @@ const State = {
     candidateBVisualLaneStatusInput: {
         candidateBRunId: '',
         bridgeReceiptId: '',
+    },
+    candidateBRuntimeDownstreamProof: null,
+    candidateBRuntimeDownstreamProofError: null,
+    candidateBRuntimeDownstreamProofPending: false,
+    candidateBRuntimeDownstreamProofInput: {
+        candidateBRunId: '',
+        bridgeReceiptId: '',
+        coverageEvidenceJson: '',
     },
     gateBDecisions: {},
     gateBClientRequestId: null,
@@ -7517,6 +7528,12 @@ function candidateBVisualLaneStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBRuntimeDownstreamProofEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_runtime_downstream_proof_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBArtifactFamilyStatusInputValues() {
     const sourceKindInput = document.getElementById('candidate-b-artifact-family-source-kind');
     const receiptInput = document.getElementById('candidate-b-artifact-family-bridge-receipt-id');
@@ -7551,6 +7568,31 @@ function candidateBVisualLaneStatusInputValues() {
     };
 }
 
+function candidateBRuntimeDownstreamProofInputValues() {
+    const runInput = document.getElementById('candidate-b-runtime-downstream-proof-run-id');
+    const receiptInput = document.getElementById('candidate-b-runtime-downstream-proof-bridge-receipt-id');
+    const coverageInput = document.getElementById('candidate-b-runtime-downstream-proof-coverage-json');
+    return {
+        candidateBRunId: (
+            runInput?.value
+            || State.candidateBRuntimeDownstreamProofInput.candidateBRunId
+            || State.candidateBVisualLaneStatus?.candidate_b_run_id
+            || ''
+        ).trim(),
+        bridgeReceiptId: (
+            receiptInput?.value
+            || State.candidateBRuntimeDownstreamProofInput.bridgeReceiptId
+            || State.candidateBVisualLaneStatus?.bridge_receipt_id
+            || ''
+        ).trim(),
+        coverageEvidenceJson: (
+            coverageInput?.value
+            || State.candidateBRuntimeDownstreamProofInput.coverageEvidenceJson
+            || ''
+        ).trim(),
+    };
+}
+
 function candidateBArtifactFamilyStatusPayload() {
     const values = candidateBArtifactFamilyStatusInputValues();
     State.candidateBArtifactFamilyStatusInput = values;
@@ -7575,6 +7617,21 @@ function candidateBVisualLaneStatusPayload() {
     };
 }
 
+function candidateBRuntimeDownstreamProofPayload() {
+    const values = candidateBRuntimeDownstreamProofInputValues();
+    State.candidateBRuntimeDownstreamProofInput = values;
+    return {
+        client_request_id: requestId(),
+        proof_mode: CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_MODE,
+        operator_decision: CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_OPERATOR_DECISION,
+        candidate_b_run_id: values.candidateBRunId,
+        bridge_receipt_id: values.bridgeReceiptId,
+        candidate_b_visual_lane_status_evidence: State.candidateBVisualLaneStatus,
+        coverage_evidence: JSON.parse(values.coverageEvidenceJson),
+        operator_confirmation: true,
+    };
+}
+
 function canInspectCandidateBArtifactFamilyStatus(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBArtifactFamilyStatusInputValues();
     return Boolean(
@@ -7594,6 +7651,21 @@ function canInspectCandidateBVisualLaneStatus(contract = candidateBDefaultPromot
         && values.candidateBRunId
         && values.bridgeReceiptId
         && !State.candidateBVisualLaneStatusPending
+    );
+}
+
+function canRecordCandidateBRuntimeDownstreamProof(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBRuntimeDownstreamProofInputValues();
+    return Boolean(
+        contract?.candidate_b_runtime_downstream_proof_admitted
+        && candidateBRuntimeDownstreamProofEndpointPath(contract)
+        && values.candidateBRunId
+        && values.bridgeReceiptId
+        && values.coverageEvidenceJson
+        && State.candidateBVisualLaneStatus?.status === 'available'
+        && State.candidateBVisualLaneStatus?.candidate_b_run_id === values.candidateBRunId
+        && State.candidateBVisualLaneStatus?.bridge_receipt_id === values.bridgeReceiptId
+        && !State.candidateBRuntimeDownstreamProofPending
     );
 }
 
@@ -7718,6 +7790,20 @@ function candidateBVisualLaneStatusPanelState() {
     return { label: 'candidate_b_visual_lane_status_not_inspected', pill: 'preview' };
 }
 
+function candidateBRuntimeDownstreamProofPanelState() {
+    if (State.candidateBRuntimeDownstreamProofPending) {
+        return { label: 'candidate_b_runtime_downstream_proof_pending', pill: 'preview' };
+    }
+    if (State.candidateBRuntimeDownstreamProofError) {
+        const code = State.candidateBRuntimeDownstreamProofError?.payload?.error?.code;
+        return { label: code || 'candidate_b_runtime_downstream_proof_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBRuntimeDownstreamProof?.status === 'proven') {
+        return { label: 'candidate_b_runtime_downstream_proof_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_runtime_downstream_proof_not_recorded', pill: 'preview' };
+}
+
 function candidateBArtifactPreviewRows(rolePreviews) {
     if (!rolePreviews || typeof rolePreviews !== 'object') return '';
     return Object.entries(rolePreviews).map(([role, refs]) => {
@@ -7835,6 +7921,46 @@ function candidateBVisualLaneStatusRows(status) {
     `;
 }
 
+function candidateBRuntimeDownstreamProofRows(proof) {
+    if (!proof) return '';
+    const coverage = Array.isArray(proof.coverage) ? proof.coverage : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Runtime Downstream Proof</strong>
+                <ul>
+                    ${fieldItem('schema id', proof.schema_id, { code: true })}
+                    ${fieldItem('proof state', proof.proof_state, { code: true })}
+                    ${fieldItem('proof receipt id', proof.proof_receipt_id, { code: true })}
+                    ${fieldItem('candidate B run id', proof.candidate_b_run_id, { code: true })}
+                    ${fieldItem('visual lane mode', proof.visual_lane_mode, { code: true })}
+                    ${fieldItem('visual lane enabled', proof.visual_lane_mode_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Coverage</strong>
+                <ul>
+                    ${fieldItem('coverage count', coverage.length)}
+                    ${fieldItem('coverage steps', coverage.join(', '), { code: true })}
+                    ${fieldItem('visual lane status hash', proof.candidate_b_visual_lane_status_hash, { code: true })}
+                    ${fieldItem('coverage evidence hash', proof.coverage_evidence_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Proof Guardrails</strong>
+                <ul>
+                    ${fieldItem('raw local path exposed', proof.raw_local_path_exposed)}
+                    ${fieldItem('provider private token exposed', proof.provider_private_token_exposed)}
+                    ${fieldItem('provider public URL enabled', proof.provider_public_url_enabled)}
+                    ${fieldItem('provider object writes enabled', proof.provider_object_writes_enabled)}
+                    ${fieldItem('connector dispatch enabled', proof.connector_dispatch_enabled)}
+                    ${fieldItem('Candidate B default promotion enabled', proof.candidate_b_default_promotion_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofRows(proof) {
     if (!proof) return '';
     const rows = {
@@ -7945,6 +8071,20 @@ function candidateBVisualLaneStatusError() {
     `;
 }
 
+function candidateBRuntimeDownstreamProofError() {
+    const error = State.candidateBRuntimeDownstreamProofError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_runtime_downstream_proof_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function renderCandidateBDefaultPromotionStatusPanel() {
     if (!elements.candidateBDefaultPromotionStatusPanel) return;
     const contract = candidateBDefaultPromotionReadinessContract();
@@ -7953,6 +8093,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
     const visualLaneState = candidateBVisualLaneStatusPanelState();
+    const runtimeDownstreamProofState = candidateBRuntimeDownstreamProofPanelState();
     const blockedScope = [
         'frontend_durable_authority',
         'raw_url_or_local_path_exposure',
@@ -7969,6 +8110,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
     const visualLaneInputs = State.candidateBVisualLaneStatusInput;
+    const runtimeDownstreamProof = State.candidateBRuntimeDownstreamProof;
+    const runtimeDownstreamProofInputs = State.candidateBRuntimeDownstreamProofInput;
     elements.candidateBDefaultPromotionStatusPanel.dataset.statusState = panelState.label;
     elements.candidateBDefaultPromotionStatusPanel.dataset.frontendDurableAuthority = 'false';
     elements.candidateBDefaultPromotionStatusPanel.innerHTML = `
@@ -8053,6 +8196,30 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBVisualLaneStatusRows(visualLaneStatus)}
                 ${candidateBVisualLaneStatusError()}
+            </section>
+            <section class="result-review-card candidate-b-runtime-downstream-proof-card">
+                <strong>Runtime Visual-Lane Downstream Proof</strong>
+                <form id="candidate-b-runtime-downstream-proof-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>Candidate B run id</span>
+                        <input id="candidate-b-runtime-downstream-proof-run-id" type="text" value="${escapeHtml(runtimeDownstreamProofInputs.candidateBRunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-runtime-001" />
+                    </label>
+                    <label>
+                        <span>runtime bridge receipt id</span>
+                        <input id="candidate-b-runtime-downstream-proof-bridge-receipt-id" type="text" value="${escapeHtml(runtimeDownstreamProofInputs.bridgeReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-runtime-l3-..." />
+                    </label>
+                    <label>
+                        <span>coverage evidence JSON</span>
+                        <textarea id="candidate-b-runtime-downstream-proof-coverage-json" rows="6" autocomplete="off" spellcheck="false" placeholder="{&quot;source_directory_scan&quot;:{&quot;status&quot;:&quot;proven&quot;,...}}">${escapeHtml(runtimeDownstreamProofInputs.coverageEvidenceJson)}</textarea>
+                    </label>
+                    <button id="candidate-b-runtime-downstream-proof-submit" type="submit" ${contract?.candidate_b_runtime_downstream_proof_admitted && State.candidateBVisualLaneStatus?.status === 'available' && !State.candidateBRuntimeDownstreamProofPending ? '' : 'disabled'}>Record Runtime Downstream Proof</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(runtimeDownstreamProofState.pill)}">${escapeHtml(runtimeDownstreamProofState.label)}</span>
+                    <span class="rail-label">Server records downstream proof only after matching Candidate B visual-lane status evidence and coverage authority are supplied.</span>
+                </div>
+                ${candidateBRuntimeDownstreamProofRows(runtimeDownstreamProof)}
+                ${candidateBRuntimeDownstreamProofError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -8158,6 +8325,11 @@ async function inspectCandidateBVisualLaneStatus(event) {
     try {
         State.candidateBVisualLaneStatus = await postJson(path, payload);
         State.candidateBVisualLaneStatusError = null;
+        State.candidateBRuntimeDownstreamProofInput = {
+            ...State.candidateBRuntimeDownstreamProofInput,
+            candidateBRunId: payload.candidate_b_run_id,
+            bridgeReceiptId: payload.bridge_receipt_id,
+        };
         addEvent('Candidate B visual-lane status inspected through server runtime bridge authority.');
     } catch (error) {
         State.candidateBVisualLaneStatus = null;
@@ -8165,6 +8337,46 @@ async function inspectCandidateBVisualLaneStatus(event) {
         addEvent(`Candidate B visual-lane status blocked: ${error.message}`);
     } finally {
         State.candidateBVisualLaneStatusPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBRuntimeDownstreamProof(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canRecordCandidateBRuntimeDownstreamProof(contract)) {
+        State.candidateBRuntimeDownstreamProof = null;
+        State.candidateBRuntimeDownstreamProofError = new Error(
+            'Candidate B runtime downstream proof requires matching visual-lane status evidence and coverage JSON.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBRuntimeDownstreamProofEndpointPath(contract);
+    let payload;
+    try {
+        payload = candidateBRuntimeDownstreamProofPayload();
+    } catch (error) {
+        State.candidateBRuntimeDownstreamProof = null;
+        State.candidateBRuntimeDownstreamProofError = new Error(
+            `Candidate B runtime downstream coverage JSON is invalid: ${error.message}`,
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBRuntimeDownstreamProofPending = true;
+    State.candidateBRuntimeDownstreamProofError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBRuntimeDownstreamProof = await postJson(path, payload);
+        State.candidateBRuntimeDownstreamProofError = null;
+        addEvent('Candidate B runtime visual-lane downstream proof recorded through server bridge authority.');
+    } catch (error) {
+        State.candidateBRuntimeDownstreamProof = null;
+        State.candidateBRuntimeDownstreamProofError = error;
+        addEvent(`Candidate B runtime downstream proof blocked: ${error.message}`);
+    } finally {
+        State.candidateBRuntimeDownstreamProofPending = false;
         renderAll();
     }
 }
@@ -14635,6 +14847,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     }
     if (event.target?.id === 'candidate-b-visual-lane-status-form') {
         inspectCandidateBVisualLaneStatus(event);
+    }
+    if (event.target?.id === 'candidate-b-runtime-downstream-proof-form') {
+        recordCandidateBRuntimeDownstreamProof(event);
     }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);
