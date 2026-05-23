@@ -168,10 +168,25 @@ function formatEmptyMessage(label, { runId, targetId, detail } = {}) {
 
 function renderRuntimeBindingEntries(runInfo) {
     const binding = runInfo?.runtime_binding || null;
+    const effectiveEngine = window.NrcApsRuntimeLabels?.effectiveDocumentProcessingEngine(binding) || 'baseline';
+    const requestedEngine = window.NrcApsRuntimeLabels?.requestedDocumentProcessingEngine(binding) || effectiveEngine;
+    const engineSource = window.NrcApsRuntimeLabels?.documentProcessingEngineSource(binding) || 'request_config_default';
     return `
         <div class="layout-entry">
             <strong>VARIANT</strong>
             <span>${escapeHtml(runtimeVariantLabel(binding))}</span>
+        </div>
+        <div class="layout-entry">
+            <strong>EFFECTIVE ENGINE</strong>
+            <span>${escapeHtml(effectiveEngine)}</span>
+        </div>
+        <div class="layout-entry">
+            <strong>REQUESTED ENGINE</strong>
+            <span>${escapeHtml(requestedEngine)}</span>
+        </div>
+        <div class="layout-entry">
+            <strong>ENGINE SOURCE</strong>
+            <span>${escapeHtml(engineSource)}</span>
         </div>
         <div class="layout-entry">
             <strong>RUNTIME</strong>

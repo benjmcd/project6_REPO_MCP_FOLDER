@@ -20,6 +20,35 @@
         return 'Baseline';
     }
 
+    function requestedDocumentProcessingEngine(runtimeBinding) {
+        const binding = runtimeBinding || {};
+        return normalize(binding.requested_document_processing_engine) || normalize(binding.document_processing_engine) || 'baseline';
+    }
+
+    function effectiveDocumentProcessingEngine(runtimeBinding) {
+        const binding = runtimeBinding || {};
+        return normalize(binding.document_processing_engine) || 'baseline';
+    }
+
+    function documentProcessingEngineSource(runtimeBinding) {
+        const binding = runtimeBinding || {};
+        return normalize(binding.document_processing_engine_source) || 'request_config_default';
+    }
+
+    function runtimeBindingSummary(runtimeBinding) {
+        const binding = runtimeBinding || null;
+        if (!binding) return 'n/a';
+        const parts = [binding.runtime_label || 'n/a'];
+        if (binding.database_label) parts.push(`db ${binding.database_label}`);
+        if (binding.storage_label) parts.push(`storage ${binding.storage_label}`);
+        const effectiveEngine = effectiveDocumentProcessingEngine(binding);
+        const requestedEngine = requestedDocumentProcessingEngine(binding);
+        parts.push(`effective ${effectiveEngine}`);
+        if (requestedEngine !== effectiveEngine) parts.push(`requested ${requestedEngine}`);
+        parts.push(`source ${documentProcessingEngineSource(binding)}`);
+        return parts.join(' | ');
+    }
+
     function runOptionLabel(runInfo) {
         const baseLabel = String(runInfo?.display_label || runInfo?.run_id || 'unknown run');
         const label = variantLabel(runInfo?.runtime_binding);
@@ -30,6 +59,10 @@
     window.NrcApsRuntimeLabels = {
         variantKind,
         variantLabel,
+        requestedDocumentProcessingEngine,
+        effectiveDocumentProcessingEngine,
+        documentProcessingEngineSource,
+        runtimeBindingSummary,
         runOptionLabel,
     };
 }());

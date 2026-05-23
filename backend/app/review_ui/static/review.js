@@ -582,10 +582,16 @@ function updateRunIdentity(runId) {
     const status = runInfo.status || 'unknown';
     const counters = runInfo.summary_counters || {};
     const runtimeBinding = runInfo.runtime_binding || null;
+    const effectiveEngine = window.NrcApsRuntimeLabels?.effectiveDocumentProcessingEngine(runtimeBinding) || 'baseline';
+    const requestedEngine = window.NrcApsRuntimeLabels?.requestedDocumentProcessingEngine(runtimeBinding) || effectiveEngine;
+    const engineSource = window.NrcApsRuntimeLabels?.documentProcessingEngineSource(runtimeBinding) || 'request_config_default';
     el.innerHTML =
         `<div class="meta-item"><span class="meta-label">Run:</span> ${escapeHtml(runId)}</div>` +
         `<div class="meta-item"><span class="meta-label">Status:</span> ${escapeHtml(status)}</div>` +
         `<div class="meta-item"><span class="meta-label">Variant:</span> ${escapeHtml(runtimeVariantLabel(runtimeBinding))}</div>` +
+        `<div class="meta-item"><span class="meta-label">Effective Engine:</span> ${escapeHtml(effectiveEngine)}</div>` +
+        `<div class="meta-item"><span class="meta-label">Requested Engine:</span> ${escapeHtml(requestedEngine)}</div>` +
+        `<div class="meta-item"><span class="meta-label">Engine Source:</span> ${escapeHtml(engineSource)}</div>` +
         `<div class="meta-item"><span class="meta-label">Runtime:</span> ${escapeHtml(runtimeBinding?.runtime_label || 'n/a')}</div>` +
         `<div class="meta-item"><span class="meta-label">DB:</span> ${escapeHtml(runtimeBinding?.database_label || 'n/a')}</div>` +
         `<div class="meta-item"><span class="meta-label">Storage:</span> ${escapeHtml(runtimeBinding?.storage_label || 'n/a')}</div>` +
