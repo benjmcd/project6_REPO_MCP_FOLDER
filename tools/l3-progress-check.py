@@ -2656,6 +2656,9 @@ CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_FREEZE = (
 CANDIDATE_B_FULL_CORPUS_RUNTIME_BRIDGE_RUNTIME = (
     PLANNING_DOCS / "974-cb-full-corpus-runtime-bridge.md"
 )
+CANDIDATE_B_FULL_CORPUS_RUNTIME_DOWNSTREAM_PROOF = (
+    PLANNING_DOCS / "975-cb-full-corpus-runtime-downstream-proof.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -2671,6 +2674,9 @@ REVIEW_NRC_APS_RUNTIME_SERVICE = (
 )
 CANDIDATE_B_RUNTIME_BRIDGE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_runtime_bridge.py"
+)
+CANDIDATE_B_VISUAL_LANE_STATUS_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_visual_lane_status.py"
 )
 CANDIDATE_B_DEFAULT_SELECTOR_TEST = (
     ROOT / "backend" / "tests" / "test_nrc_aps_document_processing_default_selector.py"
@@ -90817,6 +90823,56 @@ def _check_candidate_b_full_corpus_runtime_bridge_runtime(errors: list[str]) -> 
                 )
 
 
+def _check_candidate_b_full_corpus_runtime_downstream_proof(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_RUNTIME_DOWNSTREAM_PROOF: (
+            "Candidate B Full-Corpus Runtime Downstream Proof",
+            "milestone: candidate_b_full_corpus_runtime_downstream_e2e_proof_v1",
+            "current_main: 72efcd498fe1468fee27e140fd714a5dd6d7f23d",
+            "real_bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "real_downstream_proof_id: cb-runtime-downstream-proof-1a8c44a841830707c2168578",
+            "candidate_b_run_id: f644b3f6-a7a9-4889-84d9-d842f5d12e79",
+            "source_directory_eligible_file_count: 71",
+            "material_file_proven: text/target-00001.md",
+            "qualitative_analysis_status: available",
+            "same_origin_delivery_available: true",
+            "provider_private_state: provider_private_signed_url_prepared",
+            "provider_private_revoke_state: provider_private_signed_url_revoked",
+            "internal_webhook_state: source_directory_internal_webhook_dispatched",
+            "visual_lane_status: available",
+            "downstream_proof_status: proven",
+            "coverage_count: 17",
+            "candidate_b_full_corpus_operator_runbook_checkpoint_v1",
+        ),
+        CANDIDATE_B_RUNTIME_BRIDGE_TEST: (
+            "layer3_candidate_b_downstream_proof",
+            "_candidate_b_runtime_downstream_package_prepare",
+            "_candidate_b_runtime_delivery_surface_proof",
+            "_runtime_downstream_coverage_evidence",
+            "candidate-b-full-corpus-runtime-downstream-proof",
+            "provider_private_revoke",
+            "candidate_b_default_promotion_enabled",
+        ),
+        CANDIDATE_B_VISUAL_LANE_STATUS_SERVICE: (
+            "_ADMITTED_RUNTIME_BRIDGE_MODES",
+            "FULL_CORPUS_BRIDGE_MODE",
+            "candidate_b_visual_lane_status_bridge_mode_not_admitted",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_candidate_b_downstream_proof.py": (
+            "_ADMITTED_RUNTIME_BRIDGE_MODES",
+            "FULL_CORPUS_BRIDGE_MODE",
+            "candidate_b_downstream_proof_bridge_mode_not_admitted",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus runtime downstream proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91639,6 +91695,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_compare_triplet_checkpoint(errors)
     _check_candidate_b_full_corpus_runtime_bridge_freeze(errors)
     _check_candidate_b_full_corpus_runtime_bridge_runtime(errors)
+    _check_candidate_b_full_corpus_runtime_downstream_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

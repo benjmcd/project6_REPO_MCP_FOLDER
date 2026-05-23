@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -33,7 +34,11 @@ from app.models.models import (
     L3ReconciliationRecord,
     L3SourceDirectoryInternalWebhookDispatchReceipt,
 )
-from app.services import layer3_candidate_b_runtime_bridge, layer3_internal_webhook_connector
+from app.services import (
+    layer3_candidate_b_downstream_proof,
+    layer3_candidate_b_runtime_bridge,
+    layer3_internal_webhook_connector,
+)
 from app.services.layer3_source_directory_text_index import source_directory_material_text_index
 from app.services.layer3_source_directory_vector_index import (
     source_directory_material_embedding_vector_index,
@@ -489,6 +494,386 @@ def _approved_candidate_b_runtime_material(
         db.close()
 
 
+def _candidate_b_runtime_downstream_package_prepare(
+    client: TestClient,
+    scan_body: dict[str, Any],
+    *,
+    relative_name: str,
+    request_prefix: str,
+    query_text: str,
+    analysis_focus: str,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+    snapshot_info = _approved_candidate_b_runtime_material(client, scan_body, relative_name=relative_name)
+    db = client.layer3_session_factory()
+    try:
+        text_index = source_directory_material_text_index(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-text-index",
+                **snapshot_info,
+            },
+        )
+        vector_index = source_directory_material_embedding_vector_index(
+            db,
+            {
+                "client_request_id": f"{request_prefix}-vector-index",
+                **snapshot_info,
+                "index_authority_hash": text_index["index_authority_hash"],
+            },
+        )
+    finally:
+        db.close()
+
+    analysis_payload = {
+        "client_request_id": f"{request_prefix}-analysis",
+        **snapshot_info,
+        "index_authority_hash": text_index["index_authority_hash"],
+        "embedding_index_authority_hash": vector_index["embedding_index_authority_hash"],
+        "query_text": query_text,
+        "analysis_question": "What Candidate B runtime material is available?",
+        "analysis_focus": analysis_focus,
+        "limit": 2,
+        "offset": 0,
+        "top_k": 2,
+    }
+    analysis = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis"
+        ),
+        json=analysis_payload,
+    )
+    assert analysis.status_code == 200, analysis.text
+    analysis_body = analysis.json()
+    assert analysis_body["status"] == "available"
+    assert analysis_body["source_directory_package_review_preview_enabled"] is True
+    assert analysis_body["negative_invariants"]["rag_execution_enabled"] is False
+    assert analysis_body["negative_invariants"]["prompt_model_provider_runtime_enabled"] is False
+
+    commit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/commit"
+        ),
+        json={
+            **analysis_payload,
+            "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+            "source_directory_hybrid_package_review_preview_hash": (
+                analysis_body["source_directory_hybrid_package_review_preview_hash"]
+            ),
+            "operator_decision": "commit_source_directory_hybrid_context_packet_qualitative_analysis_package",
+        },
+    )
+    assert commit.status_code == 200, commit.text
+    commit_body = commit.json()
+
+    submit_payload = {
+        **analysis_payload,
+        "qualitative_analysis_hash": analysis_body["qualitative_analysis_hash"],
+        "source_directory_hybrid_package_review_preview_hash": (
+            analysis_body["source_directory_hybrid_package_review_preview_hash"]
+        ),
+        "construction_basis_hash": commit_body["construction_basis_hash"],
+        "reconciliation_record_id": commit_body["reconciliation_record_id"],
+        "output_package_ids": commit_body["output_package_ids"],
+        "package_kinds": commit_body["package_kinds"],
+        "payload_hashes": commit_body["payload_hashes"],
+        "operator_decision": "approved",
+        "decision_notes": "Candidate B full-corpus runtime downstream proof package approved.",
+    }
+    submit = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/package/review/submit"
+        ),
+        json=submit_payload,
+    )
+    assert submit.status_code == 200, submit.text
+    submit_body = submit.json()
+
+    handoff_payload = {
+        **submit_payload,
+        "operator_decision": "authorize_prepare",
+        "package_review_submit_record_ref": submit_body["submit_record_ref"],
+        "package_review_state": "package_review_approved",
+        "handoff_target": "internal_export_envelope",
+        "export_mode": "prepare_only",
+    }
+    handoff = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/prepare"
+        ),
+        json=handoff_payload,
+    )
+    assert handoff.status_code == 200, handoff.text
+    handoff_body = handoff.json()
+
+    prepare_payload = {
+        **handoff_payload,
+        "operator_decision": "prepare_source_directory_hybrid_external_export_download",
+        "prepare_record_ref": handoff_body["prepare_record_ref"],
+        "handoff_export_state": "handoff_export_prepared",
+        "handoff_export_envelope_ref": handoff_body["handoff_export_envelope"]["envelope_ref"],
+        "external_export_download_target": (
+            "source_directory_hybrid_context_packet_qualitative_analysis_package_download_reference"
+        ),
+        "download_mode": "reference_only_prepare",
+    }
+    prepare = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/prepare"
+        ),
+        json=prepare_payload,
+    )
+    assert prepare.status_code == 200, prepare.text
+    prepare_body = prepare.json()
+    assert prepare_body["status"] == "prepared"
+    return snapshot_info, analysis_payload, analysis_body, prepare_payload, prepare_body
+
+
+def _candidate_b_runtime_delivery_surface_proof(
+    client: TestClient,
+    monkeypatch,
+    *,
+    analysis_payload: dict[str, Any],
+    analysis_body: dict[str, Any],
+    prepare_payload: dict[str, Any],
+    prepare_body: dict[str, Any],
+    request_prefix: str,
+) -> dict[str, Any]:
+    selected_package = next(
+        package for package in prepare_body["output_packages"] if package["package_kind"] == "user_facing"
+    )
+    delivery_payload = {
+        **prepare_payload,
+        "operator_decision": "deliver_source_directory_hybrid_external_export_download",
+        "external_export_download_record_ref": prepare_body["external_export_download_record_ref"],
+        "export_download_descriptor_ref": prepare_body["export_download_descriptor_ref"],
+        "external_export_download_state": "external_export_download_prepared",
+        "delivery_mode": "same_origin_artifact_stream",
+        "output_package_id": selected_package["output_package_id"],
+        "package_kind": selected_package["package_kind"],
+        "package_payload_hash": selected_package["payload_hash"],
+    }
+    delivery_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver/status"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery_status.status_code == 200, delivery_status.text
+    assert delivery_status.json()["delivery_available"] is True
+
+    delivery = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/deliver"
+        ),
+        json=delivery_payload,
+    )
+    assert delivery.status_code == 200, delivery.text
+    assert delivery.headers["X-Layer3-Delivery-State"] == "external_export_download_delivered"
+
+    provider_private_prepare = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": f"{request_prefix}-provider-private-prepare",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": f"{request_prefix}-redacted-delivery-proof",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert provider_private_prepare.status_code == 200, provider_private_prepare.text
+    provider_private_body = provider_private_prepare.json()
+    assert provider_private_body["provider_signed_url_state"] == "provider_private_signed_url_prepared"
+    assert provider_private_body["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert provider_private_body["source_artifact_hash"] == selected_package["payload_hash"]
+    assert provider_private_body["provider_network_enabled"] is False
+    assert provider_private_body["provider_object_write_enabled"] is False
+    assert provider_private_body["raw_provider_private_signed_url_token_exposed"] is False
+
+    provider_private_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/status"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": f"{request_prefix}-provider-private-status",
+            "operator_decision": "inspect_source_directory_hybrid_provider_private_signed_url_status",
+            "delivery_mode": "provider_private_signed_url",
+            "provider_signed_url_receipt_id": provider_private_body["provider_signed_url_receipt_id"],
+        },
+    )
+    assert provider_private_status.status_code == 200, provider_private_status.text
+    assert provider_private_status.json()["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert provider_private_status.json()["raw_provider_private_signed_url_token_exposed"] is False
+
+    provider_private_use = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/use"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": f"{request_prefix}-provider-private-use",
+            "operator_decision": "use_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "provider_signed_url_receipt_id": provider_private_body["provider_signed_url_receipt_id"],
+        },
+    )
+    assert provider_private_use.status_code == 200, provider_private_use.text
+    assert provider_private_use.json()["delivery_use_mode"] == "server_owned_redacted_provider_private_use"
+    assert provider_private_use.json()["provider_url_redacted"] == "provider-private-signed-url:redacted"
+    assert provider_private_use.json()["provider_network_enabled"] is False
+    assert "provider_private_signed_url_token" not in provider_private_use.json()
+
+    revoke_prepare = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/prepare"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": f"{request_prefix}-provider-private-revoke-prepare",
+            "operator_decision": "prepare_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "recipient_scope": f"{request_prefix}-redacted-revoke-proof",
+            "requested_ttl_seconds": 300,
+        },
+    )
+    assert revoke_prepare.status_code == 200, revoke_prepare.text
+    provider_private_revoke = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/download/"
+            "provider-private-signed-url/revoke"
+        ),
+        json={
+            **delivery_payload,
+            "client_request_id": f"{request_prefix}-provider-private-revoke",
+            "operator_decision": "revoke_source_directory_hybrid_provider_private_signed_url",
+            "delivery_mode": "provider_private_signed_url",
+            "provider_signed_url_receipt_id": revoke_prepare.json()["provider_signed_url_receipt_id"],
+            "idempotency_key": f"{request_prefix}-provider-private-revoke",
+            "revoked_by": f"{request_prefix}-test",
+            "revocation_reason": "Candidate B full-corpus runtime downstream proof revoke.",
+        },
+    )
+    assert provider_private_revoke.status_code == 200, provider_private_revoke.text
+    assert provider_private_revoke.json()["provider_signed_url_state"] == "provider_private_signed_url_revoked"
+    assert provider_private_revoke.json()["raw_provider_private_signed_url_token_exposed"] is False
+
+    webhook_calls: list[dict[str, Any]] = []
+
+    def fake_transport(url, envelope, headers, timeout):
+        webhook_calls.append({"url": url, "envelope": envelope, "headers": headers, "timeout": timeout})
+        return 202, {"accepted": True, "receipt": f"{request_prefix}-source-directory-ok"}
+
+    monkeypatch.setattr(layer3_internal_webhook_connector, "INTERNAL_WEBHOOK_TRANSPORT", fake_transport)
+    webhook_payload = _source_directory_internal_webhook_payload(
+        prepare_body,
+        prepare_payload,
+        request_id=f"{request_prefix}-internal-webhook-dispatch",
+    )
+    webhook = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/dispatch"
+        ),
+        json=webhook_payload,
+    )
+    assert webhook.status_code == 200, webhook.text
+    webhook_body = webhook.json()
+    assert webhook_body["source_directory_internal_webhook_dispatch_state"] == (
+        "source_directory_internal_webhook_dispatched"
+    )
+    assert webhook_body["connector_dispatch_enabled"] is False
+    assert len(webhook_calls) == 1
+    assert webhook_calls[0]["envelope"]["raw_package_payload_included"] is False
+
+    webhook_status = client.get(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/handoff/export/internal-webhook/status/"
+            f"{webhook_body['source_directory_internal_webhook_dispatch_receipt_id']}"
+        )
+    )
+    assert webhook_status.status_code == 200, webhook_status.text
+    assert webhook_status.json()["source_directory_internal_webhook_dispatch_state"] == (
+        "source_directory_internal_webhook_dispatched"
+    )
+
+    downstream_status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
+        ),
+        json={
+            **{key: value for key, value in analysis_payload.items() if key != "client_request_id"},
+            "client_request_id": f"{request_prefix}-downstream-status",
+        },
+    )
+    assert downstream_status.status_code == 200, downstream_status.text
+    downstream_status_body = downstream_status.json()
+    assert downstream_status_body["qualitative_analysis_hash"] == analysis_body["qualitative_analysis_hash"]
+    assert downstream_status_body["source_directory_hybrid_handoff_export_prepare_available"] is True
+
+    session = client.get(f"/api/v1/layer3/session/{webhook_body['session_id']}")
+    assert session.status_code == 200, session.text
+    session_body = session.json()
+    assert session_body["internal_webhook_dispatch"]["state"] == "source_directory_internal_webhook_dispatched"
+    assert session_body["internal_webhook_dispatch"]["raw_package_payload_exposed"] is False
+    return {
+        "delivery_status": delivery_status.json(),
+        "delivery_text": delivery.text,
+        "provider_private": provider_private_body,
+        "provider_private_status": provider_private_status.json(),
+        "provider_private_use": provider_private_use.json(),
+        "provider_private_revoke": provider_private_revoke.json(),
+        "webhook": webhook_body,
+        "webhook_status": webhook_status.json(),
+        "downstream_status": downstream_status_body,
+        "session": session_body,
+    }
+
+
+def _runtime_downstream_coverage_evidence(retained_artifact_family_hash: str) -> dict[str, Any]:
+    evidence: dict[str, Any] = {}
+    for step in sorted(layer3_candidate_b_downstream_proof.REQUIRED_COVERAGE):
+        entry = {
+            "status": "proven",
+            "evidence_ref": f"candidate-b-full-corpus-runtime-downstream-proof://{step}",
+            "evidence_hash": hashlib.sha256(step.encode("utf-8")).hexdigest(),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+        }
+        if step in layer3_candidate_b_downstream_proof.DELIVERY_ARTIFACT_AUTHORITY_COVERAGE:
+            entry["candidate_b_retained_artifact_family_hash"] = retained_artifact_family_hash
+            entry["candidate_b_delivery_artifact_roles_bound"] = True
+        evidence[step] = entry
+    return evidence
+
+
 def _candidate_b_runtime_external_export_download_authority(
     client: TestClient,
     tmp_path: Path,
@@ -842,6 +1227,8 @@ def test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_internal_webhook_url", "http://127.0.0.1/source-directory-webhook")
+    monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "candidate-b-full-corpus-runtime-webhook")
     bindings = {
         BASELINE_FULL_CORPUS_RUN_ID: _full_corpus_runtime_binding(
             tmp_path,
@@ -913,31 +1300,67 @@ def test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b(
     scan_body = scan.json()
     assert scan_body["eligible_file_count"] == 71
 
-    preview = client.post(
-        "/api/v1/layer3/source/ingestion/server-configured-directory/material-preview",
-        json=_material_preview_payload(scan_body, "text/target-00001.md"),
+    _, analysis_payload, analysis_body, prepare_payload, prepare_body = (
+        _candidate_b_runtime_downstream_package_prepare(
+            client,
+            scan_body,
+            relative_name="text/target-00001.md",
+            request_prefix="candidate-b-full-corpus-runtime",
+            query_text="Candidate B full-corpus normalized text",
+            analysis_focus="Candidate B full-corpus runtime curated markdown downstream proof",
+        )
     )
-    assert preview.status_code == 200, preview.text
-    preview_body = preview.json()
-    candidate = preview_body["material_candidate"]
-    gate_b = client.post(
-        "/api/v1/layer3/gate-b/decision",
+    delivery_surfaces = _candidate_b_runtime_delivery_surface_proof(
+        client,
+        monkeypatch,
+        analysis_payload=analysis_payload,
+        analysis_body=analysis_body,
+        prepare_payload=prepare_payload,
+        prepare_body=prepare_body,
+        request_prefix="candidate-b-full-corpus-runtime",
+    )
+    assert "Candidate B full-corpus normalized text" in delivery_surfaces["delivery_text"]
+    response_text = json.dumps({"bridge": response, "delivery_surfaces": delivery_surfaces}, sort_keys=True)
+    assert str(bindings[CANDIDATE_B_FULL_CORPUS_RUN_ID].review_root) not in response_text
+    assert response["governed_retained_artifact_family"]["role_counts"]["delivery_artifacts"] >= 3
+
+    visual_status = client.post(
+        "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status",
         json={
-            "client_request_id": "candidate-b-full-corpus-runtime-gate-b",
-            "preflight_id": "candidate-b-full-corpus-runtime-preflight",
-            "source_set_id": scan_body["source_ingestion_batch_id"],
-            "material_preview_id": preview_body["material_preview_id"],
-            "material_preview_hash": preview_body["material_preview_hash"],
-            "candidate_decisions": [
-                {
-                    "candidate_id": candidate["candidate_id"],
-                    "decision": "approved",
-                    "decision_basis": candidate,
-                }
-            ],
+            "client_request_id": "candidate-b-full-corpus-runtime-visual-lane-status",
+            "status_mode": "candidate_b_visual_lane_status_v1",
+            "operator_decision": "inspect_candidate_b_visual_lane_evidence_status",
+            "candidate_b_run_id": CANDIDATE_B_FULL_CORPUS_RUN_ID,
+            "bridge_receipt_id": response["bridge_receipt_id"],
         },
     )
-    assert gate_b.status_code == 200, gate_b.text
+    assert visual_status.status_code == 200, visual_status.text
+    retained_hash = response["authority_hashes"]["governed_retained_artifact_family_hash"]
+    downstream_proof = client.post(
+        "/api/v1/layer3/source/ingestion/candidate-b/runtime/downstream-proof",
+        json={
+            "client_request_id": "candidate-b-full-corpus-runtime-downstream-proof",
+            "proof_mode": "candidate_b_visual_lane_runtime_downstream_e2e_proof_v1",
+            "operator_decision": "record_candidate_b_visual_lane_runtime_downstream_e2e_proof",
+            "candidate_b_run_id": CANDIDATE_B_FULL_CORPUS_RUN_ID,
+            "bridge_receipt_id": response["bridge_receipt_id"],
+            "candidate_b_visual_lane_status_evidence": visual_status.json(),
+            "coverage_evidence": _runtime_downstream_coverage_evidence(retained_hash),
+            "operator_confirmation": True,
+        },
+    )
+    assert downstream_proof.status_code == 200, downstream_proof.text
+    proof_body = downstream_proof.json()
+    assert proof_body["status"] == "proven"
+    assert proof_body["candidate_b_run_id"] == CANDIDATE_B_FULL_CORPUS_RUN_ID
+    assert set(proof_body["coverage"]) == layer3_candidate_b_downstream_proof.REQUIRED_COVERAGE
+    assert proof_body["coverage_evidence"]["provider_private_use"]["candidate_b_retained_artifact_family_hash"] == (
+        retained_hash
+    )
+    assert proof_body["provider_public_url_enabled"] is False
+    assert proof_body["provider_object_writes_enabled"] is False
+    assert proof_body["connector_dispatch_enabled"] is False
+    assert proof_body["candidate_b_default_promotion_enabled"] is False
 
 
 def test_candidate_b_runtime_curated_markdown_completes_layer3_downstream_path(
