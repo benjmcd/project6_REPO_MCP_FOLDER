@@ -857,6 +857,35 @@ def test_candidate_b_default_readiness_ready_path_is_read_only_and_non_promoting
     assert str(tmp_path) not in json.dumps(body, sort_keys=True)
 
 
+def test_candidate_b_readiness_does_not_echo_role_previews_when_roles_are_missing(
+    client: TestClient,
+) -> None:
+    bundle_receipt_id = _write_bundle_receipt()
+    runtime_receipt_id = _write_runtime_receipt()
+    receipt_path = Path(settings.layer3_candidate_b_bundle_bridge_dir) / bundle_receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    artifact_family = receipt["governed_retained_artifact_family"]
+    artifact_family.pop("roles")
+    artifact_family["role_previews"] = {
+        "visual_page_evidence": [{"display_ref": "raw/annotated/fontish.pdf"}],
+        "product_inspection_artifacts": [{"display_ref": "raw/annotated/fontish.pdf"}],
+        "delivery_artifacts": [{"display_ref": "raw/annotated/fontish.pdf"}],
+    }
+    _write_json(receipt_path, receipt)
+
+    response = client.post(READY_ENDPOINT, json=_payload(bundle_receipt_id, runtime_receipt_id))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_default_readiness_bundle_governed_artifact_roles_missing" in codes
+    inspection = body["candidate_b_final_operator_inspection_evidence"]
+    assert inspection["status"] == "blocked"
+    assert inspection["bundle"]["role_previews"] == {}
+    assert "raw/annotated/fontish.pdf" not in json.dumps(body, sort_keys=True)
+
+
 def test_candidate_b_operator_delivery_projection_fields_are_declared_in_openapi(client: TestClient) -> None:
     openapi = client.app.openapi()
     schemas = openapi["components"]["schemas"]
