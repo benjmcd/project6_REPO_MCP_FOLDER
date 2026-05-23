@@ -400,8 +400,17 @@ def _validate_coverage_evidence(
                 "candidate_b_retained_artifact_family_hash": retained_artifact_family_hash,
                 "candidate_b_delivery_artifact_roles_bound": True,
             }
+        evidence_ref = str(entry.get("evidence_ref") or f"candidate-b-bundle-downstream-proof://{step}").strip()
+        if evidence_ref.lower().startswith(("http://", "https://", "file://")):
+            raise CandidateBBundleDownstreamProofError(
+                "candidate_b_bundle_downstream_proof_coverage_exposes_forbidden_reference",
+                "Candidate B bundle downstream proof coverage cannot expose raw URL or file references.",
+                http_status=409,
+                details={"coverage_step": step},
+            )
         coverage[step] = {
             "status": "proven",
+            "evidence_ref": evidence_ref,
             "evidence_hash": _stable_hash(dict(entry)),
             **delivery_authority,
         }
