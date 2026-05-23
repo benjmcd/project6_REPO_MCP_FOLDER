@@ -10189,6 +10189,185 @@ test('Layer 3 workbench renders source-directory scan and status authority field
   ]);
 });
 
+test('Layer 3 workbench routes Candidate B bridge curated roots through rendered source-directory Gate B', async ({ page, request }) => {
+  test.setTimeout(90000);
+  const apiRequests = trackLayer3ApiRequests(page);
+  const consoleErrors = [];
+  const pageErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('pageerror', (error) => {
+    pageErrors.push(error.message);
+  });
+  await page.route('**/favicon.ico', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+
+  const scanPath = '/api/v1/layer3/source/ingestion/server-configured-directory/scan';
+  const materialPreviewPath = '/api/v1/layer3/source/ingestion/server-configured-directory/material-preview';
+  const gateBPath = '/api/v1/layer3/gate-b/decision';
+  const forbiddenPayloadKeys = [
+    'path',
+    'paths',
+    'directory',
+    'local_path',
+    'url',
+    'urls',
+    'glob',
+    'recursive',
+    'file',
+    'files',
+    'file_bytes',
+    'download_url',
+    'public_url',
+    'signed_url',
+    'provider_credentials',
+    'browser_state',
+    'frontend_state',
+    'raw_payload_path',
+  ];
+  const expectNoForbiddenPayloadKeys = (payload) => {
+    for (const forbiddenKey of forbiddenPayloadKeys) {
+      expect(payload).not.toHaveProperty(forbiddenKey);
+    }
+  };
+
+  try {
+    for (const sourceKind of ['bundle', 'runtime']) {
+      const setup = await expectJson(await request.post('/__test/layer3/candidate-b-source-directory-authority', {
+        data: { candidate_b_source_kind: sourceKind },
+      }));
+      expect(setup.schema_id).toBe('project6.review_browser_candidate_b_source_directory_authority_setup.v1');
+      expect(setup.source_ingestion_dir_configured_from_bridge).toBe(true);
+      expect(setup.candidate_b_source_kind).toBe(sourceKind);
+      expect(setup.curated_root_absolute_path_exposed).toBe(false);
+      expect(setup.layer3_material_preview_compatible).toBe(true);
+      expect(setup.gate_b_material_authority_compatible).toBe(true);
+      expect(setup.expected_source_directory_file_count).toBeGreaterThan(0);
+      expect(setup.artifact_role_counts.material_analysis_payloads).toBeGreaterThan(0);
+      expect(JSON.stringify(setup)).not.toContain('C:\\');
+
+      const subset = setup.admitted_artifact_subset;
+      const expectedRelativeNames = [
+        ...(subset.top_level_files ?? []),
+        ...(subset.raw_files ?? []),
+        ...(subset.trace_files ?? []),
+        ...(subset.normalized_files ?? []),
+        ...(subset.text_files ?? []),
+      ].sort();
+      expect(expectedRelativeNames).toHaveLength(setup.expected_source_directory_file_count);
+
+      await page.setViewportSize({ width: 1360, height: 980 });
+      await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+      const sourcePanel = page.locator('#source-directory-ingestion-rendered-controls');
+      await sourcePanel.scrollIntoViewIfNeeded();
+      await expect(sourcePanel).toBeVisible();
+
+      const scanRequestPromise = page.waitForRequest((apiRequest) => (
+        new URL(apiRequest.url()).pathname === scanPath && apiRequest.method() === 'POST'
+      ));
+      const scanResponsePromise = page.waitForResponse((response) => (
+        new URL(response.url()).pathname === scanPath && response.request().method() === 'POST'
+      ));
+      await page.locator('#source-directory-ingestion-client-request-id').fill(
+        requestId(`candidate-b-${sourceKind}-source-directory-rendered-scan`),
+      );
+      await page.locator('#source-directory-ingestion-scan-submit').click();
+      const scanPayload = (await scanRequestPromise).postDataJSON();
+      const scanBody = await expectJsonStatus(await scanResponsePromise, 201);
+      expectOnlyPayloadKeys(scanPayload, [
+        'client_request_id',
+        'operator_decision',
+        'source_family',
+        'ingestion_mode',
+      ]);
+      expectNoForbiddenPayloadKeys(scanPayload);
+      expect(scanBody.schema_id).toBe('layer3.source_directory_ingestion_batch.v1');
+      expect(scanBody.eligible_file_count).toBe(setup.expected_source_directory_file_count);
+      expect(scanBody.files).toHaveLength(setup.expected_source_directory_file_count);
+      expect(scanBody.files.map((file) => file.relative_name).sort()).toEqual(expectedRelativeNames);
+      expect(scanBody.source_root_absolute_path_exposed).toBe(false);
+      expect(JSON.stringify(scanBody)).not.toContain('C:\\');
+      await expect(page.locator('#source-directory-ingestion-panel')).toContainText(expectedRelativeNames[0]);
+      await expect(page.locator('#source-directory-ingestion-panel')).not.toContainText('C:\\');
+
+      const materialRequestPromise = page.waitForRequest((apiRequest) => (
+        new URL(apiRequest.url()).pathname === materialPreviewPath && apiRequest.method() === 'POST'
+      ));
+      const materialResponsePromise = page.waitForResponse((response) => (
+        new URL(response.url()).pathname === materialPreviewPath && response.request().method() === 'POST'
+      ));
+      const firstMaterialPreviewButton = page.locator('.source-directory-material-preview-button').first();
+      await expect(firstMaterialPreviewButton).toBeEnabled();
+      await firstMaterialPreviewButton.click();
+      const materialPayload = (await materialRequestPromise).postDataJSON();
+      const materialPreview = await expectJson(await materialResponsePromise);
+      expectOnlyPayloadKeys(materialPayload, [
+        'client_request_id',
+        'source_ingestion_batch_id',
+        'source_ingestion_file_id',
+        'file_identity_hash',
+        'authority_basis_hash',
+        'max_chars',
+      ]);
+      expectNoForbiddenPayloadKeys(materialPayload);
+      expect(materialPreview.schema_id).toBe('layer3.source_directory_material_preview.v1');
+      expect(materialPreview.status).toBe('available');
+      expect(materialPreview.source_ingestion_batch_id).toBe(scanBody.source_ingestion_batch_id);
+      expect(materialPreview.material_candidate.source_class).toBe('server_configured_directory_file');
+      expect(materialPreview.source_gate.absolute_path_exposed).toBe(false);
+      expect(materialPreview.source_gate.rag_vector_index_enabled).toBe(false);
+      expect(materialPreview.source_gate.package_construction_enabled).toBe(false);
+      expect(JSON.stringify(materialPreview)).not.toContain('C:\\');
+
+      const gateBRequestPromise = page.waitForRequest((apiRequest) => (
+        new URL(apiRequest.url()).pathname === gateBPath && apiRequest.method() === 'POST'
+      ));
+      const gateBResponsePromise = page.waitForResponse((response) => (
+        new URL(response.url()).pathname === gateBPath && response.request().method() === 'POST'
+      ));
+      await page.locator('#source-directory-gate-b-submit').click();
+      const gateBPayload = (await gateBRequestPromise).postDataJSON();
+      const gateB = await expectJson(await gateBResponsePromise);
+      expectOnlyPayloadKeys(gateBPayload, [
+        'schema_id',
+        'client_request_id',
+        'preflight_id',
+        'source_set_id',
+        'material_preview_id',
+        'material_preview_hash',
+        'actor',
+        'candidate_decisions',
+        'commit_reason',
+      ]);
+      expectNoForbiddenPayloadKeys(gateBPayload);
+      expect(gateB.schema_id).toBe('layer3.gate_b_decision_result.v1');
+      expect(gateB.status).toBe('ok');
+      expect(gateB.next_state).toBe('gate_c_preview_ready');
+      expect(gateB.approved_candidate_ids).toEqual([materialPreview.material_candidate.candidate_id]);
+      expect(JSON.stringify(gateB)).not.toContain('C:\\');
+      await expect(page.locator('#source-directory-ingestion-message')).toContainText('Gate B committed session');
+    }
+  } finally {
+    const reset = await expectJson(await request.post('/__test/layer3/source-directory-fixture-reset'));
+    expect(reset.schema_id).toBe('project6.review_browser_source_directory_fixture_reset.v1');
+    expect(reset.source_ingestion_dir_restored).toBe(true);
+    expect(reset.source_root_absolute_path_exposed).toBe(false);
+  }
+
+  expect(consoleErrors).toEqual([]);
+  expect(pageErrors).toEqual([]);
+  expectNoRequestsToLayer3Paths(apiRequests, [
+    'source/mixed-corpus/materialize',
+    'handoff/connector',
+    'provider-public-url',
+    'package/mutation',
+  ]);
+});
+
 test('Layer 3 source-directory activation proof renders blocked scan and missing batch states', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   const consoleErrors = [];
