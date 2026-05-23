@@ -17,6 +17,8 @@ OPERATOR_DECISION = "inspect_candidate_b_full_corpus_operator_workflow_status"
 WORKFLOW_SCHEMA_ID = "candidate_b.full_corpus_layer3_operator_workflow.v1"
 WORKFLOW_MODE = "candidate_b_full_corpus_operator_workflow_v1"
 WORKFLOW_RECEIPT_PREFIX = "cb-full-corpus-operator"
+RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID = "candidate_b.full_corpus_runtime_root_lifecycle.v1"
+RUNTIME_ROOT_LIFECYCLE_MODE = "candidate_b_full_corpus_runtime_root_lifecycle_v1"
 STATUS_HASH_KEYS = (
     "schema_id",
     "schema_version",
@@ -35,6 +37,7 @@ STATUS_HASH_KEYS = (
     "corpus",
     "layer3",
     "artifact_family",
+    "runtime_root_lifecycle",
     "operator_projection",
 )
 WORKFLOW_RECEIPT_HASH_KEYS = (
@@ -133,12 +136,14 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
     corpus = _workflow_corpus(receipt)
     layer3 = _workflow_layer3_projection(receipt)
     artifact_family = _workflow_artifact_family(receipt)
+    runtime_root_lifecycle = _workflow_runtime_root_lifecycle(receipt)
     operator_projection = {
         "workflow_status_visible": True,
         "workflow_receipt_projection_visible": True,
         "bridge_receipt_projection_visible": True,
         "downstream_proof_projection_visible": True,
         "artifact_family_projection_visible": True,
+        "runtime_root_lifecycle_projection_visible": runtime_root_lifecycle["available"],
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
         "artifact_bytes_exposed": False,
@@ -163,6 +168,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "corpus": corpus,
         "layer3": layer3,
         "artifact_family": artifact_family,
+        "runtime_root_lifecycle": runtime_root_lifecycle,
         "operator_projection": operator_projection,
     }
     status_hash = _stable_hash({key: status_input[key] for key in STATUS_HASH_KEYS})
@@ -420,6 +426,87 @@ def _workflow_artifact_family(receipt: Mapping[str, Any]) -> dict[str, Any]:
         "role_counts": dict(role_counts),
         "curated_file_count": _non_negative_int(artifact_family, "curated_file_count"),
         "text_file_count": _non_negative_int(artifact_family, "text_file_count"),
+    }
+
+
+def _workflow_runtime_root_lifecycle(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    lifecycle = receipt.get("runtime_root_lifecycle")
+    if lifecycle is None:
+        return {
+            "available": False,
+            "lifecycle_receipt_id": "",
+            "lifecycle_receipt_hash": "",
+            "runtime_parent_ref": "",
+            "root_count": 0,
+            "validate_only_triplet": False,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+        }
+    if not isinstance(lifecycle, Mapping):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_runtime_root_lifecycle_invalid",
+            "The selected workflow receipt has an invalid runtime-root lifecycle projection.",
+            http_status=409,
+        )
+    schema_id = str(lifecycle.get("schema_id") or "")
+    lifecycle_mode = str(lifecycle.get("lifecycle_mode") or "")
+    if schema_id != RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID or lifecycle_mode != RUNTIME_ROOT_LIFECYCLE_MODE:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_runtime_root_lifecycle_mode_invalid",
+            "The selected workflow receipt has a runtime-root lifecycle projection outside the admitted schema or mode.",
+            http_status=409,
+            details={
+                "expected_schema_id": RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID,
+                "expected_lifecycle_mode": RUNTIME_ROOT_LIFECYCLE_MODE,
+            },
+        )
+    receipt_id = str(lifecycle.get("lifecycle_receipt_id") or "")
+    _validate_storage_id(receipt_id, prefix="cb-full-corpus-runtime-roots")
+    receipt_hash = str(lifecycle.get("lifecycle_receipt_hash") or "")
+    if not re.fullmatch(r"[a-f0-9]{64}", receipt_hash):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_runtime_root_lifecycle_hash_invalid",
+            "The selected workflow receipt has an invalid runtime-root lifecycle receipt hash.",
+            http_status=409,
+        )
+    runtime_parent_ref = str(lifecycle.get("runtime_parent_ref") or "")
+    if not runtime_parent_ref.startswith(("repo://", "redacted://")):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_runtime_root_lifecycle_ref_invalid",
+            "The selected workflow receipt has an invalid runtime-root parent reference.",
+            http_status=409,
+        )
+    root_count = _non_negative_int(lifecycle, "root_count")
+    if root_count != 3:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_runtime_root_lifecycle_count_invalid",
+            "Candidate B full-corpus runtime-root lifecycle receipts must bind baseline, Candidate A, and Candidate B.",
+            http_status=409,
+            details={"root_count": root_count},
+        )
+    if lifecycle.get("validate_only_triplet") is not True:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_runtime_root_lifecycle_not_validate_only",
+            "Candidate B full-corpus runtime-root lifecycle receipts require validate-only triplet authority.",
+            http_status=409,
+        )
+    if lifecycle.get("raw_local_path_exposed") is not False or lifecycle.get("raw_url_exposed") is not False:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_runtime_root_lifecycle_raw_authority",
+            "Candidate B full-corpus runtime-root lifecycle receipts must not expose raw path or URL authority.",
+            http_status=409,
+        )
+    return {
+        "available": True,
+        "schema_id": schema_id,
+        "lifecycle_mode": lifecycle_mode,
+        "lifecycle_receipt_id": receipt_id,
+        "lifecycle_receipt_hash": receipt_hash,
+        "runtime_parent_ref": runtime_parent_ref,
+        "root_count": root_count,
+        "validate_only_triplet": True,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
     }
 
 

@@ -142,6 +142,23 @@ python .\tools\run_candidate_b_full_corpus_operator_workflow.py `
 
 The explicit roots must all share one `storage_test_runtime\lc_e2e` or `storage\lc_e2e` parent. During the bridge call, the runner temporarily uses that parent as server-side runtime discovery authority, then restores isolated Layer 3 storage for downstream proof. The request to the Layer 3 bridge still carries only run ids, never local path fields.
 
+Each runner execution now records the selected runtime roots in a redacted lifecycle receipt before the Layer 3 bridge runs:
+
+```text
+schema_id: candidate_b.full_corpus_runtime_root_lifecycle.v1
+lifecycle_mode: candidate_b_full_corpus_runtime_root_lifecycle_v1
+receipt_id_prefix: cb-full-corpus-runtime-roots-
+default_receipt_dir: repo://backend/app/storage_test_runtime/lc_e2e/cb-full-corpus-runtime-root-lifecycle
+root_count: 3
+validate_only_triplet: true
+runtime_roots_moved_or_copied: false
+runtime_artifacts_seeded_by_lifecycle: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+```
+
+The lifecycle receipt hashes each selected run's `local_corpus_e2e_summary.json` and `lc.db`, binds the baseline/Candidate A/Candidate B run ids and compare target set, and stores only repo-relative or redacted references. It is an authority binding for the existing runtime roots, not a copier, seeder, importer, or source-expansion mechanism.
+
 The merged-current-main proof checkpoint is:
 
 ```yaml

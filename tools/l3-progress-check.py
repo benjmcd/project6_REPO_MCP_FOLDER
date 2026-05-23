@@ -2665,6 +2665,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_RUNBOOK_CHECKPOINT = (
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER_CHECKPOINT = (
     PLANNING_DOCS / "977-cb-full-corpus-operator-workflow.md"
 )
+CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_CHECKPOINT = (
+    PLANNING_DOCS / "978-cb-full-corpus-runtime-root-lifecycle.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -90968,6 +90971,64 @@ def _check_candidate_b_full_corpus_operator_workflow_runner(errors: list[str]) -
                 )
 
 
+def _check_candidate_b_full_corpus_runtime_root_lifecycle(errors: list[str]) -> None:
+    status_service = ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_status.py"
+    status_test = ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_status.py"
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_RUNTIME_ROOT_LIFECYCLE_CHECKPOINT: (
+            "Candidate B Full-Corpus Runtime Root Lifecycle",
+            "milestone: candidate_b_full_corpus_runtime_root_lifecycle_v1",
+            "current_main: 5122ae632d6adc18791365cf006918786b398119",
+            "schema_id: candidate_b.full_corpus_runtime_root_lifecycle.v1",
+            "lifecycle_mode: candidate_b_full_corpus_runtime_root_lifecycle_v1",
+            "receipt_id_prefix: cb-full-corpus-runtime-roots-",
+            "runtime_roots_moved_or_copied: false",
+            "runtime_artifacts_seeded_by_lifecycle: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "candidate_b.full_corpus_runtime_root_lifecycle.v1",
+            "candidate_b_full_corpus_runtime_root_lifecycle_v1",
+            "cb-full-corpus-runtime-roots-",
+            "runtime_roots_moved_or_copied: false",
+            "runtime_artifacts_seeded_by_lifecycle: false",
+            "authority binding for the existing runtime roots",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER: (
+            'RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID = "candidate_b.full_corpus_runtime_root_lifecycle.v1"',
+            'RUNTIME_ROOT_LIFECYCLE_MODE = "candidate_b_full_corpus_runtime_root_lifecycle_v1"',
+            "DEFAULT_RUNTIME_ROOT_LIFECYCLE_DIR",
+            "_runtime_root_lifecycle_receipt",
+            "runtime_roots_moved_or_copied",
+            "runtime_artifacts_seeded_by_lifecycle",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST: (
+            "test_runtime_root_lifecycle_receipt_binds_roots_without_raw_path_leak",
+            "test_runtime_root_lifecycle_receipt_rejects_mixed_runtime_parents",
+            "cb-full-corpus-runtime-roots-",
+        ),
+        status_service: (
+            "runtime_root_lifecycle_projection_visible",
+            "_workflow_runtime_root_lifecycle",
+            "candidate_b_full_corpus_runtime_root_lifecycle_count_invalid",
+            "cb-full-corpus-runtime-roots",
+        ),
+        status_test: (
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_invalid_runtime_root_lifecycle",
+            "runtime_root_lifecycle_projection_visible",
+            "cb-full-corpus-runtime-roots-",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus runtime root lifecycle term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -91793,6 +91854,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_runtime_downstream_proof(errors)
     _check_candidate_b_full_corpus_operator_runbook_checkpoint(errors)
     _check_candidate_b_full_corpus_operator_workflow_runner(errors)
+    _check_candidate_b_full_corpus_runtime_root_lifecycle(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
