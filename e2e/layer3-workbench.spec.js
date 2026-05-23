@@ -12733,3 +12733,42 @@ test('Layer 3 workbench proves Candidate B bundle source-directory full downstre
     expect(reset.source_root_absolute_path_exposed).toBe(false);
   }
 });
+
+test('Layer 3 workbench proves Candidate B runtime source-directory full downstream path', async ({ page, request }) => {
+  try {
+    await proveSourceDirectoryScanToHybridHandoffDeliveryLiveServerPath(page, request, {
+      sourceDirectorySetup: async (apiRequest) => {
+        const setup = await expectJson(await apiRequest.post('/__test/layer3/candidate-b-source-directory-authority', {
+          data: { candidate_b_source_kind: 'runtime' },
+        }));
+        expect(setup.schema_id).toBe('project6.review_browser_candidate_b_source_directory_authority_setup.v1');
+        expect(setup.source_ingestion_dir_configured_from_bridge).toBe(true);
+        expect(setup.candidate_b_source_kind).toBe('runtime');
+        expect(setup.curated_root_absolute_path_exposed).toBe(false);
+        expect(setup.layer3_material_preview_compatible).toBe(true);
+        expect(setup.gate_b_material_authority_compatible).toBe(true);
+        expect(setup.artifact_role_counts.material_analysis_payloads).toBeGreaterThan(0);
+        expect(JSON.stringify(setup)).not.toContain('C:\\');
+        const subset = setup.admitted_artifact_subset;
+        const expectedRelativeNames = [
+          ...(subset.top_level_files ?? []),
+          ...(subset.trace_files ?? []),
+          ...(subset.normalized_files ?? []),
+          ...(subset.text_files ?? []),
+        ].sort();
+        expect(expectedRelativeNames).toHaveLength(setup.expected_source_directory_file_count);
+        expect(expectedRelativeNames).toContain('text/fontish.md');
+        return {
+          expectedRelativeNames,
+          preferredMaterialRelativeName: 'text/fontish.md',
+          requestIdPrefix: 'candidate-b-runtime-source-directory-full-path',
+        };
+      },
+    });
+  } finally {
+    const reset = await expectJson(await request.post('/__test/layer3/source-directory-fixture-reset'));
+    expect(reset.schema_id).toBe('project6.review_browser_source_directory_fixture_reset.v1');
+    expect(reset.source_ingestion_dir_restored).toBe(true);
+    expect(reset.source_root_absolute_path_exposed).toBe(false);
+  }
+});
