@@ -72,6 +72,8 @@ def build_runtime_binding_summary(binding: ReviewRuntimeBinding) -> NrcApsReview
         storage_label=binding.storage_dir.name if binding.storage_dir is not None else None,
         visual_lane_mode=metadata["visual_lane_mode"],
         document_processing_engine=metadata["document_processing_engine"],
+        requested_document_processing_engine=metadata["requested_document_processing_engine"],
+        document_processing_engine_source=metadata["document_processing_engine_source"],
         variant_kind=metadata["variant_kind"],
     )
 
