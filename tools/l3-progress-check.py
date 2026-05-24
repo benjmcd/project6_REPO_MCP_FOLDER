@@ -2722,6 +2722,9 @@ CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_LIVE_HTTP_PROOF = (
 CANDIDATE_B_WORKFLOW_RUN_HISTORY_SELECTION = (
     PLANNING_DOCS / "996-cb-workflow-run-history-selection.md"
 )
+CANDIDATE_B_WORKFLOW_RUN_HISTORY_PROJECTION = (
+    PLANNING_DOCS / "997-cb-workflow-run-history-projection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2740,6 +2743,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_TEST = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_run.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_history.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -92528,6 +92534,134 @@ def _check_candidate_b_workflow_run_history_selection(
                 )
 
 
+def _check_candidate_b_workflow_run_history_projection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_WORKFLOW_RUN_HISTORY_PROJECTION: (
+            "Candidate B Workflow Run History Read-Only Projection",
+            "milestone: candidate_b_operator_workflow_run_history_read_only_projection_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/996-cb-workflow-run-history-selection.md",
+            "current_main_entry: dbadb7a35f61fffbb3ddf85118c0e00e06599b8f",
+            "runtime_status: implemented",
+            "selected_history_scope: server_owned_candidate_b_full_corpus_operator_workflow_run_receipts",
+            "selected_history_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "selected_rendered_history_mode: rendered_candidate_b_full_corpus_operator_workflow_run_history_control",
+            "history_schema_id: layer3.candidate_b_full_corpus_operator_workflow_history.v1",
+            "history_mode: candidate_b_full_corpus_operator_workflow_history_v1",
+            "history_service: backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_history.py",
+            "history_api_route: backend/app/api/layer3.py",
+            "history_rendered_surface: backend/app/review_ui/static/layer3.js",
+            "history_e2e_proof: e2e/layer3-workbench.spec.js",
+            "configured_receipt_authority_used: true",
+            "read_only_history_projection: true",
+            "single_run_status_endpoint_reused_for_detail: true",
+            "history_rows_bind_authority_basis_hash: true",
+            "history_rows_bind_status_request: true",
+            "invalid_or_stale_receipts_fail_closed: true",
+            "missing_configured_receipt_root_fails_closed: true",
+            "non_run_receipts_fail_closed: true",
+            "browser_supplied_receipt_root_admitted: false",
+            "cancel_runtime_admitted: false",
+            "retry_runtime_admitted: false",
+            "resume_runtime_admitted: false",
+            "queue_scheduler_runtime_admitted: false",
+            "expiry_mutation_runtime_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "verification_headless_rendered_e2e: passed",
+            "verification_headed_rendered_e2e: passed",
+            "verification_backend_pytest: 10 passed",
+            "next_exact_posture: candidate_b_operator_workflow_lifecycle_mutation_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_run_history_read_only_projection_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/996-cb-workflow-run-history-selection.md",
+            "runtime_status: implemented",
+            "selected_history_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "selected_rendered_history_mode: rendered_candidate_b_full_corpus_operator_workflow_run_history_control",
+            "history_schema_id: layer3.candidate_b_full_corpus_operator_workflow_history.v1",
+            "configured_receipt_authority_used: true",
+            "read_only_history_projection: true",
+            "single_run_status_endpoint_reused_for_detail: true",
+            "history_rows_bind_status_request: true",
+            "invalid_or_stale_receipts_fail_closed: true",
+            "cancel_runtime_admitted: false",
+            "queue_scheduler_runtime_admitted: false",
+            "verification_headless_rendered_e2e: passed",
+            "verification_headed_rendered_e2e: passed",
+            "verification_backend_pytest: 10 passed",
+            "next_exact_posture: candidate_b_operator_workflow_lifecycle_mutation_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_history.v1"',
+            'HISTORY_MODE = "candidate_b_full_corpus_operator_workflow_history_v1"',
+            'HISTORY_SCOPE = "server_owned_candidate_b_full_corpus_operator_workflow_run_receipts"',
+            'RENDERED_HISTORY_MODE = "rendered_candidate_b_full_corpus_operator_workflow_run_history_control"',
+            "def candidate_b_full_corpus_operator_workflow_history()",
+            '"read_only_history_projection": True',
+            '"browser_supplied_receipt_root_admitted": False',
+            '"cancel_runtime_admitted": False',
+            '"queue_scheduler_runtime_admitted": False',
+            '"frontend_durable_authority_enabled": False',
+            "def _validate_server_run(",
+            "def _workflow_receipt_root()",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_history",
+            "candidate_b_full_corpus_operator_workflow_history_admitted",
+            "candidate_b_full_corpus_operator_workflow_history_endpoint",
+            "Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/history"',
+            "get_candidate_b_full_corpus_operator_workflow_history",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_history_admitted",
+            "candidate_b_full_corpus_operator_workflow_history_endpoint",
+            "operator-workflow/history",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_history": True',
+            "candidate_b_full_corpus_operator_workflow_history_admitted",
+            "candidate_b_full_corpus_operator_workflow_history_endpoint",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "HISTORY_ENDPOINT =",
+            "test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_runs",
+            "test_candidate_b_full_corpus_operator_workflow_history_fails_closed_for_stale_run_receipt",
+            "test_candidate_b_full_corpus_operator_workflow_history_reports_empty_configured_authority",
+            "read_only_history_projection",
+            "single_run_status_endpoint_reused_for_detail",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_RENDERED_MODE",
+            "candidateBFullCorpusOperatorWorkflowHistoryEndpointPath",
+            "canRefreshCandidateBFullCorpusOperatorWorkflowHistory",
+            "candidateBFullCorpusOperatorWorkflowHistoryRows",
+            "refreshCandidateBFullCorpusOperatorWorkflowHistory",
+            "inspectCandidateBFullCorpusOperatorWorkflowHistoryRow",
+            "candidate-b-full-corpus-workflow-history-form",
+            "data-candidate-b-workflow-history-inspect-index",
+            "rendered_candidate_b_full_corpus_operator_workflow_run_history_control",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "refreshes Candidate B workflow history and inspects a selected run",
+            "candidate_b_full_corpus_operator_workflow_history.v1",
+            "server_owned_candidate_b_full_corpus_operator_workflow_run_receipts",
+            "rendered_candidate_b_full_corpus_operator_workflow_run_history_control",
+            "candidate-b-full-corpus-workflow-history-refresh",
+            "data-candidate-b-workflow-history-inspect-index",
+            "expect(workflowStatusPayload).toEqual(returnedStatusRequest)",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B workflow run history projection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -93372,6 +93506,7 @@ def main() -> int:
     _check_candidate_b_rendered_operator_workflow_run_start_control(errors)
     _check_candidate_b_rendered_operator_workflow_run_live_http_proof(errors)
     _check_candidate_b_workflow_run_history_selection(errors)
+    _check_candidate_b_workflow_run_history_projection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
