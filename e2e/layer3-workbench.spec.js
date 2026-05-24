@@ -7776,6 +7776,42 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowStatusPayload = null;
+  const retryTerminalProjection = {
+    retry_terminal_projection_state: 'failed',
+    retry_terminal_status_projection_mode: 'read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation',
+    retry_terminal_status_projection_surfaces: ['status', 'history'],
+    read_only_retry_terminal_projection: true,
+    retry_completion_failure_receipt_available: true,
+    retry_completion_failure_receipt_id: 'cb-full-corpus-operator-rendered-proof-retry-completion-failure',
+    retry_completion_failure_receipt_hash: '4'.repeat(64),
+    retry_completion_failure_authority_hash: '5'.repeat(64),
+    retry_worker_attempt_receipt_id: 'cb-full-corpus-operator-rendered-proof-retry-worker-attempt',
+    retry_worker_attempt_authority_hash: '6'.repeat(64),
+    latest_retry_progress_checkpoint_receipt_id: 'cb-full-corpus-operator-rendered-proof-retry-progress-checkpoint',
+    latest_retry_progress_checkpoint_authority_hash: '7'.repeat(64),
+    retry_terminal_outcome: 'failed',
+    retry_terminal_outcome_hash: '8'.repeat(64),
+    terminal_failure_code: 'operator_safe_retry_failure',
+    terminal_failure_phase: 'analysis',
+    missing_retry_terminal_receipt_projects_not_recorded: true,
+    stale_retry_terminal_receipt_rejected: true,
+    ambiguous_retry_terminal_receipt_rejected: true,
+    retry_terminal_failure_payload_operator_safe: true,
+    operator_safe_retry_terminal_failure_code_visible: true,
+    operator_safe_retry_terminal_failure_phase_visible: true,
+    retry_terminal_receipt_creation_admitted_now: false,
+    retry_completion_failure_receipt_mutation_admitted: false,
+    background_process_runtime_selected_now: false,
+    job_execution_runtime_selected_now: false,
+    cancel_runtime_selected_now: false,
+    resume_runtime_selected_now: false,
+    raw_exception_trace_admitted: false,
+    raw_log_excerpt_admitted: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    artifact_bytes_exposed: false,
+    selector_mutation_performed: false,
+  };
   await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status', async (route) => {
     workflowStatusPayload = route.request().postDataJSON();
     await route.fulfill({
@@ -7838,6 +7874,7 @@ test('Layer 3 workbench inspects Candidate B full-corpus workflow status through
             material_analysis_payloads: 71,
           },
         },
+        retry_terminal_status_projection: retryTerminalProjection,
         operator_projection: {
           workflow_status_visible: true,
           workflow_receipt_projection_visible: true,
@@ -7895,6 +7932,14 @@ test('Layer 3 workbench inspects Candidate B full-corpus workflow status through
   await expect(panel).toContainText('1805');
   await expect(panel).toContainText('raw local path exposed');
   await expect(panel).toContainText('false');
+  await expect(panel).toContainText('Retry Terminal Projection');
+  await expect(panel).toContainText('retry terminal projection state');
+  await expect(panel).toContainText('failed');
+  await expect(panel).toContainText('cb-full-corpus-operator-rendered-proof-retry-completion-failure');
+  await expect(panel).toContainText('operator_safe_retry_failure');
+  await expect(panel).toContainText('terminal failure phase');
+  await expect(panel).toContainText('raw exception trace admitted');
+  await expect(panel).toContainText('retry terminal receipt creation admitted');
 
   expect(workflowStatusPayload).toMatchObject({
     status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
@@ -8104,6 +8149,42 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowHistoryRequested = false;
   let workflowStatusPayload = null;
+  const retryTerminalProjection = {
+    retry_terminal_projection_state: 'completed',
+    retry_terminal_status_projection_mode: 'read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation',
+    retry_terminal_status_projection_surfaces: ['status', 'history'],
+    read_only_retry_terminal_projection: true,
+    retry_completion_failure_receipt_available: true,
+    retry_completion_failure_receipt_id: 'cb-full-corpus-operator-history-rendered-proof-retry-completion-failure',
+    retry_completion_failure_receipt_hash: '4'.repeat(64),
+    retry_completion_failure_authority_hash: '5'.repeat(64),
+    retry_worker_attempt_receipt_id: 'cb-full-corpus-operator-history-rendered-proof-retry-worker-attempt',
+    retry_worker_attempt_authority_hash: '6'.repeat(64),
+    latest_retry_progress_checkpoint_receipt_id: 'cb-full-corpus-operator-history-rendered-proof-retry-progress-checkpoint',
+    latest_retry_progress_checkpoint_authority_hash: '7'.repeat(64),
+    retry_terminal_outcome: 'completed',
+    retry_terminal_outcome_hash: '8'.repeat(64),
+    terminal_failure_code: '',
+    terminal_failure_phase: '',
+    missing_retry_terminal_receipt_projects_not_recorded: true,
+    stale_retry_terminal_receipt_rejected: true,
+    ambiguous_retry_terminal_receipt_rejected: true,
+    retry_terminal_failure_payload_operator_safe: true,
+    operator_safe_retry_terminal_failure_code_visible: false,
+    operator_safe_retry_terminal_failure_phase_visible: false,
+    retry_terminal_receipt_creation_admitted_now: false,
+    retry_completion_failure_receipt_mutation_admitted: false,
+    background_process_runtime_selected_now: false,
+    job_execution_runtime_selected_now: false,
+    cancel_runtime_selected_now: false,
+    resume_runtime_selected_now: false,
+    raw_exception_trace_admitted: false,
+    raw_log_excerpt_admitted: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    artifact_bytes_exposed: false,
+    selector_mutation_performed: false,
+  };
   const returnedStatusRequest = {
     client_request_id: 'candidate-b-rendered-history-status-request',
     status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
@@ -8189,6 +8270,7 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
             artifact_bytes_exposed: false,
             selector_mutation_performed: false,
             frontend_durable_authority_enabled: false,
+            retry_terminal_status_projection: retryTerminalProjection,
             row_hash: 'd'.repeat(64),
           },
         ],
@@ -8236,6 +8318,7 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
         },
         validate_only_triplet: true,
         artifacts_seeded_or_generated_by_triplet_validator: false,
+        retry_terminal_status_projection: retryTerminalProjection,
         raw_local_path_exposed: false,
         raw_url_exposed: false,
         selector_mutation_performed: false,
@@ -8260,11 +8343,18 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
   await expect(historyCard).toContainText(returnedStatusRequest.operator_workflow_receipt_id);
   await expect(historyCard).toContainText('cancel runtime admitted: false');
   await expect(historyCard).toContainText('raw URL exposed: false');
+  await expect(historyCard).toContainText('retry terminal projection state');
+  await expect(historyCard).toContainText('completed');
+  await expect(historyCard).toContainText('cb-full-corpus-operator-history-rendered-proof-retry-completion-failure');
+  await expect(historyCard).toContainText('retry terminal receipt creation admitted: false');
 
   await page.locator('[data-candidate-b-workflow-history-inspect-index="0"]').click();
   await expect(panel).toContainText('candidate_b_full_corpus_workflow_status_available');
   await expect(panel).toContainText('Selected Workflow Run 1');
   await expect(panel).toContainText(returnedStatusRequest.downstream_proof_id);
+  await expect(panel).toContainText('Retry Terminal Projection');
+  await expect(panel).toContainText('retry terminal outcome');
+  await expect(panel).toContainText('completed');
 
   expect(workflowHistoryRequested).toBe(true);
   expect(workflowStatusPayload).toEqual(returnedStatusRequest);
