@@ -1,0 +1,55 @@
+# Candidate B Operator Workflow Ownership Access Policy Closeout Status Review Audit Projection
+
+```yaml
+milestone: candidate_b_operator_workflow_ownership_access_policy_closeout_status_review_audit_projection_v1
+source_operator_workflow_ownership_access_policy_route_expansion: next_milestone_plans/Layer3_planning_docs/1062-cb-operator-workflow-ownership-access-policy-route-expansion.md
+current_main_entry: 16a2b3b09f4e379a38b4ea7b3058d52e93a33db0
+runtime_status: closeout_status_review_audit_projection_policy_enforced
+implemented_policy_module: backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py
+implemented_closeout_status_service: backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py
+implemented_route_context_surface: backend/app/api/layer3.py
+implemented_test_surface: backend/tests/test_layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py
+selected_auth_mode: session_tenant_owner_authorization
+selected_named_security_behavior: candidate_b_operator_workflow_owner_scoped_access_decision_v1
+policy_decision_schema_id: layer3.candidate_b.operator_workflow.owner_access_policy_decision.v1
+audit_event_schema_id: layer3.candidate_b.operator_workflow.ownership_access_audit_event.v1
+policy_receipt_prefix: cb-full-corpus-operator-policy
+protected_route_families_implemented: workflow_run,workflow_status,workflow_history,lifecycle_expiry,queue_scheduler_worker_progress_completion_retry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status,review_status_projection,audit_projection
+remaining_protected_route_families: none_for_current_candidate_b_operator_workflow_scope
+protected_projection_surfaces_implemented: acceptance_closeout_status,acceptance_closeout_status_review,acceptance_closeout_status_audit
+shared_projection_authority_policy_helper: authorize_projection_receipt_access
+closeout_status_projection_authority: repeatability_acceptance_operator_closeout_receipt_or_repeatability_acceptance_checkpoint_selector
+closeout_status_policy_enforced: true
+review_status_projection_policy_enforced: true
+audit_projection_policy_enforced: true
+ownership_access_policy_response_projection: closeout_status,review_status_projection,audit_projection
+missing_closeout_receipt_projects_not_recorded: true
+available_closeout_receipt_projects_available: true
+stale_closeout_receipt_rejected: true
+ambiguous_closeout_receipt_rejected: true
+missing_identity_policy: reject_fail_closed_for_AUTH_OWNER_proxy
+untrusted_proxy_header_policy: reject_fail_closed
+audit_event_runtime: append_only_redacted_policy_receipt_under_configured_workflow_root
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+proof_compile: python -m py_compile ./backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py ./backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py ./backend/app/api/layer3.py
+proof_tests: python -m pytest ./backend/tests/test_layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py -q
+proof_status: local_passed
+next_exact_posture: candidate_b_operator_workflow_rendered_identity_status_controls_selection_v1
+```
+
+This slice closes the remaining read-only Candidate B operator workflow policy projections without adding new workflow execution, provider delivery, connector dispatch, source expansion, RAG/model runtime, default-scope expansion, browser-storage authority, or frontend durable authority. The existing acceptance-closeout status endpoint remains the canonical status/review projection surface, and its response now carries redacted policy decisions and append-only audit event refs for closeout status, review status projection, and audit projection.
+
+## Coherence Check
+
+- Does this create a separate review or audit API? Recommended answer: no. Current main exposes these as read-only projections of the closeout-status surface.
+- Does this complete production auth/security for the whole platform? Recommended answer: no. It completes the current Candidate B operator workflow route-family policy scope; rendered identity/status controls and broader production auth/storage hardening still need separate selection.
+- Does this change Candidate B default scope? Recommended answer: no. Candidate B remains eligible/effective PDFs only with baseline rollback preserved.

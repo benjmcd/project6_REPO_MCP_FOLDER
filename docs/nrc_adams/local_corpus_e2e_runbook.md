@@ -4240,3 +4240,39 @@ next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_closeo
 ```
 
 The protected-route expansion carries trusted policy request context into the remaining Candidate B operator workflow API route families and enforces owner/auditor policy at the shared workflow-row authority boundary. The focused regression covers proxy-owned queue-state continuation, redacted policy audit emission, and fail-closed cross-owner rejection. Closeout-status, review-status projection, and audit projection remain next because they are read-only projection surfaces that need explicit projection-policy treatment.
+
+### Candidate B Operator Workflow Ownership Access Policy Closeout Status Review Audit Projection
+
+```yaml
+milestone: candidate_b_operator_workflow_ownership_access_policy_closeout_status_review_audit_projection_v1
+source_operator_workflow_ownership_access_policy_route_expansion: next_milestone_plans/Layer3_planning_docs/1062-cb-operator-workflow-ownership-access-policy-route-expansion.md
+current_main_entry: 16a2b3b09f4e379a38b4ea7b3058d52e93a33db0
+runtime_status: closeout_status_review_audit_projection_policy_enforced
+implemented_policy_module: backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py
+implemented_closeout_status_service: backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py
+implemented_route_context_surface: backend/app/api/layer3.py
+protected_route_families_implemented: workflow_run,workflow_status,workflow_history,lifecycle_expiry,queue_scheduler_worker_progress_completion_retry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status,review_status_projection,audit_projection
+remaining_protected_route_families: none_for_current_candidate_b_operator_workflow_scope
+protected_projection_surfaces_implemented: acceptance_closeout_status,acceptance_closeout_status_review,acceptance_closeout_status_audit
+shared_projection_authority_policy_helper: authorize_projection_receipt_access
+closeout_status_projection_authority: repeatability_acceptance_operator_closeout_receipt_or_repeatability_acceptance_checkpoint_selector
+closeout_status_policy_enforced: true
+review_status_projection_policy_enforced: true
+audit_projection_policy_enforced: true
+ownership_access_policy_response_projection: closeout_status,review_status_projection,audit_projection
+missing_identity_policy: reject_fail_closed_for_AUTH_OWNER_proxy
+audit_event_runtime: append_only_redacted_policy_receipt_under_configured_workflow_root
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+proof_status: local_passed
+next_exact_posture: candidate_b_operator_workflow_rendered_identity_status_controls_selection_v1
+```
+
+The acceptance-closeout status endpoint is now also the governed read-only status/review/audit projection surface for the current Candidate B operator workflow scope. Operators see redacted policy refs and audit event refs for the closeout status, review projection, and audit projection decisions; no new execution, provider, connector, source expansion, RAG/model, default-scope, browser-storage, or frontend authority is admitted by this slice.

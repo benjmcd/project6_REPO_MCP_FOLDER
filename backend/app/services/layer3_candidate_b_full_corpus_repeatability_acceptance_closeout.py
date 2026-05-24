@@ -288,6 +288,7 @@ def candidate_b_full_corpus_repeatability_acceptance_closeout_status(
     else:
         receipt_id, receipt = receipt_match
         projection = _closeout_available_projection(receipt_id, receipt, fields)
+    ownership_access_policy = _authorize_closeout_status_projection(fields, projection)
     status_hash = workflow_status._stable_hash({key: projection[key] for key in STATUS_HASH_KEYS})
     return {
         "schema_id": STATUS_SCHEMA_ID,
@@ -297,6 +298,7 @@ def candidate_b_full_corpus_repeatability_acceptance_closeout_status(
         "status": "available",
         **projection,
         "closeout_status_hash": status_hash,
+        "ownership_access_policy": ownership_access_policy,
         "source_closeout_endpoint": CLOSEOUT_ENDPOINT,
         "repeatability_acceptance_operator_closeout_status_endpoint": STATUS_ENDPOINT,
     }
@@ -573,6 +575,10 @@ def _status_operator_projection(*, available: bool) -> dict[str, Any]:
         "comparison_summary_visible": available,
         "negative_invariants_visible": True,
         "rendered_proof_summary_visible": available,
+        "closeout_status_policy_enforced": True,
+        "review_status_projection_policy_enforced": True,
+        "audit_projection_policy_enforced": True,
+        "ownership_access_policy_audit_event_appended": True,
         "read_only_acceptance_closeout_status_projection": True,
         "missing_closeout_receipt_projects_not_recorded": True,
         "stale_closeout_receipt_rejected": True,
@@ -614,6 +620,130 @@ def _status_operator_projection(*, available: bool) -> dict[str, Any]:
         "candidate_a_semantics_preserved": True,
         "candidate_b_default_scope_preserved": "eligible_effective_pdfs_only",
         "selector_mutation_performed": False,
+    }
+
+
+def _authorize_closeout_status_projection(
+    fields: Mapping[str, Any],
+    projection: Mapping[str, Any],
+) -> dict[str, Any]:
+    authority = _closeout_status_projection_authority(projection)
+    authority_fields = {
+        key: authority[key]
+        for key in ("projection_receipt_id", "projection_receipt_hash", "authority_basis_hash")
+    }
+    decisions = {
+        "closeout_status": workflow_access_policy.authorize_projection_receipt_access(
+            fields=fields,
+            route_family="closeout_status",
+            rendered_surface="acceptance_closeout_status",
+            **authority_fields,
+        ),
+        "review_status_projection": workflow_access_policy.authorize_projection_receipt_access(
+            fields=fields,
+            route_family="review_status_projection",
+            rendered_surface="acceptance_closeout_status_review",
+            **authority_fields,
+        ),
+        "audit_projection": workflow_access_policy.authorize_projection_receipt_access(
+            fields=fields,
+            route_family="audit_projection",
+            rendered_surface="acceptance_closeout_status_audit",
+            **authority_fields,
+        ),
+    }
+    return {
+        "policy_scope": "candidate_b_acceptance_closeout_status_review_audit_projection",
+        "projection_authority_kind": authority["projection_authority_kind"],
+        "protected_route_families": list(decisions),
+        "closeout_status": _policy_projection(decisions["closeout_status"]),
+        "review_status_projection": _policy_projection(decisions["review_status_projection"]),
+        "audit_projection": _policy_projection(decisions["audit_projection"]),
+        "raw_operator_identity_exposed": False,
+        "raw_proxy_header_exposed": False,
+        "raw_tenant_or_workspace_exposed": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "raw_token_exposed": False,
+        "provider_or_connector_secret_exposed": False,
+        "artifact_bytes_exposed": False,
+        "browser_storage_authority_used": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
+def _closeout_status_projection_authority(projection: Mapping[str, Any]) -> dict[str, str]:
+    if projection.get("repeatability_acceptance_operator_closeout_receipt_available") is True:
+        return {
+            "projection_receipt_id": str(
+                projection["repeatability_acceptance_operator_closeout_receipt_id"]
+            ),
+            "projection_receipt_hash": str(
+                projection["repeatability_acceptance_operator_closeout_receipt_hash"]
+            ),
+            "authority_basis_hash": str(
+                projection["repeatability_acceptance_operator_closeout_authority_hash"]
+            ),
+            "projection_authority_kind": "repeatability_acceptance_operator_closeout_receipt",
+        }
+    selector = {
+        "schema_id": STATUS_SCHEMA_ID,
+        "mode": STATUS_MODE,
+        "closeout_status_projection_state": projection["closeout_status_projection_state"],
+        "repeatability_acceptance_checkpoint_receipt_id": projection[
+            "repeatability_acceptance_checkpoint_receipt_id"
+        ],
+        "repeatability_acceptance_checkpoint_receipt_hash": projection[
+            "repeatability_acceptance_checkpoint_receipt_hash"
+        ],
+        "repeatability_acceptance_checkpoint_authority_hash": projection[
+            "repeatability_acceptance_checkpoint_authority_hash"
+        ],
+    }
+    return {
+        "projection_receipt_id": str(
+            projection.get("repeatability_acceptance_checkpoint_receipt_id")
+            or "candidate-b-acceptance-closeout-status-not-recorded"
+        ),
+        "projection_receipt_hash": str(
+            projection.get("repeatability_acceptance_checkpoint_receipt_hash")
+            or workflow_status._stable_hash(selector)
+        ),
+        "authority_basis_hash": str(
+            projection.get("repeatability_acceptance_checkpoint_authority_hash")
+            or workflow_status._stable_hash({"closeout_status_selector": selector})
+        ),
+        "projection_authority_kind": "repeatability_acceptance_checkpoint_selector",
+    }
+
+
+def _policy_projection(policy_decision: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "policy_schema_id": str(policy_decision["policy_schema_id"]),
+        "policy_status": str(policy_decision["policy_status"]),
+        "policy_hash": str(policy_decision["policy_hash"]),
+        "actor_ref_hash": str(policy_decision["actor_ref_hash"]),
+        "tenant_or_workspace_ref_hash": str(policy_decision["tenant_or_workspace_ref_hash"]),
+        "workflow_receipt_id": str(policy_decision["workflow_receipt_id"]),
+        "workflow_receipt_hash": str(policy_decision["workflow_receipt_hash"]),
+        "route_family": str(policy_decision["route_family"]),
+        "rendered_surface": str(policy_decision["rendered_surface"]),
+        "decision": str(policy_decision["decision"]),
+        "reason_code": str(policy_decision["reason_code"]),
+        "audit_event_id": str(policy_decision["audit_event_id"]),
+        "audit_event_hash": str(policy_decision["audit_event_hash"]),
+        "audit_event_ref": str(policy_decision["audit_event_ref"]),
+        "next_actions": list(policy_decision["next_actions"]),
+        "raw_operator_identity_exposed": False,
+        "raw_proxy_header_exposed": False,
+        "raw_tenant_or_workspace_exposed": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "raw_token_exposed": False,
+        "provider_or_connector_secret_exposed": False,
+        "artifact_bytes_exposed": False,
+        "browser_storage_authority_used": False,
+        "frontend_durable_authority_enabled": False,
     }
 
 

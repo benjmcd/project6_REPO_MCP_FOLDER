@@ -14,6 +14,7 @@ os.environ["DB_INIT_MODE"] = "none"
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
+from app.core.config import settings
 from app.services import layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint as acceptance
 from app.services import layer3_candidate_b_full_corpus_repeatability_acceptance_closeout as closeout
 from app.services import layer3_candidate_b_full_corpus_repeatability_rerun_trial as rerun_trial
@@ -142,9 +143,26 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projec
     assert response["closeout_status_projection_state"] == "not_recorded"
     assert response["repeatability_acceptance_operator_closeout_receipt_available"] is False
     assert response["operator_projection"]["read_only_acceptance_closeout_status_projection"] is True
+    assert response["operator_projection"]["closeout_status_policy_enforced"] is True
+    assert response["operator_projection"]["review_status_projection_policy_enforced"] is True
+    assert response["operator_projection"]["audit_projection_policy_enforced"] is True
     assert response["operator_projection"]["acceptance_closeout_receipt_creation_admitted_now"] is False
     assert response["operator_projection"]["frontend_durable_authority_enabled"] is False
     assert response["operator_projection"]["default_scope_expansion_admitted"] is False
+    assert response["ownership_access_policy"]["projection_authority_kind"] == (
+        "repeatability_acceptance_checkpoint_selector"
+    )
+    assert response["ownership_access_policy"]["protected_route_families"] == [
+        "closeout_status",
+        "review_status_projection",
+        "audit_projection",
+    ]
+    assert response["ownership_access_policy"]["closeout_status"]["route_family"] == "closeout_status"
+    assert (
+        response["ownership_access_policy"]["review_status_projection"]["route_family"]
+        == "review_status_projection"
+    )
+    assert response["ownership_access_policy"]["audit_projection"]["route_family"] == "audit_projection"
 
 
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projects_available(
@@ -186,6 +204,26 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projec
     assert response["operator_projection"]["acceptance_closeout_receipt_mutation_admitted"] is False
     assert response["operator_projection"]["actual_corpus_processing_execution_admitted_now"] is False
     assert response["operator_projection"]["provider_object_write_enabled"] is False
+    assert response["ownership_access_policy"]["projection_authority_kind"] == (
+        "repeatability_acceptance_operator_closeout_receipt"
+    )
+    assert response["ownership_access_policy"]["protected_route_families"] == [
+        "closeout_status",
+        "review_status_projection",
+        "audit_projection",
+    ]
+    for route_family in response["ownership_access_policy"]["protected_route_families"]:
+        policy = response["ownership_access_policy"][route_family]
+        assert policy["route_family"] == route_family
+        assert policy["policy_status"] == "admitted"
+        assert policy["audit_event_ref"].startswith("candidate-b-operator-workflow-policy://")
+        assert policy["raw_operator_identity_exposed"] is False
+        assert policy["raw_local_path_exposed"] is False
+        audit_path = acceptance_authority["root"] / policy["audit_event_id"] / "receipt.json"
+        audit_receipt = json.loads(audit_path.read_text(encoding="utf-8"))
+        assert audit_receipt["route_family"] == route_family
+        assert audit_receipt["raw_proxy_header_exposed"] is False
+        assert audit_receipt["raw_url_exposed"] is False
 
 
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_api_accepts_closeout_mode(
@@ -200,6 +238,7 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_api_ac
         status_response = test_client.post(
             STATUS_ENDPOINT,
             json=_status_request(
+                operator_role="auditor",
                 repeatability_acceptance_operator_closeout_receipt_id=closeout_body[
                     "repeatability_acceptance_operator_closeout_receipt_id"
                 ],
@@ -217,6 +256,40 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_api_ac
         "repeatability_acceptance_operator_closeout_receipt_id"
     ]
     assert status_body["operator_projection"]["read_only_acceptance_closeout_status_projection"] is True
+    assert status_body["ownership_access_policy"]["closeout_status"]["route_family"] == "closeout_status"
+    assert status_body["ownership_access_policy"]["closeout_status"]["decision"] == "allow"
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_api_rejects_proxy_missing_identity(
+    acceptance_authority: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+    closeout_response = closeout.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+        _closeout_request(acceptance_receipt)
+    )
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    app.openapi_schema = None
+    with TestClient(app) as test_client:
+        status_response = test_client.post(
+            STATUS_ENDPOINT,
+            json=_status_request(
+                repeatability_acceptance_operator_closeout_receipt_id=closeout_response[
+                    "repeatability_acceptance_operator_closeout_receipt_id"
+                ],
+                repeatability_acceptance_operator_closeout_receipt_hash=closeout_response[
+                    "repeatability_acceptance_operator_closeout_receipt_hash"
+                ],
+            ),
+        )
+    app.openapi_schema = None
+
+    assert status_response.status_code == 401
+    assert (
+        status_response.json()["error"]["code"]
+        == "candidate_b_operator_workflow_access_policy_missing_identity_authority"
+    )
 
 
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_rejects_stale_hash(

@@ -3355,6 +3355,7 @@ class Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRequest(Bas
         "read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority"
     ]
     operator_decision: Literal["inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status"]
+    operator_role: Literal["auditor"] | None = None
     repeatability_acceptance_operator_closeout_receipt_id: str | None = Field(default=None, min_length=1)
     repeatability_acceptance_operator_closeout_receipt_hash: str | None = Field(
         default=None,
@@ -5395,6 +5396,7 @@ class Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusResponse(La
     negative_invariants: dict[str, bool]
     rendered_acceptance_control_proof: dict[str, Any]
     operator_projection: dict[str, Any]
+    ownership_access_policy: dict[str, Any]
     source_closeout_endpoint: str
     repeatability_acceptance_operator_closeout_status_endpoint: str
 
