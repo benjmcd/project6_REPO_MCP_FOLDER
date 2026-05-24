@@ -4480,3 +4480,47 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_se
 ```
 
 The broader-scope readiness audit is now an operator-callable, read-only API surface. It checks exact scope-class evidence and can only prepare a later separately frozen default-scope selection; it does not broaden Candidate B default behavior, mutate selectors, ingest new source families, expose paths/URLs, or enable provider/connector/RAG/model/full-mockup/browser/frontend authority.
+
+### Candidate B Broader Eligible Corpus Default Scope Runtime Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_runtime_selection_v1
+source_broader_eligible_corpus_scope_readiness_audit: next_milestone_plans/Layer3_planning_docs/1069-cb-broader-eligible-corpus-scope-readiness-audit.md
+current_main_entry: 3d2dc7a9178fc0f6ed0923333b1c9e8dc36c7fed
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_runtime_v1
+selected_runtime_scope: candidate_b_default_scope_selection_for_ready_broader_corpus_classes_only
+selected_scope_binding_authority: candidate_b_broader_eligible_corpus_scope_readiness_audit_ready_state
+selected_scope_binding_state_required: candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection
+selected_scope_classes_source: proposed_default_scope_classes_from_matching_ready_audit
+current_ready_audit_receipt_available: false
+current_runtime_scope_classes_selected: none_until_ready_audit_receipt_bound
+current_default_scope_preserved: eligible_effective_pdfs_only
+non_pdf_default_preserved: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+runtime_must_fail_closed_without_ready_audit: true
+runtime_must_fail_closed_on_stale_or_mismatched_audit_hash: true
+runtime_must_fail_closed_on_unready_or_unproposed_scope_class: true
+runtime_must_project_operator_visible_scope_status: true
+runtime_must_record_redacted_selection_receipt: true
+default_scope_expansion_admitted_now: false
+selector_mutation_admitted_now: false
+source_expansion_admitted_now: false
+runtime_db_or_storage_expansion_admitted_now: false
+pdf_or_image_text_material_ingestion_admitted_now: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_v1
+```
+
+The default-scope runtime selection is frozen but not implemented here. The future runtime must bind to a ready broader-scope audit result and exact proposed classes before recording any redacted selection receipt. No broader classes are selected in this checkpoint because current main has the audit API but no bound ready audit receipt.
