@@ -3157,3 +3157,48 @@ next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_re
 ```
 
 Operators can now record a repeatability checkpoint receipt for a downstream-proven Candidate B async operator workflow without rerunning corpus processing, controlling a process, or mutating prior receipts. The request supplies hashes and receipt ids; the server reloads workflow history, status, and completion-monitor authority and rejects stale, missing, mismatched, non-downstream-proven, or raw-leaking inputs.
+
+### Candidate B Full-Corpus Operator Repeatability Checkpoint Rendered Control Selection
+
+```yaml
+milestone: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_selection_v1
+source_repeatability_checkpoint_runtime: next_milestone_plans/Layer3_planning_docs/1037-cb-repeatability-checkpoint-runtime.md
+current_main_entry: 349fb54afc70a86b3339718d1d18f35801211eef
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_v1
+selected_rendered_control_scope: server_projection_consumer_for_candidate_b_repeatability_checkpoint_receipts
+selected_repeatability_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint
+selected_repeatability_checkpoint_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint
+selected_rendered_control_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint_from_current_history_status_and_completion_monitor_projection
+selected_rendered_control_model: per_workflow_history_row_button_enabled_only_when_status_and_completion_monitor_projection_are_current_and_downstream_proven
+existing_history_panel_reused: true
+existing_status_projection_reused: true
+existing_completion_monitor_projection_reused: true
+rendered_control_button_label: Record Repeatability Checkpoint
+headless_rendered_proof_required: true
+headed_rendered_proof_required: true
+stale_status_or_completion_monitor_must_disable_or_fail_closed: true
+non_downstream_proven_completion_monitor_must_disable_or_fail_closed: true
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+frontend_durable_authority_enabled: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_v1
+```
+
+The next rendered pass should add the operator control that records the already admitted repeatability checkpoint. It should reuse current workflow history, workflow status, and completion-monitor projections; submit only receipt ids/hashes and bounded runbook step constants; and prove headed/headless rendered behavior without giving the browser durable authority.
