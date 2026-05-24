@@ -87,7 +87,7 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
         "worker_attempt_runtime_admitted": True,
         "background_process_runtime_admitted": False,
         "job_execution_runtime_admitted": False,
-        "progress_checkpoint_runtime_admitted": False,
+        "progress_checkpoint_runtime_admitted": True,
         "expiry_mutation_runtime_admitted": True,
         "default_scope_expansion_admitted": False,
         "provider_object_write_enabled": False,
@@ -105,7 +105,8 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
             "record append-only queue-state authority for a selected workflow-run row",
             "record append-only scheduler lease authority for a selected queue-state receipt",
             "record append-only worker-attempt authority for a selected scheduler lease receipt",
-            "select progress checkpoint, completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
+            "select completion, cancel, retry, or resume only through a separate freeze",
         ],
     }
 
@@ -118,6 +119,9 @@ def _history_rows() -> list[dict[str, Any]]:
         workflow_status._validate_storage_id(receipt_id, prefix=RUN_RECEIPT_PREFIX)
         receipt = _read_json_receipt(receipt_file)
         if "server_owned_workflow_run" not in receipt:
+            schema_id = str(receipt.get("schema_id") or "")
+            if schema_id.startswith("layer3.candidate_b_full_corpus_operator_workflow_"):
+                continue
             raise CandidateBFullCorpusOperatorWorkflowHistoryError(
                 "candidate_b_full_corpus_operator_workflow_history_non_run_receipt",
                 "Workflow-run history only admits server-owned workflow-run receipts.",
