@@ -16,10 +16,19 @@ SCHEMA_VERSION = 1
 CLOSEOUT_MODE = "append_only_acceptance_operator_closeout_receipt_without_process_execution_or_authority_mutation"
 OPERATOR_DECISION = "record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout"
 CLOSEOUT_STATE = "repeatability_acceptance_operator_closeout_recorded"
+STATUS_SCHEMA_ID = (
+    "layer3.candidate_b_full_corpus_repeatability_acceptance_operator_closeout_status.v1"
+)
+STATUS_MODE = (
+    "read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority"
+)
+STATUS_OPERATOR_DECISION = "inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status"
+STATUS_PROJECTION_MODE = STATUS_MODE
 CLOSEOUT_RECEIPT_PREFIX = f"{workflow_status.WORKFLOW_RECEIPT_PREFIX}-repeatability-acceptance-closeout"
 CLOSEOUT_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout"
 )
+STATUS_ENDPOINT = f"{CLOSEOUT_ENDPOINT}/status"
 ACCEPTANCE_CHECKPOINT_ENDPOINT = acceptance.ACCEPTANCE_CHECKPOINT_ENDPOINT
 RENDERED_CONTROL_MODE = "rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control"
 RENDERED_PROOF_STATE = "headed_and_headless_passed"
@@ -56,6 +65,39 @@ REQUIRED_NEGATIVE_INVARIANTS: Mapping[str, bool] = {
     "default_scope_expansion_admitted": False,
 }
 _FORBIDDEN_REQUEST_FIELDS = acceptance._FORBIDDEN_REQUEST_FIELDS
+STATUS_HASH_KEYS = (
+    "schema_id",
+    "schema_version",
+    "mode",
+    "closeout_status_projection_state",
+    "repeatability_acceptance_operator_closeout_receipt_available",
+    "repeatability_acceptance_operator_closeout_receipt_id",
+    "repeatability_acceptance_operator_closeout_receipt_hash",
+    "repeatability_acceptance_operator_closeout_hash",
+    "repeatability_acceptance_operator_closeout_authority_hash",
+    "repeatability_acceptance_operator_closeout_receipt_ref",
+    "repeatability_acceptance_checkpoint_receipt_id",
+    "repeatability_acceptance_checkpoint_receipt_hash",
+    "repeatability_acceptance_checkpoint_authority_hash",
+    "original_repeatability_checkpoint_receipt_id",
+    "repeatability_rerun_trial_receipt_id",
+    "original_operator_workflow_receipt_id",
+    "rerun_operator_workflow_receipt_id",
+    "baseline_run_id",
+    "candidate_a_run_id",
+    "original_candidate_b_run_id",
+    "rerun_candidate_b_run_id",
+    "compare_target_set_hash",
+    "material_relative_name",
+    "acceptance_disposition",
+    "comparison_hash",
+    "negative_invariants_hash",
+    "rendered_acceptance_control_proof_state",
+    "comparison_summary",
+    "negative_invariants",
+    "rendered_acceptance_control_proof",
+    "operator_projection",
+)
 
 
 class CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(Exception):
@@ -220,6 +262,44 @@ def record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
     }
 
 
+def candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = _normalise_payload(payload)
+    request_id = _required(fields, "client_request_id")
+    if _required(fields, "closeout_status_mode") != STATUS_MODE:
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_mode_not_admitted",
+            "Only the read-only Candidate B repeatability acceptance-closeout status mode is admitted.",
+            details={"expected_closeout_status_mode": STATUS_MODE},
+        )
+    if _required(fields, "operator_decision") != STATUS_OPERATOR_DECISION:
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_decision_not_admitted",
+            "The operator decision does not match the admitted acceptance-closeout status inspection.",
+            details={"expected_operator_decision": STATUS_OPERATOR_DECISION},
+        )
+
+    receipt_match = _selected_closeout_receipt(fields)
+    if receipt_match is None:
+        projection = _closeout_not_recorded_projection(fields)
+    else:
+        receipt_id, receipt = receipt_match
+        projection = _closeout_available_projection(receipt_id, receipt, fields)
+    status_hash = workflow_status._stable_hash({key: projection[key] for key in STATUS_HASH_KEYS})
+    return {
+        "schema_id": STATUS_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "request_id": request_id,
+        "server_time": workflow_status._server_time(),
+        "status": "available",
+        **projection,
+        "closeout_status_hash": status_hash,
+        "source_closeout_endpoint": CLOSEOUT_ENDPOINT,
+        "repeatability_acceptance_operator_closeout_status_endpoint": STATUS_ENDPOINT,
+    }
+
+
 def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     fields = dict(payload)
     blocked = sorted(key for key in fields if key in _FORBIDDEN_REQUEST_FIELDS and fields.get(key) is not None)
@@ -230,6 +310,332 @@ def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             details={"blocked_fields": blocked},
         )
     return fields
+
+
+def _selected_closeout_receipt(fields: Mapping[str, Any]) -> tuple[str, dict[str, Any]] | None:
+    explicit_closeout_id = str(fields.get("repeatability_acceptance_operator_closeout_receipt_id") or "").strip()
+    if explicit_closeout_id:
+        return _explicit_closeout_receipt(explicit_closeout_id, fields)
+    acceptance_receipt_id = str(fields.get("repeatability_acceptance_checkpoint_receipt_id") or "").strip()
+    if not acceptance_receipt_id:
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_selector_missing",
+            "Closeout status requires either a closeout receipt id or an acceptance-checkpoint receipt id.",
+            details={
+                "accepted_selectors": [
+                    "repeatability_acceptance_operator_closeout_receipt_id",
+                    "repeatability_acceptance_checkpoint_receipt_id",
+                ]
+            },
+        )
+    return _closeout_receipt_for_acceptance_checkpoint(acceptance_receipt_id, fields)
+
+
+def _explicit_closeout_receipt(
+    receipt_id: str,
+    fields: Mapping[str, Any],
+) -> tuple[str, dict[str, Any]]:
+    _validate_storage_id(receipt_id, prefix=CLOSEOUT_RECEIPT_PREFIX)
+    receipt_file = _workflow_receipt_root() / receipt_id / "receipt.json"
+    if not receipt_file.is_file():
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_receipt_missing",
+            "The selected Candidate B repeatability acceptance-closeout receipt is missing.",
+            http_status=404,
+            details={"repeatability_acceptance_operator_closeout_receipt_id": receipt_id},
+        )
+    receipt = _read_json_receipt(receipt_file)
+    receipt_hash = _validate_stored_closeout_receipt(receipt, receipt_id=receipt_id)
+    supplied_hash = str(
+        fields.get("repeatability_acceptance_operator_closeout_receipt_hash") or ""
+    ).strip()
+    if supplied_hash and receipt_hash != _required_hash(
+        fields,
+        "repeatability_acceptance_operator_closeout_receipt_hash",
+    ):
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_stale_closeout_receipt",
+            "The selected Candidate B repeatability acceptance-closeout receipt hash is stale or mismatched.",
+            http_status=409,
+            details={
+                "expected_repeatability_acceptance_operator_closeout_receipt_hash": receipt_hash,
+                "received_repeatability_acceptance_operator_closeout_receipt_hash": supplied_hash,
+            },
+        )
+    _validate_optional_acceptance_binding(receipt, fields)
+    return receipt_id, receipt
+
+
+def _closeout_receipt_for_acceptance_checkpoint(
+    acceptance_receipt_id: str,
+    fields: Mapping[str, Any],
+) -> tuple[str, dict[str, Any]] | None:
+    _validate_storage_id(acceptance_receipt_id, prefix=acceptance.ACCEPTANCE_CHECKPOINT_RECEIPT_PREFIX)
+    acceptance_hash = str(fields.get("repeatability_acceptance_checkpoint_receipt_hash") or "").strip()
+    matches: list[tuple[str, dict[str, Any]]] = []
+    for receipt_file in sorted(_workflow_receipt_root().glob(f"{CLOSEOUT_RECEIPT_PREFIX}-*/receipt.json")):
+        receipt_id = receipt_file.parent.name
+        _validate_storage_id(receipt_id, prefix=CLOSEOUT_RECEIPT_PREFIX)
+        receipt = _read_json_receipt(receipt_file)
+        _validate_stored_closeout_receipt(receipt, receipt_id=receipt_id)
+        closeout = _closeout_body(receipt)
+        if closeout.get("repeatability_acceptance_checkpoint_receipt_id") != acceptance_receipt_id:
+            continue
+        if acceptance_hash and closeout.get("repeatability_acceptance_checkpoint_receipt_hash") != acceptance_hash:
+            raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+                "candidate_b_full_corpus_repeatability_acceptance_closeout_status_stale_acceptance_checkpoint",
+                "A closeout receipt exists for the selected acceptance checkpoint, but the supplied checkpoint hash is stale or mismatched.",
+                http_status=409,
+                details={
+                    "repeatability_acceptance_checkpoint_receipt_id": acceptance_receipt_id,
+                    "expected_repeatability_acceptance_checkpoint_receipt_hash": closeout.get(
+                        "repeatability_acceptance_checkpoint_receipt_hash"
+                    ),
+                    "received_repeatability_acceptance_checkpoint_receipt_hash": acceptance_hash,
+                },
+            )
+        matches.append((receipt_id, receipt))
+    if not matches:
+        return None
+    if len(matches) > 1:
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_receipt_ambiguous",
+            "Multiple Candidate B acceptance-closeout receipts are bound to the selected acceptance checkpoint.",
+            http_status=409,
+            details={
+                "repeatability_acceptance_checkpoint_receipt_id": acceptance_receipt_id,
+                "repeatability_acceptance_operator_closeout_receipt_ids": [
+                    receipt_id for receipt_id, _receipt in matches
+                ],
+            },
+        )
+    return matches[0]
+
+
+def _validate_optional_acceptance_binding(
+    receipt: Mapping[str, Any],
+    fields: Mapping[str, Any],
+) -> None:
+    closeout = _closeout_body(receipt)
+    expected = {
+        "repeatability_acceptance_checkpoint_receipt_id": str(
+            fields.get("repeatability_acceptance_checkpoint_receipt_id") or ""
+        ).strip(),
+        "repeatability_acceptance_checkpoint_receipt_hash": str(
+            fields.get("repeatability_acceptance_checkpoint_receipt_hash") or ""
+        ).strip(),
+        "repeatability_acceptance_checkpoint_authority_hash": str(
+            fields.get("repeatability_acceptance_checkpoint_authority_hash") or ""
+        ).strip(),
+    }
+    mismatches = [
+        {"field": key, "expected": closeout.get(key), "received": value}
+        for key, value in expected.items()
+        if value and closeout.get(key) != value
+    ]
+    if mismatches:
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_binding_mismatch",
+            "The selected closeout receipt is not bound to the supplied acceptance-checkpoint authority.",
+            http_status=409,
+            details={"mismatches": mismatches},
+        )
+
+
+def _validate_stored_closeout_receipt(receipt: Mapping[str, Any], *, receipt_id: str) -> str:
+    return _validate_closeout_receipt(
+        receipt,
+        request_id=str(receipt.get("client_request_id") or ""),
+        receipt_id=receipt_id,
+        closeout_hash=str(receipt.get("repeatability_acceptance_operator_closeout_hash") or ""),
+        closeout_authority_hash=str(
+            receipt.get("repeatability_acceptance_operator_closeout_authority_hash") or ""
+        ),
+        idempotency_key_hash=str(receipt.get("idempotency_key_hash") or ""),
+    )
+
+
+def _closeout_not_recorded_projection(fields: Mapping[str, Any]) -> dict[str, Any]:
+    acceptance_receipt_id = str(fields.get("repeatability_acceptance_checkpoint_receipt_id") or "").strip()
+    acceptance_receipt_hash = str(fields.get("repeatability_acceptance_checkpoint_receipt_hash") or "").strip()
+    acceptance_authority_hash = str(
+        fields.get("repeatability_acceptance_checkpoint_authority_hash") or ""
+    ).strip()
+    projection = {
+        "schema_id": STATUS_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "mode": STATUS_MODE,
+        "closeout_status_projection_state": "not_recorded",
+        "repeatability_acceptance_operator_closeout_receipt_available": False,
+        "repeatability_acceptance_operator_closeout_receipt_id": "",
+        "repeatability_acceptance_operator_closeout_receipt_hash": "",
+        "repeatability_acceptance_operator_closeout_hash": "",
+        "repeatability_acceptance_operator_closeout_authority_hash": "",
+        "repeatability_acceptance_operator_closeout_receipt_ref": "",
+        "repeatability_acceptance_checkpoint_receipt_id": acceptance_receipt_id,
+        "repeatability_acceptance_checkpoint_receipt_hash": acceptance_receipt_hash,
+        "repeatability_acceptance_checkpoint_authority_hash": acceptance_authority_hash,
+        "original_repeatability_checkpoint_receipt_id": "",
+        "repeatability_rerun_trial_receipt_id": "",
+        "original_operator_workflow_receipt_id": "",
+        "rerun_operator_workflow_receipt_id": "",
+        "baseline_run_id": "",
+        "candidate_a_run_id": "",
+        "original_candidate_b_run_id": "",
+        "rerun_candidate_b_run_id": "",
+        "compare_target_set_hash": "",
+        "material_relative_name": "",
+        "acceptance_disposition": "not_recorded",
+        "comparison_hash": "",
+        "negative_invariants_hash": "",
+        "rendered_acceptance_control_proof_state": "not_recorded",
+        "comparison_summary": {},
+        "negative_invariants": dict(REQUIRED_NEGATIVE_INVARIANTS),
+        "rendered_acceptance_control_proof": {},
+        "operator_projection": _status_operator_projection(available=False),
+    }
+    _assert_no_raw_authority_exposure(projection)
+    return projection
+
+
+def _closeout_available_projection(
+    receipt_id: str,
+    receipt: Mapping[str, Any],
+    fields: Mapping[str, Any],
+) -> dict[str, Any]:
+    closeout = _closeout_body(receipt)
+    receipt_hash = _validate_stored_closeout_receipt(receipt, receipt_id=receipt_id)
+    comparison = _mapping_field(closeout, "comparison")
+    negative_invariants = _mapping_field(closeout, "negative_invariants")
+    rendered_proof = _mapping_field(closeout, "rendered_acceptance_control_proof")
+    projection = {
+        "schema_id": STATUS_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "mode": STATUS_MODE,
+        "closeout_status_projection_state": "available",
+        "repeatability_acceptance_operator_closeout_receipt_available": True,
+        "repeatability_acceptance_operator_closeout_receipt_id": receipt_id,
+        "repeatability_acceptance_operator_closeout_receipt_hash": receipt_hash,
+        "repeatability_acceptance_operator_closeout_hash": str(
+            receipt["repeatability_acceptance_operator_closeout_hash"]
+        ),
+        "repeatability_acceptance_operator_closeout_authority_hash": str(
+            receipt["repeatability_acceptance_operator_closeout_authority_hash"]
+        ),
+        "repeatability_acceptance_operator_closeout_receipt_ref": (
+            "candidate-b-full-corpus-operator-workflow-repeatability-acceptance-closeout://"
+            f"{receipt_id}/{receipt_hash[:24]}"
+        ),
+        "repeatability_acceptance_checkpoint_receipt_id": str(
+            closeout["repeatability_acceptance_checkpoint_receipt_id"]
+        ),
+        "repeatability_acceptance_checkpoint_receipt_hash": str(
+            closeout["repeatability_acceptance_checkpoint_receipt_hash"]
+        ),
+        "repeatability_acceptance_checkpoint_authority_hash": str(
+            closeout["repeatability_acceptance_checkpoint_authority_hash"]
+        ),
+        "original_repeatability_checkpoint_receipt_id": str(
+            closeout["original_repeatability_checkpoint_receipt_id"]
+        ),
+        "repeatability_rerun_trial_receipt_id": str(closeout["repeatability_rerun_trial_receipt_id"]),
+        "original_operator_workflow_receipt_id": str(closeout["original_operator_workflow_receipt_id"]),
+        "rerun_operator_workflow_receipt_id": str(closeout["rerun_operator_workflow_receipt_id"]),
+        "baseline_run_id": str(closeout["baseline_run_id"]),
+        "candidate_a_run_id": str(closeout["candidate_a_run_id"]),
+        "original_candidate_b_run_id": str(closeout["original_candidate_b_run_id"]),
+        "rerun_candidate_b_run_id": str(closeout["rerun_candidate_b_run_id"]),
+        "compare_target_set_hash": str(closeout["compare_target_set_hash"]),
+        "material_relative_name": str(closeout["material_relative_name"]),
+        "acceptance_disposition": str(closeout["acceptance_disposition"]),
+        "comparison_hash": workflow_status._stable_hash(comparison),
+        "negative_invariants_hash": workflow_status._stable_hash(negative_invariants),
+        "rendered_acceptance_control_proof_state": str(
+            rendered_proof["rendered_acceptance_control_proof_state"]
+        ),
+        "comparison_summary": comparison,
+        "negative_invariants": negative_invariants,
+        "rendered_acceptance_control_proof": rendered_proof,
+        "operator_projection": _status_operator_projection(available=True),
+    }
+    _validate_optional_acceptance_binding(receipt, fields)
+    _assert_no_raw_authority_exposure(projection)
+    return projection
+
+
+def _status_operator_projection(*, available: bool) -> dict[str, Any]:
+    return {
+        "closeout_status_projection_visible": True,
+        "closeout_receipt_projection_visible": available,
+        "acceptance_checkpoint_projection_visible": True,
+        "comparison_summary_visible": available,
+        "negative_invariants_visible": True,
+        "rendered_proof_summary_visible": available,
+        "read_only_acceptance_closeout_status_projection": True,
+        "missing_closeout_receipt_projects_not_recorded": True,
+        "stale_closeout_receipt_rejected": True,
+        "ambiguous_closeout_receipt_rejected": True,
+        "acceptance_closeout_receipt_creation_admitted_now": False,
+        "acceptance_closeout_receipt_mutation_admitted": False,
+        "acceptance_checkpoint_receipt_mutation_admitted": False,
+        "original_repeatability_checkpoint_receipt_mutation_admitted": False,
+        "repeatability_rerun_trial_receipt_mutation_admitted": False,
+        "original_workflow_receipt_mutation_admitted": False,
+        "rerun_workflow_receipt_mutation_admitted": False,
+        "process_execution_receipt_mutation_admitted": False,
+        "process_completion_result_receipt_mutation_admitted": False,
+        "adopted_result_downstream_proof_receipt_mutation_admitted": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "process_control_admitted": False,
+        "process_kill_cancel_retry_resume_admitted": False,
+        "browser_triggered_process_start_admitted": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "raw_pid_admitted": False,
+        "raw_stdout_admitted": False,
+        "raw_stderr_admitted": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "browser_storage_authority_admitted": False,
+        "frontend_durable_authority_enabled": False,
+        "provider_object_write_enabled": False,
+        "connector_dispatch_enabled": False,
+        "rag_vector_model_runtime_enabled": False,
+        "full_mockup_activation_enabled": False,
+        "default_scope_expansion_admitted": False,
+        "baseline_rollback_preserved": True,
+        "candidate_a_semantics_preserved": True,
+        "candidate_b_default_scope_preserved": "eligible_effective_pdfs_only",
+        "selector_mutation_performed": False,
+    }
+
+
+def _closeout_body(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    closeout = receipt.get("repeatability_acceptance_operator_closeout")
+    if not isinstance(closeout, Mapping):
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_receipt_invalid",
+            "The Candidate B acceptance-closeout receipt is missing closeout authority.",
+            http_status=409,
+        )
+    return dict(closeout)
+
+
+def _mapping_field(fields: Mapping[str, Any], key: str) -> dict[str, Any]:
+    value = fields.get(key)
+    if not isinstance(value, Mapping):
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_projection_invalid",
+            "The Candidate B acceptance-closeout receipt is missing a required projection object.",
+            http_status=409,
+            details={"field": key},
+        )
+    return dict(value)
 
 
 def _validated_acceptance_checkpoint_receipt(fields: Mapping[str, Any]) -> dict[str, Any]:

@@ -55,6 +55,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["candidate_b_full_corpus_operator_repeatability_checkpoint"] is True
     assert direct_body["features"]["candidate_b_full_corpus_repeatability_rerun_trial"] is True
     assert direct_body["features"]["candidate_b_full_corpus_repeatability_acceptance_closeout"] is True
+    assert direct_body["features"]["candidate_b_full_corpus_repeatability_acceptance_closeout_status"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_scheduler_lease"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_worker_attempt"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_progress_checkpoint"] is True
@@ -238,6 +239,18 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_repeatability_acceptance_closeout_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_repeatability_acceptance_closeout_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout"
+    )
+    assert (
+        direct_body["execution_readiness"][
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_admitted"
+        ]
+        is True
+    )
+    assert (
+        direct_body["execution_readiness"][
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_endpoint"
+        ]
+        == "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status"
     )
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint"] == (

@@ -53,6 +53,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "candidate_b_full_corpus_operator_repeatability_checkpoint": True,
     "candidate_b_full_corpus_repeatability_rerun_trial": True,
     "candidate_b_full_corpus_repeatability_acceptance_closeout": True,
+    "candidate_b_full_corpus_repeatability_acceptance_closeout_status": True,
     "candidate_b_full_corpus_operator_workflow_scheduler_lease": True,
     "candidate_b_full_corpus_operator_workflow_worker_attempt": True,
     "candidate_b_full_corpus_operator_workflow_progress_checkpoint": True,
@@ -282,6 +283,10 @@ def build_bootstrap_contract(
             "candidate_b_full_corpus_repeatability_acceptance_closeout_admitted": True,
             "candidate_b_full_corpus_repeatability_acceptance_closeout_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout"
+            ),
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_admitted": True,
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status"
             ),
             "candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted": True,
             "candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint": (
