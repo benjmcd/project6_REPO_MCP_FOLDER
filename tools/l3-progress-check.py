@@ -2836,6 +2836,9 @@ CANDIDATE_B_ASYNC_ADOPTED_PROCESS_RESULT_DOWNSTREAM_PROOF_RUNTIME = (
 CANDIDATE_B_ASYNC_OPERATOR_WORKFLOW_COMPLETION_MONITOR_SELECTION = (
     PLANNING_DOCS / "1034-cb-async-operator-workflow-completion-monitor-selection.md"
 )
+CANDIDATE_B_ASYNC_OPERATOR_WORKFLOW_COMPLETION_MONITOR_RUNTIME = (
+    PLANNING_DOCS / "1035-cb-async-operator-workflow-completion-monitor-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2883,6 +2886,13 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_SERVIC
     / "app"
     / "services"
     / "layer3_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_operator_workflow_completion_monitor.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_SCHEDULER_LEASE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease.py"
@@ -2948,6 +2958,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_COMPLETION_FAILURE_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_CLI_TEST = (
+    ROOT / "tests" / "test_candidate_b_full_corpus_operator_workflow.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -97070,6 +97083,134 @@ def _check_candidate_b_async_operator_workflow_completion_monitor_selection(
                 )
 
 
+def _check_candidate_b_async_operator_workflow_completion_monitor_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_OPERATOR_WORKFLOW_COMPLETION_MONITOR_RUNTIME: (
+            "Candidate B Async Operator Workflow Completion Monitor Runtime",
+            "milestone: candidate_b_async_operator_workflow_completion_monitor_v1",
+            "source_completion_monitor_selection: next_milestone_plans/Layer3_planning_docs/1034-cb-async-operator-workflow-completion-monitor-selection.md",
+            "current_main_entry: 105ce59c299a7c01fd53cd249450a7a4ee99e1b1",
+            "runtime_status: implemented",
+            "selected_completion_monitor_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor",
+            "selected_completion_monitor_mode: read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution",
+            "selected_completion_monitor_action: inspect_candidate_b_async_operator_workflow_completion_monitor",
+            "selected_completion_monitor_projection_model: read_only_projection_binding_process_execution_receipt_to_terminal_result_adoption_and_downstream_proof_status",
+            "selected_completion_monitor_states: not_started,started_status_unknown,started_running_or_unresolved,completed_result_adopted,completed_downstream_proven,failed,blocked,expired,stale_authority,monitor_unavailable",
+            "stale_projection_binding_rejects: true",
+            "contradictory_terminal_state_rejects: true",
+            "completion_without_started_process_rejects: true",
+            "completion_monitor_runtime_selected: true",
+            "process_control_admitted: false",
+            "process_kill_cancel_retry_resume_admitted: false",
+            "process_completion_result_mutation_admitted: false",
+            "process_execution_receipt_mutation_admitted: false",
+            "raw_pid_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_operator_workflow_completion_monitor_v1",
+            "source_completion_monitor_selection: next_milestone_plans/Layer3_planning_docs/1034-cb-async-operator-workflow-completion-monitor-selection.md",
+            "runtime_status: implemented",
+            "selected_completion_monitor_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor",
+            "selected_completion_monitor_mode: read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution",
+            "selected_completion_monitor_action: inspect_candidate_b_async_operator_workflow_completion_monitor",
+            "completion_monitor_runtime_selected: true",
+            "process_control_admitted: false",
+            "process_kill_cancel_retry_resume_admitted: false",
+            "process_completion_result_mutation_admitted: false",
+            "process_execution_receipt_mutation_admitted: false",
+            "raw_pid_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_completion_monitor.v1"',
+            "COMPLETION_MONITOR_MODE = (",
+            'OPERATOR_DECISION = "inspect_candidate_b_async_operator_workflow_completion_monitor"',
+            "COMPLETION_MONITOR_ENDPOINT = (",
+            "read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution",
+            "completed_downstream_proven",
+            "started_running_or_unresolved",
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_stale_projection_binding",
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_contradictory_terminal_state",
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_completion_without_started_process",
+            '"process_control_admitted": False',
+            '"raw_pid_admitted": False',
+            '"raw_stdout_admitted": False',
+            '"raw_stderr_admitted": False',
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBFullCorpusOperatorWorkflowCompletionMonitorRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowCompletionMonitorResponse",
+            "post_candidate_b_full_corpus_operator_workflow_completion_monitor",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor",
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_admitted",
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_endpoint",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_admitted",
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_endpoint",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_admitted",
+            "candidate_b_full_corpus_operator_workflow_completion_monitor_endpoint",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_RENDERED_MODE",
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_MODE",
+            "candidateBFullCorpusOperatorWorkflowCompletionMonitorEndpointPath",
+            "candidateBFullCorpusOperatorWorkflowCompletionMonitorPayload",
+            "canInspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor",
+            "candidateBFullCorpusOperatorWorkflowCompletionMonitorRows",
+            "inspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor",
+            "data-candidate-b-workflow-completion-monitor-index",
+            "candidate-b-full-corpus-workflow-completion-monitor-card",
+            "read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench inspects Candidate B workflow completion monitor through rendered read-only control",
+            "data-candidate-b-workflow-completion-monitor-index",
+            "candidate_b_full_corpus_workflow_completion_monitor_downstream_proven",
+            "completed_downstream_proven",
+            "process control admitted: false",
+            "raw stdout admitted: false",
+            "frontend durable authority enabled: false",
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_CLI_TEST: (
+            "test_completion_monitor_projects_downstream_proven_state",
+            "test_completion_monitor_projects_not_started_without_process_receipt",
+            "test_completion_monitor_rejects_raw_process_authority",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async operator workflow completion monitor runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -97951,6 +98092,7 @@ def main() -> int:
     _check_candidate_b_async_adopted_process_result_downstream_proof_selection(errors)
     _check_candidate_b_async_adopted_process_result_downstream_proof_runtime(errors)
     _check_candidate_b_async_operator_workflow_completion_monitor_selection(errors)
+    _check_candidate_b_async_operator_workflow_completion_monitor_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
