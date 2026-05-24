@@ -355,6 +355,9 @@ const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_OPERATOR_DECIS
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_process_completion_result_control';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_MODE = 'append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_OPERATOR_DECISION = 'record_candidate_b_async_process_completion_result_adoption';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_control';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_MODE = 'read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_OPERATOR_DECISION = 'record_candidate_b_async_adopted_process_result_downstream_operator_proof';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
@@ -532,6 +535,9 @@ const State = {
     candidateBFullCorpusOperatorWorkflowProcessCompletionResult: null,
     candidateBFullCorpusOperatorWorkflowProcessCompletionResultError: null,
     candidateBFullCorpusOperatorWorkflowProcessCompletionResultPending: false,
+    candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof: null,
+    candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError: null,
+    candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPending: false,
     candidateBFullCorpusOperatorWorkflowRun: null,
     candidateBFullCorpusOperatorWorkflowRunError: null,
     candidateBFullCorpusOperatorWorkflowRunPending: false,
@@ -7693,6 +7699,12 @@ function candidateBFullCorpusOperatorWorkflowProcessCompletionResultEndpointPath
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBClosureEvidenceEndpointPath(contract) {
     const endpoint = contract?.candidate_b_default_promotion_closure_evidence_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8251,6 +8263,32 @@ function candidateBFullCorpusOperatorWorkflowProcessCompletionResultPayload(row)
     };
 }
 
+function candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPayload(row) {
+    const history = State.candidateBFullCorpusOperatorWorkflowHistory || {};
+    const processCompletionResult = row.process_completion_result_projection || {};
+    return {
+        client_request_id: requestId(),
+        adopted_result_downstream_proof_mode: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_OPERATOR_DECISION,
+        operator_workflow_receipt_id: row.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: row.operator_workflow_receipt_hash,
+        row_hash: row.row_hash,
+        authority_basis_hash: row.authority_basis_hash,
+        history_hash: history.history_hash,
+        process_completion_result_receipt_id: processCompletionResult.process_completion_result_receipt_id,
+        process_completion_result_receipt_hash: processCompletionResult.process_completion_result_receipt_hash,
+        process_completion_result_authority_hash: processCompletionResult.process_completion_result_authority_hash,
+        process_execution_receipt_id: processCompletionResult.process_execution_receipt_id,
+        process_execution_receipt_hash: processCompletionResult.process_execution_receipt_hash,
+        process_execution_authority_hash: processCompletionResult.process_execution_authority_hash,
+        result_workflow_receipt_id: processCompletionResult.result_workflow_receipt_id,
+        result_workflow_receipt_hash: processCompletionResult.result_workflow_receipt_hash,
+        result_authority_hash: processCompletionResult.result_authority_hash,
+        result_status_request_hash: processCompletionResult.result_status_request_hash,
+        result_downstream_proof_hash: processCompletionResult.result_downstream_proof_hash,
+    };
+}
+
 function candidateBClosureEvidencePayload() {
     const values = candidateBClosureEvidenceInputValues();
     State.candidateBClosureEvidenceInput = values;
@@ -8464,6 +8502,36 @@ function canRecordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult(ro
     );
 }
 
+function canRecordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(row, contract = candidateBDefaultPromotionReadinessContract()) {
+    const processCompletionResult = row?.process_completion_result_projection || {};
+    const adoptedResultDownstreamProof = row?.adopted_result_downstream_proof_projection || {};
+    return Boolean(
+        contract?.candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_admitted
+        && candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofEndpointPath(contract)
+        && State.candidateBFullCorpusOperatorWorkflowHistory?.history_hash
+        && row?.operator_workflow_receipt_id
+        && row?.operator_workflow_receipt_hash
+        && row?.row_hash
+        && row?.authority_basis_hash
+        && processCompletionResult.process_completion_result_projection_state === 'completed'
+        && processCompletionResult.process_completion_result_receipt_id
+        && processCompletionResult.process_completion_result_receipt_hash
+        && processCompletionResult.process_completion_result_authority_hash
+        && processCompletionResult.process_execution_receipt_id
+        && processCompletionResult.process_execution_receipt_hash
+        && processCompletionResult.process_execution_authority_hash
+        && processCompletionResult.result_workflow_receipt_id
+        && processCompletionResult.result_workflow_receipt_hash
+        && processCompletionResult.result_authority_hash
+        && processCompletionResult.result_status_request_hash
+        && processCompletionResult.result_downstream_proof_hash
+        && adoptedResultDownstreamProof.adopted_result_downstream_proof_projection_state === 'not_recorded'
+        && adoptedResultDownstreamProof.adopted_result_downstream_proof_receipt_available !== true
+        && !State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPending
+        && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
+    );
+}
+
 function canRecordCandidateBClosureEvidence(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBClosureEvidenceInputValues();
     return Boolean(
@@ -8660,6 +8728,20 @@ function candidateBFullCorpusOperatorWorkflowProcessCompletionResultPanelState()
         return { label: 'candidate_b_full_corpus_workflow_process_completion_result_completed', pill: 'ok' };
     }
     return { label: 'candidate_b_full_corpus_workflow_process_completion_result_ready', pill: 'preview' };
+}
+
+function candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPanelState() {
+    if (State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPending) {
+        return { label: 'candidate_b_full_corpus_workflow_adopted_result_downstream_proof_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError) {
+        const code = State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_workflow_adopted_result_downstream_proof_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof?.adopted_result_downstream_proof_state === 'proven') {
+        return { label: 'candidate_b_full_corpus_workflow_adopted_result_downstream_proof_proven', pill: 'ok' };
+    }
+    return { label: 'candidate_b_full_corpus_workflow_adopted_result_downstream_proof_ready', pill: 'preview' };
 }
 
 function candidateBClosureEvidencePanelState() {
@@ -9183,6 +9265,7 @@ function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
     const executionBoundaryProjection = status.execution_boundary_projection || {};
     const processExecutionProjection = status.process_execution_projection || {};
     const processCompletionResultProjection = status.process_completion_result_projection || {};
+    const adoptedResultDownstreamProofProjection = status.adopted_result_downstream_proof_projection || {};
     return `
         <div class="candidate-b-final-proof-status-grid">
             <section class="result-review-card">
@@ -9254,6 +9337,12 @@ function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
                 <strong>Process Completion/Result Projection</strong>
                 <ul>
                     ${candidateBProcessCompletionResultProjectionItems(processCompletionResultProjection)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Adopted Result Downstream Proof Projection</strong>
+                <ul>
+                    ${candidateBAdoptedResultDownstreamProofProjectionItems(adoptedResultDownstreamProofProjection)}
                 </ul>
             </section>
         </div>
@@ -9375,6 +9464,34 @@ function candidateBProcessCompletionResultProjectionItems(projection) {
     `;
 }
 
+function candidateBAdoptedResultDownstreamProofProjectionItems(projection) {
+    const adoptedProof = projection && typeof projection === 'object' ? projection : {};
+    return `
+        ${fieldItem('adopted result downstream proof projection state', adoptedProof.adopted_result_downstream_proof_projection_state, { code: true })}
+        ${fieldItem('adopted result downstream proof receipt available', adoptedProof.adopted_result_downstream_proof_receipt_available)}
+        ${fieldItem('adopted result downstream proof receipt id', adoptedProof.adopted_result_downstream_proof_receipt_id, { code: true })}
+        ${fieldItem('adopted result downstream proof receipt hash', adoptedProof.adopted_result_downstream_proof_receipt_hash, { code: true })}
+        ${fieldItem('adopted result downstream proof authority hash', adoptedProof.adopted_result_downstream_proof_authority_hash, { code: true })}
+        ${fieldItem('process completion/result receipt id', adoptedProof.process_completion_result_receipt_id, { code: true })}
+        ${fieldItem('process completion/result authority hash', adoptedProof.process_completion_result_authority_hash, { code: true })}
+        ${fieldItem('result workflow receipt id', adoptedProof.result_workflow_receipt_id, { code: true })}
+        ${fieldItem('result workflow receipt hash', adoptedProof.result_workflow_receipt_hash, { code: true })}
+        ${fieldItem('result status request hash', adoptedProof.result_status_request_hash, { code: true })}
+        ${fieldItem('result downstream proof hash', adoptedProof.result_downstream_proof_hash, { code: true })}
+        ${fieldItem('adopted result status hash', adoptedProof.adopted_result_status_hash, { code: true })}
+        ${fieldItem('adopted result downstream proof status', adoptedProof.adopted_result_downstream_proof_status, { code: true })}
+        ${fieldItem('adopted result downstream proof runtime selected', adoptedProof.adopted_result_downstream_proof_runtime_selected)}
+        ${fieldItem('actual subprocess spawn admitted now', adoptedProof.actual_subprocess_spawn_admitted_now)}
+        ${fieldItem('actual corpus processing execution admitted now', adoptedProof.actual_corpus_processing_execution_admitted_now)}
+        ${fieldItem('operator supplied command admitted', adoptedProof.operator_supplied_command_admitted)}
+        ${fieldItem('raw stdout admitted', adoptedProof.raw_stdout_admitted)}
+        ${fieldItem('raw stderr admitted', adoptedProof.raw_stderr_admitted)}
+        ${fieldItem('raw local path exposed', adoptedProof.raw_local_path_exposed)}
+        ${fieldItem('raw URL exposed', adoptedProof.raw_url_exposed)}
+        ${fieldItem('artifact bytes exposed', adoptedProof.artifact_bytes_exposed)}
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
     if (!history) return '';
     const contract = candidateBDefaultPromotionReadinessContract();
@@ -9388,6 +9505,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
         const executionBoundaryDisabled = canRecordCandidateBFullCorpusOperatorWorkflowExecutionBoundary(row, contract) ? '' : 'disabled';
         const processExecutionDisabled = canRecordCandidateBFullCorpusOperatorWorkflowProcessExecution(row, contract) ? '' : 'disabled';
         const processCompletionResultDisabled = canRecordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult(row, contract) ? '' : 'disabled';
+        const adoptedResultDownstreamProofDisabled = canRecordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(row, contract) ? '' : 'disabled';
         return `
             <section class="result-review-card candidate-b-full-corpus-workflow-history-row" data-workflow-run-receipt-id="${escapeHtml(row.operator_workflow_receipt_id)}">
                 <strong>${isSelected ? 'Selected Workflow Run' : 'Workflow Run'} ${escapeHtml(index + 1)}</strong>
@@ -9412,6 +9530,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                     ${candidateBExecutionBoundaryProjectionItems(row.execution_boundary_projection)}
                     ${candidateBProcessExecutionProjectionItems(row.process_execution_projection)}
                     ${candidateBProcessCompletionResultProjectionItems(row.process_completion_result_projection)}
+                    ${candidateBAdoptedResultDownstreamProofProjectionItems(row.adopted_result_downstream_proof_projection)}
                 </ul>
                 <button type="button" data-candidate-b-workflow-history-inspect-index="${escapeHtml(index)}" ${State.candidateBFullCorpusOperatorWorkflowStatusPending ? 'disabled' : ''}>Inspect Run Status</button>
                 <button type="button" data-candidate-b-workflow-lifecycle-expire-index="${escapeHtml(index)}" ${lifecycleDisabled}>Expire/Close Run</button>
@@ -9419,6 +9538,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                 <button type="button" data-candidate-b-workflow-execution-boundary-index="${escapeHtml(index)}" ${executionBoundaryDisabled}>Record Execution Boundary</button>
                 <button type="button" data-candidate-b-workflow-process-execution-index="${escapeHtml(index)}" ${processExecutionDisabled}>Start Process Execution</button>
                 <button type="button" data-candidate-b-workflow-process-completion-result-index="${escapeHtml(index)}" ${processCompletionResultDisabled}>Adopt Process Result</button>
+                <button type="button" data-candidate-b-workflow-adopted-result-downstream-proof-index="${escapeHtml(index)}" ${adoptedResultDownstreamProofDisabled}>Prove Adopted Result</button>
             </section>
         `;
     }).join('') : `
@@ -9754,6 +9874,70 @@ function candidateBFullCorpusOperatorWorkflowProcessCompletionResultRows(process
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofRows(adoptedProof) {
+    if (!adoptedProof) return '';
+    const layer3 = adoptedProof.adopted_result_layer3_projection || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>Adopted Result Downstream Proof Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', adoptedProof.schema_id, { code: true })}
+                    ${fieldItem('adopted result downstream proof state', adoptedProof.adopted_result_downstream_proof_state, { code: true })}
+                    ${fieldItem('adopted result downstream proof receipt id', adoptedProof.adopted_result_downstream_proof_receipt_id, { code: true })}
+                    ${fieldItem('adopted result downstream proof receipt hash', adoptedProof.adopted_result_downstream_proof_receipt_hash, { code: true })}
+                    ${fieldItem('adopted result downstream proof authority hash', adoptedProof.adopted_result_downstream_proof_authority_hash, { code: true })}
+                    ${fieldItem('idempotent replay', adoptedProof.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Adopted Result Authority</strong>
+                <ul>
+                    ${fieldItem('workflow receipt id', adoptedProof.operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('process completion/result receipt id', adoptedProof.process_completion_result_receipt_id, { code: true })}
+                    ${fieldItem('result workflow receipt id', adoptedProof.result_workflow_receipt_id, { code: true })}
+                    ${fieldItem('result workflow receipt hash', adoptedProof.result_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('result status request hash', adoptedProof.result_status_request_hash, { code: true })}
+                    ${fieldItem('result downstream proof hash', adoptedProof.result_downstream_proof_hash, { code: true })}
+                    ${fieldItem('adopted result status hash', adoptedProof.adopted_result_status_hash, { code: true })}
+                    ${fieldItem('adopted result downstream proof status', adoptedProof.adopted_result_downstream_proof_status, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Adopted Result Layer 3 Projection</strong>
+                <ul>
+                    ${fieldItem('bridge status', layer3.bridge_status, { code: true })}
+                    ${fieldItem('source-directory scan status', layer3.source_directory_scan_status, { code: true })}
+                    ${fieldItem('qualitative analysis status', layer3.qualitative_analysis_status, { code: true })}
+                    ${fieldItem('external export/download status', layer3.external_export_download_status, { code: true })}
+                    ${fieldItem('same-origin delivery available', layer3.same_origin_delivery_available)}
+                    ${fieldItem('provider-private state', layer3.provider_private_state, { code: true })}
+                    ${fieldItem('internal webhook state', layer3.internal_webhook_state, { code: true })}
+                    ${fieldItem('visual lane status', layer3.visual_lane_status, { code: true })}
+                    ${fieldItem('downstream proof status', layer3.downstream_proof_status, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Downstream Proof Guardrails</strong>
+                <ul>
+                    ${fieldItem('append-only receipt', adoptedProof.append_only_adopted_result_downstream_proof_receipt)}
+                    ${fieldItem('process completion/result receipt mutated', adoptedProof.process_completion_result_receipt_mutated)}
+                    ${fieldItem('adopted result workflow receipt mutated', adoptedProof.adopted_result_workflow_receipt_mutated)}
+                    ${fieldItem('downstream proof receipt mutated', adoptedProof.downstream_proof_receipt_mutated)}
+                    ${fieldItem('actual subprocess spawn admitted now', adoptedProof.actual_subprocess_spawn_admitted_now)}
+                    ${fieldItem('actual corpus processing execution admitted now', adoptedProof.actual_corpus_processing_execution_admitted_now)}
+                    ${fieldItem('operator supplied command admitted', adoptedProof.operator_supplied_command_admitted)}
+                    ${fieldItem('raw stdout admitted', adoptedProof.raw_stdout_admitted)}
+                    ${fieldItem('raw stderr admitted', adoptedProof.raw_stderr_admitted)}
+                    ${fieldItem('raw local path exposed', adoptedProof.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', adoptedProof.raw_url_exposed)}
+                    ${fieldItem('frontend durable authority', adoptedProof.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBClosureEvidenceRows(closure) {
     if (!closure) return '';
     return `
@@ -10013,6 +10197,20 @@ function candidateBFullCorpusOperatorWorkflowProcessCompletionResultError() {
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError() {
+    const error = State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBClosureEvidenceError() {
     const error = State.candidateBClosureEvidenceError;
     if (!error) return '';
@@ -10112,6 +10310,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowExecutionBoundaryState = candidateBFullCorpusOperatorWorkflowExecutionBoundaryPanelState();
     const fullCorpusWorkflowProcessExecutionState = candidateBFullCorpusOperatorWorkflowProcessExecutionPanelState();
     const fullCorpusWorkflowProcessCompletionResultState = candidateBFullCorpusOperatorWorkflowProcessCompletionResultPanelState();
+    const fullCorpusWorkflowAdoptedResultDownstreamProofState = candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
@@ -10142,6 +10341,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowExecutionBoundary = State.candidateBFullCorpusOperatorWorkflowExecutionBoundary;
     const fullCorpusWorkflowProcessExecution = State.candidateBFullCorpusOperatorWorkflowProcessExecution;
     const fullCorpusWorkflowProcessCompletionResult = State.candidateBFullCorpusOperatorWorkflowProcessCompletionResult;
+    const fullCorpusWorkflowAdoptedResultDownstreamProof = State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
@@ -10416,6 +10616,15 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBFullCorpusOperatorWorkflowProcessCompletionResultRows(fullCorpusWorkflowProcessCompletionResult)}
                 ${candidateBFullCorpusOperatorWorkflowProcessCompletionResultError()}
+            </section>
+            <section class="result-review-card candidate-b-full-corpus-workflow-adopted-result-downstream-proof-card" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                <strong>Full-Corpus Operator Workflow Adopted Result Downstream Proof</strong>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusWorkflowAdoptedResultDownstreamProofState.pill)}">${escapeHtml(fullCorpusWorkflowAdoptedResultDownstreamProofState.label)}</span>
+                    <span class="rail-label">Server revalidates a completed process-result receipt against existing adopted-result status and downstream proof; the browser cannot rerun processing, submit paths, or mutate result authority.</span>
+                </div>
+                ${candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofRows(fullCorpusWorkflowAdoptedResultDownstreamProof)}
+                ${candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError()}
             </section>
             <section class="result-review-card candidate-b-operator-status-card">
                 <strong>Default-Promotion Operator Status</strong>
@@ -11099,6 +11308,42 @@ async function recordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult
         addEvent(`Candidate B full-corpus workflow process completion/result adoption blocked: ${error.message}`);
     } finally {
         State.candidateBFullCorpusOperatorWorkflowProcessCompletionResultPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(event) {
+    const button = event.target?.closest?.('[data-candidate-b-workflow-adopted-result-downstream-proof-index]');
+    if (!button) return;
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    const path = candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofEndpointPath(contract);
+    const rows = State.candidateBFullCorpusOperatorWorkflowHistory?.history_rows;
+    const index = Number(button.dataset.candidateBWorkflowAdoptedResultDownstreamProofIndex);
+    const row = Array.isArray(rows) ? rows[index] : null;
+    if (!path || !canRecordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(row, contract)) {
+        State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof = null;
+        State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError = new Error(
+            'Candidate B adopted-result downstream proof requires a current history row, completed process-completion/result projection, adopted workflow result authority, and the admitted downstream-proof endpoint.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBFullCorpusOperatorWorkflowHistorySelectedReceiptId = row.operator_workflow_receipt_id || '';
+    const payload = candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPayload(row);
+    State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPending = true;
+    State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof = await postJson(path, payload);
+        State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError = null;
+        addEvent('Candidate B full-corpus workflow adopted-result downstream proof recorded through append-only receipt authority.');
+    } catch (error) {
+        State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof = null;
+        State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError = error;
+        addEvent(`Candidate B full-corpus workflow adopted-result downstream proof blocked: ${error.message}`);
+    } finally {
+        State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPending = false;
         renderAll();
     }
 }
@@ -17674,6 +17919,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('click', (event)
     recordCandidateBFullCorpusOperatorWorkflowExecutionBoundary(event);
     recordCandidateBFullCorpusOperatorWorkflowProcessExecution(event);
     recordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult(event);
+    recordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(event);
 });
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);

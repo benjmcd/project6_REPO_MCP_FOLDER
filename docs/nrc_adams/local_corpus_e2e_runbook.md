@@ -2913,3 +2913,41 @@ next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator
 ```
 
 The next selected runtime should prove that an adopted completed process result is downstream-usable by revalidating its stored result status request and existing downstream proof. It should not re-run Candidate B, replay Layer 3, mutate any source/result receipt, expose raw process output, or broaden source/provider/connector/RAG/model/full-mockup/default scope.
+
+### Candidate B Async Adopted Process Result Downstream Operator Proof Runtime
+
+```yaml
+milestone: candidate_b_async_adopted_process_result_downstream_operator_proof_v1
+source_adopted_process_result_downstream_proof_selection: next_milestone_plans/Layer3_planning_docs/1032-cb-async-adopted-process-result-downstream-proof-selection.md
+current_main_entry: 516807d78a2f4a87e2931e86bdf967cd0773f1fd
+runtime_status: implemented
+selected_downstream_proof_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof
+selected_downstream_proof_mode: read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution
+selected_downstream_proof_action: record_candidate_b_async_adopted_process_result_downstream_operator_proof
+completed_process_result_required: true
+adopted_result_status_request_revalidation_required: true
+adopted_result_downstream_proof_status_required: proven
+status_history_projection_after_downstream_proof: true
+rendered_operator_projection_after_downstream_proof: true
+adopted_result_downstream_proof_runtime_selected: true
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+process_completion_result_receipt_mutation_admitted: false
+adopted_result_workflow_receipt_mutation_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_async_operator_workflow_completion_monitor_selection_v1
+```
+
+Operators can now prove that an adopted completed process result is still downstream-usable without rerunning Candidate B or Layer 3. The server writes an append-only proof receipt only after reloading the process-completion/result receipt, revalidating its stored adopted-result status request, and confirming the adopted result's downstream proof remains proven. The browser control cannot provide commands, runtime roots, local paths, raw URLs, stdout, stderr, traces, logs, artifact bytes, provider refs, connector destinations, model/RAG controls, selector mutations, or durable authority.
