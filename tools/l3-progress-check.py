@@ -2902,6 +2902,9 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_STATUS_RUNTIM
 CANDIDATE_B_FULL_CORPUS_REPEATABILITY_OPERATOR_WORKFLOW_COMPLETION_AUDIT_SELECTION = (
     PLANNING_DOCS / "1056-cb-repeatability-operator-workflow-completion-audit-selection.md"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_OPERATOR_WORKFLOW_COMPLETION_AUDIT = (
+    PLANNING_DOCS / "1057-cb-repeatability-operator-workflow-completion-audit.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -99440,6 +99443,106 @@ def _check_candidate_b_full_corpus_repeatability_operator_workflow_completion_au
                 )
 
 
+def _check_candidate_b_full_corpus_repeatability_operator_workflow_completion_audit(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_OPERATOR_WORKFLOW_COMPLETION_AUDIT: (
+            "Candidate B Full-Corpus Repeatability Operator Workflow Completion Audit",
+            "milestone: candidate_b_full_corpus_repeatability_operator_workflow_completion_audit_v1",
+            "source_repeatability_operator_workflow_completion_audit_selection: next_milestone_plans/Layer3_planning_docs/1056-cb-repeatability-operator-workflow-completion-audit-selection.md",
+            "current_main: 1c536a20d7cc19f9b826b2023799ed64bafd348f",
+            "audit_mode: no_runtime_requirement_by_requirement_completion_audit",
+            "runtime_status: audit_only_no_runtime_change",
+            "completion_status: complete_for_current_server_owned_repeatability_operator_workflow_scope",
+            "accepted_scope: server_owned_candidate_b_full_corpus_repeatability_operator_workflow_for_eligible_effective_pdfs",
+            "operator_surface: rendered_start_progress_status_review_repeatability_rerun_acceptance_closeout_and_closeout_status_controls",
+            "authority_chain_verified: workflow_run,workflow_history,workflow_status,completion_monitor,repeatability_checkpoint,repeatability_checkpoint_rendered_status,rerun_trial,rerun_trial_rendered_status,acceptance_checkpoint,acceptance_rendered_control,acceptance_closeout,acceptance_closeout_rendered_control,acceptance_closeout_status,acceptance_closeout_rendered_status",
+            "runtime_evidence_chain_verified: candidate_b_default_eligible_pdf_selector,candidate_b_opendataloader_page_evidence_v1,candidate_b_bundle_bridge,candidate_b_runtime_bridge,layer3_material_preview_gate_b,layer3_downstream_analysis_package_handoff_delivery,full_corpus_operator_workflow,workflow_completion_monitor,repeatability_checkpoint,repeatability_rerun_trial,acceptance_checkpoint,acceptance_closeout,rendered_closeout_status",
+            "server_owned_workflow_run_receipts: proven",
+            "read_only_history_status_progress_completion_monitoring: proven",
+            "rendered_operator_start_progress_status_review_controls: proven",
+            "original_and_rerun_downstream_proven_rows_bound_to_same_corpus_material_compare_target_runtime_root_policy: proven",
+            "repeatability_checkpoint_receipt: proven",
+            "repeatability_rerun_trial_receipt: proven",
+            "acceptance_checkpoint_receipt: proven",
+            "acceptance_closeout_receipt: proven",
+            "acceptance_closeout_status_projection: proven",
+            "headed_and_headless_rendered_proof: proven",
+            "runbook_and_progress_checker_guards: proven",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "candidate_b_is_not_reinterpreted_as_candidate_a: true",
+            "validate_only_actions_do_not_seed_or_generate_artifacts: true",
+            "raw_paths_urls_stdout_stderr_logs_traces_pids_artifact_bytes_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "process_control_or_browser_triggered_execution_added_by_this_audit: false",
+            "operator_supplied_command_path_or_url_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_enabled: false",
+            "runtime_behavior_change_introduced_by_this_audit: false",
+            "route_api_dto_model_migration_service_behavior_change_introduced_by_this_audit: false",
+            "rendered_behavior_change_introduced_by_this_audit: false",
+            "remaining_blockers_for_current_repeatability_operator_workflow_scope: []",
+            "remaining_program_work_after_this_audit: production_auth_security_multi_user_storage_hardening,broader_eligible_corpus_default_scope_decision,full_mockup_activation_readiness,semantic_rag_model_runtime_selection_if_separately_admitted",
+            "next_exact_posture: candidate_b_post_repeatability_production_hardening_selection_v1",
+            "This audit does not complete the whole production-grade platform goal.",
+            "The current Candidate B full-corpus repeatability operator workflow is complete for the current admitted scope.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_repeatability_operator_workflow_completion_audit_v1",
+            "source_repeatability_operator_workflow_completion_audit_selection: next_milestone_plans/Layer3_planning_docs/1056-cb-repeatability-operator-workflow-completion-audit-selection.md",
+            "current_main: 1c536a20d7cc19f9b826b2023799ed64bafd348f",
+            "audit_mode: no_runtime_requirement_by_requirement_completion_audit",
+            "runtime_status: audit_only_no_runtime_change",
+            "completion_status: complete_for_current_server_owned_repeatability_operator_workflow_scope",
+            "accepted_scope: server_owned_candidate_b_full_corpus_repeatability_operator_workflow_for_eligible_effective_pdfs",
+            "operator_surface: rendered_start_progress_status_review_repeatability_rerun_acceptance_closeout_and_closeout_status_controls",
+            "authority_chain_verified: workflow_run,workflow_history,workflow_status,completion_monitor,repeatability_checkpoint,repeatability_checkpoint_rendered_status,rerun_trial,rerun_trial_rendered_status,acceptance_checkpoint,acceptance_rendered_control,acceptance_closeout,acceptance_closeout_rendered_control,acceptance_closeout_status,acceptance_closeout_rendered_status",
+            "server_owned_workflow_run_receipts: proven",
+            "read_only_history_status_progress_completion_monitoring: proven",
+            "rendered_operator_start_progress_status_review_controls: proven",
+            "repeatability_checkpoint_receipt: proven",
+            "repeatability_rerun_trial_receipt: proven",
+            "acceptance_checkpoint_receipt: proven",
+            "acceptance_closeout_receipt: proven",
+            "acceptance_closeout_status_projection: proven",
+            "headed_and_headless_rendered_proof: proven",
+            "runbook_and_progress_checker_guards: proven",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "raw_paths_urls_stdout_stderr_logs_traces_pids_artifact_bytes_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_enabled: false",
+            "runtime_behavior_change_introduced_by_this_audit: false",
+            "remaining_blockers_for_current_repeatability_operator_workflow_scope: []",
+            "remaining_program_work_after_this_audit: production_auth_security_multi_user_storage_hardening,broader_eligible_corpus_default_scope_decision,full_mockup_activation_readiness,semantic_rag_model_runtime_selection_if_separately_admitted",
+            "next_exact_posture: candidate_b_post_repeatability_production_hardening_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_OPERATOR_WORKFLOW_COMPLETION_AUDIT_SELECTION: (
+            "next_exact_posture: candidate_b_full_corpus_repeatability_operator_workflow_completion_audit_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus repeatability operator workflow completion audit term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -100343,6 +100446,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_selection(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_runtime(errors)
     _check_candidate_b_full_corpus_repeatability_operator_workflow_completion_audit_selection(errors)
+    _check_candidate_b_full_corpus_repeatability_operator_workflow_completion_audit(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
