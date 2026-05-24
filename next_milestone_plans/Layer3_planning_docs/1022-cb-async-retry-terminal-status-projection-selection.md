@@ -1,0 +1,70 @@
+# Candidate B Async Retry Terminal Status Projection Selection
+
+```yaml
+milestone: candidate_b_async_retry_terminal_status_projection_selection_v1
+source_retry_completion_failure_runtime: next_milestone_plans/Layer3_planning_docs/1021-cb-async-retry-completion-failure-runtime.md
+current_main_entry: 33abf1eada164eafd95e48273f60440b3ba26f05
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_retry_terminal_status_projection_v1
+selected_retry_terminal_status_projection_scope: server_owned_candidate_b_full_corpus_operator_workflow_status_history_projection_of_retry_completion_failure_receipts
+selected_retry_terminal_status_projection_mode: read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation
+selected_retry_terminal_status_projection_surfaces: status,history
+existing_status_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+existing_history_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_retry_completion_failure_endpoint_reused_for_retry_terminal_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure
+selected_retry_terminal_status_projection_model: redacted_read_only_projection_of_latest_retry_completion_failure_receipt_per_retry_worker_attempt
+selected_retry_terminal_status_projection_binding: retry_completion_failure_receipt_id,retry_completion_failure_receipt_hash,retry_completion_failure_authority_hash,retry_worker_attempt_receipt_id,retry_worker_attempt_authority_hash,latest_retry_progress_checkpoint_receipt_id,latest_retry_progress_checkpoint_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_terminal_outcome,retry_terminal_outcome_hash
+selected_retry_terminal_status_projection_idempotency_basis: read_only_projection_from_server_owned_retry_terminal_receipts
+retry_terminal_projection_state_values: not_recorded,completed,failed,blocked
+missing_retry_terminal_receipt_projects_not_recorded: true
+stale_retry_terminal_receipt_must_reject: true
+ambiguous_retry_terminal_receipt_must_reject: true
+retry_terminal_failure_payload_operator_safe: true
+operator_safe_retry_terminal_failure_code_visible: true
+operator_safe_retry_terminal_failure_phase_visible: true
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+retry_terminal_receipt_creation_admitted_now: false
+retry_completion_failure_receipt_mutation_admitted: false
+retry_progress_checkpoint_receipt_mutation_admitted: false
+retry_worker_attempt_receipt_mutation_admitted: false
+retry_scheduler_lease_receipt_mutation_admitted: false
+retry_queue_state_receipt_mutation_admitted: false
+retry_policy_receipt_mutation_admitted: false
+completion_failure_receipt_mutation_admitted: false
+failed_worker_attempt_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+retry_terminal_status_projection_runtime_selected_after_sync: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_terminal_status_projection_v1
+```
+
+This freeze selects a read-only projection slice after retry terminal receipts became recordable. Current main can record retry terminal completion/failure authority, but the existing status and history surfaces do not yet project that terminal authority back to operators.
+
+The next runtime must reuse the existing Candidate B full-corpus workflow status and history endpoints. It should report no terminal receipt as `not_recorded`, project completed and operator-safe failed retry terminal receipts when present, and fail closed for stale, contradictory, or ambiguous terminal receipt authority. It must not create receipts, mutate retry or original failed-lineage receipts, execute jobs, start background processing, admit cancel/resume, or expose raw paths, URLs, traces, logs, provider refs, connector destinations, or artifact bytes.
+
+## Coherence Check
+
+- Should projection create a retry terminal receipt? Recommended answer: no. Receipt creation is already handled by the retry completion/failure endpoint.
+- Should missing terminal authority fail history/status? Recommended answer: no. Missing terminal authority should project `not_recorded`; stale or ambiguous terminal authority should fail closed.
+- Should status/history expose retry failure diagnostics? Recommended answer: only operator-safe terminal outcome, failure code, failure phase, receipt ids, hashes, and redacted refs.
+- Should this slice admit cancel, resume, background execution, or job execution? Recommended answer: no. Those remain separate authority decisions after operators can inspect retry terminal state.
