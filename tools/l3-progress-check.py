@@ -2731,6 +2731,9 @@ CANDIDATE_B_WORKFLOW_RUN_LIFECYCLE_SELECTION = (
 CANDIDATE_B_WORKFLOW_RUN_EXPIRY_CLOSEOUT_RUNTIME = (
     PLANNING_DOCS / "999-cb-workflow-expiry-closeout-runtime.md"
 )
+CANDIDATE_B_ASYNC_CANCEL_RETRY_QUEUE_SELECTION = (
+    PLANNING_DOCS / "1000-cb-async-cancel-retry-queue-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -92845,6 +92848,131 @@ def _check_candidate_b_workflow_run_lifecycle_selection(
                 )
 
 
+def _check_candidate_b_async_cancel_retry_queue_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_CANCEL_RETRY_QUEUE_SELECTION: (
+            "Candidate B Async Cancel/Retry/Queue Authority Selection",
+            "milestone: candidate_b_async_cancel_retry_queue_authority_selection_v1",
+            "source_expiry_closeout_runtime: next_milestone_plans/Layer3_planning_docs/999-cb-workflow-expiry-closeout-runtime.md",
+            "current_main_entry: 8320d8e480ea368fed1504ed985061910936dc11",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_workflow_queue_state_authority_v1",
+            "selected_next_runtime_scope: server_owned_candidate_b_full_corpus_operator_workflow_queue_state_receipts",
+            "selected_first_runtime_reason: cancel_retry_resume_require_server_owned_queue_attempt_and_checkpoint_authority",
+            "selected_queue_state_mode: append_only_queue_state_receipt_without_background_scheduler",
+            "selected_queue_state_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state",
+            "existing_run_start_endpoint_reused_for_current_sync_start: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "existing_history_endpoint_reused_for_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "existing_status_endpoint_reused_for_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "existing_expiry_closeout_endpoint_remains_only_lifecycle_mutation: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire",
+            "selected_queue_state_receipt_model: append_only_queue_state_receipt_without_mutating_source_run_receipt",
+            "selected_queue_state_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,authority_basis_hash,history_hash,queue_state_hash",
+            "selected_queue_state_idempotency_basis: client_request_id_plus_queue_state_authority_hash",
+            "stale_run_receipt_must_reject: true",
+            "stale_history_row_must_reject: true",
+            "missing_run_receipt_must_reject: true",
+            "source_run_receipt_mutation_admitted: false",
+            "browser_supplied_receipt_root_admitted: false",
+            "browser_supplied_runtime_roots_admitted: false",
+            "operator_supplied_local_path_admitted: false",
+            "operator_supplied_raw_url_admitted: false",
+            "queue_state_authority_runtime_selected_after_sync: true",
+            "queue_scheduler_runtime_selected_now: false",
+            "background_worker_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "default_scope_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_workflow_queue_state_authority_v1",
+            "Can cancel be first? Recommended answer: no.",
+            "Can retry be first? Recommended answer: no.",
+            "Can resume be first? Recommended answer: no.",
+            "Can queue scheduling be first? Recommended answer: not full scheduling.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_cancel_retry_queue_authority_selection_v1",
+            "source_expiry_closeout_runtime: next_milestone_plans/Layer3_planning_docs/999-cb-workflow-expiry-closeout-runtime.md",
+            "current_main_entry: 8320d8e480ea368fed1504ed985061910936dc11",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_workflow_queue_state_authority_v1",
+            "selected_next_runtime_scope: server_owned_candidate_b_full_corpus_operator_workflow_queue_state_receipts",
+            "selected_first_runtime_reason: cancel_retry_resume_require_server_owned_queue_attempt_and_checkpoint_authority",
+            "selected_queue_state_mode: append_only_queue_state_receipt_without_background_scheduler",
+            "selected_queue_state_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state",
+            "selected_queue_state_receipt_model: append_only_queue_state_receipt_without_mutating_source_run_receipt",
+            "selected_queue_state_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,authority_basis_hash,history_hash,queue_state_hash",
+            "selected_queue_state_idempotency_basis: client_request_id_plus_queue_state_authority_hash",
+            "stale_run_receipt_must_reject: true",
+            "stale_history_row_must_reject: true",
+            "source_run_receipt_mutation_admitted: false",
+            "queue_state_authority_runtime_selected_after_sync: true",
+            "queue_scheduler_runtime_selected_now: false",
+            "background_worker_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_workflow_queue_state_authority_v1",
+            "The next runtime-bearing Candidate B workflow slice should be server-owned queue-state receipt authority",
+        ),
+        CANDIDATE_B_WORKFLOW_RUN_EXPIRY_CLOSEOUT_RUNTIME: (
+            "next_exact_posture: candidate_b_async_cancel_retry_queue_authority_selection_v1",
+            "Cancel, retry, resume, queue scheduling, broader default scope, provider object writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser storage authority, and frontend durable authority remain unselected.",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_SERVICE: (
+            '"queue_scheduler_admitted": "contract_only"',
+            '"cancel_endpoint_admitted": "contract_only"',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"cancel_runtime_admitted": False',
+            '"retry_runtime_admitted": False',
+            '"resume_runtime_admitted": False',
+            '"queue_scheduler_runtime_admitted": False',
+            '"expiry_mutation_runtime_admitted": True',
+            "select cancel, retry, resume, or queue scheduling only through a separate freeze",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE: (
+            "Workflow-run lifecycle expiry does not admit caller paths, URLs, selector mutation, connector/model controls, browser authority, queue scheduling, cancel, retry, or resume.",
+            '"cancel_runtime_selected_now": False',
+            '"retry_runtime_selected_now": False',
+            '"resume_runtime_selected_now": False',
+            '"queue_scheduler_runtime_selected_now": False',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async cancel/retry/queue selection term: {term}"
+                )
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    forbidden_routes = (
+        '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/cancel"',
+        '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/retry"',
+        '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/resume"',
+        '"/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state"',
+    )
+    for route in forbidden_routes:
+        if route in api_text:
+            errors.append(
+                f"{_rel(LAYER3_API)} exposes non-implemented Candidate B async selection route: {route}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -93691,6 +93819,7 @@ def main() -> int:
     _check_candidate_b_workflow_run_history_selection(errors)
     _check_candidate_b_workflow_run_history_projection(errors)
     _check_candidate_b_workflow_run_lifecycle_selection(errors)
+    _check_candidate_b_async_cancel_retry_queue_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
