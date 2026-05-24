@@ -401,6 +401,42 @@ const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_RUNBOOK_STEPS 
     'review_rerun_trial_comparison',
     'record_repeatability_acceptance_checkpoint',
 ];
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_MODE = 'rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_MODE = 'append_only_acceptance_operator_closeout_receipt_without_process_execution_or_authority_mutation';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_OPERATOR_DECISION = 'record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_PROOF_STATE = 'headed_and_headless_passed';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_HEADLESS_PROOF_LABEL = 'candidate_b_repeatability_acceptance_rendered_control_headless_chromium_pass';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_HEADED_PROOF_LABEL = 'candidate_b_repeatability_acceptance_rendered_control_headed_chromium_pass';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RUNBOOK_STEPS = [
+    'inspect_repeatability_acceptance_checkpoint',
+    'verify_headed_and_headless_rendered_acceptance_proof',
+    'review_closeout_negative_invariants',
+    'record_repeatability_acceptance_operator_closeout',
+];
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_NEGATIVE_INVARIANTS = {
+    actual_corpus_processing_execution_admitted_now: false,
+    actual_subprocess_spawn_admitted_now: false,
+    process_control_admitted: false,
+    process_kill_cancel_retry_resume_admitted: false,
+    browser_triggered_process_start_admitted: false,
+    operator_supplied_command_admitted: false,
+    operator_supplied_local_path_admitted: false,
+    operator_supplied_raw_url_admitted: false,
+    raw_pid_admitted: false,
+    raw_stdout_admitted: false,
+    raw_stderr_admitted: false,
+    raw_exception_trace_admitted: false,
+    raw_log_excerpt_admitted: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    artifact_bytes_exposed: false,
+    provider_object_write_enabled: false,
+    connector_dispatch_enabled: false,
+    rag_vector_model_runtime_enabled: false,
+    full_mockup_activation_enabled: false,
+    frontend_durable_authority_enabled: false,
+    default_scope_expansion_admitted: false,
+};
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
@@ -596,6 +632,9 @@ const State = {
     candidateBFullCorpusRepeatabilityAcceptanceCheckpoint: null,
     candidateBFullCorpusRepeatabilityAcceptanceCheckpointError: null,
     candidateBFullCorpusRepeatabilityAcceptanceCheckpointPending: false,
+    candidateBFullCorpusRepeatabilityAcceptanceCloseout: null,
+    candidateBFullCorpusRepeatabilityAcceptanceCloseoutError: null,
+    candidateBFullCorpusRepeatabilityAcceptanceCloseoutPending: false,
     candidateBFullCorpusOperatorWorkflowRun: null,
     candidateBFullCorpusOperatorWorkflowRunError: null,
     candidateBFullCorpusOperatorWorkflowRunPending: false,
@@ -7788,6 +7827,12 @@ function candidateBFullCorpusRepeatabilityAcceptanceCheckpointEndpointPath(contr
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBFullCorpusRepeatabilityAcceptanceCloseoutEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_repeatability_acceptance_closeout_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBClosureEvidenceEndpointPath(contract) {
     const endpoint = contract?.candidate_b_default_promotion_closure_evidence_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8520,6 +8565,27 @@ function candidateBFullCorpusRepeatabilityAcceptanceCheckpointPayload() {
     };
 }
 
+function candidateBFullCorpusRepeatabilityAcceptanceCloseoutPayload() {
+    const acceptanceReceipt = State.candidateBFullCorpusRepeatabilityAcceptanceCheckpoint || {};
+    const acceptanceCheckpoint = acceptanceReceipt.repeatability_acceptance_checkpoint || {};
+    return {
+        client_request_id: requestId(),
+        acceptance_closeout_mode: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_OPERATOR_DECISION,
+        repeatability_acceptance_checkpoint_receipt_id: acceptanceReceipt.repeatability_acceptance_checkpoint_receipt_id,
+        repeatability_acceptance_checkpoint_receipt_hash: acceptanceReceipt.repeatability_acceptance_checkpoint_receipt_hash,
+        repeatability_acceptance_checkpoint_hash: acceptanceReceipt.repeatability_acceptance_checkpoint_hash,
+        repeatability_acceptance_checkpoint_authority_hash: acceptanceReceipt.repeatability_acceptance_checkpoint_authority_hash,
+        acceptance_disposition: acceptanceCheckpoint.acceptance_disposition,
+        rendered_acceptance_control_mode: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_RENDERED_MODE,
+        rendered_acceptance_control_proof_state: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_PROOF_STATE,
+        headless_rendered_proof_label: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_HEADLESS_PROOF_LABEL,
+        headed_rendered_proof_label: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_HEADED_PROOF_LABEL,
+        operator_runbook_closeout_steps: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RUNBOOK_STEPS,
+        negative_invariant_attestations: { ...CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_NEGATIVE_INVARIANTS },
+    };
+}
+
 function candidateBClosureEvidencePayload() {
     const values = candidateBClosureEvidenceInputValues();
     State.candidateBClosureEvidenceInput = values;
@@ -8926,6 +8992,34 @@ function canRecordCandidateBFullCorpusRepeatabilityAcceptanceCheckpoint(contract
     );
 }
 
+function canRecordCandidateBFullCorpusRepeatabilityAcceptanceCloseout(contract = candidateBDefaultPromotionReadinessContract()) {
+    const acceptanceReceipt = State.candidateBFullCorpusRepeatabilityAcceptanceCheckpoint || {};
+    const acceptanceCheckpoint = acceptanceReceipt.repeatability_acceptance_checkpoint || {};
+    const comparison = acceptanceCheckpoint.comparison || {};
+    const disposition = String(acceptanceCheckpoint.acceptance_disposition || '').trim();
+    return Boolean(
+        contract?.candidate_b_full_corpus_repeatability_acceptance_closeout_admitted
+        && candidateBFullCorpusRepeatabilityAcceptanceCloseoutEndpointPath(contract)
+        && acceptanceReceipt.repeatability_acceptance_checkpoint_state === 'repeatability_acceptance_checkpoint_recorded'
+        && acceptanceReceipt.repeatability_acceptance_checkpoint_receipt_id
+        && acceptanceReceipt.repeatability_acceptance_checkpoint_receipt_hash
+        && acceptanceReceipt.repeatability_acceptance_checkpoint_hash
+        && acceptanceReceipt.repeatability_acceptance_checkpoint_authority_hash
+        && CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_DISPOSITIONS.includes(disposition)
+        && comparison.same_eligible_corpus_identity === true
+        && comparison.same_compare_target_set_hash === true
+        && comparison.same_material_relative_name === true
+        && comparison.same_runtime_root_lifecycle_policy === true
+        && !State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutPending
+        && !State.candidateBFullCorpusRepeatabilityAcceptanceCheckpointPending
+        && !State.candidateBFullCorpusRepeatabilityRerunTrialPending
+        && !State.candidateBFullCorpusOperatorRepeatabilityCheckpointPending
+        && !State.candidateBFullCorpusOperatorWorkflowStatusPending
+        && !State.candidateBFullCorpusOperatorWorkflowCompletionMonitorPending
+        && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
+    );
+}
+
 function canRecordCandidateBClosureEvidence(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBClosureEvidenceInputValues();
     return Boolean(
@@ -9199,6 +9293,20 @@ function candidateBFullCorpusRepeatabilityAcceptanceCheckpointPanelState() {
         return { label: 'candidate_b_full_corpus_repeatability_acceptance_checkpoint_recorded', pill: 'ok' };
     }
     return { label: 'candidate_b_full_corpus_repeatability_acceptance_checkpoint_ready', pill: 'preview' };
+}
+
+function candidateBFullCorpusRepeatabilityAcceptanceCloseoutPanelState() {
+    if (State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutPending) {
+        return { label: 'candidate_b_full_corpus_repeatability_acceptance_closeout_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutError) {
+        const code = State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_repeatability_acceptance_closeout_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusRepeatabilityAcceptanceCloseout?.repeatability_acceptance_operator_closeout_state === 'repeatability_acceptance_operator_closeout_recorded') {
+        return { label: 'candidate_b_full_corpus_repeatability_acceptance_closeout_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_full_corpus_repeatability_acceptance_closeout_ready', pill: 'preview' };
 }
 
 function candidateBClosureEvidencePanelState() {
@@ -11009,6 +11117,108 @@ function candidateBFullCorpusOperatorRepeatabilityCheckpointError() {
     `;
 }
 
+function candidateBFullCorpusRepeatabilityAcceptanceCloseoutRows(closeoutReceipt) {
+    if (!closeoutReceipt) return '';
+    const closeout = closeoutReceipt.repeatability_acceptance_operator_closeout || {};
+    const comparison = closeout.comparison || {};
+    const renderedProof = closeout.rendered_acceptance_control_proof || {};
+    const negativeInvariants = closeoutReceipt.negative_invariants || closeout.negative_invariants || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>Repeatability Acceptance Closeout Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', closeoutReceipt.schema_id, { code: true })}
+                    ${fieldItem('status', closeoutReceipt.status, { code: true })}
+                    ${fieldItem('closeout state', closeoutReceipt.repeatability_acceptance_operator_closeout_state, { code: true })}
+                    ${fieldItem('closeout receipt id', closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_id, { code: true })}
+                    ${fieldItem('closeout receipt hash', closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_hash, { code: true })}
+                    ${fieldItem('closeout receipt ref', closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_ref, { code: true })}
+                    ${fieldItem('closeout hash', closeoutReceipt.repeatability_acceptance_operator_closeout_hash, { code: true })}
+                    ${fieldItem('closeout authority hash', closeoutReceipt.repeatability_acceptance_operator_closeout_authority_hash, { code: true })}
+                    ${fieldItem('idempotent replay', closeoutReceipt.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Closed Repeatability Authority</strong>
+                <ul>
+                    ${fieldItem('acceptance checkpoint receipt id', closeout.repeatability_acceptance_checkpoint_receipt_id, { code: true })}
+                    ${fieldItem('original checkpoint receipt id', closeout.original_repeatability_checkpoint_receipt_id, { code: true })}
+                    ${fieldItem('rerun trial receipt id', closeout.repeatability_rerun_trial_receipt_id, { code: true })}
+                    ${fieldItem('baseline run id', closeout.baseline_run_id, { code: true })}
+                    ${fieldItem('Candidate A run id', closeout.candidate_a_run_id, { code: true })}
+                    ${fieldItem('original Candidate B run id', closeout.original_candidate_b_run_id, { code: true })}
+                    ${fieldItem('rerun Candidate B run id', closeout.rerun_candidate_b_run_id, { code: true })}
+                    ${fieldItem('compare target set hash', closeout.compare_target_set_hash, { code: true })}
+                    ${fieldItem('material file', closeout.material_relative_name, { code: true })}
+                    ${fieldItem('acceptance disposition', closeout.acceptance_disposition, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Rendered Proof Binding</strong>
+                <ul>
+                    ${fieldItem('rendered acceptance control mode', renderedProof.rendered_acceptance_control_mode, { code: true })}
+                    ${fieldItem('rendered acceptance control proof state', renderedProof.rendered_acceptance_control_proof_state, { code: true })}
+                    ${fieldItem('headless proof label', renderedProof.headless_rendered_proof_label, { code: true })}
+                    ${fieldItem('headed proof label', renderedProof.headed_rendered_proof_label, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Closeout Comparison</strong>
+                <ul>
+                    ${fieldItem('same eligible corpus identity', comparison.same_eligible_corpus_identity)}
+                    ${fieldItem('same compare target set hash', comparison.same_compare_target_set_hash)}
+                    ${fieldItem('same material relative name', comparison.same_material_relative_name)}
+                    ${fieldItem('same runtime-root lifecycle policy', comparison.same_runtime_root_lifecycle_policy)}
+                    ${fieldItem('delta observed', comparison.delta_observed)}
+                    ${fieldItem('regression disposition', comparison.regression_disposition || closeout.acceptance_disposition, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Closeout Guardrails</strong>
+                <ul>
+                    ${fieldItem('append-only closeout receipt', closeoutReceipt.append_only_repeatability_acceptance_operator_closeout_receipt)}
+                    ${fieldItem('exclusive closeout per authority', closeoutReceipt.exclusive_repeatability_acceptance_operator_closeout_per_authority)}
+                    ${fieldItem('closeout receipt mutation admitted', closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_mutation_admitted)}
+                    ${fieldItem('acceptance checkpoint receipt mutated', closeoutReceipt.repeatability_acceptance_checkpoint_receipt_mutated)}
+                    ${fieldItem('original checkpoint receipt mutated', closeoutReceipt.original_repeatability_checkpoint_receipt_mutated)}
+                    ${fieldItem('rerun trial receipt mutated', closeoutReceipt.repeatability_rerun_trial_receipt_mutated)}
+                    ${fieldItem('original workflow receipt mutated', closeoutReceipt.original_workflow_receipt_mutated)}
+                    ${fieldItem('rerun workflow receipt mutated', closeoutReceipt.rerun_workflow_receipt_mutated)}
+                    ${fieldItem('baseline rollback preserved', closeoutReceipt.baseline_rollback_preserved)}
+                    ${fieldItem('Candidate A semantics preserved', closeoutReceipt.candidate_a_semantics_preserved)}
+                    ${fieldItem('Candidate B default scope preserved', closeoutReceipt.candidate_b_default_scope_preserved, { code: true })}
+                    ${fieldItem('selector mutation performed', closeoutReceipt.selector_mutation_performed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Negative Invariants</strong>
+                <ul>
+                    ${fieldItem('actual corpus processing execution admitted now', negativeInvariants.actual_corpus_processing_execution_admitted_now)}
+                    ${fieldItem('actual subprocess spawn admitted now', negativeInvariants.actual_subprocess_spawn_admitted_now)}
+                    ${fieldItem('process control admitted', negativeInvariants.process_control_admitted)}
+                    ${fieldItem('process kill/cancel/retry/resume admitted', negativeInvariants.process_kill_cancel_retry_resume_admitted)}
+                    ${fieldItem('browser triggered process start admitted', negativeInvariants.browser_triggered_process_start_admitted)}
+                    ${fieldItem('operator supplied command admitted', negativeInvariants.operator_supplied_command_admitted)}
+                    ${fieldItem('operator supplied local path admitted', negativeInvariants.operator_supplied_local_path_admitted)}
+                    ${fieldItem('operator supplied raw URL admitted', negativeInvariants.operator_supplied_raw_url_admitted)}
+                    ${fieldItem('raw stdout admitted', negativeInvariants.raw_stdout_admitted)}
+                    ${fieldItem('raw stderr admitted', negativeInvariants.raw_stderr_admitted)}
+                    ${fieldItem('raw local path exposed', negativeInvariants.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', negativeInvariants.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', negativeInvariants.artifact_bytes_exposed)}
+                    ${fieldItem('provider object write enabled', negativeInvariants.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', negativeInvariants.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', negativeInvariants.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('full mockup activation enabled', negativeInvariants.full_mockup_activation_enabled)}
+                    ${fieldItem('frontend durable authority enabled', negativeInvariants.frontend_durable_authority_enabled)}
+                    ${fieldItem('default scope expansion admitted', negativeInvariants.default_scope_expansion_admitted)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusRepeatabilityRerunTrialError() {
     const error = State.candidateBFullCorpusRepeatabilityRerunTrialError;
     if (!error) return '';
@@ -11028,6 +11238,20 @@ function candidateBFullCorpusRepeatabilityAcceptanceCheckpointError() {
     if (!error) return '';
     const detail = error.payload?.error || error.payload?.detail || {};
     const code = detail.code || 'candidate_b_full_corpus_repeatability_acceptance_checkpoint_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function candidateBFullCorpusRepeatabilityAcceptanceCloseoutError() {
+    const error = State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_repeatability_acceptance_closeout_error';
     const message = detail.message || error.message;
     return `
         <div class="error-panel">
@@ -11141,6 +11365,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusRepeatabilityCheckpointState = candidateBFullCorpusOperatorRepeatabilityCheckpointPanelState();
     const fullCorpusRepeatabilityRerunTrialState = candidateBFullCorpusRepeatabilityRerunTrialPanelState();
     const fullCorpusRepeatabilityAcceptanceCheckpointState = candidateBFullCorpusRepeatabilityAcceptanceCheckpointPanelState();
+    const fullCorpusRepeatabilityAcceptanceCloseoutState = candidateBFullCorpusRepeatabilityAcceptanceCloseoutPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
@@ -11177,6 +11402,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusRepeatabilityRerunTrial = State.candidateBFullCorpusRepeatabilityRerunTrial;
     const fullCorpusRepeatabilityRerunTrialInputs = State.candidateBFullCorpusRepeatabilityRerunTrialInput;
     const fullCorpusRepeatabilityAcceptanceCheckpoint = State.candidateBFullCorpusRepeatabilityAcceptanceCheckpoint;
+    const fullCorpusRepeatabilityAcceptanceCloseout = State.candidateBFullCorpusRepeatabilityAcceptanceCloseout;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
@@ -11230,6 +11456,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('full-corpus workflow execution boundary', contract?.candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint, { code: true })}
                     ${fieldItem('full-corpus repeatability rerun trial', contract?.candidate_b_full_corpus_repeatability_rerun_trial_endpoint, { code: true })}
                     ${fieldItem('full-corpus acceptance checkpoint', contract?.candidate_b_full_corpus_repeatability_acceptance_checkpoint_endpoint, { code: true })}
+                    ${fieldItem('full-corpus acceptance closeout', contract?.candidate_b_full_corpus_repeatability_acceptance_closeout_endpoint, { code: true })}
                     ${fieldItem('closure evidence', contract?.candidate_b_default_promotion_closure_evidence_endpoint, { code: true })}
                     ${fieldItem('readiness audit', contract?.candidate_b_default_promotion_readiness_audit_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
@@ -11509,6 +11736,16 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBFullCorpusRepeatabilityAcceptanceCheckpointRows(fullCorpusRepeatabilityAcceptanceCheckpoint)}
                 ${candidateBFullCorpusRepeatabilityAcceptanceCheckpointError()}
+            </section>
+            <section class="result-review-card candidate-b-full-corpus-repeatability-acceptance-closeout-card" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                <strong>Full-Corpus Repeatability Acceptance Closeout</strong>
+                <button id="candidate-b-repeatability-acceptance-closeout-submit" type="button" ${canRecordCandidateBFullCorpusRepeatabilityAcceptanceCloseout(contract) ? '' : 'disabled'}>Record Acceptance Closeout</button>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusRepeatabilityAcceptanceCloseoutState.pill)}">${escapeHtml(fullCorpusRepeatabilityAcceptanceCloseoutState.label)}</span>
+                    <span class="rail-label">Server records operator closeout over the accepted checkpoint chain and headed/headless rendered proof labels; this control cannot rerun processing, mutate predecessor receipts, expose raw authority, expand default scope, or create frontend durable authority.</span>
+                </div>
+                ${candidateBFullCorpusRepeatabilityAcceptanceCloseoutRows(fullCorpusRepeatabilityAcceptanceCloseout)}
+                ${candidateBFullCorpusRepeatabilityAcceptanceCloseoutError()}
             </section>
             <section class="result-review-card candidate-b-operator-status-card">
                 <strong>Default-Promotion Operator Status</strong>
@@ -12368,6 +12605,38 @@ async function recordCandidateBFullCorpusRepeatabilityAcceptanceCheckpoint(event
         addEvent(`Candidate B full-corpus repeatability acceptance checkpoint blocked: ${error.message}`);
     } finally {
         State.candidateBFullCorpusRepeatabilityAcceptanceCheckpointPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBFullCorpusRepeatabilityAcceptanceCloseout(event) {
+    const button = event.target?.closest?.('#candidate-b-repeatability-acceptance-closeout-submit');
+    if (!button) return;
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    const path = candidateBFullCorpusRepeatabilityAcceptanceCloseoutEndpointPath(contract);
+    if (!path || !canRecordCandidateBFullCorpusRepeatabilityAcceptanceCloseout(contract)) {
+        State.candidateBFullCorpusRepeatabilityAcceptanceCloseout = null;
+        State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutError = new Error(
+            'Candidate B repeatability acceptance closeout requires a current accepted checkpoint receipt, non-regression disposition, matching corpus/material policy, and the admitted closeout endpoint.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const payload = candidateBFullCorpusRepeatabilityAcceptanceCloseoutPayload();
+    State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutPending = true;
+    State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBFullCorpusRepeatabilityAcceptanceCloseout = await postJson(path, payload);
+        State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutError = null;
+        addEvent('Candidate B full-corpus repeatability acceptance closeout recorded through server append-only receipt authority.');
+    } catch (error) {
+        State.candidateBFullCorpusRepeatabilityAcceptanceCloseout = null;
+        State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutError = error;
+        addEvent(`Candidate B full-corpus repeatability acceptance closeout blocked: ${error.message}`);
+    } finally {
+        State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutPending = false;
         renderAll();
     }
 }
@@ -18948,6 +19217,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('click', (event)
     recordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(event);
     recordCandidateBFullCorpusRepeatabilityRerunTrial(event);
     recordCandidateBFullCorpusRepeatabilityAcceptanceCheckpoint(event);
+    recordCandidateBFullCorpusRepeatabilityAcceptanceCloseout(event);
 });
 elements.candidateBDefaultPromotionStatusPanel.addEventListener('change', (event) => {
     if (event.target?.id === 'candidate-b-repeatability-rerun-trial-disposition') {
