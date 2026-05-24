@@ -38,6 +38,7 @@ from app.services import (
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_final_proof,
     layer3_candidate_b_full_corpus_operator_workflow_history,
+    layer3_candidate_b_full_corpus_operator_workflow_lifecycle,
     layer3_candidate_b_full_corpus_operator_workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_status,
     layer3_candidate_b_operator_status,
@@ -168,6 +169,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_run_endpoint: str
     candidate_b_full_corpus_operator_workflow_history_admitted: bool
     candidate_b_full_corpus_operator_workflow_history_endpoint: str
+    candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted: bool
+    candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2761,6 +2764,19 @@ class Layer3CandidateBFullCorpusOperatorWorkflowRunRequest(BaseModel):
     material_relative_name: str | None = None
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowLifecycleRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    lifecycle_mode: Literal["candidate_b_operator_workflow_run_expiry_closeout_receipt_v1"]
+    operator_decision: Literal["expire_or_close_server_owned_workflow_run_receipt"]
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3465,6 +3481,52 @@ class Layer3CandidateBFullCorpusOperatorWorkflowRunResponse(Layer3BaseResponse):
     artifact_bytes_exposed: bool
     selector_mutation_performed: bool
     negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowLifecycleResponse(Layer3BaseResponse):
+    mode: str
+    status: str
+    lifecycle_state: str
+    lifecycle_receipt_id: str
+    lifecycle_receipt_hash: str
+    lifecycle_receipt_ref: str
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    source_operator_workflow_receipt_id: str
+    source_operator_workflow_receipt_hash: str
+    authority_basis_hash: str
+    row_hash: str
+    history_hash: str
+    lifecycle_authority: dict[str, Any]
+    lifecycle_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_lifecycle_receipt: bool
+    source_run_receipt_mutated: bool
+    run_state_before_lifecycle: str
+    run_state_after_lifecycle: str
+    selected_lifecycle_action: str
+    rendered_lifecycle_mode: str
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    cancel_runtime_selected_now: bool
+    retry_runtime_selected_now: bool
+    resume_runtime_selected_now: bool
+    queue_scheduler_runtime_selected_now: bool
+    expiry_closeout_runtime_selected: bool
+    default_scope_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
     next_allowed_actions: list[str]
 
 
@@ -9271,6 +9333,23 @@ def post_candidate_b_full_corpus_operator_workflow_status(
             payload.model_dump(exclude_unset=True),
         )
     except workflow_status_service.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowLifecycleResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_lifecycle_expire(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowLifecycleRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_lifecycle_service = layer3_candidate_b_full_corpus_operator_workflow_lifecycle
+    try:
+        return workflow_lifecycle_service.expire_candidate_b_full_corpus_operator_workflow_run(
+            payload.model_dump(exclude_unset=True),
+        )
+    except workflow_lifecycle_service.CandidateBFullCorpusOperatorWorkflowLifecycleError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
