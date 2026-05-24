@@ -2926,6 +2926,9 @@ CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_PROJECTIONS = (
 CANDIDATE_B_OPERATOR_WORKFLOW_RENDERED_IDENTITY_STATUS_CONTROLS_SELECTION = (
     PLANNING_DOCS / "1064-cb-operator-workflow-rendered-identity-status-controls-selection.md"
 )
+CANDIDATE_B_OPERATOR_WORKFLOW_RENDERED_IDENTITY_STATUS_CONTROLS_RUNTIME = (
+    PLANNING_DOCS / "1065-cb-operator-workflow-rendered-identity-status-controls-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -100222,6 +100225,86 @@ def _check_candidate_b_operator_workflow_rendered_identity_status_controls_selec
                 )
 
 
+def _check_candidate_b_operator_workflow_rendered_identity_status_controls_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_WORKFLOW_RENDERED_IDENTITY_STATUS_CONTROLS_RUNTIME: (
+            "Candidate B Operator Workflow Rendered Identity Status Controls Runtime",
+            "milestone: candidate_b_operator_workflow_rendered_identity_status_controls_runtime_v1",
+            "source_operator_workflow_rendered_identity_status_controls_selection: next_milestone_plans/Layer3_planning_docs/1064-cb-operator-workflow-rendered-identity-status-controls-selection.md",
+            "current_main_entry: 092cb5253719bb940b0fc9ff849daa61d03fef8d",
+            "runtime_status: rendered_policy_identity_status_controls_implemented",
+            "implemented_rendered_control_scope: candidate_b_operator_workflow_policy_status_identity_projection_controls",
+            "implemented_rendered_surfaces: workflow_run,workflow_history,workflow_status,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,acceptance_closeout_status,acceptance_closeout_status_review,acceptance_closeout_status_audit",
+            "implemented_policy_response_projection: ownership_access_policy,policy_status,policy_hash,route_family,rendered_surface,audit_event_ref,actor_ref_hash,tenant_or_workspace_ref_hash",
+            "implemented_request_role_projection: workflow_status_payload_operator_role_auditor,workflow_history_status_request_operator_role_auditor,acceptance_closeout_status_payload_operator_role_auditor",
+            "rendered_workflow_run_policy_control: Workflow Run Ownership Policy",
+            "rendered_workflow_history_policy_control: workflow_history_row_policy_items",
+            "rendered_workflow_status_policy_control: Workflow Status Ownership Policy",
+            "rendered_completion_monitor_policy_control: Completion Monitor Ownership Policy",
+            "rendered_repeatability_checkpoint_policy_control: Repeatability Checkpoint Ownership Policy",
+            "rendered_rerun_trial_policy_control: Rerun Trial Ownership Policy",
+            "rendered_acceptance_checkpoint_policy_control: Acceptance Checkpoint Ownership Policy",
+            "rendered_acceptance_closeout_policy_control: Acceptance Closeout Ownership Policy",
+            "rendered_acceptance_closeout_status_policy_control: Closeout Status Policy",
+            "rendered_acceptance_closeout_review_policy_control: Review Status Projection Policy",
+            "rendered_acceptance_closeout_audit_policy_control: Audit Projection Policy",
+            "rendered_error_projection: server_derived_identity_only,browser_storage_blocked,raw_proxy_header_exposed_false,raw_operator_identity_exposed_false,frontend_durable_authority_enabled_false",
+            "raw_proxy_header_exposed: false",
+            "raw_operator_identity_exposed: false",
+            "raw_tenant_or_workspace_exposed: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_or_connector_secret_exposed: false",
+            "browser_storage_authority_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_enabled: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium PASS",
+            "headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium --headed PASS",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_operator_workflow_production_auth_storage_hardening_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_rendered_identity_status_controls_runtime_v1",
+            "source_operator_workflow_rendered_identity_status_controls_selection: next_milestone_plans/Layer3_planning_docs/1064-cb-operator-workflow-rendered-identity-status-controls-selection.md",
+            "current_main_entry: 092cb5253719bb940b0fc9ff849daa61d03fef8d",
+            "runtime_status: rendered_policy_identity_status_controls_implemented",
+            "implemented_rendered_control_scope: candidate_b_operator_workflow_policy_status_identity_projection_controls",
+            "implemented_rendered_surfaces: workflow_run,workflow_history,workflow_status,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,acceptance_closeout_status,acceptance_closeout_status_review,acceptance_closeout_status_audit",
+            "implemented_policy_response_projection: ownership_access_policy,policy_status,policy_hash,route_family,rendered_surface,audit_event_ref,actor_ref_hash,tenant_or_workspace_ref_hash",
+            "implemented_request_role_projection: workflow_status_payload_operator_role_auditor,workflow_history_status_request_operator_role_auditor,acceptance_closeout_status_payload_operator_role_auditor",
+            "rendered_workflow_status_policy_control: Workflow Status Ownership Policy",
+            "rendered_workflow_history_policy_control: workflow_history_row_policy_items",
+            "rendered_acceptance_closeout_status_policy_control: Closeout Status Policy",
+            "rendered_acceptance_closeout_review_policy_control: Review Status Projection Policy",
+            "rendered_acceptance_closeout_audit_policy_control: Audit Projection Policy",
+            "browser_storage_authority_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_operator_workflow_production_auth_storage_hardening_selection_v1",
+        ),
+        CANDIDATE_B_OPERATOR_WORKFLOW_RENDERED_IDENTITY_STATUS_CONTROLS_SELECTION: (
+            "next_exact_posture: candidate_b_operator_workflow_rendered_identity_status_controls_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B rendered identity/status controls runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -101133,6 +101216,7 @@ def main() -> int:
     _check_candidate_b_operator_workflow_ownership_access_policy_route_expansion(errors)
     _check_candidate_b_operator_workflow_ownership_access_policy_projections(errors)
     _check_candidate_b_operator_workflow_rendered_identity_status_controls_selection(errors)
+    _check_candidate_b_operator_workflow_rendered_identity_status_controls_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
