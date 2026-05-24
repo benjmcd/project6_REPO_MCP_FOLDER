@@ -3475,3 +3475,48 @@ next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_rendered_co
 ```
 
 Operators can now record a server-owned acceptance checkpoint after an original repeatability checkpoint and rerun-trial receipt exist. The endpoint revalidates the original checkpoint, rerun-trial receipt, workflow statuses, completion monitors, and comparison disposition before writing the append-only acceptance receipt. It accepts only `no_regression_observed` or `delta_reviewed_no_regression`; `regression_detected_blocked` fails closed and blocks acceptance.
+
+### Candidate B Full-Corpus Repeatability Acceptance Rendered Control Selection
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_rendered_control_selection_v1
+source_repeatability_acceptance_checkpoint_runtime: next_milestone_plans/Layer3_planning_docs/1045-cb-repeatability-acceptance-checkpoint-runtime.md
+current_main_entry: 4d8bf45430f87c59926588e6525af90fadac3a4f
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_full_corpus_repeatability_acceptance_rendered_control_v1
+selected_rendered_control_scope: server_projection_consumer_for_candidate_b_repeatability_acceptance_checkpoint_receipts
+selected_acceptance_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint
+selected_acceptance_checkpoint_action: record_candidate_b_full_corpus_repeatability_acceptance_checkpoint
+selected_rendered_control_action: record_candidate_b_full_corpus_repeatability_acceptance_checkpoint_from_current_checkpoint_and_rerun_trial_projection
+rendered_control_button_label: Record Acceptance Checkpoint
+headless_rendered_proof_required: true
+headed_rendered_proof_required: true
+original_repeatability_checkpoint_required: true
+repeatability_rerun_trial_receipt_required: true
+rerun_trial_state_required: repeatability_rerun_trial_recorded
+original_workflow_status_required: proven
+original_completion_monitor_state_required: completed_downstream_proven
+rerun_workflow_status_required: proven
+rerun_completion_monitor_state_required: completed_downstream_proven
+accepted_dispositions: no_regression_observed,delta_reviewed_no_regression
+blocked_disposition: regression_detected_blocked
+regression_detected_must_disable_or_fail_closed: true
+stale_original_checkpoint_must_disable_or_fail_closed: true
+stale_rerun_trial_must_disable_or_fail_closed: true
+mismatched_corpus_identity_must_disable_or_fail_closed: true
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+frontend_durable_authority_enabled: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_rendered_control_v1
+```
+
+The next rendered pass should add the operator control for recording the final acceptance-checkpoint receipt. The UI may consume existing workflow history, status, completion-monitor, repeatability-checkpoint, and rerun-trial projections, but it remains a server-projection consumer only. It must post bounded ids/hashes, material identity, admitted disposition, operator decision, and runbook constants to the server endpoint, then render the server acceptance receipt without local paths, raw URLs, commands, stdout/stderr, process controls, browser storage authority, or frontend durable authority.
