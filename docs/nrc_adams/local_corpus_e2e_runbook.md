@@ -1213,3 +1213,58 @@ next_exact_posture: candidate_b_async_cancel_retry_queue_authority_selection_v1
 Operators close out a Candidate B workflow run by refreshing server-owned history, choosing a run row, and submitting only the current row/hash authority to the lifecycle endpoint. The endpoint writes a separate lifecycle receipt and leaves the original workflow-run receipt unchanged so detail inspection still uses the returned status request.
 
 This lifecycle pass does not add cancel, retry, resume, async queue scheduling, broader Candidate B default scope, provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser storage authority, or frontend durable authority.
+
+## Candidate B Async Cancel/Retry/Queue Authority Selection
+
+```yaml
+milestone: candidate_b_async_cancel_retry_queue_authority_selection_v1
+source_expiry_closeout_runtime: next_milestone_plans/Layer3_planning_docs/999-cb-workflow-expiry-closeout-runtime.md
+current_main_entry: 8320d8e480ea368fed1504ed985061910936dc11
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_workflow_queue_state_authority_v1
+selected_next_runtime_scope: server_owned_candidate_b_full_corpus_operator_workflow_queue_state_receipts
+selected_first_runtime_reason: cancel_retry_resume_require_server_owned_queue_attempt_and_checkpoint_authority
+selected_queue_state_mode: append_only_queue_state_receipt_without_background_scheduler
+selected_queue_state_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state
+existing_run_start_endpoint_reused_for_current_sync_start: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run
+existing_history_endpoint_reused_for_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_status_endpoint_reused_for_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+existing_expiry_closeout_endpoint_remains_only_lifecycle_mutation: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire
+selected_queue_state_receipt_model: append_only_queue_state_receipt_without_mutating_source_run_receipt
+selected_queue_state_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,authority_basis_hash,history_hash,queue_state_hash
+selected_queue_state_idempotency_basis: client_request_id_plus_queue_state_authority_hash
+stale_run_receipt_must_reject: true
+stale_history_row_must_reject: true
+missing_run_receipt_must_reject: true
+source_run_receipt_mutation_admitted: false
+browser_supplied_receipt_root_admitted: false
+browser_supplied_runtime_roots_admitted: false
+browser_supplied_source_directory_admitted: false
+browser_supplied_bridge_dir_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+queue_state_authority_runtime_selected_after_sync: true
+queue_scheduler_runtime_selected_now: false
+background_worker_runtime_selected_now: false
+cancel_runtime_selected_now: false
+retry_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_workflow_queue_state_authority_v1
+```
+
+The next runtime-bearing Candidate B workflow slice should be server-owned queue-state receipt authority, not cancel, retry, resume, or a background scheduler. Cancellation needs an in-flight job/lease target, retry needs attempt/failure authority, and resume needs checkpoint authority; current main does not provide those yet.
+
+The queue-state runtime must remain append-only and server-authoritative. It should bind to the existing run receipt, history row, authority basis, and queue-state hash, reject stale or missing authority, expose no raw paths or URLs, and preserve the existing run, status, history, and expiry-closeout surfaces.
