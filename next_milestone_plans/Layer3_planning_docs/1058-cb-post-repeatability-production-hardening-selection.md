@@ -1,0 +1,60 @@
+# Candidate B Post-Repeatability Production Hardening Selection
+
+```yaml
+milestone: candidate_b_post_repeatability_production_hardening_selection_v1
+source_repeatability_operator_workflow_completion_audit: next_milestone_plans/Layer3_planning_docs/1057-cb-repeatability-operator-workflow-completion-audit.md
+current_main_entry: 75874f900629fa710122abc83231c5f0a8588058
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_target: candidate_b_operator_workflow_ownership_access_policy_freeze_v1
+selected_hardening_lane: production_auth_security_multi_user_storage_hardening
+selected_first_hardening_slice: candidate_b_operator_workflow_owner_scoped_access_policy
+selected_named_security_behavior: candidate_b_operator_workflow_owner_scoped_access_decision_v1
+selected_protected_surface: candidate_b_full_corpus_operator_workflow_receipts_and_rendered_operator_controls
+selected_policy_mode: ownership_access_policy_contract_only
+selected_identity_authority_status: unresolved_not_runtime_admitted
+selected_tenant_authority_status: unresolved_not_runtime_admitted
+selected_operator_role_status: unresolved_not_runtime_admitted
+selected_storage_authority_status: existing_server_owned_receipt_and_storage_refs_only
+selected_audit_event_contract_status: required_next_not_runtime_admitted
+selected_route_dependency_change: false
+selected_model_migration_change: false
+selected_rendered_identity_control_change: false
+implementation_admitted_after_current_main_sync: true
+next_policy_freeze_must_name: identity_authority,tenant_or_workspace_authority,operator_role_matrix,workflow_receipt_owner_binding,storage_root_access_policy,audit_event_contract,forbidden_request_fields,negative_tests,backwards_compatibility,rollback_fail_closed_behavior
+protected_route_families: workflow_run,workflow_history,workflow_status,queue_scheduler_worker_progress_completion_retry,lifecycle_expiry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status
+protected_rendered_surfaces: run_start,history,status,progress,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status
+threat_model_required: cross_operator_receipt_replay,stale_receipt_use,tenant_workspace_mixup,untrusted_proxy_header_spoofing,browser_state_identity_forgery,storage_root_cross_run_access,raw_path_url_token_leakage,provider_connector_secret_leakage
+negative_tests_required: rejects_missing_identity_authority,rejects_untrusted_proxy_identity,rejects_cross_owner_receipt,rejects_stale_policy_hash,rejects_browser_storage_identity,rejects_raw_path_url_token_response,rejects_storage_root_escape,rejects_provider_connector_secret_exposure
+runtime_behavior_change_introduced_by_selection: false
+route_api_dto_model_migration_service_behavior_change_introduced_by_selection: false
+rendered_behavior_change_introduced_by_selection: false
+auth_security_runtime_admitted_now: false
+multi_user_runtime_admitted_now: false
+storage_policy_runtime_admitted_now: false
+audit_event_runtime_admitted_now: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_freeze_v1
+```
+
+This freeze selects the first post-repeatability production-hardening lane after the Candidate B repeatability operator workflow completion audit. The selected lane is not broad auth/security implementation. It is a named policy freeze for the existing Candidate B full-corpus operator workflow receipt family and rendered operator controls.
+
+The next pass must define an owner-scoped access policy over the already-proven workflow run, history, status, progress, completion monitor, repeatability, rerun, acceptance, closeout, closeout status, and rendered operator surfaces. It must name the identity authority, tenant/workspace authority, operator role matrix, workflow receipt owner binding, storage-root access policy, audit-event contract, forbidden request fields, negative tests, backwards compatibility, and rollback/fail-closed behavior before any route dependency, model, migration, service, or rendered identity behavior is admitted.
+
+This selection does not implement authentication, authorization, multi-user ownership, storage policy runtime, audit-event runtime, route dependencies, DTO changes, model/migration changes, middleware, rendered identity controls, provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, broader Candidate B default scope, browser-storage authority, or frontend durable authority.
+
+## Coherence Check
+
+- Why not implement auth now? Recommended answer: current main has the Candidate B workflow surface, but identity, tenant/workspace, role, storage policy, and audit-event authority still need a named freeze before runtime.
+- Why choose this slice first? Recommended answer: production hardening should start with ownership/access over the highest-value completed workflow surface before broader corpus defaulting, mockup activation, or model runtime.
+- Does this change local proof-harness behavior? Recommended answer: no. It is a no-runtime selection and preserves the existing local/default proof posture.
+- What comes next? Recommended answer: `candidate_b_operator_workflow_ownership_access_policy_freeze_v1`.
