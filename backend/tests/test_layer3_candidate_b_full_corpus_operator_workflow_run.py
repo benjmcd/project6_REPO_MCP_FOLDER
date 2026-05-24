@@ -17,6 +17,7 @@ sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_lifecycle as workflow_lifecycle
+from app.services import layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status
 from main import app
@@ -26,6 +27,7 @@ RUN_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator
 STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status"
 HISTORY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history"
 LIFECYCLE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire"
+QUEUE_STATE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state"
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
 CANDIDATE_B_RUN_ID = "candidate-b-run"
@@ -207,6 +209,21 @@ def _lifecycle_request(history: dict[str, Any], row: dict[str, Any], **overrides
     return payload
 
 
+def _queue_state_request(history: dict[str, Any], row: dict[str, Any], **overrides: str) -> dict[str, str]:
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-queue-state",
+        "queue_state_mode": workflow_queue_state.QUEUE_STATE_MODE,
+        "operator_decision": workflow_queue_state.OPERATOR_DECISION,
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt(
     client: TestClient,
 ) -> None:
@@ -280,6 +297,7 @@ def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_ru
     assert body["single_run_status_endpoint_reused_for_detail"] is True
     assert body["browser_supplied_receipt_root_admitted"] is False
     assert body["cancel_runtime_admitted"] is False
+    assert body["queue_state_authority_runtime_admitted"] is True
     assert body["queue_scheduler_runtime_admitted"] is False
     assert body["expiry_mutation_runtime_admitted"] is True
     assert body["frontend_durable_authority_enabled"] is False
@@ -350,6 +368,107 @@ def test_candidate_b_full_corpus_operator_workflow_lifecycle_expires_append_only
     refreshed_history = client.get(HISTORY_ENDPOINT).json()
     assert refreshed_history["receipt_count"] == 1
     assert refreshed_history["history_rows"][0]["operator_workflow_receipt_id"] == run_body["operator_workflow_receipt_id"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_queue_state_records_append_only(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    run_body = client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+
+    response = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row))
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_queue_state.SCHEMA_ID
+    assert body["mode"] == workflow_queue_state.QUEUE_STATE_MODE
+    assert body["queue_state"] == workflow_queue_state.QUEUE_STATE
+    assert body["operator_workflow_receipt_id"] == run_body["operator_workflow_receipt_id"]
+    assert body["operator_workflow_receipt_hash"] == run_body["operator_workflow_receipt_hash"]
+    assert body["row_hash"] == row["row_hash"]
+    assert body["history_hash"] == history_body["history_hash"]
+    assert body["append_only_queue_state_receipt"] is True
+    assert body["source_run_receipt_mutated"] is False
+    assert body["run_state_before_queue_state"] == "proven"
+    assert body["run_state_after_queue_state"] == "proven"
+    assert body["queue_state_authority_runtime_selected"] is True
+    assert body["queue_scheduler_runtime_selected_now"] is False
+    assert body["background_worker_runtime_selected_now"] is False
+    assert body["cancel_runtime_selected_now"] is False
+    assert body["retry_runtime_selected_now"] is False
+    assert body["resume_runtime_selected_now"] is False
+    assert body["expiry_enforcement_runtime_selected_now"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["status_request"] == row["status_request"]
+    assert body["history_endpoint"] == HISTORY_ENDPOINT
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+    run_receipt_file = (
+        Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+        / run_body["operator_workflow_receipt_id"]
+        / "receipt.json"
+    )
+    run_receipt = json.loads(run_receipt_file.read_text(encoding="utf-8"))
+    assert run_receipt["server_owned_workflow_run"]["run_state"] == "proven"
+
+
+def test_candidate_b_full_corpus_operator_workflow_queue_state_is_idempotent(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    request = _queue_state_request(history_body, row)
+
+    first = client.post(QUEUE_STATE_ENDPOINT, json=request).json()
+    second_response = client.post(QUEUE_STATE_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["queue_state_receipt_id"] == first["queue_state_receipt_id"]
+    assert second["queue_state_receipt_hash"] == first["queue_state_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_queue_state_rejects_stale_authority(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+
+    response = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row, history_hash="6" * 64))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["queue_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_queue_state_stale_authority"
+
+
+def test_candidate_b_full_corpus_operator_workflow_queue_state_service_rejects_raw_authority(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    payload = _queue_state_request(history_body, row, local_path="C:\\raw\\candidate-b")
+
+    with pytest.raises(workflow_queue_state.CandidateBFullCorpusOperatorWorkflowQueueStateError) as exc_info:
+        workflow_queue_state.record_candidate_b_full_corpus_operator_workflow_queue_state(payload)
+
+    assert exc_info.value.code == "candidate_b_full_corpus_operator_workflow_queue_state_forbidden_request_fields"
+    assert exc_info.value.details["blocked_fields"] == ["local_path"]
 
 
 def test_candidate_b_full_corpus_operator_workflow_lifecycle_is_idempotent(
