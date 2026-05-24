@@ -88,6 +88,7 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
         "background_process_runtime_admitted": False,
         "job_execution_runtime_admitted": False,
         "progress_checkpoint_runtime_admitted": True,
+        "completion_failure_runtime_admitted": True,
         "expiry_mutation_runtime_admitted": True,
         "default_scope_expansion_admitted": False,
         "provider_object_write_enabled": False,
@@ -106,7 +107,8 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
             "record append-only scheduler lease authority for a selected queue-state receipt",
             "record append-only worker-attempt authority for a selected scheduler lease receipt",
             "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ],
     }
 

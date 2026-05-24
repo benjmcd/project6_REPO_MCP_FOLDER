@@ -1,0 +1,51 @@
+# Candidate B Async Completion/Failure Runtime
+
+```yaml
+milestone: candidate_b_async_completion_failure_receipt_v1
+source_completion_failure_selection: next_milestone_plans/Layer3_planning_docs/1008-cb-async-completion-failure-selection.md
+runtime_status: implemented
+selected_completion_failure_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure
+selected_completion_failure_mode: append_only_completion_failure_receipt_without_cancel_retry_resume_or_source_receipt_mutation
+selected_completion_failure_action: record_candidate_b_async_completion_failure
+selected_completion_failure_scope: server_owned_candidate_b_full_corpus_operator_workflow_worker_attempts_with_progress_checkpoint_receipts
+selected_completion_failure_receipt_model: append_only_terminal_receipt_without_mutating_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipt
+selected_completion_failure_receipt_binding: worker_attempt_receipt_id,worker_attempt_receipt_hash,worker_attempt_authority_hash,latest_progress_checkpoint_receipt_id,latest_progress_checkpoint_receipt_hash,latest_progress_checkpoint_authority_hash,progress_checkpoint_sequence,scheduler_lease_receipt_id,queue_state_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,terminal_outcome,terminal_outcome_hash
+selected_completion_failure_idempotency_basis: client_request_id_plus_completion_failure_authority_hash
+selected_terminal_outcomes: completed,failed
+minimum_progress_checkpoint_required: true
+pre_checkpoint_failure_runtime_selected_now: false
+stale_progress_checkpoint_receipt_rejected: true
+missing_progress_checkpoint_receipt_rejected: true
+non_latest_progress_checkpoint_receipt_rejected: true
+terminal_conflict_rejected: true
+terminal_failure_payload_operator_safe: true
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+worker_attempt_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+completion_failure_runtime_selected: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+retry_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+next_exact_posture: candidate_b_async_cancel_retry_resume_policy_selection_v1
+```
+
+This runtime records server-owned append-only terminal completion/failure receipts over an existing worker-attempt and its latest progress-checkpoint receipt. Replaying the same request returns the same receipt, stale or non-latest progress-checkpoint authority fails closed, and a second terminal receipt for the same worker attempt fails closed.
+
+The runtime intentionally does not execute Candidate B work, mutate prior receipts, cancel, retry, resume, enforce expiry, broaden Candidate B default scope, write provider objects, dispatch connectors, run RAG/vector/model logic, expose raw paths, URLs, traces, logs, or artifact bytes, or activate full mockup behavior.
