@@ -2588,3 +2588,48 @@ next_exact_posture: candidate_b_async_background_job_execution_boundary_selectio
 ```
 
 Operators can now inspect retry terminal status through the rendered full-corpus workflow status and history controls. The rendered projection shows server-provided retry terminal state, outcome, receipt authority, worker-attempt/progress-checkpoint binding, operator-safe failure code/phase, and guardrail fields without exposing raw paths, URLs, traces, logs, or artifact bytes.
+
+### Candidate B Async Background Job Execution Boundary Selection
+
+```yaml
+milestone: candidate_b_async_background_job_execution_boundary_selection_v1
+source_rendered_retry_terminal_projection_runtime: next_milestone_plans/Layer3_planning_docs/1025-cb-async-retry-terminal-rendered-status-projection-runtime.md
+current_main_entry: 9c88315b06839c921ac5fbecc616b8dc4591be18
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_background_job_execution_boundary_v1
+selected_background_execution_boundary_mode: execution_boundary_receipt_without_process_start_or_job_execution
+selected_background_execution_boundary_source_lineage: operator_workflow_receipt,queue_state_receipt,scheduler_lease_receipt,worker_attempt_receipt,progress_checkpoint_receipt,completion_failure_receipt,retry_policy_receipt,retry_queue_state_receipt,retry_scheduler_lease_receipt,retry_worker_attempt_receipt,retry_progress_checkpoint_receipt,retry_completion_failure_receipt
+selected_background_execution_boundary_outputs: execution_boundary_receipt,execution_boundary_receipt_hash,execution_boundary_authority_hash,operator_safe_execution_state,status_history_projection_fields
+status_history_projection_required_after_boundary: true
+rendered_operator_projection_required_after_boundary: true
+stale_history_row_must_reject: true
+stale_scheduler_lease_must_reject: true
+stale_worker_attempt_must_reject: true
+stale_progress_checkpoint_must_reject: true
+terminal_receipt_conflict_must_reject: true
+background_process_runtime_selected_after_sync: true
+job_execution_runtime_selected_after_sync: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_background_job_execution_boundary_v1
+```
+
+The next runtime should record a server-owned background execution-boundary receipt over the existing Candidate B async lineage. It should prove the workflow row, queue/lease/attempt/progress/terminal authority, retry lineage, and rendered status/history projection are coherent enough to become a future execution target without starting a worker or executing corpus processing in the same slice.
