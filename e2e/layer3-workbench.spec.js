@@ -8148,7 +8148,7 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
         retry_runtime_admitted: false,
         resume_runtime_admitted: false,
         queue_scheduler_runtime_admitted: false,
-        expiry_mutation_runtime_admitted: false,
+        expiry_mutation_runtime_admitted: true,
         default_scope_expansion_admitted: false,
         provider_object_write_enabled: false,
         connector_dispatch_enabled: false,
@@ -8161,7 +8161,8 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
         selector_mutation_performed: false,
         next_allowed_actions: [
           'inspect a selected workflow-run row through the returned status request',
-          'select cancel, retry, resume, or expiry enforcement only through a separate freeze',
+          'expire or close a selected workflow-run row through the admitted lifecycle endpoint',
+          'select cancel, retry, resume, or queue scheduling only through a separate freeze',
         ],
         history_rows: [
           {
@@ -8274,6 +8275,209 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
   ))).toEqual([
     { method: 'GET', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history' },
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status' },
+  ]);
+});
+
+test('Layer 3 workbench expires Candidate B workflow run through rendered append-only lifecycle control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let workflowLifecyclePayload = null;
+  const returnedStatusRequest = {
+    client_request_id: 'candidate-b-rendered-lifecycle-status-request',
+    status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+    operator_decision: 'inspect_candidate_b_full_corpus_operator_workflow_status',
+    operator_workflow_receipt_id: 'cb-full-corpus-operator-run-lifecycle-rendered-proof',
+    baseline_run_id: 'baseline-rendered-lifecycle-proof',
+    candidate_a_run_id: 'candidate-a-rendered-lifecycle-proof',
+    candidate_b_run_id: 'candidate-b-rendered-lifecycle-proof',
+    bridge_receipt_id: 'cb-runtime-l3-rendered-lifecycle-proof',
+    downstream_proof_id: 'cb-runtime-downstream-proof-rendered-lifecycle-proof',
+  };
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_history.v1',
+        schema_version: 1,
+        request_id: 'candidate-b-full-corpus-operator-workflow-history',
+        server_time: '2026-05-24T00:00:00Z',
+        mode: 'candidate_b_full_corpus_operator_workflow_history_v1',
+        history_scope: 'server_owned_candidate_b_full_corpus_operator_workflow_run_receipts',
+        history_state: 'available',
+        status: 'available',
+        status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status',
+        rendered_history_mode: 'rendered_candidate_b_full_corpus_operator_workflow_run_history_control',
+        receipt_count: 1,
+        history_hash: '8'.repeat(64),
+        history_ref: 'candidate-b-full-corpus-operator-workflow-history://888888888888888888888888',
+        configured_receipt_authority_used: true,
+        read_only_history_projection: true,
+        single_run_status_endpoint_reused_for_detail: true,
+        browser_supplied_receipt_root_admitted: false,
+        browser_supplied_runtime_roots_admitted: false,
+        browser_supplied_source_directory_admitted: false,
+        browser_supplied_bridge_dir_admitted: false,
+        operator_supplied_local_path_admitted: false,
+        operator_supplied_raw_url_admitted: false,
+        cancel_runtime_admitted: false,
+        retry_runtime_admitted: false,
+        resume_runtime_admitted: false,
+        queue_scheduler_runtime_admitted: false,
+        expiry_mutation_runtime_admitted: true,
+        default_scope_expansion_admitted: false,
+        provider_object_write_enabled: false,
+        connector_dispatch_enabled: false,
+        rag_vector_model_runtime_enabled: false,
+        full_mockup_activation_enabled: false,
+        frontend_durable_authority_enabled: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+        next_allowed_actions: [
+          'inspect a selected workflow-run row through the returned status request',
+          'expire or close a selected workflow-run row through the admitted lifecycle endpoint',
+        ],
+        history_rows: [
+          {
+            operator_workflow_receipt_id: returnedStatusRequest.operator_workflow_receipt_id,
+            operator_workflow_receipt_hash: '9'.repeat(64),
+            source_operator_workflow_receipt_id: 'cb-full-corpus-operator-source-lifecycle-rendered-proof',
+            source_operator_workflow_receipt_hash: 'a'.repeat(64),
+            authority_basis_hash: 'b'.repeat(64),
+            runtime_root_lifecycle_receipt_id: 'cb-full-corpus-runtime-roots-lifecycle-rendered-proof',
+            baseline_run_id: returnedStatusRequest.baseline_run_id,
+            candidate_a_run_id: returnedStatusRequest.candidate_a_run_id,
+            candidate_b_run_id: returnedStatusRequest.candidate_b_run_id,
+            compare_target_set_hash: 'c'.repeat(64),
+            bridge_receipt_id: returnedStatusRequest.bridge_receipt_id,
+            downstream_proof_id: returnedStatusRequest.downstream_proof_id,
+            material_relative_name: 'text/target-lifecycle-00001.md',
+            run_state: 'proven',
+            state_machine: ['accepted', 'running', 'proven', 'blocked', 'cancelled', 'expired'],
+            server_time: '2026-05-24T00:00:00Z',
+            status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status',
+            status_request: returnedStatusRequest,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            artifact_bytes_exposed: false,
+            selector_mutation_performed: false,
+            frontend_durable_authority_enabled: false,
+            row_hash: 'd'.repeat(64),
+          },
+        ],
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire', async (route) => {
+    workflowLifecyclePayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_lifecycle.v1',
+        schema_version: 1,
+        request_id: workflowLifecyclePayload.client_request_id,
+        server_time: '2026-05-24T00:00:01Z',
+        mode: 'candidate_b_operator_workflow_run_expiry_closeout_receipt_v1',
+        status: 'available',
+        lifecycle_state: 'expired',
+        lifecycle_receipt_id: 'cb-full-corpus-operator-lifecycle-expiry-rendered-proof',
+        lifecycle_receipt_hash: 'e'.repeat(64),
+        lifecycle_receipt_ref: 'candidate-b-full-corpus-operator-workflow-lifecycle://cb-full-corpus-operator-lifecycle-expiry-rendered-proof/eeeeeeeeeeeeeeeeeeeeeeee',
+        operator_workflow_receipt_id: workflowLifecyclePayload.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: workflowLifecyclePayload.operator_workflow_receipt_hash,
+        source_operator_workflow_receipt_id: 'cb-full-corpus-operator-source-lifecycle-rendered-proof',
+        source_operator_workflow_receipt_hash: 'a'.repeat(64),
+        authority_basis_hash: workflowLifecyclePayload.authority_basis_hash,
+        row_hash: workflowLifecyclePayload.row_hash,
+        history_hash: workflowLifecyclePayload.history_hash,
+        lifecycle_authority: {
+          lifecycle_state: 'expired',
+          operator_workflow_receipt_id: workflowLifecyclePayload.operator_workflow_receipt_id,
+        },
+        lifecycle_authority_hash: 'f'.repeat(64),
+        idempotency_key_hash: '1'.repeat(64),
+        idempotent_replay: false,
+        append_only_lifecycle_receipt: true,
+        source_run_receipt_mutated: false,
+        run_state_before_lifecycle: 'proven',
+        run_state_after_lifecycle: 'expired',
+        selected_lifecycle_action: 'expire_or_close_server_owned_workflow_run_receipt',
+        rendered_lifecycle_mode: 'rendered_candidate_b_full_corpus_operator_workflow_lifecycle_expire_control',
+        status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status',
+        status_request: returnedStatusRequest,
+        history_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history',
+        history_request: {
+          method: 'GET',
+          endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history',
+        },
+        cancel_runtime_selected_now: false,
+        retry_runtime_selected_now: false,
+        resume_runtime_selected_now: false,
+        queue_scheduler_runtime_selected_now: false,
+        expiry_closeout_runtime_selected: true,
+        default_scope_expansion_admitted: false,
+        provider_object_write_enabled: false,
+        connector_dispatch_enabled: false,
+        rag_vector_model_runtime_enabled: false,
+        full_mockup_activation_enabled: false,
+        frontend_durable_authority_enabled: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+        next_allowed_actions: [
+          'refresh workflow-run history',
+          'inspect the original workflow run through the returned status request',
+        ],
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const lifecycleCard = page.locator('.candidate-b-full-corpus-workflow-lifecycle-card');
+  await expect(lifecycleCard).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_full_corpus_operator_workflow_lifecycle_expire_control',
+  );
+  await expect(lifecycleCard).toHaveAttribute('data-frontend-durable-authority', 'false');
+
+  await page.locator('#candidate-b-full-corpus-workflow-history-refresh').click();
+  await expect(panel).toContainText(returnedStatusRequest.operator_workflow_receipt_id);
+  await expect(panel).toContainText('expiry mutation admitted: true');
+  await page.locator('[data-candidate-b-workflow-lifecycle-expire-index="0"]').click();
+  await expect(lifecycleCard).toContainText('candidate_b_full_corpus_workflow_lifecycle_expired');
+  await expect(lifecycleCard).toContainText('append-only receipt: true');
+  await expect(lifecycleCard).toContainText('source run receipt mutated: false');
+  await expect(lifecycleCard).toContainText('queue scheduler selected now: false');
+
+  expect(workflowLifecyclePayload).toMatchObject({
+    lifecycle_mode: 'candidate_b_operator_workflow_run_expiry_closeout_receipt_v1',
+    operator_decision: 'expire_or_close_server_owned_workflow_run_receipt',
+    operator_workflow_receipt_id: returnedStatusRequest.operator_workflow_receipt_id,
+    operator_workflow_receipt_hash: '9'.repeat(64),
+    row_hash: 'd'.repeat(64),
+    authority_basis_hash: 'b'.repeat(64),
+    history_hash: '8'.repeat(64),
+  });
+  expect(workflowLifecyclePayload).not.toHaveProperty('raw_url');
+  expect(workflowLifecyclePayload).not.toHaveProperty('local_path');
+  expect(workflowLifecyclePayload).not.toHaveProperty('runtime_root');
+  expect(workflowLifecyclePayload).not.toHaveProperty('source_directory');
+  expect(workflowLifecyclePayload).not.toHaveProperty('cancel');
+  expect(workflowLifecyclePayload).not.toHaveProperty('retry');
+  expect(workflowLifecyclePayload).not.toHaveProperty('resume');
+  expect(workflowLifecyclePayload).not.toHaveProperty('queue');
+  expect(workflowLifecyclePayload).not.toHaveProperty('frontend_durable_authority');
+  expect(JSON.stringify(workflowLifecyclePayload)).not.toContain('file://');
+  expect(JSON.stringify(workflowLifecyclePayload)).not.toContain('https://');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/full-corpus/operator-workflow/')
+  ))).toEqual([
+    { method: 'GET', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire' },
   ]);
 });
 

@@ -2728,6 +2728,9 @@ CANDIDATE_B_WORKFLOW_RUN_HISTORY_PROJECTION = (
 CANDIDATE_B_WORKFLOW_RUN_LIFECYCLE_SELECTION = (
     PLANNING_DOCS / "998-cb-workflow-lifecycle-selection.md"
 )
+CANDIDATE_B_WORKFLOW_RUN_EXPIRY_CLOSEOUT_RUNTIME = (
+    PLANNING_DOCS / "999-cb-workflow-expiry-closeout-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2749,6 +2752,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_history.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_lifecycle.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -92726,6 +92732,40 @@ def _check_candidate_b_workflow_run_lifecycle_selection(
             "next_exact_posture: candidate_b_operator_workflow_lifecycle_mutation_selection_v1",
             "Any cancel, retry, resume, expiry enforcement, queue scheduling, or broader workflow orchestration must be frozen separately",
         ),
+        CANDIDATE_B_WORKFLOW_RUN_EXPIRY_CLOSEOUT_RUNTIME: (
+            "Candidate B Workflow Run Expiry/Closeout Runtime",
+            "milestone: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1",
+            "source_lifecycle_selection: next_milestone_plans/Layer3_planning_docs/998-cb-workflow-lifecycle-selection.md",
+            "runtime_status: implemented",
+            "selected_lifecycle_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire",
+            "selected_lifecycle_mode: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1",
+            "selected_lifecycle_action: expire_or_close_server_owned_workflow_run_receipt",
+            "selected_rendered_lifecycle_mode: rendered_candidate_b_full_corpus_operator_workflow_lifecycle_expire_control",
+            "selected_lifecycle_receipt_model: append_only_lifecycle_receipt_without_mutating_source_run_receipt",
+            "selected_lifecycle_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash",
+            "stale_run_receipt_rejected: true",
+            "stale_history_row_rejected: true",
+            "source_run_receipt_mutation_admitted: false",
+            "expiry_closeout_runtime_selected: true",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_cancel_retry_queue_authority_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_lifecycle.v1"',
+            'LIFECYCLE_MODE = "candidate_b_operator_workflow_run_expiry_closeout_receipt_v1"',
+            'OPERATOR_DECISION = "expire_or_close_server_owned_workflow_run_receipt"',
+            'LIFECYCLE_ENDPOINT = (',
+            "expire_candidate_b_full_corpus_operator_workflow_run",
+            "_selected_history_row",
+            "_validate_selected_authority",
+            "_load_or_write_lifecycle_receipt",
+            '"append_only_lifecycle_receipt": True',
+            '"source_run_receipt_mutated": False',
+            '"cancel_runtime_selected_now": False',
+            '"expiry_closeout_runtime_selected": True',
+            "candidate_b_full_corpus_operator_workflow_lifecycle_forbidden_request_fields",
+            "candidate_b_full_corpus_operator_workflow_lifecycle_stale_authority",
+        ),
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_SERVICE: (
             'STATE_MACHINE = ("accepted", "running", "proven", "blocked", "cancelled", "expired")',
             '"queue_scheduler_admitted": "contract_only"',
@@ -92736,8 +92776,64 @@ def _check_candidate_b_workflow_run_lifecycle_selection(
             '"retry_runtime_admitted": False',
             '"resume_runtime_admitted": False',
             '"queue_scheduler_runtime_admitted": False',
-            '"expiry_mutation_runtime_admitted": False',
-            "select cancel, retry, resume, or expiry enforcement only through a separate freeze",
+            '"expiry_mutation_runtime_admitted": True',
+            "expire or close a selected workflow-run row through the admitted lifecycle endpoint",
+            "select cancel, retry, resume, or queue scheduling only through a separate freeze",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_lifecycle",
+            "Layer3CandidateBFullCorpusOperatorWorkflowLifecycleRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowLifecycleResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire"',
+            "CandidateBFullCorpusOperatorWorkflowLifecycleError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted",
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_lifecycle_expire": True',
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted",
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted",
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_lifecycle_expire"',
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted",
+            "candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_RENDERED_MODE",
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_MODE",
+            "candidateBFullCorpusOperatorWorkflowLifecycleEndpointPath",
+            "candidateBFullCorpusOperatorWorkflowLifecyclePayload",
+            "canExpireCandidateBFullCorpusOperatorWorkflowRow",
+            "candidateBFullCorpusOperatorWorkflowLifecycleRows",
+            "expireCandidateBFullCorpusOperatorWorkflowHistoryRow",
+            "data-candidate-b-workflow-lifecycle-expire-index",
+            "candidate-b-full-corpus-workflow-lifecycle-card",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_lifecycle_expires_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_lifecycle_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_lifecycle_rejects_stale_authority",
+            "test_candidate_b_full_corpus_operator_workflow_lifecycle_service_rejects_raw_authority",
+            "LIFECYCLE_ENDPOINT",
+            "workflow_lifecycle.LIFECYCLE_MODE",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "Layer 3 workbench expires Candidate B workflow run through rendered append-only lifecycle control",
+            "rendered_candidate_b_full_corpus_operator_workflow_lifecycle_expire_control",
+            "candidate_b_operator_workflow_run_expiry_closeout_receipt_v1",
+            "expire_or_close_server_owned_workflow_run_receipt",
+            "data-candidate-b-workflow-lifecycle-expire-index",
+            "append-only receipt: true",
+            "source run receipt mutated: false",
+            "expect(workflowLifecyclePayload).not.toHaveProperty('local_path')",
+            "expect(workflowLifecyclePayload).not.toHaveProperty('frontend_durable_authority')",
         ),
     }
     for path, terms in required_terms.items():

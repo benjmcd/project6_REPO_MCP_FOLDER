@@ -1,0 +1,51 @@
+# Candidate B Workflow Run Expiry/Closeout Runtime
+
+```yaml
+milestone: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1
+source_lifecycle_selection: next_milestone_plans/Layer3_planning_docs/998-cb-workflow-lifecycle-selection.md
+runtime_status: implemented
+selected_lifecycle_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire
+selected_lifecycle_mode: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1
+selected_lifecycle_action: expire_or_close_server_owned_workflow_run_receipt
+selected_lifecycle_scope: server_owned_candidate_b_full_corpus_operator_workflow_run_receipts
+selected_source_authority: configured_L3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR
+existing_history_endpoint_reused_for_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_status_endpoint_reused_for_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+selected_rendered_lifecycle_mode: rendered_candidate_b_full_corpus_operator_workflow_lifecycle_expire_control
+selected_lifecycle_receipt_model: append_only_lifecycle_receipt_without_mutating_source_run_receipt
+selected_lifecycle_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash
+selected_idempotency_basis: client_request_id_plus_lifecycle_authority_hash
+stale_run_receipt_rejected: true
+stale_history_row_rejected: true
+missing_run_receipt_rejected: true
+source_run_receipt_mutation_admitted: false
+browser_supplied_receipt_root_admitted: false
+browser_supplied_runtime_roots_admitted: false
+browser_supplied_source_directory_admitted: false
+browser_supplied_bridge_dir_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+cancel_runtime_selected_now: false
+retry_runtime_selected_now: false
+resume_runtime_selected_now: false
+queue_scheduler_runtime_selected_now: false
+expiry_closeout_runtime_selected: true
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_scope: backend_service_api_readiness_rendered_operator_control_focused_tests
+next_exact_posture: candidate_b_async_cancel_retry_queue_authority_selection_v1
+```
+
+This runtime implements the lifecycle slice selected in `998-cb-workflow-lifecycle-selection.md`. The lifecycle endpoint revalidates the current server-owned workflow-run history row, binds the request to the current `history_hash`, `row_hash`, `operator_workflow_receipt_hash`, and `authority_basis_hash`, and writes a separate lifecycle receipt.
+
+The source workflow-run receipt is not mutated. The operator can continue to inspect the original run through the returned status request. Idempotency is bound to `client_request_id` plus the lifecycle authority hash, and stale or missing authority fails closed.
+
+Cancel, retry, resume, queue scheduling, broader default scope, provider object writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser storage authority, and frontend durable authority remain unselected.
