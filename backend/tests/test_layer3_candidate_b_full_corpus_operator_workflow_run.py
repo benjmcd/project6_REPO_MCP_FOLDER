@@ -21,6 +21,7 @@ from app.services import layer3_candidate_b_full_corpus_operator_workflow_queue_
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease as workflow_scheduler_lease
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status
+from app.services import layer3_candidate_b_full_corpus_operator_workflow_worker_attempt as workflow_worker_attempt
 from main import app
 
 
@@ -30,6 +31,7 @@ HISTORY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/oper
 LIFECYCLE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire"
 QUEUE_STATE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state"
 SCHEDULER_LEASE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease"
+WORKER_ATTEMPT_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/worker/attempt"
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
 CANDIDATE_B_RUN_ID = "candidate-b-run"
@@ -249,6 +251,33 @@ def _scheduler_lease_request(
     return payload
 
 
+def _worker_attempt_request(
+    history: dict[str, Any],
+    row: dict[str, Any],
+    scheduler_lease_body: dict[str, Any],
+    **overrides: str,
+) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-worker-attempt",
+        "worker_attempt_mode": workflow_worker_attempt.WORKER_ATTEMPT_MODE,
+        "operator_decision": workflow_worker_attempt.OPERATOR_DECISION,
+        "worker_attempt_number": workflow_worker_attempt.WORKER_ATTEMPT_NUMBER,
+        "scheduler_lease_receipt_id": scheduler_lease_body["scheduler_lease_receipt_id"],
+        "scheduler_lease_receipt_hash": scheduler_lease_body["scheduler_lease_receipt_hash"],
+        "scheduler_lease_authority_hash": scheduler_lease_body["scheduler_lease_authority_hash"],
+        "queue_state_receipt_id": scheduler_lease_body["queue_state_receipt_id"],
+        "queue_state_receipt_hash": scheduler_lease_body["queue_state_receipt_hash"],
+        "queue_state_authority_hash": scheduler_lease_body["queue_state_authority_hash"],
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt(
     client: TestClient,
 ) -> None:
@@ -324,6 +353,10 @@ def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_ru
     assert body["cancel_runtime_admitted"] is False
     assert body["queue_state_authority_runtime_admitted"] is True
     assert body["queue_scheduler_runtime_admitted"] is True
+    assert body["worker_attempt_runtime_admitted"] is True
+    assert body["background_process_runtime_admitted"] is False
+    assert body["job_execution_runtime_admitted"] is False
+    assert body["progress_checkpoint_runtime_admitted"] is False
     assert body["expiry_mutation_runtime_admitted"] is True
     assert body["frontend_durable_authority_enabled"] is False
     row = body["history_rows"][0]
@@ -641,6 +674,173 @@ def test_candidate_b_full_corpus_operator_workflow_scheduler_lease_service_rejec
         workflow_scheduler_lease.record_candidate_b_full_corpus_operator_workflow_scheduler_lease(payload)
 
     assert exc_info.value.code == "candidate_b_full_corpus_operator_workflow_scheduler_lease_forbidden_request_fields"
+    assert exc_info.value.details["blocked_fields"] == ["local_path"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_worker_attempt_records_append_only(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    run_body = client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    queue_state_body = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row)).json()
+    scheduler_lease_body = client.post(
+        SCHEDULER_LEASE_ENDPOINT,
+        json=_scheduler_lease_request(history_body, row, queue_state_body),
+    ).json()
+
+    response = client.post(
+        WORKER_ATTEMPT_ENDPOINT,
+        json=_worker_attempt_request(history_body, row, scheduler_lease_body),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_worker_attempt.SCHEMA_ID
+    assert body["mode"] == workflow_worker_attempt.WORKER_ATTEMPT_MODE
+    assert body["worker_attempt_state"] == "attempt_authority_recorded"
+    assert body["worker_attempt_number"] == 1
+    assert body["scheduler_lease_receipt_id"] == scheduler_lease_body["scheduler_lease_receipt_id"]
+    assert body["scheduler_lease_receipt_hash"] == scheduler_lease_body["scheduler_lease_receipt_hash"]
+    assert body["scheduler_lease_authority_hash"] == scheduler_lease_body["scheduler_lease_authority_hash"]
+    assert body["queue_state_receipt_id"] == queue_state_body["queue_state_receipt_id"]
+    assert body["operator_workflow_receipt_id"] == run_body["operator_workflow_receipt_id"]
+    assert body["operator_workflow_receipt_hash"] == run_body["operator_workflow_receipt_hash"]
+    assert body["append_only_worker_attempt_receipt"] is True
+    assert body["exclusive_initial_attempt_per_scheduler_lease"] is True
+    assert body["scheduler_lease_receipt_mutated"] is False
+    assert body["queue_state_receipt_mutated"] is False
+    assert body["source_run_receipt_mutated"] is False
+    assert body["run_state_before_worker_attempt"] == "proven"
+    assert body["run_state_after_worker_attempt"] == "proven"
+    assert body["scheduler_lease_state_before_worker_attempt"] == "leased"
+    assert body["worker_attempt_runtime_selected"] is True
+    assert body["background_process_runtime_selected_now"] is False
+    assert body["job_execution_runtime_selected_now"] is False
+    assert body["progress_checkpoint_runtime_selected_now"] is False
+    assert body["completion_runtime_selected_now"] is False
+    assert body["cancel_runtime_selected_now"] is False
+    assert body["retry_runtime_selected_now"] is False
+    assert body["resume_runtime_selected_now"] is False
+    assert body["expiry_enforcement_runtime_selected_now"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["worker_attempt_endpoint"] == WORKER_ATTEMPT_ENDPOINT
+    assert body["scheduler_lease_endpoint"] == SCHEDULER_LEASE_ENDPOINT
+    assert body["status_request"] == row["status_request"]
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+    workflow_root = Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+    scheduler_lease_receipt = json.loads(
+        (workflow_root / scheduler_lease_body["scheduler_lease_receipt_id"] / "receipt.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert scheduler_lease_receipt["scheduler_lease_receipt_hash"] == scheduler_lease_body["scheduler_lease_receipt_hash"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_worker_attempt_is_idempotent(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    queue_state_body = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row)).json()
+    scheduler_lease_body = client.post(
+        SCHEDULER_LEASE_ENDPOINT,
+        json=_scheduler_lease_request(history_body, row, queue_state_body),
+    ).json()
+    request = _worker_attempt_request(history_body, row, scheduler_lease_body)
+
+    first = client.post(WORKER_ATTEMPT_ENDPOINT, json=request).json()
+    second_response = client.post(WORKER_ATTEMPT_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["worker_attempt_receipt_id"] == first["worker_attempt_receipt_id"]
+    assert second["worker_attempt_receipt_hash"] == first["worker_attempt_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_worker_attempt_rejects_stale_scheduler_lease(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    queue_state_body = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row)).json()
+    scheduler_lease_body = client.post(
+        SCHEDULER_LEASE_ENDPOINT,
+        json=_scheduler_lease_request(history_body, row, queue_state_body),
+    ).json()
+
+    response = client.post(
+        WORKER_ATTEMPT_ENDPOINT,
+        json=_worker_attempt_request(history_body, row, scheduler_lease_body, scheduler_lease_receipt_hash="6" * 64),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["worker_attempt_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_worker_attempt_stale_scheduler_lease_receipt"
+
+
+def test_candidate_b_full_corpus_operator_workflow_worker_attempt_rejects_competing_attempt(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    queue_state_body = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row)).json()
+    scheduler_lease_body = client.post(
+        SCHEDULER_LEASE_ENDPOINT,
+        json=_scheduler_lease_request(history_body, row, queue_state_body),
+    ).json()
+    client.post(WORKER_ATTEMPT_ENDPOINT, json=_worker_attempt_request(history_body, row, scheduler_lease_body))
+
+    response = client.post(
+        WORKER_ATTEMPT_ENDPOINT,
+        json=_worker_attempt_request(
+            history_body,
+            row,
+            scheduler_lease_body,
+            client_request_id="candidate-b-full-corpus-workflow-worker-attempt-second",
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["worker_attempt_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_worker_attempt_conflict"
+
+
+def test_candidate_b_full_corpus_operator_workflow_worker_attempt_service_rejects_raw_authority(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    queue_state_body = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row)).json()
+    scheduler_lease_body = client.post(
+        SCHEDULER_LEASE_ENDPOINT,
+        json=_scheduler_lease_request(history_body, row, queue_state_body),
+    ).json()
+    payload = _worker_attempt_request(history_body, row, scheduler_lease_body, local_path="C:\\raw\\candidate-b")
+
+    with pytest.raises(workflow_worker_attempt.CandidateBFullCorpusOperatorWorkflowWorkerAttemptError) as exc_info:
+        workflow_worker_attempt.record_candidate_b_full_corpus_operator_workflow_worker_attempt(payload)
+
+    assert exc_info.value.code == "candidate_b_full_corpus_operator_workflow_worker_attempt_forbidden_request_fields"
     assert exc_info.value.details["blocked_fields"] == ["local_path"]
 
 
