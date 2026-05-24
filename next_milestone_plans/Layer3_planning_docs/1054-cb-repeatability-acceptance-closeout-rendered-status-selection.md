@@ -1,0 +1,74 @@
+# Candidate B Full-Corpus Repeatability Acceptance Closeout Rendered Status Selection
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_selection_v1
+source_repeatability_acceptance_closeout_status_runtime: next_milestone_plans/Layer3_planning_docs/1053-cb-repeatability-acceptance-closeout-status-runtime.md
+current_main_entry: eadad722ab4c2256ef3621b040c673e6d85f1bce
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_v1
+selected_rendered_closeout_status_scope: operator_visible_read_only_status_review_projection_of_acceptance_closeout_status
+selected_rendered_closeout_status_mode: rendered_read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority
+selected_rendered_status_control_target: rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_status_control
+selected_rendered_status_surfaces: status,history,review
+existing_status_endpoint_reused_for_rendered_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status
+existing_closeout_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout
+existing_rendered_closeout_control_reused: candidate-b-repeatability-acceptance-closeout-submit
+existing_rendered_closeout_card_reused: candidate-b-full-corpus-repeatability-acceptance-closeout-card
+selected_rendered_status_fields: repeatability_acceptance_operator_closeout_receipt_id,repeatability_acceptance_operator_closeout_receipt_hash,repeatability_acceptance_operator_closeout_hash,repeatability_acceptance_operator_closeout_authority_hash,repeatability_acceptance_checkpoint_receipt_id,repeatability_acceptance_checkpoint_receipt_hash,repeatability_acceptance_checkpoint_authority_hash,original_repeatability_checkpoint_receipt_id,repeatability_rerun_trial_receipt_id,original_operator_workflow_receipt_id,rerun_operator_workflow_receipt_id,baseline_run_id,candidate_a_run_id,original_candidate_b_run_id,rerun_candidate_b_run_id,compare_target_set_hash,material_relative_name,acceptance_disposition,comparison_hash,negative_invariants_hash,rendered_acceptance_control_proof_state,closeout_status_state
+closeout_status_values_rendered: not_recorded,available,blocked
+missing_closeout_receipt_renders_not_recorded: true
+available_closeout_receipt_renders_available: true
+stale_closeout_receipt_must_fail_closed: true
+ambiguous_closeout_receipt_must_fail_closed: true
+redacted_closeout_receipt_ref_required: true
+raw_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+raw_stdout_rendered: false
+raw_stderr_rendered: false
+artifact_bytes_rendered: false
+acceptance_closeout_receipt_creation_admitted_now: false
+acceptance_closeout_receipt_mutation_admitted: false
+acceptance_checkpoint_receipt_mutation_admitted: false
+original_repeatability_checkpoint_receipt_mutation_admitted: false
+repeatability_rerun_trial_receipt_mutation_admitted: false
+original_workflow_receipt_mutation_admitted: false
+rerun_workflow_receipt_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+process_completion_result_receipt_mutation_admitted: false
+adopted_result_downstream_proof_receipt_mutation_admitted: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+process_kill_cancel_retry_resume_admitted: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_v1
+```
+
+This freeze selects the rendered/operator status projection for the existing read-only acceptance-closeout status endpoint. The rendered status should live beside the Candidate B full-corpus workflow history/review surfaces and the rendered closeout control. It should let an operator inspect whether closeout authority is missing, available, or blocked without using the API directly.
+
+The browser remains only a projection consumer. Missing closeout authority must render as `not_recorded`; current closeout authority must render as `available`; stale, contradictory, or ambiguous authority must fail closed through the server-owned status endpoint. The rendered status must reuse the existing closeout recording endpoint and rendered closeout card context without creating receipts, mutating lineage, re-running Candidate B or Layer 3, controlling processes, or expanding provider, connector, RAG/model, full mockup, default-selector, browser-storage, or frontend durable authority.
+
+## Coherence Check
+
+- Does this freeze add another status API endpoint? Recommended answer: no. It selects a rendered projection over the existing read-only closeout status endpoint.
+- Can the rendered status create or repair an acceptance-closeout receipt? Recommended answer: no. It can only display server-owned status authority.
+- How should missing closeout authority render? Recommended answer: `not_recorded`, with the recording control remaining the only admitted closeout creation path.
+- What proof is required next? Recommended answer: implement the rendered projection and prove it in both headless and headed Chrome.
