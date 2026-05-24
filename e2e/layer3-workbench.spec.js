@@ -7757,9 +7757,16 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   await expect(panel).toContainText('candidate_b_opendataloader_pdf_eligible_pdf_corpus_processing_only');
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/operator-status');
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/default-promotion/final-proof/status');
+  await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime');
   await expect(panel).toContainText('baseline rollback preserved');
   await expect(panel).toContainText('selector mutation from this panel');
   await expect(panel).toContainText('frontend durable authority');
+  await expect(page.locator('#candidate-b-broader-scope-runtime-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control',
+  );
+  await expect(page.locator('#candidate-b-broader-scope-runtime-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-broader-scope-runtime-submit')).toBeDisabled();
   await expect(page.locator('#candidate-b-final-proof-status-form')).toHaveAttribute(
     'data-rendered-mode',
     'rendered_candidate_b_default_promotion_final_proof_status_inspection_control',
@@ -7770,7 +7777,210 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
     '/source/ingestion/candidate-b/default-promotion/closure-evidence',
     '/source/ingestion/candidate-b/default-promotion/readiness-audit',
     '/source/ingestion/candidate-b/default-promotion/final-proof',
+    '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime',
   ]);
+});
+
+test('Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control', async ({ page, request }) => {
+  const readinessPayload = {
+    client_request_id: 'cb-broader-scope-rendered-readiness-test',
+    audit_mode: 'candidate_b_broader_eligible_corpus_scope_readiness_audit_v1',
+    exact_corpus_class_list: [
+      'office_documents',
+      'images_or_ocr',
+      'zip_members',
+      'structured_json_or_csv_or_xlsx',
+      'sec_edgar',
+      'web_or_database_sources',
+      'mixed_corpus_batches',
+    ],
+    explicit_exclusion_list: [
+      'selector_mutation_without_separate_freeze',
+      'source_expansion_without_separate_freeze',
+      'runtime_db_or_storage_expansion',
+      'pdf_or_image_text_material_ingestion',
+      'provider_object_writes',
+      'connector_dispatch',
+      'rag_vector_model_runtime',
+      'auth_security_expansion',
+      'full_mockup_activation',
+      'frontend_durable_authority',
+      'browser_storage_authority',
+    ],
+    proposed_default_scope_classes: ['structured_json_or_csv_or_xlsx'],
+    scope_evidence: Object.fromEntries([
+      'office_documents',
+      'images_or_ocr',
+      'zip_members',
+      'structured_json_or_csv_or_xlsx',
+      'sec_edgar',
+      'web_or_database_sources',
+      'mixed_corpus_batches',
+    ].map((scopeClass) => [
+      scopeClass,
+      {
+        current_parser_or_engine_authority: `current-main-authority:${scopeClass}`,
+        baseline_rollback_behavior: 'baseline_preserved',
+        candidate_a_interaction: 'candidate_a_semantics_preserved',
+        candidate_b_runtime_compatibility: 'compatible_for_separate_selection',
+        layer3_material_authority_bridge_compatibility: 'compatible_for_separate_selection',
+        artifact_family_preservation: 'preserved',
+        redaction_and_status_projection: 'redacted_operator_visible',
+        corpus_scale_proof: 'available',
+        fail_closed_stale_or_missing_authority: 'proven',
+        regression_disposition: 'no_unacceptable_regression_identified',
+        selector_mutation_required_now: false,
+        source_expansion_required_now: false,
+        runtime_db_or_storage_expansion_required_now: false,
+      },
+    ])),
+    rollback_to_baseline_confirmation: true,
+    operator_confirmation: true,
+  };
+  const readiness = await expectJson(await request.post(
+    '/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit',
+    { data: readinessPayload },
+  ));
+  expect(readiness.status).toBe('ready');
+  expect(readiness.audit_state).toBe('candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection');
+
+  const runtimePayloads = [];
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime',
+    async (route) => {
+      const payload = route.request().postDataJSON();
+      runtimePayloads.push(payload);
+      if (payload.selected_scope_classes.includes('office_documents')) {
+        await route.fulfill({
+          status: 409,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_runtime.v1',
+            schema_version: 1,
+            request_id: payload.client_request_id,
+            server_time: '2026-05-24T00:00:00Z',
+            status: 'blocked',
+            mode: 'candidate_b_broader_eligible_corpus_default_scope_runtime_v1',
+            runtime_state: 'candidate_b_broader_eligible_corpus_default_scope_runtime_blocked',
+            error: {
+              code: 'candidate_b_broader_scope_runtime_unproposed_scope_class',
+              message: 'Only exact classes proposed by a ready broader-scope audit are admitted.',
+              details: { selected_scope_classes: payload.selected_scope_classes },
+            },
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_runtime.v1',
+          schema_version: 1,
+          request_id: payload.client_request_id,
+          server_time: '2026-05-24T00:00:00Z',
+          status: 'selected',
+          mode: 'candidate_b_broader_eligible_corpus_default_scope_runtime_v1',
+          runtime_state: 'candidate_b_broader_eligible_corpus_default_scope_runtime_selected',
+          selection_receipt_id: 'cb-broader-scope-runtime-rendered-proof',
+          selection_receipt_hash: '5'.repeat(64),
+          selection_receipt_ref: 'candidate-b-broader-scope-runtime://rendered-proof/555555555555555555555555',
+          selection_receipt_status: 'recorded',
+          blocked_reasons: [],
+          readiness_audit_binding: {
+            schema_id: readiness.schema_id,
+            mode: readiness.mode,
+            required_state: 'candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection',
+            readiness_audit_id: payload.readiness_audit_id,
+            readiness_audit_hash: payload.readiness_audit_hash,
+            binding_verified: true,
+          },
+          selected_scope_classes: payload.selected_scope_classes,
+          selected_scope_classes_source: 'proposed_default_scope_classes_from_matching_ready_audit',
+          current_default_scope_preserved: 'eligible_effective_pdfs_only',
+          non_pdf_default_preserved: 'baseline',
+          baseline_rollback: { selector: 'baseline', available: true, depends_on_candidate_b_artifacts: false },
+          operator_visible_scope_status: {
+            broader_scope_runtime_selected: true,
+            selected_scope_class_count: payload.selected_scope_classes.length,
+            redacted_selection_receipt_available: true,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            provider_or_connector_secret_exposed: false,
+          },
+          default_scope_expansion_enabled: true,
+          selector_mutation_performed: false,
+          source_expansion_admitted: false,
+          runtime_db_or_storage_expansion_admitted: false,
+          pdf_or_image_text_material_ingestion_admitted: false,
+          provider_object_write_enabled: false,
+          connector_dispatch_enabled: false,
+          rag_vector_model_runtime_enabled: false,
+          auth_security_expansion_enabled: false,
+          full_mockup_activation_enabled: false,
+          frontend_durable_authority_enabled: false,
+          browser_storage_authority_enabled: false,
+          raw_local_path_exposed: false,
+          raw_url_exposed: false,
+        }),
+      });
+    },
+  );
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#candidate-b-broader-scope-runtime-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#candidate-b-broader-scope-runtime-readiness-json').fill(JSON.stringify(readiness));
+  await expect(page.locator('#candidate-b-broader-scope-runtime-submit')).toBeEnabled();
+
+  const selectedRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime')
+  ));
+  await page.locator('#candidate-b-broader-scope-runtime-submit').click();
+  const selectedPayload = (await selectedRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(selectedPayload, [
+    'client_request_id',
+    'runtime_mode',
+    'readiness_audit_id',
+    'readiness_audit_hash',
+    'readiness_audit',
+    'selected_scope_classes',
+    'rollback_to_baseline_confirmation',
+    'operator_confirmation',
+  ]);
+  expect(selectedPayload).toMatchObject({
+    runtime_mode: 'candidate_b_broader_eligible_corpus_default_scope_runtime_v1',
+    readiness_audit_id: readiness.audit_id,
+    readiness_audit_hash: readiness.audit_hash,
+    selected_scope_classes: ['structured_json_or_csv_or_xlsx'],
+    rollback_to_baseline_confirmation: true,
+    operator_confirmation: true,
+  });
+  await expect(panel).toContainText('candidate_b_broader_scope_runtime_selected');
+  await expect(panel).toContainText('receipt status: recorded');
+  await expect(panel).toContainText('receipt id: cb-broader-scope-runtime-rendered-proof');
+  await expect(panel).toContainText('selected classes: structured_json_or_csv_or_xlsx');
+  await expect(panel).toContainText('selector mutation performed: false');
+  await expect(panel).toContainText('raw local path exposed: false');
+  await expect(panel).toContainText('raw URL exposed: false');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+
+  await page.locator('#candidate-b-broader-scope-runtime-selected-classes').fill('office_documents');
+  await expect(page.locator('#candidate-b-broader-scope-runtime-submit')).toBeEnabled();
+  await page.locator('#candidate-b-broader-scope-runtime-submit').click();
+  await expect(panel).toContainText('candidate_b_broader_scope_runtime_unproposed_scope_class');
+  await expect(panel).toContainText('Only exact classes proposed by a ready broader-scope audit are admitted.');
+  expect(runtimePayloads).toHaveLength(2);
 });
 
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {

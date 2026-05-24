@@ -2953,6 +2953,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME = (
     PLANNING_DOCS
     / "1071-cb-broader-eligible-corpus-default-scope-runtime.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_RENDERED_STATUS = (
+    PLANNING_DOCS
+    / "1072-cb-broader-eligible-corpus-default-scope-runtime-rendered-status.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -101069,6 +101073,104 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_runtime(
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_status(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_RENDERED_STATUS: (
+            "Candidate B Broader Eligible Corpus Default Scope Runtime Rendered Status",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_status_v1",
+            "source_broader_eligible_corpus_default_scope_runtime: next_milestone_plans/Layer3_planning_docs/1071-cb-broader-eligible-corpus-default-scope-runtime.md",
+            "current_main_entry: e3007dd8824770585d442916067c9a40f3343927",
+            "rendered_status: broader_scope_default_scope_runtime_rendered_status_implemented",
+            "rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control",
+            "runtime_mode: candidate_b_broader_eligible_corpus_default_scope_runtime_v1",
+            "runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime",
+            "selected_state_visible: candidate_b_broader_eligible_corpus_default_scope_runtime_selected",
+            "blocked_state_visible: candidate_b_broader_eligible_corpus_default_scope_runtime_blocked",
+            "ready_audit_json_required: true",
+            "selected_scope_classes_required: true",
+            "readiness_audit_id_hash_bound: true",
+            "redacted_selection_receipt_visible: true",
+            "operator_visible_scope_status_visible: true",
+            "current_default_scope_preserved: eligible_effective_pdfs_only",
+            "non_pdf_default_preserved: baseline",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "rendered_contract_proof: e2e/layer3-workbench.spec.js::Layer 3 workbench renders Candidate B default-promotion status contract without route calls",
+            "rendered_runtime_status_proof: e2e/layer3-workbench.spec.js::Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control",
+            "proof_status:",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_status_v1",
+            "source_broader_eligible_corpus_default_scope_runtime: next_milestone_plans/Layer3_planning_docs/1071-cb-broader-eligible-corpus-default-scope-runtime.md",
+            "current_main_entry: e3007dd8824770585d442916067c9a40f3343927",
+            "rendered_status: broader_scope_default_scope_runtime_rendered_status_implemented",
+            "rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control",
+            "runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime",
+            "selected_state_visible: candidate_b_broader_eligible_corpus_default_scope_runtime_selected",
+            "blocked_state_visible: candidate_b_broader_eligible_corpus_default_scope_runtime_blocked",
+            "ready_audit_json_required: true",
+            "selected_scope_classes_required: true",
+            "redacted_selection_receipt_visible: true",
+            "operator_visible_scope_status_visible: true",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync_v1",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_BROADER_SCOPE_RUNTIME_RENDERED_MODE",
+            "rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control",
+            "CANDIDATE_B_BROADER_SCOPE_RUNTIME_MODE",
+            "candidate_b_broader_eligible_corpus_default_scope_runtime_v1",
+            "candidateBBroaderScopeRuntimeEndpointPath",
+            "candidateBBroaderScopeRuntimePayload",
+            "candidateBBroaderScopeRuntimeRows",
+            "candidate-b-broader-scope-runtime-form",
+            "candidate-b-broader-scope-runtime-readiness-json",
+            "candidate-b-broader-scope-runtime-selected-classes",
+            "candidate-b-broader-scope-runtime-submit",
+            "recordCandidateBBroaderScopeRuntime",
+            "State.candidateBBroaderScopeRuntimeInput = candidateBBroaderScopeRuntimeInputValues();",
+            "selector mutation performed",
+            "raw local path exposed",
+            "raw URL exposed",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench renders Candidate B default-promotion status contract without route calls",
+            "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control",
+            "rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control",
+            "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime",
+            "candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection",
+            "candidate_b_broader_eligible_corpus_default_scope_runtime_selected",
+            "candidate_b_broader_scope_runtime_unproposed_scope_class",
+            "runtimePayloads",
+            "expectOnlyPayloadKeys(selectedPayload",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope runtime rendered status term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -101987,6 +102089,7 @@ def main() -> int:
     _check_candidate_b_broader_eligible_corpus_scope_readiness_audit(errors)
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime_selection(errors)
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime(errors)
+    _check_candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_status(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
