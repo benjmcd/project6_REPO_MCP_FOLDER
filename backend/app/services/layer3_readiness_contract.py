@@ -285,6 +285,10 @@ def build_readiness_contract(
         "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint"
         ),
+        "candidate_b_full_corpus_operator_workflow_retry_completion_failure_admitted": True,
+        "candidate_b_full_corpus_operator_workflow_retry_completion_failure_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure"
+        ),
         "candidate_b_default_promotion_selector_switch_admitted": True,
         "candidate_b_default_promotion_selector_scope": ELIGIBLE_CORPUS_SCOPE,
         "source_directory_ingestion_scan_admitted": True,

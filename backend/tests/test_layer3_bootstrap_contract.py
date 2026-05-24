@@ -56,6 +56,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_retry_scheduler_lease"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_retry_worker_attempt"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint"] is True
+    assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_retry_completion_failure"] is True
     assert direct_body["features"]["source_directory_ingestion_scan"] is True
     assert direct_body["features"]["source_directory_ingestion_status"] is True
     assert direct_body["features"]["source_directory_material_preview"] is True
@@ -237,6 +238,17 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_endpoint"
     ] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint"
+    )
+    assert (
+        direct_body["execution_readiness"][
+            "candidate_b_full_corpus_operator_workflow_retry_completion_failure_admitted"
+        ]
+        is True
+    )
+    assert direct_body["execution_readiness"][
+        "candidate_b_full_corpus_operator_workflow_retry_completion_failure_endpoint"
+    ] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure"
     )
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_selector_switch_admitted"] is True
     assert (
