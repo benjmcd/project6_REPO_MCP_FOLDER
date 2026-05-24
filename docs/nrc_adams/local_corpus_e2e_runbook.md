@@ -974,3 +974,46 @@ next_exact_posture: candidate_b_rendered_operator_workflow_run_live_http_operato
 ```
 
 The rendered control starts only a server-owned workflow run from already prepared Candidate B full-corpus server authority. It then follows the run endpoint's returned `status_request` into the existing read-only status endpoint. This does not add broad corpus processing start, browser-owned runtime roots, source-directory selection, queue scheduling beyond the existing contract-only response, cancel runtime, selector mutation, provider writes, connector dispatch, model runtime, or full mockup activation.
+
+## Candidate B Rendered Workflow Run Live HTTP Proof
+
+```yaml
+milestone: candidate_b_rendered_operator_workflow_run_live_http_operator_proof_v1
+source_rendered_control_checkpoint: next_milestone_plans/Layer3_planning_docs/994-cb-rendered-run-start-control.md
+source_live_http_api_checkpoint: next_milestone_plans/Layer3_planning_docs/992-cb-server-run-live-http-proof.md
+current_main_entry: 1a124dfcfd548181acb633a9cacadcc1446f3228
+execution_mode: live-http-rendered-browser
+live_http_layer3_api_used: true
+testclient_dependency_used: false
+in_memory_db_used: false
+durable_database_required: true
+playwright_browser_surface_used: true
+selected_rendered_start_mode: rendered_candidate_b_full_corpus_operator_workflow_run_start_control
+selected_rendered_progress_mode: rendered_candidate_b_full_corpus_operator_workflow_run_progress_control
+run_endpoint_verified: true
+status_endpoint_verified_after_rendered_run: true
+run_endpoint_status_request_used_for_progress: true
+rendered_payload_allowed_fields_only: true
+forbidden_rendered_payload_fields_present: []
+headless_chromium_proof_receipt_id: cb-rendered-run-live-http-3e92b0d89030d0d329b52c4c
+headless_chromium_proof_hash: 3e92b0d89030d0d329b52c4cb6c77c3bc08adce41fd304676b76e0d02758791e
+headed_chromium_proof_receipt_id: cb-rendered-run-live-http-62a856b709e3504edf1307a3
+headed_chromium_proof_hash: 62a856b709e3504edf1307a33fc0275d5e8915dca7f0160563c5ec62d869869f
+raw_api_base_url_persisted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+runtime_roots_submitted_by_browser: false
+source_directory_submitted_by_browser: false
+bridge_dir_submitted_by_browser: false
+selector_mutation_performed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+verification_script_syntax: node --check .\tools\prove_candidate_b_rendered_workflow_run_live_http.js
+verification_headless_rendered_live_http: passed
+verification_headed_rendered_live_http: passed
+next_exact_posture: candidate_b_operator_workflow_run_history_and_lifecycle_selection_v1
+```
+
+The live rendered proof runs the actual `/review/layer3` page against a configured FastAPI server. The proof helper fills only server authority identifiers from a prepared Candidate B full-corpus workflow receipt, submits the rendered start control, verifies the live run endpoint, and verifies the browser posts the run endpoint's returned `status_request` to the live status endpoint. It proves rendered operator start/progress behavior without TestClient, route stubs, in-memory database state, browser-owned runtime roots, raw path/URL submission, selector mutation, provider writes, connector dispatch, model runtime, or full mockup activation.
