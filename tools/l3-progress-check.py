@@ -2914,6 +2914,9 @@ CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_FREEZE = (
 CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_CONTRACT = (
     PLANNING_DOCS / "1060-cb-operator-workflow-ownership-access-policy-contract.md"
 )
+CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_RUNTIME = (
+    PLANNING_DOCS / "1061-cb-operator-workflow-ownership-access-policy-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -99916,6 +99919,99 @@ def _check_candidate_b_operator_workflow_ownership_access_policy_contract(
                 )
 
 
+def _check_candidate_b_operator_workflow_ownership_access_policy_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_RUNTIME: (
+            "Candidate B Operator Workflow Ownership Access Policy Runtime",
+            "milestone: candidate_b_operator_workflow_ownership_access_policy_runtime_v1",
+            "source_operator_workflow_ownership_access_policy_contract: next_milestone_plans/Layer3_planning_docs/1060-cb-operator-workflow-ownership-access-policy-contract.md",
+            "current_main_entry: d62b03bbe0d881d20236359d3300b093e0f96054",
+            "runtime_status: core_run_status_history_implemented",
+            "implemented_policy_module: backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py",
+            "implemented_route_context_surface: backend/app/api/layer3.py",
+            "implemented_service_surfaces: backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_run.py,backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_status.py,backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_history.py",
+            "implemented_test_surfaces: backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_run.py,backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_status.py",
+            "selected_auth_mode: session_tenant_owner_authorization",
+            "selected_named_security_behavior: candidate_b_operator_workflow_owner_scoped_access_decision_v1",
+            "policy_decision_schema_id: layer3.candidate_b.operator_workflow.owner_access_policy_decision.v1",
+            "audit_event_schema_id: layer3.candidate_b.operator_workflow.ownership_access_audit_event.v1",
+            "policy_receipt_prefix: cb-full-corpus-operator-policy",
+            "protected_route_families_implemented: workflow_run,workflow_status,workflow_history",
+            "protected_rendered_surfaces_implemented: run_start,status,history",
+            "remaining_protected_route_families: lifecycle_expiry,queue_scheduler_worker_progress_completion_retry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status,review_status_projection,audit_projection",
+            "identity_authority_runtime: AUTH_OWNER_none_local_single_operator_or_AUTH_OWNER_proxy_trusted_header_hash",
+            "tenant_or_workspace_authority_runtime: AUTH_OWNER_none_local_single_workspace_or_AUTH_OWNER_proxy_trusted_groups_header_hash",
+            "operator_role_runtime: owner_can_run,auditor_can_read_status_history",
+            "workflow_receipt_owner_binding_runtime: server_owned_workflow_run.workflow_receipt_owner_binding",
+            "storage_root_access_runtime: configured_workflow_receipt_root_only_no_client_supplied_paths",
+            "audit_event_runtime: append_only_redacted_policy_receipt_under_configured_workflow_root",
+            "request_forbidden_fields: auth_policy_override,auth_security_directive,security_context,browser_identity,local_storage_identity,proxy_identity_header,raw_operator_identity,raw_tenant_id,raw_workspace_id,operator_role_override,permission_override,raw_storage_root,raw_receipt_path,raw_url,provider_secret,connector_secret",
+            "response_safe_fields: policy_schema_id,policy_hash,policy_status,actor_ref_hash,tenant_or_workspace_ref_hash,workflow_receipt_id,workflow_receipt_hash,route_family,rendered_surface,decision,reason_code,audit_event_id,audit_event_hash,audit_event_ref,next_actions",
+            "missing_identity_policy: reject_fail_closed_for_AUTH_OWNER_proxy",
+            "missing_tenant_or_workspace_policy: reject_fail_closed_for_AUTH_OWNER_proxy",
+            "untrusted_proxy_header_policy: reject_fail_closed",
+            "cross_owner_receipt_access_policy: reject_fail_closed",
+            "stale_policy_hash_policy: reject_fail_closed",
+            "browser_identity_policy: never_authority",
+            "local_storage_identity_policy: never_authority",
+            "local_proof_harness_compatibility: AUTH_OWNER_none_single_operator_dev_profile_unchanged",
+            "audit_event_write_failure_policy: reject_fail_closed",
+            "runtime_behavior_change_introduced_by_runtime: true",
+            "auth_security_runtime_admitted_now: true",
+            "multi_user_runtime_admitted_now: partially_core_surfaces_only",
+            "storage_policy_runtime_admitted_now: configured_workflow_receipt_root_only",
+            "audit_event_runtime_admitted_now: true",
+            "route_level_auth_dependency_admitted_now: core_candidate_b_operator_workflow_run_status_history",
+            "model_migration_admitted_now: false",
+            "rendered_identity_control_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_protected_route_expansion_v1",
+            "This runtime slice implements the first server-owned Candidate B workflow ownership/access policy layer",
+            "The remaining protected workflow route families still need a follow-up expansion pass",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_ownership_access_policy_runtime_v1",
+            "source_operator_workflow_ownership_access_policy_contract: next_milestone_plans/Layer3_planning_docs/1060-cb-operator-workflow-ownership-access-policy-contract.md",
+            "current_main_entry: d62b03bbe0d881d20236359d3300b093e0f96054",
+            "runtime_status: core_run_status_history_implemented",
+            "implemented_policy_module: backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py",
+            "protected_route_families_implemented: workflow_run,workflow_status,workflow_history",
+            "remaining_protected_route_families: lifecycle_expiry,queue_scheduler_worker_progress_completion_retry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status,review_status_projection,audit_projection",
+            "missing_identity_policy: reject_fail_closed_for_AUTH_OWNER_proxy",
+            "cross_owner_receipt_access_policy: reject_fail_closed",
+            "stale_policy_hash_policy: reject_fail_closed",
+            "audit_event_runtime_admitted_now: true",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_protected_route_expansion_v1",
+        ),
+        CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_CONTRACT: (
+            "next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B operator workflow ownership access policy runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -100823,6 +100919,7 @@ def main() -> int:
     _check_candidate_b_post_repeatability_production_hardening_selection(errors)
     _check_candidate_b_operator_workflow_ownership_access_policy_freeze(errors)
     _check_candidate_b_operator_workflow_ownership_access_policy_contract(errors)
+    _check_candidate_b_operator_workflow_ownership_access_policy_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

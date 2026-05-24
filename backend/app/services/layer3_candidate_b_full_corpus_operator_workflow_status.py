@@ -8,6 +8,7 @@ import re
 from typing import Any, Mapping
 
 from app.core.config import settings
+from app.services import layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy
 
 
 SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_status.v1"
@@ -194,6 +195,16 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
     receipt = _read_workflow_receipt(receipt_id)
     receipt_hash = _validate_workflow_receipt(receipt, receipt_id=receipt_id, fields=fields)
     _assert_no_raw_authority_exposure(receipt)
+    ownership_access_policy = workflow_access_policy.authorize_workflow_access(
+        fields=fields,
+        route_family="workflow_status",
+        rendered_surface="status",
+        workflow_receipt_id=receipt_id,
+        workflow_receipt_hash=receipt_hash,
+        authority_basis_hash=_workflow_authority_basis_hash(receipt),
+        requested_role=str(fields.get("operator_role") or workflow_access_policy.AUDITOR_ROLE),
+        existing_owner_binding=_workflow_owner_binding(receipt),
+    )
 
     corpus = _workflow_corpus(receipt)
     eligibility_summary = _workflow_eligibility_summary(corpus)
@@ -256,6 +267,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "process_completion_result_projection": process_completion_result_projection,
         "adopted_result_downstream_proof_projection": adopted_result_downstream_proof_projection,
         "operator_projection": operator_projection,
+        "ownership_access_policy": _policy_projection(ownership_access_policy),
     }
     status_hash = _stable_hash({key: status_input[key] for key in STATUS_HASH_KEYS})
     return {
@@ -278,7 +290,11 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
             **_negative_invariants(receipt),
             "operator_workflow_status_mutation_performed": False,
             "frontend_durable_authority_enabled": False,
+            "ownership_access_policy_audit_event_appended": True,
+            "browser_storage_identity_used": False,
+            "raw_identity_or_policy_secret_exposed": False,
         },
+        "ownership_access_policy": _policy_projection(ownership_access_policy),
         "next_allowed_actions": [
             "inspect Candidate B full-corpus operator workflow evidence",
             "use this receipt status as operator-repeatability evidence",
@@ -289,6 +305,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
 
 def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     fields = dict(payload)
+    workflow_access_policy.reject_forbidden_request_fields(fields)
     blocked = sorted(key for key in fields if key in _FORBIDDEN_REQUEST_FIELDS and fields.get(key) is not None)
     if blocked:
         raise CandidateBFullCorpusOperatorWorkflowStatusError(
@@ -435,6 +452,63 @@ def _validate_workflow_receipt(receipt: Mapping[str, Any], *, receipt_id: str, f
             http_status=409,
         )
     return expected_hash
+
+
+def _workflow_authority_basis_hash(receipt: Mapping[str, Any]) -> str:
+    server_run = receipt.get("server_owned_workflow_run")
+    if isinstance(server_run, Mapping):
+        authority_basis_hash = str(server_run.get("authority_basis_hash") or "").strip()
+        if authority_basis_hash:
+            return authority_basis_hash
+    return _stable_hash({key: receipt[key] for key in WORKFLOW_RECEIPT_HASH_KEYS if key in receipt})
+
+
+def _workflow_owner_binding(receipt: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    owner_binding = receipt.get("workflow_receipt_owner_binding")
+    if isinstance(owner_binding, Mapping):
+        return owner_binding
+    policy = receipt.get("ownership_access_policy")
+    if isinstance(policy, Mapping):
+        return policy
+    server_run = receipt.get("server_owned_workflow_run")
+    if isinstance(server_run, Mapping):
+        owner_binding = server_run.get("workflow_receipt_owner_binding")
+        if isinstance(owner_binding, Mapping):
+            return owner_binding
+        policy = server_run.get("ownership_access_policy")
+        if isinstance(policy, Mapping):
+            return policy
+    return None
+
+
+def _policy_projection(policy_decision: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "policy_schema_id": str(policy_decision["policy_schema_id"]),
+        "policy_status": str(policy_decision["policy_status"]),
+        "policy_hash": str(policy_decision["policy_hash"]),
+        "actor_ref_hash": str(policy_decision["actor_ref_hash"]),
+        "tenant_or_workspace_ref_hash": str(policy_decision["tenant_or_workspace_ref_hash"]),
+        "workflow_receipt_id": str(policy_decision["workflow_receipt_id"]),
+        "workflow_receipt_hash": str(policy_decision["workflow_receipt_hash"]),
+        "route_family": str(policy_decision["route_family"]),
+        "rendered_surface": str(policy_decision["rendered_surface"]),
+        "decision": str(policy_decision["decision"]),
+        "reason_code": str(policy_decision["reason_code"]),
+        "audit_event_id": str(policy_decision["audit_event_id"]),
+        "audit_event_hash": str(policy_decision["audit_event_hash"]),
+        "audit_event_ref": str(policy_decision["audit_event_ref"]),
+        "next_actions": list(policy_decision["next_actions"]),
+        "raw_operator_identity_exposed": False,
+        "raw_proxy_header_exposed": False,
+        "raw_tenant_or_workspace_exposed": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "raw_token_exposed": False,
+        "provider_or_connector_secret_exposed": False,
+        "artifact_bytes_exposed": False,
+        "browser_storage_authority_used": False,
+        "frontend_durable_authority_enabled": False,
+    }
 
 
 def _workflow_corpus(receipt: Mapping[str, Any]) -> dict[str, Any]:

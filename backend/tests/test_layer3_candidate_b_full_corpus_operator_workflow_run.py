@@ -16,6 +16,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
+from app.services import layer3_candidate_b_operator_workflow_access_policy as access_policy
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_completion_failure as workflow_completion_failure
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_execution_boundary as workflow_execution_boundary
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_lifecycle as workflow_lifecycle
@@ -100,6 +101,8 @@ def client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         "layer3_candidate_b_full_corpus_operator_workflow_dir",
         str(tmp_path / "workflow-receipts"),
     )
+    monkeypatch.setattr(settings, "auth_owner", "none")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", False)
     app.openapi_schema = None
     with TestClient(app) as test_client:
         yield test_client
@@ -892,6 +895,12 @@ def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatibl
     assert body["source_operator_workflow_receipt_hash"] == source_receipt["receipt_hash"]
     assert body["runtime_root_lifecycle"]["lifecycle_receipt_id"] == RUNTIME_ROOT_LIFECYCLE_RECEIPT_ID
     assert body["compare_target_set_hash"] == COMPARE_TARGET_SET_HASH
+    policy = body["ownership_access_policy"]
+    assert policy["policy_schema_id"] == access_policy.POLICY_SCHEMA_ID
+    assert policy["policy_status"] == "admitted"
+    assert policy["route_family"] == "workflow_run"
+    assert policy["rendered_surface"] == "run_start"
+    assert policy["audit_event_id"].startswith(access_policy.POLICY_RECEIPT_PREFIX)
     assert body["rendered_run_start_control_admitted"] is True
     assert body["rendered_progress_control_admitted"] is True
     assert body["selector_mutation_performed"] is False
@@ -907,6 +916,17 @@ def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatibl
         / "receipt.json"
     )
     assert run_receipt_file.is_file()
+    run_receipt = json.loads(run_receipt_file.read_text(encoding="utf-8"))
+    owner_binding = run_receipt["server_owned_workflow_run"]["workflow_receipt_owner_binding"]
+    assert owner_binding["actor_ref_hash"] == policy["actor_ref_hash"]
+    assert owner_binding["tenant_or_workspace_ref_hash"] == policy["tenant_or_workspace_ref_hash"]
+    assert owner_binding["policy_hash"] == policy["policy_hash"]
+    audit_path = (
+        Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+        / policy["audit_event_id"]
+        / "receipt.json"
+    )
+    assert audit_path.is_file()
 
     status_response = client.post(STATUS_ENDPOINT, json=body["status_request"])
     assert status_response.status_code == 200
@@ -935,6 +955,35 @@ def test_candidate_b_full_corpus_operator_workflow_run_is_idempotent(client: Tes
     assert second["authority_basis_hash"] == first["authority_basis_hash"]
     assert first["idempotent_replay"] is False
     assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_run_proxy_owner_can_create_bound_receipt(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_source_receipt()
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    actor_ref_hash = access_policy._stable_hash({"auth_owner": "proxy", "actor_ref": "alice"})
+    tenant_ref_hash = access_policy._stable_hash(
+        {"auth_owner": "proxy", "tenant_or_workspace_ref": "tenant-a"}
+    )
+
+    response = client.post(
+        RUN_ENDPOINT,
+        json=_run_request(),
+        headers={"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    policy = body["ownership_access_policy"]
+    assert policy["actor_ref_hash"] == actor_ref_hash
+    assert policy["tenant_or_workspace_ref_hash"] == tenant_ref_hash
+    receipt = json.loads(_workflow_receipt_file(body["operator_workflow_receipt_id"]).read_text(encoding="utf-8"))
+    owner_binding = receipt["server_owned_workflow_run"]["workflow_receipt_owner_binding"]
+    assert owner_binding["actor_ref_hash"] == actor_ref_hash
+    assert owner_binding["tenant_or_workspace_ref_hash"] == tenant_ref_hash
 
 
 def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_runs(
