@@ -2553,3 +2553,38 @@ next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_
 ```
 
 The next rendered slice should make the already-server-projected retry terminal status visible in the existing read-only Candidate B workflow status and history controls. The browser may display only server-provided redacted retry terminal projection fields. It must not create or repair terminal receipts, mutate retry lineage, start jobs, admit cancel/resume, expose raw refs, or add frontend durable authority.
+
+### Candidate B Async Retry Terminal Rendered Status Projection Runtime
+
+```yaml
+milestone: candidate_b_async_retry_terminal_rendered_status_projection_v1
+source_rendered_retry_terminal_projection_selection: next_milestone_plans/Layer3_planning_docs/1024-cb-async-retry-terminal-rendered-status-projection-selection.md
+current_main_entry: e9f6b3c5d8dd0d32daf7dcced74904cc9d1ce143
+runtime_status: implemented
+selected_rendered_retry_terminal_projection_mode: rendered_read_only_projection_without_receipt_creation_lineage_mutation_or_frontend_authority
+selected_rendered_retry_terminal_projection_surfaces: status,history
+existing_rendered_status_control_reused: candidate-b-full-corpus-workflow-status-form
+existing_rendered_history_control_reused: candidate-b-full-corpus-workflow-history-form
+rendered_retry_terminal_projection_helper: candidateBRetryTerminalProjectionItems
+rendered_status_projection_card: Retry Terminal Projection
+rendered_status_e2e_target: e2e/layer3-workbench.spec.js::Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control
+rendered_history_e2e_target: e2e/layer3-workbench.spec.js::Layer 3 workbench refreshes Candidate B workflow history and inspects a selected run
+missing_retry_terminal_receipt_renders_not_recorded: true
+completed_retry_terminal_receipt_renders_completed: true
+failed_retry_terminal_receipt_renders_failed: true
+stale_retry_terminal_receipt_must_fail_closed_server_side: true
+ambiguous_retry_terminal_receipt_must_fail_closed_server_side: true
+retry_terminal_receipt_creation_admitted_now: false
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+frontend_durable_authority_enabled: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_background_job_execution_boundary_selection_v1
+```
+
+Operators can now inspect retry terminal status through the rendered full-corpus workflow status and history controls. The rendered projection shows server-provided retry terminal state, outcome, receipt authority, worker-attempt/progress-checkpoint binding, operator-safe failure code/phase, and guardrail fields without exposing raw paths, URLs, traces, logs, or artifact bytes.
