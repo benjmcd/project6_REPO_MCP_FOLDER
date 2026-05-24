@@ -574,8 +574,8 @@ class _FakeWorkflowRunClient:
                     "raw_local_path_exposed": False,
                     "raw_url_exposed": False,
                     "selector_mutation_performed": False,
-                    "rendered_run_start_control_admitted": False,
-                    "rendered_progress_control_admitted": False,
+                    "rendered_run_start_control_admitted": True,
+                    "rendered_progress_control_admitted": True,
                 }
             )
         if path.endswith("/operator-workflow/status"):
