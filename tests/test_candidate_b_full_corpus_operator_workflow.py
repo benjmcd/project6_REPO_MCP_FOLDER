@@ -10,7 +10,9 @@ sys.path.insert(1, str(REPO_ROOT))
 
 from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_completion_monitor as completion_monitor,
+    layer3_candidate_b_full_corpus_operator_repeatability_checkpoint as repeatability_checkpoint,
 )
+from app.api.layer3 import Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointResponse
 from tools import run_candidate_b_full_corpus_operator_workflow as workflow
 
 
@@ -304,6 +306,126 @@ def test_completion_monitor_rejects_raw_process_authority() -> None:
         raise AssertionError("completion monitor accepted raw process authority")
 
 
+def test_repeatability_checkpoint_records_append_only_receipt(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    row = _completion_monitor_history_row(
+        process_execution_state="started",
+        process_completion_state="completed",
+        adopted_proof_state="proven",
+    )
+    row["status_request"] = {"client_request_id": "status-proof"}
+    history = {"history_hash": "h" * 64, "history_rows": [row]}
+    status_projection = _repeatability_status_projection()
+    monitor_projection = _repeatability_monitor_projection()
+    monkeypatch.setattr(repeatability_checkpoint, "_current_history", lambda: history)
+    monkeypatch.setattr(
+        repeatability_checkpoint.workflow_status,
+        "candidate_b_full_corpus_operator_workflow_status",
+        lambda _payload: status_projection,
+    )
+    monkeypatch.setattr(
+        repeatability_checkpoint.completion_monitor,
+        "inspect_candidate_b_full_corpus_operator_workflow_completion_monitor",
+        lambda _payload: monitor_projection,
+    )
+    monkeypatch.setattr(repeatability_checkpoint, "_workflow_receipt_root", lambda: tmp_path)
+
+    payload = _repeatability_payload(row, history, status_projection, monitor_projection)
+
+    first = repeatability_checkpoint.record_candidate_b_full_corpus_operator_repeatability_checkpoint(payload)
+    replay = repeatability_checkpoint.record_candidate_b_full_corpus_operator_repeatability_checkpoint(payload)
+
+    assert first["repeatability_checkpoint_state"] == "repeatability_checkpoint_recorded"
+    assert first["append_only_repeatability_checkpoint_receipt"] is True
+    assert first["workflow_receipt_mutated"] is False
+    assert first["actual_corpus_processing_execution_admitted_now"] is False
+    assert first["process_control_admitted"] is False
+    assert first["raw_local_path_exposed"] is False
+    assert first["raw_url_exposed"] is False
+    assert first["repeatability_checkpoint_receipt_hash"] == replay["repeatability_checkpoint_receipt_hash"]
+    assert replay["idempotent_replay"] is True
+    assert (tmp_path / first["repeatability_checkpoint_receipt_id"] / "receipt.json").is_file()
+    Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointResponse.model_validate(first)
+
+
+def test_repeatability_checkpoint_rejects_not_downstream_proven_monitor(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    row = _completion_monitor_history_row(
+        process_execution_state="started",
+        process_completion_state="completed",
+        adopted_proof_state="proven",
+    )
+    row["status_request"] = {"client_request_id": "status-proof"}
+    history = {"history_hash": "h" * 64, "history_rows": [row]}
+    status_projection = _repeatability_status_projection()
+    monitor_projection = {
+        **_repeatability_monitor_projection(),
+        "completion_monitor_state": "completed_without_downstream_proof",
+    }
+    monkeypatch.setattr(repeatability_checkpoint, "_current_history", lambda: history)
+    monkeypatch.setattr(
+        repeatability_checkpoint.workflow_status,
+        "candidate_b_full_corpus_operator_workflow_status",
+        lambda _payload: status_projection,
+    )
+    monkeypatch.setattr(
+        repeatability_checkpoint.completion_monitor,
+        "inspect_candidate_b_full_corpus_operator_workflow_completion_monitor",
+        lambda _payload: monitor_projection,
+    )
+    monkeypatch.setattr(repeatability_checkpoint, "_workflow_receipt_root", lambda: tmp_path)
+
+    try:
+        repeatability_checkpoint.record_candidate_b_full_corpus_operator_repeatability_checkpoint(
+            _repeatability_payload(row, history, status_projection, monitor_projection)
+        )
+    except repeatability_checkpoint.CandidateBFullCorpusOperatorRepeatabilityCheckpointError as exc:
+        assert exc.code == (
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_completion_monitor_not_downstream_proven"
+        )
+    else:
+        raise AssertionError("repeatability checkpoint accepted a non-downstream-proven monitor")
+
+
+def test_repeatability_checkpoint_rejects_raw_request_authority() -> None:
+    payload = {
+        "client_request_id": "repeatability-proof",
+        "repeatability_checkpoint_mode": repeatability_checkpoint.REPEATABILITY_CHECKPOINT_MODE,
+        "operator_decision": repeatability_checkpoint.OPERATOR_DECISION,
+        "operator_workflow_receipt_id": "cb-full-corpus-operator-run-proof",
+        "operator_workflow_receipt_hash": "a" * 64,
+        "row_hash": "b" * 64,
+        "authority_basis_hash": "c" * 64,
+        "history_hash": "h" * 64,
+        "workflow_status_hash": "s" * 64,
+        "completion_monitor_hash": "m" * 64,
+        "runtime_root_lifecycle_receipt_id": "cb-full-corpus-runtime-roots-proof",
+        "bridge_receipt_id": "candidate-b-runtime-bridge-proof",
+        "downstream_proof_id": "candidate-b-downstream-proof",
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "compare_target_set_hash": "4" * 64,
+        "material_relative_name": "candidate-b/material.md",
+        "operator_runbook_repeatability_steps": list(repeatability_checkpoint.REQUIRED_RUNBOOK_STEPS),
+        "stdout": "raw output is not admitted",
+    }
+
+    try:
+        repeatability_checkpoint.record_candidate_b_full_corpus_operator_repeatability_checkpoint(payload)
+    except repeatability_checkpoint.CandidateBFullCorpusOperatorRepeatabilityCheckpointError as exc:
+        assert exc.code == (
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_forbidden_request_fields"
+        )
+        assert "stdout" in exc.details["blocked_fields"]
+    else:
+        raise AssertionError("repeatability checkpoint accepted raw request authority")
+
+
 def _completion_monitor_payload(row: dict[str, object], history: dict[str, object]) -> dict[str, object]:
     process_execution = row["process_execution_projection"]
     process_completion = row["process_completion_result_projection"]
@@ -381,6 +503,102 @@ def _completion_monitor_history_row(
                 "3" * 64 if adopted_proof_state == "proven" else ""
             ),
         },
+    }
+
+
+def _repeatability_status_projection() -> dict[str, object]:
+    return {
+        "workflow_status": "proven",
+        "workflow_status_hash": "s" * 64,
+        "workflow_receipt_id": "cb-full-corpus-operator-run-proof",
+        "workflow_receipt_hash": "a" * 64,
+        "bridge_receipt_id": "candidate-b-runtime-bridge-proof",
+        "downstream_proof_id": "candidate-b-downstream-proof",
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "compare_target_set_hash": "4" * 64,
+        "corpus": {"material_relative_name": "candidate-b/material.md"},
+        "runtime_root_lifecycle": {
+            "available": True,
+            "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-proof",
+            "lifecycle_receipt_hash": "5" * 64,
+            "runtime_parent_ref": "redacted://runtime-parent",
+            "root_count": 3,
+            "validate_only_triplet": True,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+        },
+        "artifact_family": {
+            "source_pdfs_retained": True,
+            "annotated_pdfs_retained": True,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+        },
+        "layer3": {"material_preview_compatible": True, "gate_b_compatible": True},
+        "baseline_rollback": {"available": True},
+    }
+
+
+def _repeatability_monitor_projection() -> dict[str, object]:
+    process_execution = {
+        "process_execution_projection_state": "started",
+        "process_execution_receipt_available": True,
+        "process_execution_receipt_id": "cb-full-corpus-operator-process-execution-proof",
+        "process_execution_receipt_hash": "d" * 64,
+        "process_execution_authority_hash": "e" * 64,
+    }
+    process_completion = {
+        "process_completion_result_projection_state": "completed",
+        "process_completion_result_receipt_available": True,
+        "process_completion_result_receipt_id": "cb-full-corpus-operator-process-result-proof",
+        "process_completion_result_receipt_hash": "f" * 64,
+        "process_completion_result_authority_hash": "1" * 64,
+    }
+    adopted_proof = {
+        "adopted_result_downstream_proof_projection_state": "proven",
+        "adopted_result_downstream_proof_receipt_available": True,
+        "adopted_result_downstream_proof_receipt_id": (
+            "cb-full-corpus-operator-adopted-result-downstream-proof-proof"
+        ),
+        "adopted_result_downstream_proof_receipt_hash": "2" * 64,
+        "adopted_result_downstream_proof_authority_hash": "3" * 64,
+    }
+    return {
+        "completion_monitor_state": "completed_downstream_proven",
+        "completion_monitor_hash": "m" * 64,
+        "process_execution_projection": process_execution,
+        "process_completion_result_projection": process_completion,
+        "adopted_result_downstream_proof_projection": adopted_proof,
+    }
+
+
+def _repeatability_payload(
+    row: dict[str, object],
+    history: dict[str, object],
+    status_projection: dict[str, object],
+    monitor_projection: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "client_request_id": "repeatability-proof",
+        "repeatability_checkpoint_mode": repeatability_checkpoint.REPEATABILITY_CHECKPOINT_MODE,
+        "operator_decision": repeatability_checkpoint.OPERATOR_DECISION,
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+        "workflow_status_hash": status_projection["workflow_status_hash"],
+        "completion_monitor_hash": monitor_projection["completion_monitor_hash"],
+        "runtime_root_lifecycle_receipt_id": "cb-full-corpus-runtime-roots-proof",
+        "bridge_receipt_id": status_projection["bridge_receipt_id"],
+        "downstream_proof_id": status_projection["downstream_proof_id"],
+        "baseline_run_id": status_projection["baseline_run_id"],
+        "candidate_a_run_id": status_projection["candidate_a_run_id"],
+        "candidate_b_run_id": status_projection["candidate_b_run_id"],
+        "compare_target_set_hash": status_projection["compare_target_set_hash"],
+        "material_relative_name": "candidate-b/material.md",
+        "operator_runbook_repeatability_steps": list(repeatability_checkpoint.REQUIRED_RUNBOOK_STEPS),
     }
 
 

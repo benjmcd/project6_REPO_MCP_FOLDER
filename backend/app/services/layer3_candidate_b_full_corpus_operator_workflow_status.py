@@ -141,6 +141,7 @@ _ALLOWED_REF_SCHEMES = (
     "candidate-b-full-corpus-operator-workflow-process://",
     "candidate-b-full-corpus-operator-workflow-process-result://",
     "candidate-b-full-corpus-operator-workflow-adopted-result-downstream-proof://",
+    "candidate-b-full-corpus-operator-workflow-repeatability-checkpoint://",
 )
 
 

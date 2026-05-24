@@ -47,6 +47,7 @@ from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_process_execution,
     layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint,
     layer3_candidate_b_full_corpus_operator_workflow_queue_state,
+    layer3_candidate_b_full_corpus_operator_repeatability_checkpoint,
     layer3_candidate_b_full_corpus_operator_workflow_retry_policy,
     layer3_candidate_b_full_corpus_operator_workflow_retry_completion_failure,
     layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint,
@@ -207,6 +208,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_endpoint: str
     candidate_b_full_corpus_operator_workflow_completion_monitor_admitted: bool
     candidate_b_full_corpus_operator_workflow_completion_monitor_endpoint: str
+    candidate_b_full_corpus_operator_repeatability_checkpoint_admitted: bool
+    candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint: str
     candidate_b_full_corpus_operator_workflow_retry_policy_admitted: bool
     candidate_b_full_corpus_operator_workflow_retry_policy_endpoint: str
     candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted: bool
@@ -3206,6 +3209,32 @@ class Layer3CandidateBFullCorpusOperatorWorkflowCompletionMonitorRequest(BaseMod
     adopted_result_downstream_proof_receipt_hash: str | None = None
 
 
+class Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    repeatability_checkpoint_mode: Literal[
+        "append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation"
+    ]
+    operator_decision: Literal["record_candidate_b_full_corpus_operator_repeatability_checkpoint"]
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+    workflow_status_hash: str = Field(min_length=64, max_length=64)
+    completion_monitor_hash: str = Field(min_length=64, max_length=64)
+    runtime_root_lifecycle_receipt_id: str = Field(min_length=1)
+    bridge_receipt_id: str = Field(min_length=1)
+    downstream_proof_id: str = Field(min_length=1)
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    candidate_b_run_id: str = Field(min_length=1)
+    compare_target_set_hash: str = Field(min_length=64, max_length=64)
+    material_relative_name: str = Field(min_length=1)
+    operator_runbook_repeatability_steps: list[str] = Field(min_length=4, max_length=4)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -5021,6 +5050,51 @@ class Layer3CandidateBFullCorpusOperatorWorkflowCompletionMonitorResponse(Layer3
     default_scope_expansion_admitted: bool
     selector_mutation_performed: bool
     negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    repeatability_checkpoint_state: str
+    repeatability_checkpoint_receipt_id: str
+    repeatability_checkpoint_hash: str
+    repeatability_checkpoint_authority_hash: str
+    repeatability_checkpoint_receipt_hash: str
+    repeatability_checkpoint_receipt_ref: str
+    repeatability_checkpoint: dict[str, Any]
+    repeatability_checkpoint_authority: dict[str, Any]
+    append_only_repeatability_checkpoint_receipt: bool
+    exclusive_repeatability_checkpoint_per_authority: bool
+    idempotent_replay: bool
+    workflow_receipt_mutated: bool
+    process_execution_receipt_mutated: bool
+    process_completion_result_receipt_mutated: bool
+    adopted_result_downstream_proof_receipt_mutated: bool
+    actual_corpus_processing_execution_admitted_now: bool
+    actual_subprocess_spawn_admitted_now: bool
+    process_control_admitted: bool
+    process_kill_cancel_retry_resume_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    default_scope_expansion_admitted: bool
+    raw_pid_admitted: bool
+    raw_stdout_admitted: bool
+    raw_stderr_admitted: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    history_endpoint: str
+    status_endpoint: str
+    completion_monitor_endpoint: str
+    repeatability_checkpoint_endpoint: str
+    status_request: dict[str, Any]
+    history_request: dict[str, Any]
+    completion_monitor_request: dict[str, Any]
     next_allowed_actions: list[str]
 
 
@@ -11147,6 +11221,27 @@ def post_candidate_b_full_corpus_operator_workflow_completion_monitor(
         )
     except (
         workflow_completion_monitor_service.CandidateBFullCorpusOperatorWorkflowCompletionMonitorError
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+    response_model=Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_repeatability_checkpoint(
+    payload: Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointRequest,
+) -> dict[str, Any] | JSONResponse:
+    repeatability_checkpoint_service = (
+        layer3_candidate_b_full_corpus_operator_repeatability_checkpoint
+    )
+    try:
+        return repeatability_checkpoint_service.record_candidate_b_full_corpus_operator_repeatability_checkpoint(
+            payload.model_dump(exclude_unset=True),
+        )
+    except (
+        repeatability_checkpoint_service.CandidateBFullCorpusOperatorRepeatabilityCheckpointError
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 

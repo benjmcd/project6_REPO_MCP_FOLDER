@@ -59,6 +59,7 @@ READINESS_REQUIRED_GATES = (
     "candidate-b-default-promotion-final-proof",
     "candidate-b-default-promotion-final-proof-status",
     "candidate-b-full-corpus-operator-workflow-status",
+    "candidate-b-full-corpus-operator-repeatability-checkpoint",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -110,6 +111,7 @@ READINESS_IMPLEMENTED_GATES = (
     "candidate-b-default-promotion-final-proof",
     "candidate-b-default-promotion-final-proof-status",
     "candidate-b-full-corpus-operator-workflow-status",
+    "candidate-b-full-corpus-operator-repeatability-checkpoint",
     "source-directory-external-export-download-prepare",
     "source-directory-external-export-download-deliver",
     "source-directory-external-export-download-delivery-status",
@@ -284,6 +286,10 @@ def build_readiness_contract(
         "candidate_b_full_corpus_operator_workflow_completion_monitor_admitted": True,
         "candidate_b_full_corpus_operator_workflow_completion_monitor_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor"
+        ),
+        "candidate_b_full_corpus_operator_repeatability_checkpoint_admitted": True,
+        "candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint"
         ),
         "candidate_b_full_corpus_operator_workflow_retry_policy_admitted": True,
         "candidate_b_full_corpus_operator_workflow_retry_policy_endpoint": (
