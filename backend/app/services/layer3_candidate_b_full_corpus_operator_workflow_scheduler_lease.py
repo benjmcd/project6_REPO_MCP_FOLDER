@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy,
     layer3_candidate_b_full_corpus_operator_workflow_history as workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run,
@@ -267,6 +268,13 @@ def _validate_selected_authority(
             http_status=409,
             details={"mismatches": mismatches},
         )
+    workflow_access_policy.authorize_history_row_access(
+        fields=fields,
+        row=row,
+        route_family="queue_scheduler_worker_progress_completion_retry",
+        rendered_surface="scheduler_lease",
+        requested_role=workflow_access_policy.OWNER_ROLE,
+    )
 
 
 def _selected_queue_state_receipt(

@@ -258,7 +258,13 @@ def _validate_selected_authority(
     fields: Mapping[str, Any],
 ) -> None:
     try:
-        workflow_progress_checkpoint._validate_selected_authority(history, row, fields)
+        workflow_progress_checkpoint._validate_selected_authority(
+            history,
+            row,
+            fields,
+            route_family="repeatability_checkpoint",
+            rendered_surface="repeatability_checkpoint",
+        )
     except workflow_progress_checkpoint.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError as exc:
         raise CandidateBFullCorpusOperatorRepeatabilityCheckpointError(
             f"candidate_b_full_corpus_operator_repeatability_checkpoint_{exc.code}",

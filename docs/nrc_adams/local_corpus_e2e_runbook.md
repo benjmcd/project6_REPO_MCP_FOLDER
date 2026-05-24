@@ -4208,3 +4208,35 @@ next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_protec
 ```
 
 The first runtime pass now protects Candidate B workflow run, status, and history with server-owned policy decisions and redacted append-only audit receipts. It preserves the local `AUTH_OWNER=none` operator harness while making proxy-owned operation fail closed unless trusted server identity and tenant/workspace headers are present and match any stored workflow owner binding. The remaining workflow route families still need policy-context expansion before this can be described as complete ownership enforcement.
+
+### Candidate B Operator Workflow Ownership Access Policy Protected Route Expansion
+
+```yaml
+milestone: candidate_b_operator_workflow_ownership_access_policy_protected_route_expansion_v1
+source_operator_workflow_ownership_access_policy_runtime: next_milestone_plans/Layer3_planning_docs/1061-cb-operator-workflow-ownership-access-policy-runtime.md
+current_main_entry: 632d44ec1516235258ce33f0a63a4180cb28ca87
+runtime_status: protected_route_family_policy_context_expanded
+implemented_policy_module: backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py
+implemented_route_context_surface: backend/app/api/layer3.py
+protected_route_families_implemented: workflow_run,workflow_status,workflow_history,lifecycle_expiry,queue_scheduler_worker_progress_completion_retry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout
+remaining_protected_route_families: closeout_status,review_status_projection,audit_projection
+shared_row_authority_policy_helper: authorize_history_row_access
+route_context_wrapped_api_surfaces: lifecycle_expire,queue_state,scheduler_lease,worker_attempt,progress_checkpoint,completion_failure,retry_policy,retry_queue_state,retry_scheduler_lease,retry_worker_attempt,retry_progress_checkpoint,retry_completion_failure,execution_boundary,process_execution,process_completion_result,adopted_result_downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,acceptance_closeout_status
+cross_owner_receipt_access_policy: reject_fail_closed
+missing_identity_policy: reject_fail_closed_for_AUTH_OWNER_proxy
+untrusted_proxy_header_policy: reject_fail_closed
+audit_event_runtime: append_only_redacted_policy_receipt_under_configured_workflow_root
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+proof_status: local_passed
+next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_closeout_status_review_audit_projection_v1
+```
+
+The protected-route expansion carries trusted policy request context into the remaining Candidate B operator workflow API route families and enforces owner/auditor policy at the shared workflow-row authority boundary. The focused regression covers proxy-owned queue-state continuation, redacted policy audit emission, and fail-closed cross-owner rejection. Closeout-status, review-status projection, and audit projection remain next because they are read-only projection surfaces that need explicit projection-policy treatment.

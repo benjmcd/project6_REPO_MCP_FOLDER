@@ -244,7 +244,13 @@ def _validate_selected_authority(
     fields: Mapping[str, Any],
 ) -> None:
     try:
-        workflow_progress_checkpoint._validate_selected_authority(history, row, fields)
+        workflow_progress_checkpoint._validate_selected_authority(
+            history,
+            row,
+            fields,
+            route_family="process_execution",
+            rendered_surface="process_execution",
+        )
     except workflow_progress_checkpoint.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError as exc:
         raise CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
             f"candidate_b_full_corpus_operator_workflow_process_execution_{exc.code}",

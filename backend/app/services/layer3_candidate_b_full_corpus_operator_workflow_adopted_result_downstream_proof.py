@@ -228,7 +228,13 @@ def _validate_selected_authority(
     fields: Mapping[str, Any],
 ) -> None:
     try:
-        workflow_progress_checkpoint._validate_selected_authority(history, row, fields)
+        workflow_progress_checkpoint._validate_selected_authority(
+            history,
+            row,
+            fields,
+            route_family="downstream_proof",
+            rendered_surface="adopted_result_downstream_proof",
+        )
     except workflow_progress_checkpoint.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError as exc:
         raise CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError(
             f"candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_{exc.code}",
