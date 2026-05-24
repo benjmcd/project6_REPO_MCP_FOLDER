@@ -229,6 +229,10 @@ def build_readiness_contract(
         "candidate_b_broader_eligible_corpus_scope_readiness_audit_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit"
         ),
+        "candidate_b_broader_eligible_corpus_default_scope_runtime_admitted": True,
+        "candidate_b_broader_eligible_corpus_default_scope_runtime_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime"
+        ),
         "candidate_b_default_promotion_final_proof_admitted": True,
         "candidate_b_default_promotion_final_proof_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/default-promotion/final-proof"

@@ -39,6 +39,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "candidate_b_default_promotion_closure_evidence": True,
     "candidate_b_default_promotion_readiness_audit": True,
     "candidate_b_broader_eligible_corpus_scope_readiness_audit": True,
+    "candidate_b_broader_eligible_corpus_default_scope_runtime": True,
     "candidate_b_default_promotion_final_proof": True,
     "candidate_b_default_promotion_final_proof_status": True,
     "candidate_b_full_corpus_operator_workflow_status": True,
@@ -224,6 +225,10 @@ def build_bootstrap_contract(
             "candidate_b_broader_eligible_corpus_scope_readiness_audit_admitted": True,
             "candidate_b_broader_eligible_corpus_scope_readiness_audit_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit"
+            ),
+            "candidate_b_broader_eligible_corpus_default_scope_runtime_admitted": True,
+            "candidate_b_broader_eligible_corpus_default_scope_runtime_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime"
             ),
             "candidate_b_default_promotion_final_proof_admitted": True,
             "candidate_b_default_promotion_final_proof_endpoint": (
