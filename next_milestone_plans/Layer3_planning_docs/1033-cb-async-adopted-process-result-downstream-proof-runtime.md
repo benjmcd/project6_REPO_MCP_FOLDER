@@ -1,0 +1,58 @@
+# Candidate B Async Adopted Process Result Downstream Operator Proof Runtime
+
+```yaml
+milestone: candidate_b_async_adopted_process_result_downstream_operator_proof_v1
+source_adopted_process_result_downstream_proof_selection: next_milestone_plans/Layer3_planning_docs/1032-cb-async-adopted-process-result-downstream-proof-selection.md
+current_main_entry: 516807d78a2f4a87e2931e86bdf967cd0773f1fd
+runtime_status: implemented
+selected_downstream_proof_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof
+selected_downstream_proof_mode: read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution
+selected_downstream_proof_action: record_candidate_b_async_adopted_process_result_downstream_operator_proof
+selected_downstream_proof_receipt_model: append_only_receipt_binding_process_completion_result_receipt_to_validated_adopted_result_status_and_downstream_proof
+completed_process_result_required: true
+adopted_result_status_request_revalidation_required: true
+adopted_result_downstream_proof_status_required: proven
+missing_process_completion_result_receipt_rejects: true
+stale_process_completion_result_receipt_rejects: true
+stale_or_unrelated_adopted_result_status_rejects: true
+unproven_downstream_result_rejects: true
+competing_adopted_result_downstream_proof_receipt_rejects: true
+status_history_projection_after_downstream_proof: true
+rendered_operator_projection_after_downstream_proof: true
+adopted_result_downstream_proof_runtime_selected: true
+process_completion_result_receipt_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+execution_boundary_receipt_mutation_admitted: false
+adopted_result_workflow_receipt_mutation_admitted: false
+downstream_proof_receipt_mutation_admitted: false
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+implementation_scope: backend_service_api_readiness_status_history_rendered_operator_control_focused_tests
+next_exact_posture: candidate_b_async_operator_workflow_completion_monitor_selection_v1
+```
+
+The runtime records an append-only adopted-result downstream proof receipt only after the selected workflow row has a completed process-completion/result projection. The server reloads the process-completion/result receipt, revalidates its stored adopted-result status request, and requires the adopted result's Layer 3 downstream proof projection to remain proven.
+
+This slice does not rerun Candidate B, replay Layer 3, start a background process, execute corpus processing, mutate the process-completion/result receipt, mutate the adopted result workflow receipt, mutate downstream proof authority, broaden Candidate B default scope, or admit provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser storage, or frontend durable authority.
+
+The rendered operator control submits only server-projected receipt ids and hashes from the history row. It cannot submit commands, local paths, URLs, runtime roots, raw stdout, stderr, traces, logs, provider refs, connector destinations, model/RAG controls, selector mutation controls, artifact bytes, or durable authority.
