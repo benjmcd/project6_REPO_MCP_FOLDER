@@ -135,6 +135,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["candidate_b_full_corpus_repeatability_rerun_trial_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial"
     )
+    assert direct["candidate_b_full_corpus_repeatability_acceptance_closeout_admitted"] is True
+    assert direct["candidate_b_full_corpus_repeatability_acceptance_closeout_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout"
+    )
     assert direct["candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted"] is True
     assert direct["candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease"

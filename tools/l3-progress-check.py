@@ -2878,6 +2878,9 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_RENDERED_RUNTIME = (
 CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_SELECTION = (
     PLANNING_DOCS / "1048-cb-repeatability-acceptance-closeout-selection.md"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RUNTIME = (
+    PLANNING_DOCS / "1049-cb-repeatability-acceptance-closeout-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -98609,6 +98612,101 @@ def _check_candidate_b_full_corpus_repeatability_acceptance_closeout_selection(
                 )
 
 
+def _check_candidate_b_full_corpus_repeatability_acceptance_closeout_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RUNTIME: (
+            "Candidate B Full-Corpus Repeatability Acceptance Operator Closeout Runtime",
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_operator_closeout_v1",
+            "source_repeatability_acceptance_closeout_selection: next_milestone_plans/Layer3_planning_docs/1048-cb-repeatability-acceptance-closeout-selection.md",
+            "current_main_entry: 894c82f70ddcd79cf3ef5976f1696eb279777078",
+            "runtime_status: implemented",
+            "selected_closeout_scope: server_owned_operator_closeout_receipt_over_accepted_candidate_b_full_corpus_repeatability_evidence",
+            "selected_closeout_model: append_only_closeout_receipt_over_acceptance_checkpoint_rendered_proof_runbook_and_negative_invariants",
+            "selected_closeout_action: record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout",
+            "implemented_closeout_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout",
+            "implemented_service: backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py",
+            "repeatability_acceptance_checkpoint_receipt_required: true",
+            "acceptance_checkpoint_state_required: repeatability_acceptance_checkpoint_recorded",
+            "original_repeatability_checkpoint_revalidated: true",
+            "repeatability_rerun_trial_receipt_revalidated: true",
+            "full_corpus_workflow_history_status_monitor_chain_revalidated: true",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "blocked_disposition: regression_detected_blocked",
+            "regression_detected_must_block_closeout: true",
+            "rendered_acceptance_control_proof_state_required: headed_and_headless_passed",
+            "negative_invariants_bound: true",
+            "append_only_closeout_receipt: true",
+            "exclusive_closeout_receipt_per_authority: true",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_control_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_operator_closeout_v1",
+            "source_repeatability_acceptance_closeout_selection: next_milestone_plans/Layer3_planning_docs/1048-cb-repeatability-acceptance-closeout-selection.md",
+            "current_main_entry: 894c82f70ddcd79cf3ef5976f1696eb279777078",
+            "runtime_status: implemented",
+            "implemented_closeout_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout",
+            "implemented_service: backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py",
+            "repeatability_acceptance_checkpoint_receipt_required: true",
+            "acceptance_checkpoint_state_required: repeatability_acceptance_checkpoint_recorded",
+            "original_repeatability_checkpoint_revalidated: true",
+            "repeatability_rerun_trial_receipt_revalidated: true",
+            "full_corpus_workflow_history_status_monitor_chain_revalidated: true",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "blocked_disposition: regression_detected_blocked",
+            "regression_detected_must_block_closeout: true",
+            "rendered_acceptance_control_proof_state_required: headed_and_headless_passed",
+            "negative_invariants_bound: true",
+            "append_only_closeout_receipt: true",
+            "exclusive_closeout_receipt_per_authority: true",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_control_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_SELECTION: (
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_operator_closeout_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus repeatability acceptance closeout runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -99504,6 +99602,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_repeatability_acceptance_rendered_selection(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_rendered_runtime(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_closeout_selection(errors)
+    _check_candidate_b_full_corpus_repeatability_acceptance_closeout_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
