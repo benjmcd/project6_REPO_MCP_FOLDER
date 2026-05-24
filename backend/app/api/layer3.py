@@ -45,6 +45,7 @@ from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_retry_policy,
     layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease,
+    layer3_candidate_b_full_corpus_operator_workflow_retry_worker_attempt,
     layer3_candidate_b_full_corpus_operator_workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease,
     layer3_candidate_b_full_corpus_operator_workflow_status,
@@ -195,6 +196,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_retry_queue_state_endpoint: str
     candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_admitted: bool
     candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_endpoint: str
+    candidate_b_full_corpus_operator_workflow_retry_worker_attempt_admitted: bool
+    candidate_b_full_corpus_operator_workflow_retry_worker_attempt_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2988,6 +2991,30 @@ class Layer3CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseRequest(BaseM
     history_hash: str = Field(min_length=64, max_length=64)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    retry_worker_attempt_mode: Literal["append_only_retry_worker_attempt_receipt_without_job_execution"]
+    operator_decision: Literal["record_candidate_b_async_retry_worker_attempt"]
+    retry_attempt_number: Literal[2]
+    retry_scheduler_lease_receipt_id: str = Field(min_length=1)
+    retry_scheduler_lease_receipt_hash: str = Field(min_length=64, max_length=64)
+    retry_scheduler_lease_authority_hash: str = Field(min_length=64, max_length=64)
+    retry_queue_state_receipt_id: str = Field(min_length=1)
+    retry_queue_state_receipt_hash: str = Field(min_length=64, max_length=64)
+    retry_queue_state_authority_hash: str = Field(min_length=64, max_length=64)
+    retry_policy_receipt_id: str = Field(min_length=1)
+    retry_policy_authority_hash: str = Field(min_length=64, max_length=64)
+    completion_failure_receipt_id: str = Field(min_length=1)
+    failed_worker_attempt_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -4251,6 +4278,88 @@ class Layer3CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseResponse(Laye
     job_execution_runtime_selected_now: bool
     raw_exception_trace_admitted: bool
     raw_log_excerpt_admitted: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptResponse(Layer3BaseResponse):
+    mode: str
+    retry_worker_attempt_state: str
+    retry_worker_attempt_receipt_id: str
+    retry_worker_attempt_receipt_hash: str
+    retry_worker_attempt_receipt_ref: str
+    retry_attempt_number: int
+    retry_scheduler_lease_receipt_id: str
+    retry_scheduler_lease_receipt_hash: str
+    retry_scheduler_lease_authority_hash: str
+    retry_queue_state_receipt_id: str
+    retry_queue_state_receipt_hash: str
+    retry_queue_state_authority_hash: str
+    retry_policy_receipt_id: str
+    retry_policy_receipt_hash: str
+    retry_policy_authority_hash: str
+    completion_failure_receipt_id: str
+    completion_failure_receipt_hash: str
+    completion_failure_authority_hash: str
+    failed_worker_attempt_receipt_id: str
+    failed_worker_attempt_receipt_hash: str
+    failed_worker_attempt_authority_hash: str
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    source_operator_workflow_receipt_id: str
+    source_operator_workflow_receipt_hash: str
+    authority_basis_hash: str
+    row_hash: str
+    history_hash: str
+    retry_worker_attempt: dict[str, Any]
+    retry_worker_attempt_hash: str
+    retry_worker_attempt_authority: dict[str, Any]
+    retry_worker_attempt_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_retry_worker_attempt_receipt: bool
+    exclusive_retry_worker_attempt_per_retry_scheduler_lease: bool
+    retry_scheduler_lease_receipt_mutated: bool
+    retry_queue_state_receipt_mutated: bool
+    retry_policy_receipt_mutated: bool
+    completion_failure_receipt_mutated: bool
+    failed_worker_attempt_receipt_mutated: bool
+    progress_checkpoint_receipt_mutated: bool
+    scheduler_lease_receipt_mutated: bool
+    queue_state_receipt_mutated: bool
+    source_run_receipt_mutated: bool
+    run_state_before_retry_worker_attempt: str
+    run_state_after_retry_worker_attempt: str
+    retry_scheduler_lease_state_before_retry_worker_attempt: str
+    selected_retry_worker_attempt_mode: str
+    selected_retry_worker_attempt_endpoint: str
+    selected_retry_worker_attempt_receipt_binding: str
+    selected_retry_worker_attempt_idempotency_basis: str
+    selected_retry_worker_attempt_number: int
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    retry_queue_state_endpoint: str
+    retry_scheduler_lease_endpoint: str
+    retry_worker_attempt_endpoint: str
+    retry_worker_attempt_runtime_selected: bool
+    background_process_runtime_selected_now: bool
+    job_execution_runtime_selected_now: bool
+    retry_progress_checkpoint_runtime_selected_now: bool
+    retry_completion_failure_runtime_selected_now: bool
+    cancel_runtime_selected_now: bool
+    resume_runtime_selected_now: bool
+    expiry_enforcement_runtime_selected_now: bool
+    default_scope_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
     raw_local_path_exposed: bool
     raw_url_exposed: bool
     artifact_bytes_exposed: bool
@@ -10214,6 +10323,27 @@ def post_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(
             payload.model_dump(exclude_unset=True),
         )
     except workflow_retry_scheduler_lease_service.CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/worker/attempt",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_retry_worker_attempt_service = layer3_candidate_b_full_corpus_operator_workflow_retry_worker_attempt
+    try:
+        return (
+            workflow_retry_worker_attempt_service.record_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        workflow_retry_worker_attempt_service.CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptError
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
