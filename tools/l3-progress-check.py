@@ -2761,6 +2761,9 @@ CANDIDATE_B_ASYNC_COMPLETION_FAILURE_SELECTION = (
 CANDIDATE_B_ASYNC_COMPLETION_FAILURE_RUNTIME = (
     PLANNING_DOCS / "1009-cb-async-completion-failure-runtime.md"
 )
+CANDIDATE_B_ASYNC_CANCEL_RETRY_RESUME_SELECTION = (
+    PLANNING_DOCS / "1010-cb-async-cancel-retry-resume-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -94079,6 +94082,92 @@ def _check_candidate_b_async_completion_failure_runtime(
                 )
 
 
+def _check_candidate_b_async_cancel_retry_resume_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_CANCEL_RETRY_RESUME_SELECTION: (
+            "Candidate B Async Cancel/Retry/Resume Policy Selection",
+            "milestone: candidate_b_async_cancel_retry_resume_policy_selection_v1",
+            "source_completion_failure_runtime: next_milestone_plans/Layer3_planning_docs/1009-cb-async-completion-failure-runtime.md",
+            "current_main_entry: e14ec1f9a78cb3ca85db2a3a83754de5413bf209",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_retry_policy_receipt_v1",
+            "selected_retry_policy_scope: server_owned_candidate_b_full_corpus_operator_workflow_failed_terminal_receipts",
+            "selected_retry_policy_mode: append_only_retry_policy_receipt_without_creating_retry_attempt_or_mutating_terminal_receipts",
+            "selected_retry_policy_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy",
+            "existing_completion_failure_endpoint_reused_for_terminal_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure",
+            "selected_retry_policy_receipt_model: append_only_retry_policy_receipt_without_mutating_completion_failure_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipts",
+            "selected_retry_policy_receipt_binding: completion_failure_receipt_id,completion_failure_receipt_hash,completion_failure_authority_hash,terminal_outcome,terminal_outcome_hash,worker_attempt_receipt_id,worker_attempt_receipt_hash,worker_attempt_authority_hash,latest_progress_checkpoint_receipt_id,latest_progress_checkpoint_receipt_hash,queue_state_receipt_id,scheduler_lease_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_policy_hash",
+            "selected_retry_policy_idempotency_basis: client_request_id_plus_retry_policy_authority_hash",
+            "terminal_outcome_required_for_retry: failed",
+            "completed_terminal_receipt_retry_rejected: true",
+            "missing_terminal_receipt_retry_rejected: true",
+            "stale_terminal_receipt_retry_rejected: true",
+            "retry_attempt_creation_admitted_now: false",
+            "completion_failure_receipt_mutation_admitted: false",
+            "progress_checkpoint_receipt_mutation_admitted: false",
+            "cancel_runtime_selected_now: false",
+            "retry_policy_runtime_selected_after_sync: true",
+            "retry_attempt_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "default_scope_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_policy_receipt_v1",
+            "Should cancel be first? Recommended answer: no.",
+            "Should resume be first? Recommended answer: no.",
+            "Should retry immediately create a new worker attempt? Recommended answer: no.",
+            "Should completed terminal receipts be retryable? Recommended answer: no.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_cancel_retry_resume_policy_selection_v1",
+            "source_completion_failure_runtime: next_milestone_plans/Layer3_planning_docs/1009-cb-async-completion-failure-runtime.md",
+            "current_main_entry: e14ec1f9a78cb3ca85db2a3a83754de5413bf209",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_retry_policy_receipt_v1",
+            "selected_retry_policy_mode: append_only_retry_policy_receipt_without_creating_retry_attempt_or_mutating_terminal_receipts",
+            "selected_retry_policy_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy",
+            "selected_retry_policy_idempotency_basis: client_request_id_plus_retry_policy_authority_hash",
+            "terminal_outcome_required_for_retry: failed",
+            "completed_terminal_receipt_retry_rejected: true",
+            "retry_attempt_creation_admitted_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_policy_runtime_selected_after_sync: true",
+            "retry_attempt_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_retry_policy_receipt_v1",
+            "It must reject completed terminal receipts",
+        ),
+        CANDIDATE_B_ASYNC_COMPLETION_FAILURE_RUNTIME: (
+            "next_exact_posture: candidate_b_async_cancel_retry_resume_policy_selection_v1",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async cancel/retry/resume selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -94935,6 +95024,7 @@ def main() -> int:
     _check_candidate_b_async_progress_checkpoint_runtime(errors)
     _check_candidate_b_async_completion_failure_selection(errors)
     _check_candidate_b_async_completion_failure_runtime(errors)
+    _check_candidate_b_async_cancel_retry_resume_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

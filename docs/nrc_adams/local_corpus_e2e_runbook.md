@@ -1731,3 +1731,56 @@ next_exact_posture: candidate_b_async_cancel_retry_resume_policy_selection_v1
 ```
 
 Operators can record exactly one terminal completion/failure receipt for a worker attempt with latest progress-checkpoint authority. The endpoint accepts `completed` or `failed`; failed receipts require short operator-safe failure code and phase tokens and reject raw traces/logs/paths/URLs.
+
+## Candidate B Async Cancel/Retry/Resume Policy Selection
+
+```yaml
+milestone: candidate_b_async_cancel_retry_resume_policy_selection_v1
+source_completion_failure_runtime: next_milestone_plans/Layer3_planning_docs/1009-cb-async-completion-failure-runtime.md
+current_main_entry: e14ec1f9a78cb3ca85db2a3a83754de5413bf209
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_retry_policy_receipt_v1
+selected_retry_policy_scope: server_owned_candidate_b_full_corpus_operator_workflow_failed_terminal_receipts
+selected_retry_policy_mode: append_only_retry_policy_receipt_without_creating_retry_attempt_or_mutating_terminal_receipts
+selected_retry_policy_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy
+existing_completion_failure_endpoint_reused_for_terminal_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure
+selected_retry_policy_receipt_model: append_only_retry_policy_receipt_without_mutating_completion_failure_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipts
+selected_retry_policy_receipt_binding: completion_failure_receipt_id,completion_failure_receipt_hash,completion_failure_authority_hash,terminal_outcome,terminal_outcome_hash,worker_attempt_receipt_id,worker_attempt_receipt_hash,worker_attempt_authority_hash,latest_progress_checkpoint_receipt_id,latest_progress_checkpoint_receipt_hash,queue_state_receipt_id,scheduler_lease_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_policy_hash
+selected_retry_policy_idempotency_basis: client_request_id_plus_retry_policy_authority_hash
+terminal_outcome_required_for_retry: failed
+completed_terminal_receipt_retry_rejected: true
+missing_terminal_receipt_retry_rejected: true
+stale_terminal_receipt_retry_rejected: true
+terminal_conflict_retry_rejected: true
+retry_attempt_creation_admitted_now: false
+completion_failure_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+worker_attempt_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+cancel_runtime_selected_now: false
+retry_policy_runtime_selected_after_sync: true
+retry_attempt_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_policy_receipt_v1
+```
+
+The selected next runtime should record append-only retry-policy authority over an existing failed terminal completion/failure receipt. It must reject completed terminal receipts, avoid creating a retry attempt in the same slice, preserve all prior queue/lease/attempt/progress/terminal/source receipts, and keep cancel, resume, expiry enforcement, job execution, provider/connector/model behavior, and full mockup activation outside this admission.
