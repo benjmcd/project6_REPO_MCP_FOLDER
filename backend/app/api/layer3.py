@@ -48,6 +48,7 @@ from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint,
     layer3_candidate_b_full_corpus_operator_workflow_queue_state,
     layer3_candidate_b_full_corpus_operator_repeatability_checkpoint,
+    layer3_candidate_b_full_corpus_repeatability_rerun_trial,
     layer3_candidate_b_full_corpus_operator_workflow_retry_policy,
     layer3_candidate_b_full_corpus_operator_workflow_retry_completion_failure,
     layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint,
@@ -210,6 +211,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_completion_monitor_endpoint: str
     candidate_b_full_corpus_operator_repeatability_checkpoint_admitted: bool
     candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint: str
+    candidate_b_full_corpus_repeatability_rerun_trial_admitted: bool
+    candidate_b_full_corpus_repeatability_rerun_trial_endpoint: str
     candidate_b_full_corpus_operator_workflow_retry_policy_admitted: bool
     candidate_b_full_corpus_operator_workflow_retry_policy_endpoint: str
     candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted: bool
@@ -3235,6 +3238,46 @@ class Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointRequest(BaseModel
     operator_runbook_repeatability_steps: list[str] = Field(min_length=4, max_length=4)
 
 
+class Layer3CandidateBFullCorpusRepeatabilityRerunTrialRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    rerun_trial_mode: Literal[
+        "append_only_repeatability_rerun_trial_receipt_without_process_execution_or_authority_mutation"
+    ]
+    operator_decision: Literal["record_candidate_b_full_corpus_repeatability_rerun_trial"]
+    original_repeatability_checkpoint_receipt_id: str = Field(min_length=1)
+    original_repeatability_checkpoint_receipt_hash: str = Field(min_length=64, max_length=64)
+    original_repeatability_checkpoint_hash: str = Field(min_length=64, max_length=64)
+    original_repeatability_checkpoint_authority_hash: str = Field(min_length=64, max_length=64)
+    original_operator_workflow_receipt_id: str = Field(min_length=1)
+    original_operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    original_row_hash: str = Field(min_length=64, max_length=64)
+    original_authority_basis_hash: str = Field(min_length=64, max_length=64)
+    original_history_hash: str = Field(min_length=64, max_length=64)
+    original_workflow_status_hash: str = Field(min_length=64, max_length=64)
+    original_completion_monitor_hash: str = Field(min_length=64, max_length=64)
+    rerun_operator_workflow_receipt_id: str = Field(min_length=1)
+    rerun_operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    rerun_row_hash: str = Field(min_length=64, max_length=64)
+    rerun_authority_basis_hash: str = Field(min_length=64, max_length=64)
+    rerun_history_hash: str = Field(min_length=64, max_length=64)
+    rerun_workflow_status_hash: str = Field(min_length=64, max_length=64)
+    rerun_completion_monitor_hash: str = Field(min_length=64, max_length=64)
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    original_candidate_b_run_id: str = Field(min_length=1)
+    rerun_candidate_b_run_id: str = Field(min_length=1)
+    compare_target_set_hash: str = Field(min_length=64, max_length=64)
+    material_relative_name: str = Field(min_length=1)
+    regression_disposition: Literal[
+        "no_regression_observed",
+        "delta_reviewed_no_regression",
+        "regression_detected_blocked",
+    ]
+    operator_runbook_repeatability_steps: list[str] = Field(min_length=7, max_length=7)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -5095,6 +5138,56 @@ class Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointResponse(Layer3Ba
     status_request: dict[str, Any]
     history_request: dict[str, Any]
     completion_monitor_request: dict[str, Any]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusRepeatabilityRerunTrialResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    repeatability_rerun_trial_state: str
+    repeatability_rerun_trial_receipt_id: str
+    repeatability_rerun_trial_hash: str
+    repeatability_rerun_trial_authority_hash: str
+    repeatability_rerun_trial_receipt_hash: str
+    repeatability_rerun_trial_receipt_ref: str
+    repeatability_rerun_trial: dict[str, Any]
+    repeatability_rerun_trial_authority: dict[str, Any]
+    append_only_repeatability_rerun_trial_receipt: bool
+    exclusive_repeatability_rerun_trial_per_authority: bool
+    idempotent_replay: bool
+    original_repeatability_checkpoint_receipt_mutated: bool
+    original_workflow_receipt_mutated: bool
+    rerun_workflow_receipt_mutated: bool
+    process_execution_receipt_mutated: bool
+    process_completion_result_receipt_mutated: bool
+    adopted_result_downstream_proof_receipt_mutated: bool
+    actual_corpus_processing_execution_admitted_now: bool
+    actual_subprocess_spawn_admitted_now: bool
+    process_control_admitted: bool
+    process_kill_cancel_retry_resume_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    default_scope_expansion_admitted: bool
+    raw_pid_admitted: bool
+    raw_stdout_admitted: bool
+    raw_stderr_admitted: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    history_endpoint: str
+    status_endpoint: str
+    completion_monitor_endpoint: str
+    repeatability_checkpoint_endpoint: str
+    repeatability_rerun_trial_endpoint: str
+    original_status_request: dict[str, Any]
+    rerun_status_request: dict[str, Any]
+    history_request: dict[str, Any]
+    original_completion_monitor_request: dict[str, Any]
+    rerun_completion_monitor_request: dict[str, Any]
     next_allowed_actions: list[str]
 
 
@@ -11243,6 +11336,23 @@ def post_candidate_b_full_corpus_operator_repeatability_checkpoint(
     except (
         repeatability_checkpoint_service.CandidateBFullCorpusOperatorRepeatabilityCheckpointError
     ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial",
+    response_model=Layer3CandidateBFullCorpusRepeatabilityRerunTrialResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_repeatability_rerun_trial(
+    payload: Layer3CandidateBFullCorpusRepeatabilityRerunTrialRequest,
+) -> dict[str, Any] | JSONResponse:
+    rerun_trial_service = layer3_candidate_b_full_corpus_repeatability_rerun_trial
+    try:
+        return rerun_trial_service.record_candidate_b_full_corpus_repeatability_rerun_trial(
+            payload.model_dump(exclude_unset=True),
+        )
+    except rerun_trial_service.CandidateBFullCorpusRepeatabilityRerunTrialError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

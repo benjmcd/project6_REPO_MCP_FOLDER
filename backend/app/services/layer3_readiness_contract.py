@@ -291,6 +291,10 @@ def build_readiness_contract(
         "candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint"
         ),
+        "candidate_b_full_corpus_repeatability_rerun_trial_admitted": True,
+        "candidate_b_full_corpus_repeatability_rerun_trial_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial"
+        ),
         "candidate_b_full_corpus_operator_workflow_retry_policy_admitted": True,
         "candidate_b_full_corpus_operator_workflow_retry_policy_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy"

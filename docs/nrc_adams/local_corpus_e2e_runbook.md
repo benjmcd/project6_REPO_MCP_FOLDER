@@ -3291,3 +3291,40 @@ next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_v1
 ```
 
 The next runtime should compare an original checkpointed workflow with a second downstream-proven Candidate B workflow for the same eligible PDF corpus. It should write only an append-only repeatability trial receipt. The trial endpoint must not spawn or control the rerun process; the second workflow must be produced through existing server-owned workflow-run authority before the trial comparator records repeatability evidence.
+
+### Candidate B Full-Corpus Repeatability Rerun Trial Runtime
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_rerun_trial_v1
+source_repeatability_rerun_trial_selection: next_milestone_plans/Layer3_planning_docs/1040-cb-repeatability-rerun-trial-selection.md
+runtime_status: implemented_branch_local
+selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial
+selected_repeatability_trial_mode: append_only_repeatability_rerun_trial_receipt_without_process_execution_or_authority_mutation
+selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial
+repeatability_rerun_trial_runtime_selected: true
+original_repeatability_checkpoint_required: true
+original_workflow_status_required: proven
+original_completion_monitor_state_required: completed_downstream_proven
+rerun_workflow_status_required: proven
+rerun_completion_monitor_state_required: completed_downstream_proven
+same_compare_target_set_hash_required: true
+artifact_family_hash_comparison_required: true
+layer3_downstream_projection_comparison_required: true
+retained_artifact_role_counts_comparison_required: true
+regression_or_delta_disposition_required: true
+append_only_repeatability_rerun_trial_receipt: true
+stale_original_checkpoint_rejects: true
+stale_rerun_status_or_monitor_rejects: true
+mismatched_corpus_identity_rejects: true
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+frontend_durable_authority_enabled: false
+next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_selection_v1
+```
+
+Operators can now record repeatability evidence for two independently produced, downstream-proven Candidate B full-corpus workflows. The endpoint compares server-owned original-checkpoint, original-status, original-monitor, rerun-status, and rerun-monitor authority; it writes an append-only rerun-trial receipt and does not execute Candidate B, spawn subprocesses, control processes, expose raw stdout/stderr, or accept raw local paths or URLs from the browser.
