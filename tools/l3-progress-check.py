@@ -2842,6 +2842,9 @@ CANDIDATE_B_ASYNC_OPERATOR_WORKFLOW_COMPLETION_MONITOR_RUNTIME = (
 CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_SELECTION = (
     PLANNING_DOCS / "1036-cb-repeatability-checkpoint-selection.md"
 )
+CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RUNTIME = (
+    PLANNING_DOCS / "1037-cb-repeatability-checkpoint-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2896,6 +2899,13 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_SERVICE = (
     / "app"
     / "services"
     / "layer3_candidate_b_full_corpus_operator_workflow_completion_monitor.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_operator_repeatability_checkpoint.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_SCHEDULER_LEASE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease.py"
@@ -97309,6 +97319,131 @@ def _check_candidate_b_full_corpus_operator_repeatability_checkpoint_selection(
                 )
 
 
+def _check_candidate_b_full_corpus_operator_repeatability_checkpoint_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RUNTIME: (
+            "Candidate B Full-Corpus Operator Repeatability Checkpoint Runtime",
+            "milestone: candidate_b_full_corpus_operator_repeatability_checkpoint_v1",
+            "source_repeatability_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1036-cb-repeatability-checkpoint-selection.md",
+            "current_main_entry: 194fd3c3bd225736869c4152b9e1e0d6d9859763",
+            "runtime_status: implemented",
+            "selected_repeatability_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+            "selected_repeatability_checkpoint_mode: append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation",
+            "selected_repeatability_checkpoint_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint",
+            "selected_repeatability_checkpoint_model: bind_workflow_history_status_completion_monitor_and_downstream_receipts_to_repeatability_checkpoint",
+            "repeatability_checkpoint_runtime_selected: true",
+            "append_only_repeatability_checkpoint_receipt: true",
+            "exclusive_repeatability_checkpoint_per_authority: true",
+            "workflow_history_row_required: true",
+            "workflow_status_projection_required: true",
+            "workflow_status_required: proven",
+            "completion_monitor_projection_required: true",
+            "completion_monitor_state_required: completed_downstream_proven",
+            "runtime_root_lifecycle_receipt_required: true",
+            "bridge_receipt_required: true",
+            "downstream_proof_required: true",
+            "operator_runbook_repeatability_steps_required: true",
+            "stale_history_hash_rejects: true",
+            "stale_row_hash_rejects: true",
+            "stale_workflow_status_rejects: true",
+            "stale_completion_monitor_rejects: true",
+            "non_downstream_proven_monitor_rejects: true",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "process_kill_cancel_retry_resume_admitted: false",
+            "raw_pid_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_operator_repeatability_checkpoint_v1",
+            "source_repeatability_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1036-cb-repeatability-checkpoint-selection.md",
+            "runtime_status: implemented",
+            "selected_repeatability_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+            "selected_repeatability_checkpoint_mode: append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation",
+            "selected_repeatability_checkpoint_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint",
+            "repeatability_checkpoint_runtime_selected: true",
+            "completion_monitor_state_required: completed_downstream_proven",
+            "workflow_status_required: proven",
+            "stale_completion_monitor_rejects: true",
+            "non_downstream_proven_monitor_rejects: true",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_repeatability_checkpoint.v1"',
+            "REPEATABILITY_CHECKPOINT_MODE = (",
+            'OPERATOR_DECISION = "record_candidate_b_full_corpus_operator_repeatability_checkpoint"',
+            "REPEATABILITY_CHECKPOINT_ENDPOINT = (",
+            "append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation",
+            "completed_downstream_proven",
+            "workflow_status_hash",
+            "completion_monitor_hash",
+            "runtime_root_lifecycle_receipt_id",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_stale_completion_monitor",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_completion_monitor_not_downstream_proven",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_stale_bound_authority",
+            '"append_only_repeatability_checkpoint_receipt": True',
+            '"workflow_receipt_mutated": False',
+            '"process_control_admitted": False',
+            '"raw_stdout_admitted": False',
+            '"raw_stderr_admitted": False',
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointRequest",
+            "Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointResponse",
+            "post_candidate_b_full_corpus_operator_repeatability_checkpoint",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_admitted",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_admitted",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_repeatability_checkpoint",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_admitted",
+            "candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE: (
+            "candidate-b-full-corpus-operator-workflow-repeatability-checkpoint://",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_CLI_TEST: (
+            "test_repeatability_checkpoint_records_append_only_receipt",
+            "test_repeatability_checkpoint_rejects_not_downstream_proven_monitor",
+            "test_repeatability_checkpoint_rejects_raw_request_authority",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus operator repeatability checkpoint runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -98192,6 +98327,7 @@ def main() -> int:
     _check_candidate_b_async_operator_workflow_completion_monitor_selection(errors)
     _check_candidate_b_async_operator_workflow_completion_monitor_runtime(errors)
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_selection(errors)
+    _check_candidate_b_full_corpus_operator_repeatability_checkpoint_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
