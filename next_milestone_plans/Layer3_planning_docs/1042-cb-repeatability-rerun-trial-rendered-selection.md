@@ -1,0 +1,98 @@
+# Candidate B Full-Corpus Repeatability Rerun Trial Rendered Control Selection
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_selection_v1
+source_repeatability_rerun_trial_runtime: next_milestone_plans/Layer3_planning_docs/1041-cb-repeatability-rerun-trial-runtime.md
+current_main_entry: 2a10ca531a36a89b23da740056df5fa5608c8150
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1
+selected_rendered_control_scope: server_projection_consumer_for_candidate_b_repeatability_rerun_trial_receipts
+selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial
+selected_repeatability_trial_mode: append_only_repeatability_rerun_trial_receipt_without_process_execution_or_authority_mutation
+selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial
+selected_rendered_control_action: record_candidate_b_full_corpus_repeatability_rerun_trial_from_current_original_checkpoint_and_rerun_workflow_projection
+selected_rendered_control_model: pair_original_checkpointed_workflow_with_second_downstream_proven_workflow_for_same_eligible_pdf_corpus
+existing_history_panel_reused: true
+existing_status_projection_reused: true
+existing_completion_monitor_projection_reused: true
+existing_repeatability_checkpoint_panel_reused: true
+rendered_payload_binding: original_repeatability_checkpoint_receipt_id,original_repeatability_checkpoint_receipt_hash,original_repeatability_checkpoint_hash,original_repeatability_checkpoint_authority_hash,original_operator_workflow_receipt_id,original_operator_workflow_receipt_hash,original_row_hash,original_authority_basis_hash,original_history_hash,original_workflow_status_hash,original_completion_monitor_hash,rerun_operator_workflow_receipt_id,rerun_operator_workflow_receipt_hash,rerun_row_hash,rerun_authority_basis_hash,rerun_history_hash,rerun_workflow_status_hash,rerun_completion_monitor_hash,baseline_run_id,candidate_a_run_id,original_candidate_b_run_id,rerun_candidate_b_run_id,compare_target_set_hash,material_relative_name,regression_disposition,operator_runbook_repeatability_steps
+rendered_control_button_label: Record Rerun Trial
+rendered_panel_required: true
+headless_rendered_proof_required: true
+headed_rendered_proof_required: true
+response_model_validation_required: true
+original_repeatability_checkpoint_required: true
+original_workflow_status_required: proven
+original_completion_monitor_state_required: completed_downstream_proven
+rerun_workflow_status_required: proven
+rerun_completion_monitor_state_required: completed_downstream_proven
+same_compare_target_set_hash_required: true
+same_material_relative_name_required: true
+same_runtime_root_lifecycle_policy_required: true
+stale_original_checkpoint_must_disable_or_fail_closed: true
+stale_original_status_or_monitor_must_disable_or_fail_closed: true
+stale_rerun_status_or_monitor_must_disable_or_fail_closed: true
+non_downstream_proven_original_or_rerun_must_disable_or_fail_closed: true
+mismatched_corpus_identity_must_disable_or_fail_closed: true
+artifact_family_hash_comparison_required: true
+layer3_downstream_projection_comparison_required: true
+retained_artifact_role_counts_comparison_required: true
+regression_or_delta_disposition_required: true
+operator_runbook_repeatability_steps_must_be_server_bounded: true
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_supplied_stdout_stderr_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+repeatability_rerun_trial_receipt_mutation_admitted: false
+original_repeatability_checkpoint_receipt_mutation_admitted: false
+original_workflow_receipt_mutation_admitted: false
+rerun_workflow_receipt_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+process_completion_result_mutation_admitted: false
+adopted_result_downstream_proof_mutation_admitted: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+process_kill_cancel_retry_resume_admitted: false
+raw_pid_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1
+```
+
+This selection admits the smallest rendered operator slice after the rerun-trial runtime. The control should live with the Candidate B full-corpus workflow history/status/completion-monitor and repeatability-checkpoint panels. It should let an operator pair an original checkpointed workflow with a second downstream-proven workflow for the same eligible PDF corpus, choose an admitted regression or delta disposition, and submit only projected server receipt ids, hashes, run ids, material identity, and bounded runbook steps to the server-owned rerun-trial endpoint.
+
+The browser remains a projection consumer. It must not decide repeatability, run Candidate B, spawn or control a process, mutate prior receipts, store durable authority, or submit local paths, raw URLs, commands, stdout/stderr, PIDs, artifact bytes, provider refs, connector destinations, selector mutations, RAG/vector/model controls, or full mockup activation.
+
+## Next Runtime Requirements
+
+The next rendered-control implementation must:
+
+1. Add a contract endpoint resolver for `candidate_b_full_corpus_repeatability_rerun_trial_endpoint`.
+2. Build the rerun-trial payload from the selected original checkpoint receipt projection, original workflow status and completion-monitor projection, rerun workflow status and completion-monitor projection, and bounded runbook step constants.
+3. Require the original side to be checkpointed, proven, and downstream-proven.
+4. Require the rerun side to be proven and downstream-proven.
+5. Disable or fail closed when either side is stale, missing, non-downstream-proven, mismatched on corpus identity/compare target/material/runtime-root policy, or missing required artifact/downstream comparison projections.
+6. Render the trial receipt hash/ref, authority hash, comparison summary, regression/delta disposition, trial state, and negative invariants without raw local paths or raw URLs.
+7. Prove the rendered control in headless and headed Chrome.
+8. Preserve baseline rollback, Candidate A semantics, current Candidate B eligible-PDF default scope, and full mockup non-activation.
+
+## Coherence Check
+
+- Is this a new rerun-trial backend runtime? Recommended answer: no. The server runtime already exists; this selection only admits the rendered operator control that consumes it.
+- Can the frontend decide that two workflows are repeatable? Recommended answer: no. It can only pair projected server receipts and display the server receipt/comparison.
+- Should the control start the rerun workflow? Recommended answer: no. The second workflow must already exist through separately admitted server-owned workflow-run authority.
