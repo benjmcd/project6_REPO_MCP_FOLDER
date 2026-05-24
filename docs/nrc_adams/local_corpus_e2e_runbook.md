@@ -4404,3 +4404,43 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selection_
 ```
 
 Candidate B workflow policy decisions and audit receipts now name the proxy-owner storage policy runtime, auth-owner mode, configured server identity/tenant authority, configured workflow-receipt-root storage policy, and redacted audit-event policy. `AUTH_OWNER=proxy` fails closed without trusted proxy mode, server identity, and tenant/workspace authority; existing owner bindings reject cross-owner access; stale policy hashes reject contradictory authority; caller storage roots remain forbidden; and local `AUTH_OWNER=none` single-operator proof remains compatible.
+
+### Candidate B Broader Eligible Corpus Default Scope Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_selection_v1
+source_operator_workflow_proxy_owner_storage_policy_runtime: next_milestone_plans/Layer3_planning_docs/1067-cb-operator-workflow-proxy-owner-storage-policy-runtime.md
+current_main_entry: 39c23a61c306695b801158fef6e871182a825f46
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_audit_target: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1
+selected_decision_scope: candidate_b_default_scope_after_eligible_effective_pdf_acceptance
+selected_evaluation_mode: read_only_no_runtime_scope_readiness_audit
+default_scope_expansion_admitted_now: false
+current_default_scope: eligible_effective_pdfs_only
+non_pdf_default_preserved: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+bundle_and_runtime_authority_remain_distinct: true
+candidate_scope_classes_to_audit: office_documents,images_or_ocr,zip_members,structured_json_or_csv_or_xlsx,sec_edgar,web_or_database_sources,mixed_corpus_batches
+required_scope_evidence: exact_corpus_class_list,explicit_exclusion_list,current_parser_or_engine_authority,baseline_rollback_behavior,candidate_a_interaction,candidate_b_runtime_compatibility,layer3_material_authority_bridge_compatibility,artifact_family_preservation,redaction_and_status_projection,corpus_scale_proof,fail_closed_stale_or_missing_authority,regression_disposition
+selector_mutation_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1
+```
+
+Broader Candidate B default scope is now selected only as a read-only readiness-audit question. Candidate B remains the default for eligible/effective PDFs only; baseline remains the non-PDF default and rollback path; Candidate A remains its explicit PageEvidence visual-lane variant; and no selector, ingestion, provider, connector, RAG/model, frontend authority, or full-mockup expansion is admitted by this checkpoint.
