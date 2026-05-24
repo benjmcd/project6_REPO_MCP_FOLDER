@@ -196,6 +196,47 @@ def owner_binding_from_policy(policy_decision: Mapping[str, Any]) -> dict[str, s
     }
 
 
+def owner_binding_from_workflow_authority(authority: Mapping[str, Any]) -> dict[str, str] | None:
+    explicit_binding = authority.get("workflow_receipt_owner_binding")
+    if isinstance(explicit_binding, Mapping):
+        return {
+            "actor_ref_hash": str(explicit_binding.get("actor_ref_hash") or ""),
+            "tenant_or_workspace_ref_hash": str(
+                explicit_binding.get("tenant_or_workspace_ref_hash") or ""
+            ),
+            "policy_hash": str(explicit_binding.get("policy_hash") or ""),
+        }
+    policy_decision = authority.get("ownership_access_policy")
+    if isinstance(policy_decision, Mapping):
+        return owner_binding_from_policy(policy_decision)
+    server_owned_run = authority.get("server_owned_workflow_run")
+    if isinstance(server_owned_run, Mapping):
+        nested_binding = owner_binding_from_workflow_authority(server_owned_run)
+        if nested_binding:
+            return nested_binding
+    return None
+
+
+def authorize_history_row_access(
+    *,
+    fields: Mapping[str, Any],
+    row: Mapping[str, Any],
+    route_family: str,
+    rendered_surface: str,
+    requested_role: str = OWNER_ROLE,
+) -> dict[str, Any]:
+    return authorize_workflow_access(
+        fields=fields,
+        route_family=route_family,
+        rendered_surface=rendered_surface,
+        workflow_receipt_id=str(row["operator_workflow_receipt_id"]),
+        workflow_receipt_hash=str(row["operator_workflow_receipt_hash"]),
+        authority_basis_hash=str(row["authority_basis_hash"]),
+        requested_role=str(fields.get("operator_role") or requested_role),
+        existing_owner_binding=owner_binding_from_workflow_authority(row),
+    )
+
+
 def _server_derived_principal(requested_role: str) -> tuple[str, str, str]:
     role = _normalise_role(requested_role)
     if settings.auth_owner == "none":

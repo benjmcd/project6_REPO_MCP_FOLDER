@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from app.services import (
+    layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy,
     layer3_candidate_b_full_corpus_operator_repeatability_checkpoint as repeatability_checkpoint,
     layer3_candidate_b_full_corpus_repeatability_rerun_trial as rerun_trial,
     layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status,
@@ -92,6 +93,7 @@ def record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
     trial = _rerun_trial_body(rerun_receipt)
     original = _validated_workflow_projection("original", trial)
     rerun = _validated_workflow_projection("rerun", trial)
+    _authorize_acceptance_workflow_rows(fields, original, rerun)
     original_checkpoint = _validated_original_checkpoint(fields, trial)
     rerun_trial._validate_original_checkpoint_binding(original_checkpoint, original, trial)
     _validate_rerun_trial_binding(rerun_receipt, trial, fields, original, rerun)
@@ -418,6 +420,28 @@ def _validated_acceptance_comparison(
             details={"missing_true_comparison_fields": missing},
         )
     return dict(comparison)
+
+
+def _authorize_acceptance_workflow_rows(
+    fields: Mapping[str, Any],
+    original: Mapping[str, Any],
+    rerun: Mapping[str, Any],
+) -> None:
+    for label, projection in (("original", original), ("rerun", rerun)):
+        row = projection.get("row")
+        if not isinstance(row, Mapping):
+            raise CandidateBFullCorpusRepeatabilityAcceptanceCheckpointError(
+                f"candidate_b_full_corpus_repeatability_acceptance_checkpoint_{label}_row_missing",
+                "Acceptance checkpoint policy requires original and rerun workflow-row authority.",
+                http_status=409,
+            )
+        workflow_access_policy.authorize_history_row_access(
+            fields=fields,
+            row=row,
+            route_family="acceptance_checkpoint",
+            rendered_surface=f"acceptance_checkpoint_{label}",
+            requested_role=workflow_access_policy.OWNER_ROLE,
+        )
 
 
 def _load_or_write_acceptance_checkpoint_receipt(

@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy,
     layer3_candidate_b_full_corpus_operator_workflow_history as workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status,
@@ -244,6 +245,13 @@ def _validate_selected_authority(
             http_status=409,
             details={"mismatches": mismatches},
         )
+    workflow_access_policy.authorize_history_row_access(
+        fields=fields,
+        row=row,
+        route_family="lifecycle_expiry",
+        rendered_surface="lifecycle_expire",
+        requested_role=workflow_access_policy.OWNER_ROLE,
+    )
 
 
 def _load_or_write_lifecycle_receipt(

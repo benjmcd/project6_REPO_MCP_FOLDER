@@ -13,6 +13,8 @@ os.environ["DB_INIT_MODE"] = "none"
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
+from app.core.config import settings
+from app.services import layer3_candidate_b_operator_workflow_access_policy as access_policy
 from app.services import layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint as acceptance
 from app.services import layer3_candidate_b_full_corpus_repeatability_rerun_trial as rerun_trial
 from app.services import layer3_candidate_b_full_corpus_operator_repeatability_checkpoint as checkpoint
@@ -34,6 +36,15 @@ def _row(receipt_id: str, receipt_hash: str, row_hash: str, authority_hash: str)
         "operator_workflow_receipt_hash": receipt_hash,
         "row_hash": row_hash,
         "authority_basis_hash": authority_hash,
+        "ownership_access_policy": {
+            "actor_ref_hash": access_policy._stable_hash(
+                {"auth_owner": "none", "actor_ref": access_policy.LOCAL_ACTOR_REF}
+            ),
+            "tenant_or_workspace_ref_hash": access_policy._stable_hash(
+                {"auth_owner": "none", "tenant_or_workspace_ref": access_policy.LOCAL_TENANT_REF}
+            ),
+            "policy_hash": "0" * 64,
+        },
         "run_state": "proven",
         "status_request": {"operator_workflow_receipt_id": receipt_id},
         "process_execution_projection": {
@@ -159,6 +170,9 @@ def _write_checkpoint_receipt(root: Path, original_row: dict[str, Any], original
 
 @pytest.fixture()
 def acceptance_authority(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> dict[str, Any]:
+    monkeypatch.setattr(settings, "layer3_candidate_b_full_corpus_operator_workflow_dir", str(tmp_path))
+    monkeypatch.setattr(settings, "auth_owner", "none")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", False)
     original_row = _row("cb-full-corpus-operator-original", HASH_A, HASH_B, HASH_C)
     rerun_row = _row("cb-full-corpus-operator-rerun", HASH_D, HASH_E, HASH_F)
     original_status = _status("cb-full-corpus-operator-original", HASH_A, HASH_B, "candidate-b-original")
