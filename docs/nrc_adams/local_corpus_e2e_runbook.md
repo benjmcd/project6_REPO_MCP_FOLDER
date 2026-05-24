@@ -4444,3 +4444,39 @@ next_exact_posture: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1
 ```
 
 Broader Candidate B default scope is now selected only as a read-only readiness-audit question. Candidate B remains the default for eligible/effective PDFs only; baseline remains the non-PDF default and rollback path; Candidate A remains its explicit PageEvidence visual-lane variant; and no selector, ingestion, provider, connector, RAG/model, frontend authority, or full-mockup expansion is admitted by this checkpoint.
+
+### Candidate B Broader Eligible Corpus Scope Readiness Audit
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1
+source_broader_eligible_corpus_default_scope_selection: next_milestone_plans/Layer3_planning_docs/1068-cb-broader-eligible-corpus-default-scope-selection.md
+current_main_entry: 4d1ab21446428d4f38ddb439e3e6f63c06b05730
+runtime_status: broader_scope_readiness_audit_implemented
+implemented_audit_mode: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1
+implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit
+implemented_scope_classes: office_documents,images_or_ocr,zip_members,structured_json_or_csv_or_xlsx,sec_edgar,web_or_database_sources,mixed_corpus_batches
+implemented_required_scope_evidence: current_parser_or_engine_authority,baseline_rollback_behavior,candidate_a_interaction,candidate_b_runtime_compatibility,layer3_material_authority_bridge_compatibility,artifact_family_preservation,redaction_and_status_projection,corpus_scale_proof,fail_closed_stale_or_missing_authority,regression_disposition
+implemented_contract_exposure: readiness_contract,bootstrap_contract,openapi
+ready_state_meaning: ready_for_later_separately_frozen_default_scope_selection_only
+default_scope_expansion_admitted: false
+selector_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_current_default_scope_preserved: eligible_effective_pdfs_only
+verification_focused_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_readiness.py ./backend/tests/test_layer3_readiness_contract.py ./backend/tests/test_layer3_bootstrap_contract.py -q PASS 6 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_selection_v1
+```
+
+The broader-scope readiness audit is now an operator-callable, read-only API surface. It checks exact scope-class evidence and can only prepare a later separately frozen default-scope selection; it does not broaden Candidate B default behavior, mutate selectors, ingest new source families, expose paths/URLs, or enable provider/connector/RAG/model/full-mockup/browser/frontend authority.
