@@ -3443,3 +3443,35 @@ next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_checkpoint_
 ```
 
 This freeze selects the post-rerun acceptance checkpoint without implementing it. The next runtime should write a single append-only acceptance receipt over the original repeatability checkpoint, the rerun-trial receipt, the comparison summary, the operator acceptance decision, and bounded runbook steps. It must accept only `no_regression_observed` or `delta_reviewed_no_regression`, block `regression_detected_blocked`, and preserve baseline rollback, Candidate A semantics, Candidate B eligible-PDF scope, redaction, no process control, no provider/connector/model expansion, and no frontend durable authority.
+
+### Candidate B Full-Corpus Repeatability Acceptance Checkpoint Runtime
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_checkpoint_v1
+source_repeatability_acceptance_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1044-cb-repeatability-acceptance-checkpoint-selection.md
+current_main_entry: a928e288ee3a5aa32ad0a43a3ebe7eab11588caa
+runtime_status: implemented
+selected_acceptance_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint
+selected_acceptance_checkpoint_mode: append_only_acceptance_checkpoint_receipt_without_process_execution_or_authority_mutation
+selected_acceptance_checkpoint_action: record_candidate_b_full_corpus_repeatability_acceptance_checkpoint
+repeatability_acceptance_checkpoint_runtime_selected: true
+original_repeatability_checkpoint_required: true
+repeatability_rerun_trial_receipt_required: true
+accepted_dispositions: no_regression_observed,delta_reviewed_no_regression
+blocked_disposition: regression_detected_blocked
+regression_detected_must_block_acceptance: true
+append_only_repeatability_acceptance_checkpoint_receipt: true
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+focused_pytest: py -3.12 -m pytest .\backend\tests\test_layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint.py -q PASS
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_rendered_control_selection_v1
+```
+
+Operators can now record a server-owned acceptance checkpoint after an original repeatability checkpoint and rerun-trial receipt exist. The endpoint revalidates the original checkpoint, rerun-trial receipt, workflow statuses, completion monitors, and comparison disposition before writing the append-only acceptance receipt. It accepts only `no_regression_observed` or `delta_reviewed_no_regression`; `regression_detected_blocked` fails closed and blocks acceptance.
