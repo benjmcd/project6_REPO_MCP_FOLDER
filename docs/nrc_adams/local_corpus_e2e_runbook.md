@@ -1059,3 +1059,57 @@ next_exact_posture: candidate_b_operator_workflow_run_history_read_only_projecti
 ```
 
 The selected next implementation is a read-only server-owned workflow-run history projection. It should list Candidate B full-corpus workflow-run receipts from configured server receipt authority, expose only redacted operator-safe run metadata, and let the operator inspect a selected run through the existing status endpoint's server-provided request. It does not admit lifecycle mutation, queue scheduling, cancel/retry/resume/expiry runtime, broader Candidate B default scope, provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser storage authority, or frontend durable authority.
+
+## Candidate B Workflow Run History Read-Only Projection
+
+```yaml
+milestone: candidate_b_operator_workflow_run_history_read_only_projection_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/996-cb-workflow-run-history-selection.md
+current_main_entry: dbadb7a35f61fffbb3ddf85118c0e00e06599b8f
+runtime_status: implemented
+selected_history_scope: server_owned_candidate_b_full_corpus_operator_workflow_run_receipts
+selected_history_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+selected_rendered_history_mode: rendered_candidate_b_full_corpus_operator_workflow_run_history_control
+history_schema_id: layer3.candidate_b_full_corpus_operator_workflow_history.v1
+history_mode: candidate_b_full_corpus_operator_workflow_history_v1
+selected_source_authority: configured_L3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR
+configured_receipt_authority_used: true
+read_only_history_projection: true
+single_run_status_endpoint_reused_for_detail: true
+history_rows_bind_authority_basis_hash: true
+history_rows_bind_status_request: true
+invalid_or_stale_receipts_fail_closed: true
+missing_configured_receipt_root_fails_closed: true
+non_run_receipts_fail_closed: true
+browser_supplied_receipt_root_admitted: false
+browser_supplied_runtime_roots_admitted: false
+browser_supplied_source_directory_admitted: false
+browser_supplied_bridge_dir_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+cancel_runtime_admitted: false
+retry_runtime_admitted: false
+resume_runtime_admitted: false
+queue_scheduler_runtime_admitted: false
+expiry_mutation_runtime_admitted: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+verification_node_check: passed
+verification_backend_py_compile: passed
+verification_backend_pytest: 10 passed
+verification_headless_rendered_e2e: passed
+verification_headed_rendered_e2e: passed
+next_exact_posture: candidate_b_operator_workflow_lifecycle_mutation_selection_v1
+```
+
+Operators can refresh the rendered history surface to list server-owned Candidate B workflow-run receipts from configured receipt authority. Selecting a row sends only the row's returned `status_request` to the existing full-corpus workflow status endpoint, so detail inspection remains server-authoritative and read-only.
+
+The projection is not a lifecycle-mutation surface. Cancel, retry, resume, expiry enforcement, queue scheduling, broader default scope, provider writes, connector dispatch, RAG/vector/model runtime, and full mockup activation remain separate selections.

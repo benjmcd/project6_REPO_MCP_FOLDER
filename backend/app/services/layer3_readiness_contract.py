@@ -237,6 +237,10 @@ def build_readiness_contract(
         "candidate_b_full_corpus_operator_workflow_run_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/run"
         ),
+        "candidate_b_full_corpus_operator_workflow_history_admitted": True,
+        "candidate_b_full_corpus_operator_workflow_history_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/history"
+        ),
         "candidate_b_default_promotion_selector_switch_admitted": True,
         "candidate_b_default_promotion_selector_scope": ELIGIBLE_CORPUS_SCOPE,
         "source_directory_ingestion_scan_admitted": True,
