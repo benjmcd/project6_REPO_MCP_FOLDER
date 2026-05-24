@@ -1,0 +1,66 @@
+# Candidate B Broader Eligible Corpus Default Scope Runtime Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_runtime_selection_v1
+source_broader_eligible_corpus_scope_readiness_audit: next_milestone_plans/Layer3_planning_docs/1069-cb-broader-eligible-corpus-scope-readiness-audit.md
+current_main_entry: 3d2dc7a9178fc0f6ed0923333b1c9e8dc36c7fed
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_runtime_v1
+selected_runtime_scope: candidate_b_default_scope_selection_for_ready_broader_corpus_classes_only
+selected_scope_binding_authority: candidate_b_broader_eligible_corpus_scope_readiness_audit_ready_state
+selected_scope_binding_state_required: candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection
+selected_scope_classes_source: proposed_default_scope_classes_from_matching_ready_audit
+selected_scope_class_result_required: ready_for_separate_selection
+selected_audit_hash_binding_required: true
+selected_audit_id_binding_required: true
+current_ready_audit_receipt_available: false
+current_runtime_scope_classes_selected: none_until_ready_audit_receipt_bound
+current_default_scope_preserved: eligible_effective_pdfs_only
+non_pdf_default_preserved: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+bundle_and_runtime_authority_remain_distinct: true
+runtime_must_fail_closed_without_ready_audit: true
+runtime_must_fail_closed_on_stale_or_mismatched_audit_hash: true
+runtime_must_fail_closed_on_unready_or_unproposed_scope_class: true
+runtime_must_fail_closed_on_missing_baseline_rollback: true
+runtime_must_fail_closed_on_candidate_a_semantic_drift: true
+runtime_must_project_operator_visible_scope_status: true
+runtime_must_preserve_pdf_default_rollback: true
+runtime_must_record_redacted_selection_receipt: true
+runtime_behavior_change_introduced_by_selection: false
+api_service_behavior_change_introduced_by_selection: false
+rendered_behavior_change_introduced_by_selection: false
+default_scope_expansion_admitted_now: false
+selector_mutation_admitted_now: false
+source_expansion_admitted_now: false
+runtime_db_or_storage_expansion_admitted_now: false
+pdf_or_image_text_material_ingestion_admitted_now: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+provider_or_connector_secret_exposed: false
+required_runtime_proof: ready_audit_positive_selection,missing_audit_fail_closed,stale_audit_hash_fail_closed,unready_scope_class_fail_closed,unproposed_scope_class_fail_closed,baseline_rollback_preserved,candidate_a_semantics_preserved,no_selector_mutation_without_runtime_admission,no_source_expansion,no_raw_path_or_url_projection,redacted_selection_receipt
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_v1
+```
+
+This freeze selects the next runtime target for broader Candidate B default-scope selection, but it does not broaden Candidate B default behavior. The next runtime may only bind exact proposed scope classes from a matching ready `candidate_b_broader_eligible_corpus_scope_readiness_audit_v1` result. Current main has the readiness audit API but no selected ready audit receipt, so no broader runtime classes are selected by this checkpoint.
+
+The future runtime must be fail-closed by default: missing audit, stale audit hash, unready scope class, unproposed scope class, missing rollback confirmation, Candidate A semantic drift, forbidden source expansion, runtime DB/storage expansion, selector mutation, raw path/URL exposure, provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser-storage authority, and frontend-only durable authority all block selection. A ready selection may only record a redacted server receipt and operator-visible status for a later separately admitted default-scope runtime; it may not silently mutate omitted-engine defaults in this selection.
+
+## Coherence Check
+
+- Does this make Candidate B default for non-PDF classes? Recommended answer: no. It selects a future runtime contract and keeps the current PDF-only default.
+- Why are no broader classes selected now? Recommended answer: current main has the readiness audit API, but no bound ready audit receipt selecting exact classes.
+- What evidence must exist before runtime selection can succeed? Recommended answer: a matching ready audit id/hash with exact proposed classes whose per-class result is `ready_for_separate_selection`.
+- What comes next? Recommended answer: implement `candidate_b_broader_eligible_corpus_default_scope_runtime_v1` so it records a redacted selection receipt only when a ready audit proves exact classes, and otherwise fails closed without changing defaults.
