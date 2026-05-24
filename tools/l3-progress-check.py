@@ -2961,6 +2961,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "1073-cb-broader-eligible-corpus-default-scope-runtime-current-main-sync.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_SELECTION = (
+    PLANNING_DOCS
+    / "1074-cb-broader-eligible-corpus-default-scope-selector-use-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -101266,6 +101270,114 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_runtime_current_mai
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_SELECTION: (
+            "Candidate B Broader Eligible Corpus Default Scope Selector-Use Selection",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_selection_v1",
+            "source_broader_eligible_corpus_default_scope_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1073-cb-broader-eligible-corpus-default-scope-runtime-current-main-sync.md",
+            "current_main_entry: 86aec5e059b66d98a1b6a48cd83096a8915684a0",
+            "entry_decision: freeze_only",
+            "selector_use_runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1",
+            "selected_selector_use_scope: receipt_bound_default_selector_use_for_exact_selected_broader_scope_classes_only",
+            "selected_selector_authority_source: redacted_candidate_b_broader_scope_runtime_receipt",
+            "selected_selector_authority_state_required: candidate_b_broader_eligible_corpus_default_scope_runtime_selected",
+            "selected_scope_classes_source: selected_scope_classes_from_matching_runtime_receipt",
+            "selected_runtime_receipt_id_hash_binding_required: true",
+            "selected_readiness_audit_id_hash_binding_required: true",
+            "selected_operator_confirmation_required: true",
+            "selected_baseline_rollback_confirmation_required: true",
+            "selected_candidate_a_preservation_required: true",
+            "selected_stale_authority_rejection_required: true",
+            "selected_unknown_or_unselected_class_rejection_required: true",
+            "selected_missing_receipt_rejection_required: true",
+            "selected_blocked_receipt_rejection_required: true",
+            "current_runtime_receipt_operator_surface: /review/layer3 Candidate B default-promotion status panel",
+            "current_default_scope_preserved_at_selection: eligible_effective_pdfs_only",
+            "future_default_scope_may_change_only_for_receipt_bound_selected_classes: true",
+            "non_selected_class_default_preserved: baseline",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only",
+            "candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only",
+            "bundle_and_runtime_authority_remain_distinct: true",
+            "selector_use_behavior_change_introduced_by_selection: false",
+            "runtime_behavior_introduced_by_selection: false",
+            "rendered_behavior_introduced_by_selection: false",
+            "backend_behavior_introduced_by_selection: false",
+            "api_service_behavior_introduced_by_selection: false",
+            "default_scope_expansion_performed_now: false",
+            "selector_mutation_performed_now: false",
+            "source_expansion_admitted_now: false",
+            "runtime_db_or_storage_expansion_admitted_now: false",
+            "pdf_or_image_text_material_ingestion_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_or_connector_secret_exposed: false",
+            "required_future_runtime_proof: selected_runtime_receipt_positive_selector_use,missing_receipt_fail_closed,blocked_receipt_fail_closed,stale_receipt_hash_fail_closed,stale_readiness_audit_hash_fail_closed,unknown_class_fail_closed,unselected_class_fail_closed,baseline_rollback_preserved,candidate_a_semantics_preserved,unselected_classes_remain_baseline,no_source_expansion,no_runtime_db_or_storage_expansion,no_raw_path_or_url_projection,redacted_selector_use_receipt,operator_visible_selector_status",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_selection_v1",
+            "source_broader_eligible_corpus_default_scope_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1073-cb-broader-eligible-corpus-default-scope-runtime-current-main-sync.md",
+            "current_main_entry: 86aec5e059b66d98a1b6a48cd83096a8915684a0",
+            "entry_decision: freeze_only",
+            "selector_use_runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1",
+            "selected_selector_use_scope: receipt_bound_default_selector_use_for_exact_selected_broader_scope_classes_only",
+            "selected_selector_authority_source: redacted_candidate_b_broader_scope_runtime_receipt",
+            "selected_selector_authority_state_required: candidate_b_broader_eligible_corpus_default_scope_runtime_selected",
+            "selected_scope_classes_source: selected_scope_classes_from_matching_runtime_receipt",
+            "selected_runtime_receipt_id_hash_binding_required: true",
+            "selected_readiness_audit_id_hash_binding_required: true",
+            "selected_operator_confirmation_required: true",
+            "selected_baseline_rollback_confirmation_required: true",
+            "selected_stale_authority_rejection_required: true",
+            "current_default_scope_preserved_at_selection: eligible_effective_pdfs_only",
+            "future_default_scope_may_change_only_for_receipt_bound_selected_classes: true",
+            "non_selected_class_default_preserved: baseline",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "selector_use_behavior_change_introduced_by_selection: false",
+            "runtime_behavior_introduced_by_selection: false",
+            "rendered_behavior_introduced_by_selection: false",
+            "default_scope_expansion_performed_now: false",
+            "selector_mutation_performed_now: false",
+            "source_expansion_admitted_now: false",
+            "runtime_db_or_storage_expansion_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope selector-use selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -102186,6 +102298,9 @@ def main() -> int:
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime(errors)
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_status(errors)
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync(errors)
+    _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_selection(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
