@@ -897,6 +897,10 @@ def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatibl
     assert body["compare_target_set_hash"] == COMPARE_TARGET_SET_HASH
     policy = body["ownership_access_policy"]
     assert policy["policy_schema_id"] == access_policy.POLICY_SCHEMA_ID
+    assert policy["policy_runtime"] == access_policy.PROXY_OWNER_STORAGE_POLICY_RUNTIME
+    assert policy["auth_owner_mode"] == access_policy.AUTH_OWNER_NONE_LOCAL_MODE
+    assert policy["storage_access_policy"] == access_policy.STORAGE_ACCESS_POLICY
+    assert policy["audit_event_policy"] == access_policy.AUDIT_EVENT_POLICY
     assert policy["policy_status"] == "admitted"
     assert policy["route_family"] == "workflow_run"
     assert policy["rendered_surface"] == "run_start"
@@ -980,6 +984,8 @@ def test_candidate_b_full_corpus_operator_workflow_run_proxy_owner_can_create_bo
     policy = body["ownership_access_policy"]
     assert policy["actor_ref_hash"] == actor_ref_hash
     assert policy["tenant_or_workspace_ref_hash"] == tenant_ref_hash
+    assert policy["auth_owner_mode"] == access_policy.AUTH_OWNER_PROXY_TRUSTED_MODE
+    assert policy["workflow_receipt_owner_binding_required"] is True
     receipt = json.loads(_workflow_receipt_file(body["operator_workflow_receipt_id"]).read_text(encoding="utf-8"))
     owner_binding = receipt["server_owned_workflow_run"]["workflow_receipt_owner_binding"]
     assert owner_binding["actor_ref_hash"] == actor_ref_hash
