@@ -2809,6 +2809,9 @@ CANDIDATE_B_ASYNC_RETRY_TERMINAL_RENDERED_STATUS_PROJECTION_SELECTION = (
 CANDIDATE_B_ASYNC_RETRY_TERMINAL_RENDERED_STATUS_PROJECTION_RUNTIME = (
     PLANNING_DOCS / "1025-cb-async-retry-terminal-rendered-status-projection-runtime.md"
 )
+CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_SELECTION = (
+    PLANNING_DOCS / "1026-cb-async-background-job-execution-boundary-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -95976,6 +95979,117 @@ def _check_candidate_b_async_retry_terminal_rendered_status_projection_runtime(
                 )
 
 
+def _check_candidate_b_async_background_job_execution_boundary_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_SELECTION: (
+            "Candidate B Async Background Job Execution Boundary Selection",
+            "milestone: candidate_b_async_background_job_execution_boundary_selection_v1",
+            "source_rendered_retry_terminal_projection_runtime: next_milestone_plans/Layer3_planning_docs/1025-cb-async-retry-terminal-rendered-status-projection-runtime.md",
+            "current_main_entry: 9c88315b06839c921ac5fbecc616b8dc4591be18",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_background_job_execution_boundary_v1",
+            "selected_background_execution_boundary_scope: server_owned_candidate_b_full_corpus_workflow_execution_boundary_over_existing_queue_lease_attempt_progress_terminal_receipts",
+            "selected_background_execution_boundary_mode: execution_boundary_receipt_without_process_start_or_job_execution",
+            "selected_background_execution_boundary_source_lineage: operator_workflow_receipt,queue_state_receipt,scheduler_lease_receipt,worker_attempt_receipt,progress_checkpoint_receipt,completion_failure_receipt,retry_policy_receipt,retry_queue_state_receipt,retry_scheduler_lease_receipt,retry_worker_attempt_receipt,retry_progress_checkpoint_receipt,retry_completion_failure_receipt",
+            "selected_background_execution_boundary_outputs: execution_boundary_receipt,execution_boundary_receipt_hash,execution_boundary_authority_hash,operator_safe_execution_state,status_history_projection_fields",
+            "status_history_projection_required_after_boundary: true",
+            "rendered_operator_projection_required_after_boundary: true",
+            "stale_history_row_must_reject: true",
+            "stale_scheduler_lease_must_reject: true",
+            "stale_worker_attempt_must_reject: true",
+            "stale_progress_checkpoint_must_reject: true",
+            "terminal_receipt_conflict_must_reject: true",
+            "background_process_runtime_selected_after_sync: true",
+            "job_execution_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "operator_supplied_local_path_admitted: false",
+            "operator_supplied_raw_url_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_background_job_execution_boundary_v1",
+            "Should this selection start a background worker? Recommended answer: no.",
+            "Should the boundary mutate workflow, queue, lease, worker-attempt, progress, terminal, or retry receipts? Recommended answer: no.",
+            "What should come next? Recommended answer: implement the server-owned background job execution boundary receipt and projection",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_background_job_execution_boundary_selection_v1",
+            "source_rendered_retry_terminal_projection_runtime: next_milestone_plans/Layer3_planning_docs/1025-cb-async-retry-terminal-rendered-status-projection-runtime.md",
+            "current_main_entry: 9c88315b06839c921ac5fbecc616b8dc4591be18",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_background_job_execution_boundary_v1",
+            "selected_background_execution_boundary_mode: execution_boundary_receipt_without_process_start_or_job_execution",
+            "selected_background_execution_boundary_source_lineage: operator_workflow_receipt,queue_state_receipt,scheduler_lease_receipt,worker_attempt_receipt,progress_checkpoint_receipt,completion_failure_receipt,retry_policy_receipt,retry_queue_state_receipt,retry_scheduler_lease_receipt,retry_worker_attempt_receipt,retry_progress_checkpoint_receipt,retry_completion_failure_receipt",
+            "selected_background_execution_boundary_outputs: execution_boundary_receipt,execution_boundary_receipt_hash,execution_boundary_authority_hash,operator_safe_execution_state,status_history_projection_fields",
+            "status_history_projection_required_after_boundary: true",
+            "rendered_operator_projection_required_after_boundary: true",
+            "background_process_runtime_selected_after_sync: true",
+            "job_execution_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "operator_supplied_local_path_admitted: false",
+            "operator_supplied_raw_url_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_background_job_execution_boundary_v1",
+        ),
+        CANDIDATE_B_ASYNC_RETRY_TERMINAL_RENDERED_STATUS_PROJECTION_RUNTIME: (
+            "next_exact_posture: candidate_b_async_background_job_execution_boundary_selection_v1",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"background_process_runtime_admitted": False',
+            '"job_execution_runtime_admitted": False',
+            '"queue_scheduler_runtime_admitted": True',
+            '"worker_attempt_runtime_admitted": True',
+            '"progress_checkpoint_runtime_admitted": True',
+            '"completion_failure_runtime_admitted": True',
+            '"retry_terminal_status_projection_runtime_admitted": True',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_WORKER_ATTEMPT_SERVICE: (
+            "background_process_started",
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+            "process start, job execution, progress, completion, cancel, retry, or resume",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROGRESS_CHECKPOINT_SERVICE: (
+            "job_execution_started",
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_FAILURE_SERVICE: (
+            "job_execution_started",
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async background job execution boundary selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -96848,6 +96962,7 @@ def main() -> int:
     _check_candidate_b_async_retry_terminal_status_projection_runtime(errors)
     _check_candidate_b_async_retry_terminal_rendered_status_projection_selection(errors)
     _check_candidate_b_async_retry_terminal_rendered_status_projection_runtime(errors)
+    _check_candidate_b_async_background_job_execution_boundary_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
