@@ -2851,6 +2851,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_SELECTION = (
 CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_RUNTIME = (
     PLANNING_DOCS / "1039-cb-repeatability-checkpoint-rendered-runtime.md"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_SELECTION = (
+    PLANNING_DOCS / "1040-cb-repeatability-rerun-trial-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -97641,6 +97644,89 @@ def _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_ru
                 )
 
 
+def _check_candidate_b_full_corpus_repeatability_rerun_trial_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_SELECTION: (
+            "Candidate B Full-Corpus Repeatability Rerun Trial Selection",
+            "milestone: candidate_b_full_corpus_repeatability_rerun_trial_selection_v1",
+            "source_repeatability_checkpoint_rendered_runtime: next_milestone_plans/Layer3_planning_docs/1039-cb-repeatability-checkpoint-rendered-runtime.md",
+            "current_main_entry: 963774f0545917dd9ae0e5cc7bdba35cb84012db",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: candidate_b_full_corpus_repeatability_rerun_trial_v1",
+            "selected_repeatability_trial_scope: compare_two_server_owned_candidate_b_full_corpus_operator_workflows_for_same_eligible_pdf_corpus",
+            "selected_repeatability_trial_model: append_only_trial_receipt_over_original_checkpoint_and_second_downstream_proven_workflow",
+            "selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial",
+            "selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial",
+            "original_repeatability_checkpoint_required: true",
+            "original_workflow_status_required: proven",
+            "original_completion_monitor_state_required: completed_downstream_proven",
+            "rerun_workflow_status_required: proven",
+            "rerun_completion_monitor_state_required: completed_downstream_proven",
+            "same_compare_target_set_hash_required: true",
+            "artifact_family_hash_comparison_required: true",
+            "layer3_downstream_projection_comparison_required: true",
+            "regression_or_delta_disposition_required: true",
+            "append_only_repeatability_trial_receipt_required: true",
+            "stale_original_checkpoint_must_reject: true",
+            "stale_original_status_or_monitor_must_reject: true",
+            "stale_rerun_status_or_monitor_must_reject: true",
+            "mismatched_corpus_identity_must_reject: true",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "actual_corpus_processing_execution_admitted_by_trial_endpoint: false",
+            "actual_subprocess_spawn_admitted_by_trial_endpoint: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_repeatability_rerun_trial_selection_v1",
+            "source_repeatability_checkpoint_rendered_runtime: next_milestone_plans/Layer3_planning_docs/1039-cb-repeatability-checkpoint-rendered-runtime.md",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_full_corpus_repeatability_rerun_trial_v1",
+            "selected_repeatability_trial_scope: compare_two_server_owned_candidate_b_full_corpus_operator_workflows_for_same_eligible_pdf_corpus",
+            "selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial",
+            "selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial",
+            "original_repeatability_checkpoint_required: true",
+            "rerun_workflow_status_required: proven",
+            "rerun_completion_monitor_state_required: completed_downstream_proven",
+            "artifact_family_hash_comparison_required: true",
+            "regression_or_delta_disposition_required: true",
+            "actual_corpus_processing_execution_admitted_by_trial_endpoint: false",
+            "actual_subprocess_spawn_admitted_by_trial_endpoint: false",
+            "process_control_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_RUNTIME: (
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus repeatability rerun trial selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -98527,6 +98613,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_runtime(errors)
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_selection(errors)
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_runtime(errors)
+    _check_candidate_b_full_corpus_repeatability_rerun_trial_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
