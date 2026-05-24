@@ -3703,6 +3703,7 @@ class Layer3CandidateBFullCorpusOperatorWorkflowStatusResponse(Layer3BaseRespons
     layer3: dict[str, Any]
     artifact_family: dict[str, Any]
     runtime_root_lifecycle: dict[str, Any]
+    retry_terminal_status_projection: dict[str, Any]
     operator_projection: dict[str, Any]
     validate_only_triplet: bool
     artifacts_seeded_or_generated_by_triplet_validator: bool
@@ -3735,6 +3736,7 @@ class Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse(Layer3BaseRespon
     operator_supplied_raw_url_admitted: bool
     cancel_runtime_admitted: bool
     retry_runtime_admitted: bool
+    retry_terminal_status_projection_runtime_admitted: bool
     resume_runtime_admitted: bool
     queue_state_authority_runtime_admitted: bool
     queue_scheduler_runtime_admitted: bool
