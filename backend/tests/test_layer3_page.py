@@ -454,6 +454,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_process_completion_result_control'" in js.text
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_MODE = 'append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure'" in js.text
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_OPERATOR_DECISION = 'record_candidate_b_async_process_completion_result_adoption'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_control'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_MODE = 'read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_OPERATOR_DECISION = 'record_candidate_b_async_adopted_process_result_downstream_operator_proof'" in js.text
     assert "function candidateBDefaultPromotionReadinessContract" in js.text
     assert "function candidateBDefaultPromotionStatusState" in js.text
     assert "function candidateBDefaultPromotionFinalProofPayload" in js.text
@@ -474,6 +477,10 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Full-Corpus Operator Workflow Process Execution" in js.text
     assert "process_execution_projection" in js.text
     assert "process_completion_result_projection" in js.text
+    assert "adopted_result_downstream_proof_projection" in js.text
+    assert "Full-Corpus Operator Workflow Adopted Result Downstream Proof" in js.text
+    assert "function candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPayload" in js.text
+    assert "async function recordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof" in js.text
     assert "Redacted retained role previews" in js.text
     assert "Redacted runtime delivery artifact previews" in js.text
     assert "function renderCandidateBDefaultPromotionStatusPanel" in js.text
@@ -493,6 +500,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_process_execution_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_process_completion_result_endpoint" in js.text
+    assert "candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_status_endpoint" in js.text
     assert "/source/ingestion/candidate-b/default-promotion/operator-status" not in js.text

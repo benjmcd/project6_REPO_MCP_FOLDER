@@ -41,6 +41,7 @@ from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_execution_boundary,
     layer3_candidate_b_full_corpus_operator_workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_lifecycle,
+    layer3_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof,
     layer3_candidate_b_full_corpus_operator_workflow_process_completion_result,
     layer3_candidate_b_full_corpus_operator_workflow_process_execution,
     layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint,
@@ -201,6 +202,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_process_execution_endpoint: str
     candidate_b_full_corpus_operator_workflow_process_completion_result_admitted: bool
     candidate_b_full_corpus_operator_workflow_process_completion_result_endpoint: str
+    candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_admitted: bool
+    candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_endpoint: str
     candidate_b_full_corpus_operator_workflow_retry_policy_admitted: bool
     candidate_b_full_corpus_operator_workflow_retry_policy_endpoint: str
     candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted: bool
@@ -3154,6 +3157,31 @@ class Layer3CandidateBFullCorpusOperatorWorkflowProcessCompletionResultRequest(B
     redacted_failure_summary_hash: str | None = Field(default=None, min_length=64, max_length=64)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    adopted_result_downstream_proof_mode: Literal[
+        "read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution"
+    ]
+    operator_decision: Literal["record_candidate_b_async_adopted_process_result_downstream_operator_proof"]
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+    process_completion_result_receipt_id: str = Field(min_length=1)
+    process_completion_result_receipt_hash: str = Field(min_length=64, max_length=64)
+    process_completion_result_authority_hash: str = Field(min_length=64, max_length=64)
+    process_execution_receipt_id: str = Field(min_length=1)
+    process_execution_receipt_hash: str = Field(min_length=64, max_length=64)
+    process_execution_authority_hash: str = Field(min_length=64, max_length=64)
+    result_workflow_receipt_id: str = Field(min_length=1)
+    result_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    result_status_request_hash: str = Field(min_length=64, max_length=64)
+    result_downstream_proof_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3773,6 +3801,7 @@ class Layer3CandidateBFullCorpusOperatorWorkflowStatusResponse(Layer3BaseRespons
     execution_boundary_projection: dict[str, Any]
     process_execution_projection: dict[str, Any]
     process_completion_result_projection: dict[str, Any]
+    adopted_result_downstream_proof_projection: dict[str, Any]
     operator_projection: dict[str, Any]
     validate_only_triplet: bool
     artifacts_seeded_or_generated_by_triplet_validator: bool
@@ -3809,6 +3838,7 @@ class Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse(Layer3BaseRespon
     execution_boundary_runtime_admitted: bool
     process_execution_runtime_admitted: bool
     process_completion_result_runtime_admitted: bool
+    adopted_result_downstream_proof_runtime_admitted: bool
     resume_runtime_admitted: bool
     queue_state_authority_runtime_admitted: bool
     queue_scheduler_runtime_admitted: bool
@@ -4863,6 +4893,70 @@ class Layer3CandidateBFullCorpusOperatorWorkflowProcessCompletionResultResponse(
     history_endpoint: str
     history_request: dict[str, Any]
     process_completion_result_endpoint: str
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofResponse(Layer3BaseResponse):
+    mode: str
+    adopted_result_downstream_proof_state: str
+    adopted_result_downstream_proof_receipt_id: str
+    adopted_result_downstream_proof_receipt_hash: str
+    adopted_result_downstream_proof_receipt_ref: str
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    row_hash: str
+    authority_basis_hash: str
+    history_hash: str
+    process_completion_result_receipt_id: str
+    process_completion_result_receipt_hash: str
+    process_completion_result_authority_hash: str
+    process_execution_receipt_id: str
+    process_execution_receipt_hash: str
+    process_execution_authority_hash: str
+    result_workflow_receipt_id: str
+    result_workflow_receipt_hash: str
+    result_authority_hash: str
+    result_status_request_hash: str
+    result_downstream_proof_hash: str
+    adopted_result_status_hash: str
+    adopted_result_downstream_proof_status: str
+    adopted_result_layer3_projection: dict[str, Any]
+    adopted_result_downstream_proof_authority: dict[str, Any]
+    adopted_result_downstream_proof_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_adopted_result_downstream_proof_receipt: bool
+    process_completion_result_receipt_mutated: bool
+    process_execution_receipt_mutated: bool
+    source_run_receipt_mutated: bool
+    adopted_result_workflow_receipt_mutated: bool
+    downstream_proof_receipt_mutated: bool
+    adopted_result_downstream_proof_runtime_selected: bool
+    actual_subprocess_spawn_admitted_now: bool
+    actual_corpus_processing_execution_admitted_now: bool
+    browser_triggered_process_start_admitted: bool
+    operator_supplied_command_admitted: bool
+    operator_supplied_local_path_admitted: bool
+    operator_supplied_raw_url_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    default_scope_expansion_admitted: bool
+    raw_stdout_admitted: bool
+    raw_stderr_admitted: bool
+    raw_exception_trace_admitted: bool
+    raw_log_excerpt_admitted: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    adopted_result_downstream_proof_endpoint: str
     next_allowed_actions: list[str]
 
 
@@ -10945,6 +11039,27 @@ def post_candidate_b_full_corpus_operator_workflow_process_completion_result(
         )
     except (
         workflow_process_completion_result_service.CandidateBFullCorpusOperatorWorkflowProcessCompletionResultError
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_adopted_result_downstream_proof_service = (
+        layer3_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof
+    )
+    try:
+        return workflow_adopted_result_downstream_proof_service.record_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof(
+            payload.model_dump(exclude_unset=True),
+        )
+    except (
+        workflow_adopted_result_downstream_proof_service.CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
