@@ -37,6 +37,7 @@ from app.services import (
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_final_proof,
+    layer3_candidate_b_full_corpus_operator_workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_status,
     layer3_candidate_b_operator_status,
@@ -165,6 +166,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_status_endpoint: str
     candidate_b_full_corpus_operator_workflow_run_admitted: bool
     candidate_b_full_corpus_operator_workflow_run_endpoint: str
+    candidate_b_full_corpus_operator_workflow_history_admitted: bool
+    candidate_b_full_corpus_operator_workflow_history_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -3381,6 +3384,43 @@ class Layer3CandidateBFullCorpusOperatorWorkflowStatusResponse(Layer3BaseRespons
     artifact_bytes_exposed: bool
     selector_mutation_performed: bool
     negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse(Layer3BaseResponse):
+    mode: str
+    history_scope: str
+    history_state: str
+    status_endpoint: str
+    rendered_history_mode: str
+    receipt_count: int
+    history_rows: list[dict[str, Any]]
+    history_hash: str
+    history_ref: str
+    configured_receipt_authority_used: bool
+    read_only_history_projection: bool
+    single_run_status_endpoint_reused_for_detail: bool
+    browser_supplied_receipt_root_admitted: bool
+    browser_supplied_runtime_roots_admitted: bool
+    browser_supplied_source_directory_admitted: bool
+    browser_supplied_bridge_dir_admitted: bool
+    operator_supplied_local_path_admitted: bool
+    operator_supplied_raw_url_admitted: bool
+    cancel_runtime_admitted: bool
+    retry_runtime_admitted: bool
+    resume_runtime_admitted: bool
+    queue_scheduler_runtime_admitted: bool
+    expiry_mutation_runtime_admitted: bool
+    default_scope_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
     next_allowed_actions: list[str]
 
 
@@ -9247,6 +9287,19 @@ def post_candidate_b_default_promotion_closure_evidence(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_promotion_closure.CandidateBPromotionClosureError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.get(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse,
+    responses=_workbench_error_responses(404, 409),
+)
+def get_candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any] | JSONResponse:
+    workflow_history_service = layer3_candidate_b_full_corpus_operator_workflow_history
+    try:
+        return workflow_history_service.candidate_b_full_corpus_operator_workflow_history()
+    except workflow_history_service.CandidateBFullCorpusOperatorWorkflowHistoryError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

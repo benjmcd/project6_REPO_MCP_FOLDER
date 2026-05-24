@@ -23,6 +23,7 @@ from main import app
 
 RUN_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run"
 STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status"
+HISTORY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history"
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
 CANDIDATE_B_RUN_ID = "candidate-b-run"
@@ -242,6 +243,83 @@ def test_candidate_b_full_corpus_operator_workflow_run_is_idempotent(client: Tes
     assert second["authority_basis_hash"] == first["authority_basis_hash"]
     assert first["idempotent_replay"] is False
     assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_runs(
+    client: TestClient,
+) -> None:
+    source_receipt_id, _source_receipt = _write_source_receipt()
+    run_body = client.post(RUN_ENDPOINT, json=_run_request()).json()
+
+    response = client.get(HISTORY_ENDPOINT)
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == "layer3.candidate_b_full_corpus_operator_workflow_history.v1"
+    assert body["history_state"] == "available"
+    assert body["receipt_count"] == 1
+    assert body["read_only_history_projection"] is True
+    assert body["single_run_status_endpoint_reused_for_detail"] is True
+    assert body["browser_supplied_receipt_root_admitted"] is False
+    assert body["cancel_runtime_admitted"] is False
+    assert body["queue_scheduler_runtime_admitted"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    row = body["history_rows"][0]
+    assert row["operator_workflow_receipt_id"] == run_body["operator_workflow_receipt_id"]
+    assert row["operator_workflow_receipt_hash"] == run_body["operator_workflow_receipt_hash"]
+    assert row["source_operator_workflow_receipt_id"] == source_receipt_id
+    assert row["runtime_root_lifecycle_receipt_id"] == RUNTIME_ROOT_LIFECYCLE_RECEIPT_ID
+    assert row["compare_target_set_hash"] == COMPARE_TARGET_SET_HASH
+    assert row["run_state"] == "proven"
+    assert row["status_endpoint"] == STATUS_ENDPOINT
+    assert row["raw_local_path_exposed"] is False
+    assert row["raw_url_exposed"] is False
+    assert row["selector_mutation_performed"] is False
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+    assert status_response.status_code == 200
+    assert status_response.json()["workflow_receipt_id"] == row["operator_workflow_receipt_id"]
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+
+def test_candidate_b_full_corpus_operator_workflow_history_fails_closed_for_stale_run_receipt(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    run_body = client.post(RUN_ENDPOINT, json=_run_request()).json()
+    run_receipt_file = (
+        Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+        / run_body["operator_workflow_receipt_id"]
+        / "receipt.json"
+    )
+    run_receipt = json.loads(run_receipt_file.read_text(encoding="utf-8"))
+    run_receipt["server_owned_workflow_run"]["authority_basis"]["compare_target_set_hash"] = "6" * 64
+    run_receipt_file.write_text(json.dumps(run_receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    response = client.get(HISTORY_ENDPOINT)
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["history_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_history_authority_mismatch"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_history_reports_empty_configured_authority(
+    client: TestClient,
+) -> None:
+    Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir).mkdir(parents=True)
+
+    response = client.get(HISTORY_ENDPOINT)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["history_state"] == "available"
+    assert body["receipt_count"] == 0
+    assert body["history_rows"] == []
 
 
 def test_candidate_b_full_corpus_operator_workflow_run_fails_closed_for_stale_authority(
