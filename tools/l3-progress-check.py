@@ -2719,6 +2719,9 @@ CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_START_CONTROL = (
 CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_LIVE_HTTP_PROOF = (
     PLANNING_DOCS / "995-cb-rendered-run-live-http-proof.md"
 )
+CANDIDATE_B_WORKFLOW_RUN_HISTORY_SELECTION = (
+    PLANNING_DOCS / "996-cb-workflow-run-history-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -92464,6 +92467,67 @@ def _check_candidate_b_rendered_operator_workflow_run_live_http_proof(
                 )
 
 
+def _check_candidate_b_workflow_run_history_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_WORKFLOW_RUN_HISTORY_SELECTION: (
+            "Candidate B Workflow Run History and Lifecycle Selection",
+            "milestone: candidate_b_operator_workflow_run_history_and_lifecycle_selection_v1",
+            "source_rendered_live_http_proof: next_milestone_plans/Layer3_planning_docs/995-cb-rendered-run-live-http-proof.md",
+            "current_main_entry: e35d04ce35e1db16c5a159cf42bf29359b9cce50",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_operator_workflow_run_history_read_only_projection_v1",
+            "selected_history_scope: server_owned_candidate_b_full_corpus_operator_workflow_run_receipts",
+            "selected_history_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "selected_rendered_history_mode: rendered_candidate_b_full_corpus_operator_workflow_run_history_control",
+            "selected_source_authority: configured_L3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR",
+            "browser_supplied_receipt_root_admitted: false",
+            "read_only_history_projection_admitted_after_sync: true",
+            "single_run_status_endpoint_reused_for_detail: true",
+            "history_rows_must_bind_authority_basis_hash: true",
+            "history_rows_must_bind_status_request: true",
+            "invalid_or_stale_receipts_fail_closed: true",
+            "missing_configured_receipt_root_fails_closed: true",
+            "cancel_runtime_admitted: false",
+            "retry_runtime_admitted: false",
+            "resume_runtime_admitted: false",
+            "queue_scheduler_runtime_admitted: false",
+            "expiry_mutation_runtime_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_operator_workflow_run_history_read_only_projection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_run_history_and_lifecycle_selection_v1",
+            "source_rendered_live_http_proof: next_milestone_plans/Layer3_planning_docs/995-cb-rendered-run-live-http-proof.md",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_operator_workflow_run_history_read_only_projection_v1",
+            "selected_history_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "selected_rendered_history_mode: rendered_candidate_b_full_corpus_operator_workflow_run_history_control",
+            "read_only_history_projection_admitted_after_sync: true",
+            "single_run_status_endpoint_reused_for_detail: true",
+            "invalid_or_stale_receipts_fail_closed: true",
+            "cancel_runtime_admitted: false",
+            "queue_scheduler_runtime_admitted: false",
+            "next_exact_posture: candidate_b_operator_workflow_run_history_read_only_projection_v1",
+        ),
+        CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_LIVE_HTTP_PROOF: (
+            "next_exact_posture: candidate_b_operator_workflow_run_history_and_lifecycle_selection_v1",
+            "prefer a read/list/status history projection over broader queue scheduling",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B workflow run history selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -93307,6 +93371,7 @@ def main() -> int:
     _check_candidate_b_rendered_operator_workflow_run_start_control_freeze(errors)
     _check_candidate_b_rendered_operator_workflow_run_start_control(errors)
     _check_candidate_b_rendered_operator_workflow_run_live_http_proof(errors)
+    _check_candidate_b_workflow_run_history_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
