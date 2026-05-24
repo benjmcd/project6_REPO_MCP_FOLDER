@@ -2737,6 +2737,9 @@ CANDIDATE_B_ASYNC_CANCEL_RETRY_QUEUE_SELECTION = (
 CANDIDATE_B_ASYNC_QUEUE_STATE_RUNTIME = (
     PLANNING_DOCS / "1001-cb-async-queue-state-runtime.md"
 )
+CANDIDATE_B_ASYNC_SCHEDULER_SELECTION = (
+    PLANNING_DOCS / "1002-cb-async-scheduler-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -93119,6 +93122,105 @@ def _check_candidate_b_async_queue_state_runtime(
                 )
 
 
+def _check_candidate_b_async_scheduler_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_SCHEDULER_SELECTION: (
+            "Candidate B Async Queue Scheduler Authority Selection",
+            "milestone: candidate_b_async_queue_scheduler_authority_selection_v1",
+            "source_queue_state_runtime: next_milestone_plans/Layer3_planning_docs/1001-cb-async-queue-state-runtime.md",
+            "current_main_entry: ead28c301404b7a3128b4a8234177efd29d44164",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_scheduler_lease_receipt_v1",
+            "selected_scheduler_scope: server_owned_candidate_b_full_corpus_operator_workflow_queue_state_receipts",
+            "selected_scheduler_mode: append_only_scheduler_lease_receipt_without_background_worker",
+            "selected_scheduler_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease",
+            "existing_queue_state_endpoint_reused_for_source_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state",
+            "selected_scheduler_receipt_model: append_only_scheduler_lease_receipt_without_mutating_queue_state_or_source_run_receipt",
+            "selected_scheduler_receipt_binding: queue_state_receipt_id,queue_state_receipt_hash,queue_state_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,scheduler_lease_hash",
+            "selected_scheduler_idempotency_basis: client_request_id_plus_scheduler_lease_authority_hash",
+            "stale_queue_state_receipt_must_reject: true",
+            "stale_run_receipt_must_reject: true",
+            "stale_history_row_must_reject: true",
+            "missing_queue_state_receipt_must_reject: true",
+            "source_run_receipt_mutation_admitted: false",
+            "queue_state_receipt_mutation_admitted: false",
+            "scheduler_lease_runtime_selected_after_sync: true",
+            "background_worker_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_scheduler_lease_receipt_v1",
+            "Should the scheduler lease start a background worker? Recommended answer: no.",
+            "Can cancel be implemented after queue-state but before a scheduler lease? Recommended answer: no.",
+            "Can retry be implemented before lease attempts exist? Recommended answer: no.",
+            "Can resume be implemented before checkpoint authority exists? Recommended answer: no.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_queue_scheduler_authority_selection_v1",
+            "source_queue_state_runtime: next_milestone_plans/Layer3_planning_docs/1001-cb-async-queue-state-runtime.md",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_scheduler_lease_receipt_v1",
+            "selected_scheduler_mode: append_only_scheduler_lease_receipt_without_background_worker",
+            "selected_scheduler_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease",
+            "selected_scheduler_receipt_model: append_only_scheduler_lease_receipt_without_mutating_queue_state_or_source_run_receipt",
+            "stale_queue_state_receipt_must_reject: true",
+            "stale_run_receipt_must_reject: true",
+            "stale_history_row_must_reject: true",
+            "missing_queue_state_receipt_must_reject: true",
+            "source_run_receipt_mutation_admitted: false",
+            "queue_state_receipt_mutation_admitted: false",
+            "scheduler_lease_runtime_selected_after_sync: true",
+            "background_worker_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_scheduler_lease_receipt_v1",
+            "It must not start a worker, run the job, cancel, retry, resume, enforce expiry, mutate the queue-state receipt, mutate the source run receipt",
+        ),
+        CANDIDATE_B_ASYNC_QUEUE_STATE_RUNTIME: (
+            "next_exact_posture: candidate_b_async_queue_scheduler_authority_selection_v1",
+            "queue_scheduler_runtime_selected_now: false",
+            "background_worker_runtime_selected_now: false",
+            "does not start a background scheduler or worker",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE: (
+            '"queue_scheduler_runtime_selected_now": False',
+            '"background_worker_runtime_selected_now": False',
+            '"cancel_runtime_selected_now": False',
+            '"retry_runtime_selected_now": False',
+            '"resume_runtime_selected_now": False',
+            "select queue scheduler, cancel, retry, or resume only through a separate freeze",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async scheduler selection term: {term}"
+                )
+
+    api_text = _read_required_text(LAYER3_API, errors)
+    forbidden_routes = (
+        '"/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease"',
+    )
+    for route in forbidden_routes:
+        if route in api_text:
+            errors.append(
+                f"{_rel(LAYER3_API)} exposes non-implemented Candidate B async scheduler route: {route}"
+            )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -93967,6 +94069,7 @@ def main() -> int:
     _check_candidate_b_workflow_run_lifecycle_selection(errors)
     _check_candidate_b_async_cancel_retry_queue_selection(errors)
     _check_candidate_b_async_queue_state_runtime(errors)
+    _check_candidate_b_async_scheduler_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
