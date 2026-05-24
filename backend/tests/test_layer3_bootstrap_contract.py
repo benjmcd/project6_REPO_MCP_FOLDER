@@ -53,6 +53,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_completion_monitor"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_repeatability_checkpoint"] is True
+    assert direct_body["features"]["candidate_b_full_corpus_repeatability_rerun_trial"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_scheduler_lease"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_worker_attempt"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_progress_checkpoint"] is True
@@ -225,6 +226,13 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     )
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint"
+    )
+    assert (
+        direct_body["execution_readiness"]["candidate_b_full_corpus_repeatability_rerun_trial_admitted"]
+        is True
+    )
+    assert direct_body["execution_readiness"]["candidate_b_full_corpus_repeatability_rerun_trial_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial"
     )
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint"] == (
