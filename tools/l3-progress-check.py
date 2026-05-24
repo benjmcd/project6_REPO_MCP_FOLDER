@@ -2725,6 +2725,9 @@ CANDIDATE_B_WORKFLOW_RUN_HISTORY_SELECTION = (
 CANDIDATE_B_WORKFLOW_RUN_HISTORY_PROJECTION = (
     PLANNING_DOCS / "997-cb-workflow-run-history-projection.md"
 )
+CANDIDATE_B_WORKFLOW_RUN_LIFECYCLE_SELECTION = (
+    PLANNING_DOCS / "998-cb-workflow-lifecycle-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -92662,6 +92665,90 @@ def _check_candidate_b_workflow_run_history_projection(
                 )
 
 
+def _check_candidate_b_workflow_run_lifecycle_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_WORKFLOW_RUN_LIFECYCLE_SELECTION: (
+            "Candidate B Workflow Run Lifecycle Mutation Selection",
+            "milestone: candidate_b_operator_workflow_lifecycle_mutation_selection_v1",
+            "source_history_projection: next_milestone_plans/Layer3_planning_docs/997-cb-workflow-run-history-projection.md",
+            "current_main_entry: 0b48b12da7d48f8faefdb46d93d955130041ab13",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1",
+            "selected_lifecycle_scope: server_owned_candidate_b_full_corpus_operator_workflow_run_receipts",
+            "selected_lifecycle_action: expire_or_close_server_owned_workflow_run_receipt",
+            "selected_lifecycle_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire",
+            "existing_history_endpoint_reused_for_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "existing_status_endpoint_reused_for_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "selected_lifecycle_receipt_model: append_only_lifecycle_receipt_without_mutating_source_run_receipt",
+            "selected_lifecycle_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash",
+            "selected_idempotency_basis: client_request_id_plus_lifecycle_authority_hash",
+            "stale_run_receipt_rejected: true",
+            "stale_history_row_rejected: true",
+            "missing_run_receipt_rejected: true",
+            "source_run_receipt_mutation_admitted: false",
+            "browser_supplied_receipt_root_admitted: false",
+            "browser_supplied_runtime_roots_admitted: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "queue_scheduler_runtime_selected_now: false",
+            "expiry_closeout_runtime_selected_after_sync: true",
+            "frontend_durable_authority_enabled: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_lifecycle_mutation_selection_v1",
+            "source_history_projection: next_milestone_plans/Layer3_planning_docs/997-cb-workflow-run-history-projection.md",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1",
+            "selected_lifecycle_scope: server_owned_candidate_b_full_corpus_operator_workflow_run_receipts",
+            "selected_lifecycle_action: expire_or_close_server_owned_workflow_run_receipt",
+            "selected_lifecycle_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire",
+            "selected_lifecycle_receipt_model: append_only_lifecycle_receipt_without_mutating_source_run_receipt",
+            "selected_lifecycle_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash",
+            "stale_run_receipt_rejected: true",
+            "stale_history_row_rejected: true",
+            "source_run_receipt_mutation_admitted: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "queue_scheduler_runtime_selected_now: false",
+            "expiry_closeout_runtime_selected_after_sync: true",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_operator_workflow_run_expiry_closeout_receipt_v1",
+        ),
+        CANDIDATE_B_WORKFLOW_RUN_HISTORY_PROJECTION: (
+            "next_exact_posture: candidate_b_operator_workflow_lifecycle_mutation_selection_v1",
+            "Any cancel, retry, resume, expiry enforcement, queue scheduling, or broader workflow orchestration must be frozen separately",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_SERVICE: (
+            'STATE_MACHINE = ("accepted", "running", "proven", "blocked", "cancelled", "expired")',
+            '"queue_scheduler_admitted": "contract_only"',
+            '"cancel_endpoint_admitted": "contract_only"',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"cancel_runtime_admitted": False',
+            '"retry_runtime_admitted": False',
+            '"resume_runtime_admitted": False',
+            '"queue_scheduler_runtime_admitted": False',
+            '"expiry_mutation_runtime_admitted": False',
+            "select cancel, retry, resume, or expiry enforcement only through a separate freeze",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B workflow run lifecycle selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -93507,6 +93594,7 @@ def main() -> int:
     _check_candidate_b_rendered_operator_workflow_run_live_http_proof(errors)
     _check_candidate_b_workflow_run_history_selection(errors)
     _check_candidate_b_workflow_run_history_projection(errors)
+    _check_candidate_b_workflow_run_lifecycle_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
