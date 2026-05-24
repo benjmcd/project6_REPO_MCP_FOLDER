@@ -20,6 +20,9 @@ from app.services import layer3_candidate_b_full_corpus_operator_workflow_comple
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_execution_boundary as workflow_execution_boundary
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_lifecycle as workflow_lifecycle
 from app.services import (
+    layer3_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof as workflow_adopted_result_downstream_proof,
+)
+from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_process_completion_result as workflow_process_completion_result,
 )
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_process_execution as workflow_process_execution
@@ -75,6 +78,9 @@ PROCESS_EXECUTION_ENDPOINT = (
 )
 PROCESS_COMPLETION_RESULT_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result"
+)
+ADOPTED_RESULT_DOWNSTREAM_PROOF_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof"
 )
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
@@ -685,6 +691,58 @@ def _process_completion_result_request(
     }
     payload.update(overrides)
     return payload
+
+
+def _adopted_result_downstream_proof_request(
+    history: dict[str, Any],
+    row: dict[str, Any],
+    **overrides: Any,
+) -> dict[str, Any]:
+    projection = row["process_completion_result_projection"]
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-adopted-result-downstream-proof",
+        "adopted_result_downstream_proof_mode": (
+            workflow_adopted_result_downstream_proof.ADOPTED_RESULT_DOWNSTREAM_PROOF_MODE
+        ),
+        "operator_decision": workflow_adopted_result_downstream_proof.OPERATOR_DECISION,
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+        "process_completion_result_receipt_id": projection["process_completion_result_receipt_id"],
+        "process_completion_result_receipt_hash": projection["process_completion_result_receipt_hash"],
+        "process_completion_result_authority_hash": projection["process_completion_result_authority_hash"],
+        "process_execution_receipt_id": projection["process_execution_receipt_id"],
+        "process_execution_receipt_hash": projection["process_execution_receipt_hash"],
+        "process_execution_authority_hash": projection["process_execution_authority_hash"],
+        "result_workflow_receipt_id": projection["result_workflow_receipt_id"],
+        "result_workflow_receipt_hash": projection["result_workflow_receipt_hash"],
+        "result_status_request_hash": projection["result_status_request_hash"],
+        "result_downstream_proof_hash": projection["result_downstream_proof_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _process_completion_result_chain(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", _fake_process_launch)
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+    process_body = client.post(
+        PROCESS_EXECUTION_ENDPOINT,
+        json=_process_execution_request(history_body, row, execution_boundary_body),
+    ).json()
+    refreshed_history = client.get(HISTORY_ENDPOINT).json()
+    refreshed_row = refreshed_history["history_rows"][0]
+    completion_body = client.post(
+        PROCESS_COMPLETION_RESULT_ENDPOINT,
+        json=_process_completion_result_request(refreshed_history, refreshed_row, process_body),
+    ).json()
+    completed_history = client.get(HISTORY_ENDPOINT).json()
+    return completed_history, completed_history["history_rows"][0], completion_body
 
 
 def _worker_attempt_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
@@ -3305,6 +3363,167 @@ def test_candidate_b_full_corpus_operator_workflow_process_completion_result_ser
         "candidate_b_full_corpus_operator_workflow_process_completion_result_forbidden_request_fields"
     )
     assert exc_info.value.details["blocked_fields"] == ["command", "stdout"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_records_proof(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    completed_history, completed_row, completion_body = _process_completion_result_chain(client, monkeypatch)
+
+    response = client.post(
+        ADOPTED_RESULT_DOWNSTREAM_PROOF_ENDPOINT,
+        json=_adopted_result_downstream_proof_request(completed_history, completed_row),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_adopted_result_downstream_proof.SCHEMA_ID
+    assert body["mode"] == workflow_adopted_result_downstream_proof.ADOPTED_RESULT_DOWNSTREAM_PROOF_MODE
+    assert body["adopted_result_downstream_proof_state"] == "proven"
+    assert body["operator_workflow_receipt_id"] == completed_row["operator_workflow_receipt_id"]
+    assert body["process_completion_result_receipt_id"] == completion_body["process_completion_result_receipt_id"]
+    assert body["result_workflow_receipt_id"] == completion_body["result_workflow_receipt_id"]
+    assert body["result_downstream_proof_hash"] == completion_body["result_downstream_proof_hash"]
+    assert body["adopted_result_downstream_proof_status"] == "proven"
+    assert body["adopted_result_layer3_projection"]["downstream_proof_status"] == "proven"
+    assert body["append_only_adopted_result_downstream_proof_receipt"] is True
+    assert body["process_completion_result_receipt_mutated"] is False
+    assert body["adopted_result_workflow_receipt_mutated"] is False
+    assert body["actual_subprocess_spawn_admitted_now"] is False
+    assert body["actual_corpus_processing_execution_admitted_now"] is False
+    assert body["operator_supplied_command_admitted"] is False
+    assert body["raw_stdout_admitted"] is False
+    assert body["raw_stderr_admitted"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+    status_body = client.post(STATUS_ENDPOINT, json=completed_row["status_request"]).json()
+    projection = status_body["adopted_result_downstream_proof_projection"]
+    assert projection["adopted_result_downstream_proof_projection_state"] == "proven"
+    assert projection["adopted_result_downstream_proof_receipt_id"] == body["adopted_result_downstream_proof_receipt_id"]
+    assert projection["result_workflow_receipt_id"] == body["result_workflow_receipt_id"]
+    assert projection["raw_stdout_admitted"] is False
+    assert projection["raw_stderr_admitted"] is False
+
+    history_projection = client.get(HISTORY_ENDPOINT).json()["history_rows"][0][
+        "adopted_result_downstream_proof_projection"
+    ]
+    assert history_projection["adopted_result_downstream_proof_projection_state"] == "proven"
+    assert history_projection["adopted_result_downstream_proof_receipt_id"] == body[
+        "adopted_result_downstream_proof_receipt_id"
+    ]
+
+
+def test_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_is_idempotent(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    completed_history, completed_row, _completion_body = _process_completion_result_chain(client, monkeypatch)
+    request = _adopted_result_downstream_proof_request(completed_history, completed_row)
+
+    first = client.post(ADOPTED_RESULT_DOWNSTREAM_PROOF_ENDPOINT, json=request).json()
+    second_response = client.post(ADOPTED_RESULT_DOWNSTREAM_PROOF_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["adopted_result_downstream_proof_receipt_id"] == first[
+        "adopted_result_downstream_proof_receipt_id"
+    ]
+    assert second["adopted_result_downstream_proof_receipt_hash"] == first[
+        "adopted_result_downstream_proof_receipt_hash"
+    ]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_rejects_missing_completion(
+    client: TestClient,
+) -> None:
+    history_body, row, _retry_completion_failure_body = _retry_completion_failure_chain(client)
+    response = client.post(
+        ADOPTED_RESULT_DOWNSTREAM_PROOF_ENDPOINT,
+        json={
+            "client_request_id": "candidate-b-full-corpus-workflow-missing-adopted-result-proof",
+            "adopted_result_downstream_proof_mode": (
+                workflow_adopted_result_downstream_proof.ADOPTED_RESULT_DOWNSTREAM_PROOF_MODE
+            ),
+            "operator_decision": workflow_adopted_result_downstream_proof.OPERATOR_DECISION,
+            "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+            "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+            "row_hash": row["row_hash"],
+            "authority_basis_hash": row["authority_basis_hash"],
+            "history_hash": history_body["history_hash"],
+            "process_completion_result_receipt_id": "cb-full-corpus-operator-process-result-missing",
+            "process_completion_result_receipt_hash": "6" * 64,
+            "process_completion_result_authority_hash": "7" * 64,
+            "process_execution_receipt_id": "cb-full-corpus-operator-process-execution-missing",
+            "process_execution_receipt_hash": "8" * 64,
+            "process_execution_authority_hash": "9" * 64,
+            "result_workflow_receipt_id": "cb-full-corpus-operator-missing",
+            "result_workflow_receipt_hash": "a" * 64,
+            "result_status_request_hash": "b" * 64,
+            "result_downstream_proof_hash": "c" * 64,
+        },
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["adopted_result_downstream_proof_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_process_completion_result_missing"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_rejects_stale_completion(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    completed_history, completed_row, _completion_body = _process_completion_result_chain(client, monkeypatch)
+
+    response = client.post(
+        ADOPTED_RESULT_DOWNSTREAM_PROOF_ENDPOINT,
+        json=_adopted_result_downstream_proof_request(
+            completed_history,
+            completed_row,
+            result_status_request_hash="d" * 64,
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_stale_completion_result"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_service_rejects_raw_authority(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    completed_history, completed_row, _completion_body = _process_completion_result_chain(client, monkeypatch)
+    payload = _adopted_result_downstream_proof_request(
+        completed_history,
+        completed_row,
+        command="python tools/run_candidate_b_full_corpus_operator_workflow.py",
+        local_path="C:\\raw\\path",
+    )
+
+    with pytest.raises(
+        workflow_adopted_result_downstream_proof.CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError
+    ) as exc_info:
+        workflow_adopted_result_downstream_proof.record_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof(
+            payload
+        )
+
+    assert exc_info.value.code == (
+        "candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_forbidden_request_fields"
+    )
+    assert exc_info.value.details["blocked_fields"] == ["command", "local_path"]
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_completion_failure_rejects_stale_retry_progress_checkpoint(
