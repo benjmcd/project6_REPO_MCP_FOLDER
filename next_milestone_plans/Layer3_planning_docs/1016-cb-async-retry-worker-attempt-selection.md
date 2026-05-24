@@ -1,0 +1,72 @@
+# Candidate B Async Retry Worker-Attempt Authority Selection
+
+```yaml
+milestone: candidate_b_async_retry_worker_attempt_authority_selection_v1
+source_retry_scheduler_lease_runtime: next_milestone_plans/Layer3_planning_docs/1015-cb-async-retry-scheduler-lease-runtime.md
+current_main_entry: ec83458e125f27a312fbf18a6e9ffc5027057504
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_retry_worker_attempt_receipt_v1
+selected_retry_lineage_order: retry_queue_state_receipt,retry_scheduler_lease_receipt,retry_worker_attempt_receipt,retry_progress_checkpoint_receipt,retry_completion_failure_receipt
+selected_retry_worker_attempt_scope: server_owned_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_receipts
+selected_retry_worker_attempt_mode: append_only_retry_worker_attempt_receipt_without_job_execution
+selected_retry_worker_attempt_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/worker/attempt
+existing_retry_scheduler_lease_endpoint_reused_for_retry_lease_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease
+existing_retry_queue_state_endpoint_reused_for_retry_queue_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/queue/state
+existing_retry_policy_endpoint_reused_for_retry_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy
+existing_history_endpoint_reused_for_run_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_status_endpoint_reused_for_run_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+selected_retry_worker_attempt_receipt_model: append_only_retry_worker_attempt_receipt_without_mutating_retry_scheduler_lease_retry_queue_state_retry_policy_completion_failure_failed_worker_attempt_progress_checkpoint_scheduler_lease_queue_state_or_source_run_receipts
+selected_retry_worker_attempt_receipt_binding: retry_scheduler_lease_receipt_id,retry_scheduler_lease_receipt_hash,retry_scheduler_lease_authority_hash,retry_queue_state_receipt_id,retry_queue_state_receipt_hash,retry_queue_state_authority_hash,retry_attempt_number,retry_policy_receipt_id,retry_policy_authority_hash,completion_failure_receipt_id,failed_worker_attempt_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_worker_attempt_hash
+selected_retry_worker_attempt_idempotency_basis: client_request_id_plus_retry_worker_attempt_authority_hash
+selected_retry_worker_attempt_number: 2
+exclusive_retry_worker_attempt_per_retry_scheduler_lease: true
+stale_retry_scheduler_lease_receipt_must_reject: true
+stale_retry_queue_state_receipt_must_reject: true
+stale_retry_policy_receipt_must_reject: true
+stale_completion_failure_receipt_must_reject: true
+stale_failed_worker_attempt_receipt_must_reject: true
+stale_run_receipt_must_reject: true
+stale_history_row_must_reject: true
+missing_retry_scheduler_lease_receipt_must_reject: true
+retry_scheduler_lease_receipt_mutation_admitted: false
+retry_queue_state_receipt_mutation_admitted: false
+retry_policy_receipt_mutation_admitted: false
+completion_failure_receipt_mutation_admitted: false
+failed_worker_attempt_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+retry_worker_attempt_runtime_selected_after_sync: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+retry_progress_checkpoint_runtime_selected_now: false
+retry_completion_failure_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_worker_attempt_receipt_v1
+```
+
+This freeze selects the retry worker-attempt authority slice after retry scheduler-lease receipts. The next runtime must create an append-only retry worker-attempt receipt over one current retry scheduler-lease receipt, at retry attempt number 2, without mutating the retry scheduler lease, retry queue-state, retry policy, original completion failure, failed original worker attempt, original progress, original scheduler lease, original queue-state, or source-run receipts.
+
+The retry worker-attempt receipt is authority for a new retry attempt identity only. It does not start a background process, execute work, emit retry progress checkpoints, complete the retry, cancel, resume, enforce expiry, broaden Candidate B default scope, write provider objects, dispatch connectors, run RAG/vector/model logic, expose raw paths or URLs, or activate full mockup behavior.
+
+## Coherence Check
+
+- Should the retry worker-attempt receipt execute the Candidate B job? Recommended answer: no. It should establish retry attempt identity and lineage before execution/progress is separately admitted.
+- Should it reuse the original failed worker attempt as the retry attempt? Recommended answer: no. The failed worker attempt is provenance for the retry policy; the retry worker attempt is a new attempt authority bound to retry attempt number 2.
+- Should it mutate the retry scheduler-lease or retry queue-state receipts? Recommended answer: no. It must be append-only and fail closed on stale or conflicting retry lease authority.
+- Should retry progress or retry completion be emitted in the same slice? Recommended answer: no. Progress and retry terminal receipts remain separately admitted slices.
