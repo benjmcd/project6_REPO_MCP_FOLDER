@@ -2755,6 +2755,9 @@ CANDIDATE_B_ASYNC_PROGRESS_CHECKPOINT_SELECTION = (
 CANDIDATE_B_ASYNC_PROGRESS_CHECKPOINT_RUNTIME = (
     PLANNING_DOCS / "1007-cb-async-progress-checkpoint-runtime.md"
 )
+CANDIDATE_B_ASYNC_COMPLETION_FAILURE_SELECTION = (
+    PLANNING_DOCS / "1008-cb-async-completion-failure-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -93833,6 +93836,109 @@ def _check_candidate_b_async_progress_checkpoint_runtime(
                 )
 
 
+def _check_candidate_b_async_completion_failure_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_COMPLETION_FAILURE_SELECTION: (
+            "Candidate B Async Completion/Failure Authority Selection",
+            "milestone: candidate_b_async_completion_failure_authority_selection_v1",
+            "source_progress_checkpoint_runtime: next_milestone_plans/Layer3_planning_docs/1007-cb-async-progress-checkpoint-runtime.md",
+            "current_main_entry: 2d439e6b98786d38ba7d846c3ab1415d7abe0439",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_completion_failure_receipt_v1",
+            "selected_completion_failure_scope: server_owned_candidate_b_full_corpus_operator_workflow_worker_attempts_with_progress_checkpoint_receipts",
+            "selected_completion_failure_mode: append_only_completion_failure_receipt_without_cancel_retry_resume_or_source_receipt_mutation",
+            "selected_completion_failure_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure",
+            "existing_progress_checkpoint_endpoint_reused_for_checkpoint_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/progress/checkpoint",
+            "selected_completion_failure_receipt_model: append_only_terminal_receipt_without_mutating_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipt",
+            "selected_completion_failure_receipt_binding: worker_attempt_receipt_id,worker_attempt_receipt_hash,worker_attempt_authority_hash,latest_progress_checkpoint_receipt_id,latest_progress_checkpoint_receipt_hash,latest_progress_checkpoint_authority_hash,progress_checkpoint_sequence,scheduler_lease_receipt_id,queue_state_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,terminal_outcome,terminal_outcome_hash",
+            "selected_completion_failure_idempotency_basis: client_request_id_plus_completion_failure_authority_hash",
+            "selected_terminal_outcomes: completed,failed",
+            "minimum_progress_checkpoint_required: true",
+            "pre_checkpoint_failure_runtime_selected_now: false",
+            "terminal_failure_payload_must_be_operator_safe: true",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "stale_progress_checkpoint_receipt_must_reject: true",
+            "stale_worker_attempt_receipt_must_reject: true",
+            "stale_scheduler_lease_receipt_must_reject: true",
+            "stale_queue_state_receipt_must_reject: true",
+            "stale_run_receipt_must_reject: true",
+            "stale_history_row_must_reject: true",
+            "missing_progress_checkpoint_receipt_must_reject: true",
+            "progress_checkpoint_receipt_mutation_admitted: false",
+            "worker_attempt_receipt_mutation_admitted: false",
+            "scheduler_lease_receipt_mutation_admitted: false",
+            "queue_state_receipt_mutation_admitted: false",
+            "source_run_receipt_mutation_admitted: false",
+            "completion_failure_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_completion_failure_receipt_v1",
+            "Should completion/failure execute Candidate B work? Recommended answer: no.",
+            "Should terminal receipt mutation change the original workflow-run or worker-attempt receipt? Recommended answer: no.",
+            "Should failure payloads include raw traces, raw logs, local paths, URLs, provider refs, connector destinations, or artifact bytes? Recommended answer: no.",
+            "Should cancel, retry, or resume be implemented in this slice? Recommended answer: no.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_completion_failure_authority_selection_v1",
+            "source_progress_checkpoint_runtime: next_milestone_plans/Layer3_planning_docs/1007-cb-async-progress-checkpoint-runtime.md",
+            "current_main_entry: 2d439e6b98786d38ba7d846c3ab1415d7abe0439",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_completion_failure_receipt_v1",
+            "selected_completion_failure_mode: append_only_completion_failure_receipt_without_cancel_retry_resume_or_source_receipt_mutation",
+            "selected_completion_failure_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure",
+            "selected_terminal_outcomes: completed,failed",
+            "minimum_progress_checkpoint_required: true",
+            "pre_checkpoint_failure_runtime_selected_now: false",
+            "terminal_failure_payload_must_be_operator_safe: true",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "stale_progress_checkpoint_receipt_must_reject: true",
+            "missing_progress_checkpoint_receipt_must_reject: true",
+            "progress_checkpoint_receipt_mutation_admitted: false",
+            "completion_failure_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_completion_failure_receipt_v1",
+            "It must not execute the job, mutate any prior receipt, admit cancel/retry/resume, expose raw traces/logs/paths/URLs",
+        ),
+        CANDIDATE_B_ASYNC_PROGRESS_CHECKPOINT_RUNTIME: (
+            "next_exact_posture: candidate_b_async_completion_failure_authority_selection_v1",
+            "completion_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROGRESS_CHECKPOINT_SERVICE: (
+            '"completion_runtime_selected_now": False',
+            '"cancel_runtime_selected_now": False',
+            '"retry_runtime_selected_now": False',
+            '"resume_runtime_selected_now": False',
+            "select completion, cancel, retry, or resume only through a separate freeze",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async completion/failure selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -94687,6 +94793,7 @@ def main() -> int:
     _check_candidate_b_async_worker_attempt_runtime(errors)
     _check_candidate_b_async_progress_checkpoint_selection(errors)
     _check_candidate_b_async_progress_checkpoint_runtime(errors)
+    _check_candidate_b_async_completion_failure_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
