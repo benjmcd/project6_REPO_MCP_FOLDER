@@ -2824,6 +2824,9 @@ CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_RUNTIME = (
 CANDIDATE_B_ASYNC_PROCESS_COMPLETION_RESULT_ADOPTION_SELECTION = (
     PLANNING_DOCS / "1030-cb-async-process-completion-result-adoption-selection.md"
 )
+CANDIDATE_B_ASYNC_PROCESS_COMPLETION_RESULT_ADOPTION_RUNTIME = (
+    PLANNING_DOCS / "1031-cb-async-process-completion-result-adoption-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2857,6 +2860,13 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_process_execution.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_operator_workflow_process_completion_result.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_SCHEDULER_LEASE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease.py"
@@ -96548,6 +96558,145 @@ def _check_candidate_b_async_process_completion_result_adoption_selection(
                 )
 
 
+def _check_candidate_b_async_process_completion_result_adoption_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_PROCESS_COMPLETION_RESULT_ADOPTION_RUNTIME: (
+            "Candidate B Async Process Completion/Result Adoption Runtime",
+            "milestone: candidate_b_async_process_completion_result_adoption_v1",
+            "source_process_completion_result_selection: next_milestone_plans/Layer3_planning_docs/1030-cb-async-process-completion-result-adoption-selection.md",
+            "current_main_entry: 498d11e541da0fb04b19bee4e651e63c01571f0f",
+            "runtime_status: implemented",
+            "selected_completion_result_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result",
+            "selected_completion_result_mode: append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure",
+            "selected_completion_result_action: record_candidate_b_async_process_completion_result_adoption",
+            "selected_completion_result_receipt_model: append_only_receipt_binding_process_execution_receipt_to_validated_operator_workflow_result_receipt",
+            "completed_result_adoption_requires: current_process_execution_receipt,current_history_row,current_execution_boundary_authority,validated_result_workflow_receipt_from_allowlisted_workflow,matching_operator_workflow_lineage,operator_safe_status_request",
+            "missing_process_execution_receipt_rejects: true",
+            "stale_process_execution_receipt_rejects: true",
+            "stale_or_unrelated_result_receipt_rejects: true",
+            "competing_completion_result_receipt_rejects: true",
+            "status_history_projection_after_result_adoption: true",
+            "rendered_operator_projection_after_result_adoption: true",
+            "process_completion_result_runtime_selected: true",
+            "result_adoption_runtime_selected_after_sync: true",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "operator_supplied_command_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "source_run_receipt_mutation_admitted: false",
+            "process_execution_receipt_mutation_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator_proof_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_process_completion_result_adoption_v1",
+            "source_process_completion_result_selection: next_milestone_plans/Layer3_planning_docs/1030-cb-async-process-completion-result-adoption-selection.md",
+            "runtime_status: implemented",
+            "selected_completion_result_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result",
+            "selected_completion_result_mode: append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure",
+            "selected_completion_result_action: record_candidate_b_async_process_completion_result_adoption",
+            "completed_result_adoption_requires: current_process_execution_receipt,current_history_row,current_execution_boundary_authority,validated_result_workflow_receipt_from_allowlisted_workflow,matching_operator_workflow_lineage,operator_safe_status_request",
+            "status_history_projection_after_result_adoption: true",
+            "rendered_operator_projection_after_result_adoption: true",
+            "process_completion_result_runtime_selected: true",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator_proof_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_process_completion_result.v1"',
+            "PROCESS_COMPLETION_RESULT_MODE = (",
+            'OPERATOR_DECISION = "record_candidate_b_async_process_completion_result_adoption"',
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_forbidden_request_fields",
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_process_execution_missing",
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_stale_process_execution",
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_stale_result_receipt",
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_competing_receipt",
+            "raw_stdout_admitted",
+            "raw_stderr_admitted",
+            "source_run_receipt_mutated",
+            "process_execution_receipt_mutated",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE: (
+            "PROCESS_COMPLETION_RESULT_SCHEMA_ID",
+            "PROCESS_COMPLETION_RESULT_STATUS_PROJECTION_MODE",
+            "process_completion_result_projection",
+            "process_completion_result_projection_state",
+            "candidate_b_full_corpus_operator_workflow_status_process_completion_result_mismatch",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            "process_completion_result_runtime_admitted",
+            "process_completion_result_projection",
+            "_process_completion_result_projection",
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBFullCorpusOperatorWorkflowProcessCompletionResultRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowProcessCompletionResultResponse",
+            "post_candidate_b_full_corpus_operator_workflow_process_completion_result",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_RENDERED_MODE",
+            "candidateBFullCorpusOperatorWorkflowProcessCompletionResultPayload",
+            "canRecordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult",
+            "candidateBProcessCompletionResultProjectionItems",
+            "candidateBFullCorpusOperatorWorkflowProcessCompletionResultRows",
+            "recordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult",
+            "data-candidate-b-workflow-process-completion-result-index",
+            "candidate-b-full-corpus-workflow-process-completion-result-card",
+            "process_completion_result_projection",
+        ),
+        LAYER3_PAGE_TEST: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_COMPLETION_RESULT_RENDERED_MODE",
+            "process_completion_result_projection",
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_endpoint",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench adopts Candidate B workflow process completion result through rendered append-only control",
+            "rendered_candidate_b_full_corpus_operator_workflow_process_completion_result_control",
+            "candidate-b-full-corpus-workflow-process-completion-result-card",
+            "data-candidate-b-workflow-process-completion-result-index",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result",
+            "append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure",
+            "record_candidate_b_async_process_completion_result_adoption",
+            "expect(workflowProcessCompletionResultPayload).not.toHaveProperty('command')",
+            "expect(workflowProcessCompletionResultPayload).not.toHaveProperty('stdout')",
+            "expect(workflowProcessCompletionResultPayload).not.toHaveProperty('stderr')",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "PROCESS_COMPLETION_RESULT_ENDPOINT",
+            "_process_completion_result_request",
+            "test_candidate_b_full_corpus_operator_workflow_process_completion_result_records_completed_adoption",
+            "test_candidate_b_full_corpus_operator_workflow_process_completion_result_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_process_completion_result_rejects_missing_process_execution",
+            "test_candidate_b_full_corpus_operator_workflow_process_completion_result_rejects_stale_result",
+            "test_candidate_b_full_corpus_operator_workflow_process_completion_result_service_rejects_raw_authority",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async process completion/result adoption runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -97425,6 +97574,7 @@ def main() -> int:
     _check_candidate_b_async_background_process_execution_selection(errors)
     _check_candidate_b_async_background_process_execution_runtime(errors)
     _check_candidate_b_async_process_completion_result_adoption_selection(errors)
+    _check_candidate_b_async_process_completion_result_adoption_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
