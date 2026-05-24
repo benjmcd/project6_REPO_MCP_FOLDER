@@ -219,6 +219,11 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert body["operator_projection"]["process_execution_projection_visible"] is True
     policy = body["ownership_access_policy"]
     assert policy["policy_schema_id"] == access_policy.POLICY_SCHEMA_ID
+    assert policy["policy_runtime"] == access_policy.PROXY_OWNER_STORAGE_POLICY_RUNTIME
+    assert policy["auth_owner_mode"] == access_policy.AUTH_OWNER_NONE_LOCAL_MODE
+    assert policy["storage_access_policy"] == access_policy.STORAGE_ACCESS_POLICY
+    assert policy["audit_event_policy"] == access_policy.AUDIT_EVENT_POLICY
+    assert policy["workflow_receipt_owner_binding_required"] is False
     assert policy["policy_status"] == "admitted"
     assert policy["decision"] == "allow"
     assert policy["route_family"] == "workflow_status"
@@ -232,6 +237,10 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert audit_path.is_file()
     audit_event = json.loads(audit_path.read_text(encoding="utf-8"))
     assert audit_event["schema_id"] == access_policy.POLICY_AUDIT_SCHEMA_ID
+    assert audit_event["policy_runtime"] == access_policy.PROXY_OWNER_STORAGE_POLICY_RUNTIME
+    assert audit_event["auth_owner_mode"] == access_policy.AUTH_OWNER_NONE_LOCAL_MODE
+    assert audit_event["storage_access_policy"] == access_policy.STORAGE_ACCESS_POLICY
+    assert audit_event["audit_event_policy"] == access_policy.AUDIT_EVENT_POLICY
     assert audit_event["raw_operator_identity_exposed"] is False
     assert audit_event["raw_proxy_header_exposed"] is False
     assert audit_event["raw_local_path_exposed"] is False
@@ -276,6 +285,48 @@ def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_server_
     assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_missing_identity_authority"
 
 
+def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_tenant_authority(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    receipt_id, _receipt = _write_receipt()
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+
+    response = client.post(
+        ENDPOINT,
+        json=_request(receipt_id),
+        headers={"X-Forwarded-User": "alice"},
+    )
+
+    assert response.status_code == 401
+    body = response.json()
+    assert body["policy_status"] == "rejected"
+    assert body["error"]["code"] == (
+        "candidate_b_operator_workflow_access_policy_missing_tenant_or_workspace_authority"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_trusted_mode(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    receipt_id, _receipt = _write_receipt()
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", False)
+
+    response = client.post(
+        ENDPOINT,
+        json=_request(receipt_id),
+        headers={"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"},
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["policy_status"] == "rejected"
+    assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_untrusted_proxy_identity"
+
+
 def test_candidate_b_full_corpus_operator_workflow_status_proxy_rejects_cross_owner_receipt(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -308,11 +359,29 @@ def test_candidate_b_full_corpus_operator_workflow_status_proxy_rejects_cross_ow
     )
 
     assert allowed.status_code == 200
-    assert allowed.json()["ownership_access_policy"]["actor_ref_hash"] == actor_ref_hash
+    allowed_policy = allowed.json()["ownership_access_policy"]
+    assert allowed_policy["actor_ref_hash"] == actor_ref_hash
+    assert allowed_policy["auth_owner_mode"] == access_policy.AUTH_OWNER_PROXY_TRUSTED_MODE
+    assert allowed_policy["workflow_receipt_owner_binding_required"] is True
     assert rejected.status_code == 403
     body = rejected.json()
     assert body["policy_status"] == "rejected"
     assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_cross_owner_receipt"
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_storage_root_escape(
+    client: TestClient,
+) -> None:
+    receipt_id, _receipt = _write_receipt()
+
+    with pytest.raises(access_policy.CandidateBOperatorWorkflowAccessPolicyError) as exc_info:
+        workflow_status.candidate_b_full_corpus_operator_workflow_status(
+            _request(receipt_id, raw_storage_root="../escape")
+        )
+
+    assert exc_info.value.http_status == 400
+    assert exc_info.value.code == "candidate_b_operator_workflow_access_policy_forbidden_request_fields"
+    assert exc_info.value.details["blocked_fields"] == ["raw_storage_root"]
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_incomplete_eligibility(

@@ -14,6 +14,19 @@ from app.core.config import settings
 POLICY_SCHEMA_ID = "layer3.candidate_b.operator_workflow.owner_access_policy_decision.v1"
 POLICY_AUDIT_SCHEMA_ID = "layer3.candidate_b.operator_workflow.ownership_access_audit_event.v1"
 POLICY_MODE = "candidate_b_operator_workflow_owner_scoped_access_decision_v1"
+PROXY_OWNER_STORAGE_POLICY_RUNTIME = (
+    "candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1"
+)
+AUTH_OWNER_PROXY_TRUSTED_MODE = "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true"
+AUTH_OWNER_NONE_LOCAL_MODE = "AUTH_OWNER_none_single_operator_dev_profile"
+IDENTITY_AUTHORITY = "server_request_context_configured_proxy_identity_header_hash_only"
+TENANT_WORKSPACE_AUTHORITY = (
+    "server_request_context_configured_proxy_groups_header_hash_only"
+)
+STORAGE_ACCESS_POLICY = (
+    "configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths"
+)
+AUDIT_EVENT_POLICY = "append_only_redacted_policy_receipt_under_configured_workflow_root"
 POLICY_RECEIPT_PREFIX = "cb-full-corpus-operator-policy"
 LOCAL_ACTOR_REF = "local-single-operator-dev-profile"
 LOCAL_TENANT_REF = "local-single-workspace-dev-profile"
@@ -152,6 +165,12 @@ def authorize_workflow_access(
     request_id = str(fields.get("client_request_id") or "candidate-b-operator-workflow-access-policy").strip()
     decision = {
         "policy_schema_id": POLICY_SCHEMA_ID,
+        "policy_runtime": PROXY_OWNER_STORAGE_POLICY_RUNTIME,
+        "auth_owner_mode": _auth_owner_mode(),
+        "identity_authority": IDENTITY_AUTHORITY,
+        "tenant_workspace_authority": TENANT_WORKSPACE_AUTHORITY,
+        "storage_access_policy": STORAGE_ACCESS_POLICY,
+        "audit_event_policy": AUDIT_EVENT_POLICY,
         "policy_hash": policy_hash,
         "policy_status": "admitted",
         "decision": "allow",
@@ -185,6 +204,7 @@ def authorize_workflow_access(
         "artifact_bytes_exposed": False,
         "browser_storage_authority_used": False,
         "frontend_durable_authority_enabled": False,
+        "workflow_receipt_owner_binding_required": settings.auth_owner == "proxy",
     }
 
 
@@ -379,15 +399,20 @@ def _policy_hash(
 ) -> str:
     return _stable_hash(
         {
-            "selected_auth_mode": "session_tenant_owner_authorization",
+            "selected_auth_mode": PROXY_OWNER_STORAGE_POLICY_RUNTIME,
             "protected_route_family": route_family,
             "protected_rendered_surface": rendered_surface,
             "actor_ref_hash": actor_ref_hash,
             "tenant_or_workspace_ref_hash": tenant_or_workspace_ref_hash,
             "workflow_receipt_hash": workflow_receipt_hash,
             "authority_basis_hash": authority_basis_hash,
-            "storage_policy_hash": _stable_hash({"storage": "receipt_bound_refs_only"}),
-            "audit_contract_hash": _stable_hash({"audit_event_schema_id": POLICY_AUDIT_SCHEMA_ID}),
+            "storage_policy_hash": _stable_hash({"storage": STORAGE_ACCESS_POLICY}),
+            "audit_contract_hash": _stable_hash(
+                {
+                    "audit_event_schema_id": POLICY_AUDIT_SCHEMA_ID,
+                    "audit_event_policy": AUDIT_EVENT_POLICY,
+                }
+            ),
         }
     )
 
@@ -402,6 +427,12 @@ def _append_audit_event(
         "schema_id": POLICY_AUDIT_SCHEMA_ID,
         "schema_version": 1,
         "policy_schema_id": POLICY_SCHEMA_ID,
+        "policy_runtime": str(decision["policy_runtime"]),
+        "auth_owner_mode": str(decision["auth_owner_mode"]),
+        "identity_authority": str(decision["identity_authority"]),
+        "tenant_workspace_authority": str(decision["tenant_workspace_authority"]),
+        "storage_access_policy": str(decision["storage_access_policy"]),
+        "audit_event_policy": str(decision["audit_event_policy"]),
         "policy_hash": str(decision["policy_hash"]),
         "actor_ref_hash": str(decision["actor_ref_hash"]),
         "tenant_or_workspace_ref_hash": str(decision["tenant_or_workspace_ref_hash"]),
@@ -499,6 +530,12 @@ def _workflow_receipt_root() -> Path:
 
 def _normalise_headers(headers: Mapping[str, str]) -> dict[str, str]:
     return {str(key).strip().lower(): str(value).strip() for key, value in headers.items()}
+
+
+def _auth_owner_mode() -> str:
+    if settings.auth_owner == "proxy":
+        return AUTH_OWNER_PROXY_TRUSTED_MODE
+    return AUTH_OWNER_NONE_LOCAL_MODE
 
 
 def _reason_code(role: str, route_family: str) -> str:

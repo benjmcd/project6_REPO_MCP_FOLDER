@@ -2933,6 +2933,17 @@ CANDIDATE_B_OPERATOR_WORKFLOW_PRODUCTION_AUTH_STORAGE_HARDENING_SELECTION = (
     PLANNING_DOCS
     / "1066-cb-operator-workflow-production-auth-storage-hardening-selection.md"
 )
+CANDIDATE_B_OPERATOR_WORKFLOW_PROXY_OWNER_STORAGE_POLICY_RUNTIME = (
+    PLANNING_DOCS
+    / "1067-cb-operator-workflow-proxy-owner-storage-policy-runtime.md"
+)
+CANDIDATE_B_OPERATOR_WORKFLOW_ACCESS_POLICY = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_operator_workflow_access_policy.py"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -100390,6 +100401,144 @@ def _check_candidate_b_operator_workflow_production_auth_storage_hardening_selec
                 )
 
 
+def _check_candidate_b_operator_workflow_proxy_owner_storage_policy_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_WORKFLOW_PROXY_OWNER_STORAGE_POLICY_RUNTIME: (
+            "Candidate B Operator Workflow Proxy Owner Storage Policy Runtime",
+            "milestone: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1",
+            "source_operator_workflow_production_auth_storage_hardening_selection: next_milestone_plans/Layer3_planning_docs/1066-cb-operator-workflow-production-auth-storage-hardening-selection.md",
+            "current_main_entry: 46a414c57e0e9ba78eaecd635f85297c97a61bbf",
+            "runtime_status: proxy_owner_storage_policy_runtime_implemented",
+            "implemented_policy_runtime: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1",
+            "implemented_auth_owner_mode: AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            "implemented_identity_authority: server_request_context_configured_proxy_identity_header_hash_only",
+            "implemented_tenant_workspace_authority: server_request_context_configured_proxy_groups_header_hash_only",
+            "implemented_storage_access_policy: configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths",
+            "implemented_audit_event_policy: append_only_redacted_policy_receipt_under_configured_workflow_root",
+            "implemented_local_compatibility: AUTH_OWNER_none_single_operator_dev_profile_unchanged",
+            "implemented_policy_projection_fields: policy_runtime,auth_owner_mode,identity_authority,tenant_workspace_authority,storage_access_policy,audit_event_policy,workflow_receipt_owner_binding_required",
+            "implemented_rendered_policy_fields: policy_runtime,auth_owner_mode,storage_access_policy,audit_event_policy,workflow_receipt_owner_binding_required",
+            "implemented_audit_event_fields: policy_runtime,auth_owner_mode,identity_authority,tenant_workspace_authority,storage_access_policy,audit_event_policy",
+            "proxy_owner_positive_path_proven: true",
+            "auditor_status_positive_path_proven: true",
+            "missing_identity_fail_closed_proven: true",
+            "missing_tenant_fail_closed_proven: true",
+            "untrusted_proxy_fail_closed_proven: true",
+            "cross_owner_fail_closed_proven: true",
+            "stale_policy_hash_fail_closed_proven: true",
+            "storage_root_escape_fail_closed_proven: true",
+            "audit_redaction_proven: true",
+            "AUTH_OWNER_none_compatibility_proven: true",
+            "raw_proxy_header_exposed: false",
+            "raw_operator_identity_exposed: false",
+            "raw_tenant_or_workspace_exposed: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_or_connector_secret_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_status.py ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_run.py -q PASS 112 passed",
+            "verification_node_check: node --check ./backend/app/review_ui/static/layer3.js PASS",
+            "headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium PASS 3 passed",
+            "headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium --headed PASS 3 passed",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1",
+            "source_operator_workflow_production_auth_storage_hardening_selection: next_milestone_plans/Layer3_planning_docs/1066-cb-operator-workflow-production-auth-storage-hardening-selection.md",
+            "current_main_entry: 46a414c57e0e9ba78eaecd635f85297c97a61bbf",
+            "runtime_status: proxy_owner_storage_policy_runtime_implemented",
+            "implemented_policy_runtime: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1",
+            "implemented_auth_owner_mode: AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true",
+            "implemented_storage_access_policy: configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths",
+            "implemented_audit_event_policy: append_only_redacted_policy_receipt_under_configured_workflow_root",
+            "missing_tenant_fail_closed_proven: true",
+            "untrusted_proxy_fail_closed_proven: true",
+            "storage_root_escape_fail_closed_proven: true",
+            "AUTH_OWNER_none_compatibility_proven: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_status.py ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_run.py -q PASS 112 passed",
+            "verification_node_check: node --check ./backend/app/review_ui/static/layer3.js PASS",
+            "headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium PASS 3 passed",
+            "headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium --headed PASS 3 passed",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selection_v1",
+        ),
+        CANDIDATE_B_OPERATOR_WORKFLOW_PRODUCTION_AUTH_STORAGE_HARDENING_SELECTION: (
+            "next_exact_posture: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1",
+        ),
+        CANDIDATE_B_OPERATOR_WORKFLOW_ACCESS_POLICY: (
+            'PROXY_OWNER_STORAGE_POLICY_RUNTIME = (',
+            '"candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1"',
+            'AUTH_OWNER_PROXY_TRUSTED_MODE = "AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true"',
+            'STORAGE_ACCESS_POLICY = (',
+            '"configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths"',
+            'AUDIT_EVENT_POLICY = "append_only_redacted_policy_receipt_under_configured_workflow_root"',
+            '"policy_runtime": PROXY_OWNER_STORAGE_POLICY_RUNTIME',
+            '"auth_owner_mode": _auth_owner_mode()',
+            '"storage_access_policy": STORAGE_ACCESS_POLICY',
+            '"audit_event_policy": AUDIT_EVENT_POLICY',
+            '"workflow_receipt_owner_binding_required": settings.auth_owner == "proxy"',
+            '"policy_runtime": str(decision["policy_runtime"])',
+            '"auth_owner_mode": str(decision["auth_owner_mode"])',
+            '"storage_access_policy": str(decision["storage_access_policy"])',
+            '"audit_event_policy": str(decision["audit_event_policy"])',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE: (
+            '"policy_runtime": str(policy_decision["policy_runtime"])',
+            '"auth_owner_mode": str(policy_decision["auth_owner_mode"])',
+            '"storage_access_policy": str(policy_decision["storage_access_policy"])',
+            '"audit_event_policy": str(policy_decision["audit_event_policy"])',
+            '"workflow_receipt_owner_binding_required": bool(',
+        ),
+        LAYER3_JS: (
+            "policy runtime",
+            "auth owner mode",
+            "storage access policy",
+            "audit event policy",
+            "workflow receipt owner binding required",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_tenant_authority",
+            "test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_trusted_mode",
+            "test_candidate_b_full_corpus_operator_workflow_status_rejects_storage_root_escape",
+            "access_policy.PROXY_OWNER_STORAGE_POLICY_RUNTIME",
+            "access_policy.AUTH_OWNER_NONE_LOCAL_MODE",
+            "access_policy.AUTH_OWNER_PROXY_TRUSTED_MODE",
+            "access_policy.STORAGE_ACCESS_POLICY",
+            "access_policy.AUDIT_EVENT_POLICY",
+            "candidate_b_operator_workflow_access_policy_missing_tenant_or_workspace_authority",
+            "candidate_b_operator_workflow_access_policy_untrusted_proxy_identity",
+            "candidate_b_operator_workflow_access_policy_forbidden_request_fields",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "access_policy.PROXY_OWNER_STORAGE_POLICY_RUNTIME",
+            "access_policy.AUTH_OWNER_NONE_LOCAL_MODE",
+            "access_policy.AUTH_OWNER_PROXY_TRUSTED_MODE",
+            "access_policy.STORAGE_ACCESS_POLICY",
+            "access_policy.AUDIT_EVENT_POLICY",
+            'policy["workflow_receipt_owner_binding_required"] is True',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B proxy-owner storage policy runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -101303,6 +101452,7 @@ def main() -> int:
     _check_candidate_b_operator_workflow_rendered_identity_status_controls_selection(errors)
     _check_candidate_b_operator_workflow_rendered_identity_status_controls_runtime(errors)
     _check_candidate_b_operator_workflow_production_auth_storage_hardening_selection(errors)
+    _check_candidate_b_operator_workflow_proxy_owner_storage_policy_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
