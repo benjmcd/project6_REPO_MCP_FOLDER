@@ -37,6 +37,7 @@ from app.services import (
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_final_proof,
+    layer3_candidate_b_full_corpus_operator_workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_status,
     layer3_candidate_b_operator_status,
     layer3_candidate_b_promotion_closure,
@@ -162,6 +163,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_default_promotion_final_proof_status_endpoint: str
     candidate_b_full_corpus_operator_workflow_status_admitted: bool
     candidate_b_full_corpus_operator_workflow_status_endpoint: str
+    candidate_b_full_corpus_operator_workflow_run_admitted: bool
+    candidate_b_full_corpus_operator_workflow_run_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2741,6 +2744,20 @@ class Layer3CandidateBFullCorpusOperatorWorkflowStatusRequest(BaseModel):
     downstream_proof_id: str = Field(min_length=1)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowRunRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    run_mode: Literal["candidate_b_full_corpus_operator_workflow_run_v1"]
+    operator_decision: Literal["start_candidate_b_full_corpus_operator_workflow"]
+    runtime_root_lifecycle_receipt_id: str = Field(min_length=1)
+    baseline_run_id: str = Field(min_length=1)
+    candidate_a_run_id: str = Field(min_length=1)
+    candidate_b_run_id: str = Field(min_length=1)
+    compare_target_set_hash: str = Field(min_length=64, max_length=64)
+    material_relative_name: str | None = None
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3359,6 +3376,50 @@ class Layer3CandidateBFullCorpusOperatorWorkflowStatusResponse(Layer3BaseRespons
     operator_projection: dict[str, Any]
     validate_only_triplet: bool
     artifacts_seeded_or_generated_by_triplet_validator: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowRunResponse(Layer3BaseResponse):
+    mode: str
+    status: str
+    run_state: str
+    state_machine: list[str]
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    run_receipt_id: str
+    run_receipt_hash: str
+    run_receipt_ref: str
+    source_operator_workflow_receipt_id: str
+    source_operator_workflow_receipt_hash: str
+    authority_basis_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    runtime_root_lifecycle: dict[str, Any]
+    baseline_run_id: str
+    candidate_a_run_id: str
+    candidate_b_run_id: str
+    compare_target_set_hash: str
+    bridge_receipt_id: str
+    bridge_receipt_hash: str
+    downstream_proof_id: str
+    downstream_proof_hash: str
+    coverage_count: int
+    corpus: dict[str, Any]
+    layer3: dict[str, Any]
+    artifact_family: dict[str, Any]
+    baseline_rollback: dict[str, Any]
+    status_endpoint: str
+    status_request: dict[str, Any]
+    receipt_persisted: bool
+    queue_scheduler_admitted: str
+    cancel_endpoint_admitted: str
+    rendered_run_start_control_admitted: bool
+    rendered_progress_control_admitted: bool
     raw_local_path_exposed: bool
     raw_url_exposed: bool
     artifact_bytes_exposed: bool
@@ -9136,6 +9197,23 @@ def post_candidate_b_default_promotion_operator_status(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_operator_status.CandidateBOperatorStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowRunResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_run(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowRunRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_run_service = layer3_candidate_b_full_corpus_operator_workflow_run
+    try:
+        return workflow_run_service.candidate_b_full_corpus_operator_workflow_run(
+            payload.model_dump(exclude_unset=True),
+        )
+    except workflow_run_service.CandidateBFullCorpusOperatorWorkflowRunError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
