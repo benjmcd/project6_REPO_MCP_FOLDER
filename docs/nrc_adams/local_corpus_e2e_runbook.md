@@ -4524,3 +4524,45 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_v1
 ```
 
 The default-scope runtime selection is frozen but not implemented here. The future runtime must bind to a ready broader-scope audit result and exact proposed classes before recording any redacted selection receipt. No broader classes are selected in this checkpoint because current main has the audit API but no bound ready audit receipt.
+
+### Candidate B Broader Eligible Corpus Default Scope Runtime
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_runtime_v1
+source_broader_eligible_corpus_default_scope_runtime_selection: next_milestone_plans/Layer3_planning_docs/1070-cb-broader-eligible-corpus-default-scope-runtime-selection.md
+current_main_entry: 798c3e279a97af14444da7e6210cd6cd1cd4c723
+runtime_status: broader_scope_default_scope_runtime_implemented
+implemented_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_runtime_v1
+implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime
+implemented_scope_binding_authority: candidate_b_broader_eligible_corpus_scope_readiness_audit_ready_state
+implemented_scope_binding_state_required: candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection
+implemented_scope_classes_source: proposed_default_scope_classes_from_matching_ready_audit
+implemented_audit_hash_binding_required: true
+implemented_audit_id_binding_required: true
+implemented_redacted_selection_receipt: true
+implemented_contract_exposure: readiness_contract,bootstrap_contract,openapi
+missing_audit_fail_closed_proven: true
+stale_audit_hash_fail_closed_proven: true
+unready_or_unproposed_scope_class_fail_closed_proven: true
+current_default_scope_preserved: eligible_effective_pdfs_only
+non_pdf_default_preserved_until_selection: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+selector_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_focused_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_runtime.py ./backend/tests/test_layer3_candidate_b_broader_scope_readiness.py ./backend/tests/test_layer3_readiness_contract.py ./backend/tests/test_layer3_bootstrap_contract.py -q PASS 11 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_status_v1
+```
+
+Operators can now call the broader eligible-corpus runtime only with a ready scope-readiness audit result, matching audit id/hash, exact proposed selected classes, rollback confirmation, and operator confirmation. A selected response writes a redacted `candidate-b-broader-scope-runtime://...` receipt under the configured Candidate B runtime bridge receipt root. Blocked responses record no receipt and keep Candidate B's current eligible/effective PDF default plus baseline non-PDF fallback intact.

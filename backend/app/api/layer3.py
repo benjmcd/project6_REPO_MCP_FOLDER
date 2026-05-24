@@ -34,6 +34,7 @@ from app.services import (
     layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_artifact_status,
     layer3_candidate_b_broader_scope_readiness,
+    layer3_candidate_b_broader_scope_runtime,
     layer3_candidate_b_bundle_downstream_proof,
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
@@ -3434,6 +3435,19 @@ class Layer3CandidateBBroaderEligibleCorpusScopeReadinessAuditRequest(BaseModel)
     operator_confirmation: bool
 
 
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeRuntimeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    runtime_mode: Literal["candidate_b_broader_eligible_corpus_default_scope_runtime_v1"]
+    readiness_audit_id: str = Field(min_length=1)
+    readiness_audit_hash: str = Field(min_length=1)
+    readiness_audit: dict[str, Any]
+    selected_scope_classes: list[str]
+    rollback_to_baseline_confirmation: bool
+    operator_confirmation: bool
+
+
 class Layer3CandidateBDefaultPromotionFinalProofRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -5495,6 +5509,42 @@ class Layer3CandidateBBroaderEligibleCorpusScopeReadinessAuditResponse(Layer3Bas
     candidate_b_scope_authority: dict[str, Any]
     fail_closed_behavior: dict[str, bool]
     default_scope_expansion_admitted: bool
+    selector_mutation_performed: bool
+    source_expansion_admitted: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    pdf_or_image_text_material_ingestion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    auth_security_expansion_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeRuntimeResponse(Layer3BaseResponse):
+    mode: str
+    runtime_state: str
+    selection_receipt_id: str | None
+    selection_receipt_hash: str | None
+    selection_receipt_ref: str | None
+    selection_receipt_status: str
+    blocked_reasons: list[dict[str, Any]]
+    readiness_audit_binding: dict[str, Any]
+    selected_scope_classes: list[str]
+    selected_scope_classes_source: str
+    current_default_scope_preserved: str
+    non_pdf_default_preserved: str
+    baseline_rollback: dict[str, Any]
+    candidate_a_semantics: dict[str, Any]
+    candidate_b_scope_authority: dict[str, Any]
+    operator_visible_scope_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
+    default_scope_expansion_enabled: bool
     selector_mutation_performed: bool
     source_expansion_admitted: bool
     runtime_db_or_storage_expansion_admitted: bool
@@ -11855,6 +11905,22 @@ def post_candidate_b_broader_eligible_corpus_scope_readiness_audit(
             payload.model_dump(exclude_unset=True),
         )
     except layer3_candidate_b_broader_scope_readiness.CandidateBBroaderScopeReadinessError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime",
+    response_model=Layer3CandidateBBroaderEligibleCorpusDefaultScopeRuntimeResponse,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_candidate_b_broader_eligible_corpus_default_scope_runtime(
+    payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeRuntimeRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_broader_scope_runtime.select_candidate_b_broader_scope_runtime(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_broader_scope_runtime.CandidateBBroaderScopeRuntimeError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
