@@ -4356,3 +4356,26 @@ next_exact_posture: candidate_b_operator_workflow_production_auth_storage_harden
 ```
 
 Rendered operator status controls now show server-owned ownership/access policy decisions wherever the response already carries an `ownership_access_policy` projection. Operators can inspect redacted policy hashes, route families, rendered surfaces, audit event refs, actor/tenant hash refs, and negative authority flags without raw identity, proxy headers, local paths, URLs, provider secrets, browser storage authority, or frontend durable authority.
+
+### Candidate B Operator Workflow Production Auth Storage Hardening Selection
+
+```yaml
+milestone: candidate_b_operator_workflow_production_auth_storage_hardening_selection_v1
+source_operator_workflow_rendered_identity_status_controls_runtime: next_milestone_plans/Layer3_planning_docs/1065-cb-operator-workflow-rendered-identity-status-controls-runtime.md
+current_main_entry: 9214366ac68d9f7331f15b019d4dd379f72c4239
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1
+selected_auth_owner_mode: AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true
+selected_storage_access_policy: configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths
+selected_audit_event_policy: append_only_redacted_policy_receipt_under_configured_workflow_root
+selected_local_compatibility: AUTH_OWNER_none_single_operator_dev_profile_unchanged
+implementation_admitted_after_current_main_sync: true
+auth_security_runtime_admitted_now: false
+storage_policy_runtime_admitted_now: false
+audit_event_runtime_admitted_now: false
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+next_exact_posture: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1
+```
+
+The next production-hardening pass is selected but not implemented here. It should bind existing Candidate B workflow receipts, status/history/review/audit projections, and rendered controls to proxy-derived owner and tenant/workspace authority under `AUTH_OWNER=proxy` with `TRUSTED_PROXY_MODE=true`, while preserving the local `AUTH_OWNER=none` single-operator proof harness. Storage remains limited to configured workflow receipt roots and receipt-bound refs; raw paths, URLs, provider secrets, connector secrets, browser/local-storage identity, frontend durable authority, provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, and broader Candidate B default scope remain outside this selection.
