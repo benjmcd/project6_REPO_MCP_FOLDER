@@ -8598,6 +8598,306 @@ test('Layer 3 workbench inspects Candidate B workflow completion monitor through
   ]);
 });
 
+test('Layer 3 workbench records Candidate B repeatability checkpoint through rendered append-only control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let workflowHistoryRequested = false;
+  let workflowStatusPayload = null;
+  let completionMonitorPayload = null;
+  let repeatabilityCheckpointPayload = null;
+  const processExecutionProjection = {
+    process_execution_projection_state: 'started',
+    process_execution_receipt_available: true,
+    process_execution_receipt_id: 'cb-full-corpus-repeatability-process-execution',
+    process_execution_receipt_hash: '1'.repeat(64),
+    process_execution_authority_hash: '2'.repeat(64),
+  };
+  const processCompletionProjection = {
+    process_completion_result_projection_state: 'completed',
+    process_completion_result_receipt_available: true,
+    process_completion_result_receipt_id: 'cb-full-corpus-repeatability-process-result',
+    process_completion_result_receipt_hash: '3'.repeat(64),
+    process_completion_result_authority_hash: '4'.repeat(64),
+  };
+  const adoptedProofProjection = {
+    adopted_result_downstream_proof_projection_state: 'proven',
+    adopted_result_downstream_proof_receipt_available: true,
+    adopted_result_downstream_proof_receipt_id: 'cb-full-corpus-repeatability-downstream-proof',
+    adopted_result_downstream_proof_receipt_hash: '5'.repeat(64),
+    adopted_result_downstream_proof_authority_hash: '6'.repeat(64),
+  };
+  const statusRequest = {
+    client_request_id: 'candidate-b-repeatability-status-request',
+    status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+    operator_decision: 'inspect_candidate_b_full_corpus_operator_workflow_status',
+    operator_workflow_receipt_id: 'cb-full-corpus-repeatability-rendered-proof',
+    baseline_run_id: 'baseline-rendered-repeatability-proof',
+    candidate_a_run_id: 'candidate-a-rendered-repeatability-proof',
+    candidate_b_run_id: 'candidate-b-rendered-repeatability-proof',
+    bridge_receipt_id: 'cb-runtime-l3-rendered-repeatability-proof',
+    downstream_proof_id: 'cb-runtime-downstream-proof-rendered-repeatability-proof',
+  };
+  const historyRow = {
+    operator_workflow_receipt_id: statusRequest.operator_workflow_receipt_id,
+    operator_workflow_receipt_hash: '9'.repeat(64),
+    source_operator_workflow_receipt_id: 'cb-full-corpus-operator-source-repeatability-rendered-proof',
+    source_operator_workflow_receipt_hash: 'a'.repeat(64),
+    authority_basis_hash: 'b'.repeat(64),
+    runtime_root_lifecycle_receipt_id: 'cb-full-corpus-runtime-roots-repeatability-rendered-proof',
+    baseline_run_id: statusRequest.baseline_run_id,
+    candidate_a_run_id: statusRequest.candidate_a_run_id,
+    candidate_b_run_id: statusRequest.candidate_b_run_id,
+    compare_target_set_hash: 'c'.repeat(64),
+    bridge_receipt_id: statusRequest.bridge_receipt_id,
+    downstream_proof_id: statusRequest.downstream_proof_id,
+    material_relative_name: 'text/target-repeatability-00001.md',
+    run_state: 'proven',
+    state_machine: ['accepted', 'receipts_validated', 'layer3_checked', 'proven'],
+    status_request: statusRequest,
+    process_execution_projection: processExecutionProjection,
+    process_completion_result_projection: processCompletionProjection,
+    adopted_result_downstream_proof_projection: adoptedProofProjection,
+    row_hash: 'd'.repeat(64),
+  };
+  const workflowStatusResponse = {
+    schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_status.v1',
+    schema_version: 1,
+    request_id: statusRequest.client_request_id,
+    server_time: '2026-05-24T00:00:00Z',
+    status: 'available',
+    workflow_status: 'proven',
+    workflow_receipt_id: historyRow.operator_workflow_receipt_id,
+    workflow_receipt_hash: historyRow.operator_workflow_receipt_hash,
+    workflow_status_hash: 'f'.repeat(64),
+    baseline_run_id: historyRow.baseline_run_id,
+    candidate_a_run_id: historyRow.candidate_a_run_id,
+    candidate_b_run_id: historyRow.candidate_b_run_id,
+    bridge_receipt_id: historyRow.bridge_receipt_id,
+    downstream_proof_id: historyRow.downstream_proof_id,
+    compare_target_set_hash: historyRow.compare_target_set_hash,
+    runtime_root_lifecycle: {
+      available: true,
+      lifecycle_receipt_id: historyRow.runtime_root_lifecycle_receipt_id,
+    },
+    corpus: {
+      corpus_pdf_count: 2,
+      eligible_file_count: 2,
+      material_relative_name: historyRow.material_relative_name,
+    },
+    layer3: {
+      bridge_status: 'proven',
+      source_directory_scan_status: 'proven',
+      downstream_proof_status: 'proven',
+      same_origin_delivery_available: true,
+    },
+    artifact_family: {
+      governed_retained_artifact_family_hash: '7'.repeat(64),
+      role_counts: { delivery_artifacts: 1, visual_page_evidence: 1 },
+    },
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    selector_mutation_performed: false,
+  };
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history', async (route) => {
+    workflowHistoryRequested = true;
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_history.v1',
+        schema_version: 1,
+        request_id: 'candidate-b-repeatability-workflow-history',
+        server_time: '2026-05-24T00:00:00Z',
+        mode: 'candidate_b_full_corpus_operator_workflow_history_v1',
+        history_state: 'available',
+        status: 'available',
+        history_hash: '8'.repeat(64),
+        read_only_history_projection: true,
+        browser_supplied_receipt_root_admitted: false,
+        browser_supplied_runtime_roots_admitted: false,
+        browser_supplied_source_directory_admitted: false,
+        browser_supplied_bridge_dir_admitted: false,
+        operator_supplied_local_path_admitted: false,
+        operator_supplied_raw_url_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        frontend_durable_authority_enabled: false,
+        next_allowed_actions: [
+          'inspect a selected workflow-run row through the returned status request',
+          'inspect completion through the admitted read-only completion monitor',
+          'record repeatability checkpoint from current status and completion monitor projections',
+        ],
+        history_rows: [historyRow],
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status', async (route) => {
+    workflowStatusPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(workflowStatusResponse),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor', async (route) => {
+    completionMonitorPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_completion_monitor.v1',
+        schema_version: 1,
+        request_id: completionMonitorPayload.client_request_id,
+        server_time: '2026-05-24T00:00:00Z',
+        status: 'available',
+        mode: 'read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution',
+        operator_workflow_receipt_id: historyRow.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: historyRow.operator_workflow_receipt_hash,
+        row_hash: historyRow.row_hash,
+        authority_basis_hash: historyRow.authority_basis_hash,
+        history_hash: '8'.repeat(64),
+        completion_monitor_state: 'completed_downstream_proven',
+        completion_monitor_hash: 'e'.repeat(64),
+        process_execution_projection: processExecutionProjection,
+        process_completion_result_projection: processCompletionProjection,
+        adopted_result_downstream_proof_projection: adoptedProofProjection,
+        read_only_completion_monitor_projection: true,
+        process_control_admitted: false,
+        raw_stdout_admitted: false,
+        raw_stderr_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        frontend_durable_authority_enabled: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint', async (route) => {
+    repeatabilityCheckpointPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_repeatability_checkpoint.v1',
+        schema_version: 1,
+        mode: 'append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation',
+        operator_decision: 'record_candidate_b_full_corpus_operator_repeatability_checkpoint',
+        request_id: repeatabilityCheckpointPayload.client_request_id,
+        server_time: '2026-05-24T00:00:00Z',
+        status: 'available',
+        repeatability_checkpoint_state: 'repeatability_checkpoint_recorded',
+        repeatability_checkpoint_receipt_id: 'cb-full-corpus-repeatability-checkpoint-rendered-proof',
+        repeatability_checkpoint_hash: 'a'.repeat(64),
+        repeatability_checkpoint_authority_hash: 'b'.repeat(64),
+        repeatability_checkpoint_receipt_hash: 'c'.repeat(64),
+        repeatability_checkpoint_receipt_ref: 'candidate-b-full-corpus-operator-workflow-repeatability-checkpoint://rendered-proof/cccccccccccccccccccccccc',
+        repeatability_checkpoint: {
+          ...repeatabilityCheckpointPayload,
+          status_projection: {
+            workflow_status: 'proven',
+            workflow_status_hash: workflowStatusResponse.workflow_status_hash,
+            workflow_receipt_id: historyRow.operator_workflow_receipt_id,
+            workflow_receipt_hash: historyRow.operator_workflow_receipt_hash,
+          },
+          completion_monitor_projection: {
+            completion_monitor_state: 'completed_downstream_proven',
+            completion_monitor_hash: 'e'.repeat(64),
+          },
+        },
+        repeatability_checkpoint_authority: {
+          operator_decision: 'record_candidate_b_full_corpus_operator_repeatability_checkpoint',
+        },
+        append_only_repeatability_checkpoint_receipt: true,
+        exclusive_repeatability_checkpoint_per_authority: true,
+        workflow_receipt_mutated: false,
+        process_execution_receipt_mutated: false,
+        process_completion_result_receipt_mutated: false,
+        adopted_result_downstream_proof_receipt_mutated: false,
+        actual_corpus_processing_execution_admitted_now: false,
+        actual_subprocess_spawn_admitted_now: false,
+        process_control_admitted: false,
+        raw_stdout_admitted: false,
+        raw_stderr_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        frontend_durable_authority_enabled: false,
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const checkpointCard = page.locator('.candidate-b-full-corpus-repeatability-checkpoint-card');
+  await expect(panel).toBeVisible();
+  await expect(checkpointCard).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_full_corpus_operator_repeatability_checkpoint_control',
+  );
+  await expect(checkpointCard).toHaveAttribute('data-frontend-durable-authority', 'false');
+
+  await page.locator('#candidate-b-full-corpus-workflow-history-refresh').click();
+  await expect(panel).toContainText(historyRow.operator_workflow_receipt_id);
+  await page.locator('[data-candidate-b-workflow-history-inspect-index="0"]').click();
+  await expect(panel).toContainText('candidate_b_full_corpus_workflow_status_available');
+  await page.locator('[data-candidate-b-workflow-completion-monitor-index="0"]').click();
+  await expect(panel).toContainText('candidate_b_full_corpus_workflow_completion_monitor_downstream_proven');
+  await page.locator('[data-candidate-b-workflow-repeatability-checkpoint-index="0"]').click();
+
+  await expect(checkpointCard).toContainText('candidate_b_full_corpus_repeatability_checkpoint_recorded');
+  await expect(checkpointCard).toContainText('repeatability_checkpoint_recorded');
+  await expect(checkpointCard).toContainText('cb-full-corpus-repeatability-checkpoint-rendered-proof');
+  await expect(checkpointCard).toContainText(historyRow.material_relative_name);
+  await expect(checkpointCard).toContainText('process control admitted: false');
+  await expect(checkpointCard).toContainText('raw stdout admitted: false');
+  await expect(checkpointCard).toContainText('raw stderr admitted: false');
+  await expect(checkpointCard).toContainText('frontend durable authority enabled: false');
+
+  expect(workflowHistoryRequested).toBe(true);
+  expect(workflowStatusPayload).toMatchObject(statusRequest);
+  expect(completionMonitorPayload).toMatchObject({
+    completion_monitor_mode: 'read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution',
+    operator_workflow_receipt_id: historyRow.operator_workflow_receipt_id,
+    history_hash: '8'.repeat(64),
+  });
+  expect(repeatabilityCheckpointPayload).toMatchObject({
+    repeatability_checkpoint_mode: 'append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation',
+    operator_decision: 'record_candidate_b_full_corpus_operator_repeatability_checkpoint',
+    operator_workflow_receipt_id: historyRow.operator_workflow_receipt_id,
+    operator_workflow_receipt_hash: historyRow.operator_workflow_receipt_hash,
+    row_hash: historyRow.row_hash,
+    authority_basis_hash: historyRow.authority_basis_hash,
+    history_hash: '8'.repeat(64),
+    workflow_status_hash: workflowStatusResponse.workflow_status_hash,
+    completion_monitor_hash: 'e'.repeat(64),
+    runtime_root_lifecycle_receipt_id: historyRow.runtime_root_lifecycle_receipt_id,
+    bridge_receipt_id: historyRow.bridge_receipt_id,
+    downstream_proof_id: historyRow.downstream_proof_id,
+    baseline_run_id: historyRow.baseline_run_id,
+    candidate_a_run_id: historyRow.candidate_a_run_id,
+    candidate_b_run_id: historyRow.candidate_b_run_id,
+    compare_target_set_hash: historyRow.compare_target_set_hash,
+    material_relative_name: historyRow.material_relative_name,
+    operator_runbook_repeatability_steps: [
+      'refresh_workflow_history',
+      'inspect_workflow_status',
+      'inspect_completion_monitor',
+      'record_repeatability_checkpoint',
+    ],
+  });
+  expect(JSON.stringify(repeatabilityCheckpointPayload)).not.toContain('file://');
+  expect(JSON.stringify(repeatabilityCheckpointPayload)).not.toContain('https://');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/full-corpus/operator-workflow/')
+  ))).toEqual([
+    { method: 'GET', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint' },
+  ]);
+});
+
 test('Layer 3 workbench expires Candidate B workflow run through rendered append-only lifecycle control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowLifecyclePayload = null;

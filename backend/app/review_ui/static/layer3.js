@@ -361,6 +361,15 @@ const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_ADOPTED_RESULT_DOWNSTREAM_PROOF_
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_completion_monitor_control';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_MODE = 'read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_MONITOR_OPERATOR_DECISION = 'inspect_candidate_b_async_operator_workflow_completion_monitor';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_repeatability_checkpoint_control';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_MODE = 'append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_OPERATOR_DECISION = 'record_candidate_b_full_corpus_operator_repeatability_checkpoint';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RUNBOOK_STEPS = [
+    'refresh_workflow_history',
+    'inspect_workflow_status',
+    'inspect_completion_monitor',
+    'record_repeatability_checkpoint',
+];
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
@@ -544,6 +553,9 @@ const State = {
     candidateBFullCorpusOperatorWorkflowCompletionMonitor: null,
     candidateBFullCorpusOperatorWorkflowCompletionMonitorError: null,
     candidateBFullCorpusOperatorWorkflowCompletionMonitorPending: false,
+    candidateBFullCorpusOperatorRepeatabilityCheckpoint: null,
+    candidateBFullCorpusOperatorRepeatabilityCheckpointError: null,
+    candidateBFullCorpusOperatorRepeatabilityCheckpointPending: false,
     candidateBFullCorpusOperatorWorkflowRun: null,
     candidateBFullCorpusOperatorWorkflowRunError: null,
     candidateBFullCorpusOperatorWorkflowRunPending: false,
@@ -7717,6 +7729,12 @@ function candidateBFullCorpusOperatorWorkflowCompletionMonitorEndpointPath(contr
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBFullCorpusOperatorRepeatabilityCheckpointEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBClosureEvidenceEndpointPath(contract) {
     const endpoint = contract?.candidate_b_default_promotion_closure_evidence_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8324,6 +8342,35 @@ function candidateBFullCorpusOperatorWorkflowCompletionMonitorPayload(row) {
     };
 }
 
+function candidateBFullCorpusOperatorRepeatabilityCheckpointPayload(row) {
+    const history = State.candidateBFullCorpusOperatorWorkflowHistory || {};
+    const status = State.candidateBFullCorpusOperatorWorkflowStatus || {};
+    const monitor = State.candidateBFullCorpusOperatorWorkflowCompletionMonitor || {};
+    const runtimeRootLifecycle = status.runtime_root_lifecycle || {};
+    const corpus = status.corpus || {};
+    return {
+        client_request_id: requestId(),
+        repeatability_checkpoint_mode: CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_OPERATOR_DECISION,
+        operator_workflow_receipt_id: row.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: row.operator_workflow_receipt_hash,
+        row_hash: row.row_hash,
+        authority_basis_hash: row.authority_basis_hash,
+        history_hash: history.history_hash,
+        workflow_status_hash: status.workflow_status_hash,
+        completion_monitor_hash: monitor.completion_monitor_hash,
+        runtime_root_lifecycle_receipt_id: runtimeRootLifecycle.lifecycle_receipt_id,
+        bridge_receipt_id: status.bridge_receipt_id,
+        downstream_proof_id: status.downstream_proof_id,
+        baseline_run_id: status.baseline_run_id,
+        candidate_a_run_id: status.candidate_a_run_id,
+        candidate_b_run_id: status.candidate_b_run_id,
+        compare_target_set_hash: status.compare_target_set_hash || row.compare_target_set_hash,
+        material_relative_name: corpus.material_relative_name || row.material_relative_name,
+        operator_runbook_repeatability_steps: CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RUNBOOK_STEPS,
+    };
+}
+
 function candidateBClosureEvidencePayload() {
     const values = candidateBClosureEvidenceInputValues();
     State.candidateBClosureEvidenceInput = values;
@@ -8581,6 +8628,47 @@ function canInspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor(row, co
     );
 }
 
+function canRecordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(row, contract = candidateBDefaultPromotionReadinessContract()) {
+    const history = State.candidateBFullCorpusOperatorWorkflowHistory || {};
+    const status = State.candidateBFullCorpusOperatorWorkflowStatus || {};
+    const monitor = State.candidateBFullCorpusOperatorWorkflowCompletionMonitor || {};
+    const runtimeRootLifecycle = status.runtime_root_lifecycle || {};
+    const corpus = status.corpus || {};
+    return Boolean(
+        contract?.candidate_b_full_corpus_operator_repeatability_checkpoint_admitted
+        && candidateBFullCorpusOperatorRepeatabilityCheckpointEndpointPath(contract)
+        && history.history_hash
+        && row?.operator_workflow_receipt_id
+        && row?.operator_workflow_receipt_hash
+        && row?.row_hash
+        && row?.authority_basis_hash
+        && status.workflow_status === 'proven'
+        && status.workflow_status_hash
+        && status.workflow_receipt_id === row.operator_workflow_receipt_id
+        && status.workflow_receipt_hash === row.operator_workflow_receipt_hash
+        && runtimeRootLifecycle.available === true
+        && runtimeRootLifecycle.lifecycle_receipt_id
+        && status.bridge_receipt_id
+        && status.downstream_proof_id
+        && status.baseline_run_id
+        && status.candidate_a_run_id
+        && status.candidate_b_run_id
+        && (status.compare_target_set_hash || row.compare_target_set_hash)
+        && (corpus.material_relative_name || row.material_relative_name)
+        && monitor.completion_monitor_state === 'completed_downstream_proven'
+        && monitor.completion_monitor_hash
+        && monitor.operator_workflow_receipt_id === row.operator_workflow_receipt_id
+        && monitor.operator_workflow_receipt_hash === row.operator_workflow_receipt_hash
+        && monitor.row_hash === row.row_hash
+        && monitor.authority_basis_hash === row.authority_basis_hash
+        && monitor.history_hash === history.history_hash
+        && !State.candidateBFullCorpusOperatorRepeatabilityCheckpointPending
+        && !State.candidateBFullCorpusOperatorWorkflowStatusPending
+        && !State.candidateBFullCorpusOperatorWorkflowCompletionMonitorPending
+        && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
+    );
+}
+
 function canRecordCandidateBClosureEvidence(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBClosureEvidenceInputValues();
     return Boolean(
@@ -8812,6 +8900,20 @@ function candidateBFullCorpusOperatorWorkflowCompletionMonitorPanelState() {
         return { label: `candidate_b_full_corpus_workflow_completion_monitor_${state}`, pill: 'preview' };
     }
     return { label: 'candidate_b_full_corpus_workflow_completion_monitor_ready', pill: 'preview' };
+}
+
+function candidateBFullCorpusOperatorRepeatabilityCheckpointPanelState() {
+    if (State.candidateBFullCorpusOperatorRepeatabilityCheckpointPending) {
+        return { label: 'candidate_b_full_corpus_repeatability_checkpoint_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusOperatorRepeatabilityCheckpointError) {
+        const code = State.candidateBFullCorpusOperatorRepeatabilityCheckpointError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_repeatability_checkpoint_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusOperatorRepeatabilityCheckpoint?.repeatability_checkpoint_state === 'repeatability_checkpoint_recorded') {
+        return { label: 'candidate_b_full_corpus_repeatability_checkpoint_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_full_corpus_repeatability_checkpoint_ready', pill: 'preview' };
 }
 
 function candidateBClosureEvidencePanelState() {
@@ -9577,6 +9679,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
         const processCompletionResultDisabled = canRecordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult(row, contract) ? '' : 'disabled';
         const adoptedResultDownstreamProofDisabled = canRecordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(row, contract) ? '' : 'disabled';
         const completionMonitorDisabled = canInspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor(row, contract) ? '' : 'disabled';
+        const repeatabilityCheckpointDisabled = canRecordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(row, contract) ? '' : 'disabled';
         return `
             <section class="result-review-card candidate-b-full-corpus-workflow-history-row" data-workflow-run-receipt-id="${escapeHtml(row.operator_workflow_receipt_id)}">
                 <strong>${isSelected ? 'Selected Workflow Run' : 'Workflow Run'} ${escapeHtml(index + 1)}</strong>
@@ -9611,6 +9714,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                 <button type="button" data-candidate-b-workflow-process-completion-result-index="${escapeHtml(index)}" ${processCompletionResultDisabled}>Adopt Process Result</button>
                 <button type="button" data-candidate-b-workflow-adopted-result-downstream-proof-index="${escapeHtml(index)}" ${adoptedResultDownstreamProofDisabled}>Prove Adopted Result</button>
                 <button type="button" data-candidate-b-workflow-completion-monitor-index="${escapeHtml(index)}" ${completionMonitorDisabled}>Inspect Completion Monitor</button>
+                <button type="button" data-candidate-b-workflow-repeatability-checkpoint-index="${escapeHtml(index)}" ${repeatabilityCheckpointDisabled}>Record Repeatability Checkpoint</button>
             </section>
         `;
     }).join('') : `
@@ -10342,11 +10446,104 @@ function candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError()
     `;
 }
 
+function candidateBFullCorpusOperatorRepeatabilityCheckpointRows(checkpoint) {
+    if (!checkpoint) return '';
+    const authority = checkpoint.repeatability_checkpoint_authority || {};
+    const repeatability = checkpoint.repeatability_checkpoint || {};
+    const statusProjection = repeatability.status_projection || {};
+    const monitorProjection = repeatability.completion_monitor_projection || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>Repeatability Checkpoint Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', checkpoint.schema_id, { code: true })}
+                    ${fieldItem('status', checkpoint.status, { code: true })}
+                    ${fieldItem('repeatability checkpoint state', checkpoint.repeatability_checkpoint_state, { code: true })}
+                    ${fieldItem('repeatability checkpoint receipt id', checkpoint.repeatability_checkpoint_receipt_id, { code: true })}
+                    ${fieldItem('repeatability checkpoint receipt hash', checkpoint.repeatability_checkpoint_receipt_hash, { code: true })}
+                    ${fieldItem('repeatability checkpoint receipt ref', checkpoint.repeatability_checkpoint_receipt_ref, { code: true })}
+                    ${fieldItem('idempotent replay', checkpoint.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Bound Authority</strong>
+                <ul>
+                    ${fieldItem('workflow receipt id', checkpoint.operator_workflow_receipt_id || repeatability.operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('workflow receipt hash', repeatability.operator_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('row hash', repeatability.row_hash, { code: true })}
+                    ${fieldItem('authority basis hash', repeatability.authority_basis_hash, { code: true })}
+                    ${fieldItem('history hash', repeatability.history_hash, { code: true })}
+                    ${fieldItem('workflow status hash', repeatability.workflow_status_hash, { code: true })}
+                    ${fieldItem('completion monitor hash', repeatability.completion_monitor_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Layer 3 Repeatability Binding</strong>
+                <ul>
+                    ${fieldItem('runtime-root lifecycle receipt id', repeatability.runtime_root_lifecycle_receipt_id, { code: true })}
+                    ${fieldItem('bridge receipt id', repeatability.bridge_receipt_id, { code: true })}
+                    ${fieldItem('downstream proof id', repeatability.downstream_proof_id, { code: true })}
+                    ${fieldItem('baseline run id', repeatability.baseline_run_id, { code: true })}
+                    ${fieldItem('Candidate A run id', repeatability.candidate_a_run_id, { code: true })}
+                    ${fieldItem('Candidate B run id', repeatability.candidate_b_run_id, { code: true })}
+                    ${fieldItem('compare target set hash', repeatability.compare_target_set_hash, { code: true })}
+                    ${fieldItem('material file', repeatability.material_relative_name, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Projection Checkpoints</strong>
+                <ul>
+                    ${fieldItem('workflow status', statusProjection.workflow_status, { code: true })}
+                    ${fieldItem('status workflow receipt id', statusProjection.workflow_receipt_id, { code: true })}
+                    ${fieldItem('completion monitor state', monitorProjection.completion_monitor_state, { code: true })}
+                    ${fieldItem('checkpoint hash', checkpoint.repeatability_checkpoint_hash, { code: true })}
+                    ${fieldItem('checkpoint authority hash', checkpoint.repeatability_checkpoint_authority_hash, { code: true })}
+                    ${fieldItem('authority operator decision', authority.operator_decision, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Checkpoint Guardrails</strong>
+                <ul>
+                    ${fieldItem('append-only receipt', checkpoint.append_only_repeatability_checkpoint_receipt)}
+                    ${fieldItem('exclusive checkpoint per authority', checkpoint.exclusive_repeatability_checkpoint_per_authority)}
+                    ${fieldItem('workflow receipt mutated', checkpoint.workflow_receipt_mutated)}
+                    ${fieldItem('process execution receipt mutated', checkpoint.process_execution_receipt_mutated)}
+                    ${fieldItem('process completion/result receipt mutated', checkpoint.process_completion_result_receipt_mutated)}
+                    ${fieldItem('adopted result downstream proof receipt mutated', checkpoint.adopted_result_downstream_proof_receipt_mutated)}
+                    ${fieldItem('actual corpus processing execution admitted now', checkpoint.actual_corpus_processing_execution_admitted_now)}
+                    ${fieldItem('actual subprocess spawn admitted now', checkpoint.actual_subprocess_spawn_admitted_now)}
+                    ${fieldItem('process control admitted', checkpoint.process_control_admitted)}
+                    ${fieldItem('raw stdout admitted', checkpoint.raw_stdout_admitted)}
+                    ${fieldItem('raw stderr admitted', checkpoint.raw_stderr_admitted)}
+                    ${fieldItem('raw local path exposed', checkpoint.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', checkpoint.raw_url_exposed)}
+                    ${fieldItem('frontend durable authority enabled', checkpoint.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowCompletionMonitorError() {
     const error = State.candidateBFullCorpusOperatorWorkflowCompletionMonitorError;
     if (!error) return '';
     const detail = error.payload?.error || error.payload?.detail || {};
     const code = detail.code || 'candidate_b_full_corpus_operator_workflow_completion_monitor_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function candidateBFullCorpusOperatorRepeatabilityCheckpointError() {
+    const error = State.candidateBFullCorpusOperatorRepeatabilityCheckpointError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_operator_repeatability_checkpoint_error';
     const message = detail.message || error.message;
     return `
         <div class="error-panel">
@@ -10457,6 +10654,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowProcessCompletionResultState = candidateBFullCorpusOperatorWorkflowProcessCompletionResultPanelState();
     const fullCorpusWorkflowAdoptedResultDownstreamProofState = candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPanelState();
     const fullCorpusWorkflowCompletionMonitorState = candidateBFullCorpusOperatorWorkflowCompletionMonitorPanelState();
+    const fullCorpusRepeatabilityCheckpointState = candidateBFullCorpusOperatorRepeatabilityCheckpointPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
@@ -10489,6 +10687,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowProcessCompletionResult = State.candidateBFullCorpusOperatorWorkflowProcessCompletionResult;
     const fullCorpusWorkflowAdoptedResultDownstreamProof = State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof;
     const fullCorpusWorkflowCompletionMonitor = State.candidateBFullCorpusOperatorWorkflowCompletionMonitor;
+    const fullCorpusRepeatabilityCheckpoint = State.candidateBFullCorpusOperatorRepeatabilityCheckpoint;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
@@ -10781,6 +10980,15 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBFullCorpusOperatorWorkflowCompletionMonitorRows(fullCorpusWorkflowCompletionMonitor)}
                 ${candidateBFullCorpusOperatorWorkflowCompletionMonitorError()}
+            </section>
+            <section class="result-review-card candidate-b-full-corpus-repeatability-checkpoint-card" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                <strong>Full-Corpus Operator Repeatability Checkpoint</strong>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusRepeatabilityCheckpointState.pill)}">${escapeHtml(fullCorpusRepeatabilityCheckpointState.label)}</span>
+                    <span class="rail-label">Server records an append-only checkpoint from the current history, status, and completion-monitor projections without rerun, process control, raw authority, provider writes, connector dispatch, or frontend durable authority.</span>
+                </div>
+                ${candidateBFullCorpusOperatorRepeatabilityCheckpointRows(fullCorpusRepeatabilityCheckpoint)}
+                ${candidateBFullCorpusOperatorRepeatabilityCheckpointError()}
             </section>
             <section class="result-review-card candidate-b-operator-status-card">
                 <strong>Default-Promotion Operator Status</strong>
@@ -11536,6 +11744,42 @@ async function inspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor(even
         addEvent(`Candidate B full-corpus workflow completion monitor blocked: ${error.message}`);
     } finally {
         State.candidateBFullCorpusOperatorWorkflowCompletionMonitorPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(event) {
+    const button = event.target?.closest?.('[data-candidate-b-workflow-repeatability-checkpoint-index]');
+    if (!button) return;
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    const path = candidateBFullCorpusOperatorRepeatabilityCheckpointEndpointPath(contract);
+    const rows = State.candidateBFullCorpusOperatorWorkflowHistory?.history_rows;
+    const index = Number(button.dataset.candidateBWorkflowRepeatabilityCheckpointIndex);
+    const row = Array.isArray(rows) ? rows[index] : null;
+    if (!path || !canRecordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(row, contract)) {
+        State.candidateBFullCorpusOperatorRepeatabilityCheckpoint = null;
+        State.candidateBFullCorpusOperatorRepeatabilityCheckpointError = new Error(
+            'Candidate B repeatability checkpoint requires a current proven workflow status, downstream-proven completion monitor, runtime-root lifecycle, bridge receipt, downstream proof, compare target set, and admitted checkpoint endpoint.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBFullCorpusOperatorWorkflowHistorySelectedReceiptId = row.operator_workflow_receipt_id || '';
+    const payload = candidateBFullCorpusOperatorRepeatabilityCheckpointPayload(row);
+    State.candidateBFullCorpusOperatorRepeatabilityCheckpointPending = true;
+    State.candidateBFullCorpusOperatorRepeatabilityCheckpointError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBFullCorpusOperatorRepeatabilityCheckpoint = await postJson(path, payload);
+        State.candidateBFullCorpusOperatorRepeatabilityCheckpointError = null;
+        addEvent('Candidate B full-corpus repeatability checkpoint recorded through server append-only receipt authority.');
+    } catch (error) {
+        State.candidateBFullCorpusOperatorRepeatabilityCheckpoint = null;
+        State.candidateBFullCorpusOperatorRepeatabilityCheckpointError = error;
+        addEvent(`Candidate B full-corpus repeatability checkpoint blocked: ${error.message}`);
+    } finally {
+        State.candidateBFullCorpusOperatorRepeatabilityCheckpointPending = false;
         renderAll();
     }
 }
@@ -18113,6 +18357,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('click', (event)
     recordCandidateBFullCorpusOperatorWorkflowProcessCompletionResult(event);
     recordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(event);
     inspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor(event);
+    recordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(event);
 });
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);
