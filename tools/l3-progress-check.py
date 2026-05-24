@@ -2779,6 +2779,9 @@ CANDIDATE_B_ASYNC_RETRY_SCHEDULER_LEASE_SELECTION = (
 CANDIDATE_B_ASYNC_RETRY_SCHEDULER_LEASE_RUNTIME = (
     PLANNING_DOCS / "1015-cb-async-retry-scheduler-lease-runtime.md"
 )
+CANDIDATE_B_ASYNC_RETRY_WORKER_ATTEMPT_SELECTION = (
+    PLANNING_DOCS / "1016-cb-async-retry-worker-attempt-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -94752,6 +94755,124 @@ def _check_candidate_b_async_retry_scheduler_lease_runtime(errors: list[str]) ->
                 )
 
 
+def _check_candidate_b_async_retry_worker_attempt_selection(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_RETRY_WORKER_ATTEMPT_SELECTION: (
+            "Candidate B Async Retry Worker-Attempt Authority Selection",
+            "milestone: candidate_b_async_retry_worker_attempt_authority_selection_v1",
+            "source_retry_scheduler_lease_runtime: next_milestone_plans/Layer3_planning_docs/1015-cb-async-retry-scheduler-lease-runtime.md",
+            "current_main_entry: ec83458e125f27a312fbf18a6e9ffc5027057504",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_retry_worker_attempt_receipt_v1",
+            "selected_retry_lineage_order: retry_queue_state_receipt,retry_scheduler_lease_receipt,retry_worker_attempt_receipt,retry_progress_checkpoint_receipt,retry_completion_failure_receipt",
+            "selected_retry_worker_attempt_scope: server_owned_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_receipts",
+            "selected_retry_worker_attempt_mode: append_only_retry_worker_attempt_receipt_without_job_execution",
+            "selected_retry_worker_attempt_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/worker/attempt",
+            "existing_retry_scheduler_lease_endpoint_reused_for_retry_lease_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease",
+            "existing_retry_queue_state_endpoint_reused_for_retry_queue_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/queue/state",
+            "existing_retry_policy_endpoint_reused_for_retry_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy",
+            "existing_history_endpoint_reused_for_run_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "existing_status_endpoint_reused_for_run_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "selected_retry_worker_attempt_receipt_model: append_only_retry_worker_attempt_receipt_without_mutating_retry_scheduler_lease_retry_queue_state_retry_policy_completion_failure_failed_worker_attempt_progress_checkpoint_scheduler_lease_queue_state_or_source_run_receipts",
+            "selected_retry_worker_attempt_receipt_binding: retry_scheduler_lease_receipt_id,retry_scheduler_lease_receipt_hash,retry_scheduler_lease_authority_hash,retry_queue_state_receipt_id,retry_queue_state_receipt_hash,retry_queue_state_authority_hash,retry_attempt_number,retry_policy_receipt_id,retry_policy_authority_hash,completion_failure_receipt_id,failed_worker_attempt_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_worker_attempt_hash",
+            "selected_retry_worker_attempt_idempotency_basis: client_request_id_plus_retry_worker_attempt_authority_hash",
+            "selected_retry_worker_attempt_number: 2",
+            "exclusive_retry_worker_attempt_per_retry_scheduler_lease: true",
+            "stale_retry_scheduler_lease_receipt_must_reject: true",
+            "stale_retry_queue_state_receipt_must_reject: true",
+            "stale_retry_policy_receipt_must_reject: true",
+            "stale_completion_failure_receipt_must_reject: true",
+            "stale_failed_worker_attempt_receipt_must_reject: true",
+            "stale_run_receipt_must_reject: true",
+            "stale_history_row_must_reject: true",
+            "missing_retry_scheduler_lease_receipt_must_reject: true",
+            "retry_scheduler_lease_receipt_mutation_admitted: false",
+            "retry_queue_state_receipt_mutation_admitted: false",
+            "retry_policy_receipt_mutation_admitted: false",
+            "completion_failure_receipt_mutation_admitted: false",
+            "failed_worker_attempt_receipt_mutation_admitted: false",
+            "progress_checkpoint_receipt_mutation_admitted: false",
+            "scheduler_lease_receipt_mutation_admitted: false",
+            "queue_state_receipt_mutation_admitted: false",
+            "source_run_receipt_mutation_admitted: false",
+            "retry_worker_attempt_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "retry_progress_checkpoint_runtime_selected_now: false",
+            "retry_completion_failure_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "default_scope_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "selector_mutation_performed: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_worker_attempt_receipt_v1",
+            "Should the retry worker-attempt receipt execute the Candidate B job? Recommended answer: no.",
+            "Should it reuse the original failed worker attempt as the retry attempt? Recommended answer: no.",
+            "Should it mutate the retry scheduler-lease or retry queue-state receipts? Recommended answer: no.",
+            "Should retry progress or retry completion be emitted in the same slice? Recommended answer: no.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_retry_worker_attempt_authority_selection_v1",
+            "source_retry_scheduler_lease_runtime: next_milestone_plans/Layer3_planning_docs/1015-cb-async-retry-scheduler-lease-runtime.md",
+            "current_main_entry: ec83458e125f27a312fbf18a6e9ffc5027057504",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_retry_worker_attempt_receipt_v1",
+            "selected_retry_worker_attempt_mode: append_only_retry_worker_attempt_receipt_without_job_execution",
+            "selected_retry_worker_attempt_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/worker/attempt",
+            "selected_retry_worker_attempt_number: 2",
+            "exclusive_retry_worker_attempt_per_retry_scheduler_lease: true",
+            "stale_retry_scheduler_lease_receipt_must_reject: true",
+            "retry_scheduler_lease_receipt_mutation_admitted: false",
+            "retry_queue_state_receipt_mutation_admitted: false",
+            "retry_policy_receipt_mutation_admitted: false",
+            "failed_worker_attempt_receipt_mutation_admitted: false",
+            "source_run_receipt_mutation_admitted: false",
+            "retry_worker_attempt_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "retry_progress_checkpoint_runtime_selected_now: false",
+            "retry_completion_failure_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_worker_attempt_receipt_v1",
+            "It must create new attempt-number-2 authority without reusing the failed worker attempt as the retry attempt",
+        ),
+        CANDIDATE_B_ASYNC_RETRY_SCHEDULER_LEASE_RUNTIME: (
+            "next_exact_posture: candidate_b_async_retry_worker_attempt_authority_selection_v1",
+            "retry_worker_attempt_creation_admitted_now: false",
+            "retry_worker_attempt_runtime_selected_now: false",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_SCHEDULER_LEASE_SERVICE: (
+            '"retry_worker_attempt_creation_admitted_now": False',
+            '"retry_worker_attempt_runtime_selected_now": False',
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+            "record retry worker-attempt authority only through a separately admitted retry worker-attempt slice",
+            "select cancel, resume, or job execution only through a separate freeze",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async retry worker-attempt selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -95614,6 +95735,7 @@ def main() -> int:
     _check_candidate_b_async_retry_queue_state_runtime(errors)
     _check_candidate_b_async_retry_scheduler_lease_selection(errors)
     _check_candidate_b_async_retry_scheduler_lease_runtime(errors)
+    _check_candidate_b_async_retry_worker_attempt_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
