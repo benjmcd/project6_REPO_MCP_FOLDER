@@ -370,6 +370,23 @@ const CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RUNBOOK_STEPS = 
     'inspect_completion_monitor',
     'record_repeatability_checkpoint',
 ];
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RENDERED_MODE = 'rendered_candidate_b_full_corpus_repeatability_rerun_trial_control';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_MODE = 'append_only_repeatability_rerun_trial_receipt_without_process_execution_or_authority_mutation';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_OPERATOR_DECISION = 'record_candidate_b_full_corpus_repeatability_rerun_trial';
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_DISPOSITIONS = [
+    'no_regression_observed',
+    'delta_reviewed_no_regression',
+    'regression_detected_blocked',
+];
+const CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RUNBOOK_STEPS = [
+    'refresh_workflow_history',
+    'inspect_original_checkpoint',
+    'inspect_original_workflow_status',
+    'inspect_original_completion_monitor',
+    'inspect_rerun_workflow_status',
+    'inspect_rerun_completion_monitor',
+    'record_repeatability_rerun_trial',
+];
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
@@ -556,6 +573,12 @@ const State = {
     candidateBFullCorpusOperatorRepeatabilityCheckpoint: null,
     candidateBFullCorpusOperatorRepeatabilityCheckpointError: null,
     candidateBFullCorpusOperatorRepeatabilityCheckpointPending: false,
+    candidateBFullCorpusRepeatabilityRerunTrial: null,
+    candidateBFullCorpusRepeatabilityRerunTrialError: null,
+    candidateBFullCorpusRepeatabilityRerunTrialPending: false,
+    candidateBFullCorpusRepeatabilityRerunTrialInput: {
+        regressionDisposition: 'no_regression_observed',
+    },
     candidateBFullCorpusOperatorWorkflowRun: null,
     candidateBFullCorpusOperatorWorkflowRunError: null,
     candidateBFullCorpusOperatorWorkflowRunPending: false,
@@ -7643,6 +7666,7 @@ function candidateBDefaultPromotionStatusState(contract) {
         'candidate_b_full_corpus_operator_workflow_queue_state_admitted',
         'candidate_b_full_corpus_operator_workflow_execution_boundary_admitted',
         'candidate_b_default_promotion_selector_switch_admitted',
+        'candidate_b_full_corpus_repeatability_rerun_trial_admitted',
     ];
     const missing = required.filter((field) => contract[field] !== true);
     if (missing.length) {
@@ -7731,6 +7755,12 @@ function candidateBFullCorpusOperatorWorkflowCompletionMonitorEndpointPath(contr
 
 function candidateBFullCorpusOperatorRepeatabilityCheckpointEndpointPath(contract) {
     const endpoint = contract?.candidate_b_full_corpus_operator_repeatability_checkpoint_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBFullCorpusRepeatabilityRerunTrialEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_repeatability_rerun_trial_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
     return endpoint.slice(API_ROOT.length);
 }
@@ -8371,6 +8401,62 @@ function candidateBFullCorpusOperatorRepeatabilityCheckpointPayload(row) {
     };
 }
 
+function candidateBFullCorpusRepeatabilityRerunTrialInputValues() {
+    const dispositionInput = document.getElementById('candidate-b-repeatability-rerun-trial-disposition');
+    const disposition = (
+        dispositionInput?.value
+        || State.candidateBFullCorpusRepeatabilityRerunTrialInput.regressionDisposition
+        || 'no_regression_observed'
+    ).trim();
+    return {
+        regressionDisposition: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_DISPOSITIONS.includes(disposition)
+            ? disposition
+            : 'no_regression_observed',
+    };
+}
+
+function candidateBFullCorpusRepeatabilityRerunTrialPayload(row) {
+    const history = State.candidateBFullCorpusOperatorWorkflowHistory || {};
+    const status = State.candidateBFullCorpusOperatorWorkflowStatus || {};
+    const monitor = State.candidateBFullCorpusOperatorWorkflowCompletionMonitor || {};
+    const checkpoint = State.candidateBFullCorpusOperatorRepeatabilityCheckpoint || {};
+    const repeatability = checkpoint.repeatability_checkpoint || {};
+    const corpus = status.corpus || {};
+    const values = candidateBFullCorpusRepeatabilityRerunTrialInputValues();
+    State.candidateBFullCorpusRepeatabilityRerunTrialInput = values;
+    return {
+        client_request_id: requestId(),
+        rerun_trial_mode: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_OPERATOR_DECISION,
+        original_repeatability_checkpoint_receipt_id: checkpoint.repeatability_checkpoint_receipt_id,
+        original_repeatability_checkpoint_receipt_hash: checkpoint.repeatability_checkpoint_receipt_hash,
+        original_repeatability_checkpoint_hash: checkpoint.repeatability_checkpoint_hash,
+        original_repeatability_checkpoint_authority_hash: checkpoint.repeatability_checkpoint_authority_hash,
+        original_operator_workflow_receipt_id: repeatability.operator_workflow_receipt_id,
+        original_operator_workflow_receipt_hash: repeatability.operator_workflow_receipt_hash,
+        original_row_hash: repeatability.row_hash,
+        original_authority_basis_hash: repeatability.authority_basis_hash,
+        original_history_hash: repeatability.history_hash,
+        original_workflow_status_hash: repeatability.workflow_status_hash,
+        original_completion_monitor_hash: repeatability.completion_monitor_hash,
+        rerun_operator_workflow_receipt_id: row.operator_workflow_receipt_id,
+        rerun_operator_workflow_receipt_hash: row.operator_workflow_receipt_hash,
+        rerun_row_hash: row.row_hash,
+        rerun_authority_basis_hash: row.authority_basis_hash,
+        rerun_history_hash: history.history_hash,
+        rerun_workflow_status_hash: status.workflow_status_hash,
+        rerun_completion_monitor_hash: monitor.completion_monitor_hash,
+        baseline_run_id: status.baseline_run_id,
+        candidate_a_run_id: status.candidate_a_run_id,
+        original_candidate_b_run_id: repeatability.candidate_b_run_id,
+        rerun_candidate_b_run_id: status.candidate_b_run_id,
+        compare_target_set_hash: status.compare_target_set_hash || row.compare_target_set_hash,
+        material_relative_name: corpus.material_relative_name || row.material_relative_name,
+        regression_disposition: values.regressionDisposition,
+        operator_runbook_repeatability_steps: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RUNBOOK_STEPS,
+    };
+}
+
 function candidateBClosureEvidencePayload() {
     const values = candidateBClosureEvidenceInputValues();
     State.candidateBClosureEvidenceInput = values;
@@ -8669,6 +8755,73 @@ function canRecordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(row, contr
     );
 }
 
+function canRecordCandidateBFullCorpusRepeatabilityRerunTrial(row, contract = candidateBDefaultPromotionReadinessContract()) {
+    const history = State.candidateBFullCorpusOperatorWorkflowHistory || {};
+    const status = State.candidateBFullCorpusOperatorWorkflowStatus || {};
+    const monitor = State.candidateBFullCorpusOperatorWorkflowCompletionMonitor || {};
+    const runtimeRootLifecycle = status.runtime_root_lifecycle || {};
+    const corpus = status.corpus || {};
+    const artifactFamily = status.artifact_family || {};
+    const layer3 = status.layer3 || {};
+    const checkpoint = State.candidateBFullCorpusOperatorRepeatabilityCheckpoint || {};
+    const repeatability = checkpoint.repeatability_checkpoint || {};
+    return Boolean(
+        contract?.candidate_b_full_corpus_repeatability_rerun_trial_admitted
+        && candidateBFullCorpusRepeatabilityRerunTrialEndpointPath(contract)
+        && history.history_hash
+        && checkpoint.repeatability_checkpoint_state === 'repeatability_checkpoint_recorded'
+        && checkpoint.repeatability_checkpoint_receipt_id
+        && checkpoint.repeatability_checkpoint_receipt_hash
+        && checkpoint.repeatability_checkpoint_hash
+        && checkpoint.repeatability_checkpoint_authority_hash
+        && repeatability.operator_workflow_receipt_id
+        && repeatability.operator_workflow_receipt_hash
+        && repeatability.row_hash
+        && repeatability.authority_basis_hash
+        && repeatability.history_hash
+        && repeatability.workflow_status_hash
+        && repeatability.completion_monitor_hash
+        && repeatability.baseline_run_id
+        && repeatability.candidate_a_run_id
+        && repeatability.candidate_b_run_id
+        && repeatability.compare_target_set_hash
+        && repeatability.material_relative_name
+        && row?.operator_workflow_receipt_id
+        && row.operator_workflow_receipt_id !== repeatability.operator_workflow_receipt_id
+        && row?.operator_workflow_receipt_hash
+        && row?.row_hash
+        && row?.authority_basis_hash
+        && status.workflow_status === 'proven'
+        && status.workflow_status_hash
+        && status.workflow_receipt_id === row.operator_workflow_receipt_id
+        && status.workflow_receipt_hash === row.operator_workflow_receipt_hash
+        && status.baseline_run_id === repeatability.baseline_run_id
+        && status.candidate_a_run_id === repeatability.candidate_a_run_id
+        && status.candidate_b_run_id
+        && (status.compare_target_set_hash || row.compare_target_set_hash) === repeatability.compare_target_set_hash
+        && (corpus.material_relative_name || row.material_relative_name) === repeatability.material_relative_name
+        && runtimeRootLifecycle.available === true
+        && artifactFamily.governed_retained_artifact_family_hash
+        && artifactFamily.role_counts
+        && Object.keys(layer3).length > 0
+        && monitor.completion_monitor_state === 'completed_downstream_proven'
+        && monitor.completion_monitor_hash
+        && monitor.operator_workflow_receipt_id === row.operator_workflow_receipt_id
+        && monitor.operator_workflow_receipt_hash === row.operator_workflow_receipt_hash
+        && monitor.row_hash === row.row_hash
+        && monitor.authority_basis_hash === row.authority_basis_hash
+        && monitor.history_hash === history.history_hash
+        && CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_DISPOSITIONS.includes(
+            candidateBFullCorpusRepeatabilityRerunTrialInputValues().regressionDisposition,
+        )
+        && !State.candidateBFullCorpusRepeatabilityRerunTrialPending
+        && !State.candidateBFullCorpusOperatorRepeatabilityCheckpointPending
+        && !State.candidateBFullCorpusOperatorWorkflowStatusPending
+        && !State.candidateBFullCorpusOperatorWorkflowCompletionMonitorPending
+        && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
+    );
+}
+
 function canRecordCandidateBClosureEvidence(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBClosureEvidenceInputValues();
     return Boolean(
@@ -8914,6 +9067,20 @@ function candidateBFullCorpusOperatorRepeatabilityCheckpointPanelState() {
         return { label: 'candidate_b_full_corpus_repeatability_checkpoint_recorded', pill: 'ok' };
     }
     return { label: 'candidate_b_full_corpus_repeatability_checkpoint_ready', pill: 'preview' };
+}
+
+function candidateBFullCorpusRepeatabilityRerunTrialPanelState() {
+    if (State.candidateBFullCorpusRepeatabilityRerunTrialPending) {
+        return { label: 'candidate_b_full_corpus_repeatability_rerun_trial_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusRepeatabilityRerunTrialError) {
+        const code = State.candidateBFullCorpusRepeatabilityRerunTrialError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_repeatability_rerun_trial_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusRepeatabilityRerunTrial?.repeatability_rerun_trial_state === 'repeatability_rerun_trial_recorded') {
+        return { label: 'candidate_b_full_corpus_repeatability_rerun_trial_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_full_corpus_repeatability_rerun_trial_ready', pill: 'preview' };
 }
 
 function candidateBClosureEvidencePanelState() {
@@ -9680,6 +9847,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
         const adoptedResultDownstreamProofDisabled = canRecordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(row, contract) ? '' : 'disabled';
         const completionMonitorDisabled = canInspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor(row, contract) ? '' : 'disabled';
         const repeatabilityCheckpointDisabled = canRecordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(row, contract) ? '' : 'disabled';
+        const repeatabilityRerunTrialDisabled = canRecordCandidateBFullCorpusRepeatabilityRerunTrial(row, contract) ? '' : 'disabled';
         return `
             <section class="result-review-card candidate-b-full-corpus-workflow-history-row" data-workflow-run-receipt-id="${escapeHtml(row.operator_workflow_receipt_id)}">
                 <strong>${isSelected ? 'Selected Workflow Run' : 'Workflow Run'} ${escapeHtml(index + 1)}</strong>
@@ -9715,6 +9883,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                 <button type="button" data-candidate-b-workflow-adopted-result-downstream-proof-index="${escapeHtml(index)}" ${adoptedResultDownstreamProofDisabled}>Prove Adopted Result</button>
                 <button type="button" data-candidate-b-workflow-completion-monitor-index="${escapeHtml(index)}" ${completionMonitorDisabled}>Inspect Completion Monitor</button>
                 <button type="button" data-candidate-b-workflow-repeatability-checkpoint-index="${escapeHtml(index)}" ${repeatabilityCheckpointDisabled}>Record Repeatability Checkpoint</button>
+                <button type="button" data-candidate-b-workflow-repeatability-rerun-trial-index="${escapeHtml(index)}" ${repeatabilityRerunTrialDisabled}>Record Rerun Trial</button>
             </section>
         `;
     }).join('') : `
@@ -10525,6 +10694,86 @@ function candidateBFullCorpusOperatorRepeatabilityCheckpointRows(checkpoint) {
     `;
 }
 
+function candidateBFullCorpusRepeatabilityRerunTrialRows(trialReceipt) {
+    if (!trialReceipt) return '';
+    const trial = trialReceipt.repeatability_rerun_trial || {};
+    const comparison = trial.comparison || {};
+    const artifactComparison = comparison.artifact_family_hash_comparison || {};
+    const layer3Comparison = comparison.layer3_downstream_projection_comparison || {};
+    const roleCountsComparison = comparison.retained_artifact_role_counts_comparison || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>Repeatability Rerun Trial Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', trialReceipt.schema_id, { code: true })}
+                    ${fieldItem('status', trialReceipt.status, { code: true })}
+                    ${fieldItem('repeatability rerun trial state', trialReceipt.repeatability_rerun_trial_state, { code: true })}
+                    ${fieldItem('repeatability rerun trial receipt id', trialReceipt.repeatability_rerun_trial_receipt_id, { code: true })}
+                    ${fieldItem('repeatability rerun trial receipt hash', trialReceipt.repeatability_rerun_trial_receipt_hash, { code: true })}
+                    ${fieldItem('repeatability rerun trial receipt ref', trialReceipt.repeatability_rerun_trial_receipt_ref, { code: true })}
+                    ${fieldItem('rerun trial hash', trialReceipt.repeatability_rerun_trial_hash, { code: true })}
+                    ${fieldItem('rerun trial authority hash', trialReceipt.repeatability_rerun_trial_authority_hash, { code: true })}
+                    ${fieldItem('idempotent replay', trialReceipt.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Original And Rerun Binding</strong>
+                <ul>
+                    ${fieldItem('original checkpoint receipt id', trial.original_repeatability_checkpoint_receipt_id, { code: true })}
+                    ${fieldItem('original workflow receipt id', trial.original_operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('original workflow receipt hash', trial.original_operator_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('original workflow status hash', trial.original_workflow_status_hash, { code: true })}
+                    ${fieldItem('original completion monitor hash', trial.original_completion_monitor_hash, { code: true })}
+                    ${fieldItem('rerun workflow receipt id', trial.rerun_operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('rerun workflow receipt hash', trial.rerun_operator_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('rerun workflow status hash', trial.rerun_workflow_status_hash, { code: true })}
+                    ${fieldItem('rerun completion monitor hash', trial.rerun_completion_monitor_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Comparison Summary</strong>
+                <ul>
+                    ${fieldItem('baseline run id', trial.baseline_run_id, { code: true })}
+                    ${fieldItem('Candidate A run id', trial.candidate_a_run_id, { code: true })}
+                    ${fieldItem('original Candidate B run id', trial.original_candidate_b_run_id, { code: true })}
+                    ${fieldItem('rerun Candidate B run id', trial.rerun_candidate_b_run_id, { code: true })}
+                    ${fieldItem('same Candidate B run id', comparison.same_candidate_b_run_id)}
+                    ${fieldItem('same eligible corpus identity', comparison.same_eligible_corpus_identity)}
+                    ${fieldItem('same compare target set hash', comparison.same_compare_target_set_hash)}
+                    ${fieldItem('same material relative name', comparison.same_material_relative_name)}
+                    ${fieldItem('artifact family hash equal', artifactComparison.equal)}
+                    ${fieldItem('Layer 3 projection hash equal', layer3Comparison.equal)}
+                    ${fieldItem('retained artifact role counts equal', roleCountsComparison.equal)}
+                    ${fieldItem('delta observed', comparison.delta_observed)}
+                    ${fieldItem('regression disposition', comparison.regression_disposition || trial.regression_disposition, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Rerun Trial Guardrails</strong>
+                <ul>
+                    ${fieldItem('append-only receipt', trialReceipt.append_only_repeatability_rerun_trial_receipt)}
+                    ${fieldItem('exclusive rerun trial per authority', trialReceipt.exclusive_repeatability_rerun_trial_per_authority)}
+                    ${fieldItem('original checkpoint receipt mutated', trialReceipt.original_repeatability_checkpoint_receipt_mutated)}
+                    ${fieldItem('original workflow receipt mutated', trialReceipt.original_workflow_receipt_mutated)}
+                    ${fieldItem('rerun workflow receipt mutated', trialReceipt.rerun_workflow_receipt_mutated)}
+                    ${fieldItem('process execution receipt mutated', trialReceipt.process_execution_receipt_mutated)}
+                    ${fieldItem('process completion/result receipt mutated', trialReceipt.process_completion_result_receipt_mutated)}
+                    ${fieldItem('adopted result downstream proof receipt mutated', trialReceipt.adopted_result_downstream_proof_receipt_mutated)}
+                    ${fieldItem('actual corpus processing execution admitted now', trialReceipt.actual_corpus_processing_execution_admitted_now)}
+                    ${fieldItem('actual subprocess spawn admitted now', trialReceipt.actual_subprocess_spawn_admitted_now)}
+                    ${fieldItem('process control admitted', trialReceipt.process_control_admitted)}
+                    ${fieldItem('raw stdout admitted', trialReceipt.raw_stdout_admitted)}
+                    ${fieldItem('raw stderr admitted', trialReceipt.raw_stderr_admitted)}
+                    ${fieldItem('raw local path exposed', trialReceipt.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', trialReceipt.raw_url_exposed)}
+                    ${fieldItem('frontend durable authority enabled', trialReceipt.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowCompletionMonitorError() {
     const error = State.candidateBFullCorpusOperatorWorkflowCompletionMonitorError;
     if (!error) return '';
@@ -10544,6 +10793,20 @@ function candidateBFullCorpusOperatorRepeatabilityCheckpointError() {
     if (!error) return '';
     const detail = error.payload?.error || error.payload?.detail || {};
     const code = detail.code || 'candidate_b_full_corpus_operator_repeatability_checkpoint_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
+function candidateBFullCorpusRepeatabilityRerunTrialError() {
+    const error = State.candidateBFullCorpusRepeatabilityRerunTrialError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_repeatability_rerun_trial_error';
     const message = detail.message || error.message;
     return `
         <div class="error-panel">
@@ -10655,6 +10918,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowAdoptedResultDownstreamProofState = candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofPanelState();
     const fullCorpusWorkflowCompletionMonitorState = candidateBFullCorpusOperatorWorkflowCompletionMonitorPanelState();
     const fullCorpusRepeatabilityCheckpointState = candidateBFullCorpusOperatorRepeatabilityCheckpointPanelState();
+    const fullCorpusRepeatabilityRerunTrialState = candidateBFullCorpusRepeatabilityRerunTrialPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
@@ -10688,6 +10952,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowAdoptedResultDownstreamProof = State.candidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof;
     const fullCorpusWorkflowCompletionMonitor = State.candidateBFullCorpusOperatorWorkflowCompletionMonitor;
     const fullCorpusRepeatabilityCheckpoint = State.candidateBFullCorpusOperatorRepeatabilityCheckpoint;
+    const fullCorpusRepeatabilityRerunTrial = State.candidateBFullCorpusRepeatabilityRerunTrial;
+    const fullCorpusRepeatabilityRerunTrialInputs = State.candidateBFullCorpusRepeatabilityRerunTrialInput;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
@@ -10739,6 +11005,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('full-corpus workflow status', contract?.candidate_b_full_corpus_operator_workflow_status_endpoint, { code: true })}
                     ${fieldItem('full-corpus workflow history', contract?.candidate_b_full_corpus_operator_workflow_history_endpoint, { code: true })}
                     ${fieldItem('full-corpus workflow execution boundary', contract?.candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint, { code: true })}
+                    ${fieldItem('full-corpus repeatability rerun trial', contract?.candidate_b_full_corpus_repeatability_rerun_trial_endpoint, { code: true })}
                     ${fieldItem('closure evidence', contract?.candidate_b_default_promotion_closure_evidence_endpoint, { code: true })}
                     ${fieldItem('readiness audit', contract?.candidate_b_default_promotion_readiness_audit_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
@@ -10989,6 +11256,25 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBFullCorpusOperatorRepeatabilityCheckpointRows(fullCorpusRepeatabilityCheckpoint)}
                 ${candidateBFullCorpusOperatorRepeatabilityCheckpointError()}
+            </section>
+            <section class="result-review-card candidate-b-full-corpus-repeatability-rerun-trial-card" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                <strong>Full-Corpus Repeatability Rerun Trial</strong>
+                <form id="candidate-b-repeatability-rerun-trial-form" class="candidate-b-final-proof-status-form">
+                    <label>
+                        <span>regression disposition</span>
+                        <select id="candidate-b-repeatability-rerun-trial-disposition">
+                            ${CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_DISPOSITIONS.map((disposition) => `
+                                <option value="${escapeHtml(disposition)}" ${fullCorpusRepeatabilityRerunTrialInputs.regressionDisposition === disposition ? 'selected' : ''}>${escapeHtml(disposition)}</option>
+                            `).join('')}
+                        </select>
+                    </label>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusRepeatabilityRerunTrialState.pill)}">${escapeHtml(fullCorpusRepeatabilityRerunTrialState.label)}</span>
+                    <span class="rail-label">Server records an append-only rerun-trial receipt by binding the original checkpoint to a selected second downstream-proven workflow row; this control cannot start processing, mutate workflow authority, or expose raw paths, URLs, output, or browser durable authority.</span>
+                </div>
+                ${candidateBFullCorpusRepeatabilityRerunTrialRows(fullCorpusRepeatabilityRerunTrial)}
+                ${candidateBFullCorpusRepeatabilityRerunTrialError()}
             </section>
             <section class="result-review-card candidate-b-operator-status-card">
                 <strong>Default-Promotion Operator Status</strong>
@@ -11780,6 +12066,42 @@ async function recordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(event) 
         addEvent(`Candidate B full-corpus repeatability checkpoint blocked: ${error.message}`);
     } finally {
         State.candidateBFullCorpusOperatorRepeatabilityCheckpointPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBFullCorpusRepeatabilityRerunTrial(event) {
+    const button = event.target?.closest?.('[data-candidate-b-workflow-repeatability-rerun-trial-index]');
+    if (!button) return;
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    const path = candidateBFullCorpusRepeatabilityRerunTrialEndpointPath(contract);
+    const rows = State.candidateBFullCorpusOperatorWorkflowHistory?.history_rows;
+    const index = Number(button.dataset.candidateBWorkflowRepeatabilityRerunTrialIndex);
+    const row = Array.isArray(rows) ? rows[index] : null;
+    if (!path || !canRecordCandidateBFullCorpusRepeatabilityRerunTrial(row, contract)) {
+        State.candidateBFullCorpusRepeatabilityRerunTrial = null;
+        State.candidateBFullCorpusRepeatabilityRerunTrialError = new Error(
+            'Candidate B repeatability rerun trial requires a recorded original checkpoint, a selected second downstream-proven workflow status, completion monitor, matching corpus identity, artifact comparisons, and the admitted rerun-trial endpoint.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBFullCorpusOperatorWorkflowHistorySelectedReceiptId = row.operator_workflow_receipt_id || '';
+    const payload = candidateBFullCorpusRepeatabilityRerunTrialPayload(row);
+    State.candidateBFullCorpusRepeatabilityRerunTrialPending = true;
+    State.candidateBFullCorpusRepeatabilityRerunTrialError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBFullCorpusRepeatabilityRerunTrial = await postJson(path, payload);
+        State.candidateBFullCorpusRepeatabilityRerunTrialError = null;
+        addEvent('Candidate B full-corpus repeatability rerun trial recorded through server append-only receipt authority.');
+    } catch (error) {
+        State.candidateBFullCorpusRepeatabilityRerunTrial = null;
+        State.candidateBFullCorpusRepeatabilityRerunTrialError = error;
+        addEvent(`Candidate B full-corpus repeatability rerun trial blocked: ${error.message}`);
+    } finally {
+        State.candidateBFullCorpusRepeatabilityRerunTrialPending = false;
         renderAll();
     }
 }
@@ -18358,6 +18680,13 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('click', (event)
     recordCandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProof(event);
     inspectCandidateBFullCorpusOperatorWorkflowCompletionMonitor(event);
     recordCandidateBFullCorpusOperatorRepeatabilityCheckpoint(event);
+    recordCandidateBFullCorpusRepeatabilityRerunTrial(event);
+});
+elements.candidateBDefaultPromotionStatusPanel.addEventListener('change', (event) => {
+    if (event.target?.id === 'candidate-b-repeatability-rerun-trial-disposition') {
+        State.candidateBFullCorpusRepeatabilityRerunTrialInput = candidateBFullCorpusRepeatabilityRerunTrialInputValues();
+        renderCandidateBDefaultPromotionStatusPanel();
+    }
 });
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);

@@ -8898,6 +8898,453 @@ test('Layer 3 workbench records Candidate B repeatability checkpoint through ren
   ]);
 });
 
+test('Layer 3 workbench records Candidate B repeatability rerun trial through rendered append-only control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let workflowHistoryRequested = false;
+  let repeatabilityCheckpointPayload = null;
+  let rerunTrialPayload = null;
+  const statusPayloads = [];
+  const monitorPayloads = [];
+  const processExecutionProjection = {
+    process_execution_projection_state: 'started',
+    process_execution_receipt_available: true,
+    process_execution_receipt_id: 'cb-full-corpus-rerun-trial-process-execution',
+    process_execution_receipt_hash: '1'.repeat(64),
+    process_execution_authority_hash: '2'.repeat(64),
+  };
+  const processCompletionProjection = {
+    process_completion_result_projection_state: 'completed',
+    process_completion_result_receipt_available: true,
+    process_completion_result_receipt_id: 'cb-full-corpus-rerun-trial-process-result',
+    process_completion_result_receipt_hash: '3'.repeat(64),
+    process_completion_result_authority_hash: '4'.repeat(64),
+  };
+  const adoptedProofProjection = {
+    adopted_result_downstream_proof_projection_state: 'proven',
+    adopted_result_downstream_proof_receipt_available: true,
+    adopted_result_downstream_proof_receipt_id: 'cb-full-corpus-rerun-trial-downstream-proof',
+    adopted_result_downstream_proof_receipt_hash: '5'.repeat(64),
+    adopted_result_downstream_proof_authority_hash: '6'.repeat(64),
+  };
+  const commonRequest = {
+    status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+    operator_decision: 'inspect_candidate_b_full_corpus_operator_workflow_status',
+    baseline_run_id: 'baseline-rendered-rerun-trial-proof',
+    candidate_a_run_id: 'candidate-a-rendered-rerun-trial-proof',
+    bridge_receipt_id: 'cb-runtime-l3-rendered-rerun-trial-proof',
+    downstream_proof_id: 'cb-runtime-downstream-proof-rendered-rerun-trial-proof',
+  };
+  const originalStatusRequest = {
+    ...commonRequest,
+    client_request_id: 'candidate-b-rerun-trial-original-status-request',
+    operator_workflow_receipt_id: 'cb-full-corpus-rerun-trial-original',
+    candidate_b_run_id: 'candidate-b-rerun-trial-original',
+  };
+  const rerunStatusRequest = {
+    ...commonRequest,
+    client_request_id: 'candidate-b-rerun-trial-rerun-status-request',
+    operator_workflow_receipt_id: 'cb-full-corpus-rerun-trial-rerun',
+    candidate_b_run_id: 'candidate-b-rerun-trial-rerun',
+  };
+  const baseRow = {
+    source_operator_workflow_receipt_id: 'cb-full-corpus-operator-source-rerun-trial-rendered-proof',
+    source_operator_workflow_receipt_hash: 'a'.repeat(64),
+    authority_basis_hash: 'b'.repeat(64),
+    runtime_root_lifecycle_receipt_id: 'cb-full-corpus-runtime-roots-rerun-trial-rendered-proof',
+    baseline_run_id: commonRequest.baseline_run_id,
+    candidate_a_run_id: commonRequest.candidate_a_run_id,
+    compare_target_set_hash: 'c'.repeat(64),
+    bridge_receipt_id: commonRequest.bridge_receipt_id,
+    downstream_proof_id: commonRequest.downstream_proof_id,
+    material_relative_name: 'text/target-rerun-trial-00001.md',
+    run_state: 'proven',
+    state_machine: ['accepted', 'receipts_validated', 'layer3_checked', 'proven'],
+    process_execution_projection: processExecutionProjection,
+    process_completion_result_projection: processCompletionProjection,
+    adopted_result_downstream_proof_projection: adoptedProofProjection,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    frontend_durable_authority_enabled: false,
+  };
+  const originalRow = {
+    ...baseRow,
+    operator_workflow_receipt_id: originalStatusRequest.operator_workflow_receipt_id,
+    operator_workflow_receipt_hash: '9'.repeat(64),
+    candidate_b_run_id: originalStatusRequest.candidate_b_run_id,
+    status_request: originalStatusRequest,
+    row_hash: 'd'.repeat(64),
+  };
+  const rerunRow = {
+    ...baseRow,
+    operator_workflow_receipt_id: rerunStatusRequest.operator_workflow_receipt_id,
+    operator_workflow_receipt_hash: 'e'.repeat(64),
+    candidate_b_run_id: rerunStatusRequest.candidate_b_run_id,
+    status_request: rerunStatusRequest,
+    row_hash: 'f'.repeat(64),
+  };
+  const statusForRow = (row, hash) => ({
+    schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_status.v1',
+    schema_version: 1,
+    request_id: row.status_request.client_request_id,
+    server_time: '2026-05-24T00:00:00Z',
+    status: 'available',
+    workflow_status: 'proven',
+    workflow_receipt_id: row.operator_workflow_receipt_id,
+    workflow_receipt_hash: row.operator_workflow_receipt_hash,
+    workflow_status_hash: hash,
+    baseline_run_id: row.baseline_run_id,
+    candidate_a_run_id: row.candidate_a_run_id,
+    candidate_b_run_id: row.candidate_b_run_id,
+    bridge_receipt_id: row.bridge_receipt_id,
+    downstream_proof_id: row.downstream_proof_id,
+    compare_target_set_hash: row.compare_target_set_hash,
+    runtime_root_lifecycle: {
+      available: true,
+      lifecycle_receipt_id: row.runtime_root_lifecycle_receipt_id,
+      lifecycle_receipt_hash: '7'.repeat(64),
+      validate_only_triplet: true,
+      raw_local_path_exposed: false,
+      raw_url_exposed: false,
+    },
+    corpus: {
+      corpus_pdf_count: 2,
+      eligible_file_count: 2,
+      material_relative_name: row.material_relative_name,
+      target_status_counts: { candidate_b: { recommended: 2 } },
+      eligibility_summary: {
+        corpus_pdf_count: 2,
+        eligible_pdf_count: 2,
+        skipped_pdf_count: 0,
+        failed_pdf_count: 0,
+      },
+    },
+    layer3: {
+      bridge_status: 'proven',
+      source_directory_scan_status: 'proven',
+      downstream_proof_status: 'proven',
+      same_origin_delivery_available: true,
+    },
+    artifact_family: {
+      governed_retained_artifact_family_hash: '8'.repeat(64),
+      role_counts: { delivery_artifacts: 1, visual_page_evidence: 1 },
+    },
+    baseline_rollback: { available: true },
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    selector_mutation_performed: false,
+  });
+  const originalStatus = statusForRow(originalRow, '0'.repeat(64));
+  const rerunStatus = statusForRow(rerunRow, '1'.repeat(64));
+  const monitorForRow = (row, hash, requestId) => ({
+    schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_completion_monitor.v1',
+    schema_version: 1,
+    request_id: requestId,
+    server_time: '2026-05-24T00:00:00Z',
+    status: 'available',
+    mode: 'read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution',
+    operator_workflow_receipt_id: row.operator_workflow_receipt_id,
+    operator_workflow_receipt_hash: row.operator_workflow_receipt_hash,
+    row_hash: row.row_hash,
+    authority_basis_hash: row.authority_basis_hash,
+    history_hash: '2'.repeat(64),
+    completion_monitor_state: 'completed_downstream_proven',
+    completion_monitor_hash: hash,
+    process_execution_projection: processExecutionProjection,
+    process_completion_result_projection: processCompletionProjection,
+    adopted_result_downstream_proof_projection: adoptedProofProjection,
+    read_only_completion_monitor_projection: true,
+    process_control_admitted: false,
+    raw_stdout_admitted: false,
+    raw_stderr_admitted: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    artifact_bytes_exposed: false,
+    frontend_durable_authority_enabled: false,
+  });
+  const originalMonitor = monitorForRow(originalRow, '3'.repeat(64), 'candidate-b-rerun-trial-original-monitor');
+  const rerunMonitor = monitorForRow(rerunRow, '4'.repeat(64), 'candidate-b-rerun-trial-rerun-monitor');
+
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history', async (route) => {
+    workflowHistoryRequested = true;
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_history.v1',
+        schema_version: 1,
+        request_id: 'candidate-b-rerun-trial-workflow-history',
+        server_time: '2026-05-24T00:00:00Z',
+        mode: 'candidate_b_full_corpus_operator_workflow_history_v1',
+        history_state: 'available',
+        status: 'available',
+        history_hash: '2'.repeat(64),
+        read_only_history_projection: true,
+        browser_supplied_receipt_root_admitted: false,
+        browser_supplied_runtime_roots_admitted: false,
+        browser_supplied_source_directory_admitted: false,
+        browser_supplied_bridge_dir_admitted: false,
+        operator_supplied_local_path_admitted: false,
+        operator_supplied_raw_url_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        frontend_durable_authority_enabled: false,
+        next_allowed_actions: [
+          'inspect original workflow-run row through returned status request',
+          'record repeatability checkpoint from original status and completion monitor projections',
+          'record repeatability rerun trial from second status and completion monitor projections',
+        ],
+        history_rows: [originalRow, rerunRow],
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status', async (route) => {
+    const payload = route.request().postDataJSON();
+    statusPayloads.push(payload);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(payload.operator_workflow_receipt_id === rerunRow.operator_workflow_receipt_id
+        ? rerunStatus
+        : originalStatus),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor', async (route) => {
+    const payload = route.request().postDataJSON();
+    monitorPayloads.push(payload);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(payload.operator_workflow_receipt_id === rerunRow.operator_workflow_receipt_id
+        ? rerunMonitor
+        : originalMonitor),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint', async (route) => {
+    repeatabilityCheckpointPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_repeatability_checkpoint.v1',
+        schema_version: 1,
+        mode: 'append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation',
+        operator_decision: 'record_candidate_b_full_corpus_operator_repeatability_checkpoint',
+        request_id: repeatabilityCheckpointPayload.client_request_id,
+        server_time: '2026-05-24T00:00:00Z',
+        status: 'available',
+        repeatability_checkpoint_state: 'repeatability_checkpoint_recorded',
+        repeatability_checkpoint_receipt_id: 'cb-full-corpus-repeatability-checkpoint-rerun-trial-rendered-proof',
+        repeatability_checkpoint_hash: '5'.repeat(64),
+        repeatability_checkpoint_authority_hash: '6'.repeat(64),
+        repeatability_checkpoint_receipt_hash: '7'.repeat(64),
+        repeatability_checkpoint_receipt_ref: 'candidate-b-full-corpus-operator-workflow-repeatability-checkpoint://rerun-trial/777777777777777777777777',
+        repeatability_checkpoint: {
+          ...repeatabilityCheckpointPayload,
+          status_projection: {
+            workflow_status: 'proven',
+            workflow_status_hash: originalStatus.workflow_status_hash,
+            workflow_receipt_id: originalRow.operator_workflow_receipt_id,
+            workflow_receipt_hash: originalRow.operator_workflow_receipt_hash,
+          },
+          completion_monitor_projection: {
+            completion_monitor_state: 'completed_downstream_proven',
+            completion_monitor_hash: originalMonitor.completion_monitor_hash,
+          },
+        },
+        repeatability_checkpoint_authority: {
+          operator_decision: 'record_candidate_b_full_corpus_operator_repeatability_checkpoint',
+        },
+        append_only_repeatability_checkpoint_receipt: true,
+        exclusive_repeatability_checkpoint_per_authority: true,
+        workflow_receipt_mutated: false,
+        process_execution_receipt_mutated: false,
+        process_completion_result_receipt_mutated: false,
+        adopted_result_downstream_proof_receipt_mutated: false,
+        actual_corpus_processing_execution_admitted_now: false,
+        actual_subprocess_spawn_admitted_now: false,
+        process_control_admitted: false,
+        raw_stdout_admitted: false,
+        raw_stderr_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        frontend_durable_authority_enabled: false,
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial', async (route) => {
+    rerunTrialPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_repeatability_rerun_trial.v1',
+        schema_version: 1,
+        mode: 'append_only_repeatability_rerun_trial_receipt_without_process_execution_or_authority_mutation',
+        operator_decision: 'record_candidate_b_full_corpus_repeatability_rerun_trial',
+        request_id: rerunTrialPayload.client_request_id,
+        server_time: '2026-05-24T00:00:00Z',
+        status: 'available',
+        repeatability_rerun_trial_state: 'repeatability_rerun_trial_recorded',
+        repeatability_rerun_trial_receipt_id: 'cb-full-corpus-repeatability-rerun-trial-rendered-proof',
+        repeatability_rerun_trial_receipt_hash: '9'.repeat(64),
+        repeatability_rerun_trial_receipt_ref: 'candidate-b-full-corpus-operator-workflow-repeatability-rerun-trial://rendered-proof/999999999999999999999999',
+        repeatability_rerun_trial_hash: 'a'.repeat(64),
+        repeatability_rerun_trial_authority_hash: 'b'.repeat(64),
+        repeatability_rerun_trial: {
+          ...rerunTrialPayload,
+          comparison: {
+            same_candidate_b_run_id: false,
+            same_eligible_corpus_identity: true,
+            original_corpus_identity_hash: 'c'.repeat(64),
+            rerun_corpus_identity_hash: 'c'.repeat(64),
+            same_compare_target_set_hash: true,
+            same_material_relative_name: true,
+            same_runtime_root_lifecycle_policy: true,
+            original_runtime_root_lifecycle_policy_hash: 'd'.repeat(64),
+            rerun_runtime_root_lifecycle_policy_hash: 'd'.repeat(64),
+            artifact_family_hash_comparison: {
+              original_hash: '8'.repeat(64),
+              rerun_hash: '8'.repeat(64),
+              equal: true,
+            },
+            layer3_downstream_projection_comparison: {
+              original_hash: 'e'.repeat(64),
+              rerun_hash: 'e'.repeat(64),
+              equal: true,
+            },
+            retained_artifact_role_counts_comparison: {
+              original_hash: 'f'.repeat(64),
+              rerun_hash: 'f'.repeat(64),
+              equal: true,
+            },
+            delta_observed: false,
+            regression_disposition: rerunTrialPayload.regression_disposition,
+          },
+        },
+        append_only_repeatability_rerun_trial_receipt: true,
+        exclusive_repeatability_rerun_trial_per_authority: true,
+        original_repeatability_checkpoint_receipt_mutated: false,
+        original_workflow_receipt_mutated: false,
+        rerun_workflow_receipt_mutated: false,
+        process_execution_receipt_mutated: false,
+        process_completion_result_receipt_mutated: false,
+        adopted_result_downstream_proof_receipt_mutated: false,
+        repeatability_rerun_trial_receipt_mutation_admitted: false,
+        actual_corpus_processing_execution_admitted_now: false,
+        actual_subprocess_spawn_admitted_now: false,
+        process_control_admitted: false,
+        raw_stdout_admitted: false,
+        raw_stderr_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        frontend_durable_authority_enabled: false,
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const rerunTrialCard = page.locator('.candidate-b-full-corpus-repeatability-rerun-trial-card');
+  await expect(panel).toBeVisible();
+  await expect(rerunTrialCard).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_full_corpus_repeatability_rerun_trial_control',
+  );
+  await expect(rerunTrialCard).toHaveAttribute('data-frontend-durable-authority', 'false');
+
+  await page.locator('#candidate-b-full-corpus-workflow-history-refresh').click();
+  await expect(panel).toContainText(originalRow.operator_workflow_receipt_id);
+  await expect(panel).toContainText(rerunRow.operator_workflow_receipt_id);
+  await page.locator('[data-candidate-b-workflow-history-inspect-index="0"]').click();
+  await expect(panel).toContainText('candidate_b_full_corpus_workflow_status_available');
+  await page.locator('[data-candidate-b-workflow-completion-monitor-index="0"]').click();
+  await expect(panel).toContainText('candidate_b_full_corpus_workflow_completion_monitor_downstream_proven');
+  await page.locator('[data-candidate-b-workflow-repeatability-checkpoint-index="0"]').click();
+  await expect(panel).toContainText('candidate_b_full_corpus_repeatability_checkpoint_recorded');
+
+  await page.locator('[data-candidate-b-workflow-history-inspect-index="1"]').click();
+  await expect(panel).toContainText(rerunRow.candidate_b_run_id);
+  await page.locator('[data-candidate-b-workflow-completion-monitor-index="1"]').click();
+  await page.locator('[data-candidate-b-workflow-repeatability-rerun-trial-index="1"]').click();
+
+  await expect(rerunTrialCard).toContainText('candidate_b_full_corpus_repeatability_rerun_trial_recorded');
+  await expect(rerunTrialCard).toContainText('repeatability_rerun_trial_recorded');
+  await expect(rerunTrialCard).toContainText('cb-full-corpus-repeatability-rerun-trial-rendered-proof');
+  await expect(rerunTrialCard).toContainText('same eligible corpus identity: true');
+  await expect(rerunTrialCard).toContainText('same Candidate B run id: false');
+  await expect(rerunTrialCard).toContainText('artifact family hash equal: true');
+  await expect(rerunTrialCard).toContainText('Layer 3 projection hash equal: true');
+  await expect(rerunTrialCard).toContainText('delta observed: false');
+  await expect(rerunTrialCard).toContainText('process control admitted: false');
+  await expect(rerunTrialCard).toContainText('raw stdout admitted: false');
+  await expect(rerunTrialCard).toContainText('raw stderr admitted: false');
+  await expect(rerunTrialCard).toContainText('frontend durable authority enabled: false');
+
+  expect(workflowHistoryRequested).toBe(true);
+  expect(statusPayloads).toEqual([originalStatusRequest, rerunStatusRequest]);
+  expect(monitorPayloads.map((payload) => payload.operator_workflow_receipt_id)).toEqual([
+    originalRow.operator_workflow_receipt_id,
+    rerunRow.operator_workflow_receipt_id,
+  ]);
+  expect(repeatabilityCheckpointPayload).toMatchObject({
+    operator_workflow_receipt_id: originalRow.operator_workflow_receipt_id,
+    workflow_status_hash: originalStatus.workflow_status_hash,
+    completion_monitor_hash: originalMonitor.completion_monitor_hash,
+  });
+  expect(rerunTrialPayload).toMatchObject({
+    rerun_trial_mode: 'append_only_repeatability_rerun_trial_receipt_without_process_execution_or_authority_mutation',
+    operator_decision: 'record_candidate_b_full_corpus_repeatability_rerun_trial',
+    original_repeatability_checkpoint_receipt_id: 'cb-full-corpus-repeatability-checkpoint-rerun-trial-rendered-proof',
+    original_operator_workflow_receipt_id: originalRow.operator_workflow_receipt_id,
+    original_operator_workflow_receipt_hash: originalRow.operator_workflow_receipt_hash,
+    original_row_hash: originalRow.row_hash,
+    original_authority_basis_hash: originalRow.authority_basis_hash,
+    original_history_hash: '2'.repeat(64),
+    original_workflow_status_hash: originalStatus.workflow_status_hash,
+    original_completion_monitor_hash: originalMonitor.completion_monitor_hash,
+    rerun_operator_workflow_receipt_id: rerunRow.operator_workflow_receipt_id,
+    rerun_operator_workflow_receipt_hash: rerunRow.operator_workflow_receipt_hash,
+    rerun_row_hash: rerunRow.row_hash,
+    rerun_authority_basis_hash: rerunRow.authority_basis_hash,
+    rerun_history_hash: '2'.repeat(64),
+    rerun_workflow_status_hash: rerunStatus.workflow_status_hash,
+    rerun_completion_monitor_hash: rerunMonitor.completion_monitor_hash,
+    baseline_run_id: commonRequest.baseline_run_id,
+    candidate_a_run_id: commonRequest.candidate_a_run_id,
+    original_candidate_b_run_id: originalRow.candidate_b_run_id,
+    rerun_candidate_b_run_id: rerunRow.candidate_b_run_id,
+    compare_target_set_hash: originalRow.compare_target_set_hash,
+    material_relative_name: originalRow.material_relative_name,
+    regression_disposition: 'no_regression_observed',
+    operator_runbook_repeatability_steps: [
+      'refresh_workflow_history',
+      'inspect_original_checkpoint',
+      'inspect_original_workflow_status',
+      'inspect_original_completion_monitor',
+      'inspect_rerun_workflow_status',
+      'inspect_rerun_completion_monitor',
+      'record_repeatability_rerun_trial',
+    ],
+  });
+  expect(JSON.stringify(rerunTrialPayload)).not.toContain('file://');
+  expect(JSON.stringify(rerunTrialPayload)).not.toContain('https://');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/full-corpus/operator-workflow/')
+  ))).toEqual([
+    { method: 'GET', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial' },
+  ]);
+});
+
 test('Layer 3 workbench expires Candidate B workflow run through rendered append-only lifecycle control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowLifecyclePayload = null;

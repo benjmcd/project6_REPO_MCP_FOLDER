@@ -3369,3 +3369,36 @@ next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_c
 ```
 
 The next rendered pass should add the operator control for recording a rerun-trial receipt. The UI may pair an original repeatability checkpoint with a second downstream-proven workflow and choose an admitted regression/delta disposition, but it remains a server-projection consumer only. It must post bounded ids/hashes and runbook constants to the server endpoint, then render the server comparison and receipt without local paths, raw URLs, commands, stdout/stderr, process controls, browser storage authority, or frontend durable authority.
+
+### Candidate B Full-Corpus Repeatability Rerun Trial Rendered Control Runtime
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1
+source_repeatability_rerun_trial_rendered_selection: next_milestone_plans/Layer3_planning_docs/1042-cb-repeatability-rerun-trial-rendered-selection.md
+runtime_status: implemented
+selected_rendered_control_mode: rendered_candidate_b_full_corpus_repeatability_rerun_trial_control
+selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial
+selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial
+rendered_control_runtime_selected: true
+rendered_control_button_label: Record Rerun Trial
+original_repeatability_checkpoint_required: true
+rerun_workflow_status_required: proven
+rerun_completion_monitor_state_required: completed_downstream_proven
+artifact_family_hash_comparison_required: true
+layer3_downstream_projection_comparison_required: true
+retained_artifact_role_counts_comparison_required: true
+regression_or_delta_disposition_required: true
+headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability rerun trial" --project=chromium PASS
+headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability rerun trial" --project=chromium --headed PASS
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+frontend_durable_authority_enabled: false
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_checkpoint_selection_v1
+```
+
+Operators can now record the repeatability rerun-trial receipt through the rendered Candidate B workflow history/status/monitor surface. The sequence is: refresh workflow history, inspect the original workflow status and completion monitor, record the original repeatability checkpoint, inspect the rerun workflow status and completion monitor, then click `Record Rerun Trial` on the rerun row. The rendered control submits only server-projected ids, hashes, material identity, the admitted disposition, and bounded runbook constants; the server writes the receipt and returns the comparison summary and negative invariants.
