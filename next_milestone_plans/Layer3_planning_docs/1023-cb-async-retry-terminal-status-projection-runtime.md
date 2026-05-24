@@ -1,0 +1,70 @@
+# Candidate B Async Retry Terminal Status Projection Runtime
+
+```yaml
+milestone: candidate_b_async_retry_terminal_status_projection_v1
+source_retry_terminal_status_projection_selection: next_milestone_plans/Layer3_planning_docs/1022-cb-async-retry-terminal-status-projection-selection.md
+current_main_entry: f775019701ba0312e1638164e22d2de33c6564e3
+runtime_status: implemented
+selected_retry_terminal_status_projection_scope: server_owned_candidate_b_full_corpus_operator_workflow_status_history_projection_of_retry_completion_failure_receipts
+selected_retry_terminal_status_projection_mode: read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation
+selected_retry_terminal_status_projection_surfaces: status,history
+existing_status_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+existing_history_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_retry_completion_failure_endpoint_reused_for_retry_terminal_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure
+selected_retry_terminal_status_projection_model: redacted_read_only_projection_of_latest_retry_completion_failure_receipt_per_retry_worker_attempt
+selected_retry_terminal_status_projection_binding: retry_completion_failure_receipt_id,retry_completion_failure_receipt_hash,retry_completion_failure_authority_hash,retry_worker_attempt_receipt_id,retry_worker_attempt_authority_hash,latest_retry_progress_checkpoint_receipt_id,latest_retry_progress_checkpoint_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_terminal_outcome,retry_terminal_outcome_hash
+selected_retry_terminal_status_projection_idempotency_basis: read_only_projection_from_server_owned_retry_terminal_receipts
+history_row_hash_excludes_retry_terminal_status_projection: true
+history_hash_excludes_retry_terminal_status_projection: true
+retry_terminal_projection_state_values: not_recorded,completed,failed,blocked
+missing_retry_terminal_receipt_projects_not_recorded: true
+stale_retry_terminal_receipt_rejected: true
+ambiguous_retry_terminal_receipt_rejected: true
+retry_terminal_failure_payload_operator_safe: true
+operator_safe_retry_terminal_failure_code_visible: true
+operator_safe_retry_terminal_failure_phase_visible: true
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+retry_terminal_receipt_creation_admitted_now: false
+retry_completion_failure_receipt_mutation_admitted: false
+retry_progress_checkpoint_receipt_mutation_admitted: false
+retry_worker_attempt_receipt_mutation_admitted: false
+retry_scheduler_lease_receipt_mutation_admitted: false
+retry_queue_state_receipt_mutation_admitted: false
+retry_policy_receipt_mutation_admitted: false
+completion_failure_receipt_mutation_admitted: false
+failed_worker_attempt_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+retry_terminal_status_projection_runtime_selected: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1
+```
+
+This runtime projects Candidate B retry terminal completion/failure authority through the existing status and history surfaces. Missing terminal authority projects `not_recorded`; completed and failed terminal receipts project redacted receipt, outcome, progress, and worker-attempt authority; stale or ambiguous terminal authority fails closed.
+
+The projection is intentionally excluded from `row_hash` and `history_hash` so a newly recorded retry terminal receipt does not invalidate already issued append-only retry completion/failure requests. This preserves idempotent replay and terminal-conflict behavior while still making terminal authority visible to operators.
+
+## Coherence Check
+
+- Should terminal projection change workflow-run lineage hashes? Recommended answer: no. It is a read-only status/history projection layered over server-owned receipts.
+- Should terminal projection create or repair retry terminal receipts? Recommended answer: no. Receipt creation remains isolated to the retry completion/failure endpoint.
+- Should missing terminal authority block status/history? Recommended answer: no. Missing authority is a valid `not_recorded` state; stale or ambiguous terminal authority blocks.
+- What should come next? Recommended answer: select a rendered status/history projection proof so operators can inspect retry terminal state without relying on raw API calls.

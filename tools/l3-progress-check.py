@@ -2800,6 +2800,9 @@ CANDIDATE_B_ASYNC_RETRY_COMPLETION_FAILURE_RUNTIME = (
 CANDIDATE_B_ASYNC_RETRY_TERMINAL_STATUS_PROJECTION_SELECTION = (
     PLANNING_DOCS / "1022-cb-async-retry-terminal-status-projection-selection.md"
 )
+CANDIDATE_B_ASYNC_RETRY_TERMINAL_STATUS_PROJECTION_RUNTIME = (
+    PLANNING_DOCS / "1023-cb-async-retry-terminal-status-projection-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -95670,6 +95673,112 @@ def _check_candidate_b_async_retry_terminal_status_projection_selection(errors: 
                 )
 
 
+def _check_candidate_b_async_retry_terminal_status_projection_runtime(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_RETRY_TERMINAL_STATUS_PROJECTION_RUNTIME: (
+            "Candidate B Async Retry Terminal Status Projection Runtime",
+            "milestone: candidate_b_async_retry_terminal_status_projection_v1",
+            "source_retry_terminal_status_projection_selection: next_milestone_plans/Layer3_planning_docs/1022-cb-async-retry-terminal-status-projection-selection.md",
+            "current_main_entry: f775019701ba0312e1638164e22d2de33c6564e3",
+            "runtime_status: implemented",
+            "selected_retry_terminal_status_projection_scope: server_owned_candidate_b_full_corpus_operator_workflow_status_history_projection_of_retry_completion_failure_receipts",
+            "selected_retry_terminal_status_projection_mode: read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation",
+            "selected_retry_terminal_status_projection_surfaces: status,history",
+            "existing_status_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "existing_history_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "existing_retry_completion_failure_endpoint_reused_for_retry_terminal_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure",
+            "selected_retry_terminal_status_projection_model: redacted_read_only_projection_of_latest_retry_completion_failure_receipt_per_retry_worker_attempt",
+            "selected_retry_terminal_status_projection_binding: retry_completion_failure_receipt_id,retry_completion_failure_receipt_hash,retry_completion_failure_authority_hash,retry_worker_attempt_receipt_id,retry_worker_attempt_authority_hash,latest_retry_progress_checkpoint_receipt_id,latest_retry_progress_checkpoint_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_terminal_outcome,retry_terminal_outcome_hash",
+            "history_row_hash_excludes_retry_terminal_status_projection: true",
+            "history_hash_excludes_retry_terminal_status_projection: true",
+            "missing_retry_terminal_receipt_projects_not_recorded: true",
+            "stale_retry_terminal_receipt_rejected: true",
+            "ambiguous_retry_terminal_receipt_rejected: true",
+            "retry_terminal_status_projection_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1",
+            "Should terminal projection change workflow-run lineage hashes? Recommended answer: no.",
+            "What should come next? Recommended answer: select a rendered status/history projection proof",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_retry_terminal_status_projection_v1",
+            "source_retry_terminal_status_projection_selection: next_milestone_plans/Layer3_planning_docs/1022-cb-async-retry-terminal-status-projection-selection.md",
+            "runtime_status: implemented",
+            "selected_retry_terminal_status_projection_mode: read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation",
+            "selected_retry_terminal_status_projection_surfaces: status,history",
+            "missing_retry_terminal_receipt_projects_not_recorded: true",
+            "stale_retry_terminal_receipt_rejected: true",
+            "ambiguous_retry_terminal_receipt_rejected: true",
+            "history_row_hash_excludes_retry_terminal_status_projection: true",
+            "history_hash_excludes_retry_terminal_status_projection: true",
+            "retry_terminal_receipt_creation_admitted_now: false",
+            "retry_terminal_status_projection_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1",
+        ),
+        CANDIDATE_B_ASYNC_RETRY_TERMINAL_STATUS_PROJECTION_SELECTION: (
+            "next_exact_posture: candidate_b_async_retry_terminal_status_projection_v1",
+            "implementation_admitted_after_current_main_sync: true",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE: (
+            "retry_terminal_status_projection",
+            "RETRY_TERMINAL_STATUS_PROJECTION_MODE",
+            "RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX",
+            "def _retry_terminal_status_projection",
+            "def _retry_terminal_not_recorded_projection",
+            "def _validated_retry_terminal_projection",
+            "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous",
+            "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_mismatch",
+            '"missing_retry_terminal_receipt_projects_not_recorded": True',
+            '"retry_terminal_receipt_creation_admitted_now": False',
+            '"retry_terminal_status_projection_runtime_selected": True',
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+            '"cancel_runtime_selected_now": False',
+            '"resume_runtime_selected_now": False',
+            '"raw_local_path_exposed": False',
+            '"raw_url_exposed": False',
+            '"artifact_bytes_exposed": False',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"retry_terminal_status_projection_runtime_admitted": True',
+            "inspect retry terminal authority through status/history projection",
+            "def _history_hash_row",
+            'if key != "retry_terminal_status_projection"',
+            '"retry_terminal_status_projection": _retry_terminal_status_projection',
+        ),
+        LAYER3_API: (
+            "retry_terminal_status_projection: dict[str, Any]",
+            "retry_terminal_status_projection_runtime_admitted: bool",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_reports_completed",
+            "test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_reports_failed",
+            "test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_rejects_stale_receipt",
+            "test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_rejects_ambiguous_receipts",
+            "retry_terminal_projection_state",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async retry terminal status projection runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -96539,6 +96648,7 @@ def main() -> int:
     _check_candidate_b_async_retry_completion_failure_selection(errors)
     _check_candidate_b_async_retry_completion_failure_runtime(errors)
     _check_candidate_b_async_retry_terminal_status_projection_selection(errors)
+    _check_candidate_b_async_retry_terminal_status_projection_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
