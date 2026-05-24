@@ -2746,6 +2746,9 @@ CANDIDATE_B_ASYNC_SCHEDULER_LEASE_RUNTIME = (
 CANDIDATE_B_ASYNC_WORKER_ATTEMPT_SELECTION = (
     PLANNING_DOCS / "1004-cb-async-worker-attempt-selection.md"
 )
+CANDIDATE_B_ASYNC_WORKER_ATTEMPT_RUNTIME = (
+    PLANNING_DOCS / "1005-cb-async-worker-attempt-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2776,6 +2779,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_SCHEDULER_LEASE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_WORKER_ATTEMPT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_worker_attempt.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -92800,7 +92806,8 @@ def _check_candidate_b_workflow_run_lifecycle_selection(
             '"expiry_mutation_runtime_admitted": True',
             "expire or close a selected workflow-run row through the admitted lifecycle endpoint",
             "record append-only queue-state authority for a selected workflow-run row",
-            "select background worker, cancel, retry, or resume only through a separate freeze",
+            "record append-only worker-attempt authority for a selected scheduler lease receipt",
+            "select progress checkpoint, completion, cancel, retry, or resume only through a separate freeze",
         ),
         LAYER3_API: (
             "layer3_candidate_b_full_corpus_operator_workflow_lifecycle",
@@ -92962,7 +92969,8 @@ def _check_candidate_b_async_cancel_retry_queue_selection(
             '"queue_scheduler_runtime_admitted": True',
             '"expiry_mutation_runtime_admitted": True',
             "record append-only queue-state authority for a selected workflow-run row",
-            "select background worker, cancel, retry, or resume only through a separate freeze",
+            "record append-only worker-attempt authority for a selected scheduler lease receipt",
+            "select progress checkpoint, completion, cancel, retry, or resume only through a separate freeze",
         ),
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE: (
             "Workflow-run lifecycle expiry does not admit caller paths, URLs, selector mutation, connector/model controls, browser authority, queue scheduling, cancel, retry, or resume.",
@@ -93301,7 +93309,8 @@ def _check_candidate_b_async_scheduler_lease_runtime(
             '"queue_state_authority_runtime_admitted": True',
             '"queue_scheduler_runtime_admitted": True',
             "record append-only scheduler lease authority for a selected queue-state receipt",
-            "select background worker, cancel, retry, or resume only through a separate freeze",
+            "record append-only worker-attempt authority for a selected scheduler lease receipt",
+            "select progress checkpoint, completion, cancel, retry, or resume only through a separate freeze",
         ),
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE: (
             "record append-only scheduler lease authority through the admitted scheduler lease endpoint",
@@ -93435,7 +93444,8 @@ def _check_candidate_b_async_worker_attempt_selection(
             '"cancel_runtime_selected_now": False',
             '"retry_runtime_selected_now": False',
             '"resume_runtime_selected_now": False',
-            "select background worker, cancel, retry, resume, or checkpoint only through a separate freeze",
+            "record append-only worker-attempt authority through the admitted worker attempt endpoint",
+            "select progress checkpoint, completion, cancel, retry, or resume only through a separate freeze",
         ),
     }
     for path, terms in required_terms.items():
@@ -93446,15 +93456,141 @@ def _check_candidate_b_async_worker_attempt_selection(
                     f"{_rel(path)} missing Candidate B async worker attempt selection term: {term}"
                 )
 
-    api_text = _read_required_text(LAYER3_API, errors)
-    forbidden_routes = (
-        '"/source/ingestion/candidate-b/full-corpus/operator-workflow/worker/attempt"',
-    )
-    for route in forbidden_routes:
-        if route in api_text:
-            errors.append(
-                f"{_rel(LAYER3_API)} exposes non-implemented Candidate B worker attempt route: {route}"
-            )
+
+def _check_candidate_b_async_worker_attempt_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_WORKER_ATTEMPT_RUNTIME: (
+            "Candidate B Async Worker Attempt Runtime",
+            "milestone: candidate_b_async_worker_attempt_receipt_v1",
+            "source_worker_attempt_selection: next_milestone_plans/Layer3_planning_docs/1004-cb-async-worker-attempt-selection.md",
+            "runtime_status: implemented",
+            "selected_worker_attempt_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/worker/attempt",
+            "selected_worker_attempt_mode: append_only_worker_attempt_receipt_without_job_execution",
+            "selected_worker_attempt_action: record_candidate_b_async_worker_attempt",
+            "selected_worker_attempt_scope: server_owned_candidate_b_full_corpus_operator_workflow_scheduler_lease_receipts",
+            "selected_worker_attempt_receipt_model: append_only_worker_attempt_receipt_without_mutating_scheduler_lease_queue_state_or_source_run_receipt",
+            "selected_worker_attempt_receipt_binding: scheduler_lease_receipt_id,scheduler_lease_receipt_hash,scheduler_lease_authority_hash,queue_state_receipt_id,queue_state_receipt_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,worker_attempt_hash",
+            "selected_worker_attempt_idempotency_basis: client_request_id_plus_worker_attempt_authority_hash",
+            "selected_initial_attempt_number: 1",
+            "exclusive_initial_attempt_per_scheduler_lease: true",
+            "stale_scheduler_lease_receipt_rejected: true",
+            "stale_queue_state_receipt_rejected: true",
+            "stale_run_receipt_rejected: true",
+            "stale_history_row_rejected: true",
+            "missing_scheduler_lease_receipt_rejected: true",
+            "scheduler_lease_receipt_mutation_admitted: false",
+            "queue_state_receipt_mutation_admitted: false",
+            "source_run_receipt_mutation_admitted: false",
+            "worker_attempt_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "progress_checkpoint_runtime_selected_now: false",
+            "completion_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_progress_checkpoint_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_worker_attempt_receipt_v1",
+            "source_worker_attempt_selection: next_milestone_plans/Layer3_planning_docs/1004-cb-async-worker-attempt-selection.md",
+            "runtime_status: implemented",
+            "selected_worker_attempt_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/worker/attempt",
+            "selected_worker_attempt_mode: append_only_worker_attempt_receipt_without_job_execution",
+            "selected_worker_attempt_action: record_candidate_b_async_worker_attempt",
+            "exclusive_initial_attempt_per_scheduler_lease: true",
+            "stale_scheduler_lease_receipt_rejected: true",
+            "worker_attempt_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "progress_checkpoint_runtime_selected_now: false",
+            "completion_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_progress_checkpoint_authority_selection_v1",
+            "a competing request for the same scheduler lease fails closed",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_WORKER_ATTEMPT_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_worker_attempt.v1"',
+            'WORKER_ATTEMPT_MODE = "append_only_worker_attempt_receipt_without_job_execution"',
+            'OPERATOR_DECISION = "record_candidate_b_async_worker_attempt"',
+            'WORKER_ATTEMPT_ENDPOINT = (',
+            "record_candidate_b_full_corpus_operator_workflow_worker_attempt",
+            "_selected_scheduler_lease_receipt",
+            "_reject_competing_worker_attempt",
+            '"append_only_worker_attempt_receipt": True',
+            '"exclusive_initial_attempt_per_scheduler_lease": True',
+            '"scheduler_lease_receipt_mutated": False',
+            '"queue_state_receipt_mutated": False',
+            '"source_run_receipt_mutated": False',
+            '"worker_attempt_runtime_selected": True',
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+            '"progress_checkpoint_runtime_selected_now": False',
+            '"completion_runtime_selected_now": False',
+            '"cancel_runtime_selected_now": False',
+            '"retry_runtime_selected_now": False',
+            '"resume_runtime_selected_now": False',
+            '"expiry_enforcement_runtime_selected_now": False',
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_stale_scheduler_lease_receipt",
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_conflict",
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_forbidden_request_fields",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"worker_attempt_runtime_admitted": True',
+            '"background_process_runtime_admitted": False',
+            '"job_execution_runtime_admitted": False',
+            '"progress_checkpoint_runtime_admitted": False',
+            "record append-only worker-attempt authority for a selected scheduler lease receipt",
+            "select progress checkpoint, completion, cancel, retry, or resume only through a separate freeze",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_worker_attempt",
+            "Layer3CandidateBFullCorpusOperatorWorkflowWorkerAttemptRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowWorkerAttemptResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/worker/attempt"',
+            "CandidateBFullCorpusOperatorWorkflowWorkerAttemptError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_admitted",
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_worker_attempt": True',
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_admitted",
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_admitted",
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_worker_attempt"',
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_admitted",
+            "candidate_b_full_corpus_operator_workflow_worker_attempt_endpoint",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_worker_attempt_records_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_worker_attempt_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_worker_attempt_rejects_stale_scheduler_lease",
+            "test_candidate_b_full_corpus_operator_workflow_worker_attempt_rejects_competing_attempt",
+            "test_candidate_b_full_corpus_operator_workflow_worker_attempt_service_rejects_raw_authority",
+            "WORKER_ATTEMPT_ENDPOINT",
+            "workflow_worker_attempt.WORKER_ATTEMPT_MODE",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async worker attempt runtime term: {term}"
+                )
 
 
 def main() -> int:
@@ -94308,6 +94444,7 @@ def main() -> int:
     _check_candidate_b_async_scheduler_selection(errors)
     _check_candidate_b_async_scheduler_lease_runtime(errors)
     _check_candidate_b_async_worker_attempt_selection(errors)
+    _check_candidate_b_async_worker_attempt_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

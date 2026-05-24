@@ -436,7 +436,8 @@ def _load_or_write_scheduler_lease_receipt(
         "next_allowed_actions": [
             "refresh workflow-run history",
             "inspect the original workflow run through the returned status request",
-            "select background worker, cancel, retry, resume, or checkpoint only through a separate freeze",
+            "record append-only worker-attempt authority through the admitted worker attempt endpoint",
+            "select progress checkpoint, completion, cancel, retry, or resume only through a separate freeze",
         ],
     }
     receipt_hash = workflow_status._stable_hash(receipt_input)
