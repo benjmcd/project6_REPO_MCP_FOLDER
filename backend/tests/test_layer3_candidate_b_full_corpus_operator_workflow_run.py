@@ -17,6 +17,7 @@ sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_completion_failure as workflow_completion_failure
+from app.services import layer3_candidate_b_full_corpus_operator_workflow_execution_boundary as workflow_execution_boundary
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_lifecycle as workflow_lifecycle
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint as workflow_progress_checkpoint
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state
@@ -61,6 +62,9 @@ RETRY_PROGRESS_CHECKPOINT_ENDPOINT = (
 )
 RETRY_COMPLETION_FAILURE_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure"
+)
+EXECUTION_BOUNDARY_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary"
 )
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
@@ -605,6 +609,25 @@ def _retry_completion_failure_request(
     return payload
 
 
+def _execution_boundary_request(
+    history: dict[str, Any],
+    row: dict[str, Any],
+    **overrides: Any,
+) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-execution-boundary",
+        "execution_boundary_mode": workflow_execution_boundary.EXECUTION_BOUNDARY_MODE,
+        "operator_decision": workflow_execution_boundary.OPERATOR_DECISION,
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _worker_attempt_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     _write_source_receipt()
     client.post(RUN_ENDPOINT, json=_run_request()).json()
@@ -690,6 +713,15 @@ def _retry_progress_checkpoint_chain(client: TestClient) -> tuple[dict[str, Any]
         json=_retry_progress_checkpoint_request(history_body, row, retry_worker_attempt_body),
     ).json()
     return history_body, row, retry_progress_checkpoint_body
+
+
+def _retry_completion_failure_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    retry_completion_failure_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    ).json()
+    return history_body, row, retry_completion_failure_body
 
 
 def _workflow_receipt_file(receipt_id: str) -> Path:
@@ -2643,6 +2675,146 @@ def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_project
         "candidate_b_full_corpus_operator_workflow_history_"
         "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous"
     )
+
+
+def test_candidate_b_full_corpus_operator_workflow_execution_boundary_records_append_only(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_completion_failure_body = _retry_completion_failure_chain(client)
+
+    response = client.post(
+        EXECUTION_BOUNDARY_ENDPOINT,
+        json=_execution_boundary_request(history_body, row),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_execution_boundary.SCHEMA_ID
+    assert body["mode"] == workflow_execution_boundary.EXECUTION_BOUNDARY_MODE
+    assert body["execution_boundary_state"] == "boundary_recorded"
+    assert body["operator_workflow_receipt_id"] == row["operator_workflow_receipt_id"]
+    assert body["operator_workflow_receipt_hash"] == row["operator_workflow_receipt_hash"]
+    assert body["row_hash"] == row["row_hash"]
+    assert body["history_hash"] == history_body["history_hash"]
+    assert body["append_only_execution_boundary_receipt"] is True
+    assert body["source_run_receipt_mutated"] is False
+    assert body["queue_state_receipt_mutated"] is False
+    assert body["scheduler_lease_receipt_mutated"] is False
+    assert body["worker_attempt_receipt_mutated"] is False
+    assert body["progress_checkpoint_receipt_mutated"] is False
+    assert body["completion_failure_receipt_mutated"] is False
+    assert body["retry_completion_failure_receipt_mutated"] is False
+    assert body["execution_boundary_runtime_selected"] is True
+    assert body["background_process_runtime_selected_now"] is False
+    assert body["job_execution_runtime_selected_now"] is False
+    assert body["actual_subprocess_spawn_admitted_now"] is False
+    assert body["actual_corpus_processing_execution_admitted_now"] is False
+    assert body["operator_supplied_command_admitted"] is False
+    assert body["operator_supplied_local_path_admitted"] is False
+    assert body["operator_supplied_raw_url_admitted"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["artifact_bytes_exposed"] is False
+    assert body["execution_boundary_endpoint"] == EXECUTION_BOUNDARY_ENDPOINT
+    assert body["status_request"] == row["status_request"]
+    boundary = body["execution_boundary"]
+    assert boundary["retry_completion_failure_receipt_id"] == retry_completion_failure_body[
+        "retry_completion_failure_receipt_id"
+    ]
+    assert boundary["retry_terminal_projection_state"] == "completed"
+    assert boundary["terminal_projection_visibility"] is True
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+    status_body = client.post(STATUS_ENDPOINT, json=row["status_request"]).json()
+    projection = status_body["execution_boundary_projection"]
+    assert projection["execution_boundary_projection_state"] == "boundary_recorded"
+    assert projection["execution_boundary_receipt_id"] == body["execution_boundary_receipt_id"]
+    assert projection["execution_boundary_receipt_hash"] == body["execution_boundary_receipt_hash"]
+    assert projection["retry_completion_failure_receipt_id"] == retry_completion_failure_body[
+        "retry_completion_failure_receipt_id"
+    ]
+    assert projection["background_process_runtime_selected_now"] is False
+    assert projection["job_execution_runtime_selected_now"] is False
+
+    refreshed_history = client.get(HISTORY_ENDPOINT).json()
+    assert refreshed_history["history_hash"] == history_body["history_hash"]
+    history_projection = refreshed_history["history_rows"][0]["execution_boundary_projection"]
+    assert history_projection["execution_boundary_projection_state"] == "boundary_recorded"
+    assert history_projection["execution_boundary_receipt_id"] == body["execution_boundary_receipt_id"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_execution_boundary_is_idempotent(
+    client: TestClient,
+) -> None:
+    history_body, row, _retry_completion_failure_body = _retry_completion_failure_chain(client)
+    request = _execution_boundary_request(history_body, row)
+
+    first = client.post(EXECUTION_BOUNDARY_ENDPOINT, json=request).json()
+    second_response = client.post(EXECUTION_BOUNDARY_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["execution_boundary_receipt_id"] == first["execution_boundary_receipt_id"]
+    assert second["execution_boundary_receipt_hash"] == first["execution_boundary_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_execution_boundary_rejects_missing_retry_terminal(
+    client: TestClient,
+) -> None:
+    history_body, row, _retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+
+    response = client.post(
+        EXECUTION_BOUNDARY_ENDPOINT,
+        json=_execution_boundary_request(history_body, row),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["execution_boundary_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_execution_boundary_retry_terminal_not_recorded"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_execution_boundary_rejects_stale_history(
+    client: TestClient,
+) -> None:
+    history_body, row, _retry_completion_failure_body = _retry_completion_failure_chain(client)
+
+    response = client.post(
+        EXECUTION_BOUNDARY_ENDPOINT,
+        json=_execution_boundary_request(history_body, row, history_hash="9" * 64),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["execution_boundary_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_execution_boundary_"
+        "candidate_b_full_corpus_operator_workflow_progress_checkpoint_stale_authority"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_execution_boundary_service_rejects_raw_authority(
+    client: TestClient,
+) -> None:
+    history_body, row, _retry_completion_failure_body = _retry_completion_failure_chain(client)
+    payload = _execution_boundary_request(history_body, row, local_path="C:\\raw\\candidate-b")
+
+    with pytest.raises(
+        workflow_execution_boundary.CandidateBFullCorpusOperatorWorkflowExecutionBoundaryError
+    ) as exc_info:
+        workflow_execution_boundary.record_candidate_b_full_corpus_operator_workflow_execution_boundary(payload)
+
+    assert exc_info.value.code == (
+        "candidate_b_full_corpus_operator_workflow_execution_boundary_forbidden_request_fields"
+    )
+    assert exc_info.value.details["blocked_fields"] == ["local_path"]
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_completion_failure_rejects_stale_retry_progress_checkpoint(

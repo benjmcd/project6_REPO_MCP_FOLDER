@@ -89,6 +89,7 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
         "retry_progress_checkpoint_runtime_admitted": True,
         "retry_completion_failure_runtime_admitted": True,
         "retry_terminal_status_projection_runtime_admitted": True,
+        "execution_boundary_runtime_admitted": True,
         "resume_runtime_admitted": False,
         "queue_state_authority_runtime_admitted": True,
         "queue_scheduler_runtime_admitted": True,
@@ -123,6 +124,7 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
             "record append-only retry progress-checkpoint authority through the admitted retry progress-checkpoint endpoint",
             "record append-only retry completion/failure authority through the admitted retry completion/failure endpoint",
             "inspect retry terminal authority through status/history projection",
+            "record append-only execution-boundary authority after retry terminal projection is visible",
             "select cancel, retry, or resume only through a separate freeze",
             "select cancel, retry-attempt, or resume only through a separate freeze",
         ],
@@ -231,6 +233,7 @@ def _history_row(receipt_id: str, receipt: Mapping[str, Any]) -> dict[str, Any]:
         **row,
         "row_hash": row_hash,
         "retry_terminal_status_projection": _retry_terminal_status_projection(receipt_id, receipt_hash),
+        "execution_boundary_projection": _execution_boundary_projection(receipt_id, receipt_hash),
     }
 
 
@@ -238,13 +241,25 @@ def _history_hash_row(row: Mapping[str, Any]) -> dict[str, Any]:
     return {
         key: value
         for key, value in row.items()
-        if key != "retry_terminal_status_projection"
+        if key not in {"retry_terminal_status_projection", "execution_boundary_projection"}
     }
 
 
 def _retry_terminal_status_projection(receipt_id: str, receipt_hash: str) -> dict[str, Any]:
     try:
         return workflow_status._retry_terminal_status_projection(receipt_id, receipt_hash)
+    except workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
+        raise CandidateBFullCorpusOperatorWorkflowHistoryError(
+            f"candidate_b_full_corpus_operator_workflow_history_{exc.code}",
+            exc.message,
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+
+
+def _execution_boundary_projection(receipt_id: str, receipt_hash: str) -> dict[str, Any]:
+    try:
+        return workflow_status._execution_boundary_projection(receipt_id, receipt_hash)
     except workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
         raise CandidateBFullCorpusOperatorWorkflowHistoryError(
             f"candidate_b_full_corpus_operator_workflow_history_{exc.code}",
