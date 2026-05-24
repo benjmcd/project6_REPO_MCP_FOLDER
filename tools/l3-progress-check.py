@@ -2821,6 +2821,9 @@ CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_SELECTION = (
 CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_RUNTIME = (
     PLANNING_DOCS / "1029-cb-async-background-process-execution-runtime.md"
 )
+CANDIDATE_B_ASYNC_PROCESS_COMPLETION_RESULT_ADOPTION_SELECTION = (
+    PLANNING_DOCS / "1030-cb-async-process-completion-result-adoption-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -96458,6 +96461,93 @@ def _check_candidate_b_async_background_process_execution_runtime(
                 )
 
 
+def _check_candidate_b_async_process_completion_result_adoption_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_PROCESS_COMPLETION_RESULT_ADOPTION_SELECTION: (
+            "Candidate B Async Process Completion/Result Adoption Selection",
+            "milestone: candidate_b_async_process_completion_result_adoption_selection_v1",
+            "source_process_execution_runtime: next_milestone_plans/Layer3_planning_docs/1029-cb-async-background-process-execution-runtime.md",
+            "current_main_entry: 41be8a608ea31a17b5b1cb43ebffcb517a06eeaf",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_process_completion_result_adoption_v1",
+            "selected_completion_result_mode: append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure",
+            "selected_completion_result_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result",
+            "selected_completion_result_receipt_binding: process_execution_receipt_id,process_execution_receipt_hash,process_execution_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash,result_workflow_receipt_id,result_workflow_receipt_hash,result_authority_hash,result_status_request_hash,result_downstream_proof_hash",
+            "completed_result_adoption_requires: current_process_execution_receipt,current_history_row,current_execution_boundary_authority,validated_result_workflow_receipt_from_allowlisted_workflow,matching_operator_workflow_lineage,operator_safe_status_request",
+            "missing_process_execution_receipt_must_reject: true",
+            "stale_process_execution_receipt_must_reject: true",
+            "missing_result_receipt_must_reject_for_completed_adoption: true",
+            "stale_or_unrelated_result_receipt_must_reject: true",
+            "competing_completion_result_receipt_must_reject: true",
+            "status_history_projection_required_after_result_adoption: true",
+            "rendered_operator_projection_required_after_result_adoption: true",
+            "raw_stdout_admitted_after_sync: false",
+            "raw_stderr_admitted_after_sync: false",
+            "raw_local_path_exposed_after_sync: false",
+            "raw_url_exposed_after_sync: false",
+            "process_completion_result_runtime_selected_after_sync: true",
+            "result_adoption_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "source_run_receipt_mutation_admitted: false",
+            "process_execution_receipt_mutation_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_process_completion_result_adoption_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_process_completion_result_adoption_selection_v1",
+            "source_process_execution_runtime: next_milestone_plans/Layer3_planning_docs/1029-cb-async-background-process-execution-runtime.md",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_process_completion_result_adoption_v1",
+            "selected_completion_result_mode: append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure",
+            "selected_completion_result_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result",
+            "completed_result_adoption_requires: current_process_execution_receipt,current_history_row,current_execution_boundary_authority,validated_result_workflow_receipt_from_allowlisted_workflow,matching_operator_workflow_lineage,operator_safe_status_request",
+            "missing_process_execution_receipt_must_reject: true",
+            "stale_process_execution_receipt_must_reject: true",
+            "competing_completion_result_receipt_must_reject: true",
+            "raw_stdout_admitted_after_sync: false",
+            "raw_stderr_admitted_after_sync: false",
+            "raw_local_path_exposed_after_sync: false",
+            "raw_url_exposed_after_sync: false",
+            "process_completion_result_runtime_selected_after_sync: true",
+            "result_adoption_runtime_selected_after_sync: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "source_run_receipt_mutation_admitted: false",
+            "process_execution_receipt_mutation_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_process_completion_result_adoption_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async process completion/result adoption selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -97334,6 +97424,7 @@ def main() -> int:
     _check_candidate_b_async_background_job_execution_boundary_runtime(errors)
     _check_candidate_b_async_background_process_execution_selection(errors)
     _check_candidate_b_async_background_process_execution_runtime(errors)
+    _check_candidate_b_async_process_completion_result_adoption_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

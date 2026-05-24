@@ -1,0 +1,74 @@
+# Candidate B Async Process Completion/Result Adoption Selection
+
+```yaml
+milestone: candidate_b_async_process_completion_result_adoption_selection_v1
+source_process_execution_runtime: next_milestone_plans/Layer3_planning_docs/1029-cb-async-background-process-execution-runtime.md
+current_main_entry: 41be8a608ea31a17b5b1cb43ebffcb517a06eeaf
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_process_completion_result_adoption_v1
+selected_completion_result_scope: server_owned_candidate_b_full_corpus_operator_workflow_process_result_over_existing_process_execution_receipt
+selected_completion_result_mode: append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure
+selected_completion_result_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result
+existing_process_execution_endpoint_reused_for_process_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution
+existing_history_endpoint_reused_for_row_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_status_endpoint_reused_for_detail_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+selected_completion_result_receipt_model: append_only_receipt_binding_process_execution_receipt_to_validated_operator_workflow_result_receipt
+selected_completion_result_receipt_binding: process_execution_receipt_id,process_execution_receipt_hash,process_execution_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash,result_workflow_receipt_id,result_workflow_receipt_hash,result_authority_hash,result_status_request_hash,result_downstream_proof_hash
+selected_completion_result_idempotency_basis: client_request_id_plus_process_completion_result_authority_hash
+selected_process_terminal_states: completed,failed,blocked,expired
+completed_result_adoption_requires: current_process_execution_receipt,current_history_row,current_execution_boundary_authority,validated_result_workflow_receipt_from_allowlisted_workflow,matching_operator_workflow_lineage,operator_safe_status_request
+failed_result_adoption_requires: current_process_execution_receipt,operator_safe_failure_code,operator_safe_failure_phase,redacted_failure_summary_hash
+timeout_or_expiry_must_emit_operator_safe_terminal_receipt: true
+missing_process_execution_receipt_must_reject: true
+stale_process_execution_receipt_must_reject: true
+missing_result_receipt_must_reject_for_completed_adoption: true
+stale_or_unrelated_result_receipt_must_reject: true
+competing_completion_result_receipt_must_reject: true
+status_history_projection_required_after_result_adoption: true
+rendered_operator_projection_required_after_result_adoption: true
+headless_rendered_proof_required_after_result_adoption: true
+headed_rendered_proof_required_after_result_adoption: true
+raw_stdout_admitted_after_sync: false
+raw_stderr_admitted_after_sync: false
+raw_exception_trace_admitted_after_sync: false
+raw_log_excerpt_admitted_after_sync: false
+raw_local_path_exposed_after_sync: false
+raw_url_exposed_after_sync: false
+artifact_bytes_exposed_after_sync: false
+process_completion_result_runtime_selected_after_sync: true
+result_adoption_runtime_selected_after_sync: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+source_run_receipt_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+execution_boundary_receipt_mutation_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_process_completion_result_adoption_v1
+```
+
+This freeze selects the next runtime-bearing slice after server-owned process-start receipts are current-main authority. The selected runtime may record a terminal process completion/result-adoption receipt over an existing process-execution receipt, then project only redacted completion/result status through existing workflow history/status and rendered operator surfaces.
+
+The runtime must not infer completion from browser claims. A completed adoption must bind the current process-execution receipt, current workflow history row, current execution-boundary authority, and a validated result workflow receipt produced by the allowlisted Candidate B full-corpus workflow lineage. A failed, blocked, or expired terminal result must record only operator-safe failure phase/code plus hashes or redacted refs.
+
+This selection does not admit new corpus processing execution, arbitrary process control, raw stdout/stderr capture, raw traces/logs, raw paths/URLs, artifact bytes, source-run mutation, process-execution receipt mutation, provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser storage authority, frontend durable authority, broader Candidate B default scope, or selector mutation.
+
+## Coherence Check
+
+- What proves process completion? Recommended answer: a server-validated terminal/result receipt bound to the current process-execution receipt and allowlisted workflow result lineage, not a browser assertion.
+- Should this runtime adopt arbitrary files or local paths as Candidate B results? Recommended answer: no. It may adopt only validated workflow result receipts and redacted status requests that match the existing process/workflow lineage.
+- Should stdout, stderr, traces, logs, local roots, URLs, or artifact bytes become operator-visible? Recommended answer: no. Only operator-safe codes, hashes, receipt ids, and redacted refs may project.
+- What comes next? Recommended answer: implement `candidate_b_async_process_completion_result_adoption_v1` after this selection is current-main authority, then prove status/history/rendered projection and stale/competing receipt rejection.
