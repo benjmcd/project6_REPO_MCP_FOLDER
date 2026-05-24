@@ -1,0 +1,43 @@
+# Candidate B Async Scheduler Lease Runtime
+
+```yaml
+milestone: candidate_b_async_scheduler_lease_receipt_v1
+source_scheduler_selection: next_milestone_plans/Layer3_planning_docs/1002-cb-async-scheduler-selection.md
+runtime_status: implemented
+selected_scheduler_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease
+selected_scheduler_mode: append_only_scheduler_lease_receipt_without_background_worker
+selected_scheduler_action: record_candidate_b_async_scheduler_lease
+selected_scheduler_scope: server_owned_candidate_b_full_corpus_operator_workflow_queue_state_receipts
+selected_scheduler_receipt_model: append_only_scheduler_lease_receipt_without_mutating_queue_state_or_source_run_receipt
+selected_scheduler_receipt_binding: queue_state_receipt_id,queue_state_receipt_hash,queue_state_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,scheduler_lease_hash
+selected_scheduler_idempotency_basis: client_request_id_plus_scheduler_lease_authority_hash
+exclusive_queue_state_lease: true
+stale_queue_state_receipt_rejected: true
+stale_run_receipt_rejected: true
+stale_history_row_rejected: true
+missing_queue_state_receipt_rejected: true
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+scheduler_lease_runtime_selected: true
+background_worker_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+retry_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+next_exact_posture: candidate_b_async_worker_attempt_authority_selection_v1
+```
+
+This runtime records a server-owned append-only scheduler lease receipt over one existing queue-state receipt. The same client request is idempotent. A competing client request for the same queue-state authority fails closed, so current main has one exclusive lease authority for that queue-state receipt without starting a worker or mutating the queue-state/source-run receipts.
+
+The lease runtime intentionally does not execute the Candidate B job, enforce lease expiry, cancel, retry, resume, write provider objects, dispatch connectors, run RAG/vector/model logic, broaden Candidate B default scope, or activate full mockup behavior.

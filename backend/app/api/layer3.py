@@ -41,6 +41,7 @@ from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_lifecycle,
     layer3_candidate_b_full_corpus_operator_workflow_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_run,
+    layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease,
     layer3_candidate_b_full_corpus_operator_workflow_status,
     layer3_candidate_b_operator_status,
     layer3_candidate_b_promotion_closure,
@@ -174,6 +175,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint: str
     candidate_b_full_corpus_operator_workflow_queue_state_admitted: bool
     candidate_b_full_corpus_operator_workflow_queue_state_endpoint: str
+    candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted: bool
+    candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2793,6 +2796,22 @@ class Layer3CandidateBFullCorpusOperatorWorkflowQueueStateRequest(BaseModel):
     history_hash: str = Field(min_length=64, max_length=64)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowSchedulerLeaseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    scheduler_lease_mode: Literal["append_only_scheduler_lease_receipt_without_background_worker"]
+    operator_decision: Literal["record_candidate_b_async_scheduler_lease"]
+    queue_state_receipt_id: str = Field(min_length=1)
+    queue_state_receipt_hash: str = Field(min_length=64, max_length=64)
+    queue_state_authority_hash: str = Field(min_length=64, max_length=64)
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3581,6 +3600,65 @@ class Layer3CandidateBFullCorpusOperatorWorkflowQueueStateResponse(Layer3BaseRes
     queue_state_authority_runtime_selected: bool
     queue_scheduler_runtime_selected_now: bool
     background_worker_runtime_selected_now: bool
+    cancel_runtime_selected_now: bool
+    retry_runtime_selected_now: bool
+    resume_runtime_selected_now: bool
+    expiry_enforcement_runtime_selected_now: bool
+    default_scope_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowSchedulerLeaseResponse(Layer3BaseResponse):
+    mode: str
+    status: str
+    scheduler_lease_state: str
+    scheduler_lease_receipt_id: str
+    scheduler_lease_receipt_hash: str
+    scheduler_lease_receipt_ref: str
+    queue_state_receipt_id: str
+    queue_state_receipt_hash: str
+    queue_state_authority_hash: str
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    source_operator_workflow_receipt_id: str
+    source_operator_workflow_receipt_hash: str
+    authority_basis_hash: str
+    row_hash: str
+    history_hash: str
+    scheduler_lease: dict[str, Any]
+    scheduler_lease_hash: str
+    scheduler_lease_authority: dict[str, Any]
+    scheduler_lease_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_scheduler_lease_receipt: bool
+    exclusive_queue_state_lease: bool
+    queue_state_receipt_mutated: bool
+    source_run_receipt_mutated: bool
+    run_state_before_scheduler_lease: str
+    run_state_after_scheduler_lease: str
+    queue_state_before_scheduler_lease: str
+    selected_scheduler_mode: str
+    selected_scheduler_endpoint: str
+    selected_scheduler_receipt_binding: str
+    selected_scheduler_idempotency_basis: str
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    queue_state_endpoint: str
+    scheduler_lease_runtime_selected: bool
+    background_worker_runtime_selected_now: bool
+    job_execution_runtime_selected_now: bool
     cancel_runtime_selected_now: bool
     retry_runtime_selected_now: bool
     resume_runtime_selected_now: bool
@@ -9435,6 +9513,23 @@ def post_candidate_b_full_corpus_operator_workflow_queue_state(
             payload.model_dump(exclude_unset=True),
         )
     except workflow_queue_state_service.CandidateBFullCorpusOperatorWorkflowQueueStateError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowSchedulerLeaseResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_scheduler_lease(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowSchedulerLeaseRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_scheduler_lease_service = layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease
+    try:
+        return workflow_scheduler_lease_service.record_candidate_b_full_corpus_operator_workflow_scheduler_lease(
+            payload.model_dump(exclude_unset=True),
+        )
+    except workflow_scheduler_lease_service.CandidateBFullCorpusOperatorWorkflowSchedulerLeaseError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
