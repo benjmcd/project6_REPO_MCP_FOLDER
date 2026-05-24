@@ -2704,6 +2704,9 @@ CANDIDATE_B_OPERATOR_REPEATABILITY_COMPLETION_AUDIT_CHECKPOINT = (
 CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_FREEZE = (
     PLANNING_DOCS / "990-cb-server-run-api-freeze.md"
 )
+CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_RUNTIME = (
+    PLANNING_DOCS / "991-cb-server-run-api-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2716,6 +2719,12 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_status.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_run.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
 )
 LAYER3_SOURCE_DIRECTORY_INGESTION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_source_directory_ingestion.py"
@@ -92048,6 +92057,92 @@ def _check_candidate_b_server_owned_workflow_run_api_freeze(errors: list[str]) -
                 )
 
 
+def _check_candidate_b_server_owned_workflow_run_api_runtime(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_RUNTIME: (
+            "Candidate B Server-Owned Workflow Run API Runtime",
+            "milestone: candidate_b_server_owned_workflow_run_api_runtime_v1",
+            "source_authority_freeze: next_milestone_plans/Layer3_planning_docs/990-cb-server-run-api-freeze.md",
+            "runtime_status: implemented",
+            "selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "existing_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "run_schema_id: layer3.candidate_b_full_corpus_operator_workflow_run.v1",
+            "run_mode: candidate_b_full_corpus_operator_workflow_run_v1",
+            "operator_decision: start_candidate_b_full_corpus_operator_workflow",
+            "server_resolves_source_workflow_receipt_from_configured_receipt_dir: true",
+            "idempotency_basis: client_request_id_plus_authority_basis_hash",
+            "state_machine: accepted,running,proven,blocked,cancelled,expired",
+            "durable_run_receipt_written: true",
+            "status_endpoint_compatibility: proven",
+            "client_supplied_raw_runtime_roots_admitted: false",
+            "browser_supplied_runtime_roots_admitted: false",
+            "rendered_run_start_control_admitted: false",
+            "rendered_progress_control_admitted: false",
+            "next_exact_posture: candidate_b_server_owned_workflow_run_api_live_http_proof_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_server_owned_workflow_run_api_runtime_v1",
+            "runtime_status: implemented",
+            "selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "run_schema_id: layer3.candidate_b_full_corpus_operator_workflow_run.v1",
+            "server_resolves_source_workflow_receipt_from_configured_receipt_dir: true",
+            "status_endpoint_compatibility: proven",
+            "verification_result: 14 passed",
+            "next_exact_posture: candidate_b_server_owned_workflow_run_api_live_http_proof_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_run.v1"',
+            'RUN_MODE = "candidate_b_full_corpus_operator_workflow_run_v1"',
+            'OPERATOR_DECISION = "start_candidate_b_full_corpus_operator_workflow"',
+            "STATE_MACHINE = (\"accepted\", \"running\", \"proven\", \"blocked\", \"cancelled\", \"expired\")",
+            "_find_source_workflow_receipt",
+            "_load_or_write_run_receipt",
+            "workflow_status._validate_workflow_receipt",
+            "candidate_b_full_corpus_operator_workflow_run_forbidden_request_fields",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt",
+            "test_candidate_b_full_corpus_operator_workflow_run_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_run_fails_closed_for_stale_authority",
+            "test_candidate_b_full_corpus_operator_workflow_run_rejects_raw_authority",
+            "test_candidate_b_full_corpus_operator_workflow_run_service_rejects_caller_roots",
+            "STATUS_ENDPOINT",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_run",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRunRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRunResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/run"',
+            "CandidateBFullCorpusOperatorWorkflowRunError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_run_admitted",
+            "candidate_b_full_corpus_operator_workflow_run_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_run": True',
+            "candidate_b_full_corpus_operator_workflow_run_admitted",
+            "candidate_b_full_corpus_operator_workflow_run_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_run_admitted",
+            "candidate_b_full_corpus_operator_workflow_run_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_run"',
+            "candidate_b_full_corpus_operator_workflow_run_admitted",
+            "candidate_b_full_corpus_operator_workflow_run_endpoint",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B server-owned workflow run API runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92886,6 +92981,7 @@ def main() -> int:
     _check_candidate_b_rendered_operator_workflow_status_proof(errors)
     _check_candidate_b_operator_repeatability_completion_audit(errors)
     _check_candidate_b_server_owned_workflow_run_api_freeze(errors)
+    _check_candidate_b_server_owned_workflow_run_api_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

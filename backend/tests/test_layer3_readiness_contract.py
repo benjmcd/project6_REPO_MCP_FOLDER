@@ -91,6 +91,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["candidate_b_full_corpus_operator_workflow_status_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status"
     )
+    assert direct["candidate_b_full_corpus_operator_workflow_run_admitted"] is True
+    assert direct["candidate_b_full_corpus_operator_workflow_run_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run"
+    )
     assert direct["candidate_b_default_promotion_selector_switch_admitted"] is True
     assert (
         direct["candidate_b_default_promotion_selector_scope"]
