@@ -2758,6 +2758,9 @@ CANDIDATE_B_ASYNC_PROGRESS_CHECKPOINT_RUNTIME = (
 CANDIDATE_B_ASYNC_COMPLETION_FAILURE_SELECTION = (
     PLANNING_DOCS / "1008-cb-async-completion-failure-selection.md"
 )
+CANDIDATE_B_ASYNC_COMPLETION_FAILURE_RUNTIME = (
+    PLANNING_DOCS / "1009-cb-async-completion-failure-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2798,6 +2801,13 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROGRESS_CHECKPOINT_SERVICE = (
     / "app"
     / "services"
     / "layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_FAILURE_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_operator_workflow_completion_failure.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -92824,7 +92834,8 @@ def _check_candidate_b_workflow_run_lifecycle_selection(
             "record append-only queue-state authority for a selected workflow-run row",
             "record append-only worker-attempt authority for a selected scheduler lease receipt",
             "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ),
         LAYER3_API: (
             "layer3_candidate_b_full_corpus_operator_workflow_lifecycle",
@@ -92988,7 +92999,8 @@ def _check_candidate_b_async_cancel_retry_queue_selection(
             "record append-only queue-state authority for a selected workflow-run row",
             "record append-only worker-attempt authority for a selected scheduler lease receipt",
             "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ),
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE: (
             "Workflow-run lifecycle expiry does not admit caller paths, URLs, selector mutation, connector/model controls, browser authority, queue scheduling, cancel, retry, or resume.",
@@ -93329,7 +93341,8 @@ def _check_candidate_b_async_scheduler_lease_runtime(
             "record append-only scheduler lease authority for a selected queue-state receipt",
             "record append-only worker-attempt authority for a selected scheduler lease receipt",
             "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ),
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE: (
             "record append-only scheduler lease authority through the admitted scheduler lease endpoint",
@@ -93567,7 +93580,8 @@ def _check_candidate_b_async_worker_attempt_runtime(
             '"progress_checkpoint_runtime_admitted": True',
             "record append-only worker-attempt authority for a selected scheduler lease receipt",
             "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ),
         LAYER3_API: (
             "layer3_candidate_b_full_corpus_operator_workflow_worker_attempt",
@@ -93696,14 +93710,16 @@ def _check_candidate_b_async_progress_checkpoint_selection(
             '"retry_runtime_selected_now": False',
             '"resume_runtime_selected_now": False',
             "record append-only progress-checkpoint authority through the admitted progress checkpoint endpoint",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ),
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
             '"worker_attempt_runtime_admitted": True',
             '"progress_checkpoint_runtime_admitted": True',
             "record append-only worker-attempt authority for a selected scheduler lease receipt",
             "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ),
     }
     for path, terms in required_terms.items():
@@ -93787,7 +93803,8 @@ def _check_candidate_b_async_progress_checkpoint_runtime(
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
             '"progress_checkpoint_runtime_admitted": True',
             "record append-only progress-checkpoint authority for a selected worker-attempt receipt",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
             'schema_id.startswith("layer3.candidate_b_full_corpus_operator_workflow_")',
         ),
         LAYER3_API: (
@@ -93927,7 +93944,8 @@ def _check_candidate_b_async_completion_failure_selection(
             '"cancel_runtime_selected_now": False',
             '"retry_runtime_selected_now": False',
             '"resume_runtime_selected_now": False',
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ),
     }
     for path, terms in required_terms.items():
@@ -93936,6 +93954,128 @@ def _check_candidate_b_async_completion_failure_selection(
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing Candidate B async completion/failure selection term: {term}"
+                )
+
+
+def _check_candidate_b_async_completion_failure_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_COMPLETION_FAILURE_RUNTIME: (
+            "Candidate B Async Completion/Failure Runtime",
+            "milestone: candidate_b_async_completion_failure_receipt_v1",
+            "source_completion_failure_selection: next_milestone_plans/Layer3_planning_docs/1008-cb-async-completion-failure-selection.md",
+            "runtime_status: implemented",
+            "selected_completion_failure_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure",
+            "selected_completion_failure_mode: append_only_completion_failure_receipt_without_cancel_retry_resume_or_source_receipt_mutation",
+            "selected_completion_failure_action: record_candidate_b_async_completion_failure",
+            "selected_completion_failure_scope: server_owned_candidate_b_full_corpus_operator_workflow_worker_attempts_with_progress_checkpoint_receipts",
+            "selected_completion_failure_receipt_model: append_only_terminal_receipt_without_mutating_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipt",
+            "selected_completion_failure_receipt_binding: worker_attempt_receipt_id,worker_attempt_receipt_hash,worker_attempt_authority_hash,latest_progress_checkpoint_receipt_id,latest_progress_checkpoint_receipt_hash,latest_progress_checkpoint_authority_hash,progress_checkpoint_sequence,scheduler_lease_receipt_id,queue_state_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,terminal_outcome,terminal_outcome_hash",
+            "selected_completion_failure_idempotency_basis: client_request_id_plus_completion_failure_authority_hash",
+            "selected_terminal_outcomes: completed,failed",
+            "minimum_progress_checkpoint_required: true",
+            "non_latest_progress_checkpoint_receipt_rejected: true",
+            "terminal_conflict_rejected: true",
+            "terminal_failure_payload_operator_safe: true",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "progress_checkpoint_receipt_mutation_admitted: false",
+            "completion_failure_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_cancel_retry_resume_policy_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_completion_failure_receipt_v1",
+            "source_completion_failure_selection: next_milestone_plans/Layer3_planning_docs/1008-cb-async-completion-failure-selection.md",
+            "runtime_status: implemented",
+            "selected_completion_failure_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure",
+            "selected_completion_failure_action: record_candidate_b_async_completion_failure",
+            "non_latest_progress_checkpoint_receipt_rejected: true",
+            "terminal_conflict_rejected: true",
+            "completion_failure_runtime_selected: true",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_cancel_retry_resume_policy_selection_v1",
+            "failed receipts require short operator-safe failure code and phase tokens",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_COMPLETION_FAILURE_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_completion_failure.v1"',
+            '"append_only_completion_failure_receipt_without_cancel_retry_resume_or_source_receipt_mutation"',
+            'OPERATOR_DECISION = "record_candidate_b_async_completion_failure"',
+            'COMPLETION_FAILURE_ENDPOINT = (',
+            "record_candidate_b_full_corpus_operator_workflow_completion_failure",
+            "_selected_progress_checkpoint_receipt",
+            "_validate_latest_progress_checkpoint",
+            "_validate_no_existing_terminal_receipt",
+            '"append_only_completion_failure_receipt": True',
+            '"exclusive_terminal_receipt_per_worker_attempt": True',
+            '"progress_checkpoint_receipt_mutated": False',
+            '"completion_failure_runtime_selected": True',
+            '"job_execution_runtime_selected_now": False',
+            '"cancel_runtime_selected_now": False',
+            '"retry_runtime_selected_now": False',
+            '"resume_runtime_selected_now": False',
+            "candidate_b_full_corpus_operator_workflow_completion_failure_progress_checkpoint_not_latest",
+            "candidate_b_full_corpus_operator_workflow_completion_failure_terminal_conflict",
+            "candidate_b_full_corpus_operator_workflow_completion_failure_forbidden_request_fields",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROGRESS_CHECKPOINT_SERVICE: (
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"completion_failure_runtime_admitted": True',
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_completion_failure",
+            "Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure"',
+            "CandidateBFullCorpusOperatorWorkflowCompletionFailureError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_completion_failure_admitted",
+            "candidate_b_full_corpus_operator_workflow_completion_failure_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_completion_failure": True',
+            "candidate_b_full_corpus_operator_workflow_completion_failure_admitted",
+            "candidate_b_full_corpus_operator_workflow_completion_failure_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_completion_failure_admitted",
+            "candidate_b_full_corpus_operator_workflow_completion_failure_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_completion_failure"',
+            "candidate_b_full_corpus_operator_workflow_completion_failure_admitted",
+            "candidate_b_full_corpus_operator_workflow_completion_failure_endpoint",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_completion_failure_records_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_completion_failure_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_completion_failure_records_failure",
+            "test_candidate_b_full_corpus_operator_workflow_completion_failure_rejects_stale_progress_checkpoint",
+            "test_candidate_b_full_corpus_operator_workflow_completion_failure_rejects_terminal_conflict",
+            "test_candidate_b_full_corpus_operator_workflow_completion_failure_service_rejects_raw_authority",
+            "COMPLETION_FAILURE_ENDPOINT",
+            "workflow_completion_failure.COMPLETION_FAILURE_MODE",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async completion/failure runtime term: {term}"
                 )
 
 
@@ -94794,6 +94934,7 @@ def main() -> int:
     _check_candidate_b_async_progress_checkpoint_selection(errors)
     _check_candidate_b_async_progress_checkpoint_runtime(errors)
     _check_candidate_b_async_completion_failure_selection(errors)
+    _check_candidate_b_async_completion_failure_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

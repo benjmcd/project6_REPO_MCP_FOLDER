@@ -37,6 +37,7 @@ from app.services import (
     layer3_candidate_b_default_readiness,
     layer3_candidate_b_downstream_proof,
     layer3_candidate_b_final_proof,
+    layer3_candidate_b_full_corpus_operator_workflow_completion_failure,
     layer3_candidate_b_full_corpus_operator_workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_lifecycle,
     layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint,
@@ -183,6 +184,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_worker_attempt_endpoint: str
     candidate_b_full_corpus_operator_workflow_progress_checkpoint_admitted: bool
     candidate_b_full_corpus_operator_workflow_progress_checkpoint_endpoint: str
+    candidate_b_full_corpus_operator_workflow_completion_failure_admitted: bool
+    candidate_b_full_corpus_operator_workflow_completion_failure_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2863,6 +2866,37 @@ class Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointRequest(BaseMo
     history_hash: str = Field(min_length=64, max_length=64)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    completion_failure_mode: Literal[
+        "append_only_completion_failure_receipt_without_cancel_retry_resume_or_source_receipt_mutation"
+    ]
+    operator_decision: Literal["record_candidate_b_async_completion_failure"]
+    terminal_outcome: Literal["completed", "failed"]
+    terminal_failure_code: str | None = None
+    terminal_failure_phase: str | None = None
+    latest_progress_checkpoint_receipt_id: str = Field(min_length=1)
+    latest_progress_checkpoint_receipt_hash: str = Field(min_length=64, max_length=64)
+    latest_progress_checkpoint_authority_hash: str = Field(min_length=64, max_length=64)
+    progress_checkpoint_sequence: int = Field(ge=1)
+    worker_attempt_receipt_id: str = Field(min_length=1)
+    worker_attempt_receipt_hash: str = Field(min_length=64, max_length=64)
+    worker_attempt_authority_hash: str = Field(min_length=64, max_length=64)
+    scheduler_lease_receipt_id: str = Field(min_length=1)
+    scheduler_lease_receipt_hash: str = Field(min_length=64, max_length=64)
+    scheduler_lease_authority_hash: str = Field(min_length=64, max_length=64)
+    queue_state_receipt_id: str = Field(min_length=1)
+    queue_state_receipt_hash: str = Field(min_length=64, max_length=64)
+    queue_state_authority_hash: str = Field(min_length=64, max_length=64)
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3866,6 +3900,62 @@ class Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointResponse(Layer
     raw_url_exposed: bool
     artifact_bytes_exposed: bool
     selector_mutation_performed: bool
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureResponse(Layer3BaseResponse):
+    mode: str
+    completion_failure_state: str
+    completion_failure_receipt_id: str
+    completion_failure_receipt_hash: str
+    completion_failure_receipt_ref: str
+    terminal_outcome: str
+    terminal_failure_code: str | None
+    terminal_failure_phase: str | None
+    terminal_outcome_hash: str
+    worker_attempt_receipt_id: str
+    worker_attempt_receipt_hash: str
+    worker_attempt_authority_hash: str
+    latest_progress_checkpoint_receipt_id: str
+    latest_progress_checkpoint_receipt_hash: str
+    latest_progress_checkpoint_authority_hash: str
+    progress_checkpoint_sequence: int
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    completion_failure_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_completion_failure_receipt: bool
+    exclusive_terminal_receipt_per_worker_attempt: bool
+    progress_checkpoint_receipt_mutated: bool
+    worker_attempt_receipt_mutated: bool
+    scheduler_lease_receipt_mutated: bool
+    queue_state_receipt_mutated: bool
+    source_run_receipt_mutated: bool
+    selected_completion_failure_mode: str
+    selected_completion_failure_endpoint: str
+    selected_completion_failure_receipt_binding: str
+    selected_completion_failure_idempotency_basis: str
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    progress_checkpoint_endpoint: str
+    completion_failure_endpoint: str
+    completion_failure_runtime_selected: bool
+    background_process_runtime_selected_now: bool
+    job_execution_runtime_selected_now: bool
+    cancel_runtime_selected_now: bool
+    retry_runtime_selected_now: bool
+    resume_runtime_selected_now: bool
+    expiry_enforcement_runtime_selected_now: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    terminal_failure_payload_operator_safe: bool
+    raw_exception_trace_admitted: bool
+    raw_log_excerpt_admitted: bool
     next_allowed_actions: list[str]
 
 
@@ -9757,6 +9847,23 @@ def post_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
             payload.model_dump(exclude_unset=True),
         )
     except workflow_progress_checkpoint_service.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_completion_failure(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_completion_failure_service = layer3_candidate_b_full_corpus_operator_workflow_completion_failure
+    try:
+        return workflow_completion_failure_service.record_candidate_b_full_corpus_operator_workflow_completion_failure(
+            payload.model_dump(exclude_unset=True),
+        )
+    except workflow_completion_failure_service.CandidateBFullCorpusOperatorWorkflowCompletionFailureError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
