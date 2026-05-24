@@ -237,6 +237,29 @@ def authorize_history_row_access(
     )
 
 
+def authorize_projection_receipt_access(
+    *,
+    fields: Mapping[str, Any],
+    route_family: str,
+    rendered_surface: str,
+    projection_receipt_id: str,
+    projection_receipt_hash: str,
+    authority_basis_hash: str,
+    requested_role: str = AUDITOR_ROLE,
+) -> dict[str, Any]:
+    return authorize_workflow_access(
+        fields=fields,
+        route_family=route_family,
+        rendered_surface=rendered_surface,
+        workflow_receipt_id=projection_receipt_id,
+        workflow_receipt_hash=projection_receipt_hash,
+        authority_basis_hash=authority_basis_hash,
+        requested_role=str(fields.get("operator_role") or requested_role),
+        existing_owner_binding=None,
+        require_existing_owner_binding=False,
+    )
+
+
 def _server_derived_principal(requested_role: str) -> tuple[str, str, str]:
     role = _normalise_role(requested_role)
     if settings.auth_owner == "none":

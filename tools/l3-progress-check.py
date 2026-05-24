@@ -2920,6 +2920,9 @@ CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_RUNTIME = (
 CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_ROUTE_EXPANSION = (
     PLANNING_DOCS / "1062-cb-operator-workflow-ownership-access-policy-route-expansion.md"
 )
+CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_PROJECTIONS = (
+    PLANNING_DOCS / "1063-cb-operator-workflow-ownership-access-policy-projections.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -100078,6 +100081,71 @@ def _check_candidate_b_operator_workflow_ownership_access_policy_route_expansion
                 )
 
 
+def _check_candidate_b_operator_workflow_ownership_access_policy_projections(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_PROJECTIONS: (
+            "Candidate B Operator Workflow Ownership Access Policy Closeout Status Review Audit Projection",
+            "milestone: candidate_b_operator_workflow_ownership_access_policy_closeout_status_review_audit_projection_v1",
+            "source_operator_workflow_ownership_access_policy_route_expansion: next_milestone_plans/Layer3_planning_docs/1062-cb-operator-workflow-ownership-access-policy-route-expansion.md",
+            "current_main_entry: 16a2b3b09f4e379a38b4ea7b3058d52e93a33db0",
+            "runtime_status: closeout_status_review_audit_projection_policy_enforced",
+            "implemented_policy_module: backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py",
+            "implemented_closeout_status_service: backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py",
+            "implemented_route_context_surface: backend/app/api/layer3.py",
+            "implemented_test_surface: backend/tests/test_layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py",
+            "protected_route_families_implemented: workflow_run,workflow_status,workflow_history,lifecycle_expiry,queue_scheduler_worker_progress_completion_retry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status,review_status_projection,audit_projection",
+            "remaining_protected_route_families: none_for_current_candidate_b_operator_workflow_scope",
+            "protected_projection_surfaces_implemented: acceptance_closeout_status,acceptance_closeout_status_review,acceptance_closeout_status_audit",
+            "shared_projection_authority_policy_helper: authorize_projection_receipt_access",
+            "closeout_status_projection_authority: repeatability_acceptance_operator_closeout_receipt_or_repeatability_acceptance_checkpoint_selector",
+            "closeout_status_policy_enforced: true",
+            "review_status_projection_policy_enforced: true",
+            "audit_projection_policy_enforced: true",
+            "ownership_access_policy_response_projection: closeout_status,review_status_projection,audit_projection",
+            "missing_identity_policy: reject_fail_closed_for_AUTH_OWNER_proxy",
+            "audit_event_runtime: append_only_redacted_policy_receipt_under_configured_workflow_root",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "proof_tests: python -m pytest ./backend/tests/test_layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py -q",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_operator_workflow_rendered_identity_status_controls_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_ownership_access_policy_closeout_status_review_audit_projection_v1",
+            "source_operator_workflow_ownership_access_policy_route_expansion: next_milestone_plans/Layer3_planning_docs/1062-cb-operator-workflow-ownership-access-policy-route-expansion.md",
+            "current_main_entry: 16a2b3b09f4e379a38b4ea7b3058d52e93a33db0",
+            "runtime_status: closeout_status_review_audit_projection_policy_enforced",
+            "implemented_closeout_status_service: backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py",
+            "remaining_protected_route_families: none_for_current_candidate_b_operator_workflow_scope",
+            "shared_projection_authority_policy_helper: authorize_projection_receipt_access",
+            "closeout_status_policy_enforced: true",
+            "review_status_projection_policy_enforced: true",
+            "audit_projection_policy_enforced: true",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_operator_workflow_rendered_identity_status_controls_selection_v1",
+        ),
+        CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_ROUTE_EXPANSION: (
+            "next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_closeout_status_review_audit_projection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B operator workflow ownership access policy projection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -100987,6 +101055,7 @@ def main() -> int:
     _check_candidate_b_operator_workflow_ownership_access_policy_contract(errors)
     _check_candidate_b_operator_workflow_ownership_access_policy_runtime(errors)
     _check_candidate_b_operator_workflow_ownership_access_policy_route_expansion(errors)
+    _check_candidate_b_operator_workflow_ownership_access_policy_projections(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
