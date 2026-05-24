@@ -186,8 +186,8 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
         "receipt_persisted": True,
         "queue_scheduler_admitted": "contract_only",
         "cancel_endpoint_admitted": "contract_only",
-        "rendered_run_start_control_admitted": False,
-        "rendered_progress_control_admitted": False,
+        "rendered_run_start_control_admitted": True,
+        "rendered_progress_control_admitted": True,
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
         "artifact_bytes_exposed": False,
@@ -199,7 +199,7 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
         },
         "next_allowed_actions": [
             "inspect the returned workflow receipt through the read-only status endpoint",
-            "keep rendered run-start and progress controls frozen until a separate slice admits them",
+            "inspect rendered workflow-run progress through the returned status request",
         ],
     }
 
