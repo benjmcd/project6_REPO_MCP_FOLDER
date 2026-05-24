@@ -369,6 +369,7 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             "in_memory_db_used": not _is_live_http_mode(args),
             "api_base_url_ref": _api_base_url_ref(str(getattr(args, "api_base_url", "") or "")),
             "status_endpoint_verification_required": _is_live_http_mode(args),
+            "server_run_endpoint_verification_required": _is_live_http_mode(args),
         },
         "negative_invariants": {
             "baseline_default_changed": False,
@@ -392,6 +393,7 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
     receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
     if _is_live_http_mode(args):
         receipt["live_http_status_check"] = _verify_live_http_workflow_status(args, receipt)
+        receipt["live_http_server_run_check"] = _verify_live_http_workflow_run(args, receipt)
     return receipt
 
 
@@ -717,6 +719,7 @@ def _assert_operator_api_ready(args: argparse.Namespace, client: Any) -> None:
         "candidate_b_runtime_bridge_source_scan_admitted": True,
         "candidate_b_runtime_downstream_proof_admitted": True,
         "candidate_b_full_corpus_operator_workflow_status_admitted": True,
+        "candidate_b_full_corpus_operator_workflow_run_admitted": True,
     }
     missing = [
         {"field": field, "expected": expected, "received": readiness.get(field)}
@@ -1184,6 +1187,43 @@ def _verify_live_http_workflow_status(args: argparse.Namespace, receipt: dict[st
     }
 
 
+def _verify_live_http_workflow_run(args: argparse.Namespace, receipt: dict[str, Any]) -> dict[str, Any]:
+    with _operator_api_client(
+        args,
+        layer3_storage_dir=Path("."),
+        bridge_dir=Path("."),
+    ) as client:
+        run = _post_json(
+            client,
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            _workflow_run_payload(receipt),
+        )
+        status = _post_json(
+            client,
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            run["status_request"],
+        )
+    return {
+        "run_endpoint_verified": True,
+        "run_state": run["run_state"],
+        "operator_workflow_receipt_id": run["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": run["operator_workflow_receipt_hash"],
+        "source_operator_workflow_receipt_id": run["source_operator_workflow_receipt_id"],
+        "source_operator_workflow_receipt_hash": run["source_operator_workflow_receipt_hash"],
+        "authority_basis_hash": run["authority_basis_hash"],
+        "idempotency_key_hash": run["idempotency_key_hash"],
+        "status_endpoint_verified": True,
+        "workflow_status": status["workflow_status"],
+        "workflow_status_hash": status["workflow_status_hash"],
+        "workflow_status_ref": status["workflow_status_ref"],
+        "raw_local_path_exposed": run["raw_local_path_exposed"] or status["raw_local_path_exposed"],
+        "raw_url_exposed": run["raw_url_exposed"] or status["raw_url_exposed"],
+        "selector_mutation_performed": run["selector_mutation_performed"] or status["selector_mutation_performed"],
+        "rendered_run_start_control_admitted": run["rendered_run_start_control_admitted"],
+        "rendered_progress_control_admitted": run["rendered_progress_control_admitted"],
+    }
+
+
 def _workflow_status_payload(receipt: dict[str, Any]) -> dict[str, Any]:
     return {
         "client_request_id": "candidate-b-full-corpus-operator-live-http-status",
@@ -1195,6 +1235,22 @@ def _workflow_status_payload(receipt: dict[str, Any]) -> dict[str, Any]:
         "candidate_b_run_id": receipt["candidate_b_run_id"],
         "bridge_receipt_id": receipt["bridge_receipt_id"],
         "downstream_proof_id": receipt["downstream_proof_id"],
+    }
+
+
+def _workflow_run_payload(receipt: dict[str, Any]) -> dict[str, Any]:
+    lifecycle = receipt["runtime_root_lifecycle"]
+    corpus = receipt["corpus"]
+    return {
+        "client_request_id": "candidate-b-full-corpus-operator-live-http-run",
+        "run_mode": "candidate_b_full_corpus_operator_workflow_run_v1",
+        "operator_decision": "start_candidate_b_full_corpus_operator_workflow",
+        "runtime_root_lifecycle_receipt_id": lifecycle["lifecycle_receipt_id"],
+        "baseline_run_id": receipt["baseline_run_id"],
+        "candidate_a_run_id": receipt["candidate_a_run_id"],
+        "candidate_b_run_id": receipt["candidate_b_run_id"],
+        "compare_target_set_hash": receipt["compare_target_set_hash"],
+        "material_relative_name": corpus["material_relative_name"],
     }
 
 

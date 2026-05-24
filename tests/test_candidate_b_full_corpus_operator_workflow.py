@@ -86,6 +86,7 @@ def test_live_http_readiness_requires_candidate_b_operator_endpoints() -> None:
             "candidate_b_runtime_bridge_source_scan_admitted": True,
             "candidate_b_runtime_downstream_proof_admitted": True,
             "candidate_b_full_corpus_operator_workflow_status_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_run_admitted": True,
         }
     )
     workflow._assert_operator_api_ready(args, ready)
@@ -96,6 +97,7 @@ def test_live_http_readiness_requires_candidate_b_operator_endpoints() -> None:
             "candidate_b_runtime_bridge_source_scan_admitted": False,
             "candidate_b_runtime_downstream_proof_admitted": True,
             "candidate_b_full_corpus_operator_workflow_status_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_run_admitted": True,
         }
     )
     try:
@@ -105,6 +107,36 @@ def test_live_http_readiness_requires_candidate_b_operator_endpoints() -> None:
         assert exc.details["missing_readiness"][0]["field"] == "candidate_b_runtime_bridge_source_scan_admitted"
     else:
         raise AssertionError("live-http accepted incomplete readiness")
+
+
+def test_live_http_readiness_requires_server_run_endpoint() -> None:
+    args = workflow.build_parser().parse_args(
+        [
+            "--execution-mode",
+            "live-http",
+            "--api-base-url",
+            "http://127.0.0.1:8000/api/v1/layer3",
+            "--internal-webhook-mode",
+            "configured",
+        ]
+    )
+    blocked = _FakeReadinessClient(
+        {
+            "candidate_b_runtime_material_bridge_admitted": True,
+            "candidate_b_runtime_bridge_source_scan_admitted": True,
+            "candidate_b_runtime_downstream_proof_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_status_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_run_admitted": False,
+        }
+    )
+
+    try:
+        workflow._assert_operator_api_ready(args, blocked)
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "live_http_layer3_readiness_missing"
+        assert exc.details["missing_readiness"][0]["field"] == "candidate_b_full_corpus_operator_workflow_run_admitted"
+    else:
+        raise AssertionError("live-http accepted missing server-run endpoint readiness")
 
 
 def test_workflow_status_payload_binds_live_http_receipt_ids() -> None:
@@ -128,6 +160,74 @@ def test_workflow_status_payload_binds_live_http_receipt_ids() -> None:
         "bridge_receipt_id": "cb-runtime-l3-live-http-proof",
         "downstream_proof_id": "cb-runtime-downstream-proof-live-http",
     }
+
+
+def test_workflow_run_payload_binds_live_http_server_authority() -> None:
+    receipt = {
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "compare_target_set_hash": "1" * 64,
+        "runtime_root_lifecycle": {
+            "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-live-http-proof",
+        },
+        "corpus": {"material_relative_name": "text/target-00001.md"},
+    }
+
+    assert workflow._workflow_run_payload(receipt) == {
+        "client_request_id": "candidate-b-full-corpus-operator-live-http-run",
+        "run_mode": "candidate_b_full_corpus_operator_workflow_run_v1",
+        "operator_decision": "start_candidate_b_full_corpus_operator_workflow",
+        "runtime_root_lifecycle_receipt_id": "cb-full-corpus-runtime-roots-live-http-proof",
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "compare_target_set_hash": "1" * 64,
+        "material_relative_name": "text/target-00001.md",
+    }
+
+
+def test_live_http_workflow_run_verifies_returned_status_request(monkeypatch) -> None:
+    args = workflow.build_parser().parse_args(
+        [
+            "--execution-mode",
+            "live-http",
+            "--api-base-url",
+            "http://127.0.0.1:8000/api/v1/layer3",
+            "--internal-webhook-mode",
+            "configured",
+        ]
+    )
+    client = _FakeWorkflowRunClient()
+    receipt = {
+        "receipt_id": "cb-full-corpus-operator-source",
+        "receipt_hash": "2" * 64,
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "compare_target_set_hash": "1" * 64,
+        "bridge_receipt_id": "cb-runtime-l3-source",
+        "downstream_proof_id": "cb-runtime-downstream-proof-source",
+        "runtime_root_lifecycle": {
+            "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-live-http-proof",
+        },
+        "corpus": {"material_relative_name": "text/target-00001.md"},
+    }
+
+    monkeypatch.setattr(workflow, "_operator_api_client", lambda *args, **kwargs: _FakeClientContext(client))
+
+    result = workflow._verify_live_http_workflow_run(args, receipt)
+
+    assert client.calls[0][0].endswith("/operator-workflow/run")
+    assert client.calls[1][0].endswith("/operator-workflow/status")
+    assert client.calls[1][1] == client.status_request
+    assert result["run_endpoint_verified"] is True
+    assert result["status_endpoint_verified"] is True
+    assert result["run_state"] == "proven"
+    assert result["workflow_status"] == "proven"
+    assert result["raw_local_path_exposed"] is False
+    assert result["raw_url_exposed"] is False
+    assert result["selector_mutation_performed"] is False
 
 
 def test_coverage_evidence_binds_delivery_artifact_authority() -> None:
@@ -430,6 +530,66 @@ class _FakeReadinessClient:
     def get(self, path: str) -> _FakeResponse:
         assert path == "/api/v1/layer3/readiness"
         return _FakeResponse(self.readiness)
+
+
+class _FakeClientContext:
+    def __init__(self, client: object) -> None:
+        self.client = client
+
+    def __enter__(self) -> object:
+        return self.client
+
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
+        return None
+
+
+class _FakeWorkflowRunClient:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, object]]] = []
+        self.status_request = {
+            "client_request_id": "candidate-b-full-corpus-operator-live-http-run-status",
+            "status_mode": "candidate_b_full_corpus_operator_workflow_status_v1",
+            "operator_decision": "inspect_candidate_b_full_corpus_operator_workflow_status",
+            "operator_workflow_receipt_id": "cb-full-corpus-operator-run-proof",
+            "baseline_run_id": "baseline-run",
+            "candidate_a_run_id": "candidate-a-run",
+            "candidate_b_run_id": "candidate-b-run",
+            "bridge_receipt_id": "cb-runtime-l3-source",
+            "downstream_proof_id": "cb-runtime-downstream-proof-source",
+        }
+
+    def post(self, path: str, json: dict[str, object]) -> _FakeResponse:
+        self.calls.append((path, json))
+        if path.endswith("/operator-workflow/run"):
+            return _FakeResponse(
+                {
+                    "run_state": "proven",
+                    "operator_workflow_receipt_id": "cb-full-corpus-operator-run-proof",
+                    "operator_workflow_receipt_hash": "3" * 64,
+                    "source_operator_workflow_receipt_id": "cb-full-corpus-operator-source",
+                    "source_operator_workflow_receipt_hash": "2" * 64,
+                    "authority_basis_hash": "4" * 64,
+                    "idempotency_key_hash": "5" * 64,
+                    "status_request": self.status_request,
+                    "raw_local_path_exposed": False,
+                    "raw_url_exposed": False,
+                    "selector_mutation_performed": False,
+                    "rendered_run_start_control_admitted": False,
+                    "rendered_progress_control_admitted": False,
+                }
+            )
+        if path.endswith("/operator-workflow/status"):
+            return _FakeResponse(
+                {
+                    "workflow_status": "proven",
+                    "workflow_status_hash": "6" * 64,
+                    "workflow_status_ref": "candidate-b-full-corpus-operator-workflow-status://proof",
+                    "raw_local_path_exposed": False,
+                    "raw_url_exposed": False,
+                    "selector_mutation_performed": False,
+                }
+            )
+        raise AssertionError(f"unexpected path: {path}")
 
 
 class _FakeLayer3Client:
