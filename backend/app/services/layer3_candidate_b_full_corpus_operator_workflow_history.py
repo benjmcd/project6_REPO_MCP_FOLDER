@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy,
     layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status,
 )
@@ -198,6 +199,16 @@ def _history_row(receipt_id: str, receipt: Mapping[str, Any]) -> dict[str, Any]:
             details=exc.details,
         ) from exc
     _validate_server_run(receipt_id, receipt_hash, receipt, server_run, authority_basis)
+    ownership_access_policy = workflow_access_policy.authorize_workflow_access(
+        fields={"client_request_id": f"candidate-b-full-corpus-operator-workflow-history-{receipt_id}"},
+        route_family="workflow_history",
+        rendered_surface="history",
+        workflow_receipt_id=receipt_id,
+        workflow_receipt_hash=receipt_hash,
+        authority_basis_hash=str(server_run["authority_basis_hash"]),
+        requested_role=workflow_access_policy.AUDITOR_ROLE,
+        existing_owner_binding=workflow_status._workflow_owner_binding(receipt),
+    )
     status_request = {
         "client_request_id": f"candidate-b-full-corpus-operator-workflow-history-{receipt_id}-status",
         "status_mode": workflow_status.STATUS_MODE,
@@ -233,6 +244,7 @@ def _history_row(receipt_id: str, receipt: Mapping[str, Any]) -> dict[str, Any]:
         "artifact_bytes_exposed": False,
         "selector_mutation_performed": False,
         "frontend_durable_authority_enabled": False,
+        "ownership_access_policy": workflow_status._policy_projection(ownership_access_policy),
     }
     row_hash = workflow_status._stable_hash(row)
     return {

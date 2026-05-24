@@ -5,6 +5,7 @@ import json
 from typing import Any, Mapping
 
 from app.core.config import settings
+from app.services import layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status
 
 
@@ -126,6 +127,17 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
         {"client_request_id": request_id, "authority_basis_hash": authority_basis_hash}
     )
     run_receipt_id = f"{RUN_RECEIPT_PREFIX}-{idempotency_key_hash[:24]}"
+    ownership_access_policy = workflow_access_policy.authorize_workflow_access(
+        fields=fields,
+        route_family="workflow_run",
+        rendered_surface="run_start",
+        workflow_receipt_id=run_receipt_id,
+        workflow_receipt_hash=source_receipt_hash,
+        authority_basis_hash=authority_basis_hash,
+        requested_role=str(fields.get("operator_role") or workflow_access_policy.OWNER_ROLE),
+        existing_owner_binding=_source_owner_binding(source_receipt),
+        require_existing_owner_binding=False,
+    )
     run_receipt, idempotent_replay = _load_or_write_run_receipt(
         run_receipt_id=run_receipt_id,
         source_receipt=source_receipt,
@@ -133,6 +145,7 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
         authority_basis=authority_basis,
         authority_basis_hash=authority_basis_hash,
         idempotency_key_hash=idempotency_key_hash,
+        ownership_access_policy=ownership_access_policy,
     )
     run_receipt_hash = _revalidate_workflow_receipt(run_receipt, receipt_id=run_receipt_id)
     _assert_no_raw_authority_exposure(run_receipt)
@@ -196,7 +209,11 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
             **negative_invariants,
             "browser_supplied_runtime_roots_admitted": False,
             "client_supplied_raw_runtime_roots_admitted": False,
+            "ownership_access_policy_audit_event_appended": True,
+            "browser_storage_identity_used": False,
+            "raw_identity_or_policy_secret_exposed": False,
         },
+        "ownership_access_policy": workflow_status._policy_projection(ownership_access_policy),
         "next_allowed_actions": [
             "inspect the returned workflow receipt through the read-only status endpoint",
             "inspect rendered workflow-run progress through the returned status request",
@@ -206,6 +223,7 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
 
 def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     fields = dict(payload)
+    workflow_access_policy.reject_forbidden_request_fields(fields)
     blocked = sorted(key for key in fields if key in _FORBIDDEN_REQUEST_FIELDS and fields.get(key) is not None)
     if blocked:
         raise CandidateBFullCorpusOperatorWorkflowRunError(
@@ -277,6 +295,7 @@ def _load_or_write_run_receipt(
     authority_basis: Mapping[str, Any],
     authority_basis_hash: str,
     idempotency_key_hash: str,
+    ownership_access_policy: Mapping[str, Any],
 ) -> tuple[dict[str, Any], bool]:
     root = _workflow_receipt_root()
     target = root / run_receipt_id / "receipt.json"
@@ -312,6 +331,10 @@ def _load_or_write_run_receipt(
             "authority_basis": dict(authority_basis),
             "authority_basis_hash": authority_basis_hash,
             "idempotency_key_hash": idempotency_key_hash,
+            "ownership_access_policy": workflow_status._policy_projection(ownership_access_policy),
+            "workflow_receipt_owner_binding": workflow_access_policy.owner_binding_from_policy(
+                ownership_access_policy,
+            ),
             "source_operator_workflow_receipt_id": authority_basis["source_operator_workflow_receipt_id"],
             "source_operator_workflow_receipt_hash": authority_basis["source_operator_workflow_receipt_hash"],
             "raw_local_path_exposed": False,
@@ -324,6 +347,10 @@ def _load_or_write_run_receipt(
     }
     target.write_text(json.dumps(run_receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return run_receipt, False
+
+
+def _source_owner_binding(source_receipt: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    return workflow_status._workflow_owner_binding(source_receipt)
 
 
 def _workflow_receipt_root() -> Path:

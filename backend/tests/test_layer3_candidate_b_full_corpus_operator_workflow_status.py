@@ -16,6 +16,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
+from app.services import layer3_candidate_b_operator_workflow_access_policy as access_policy
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status
 from main import app
 
@@ -38,6 +39,8 @@ def client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         "layer3_candidate_b_full_corpus_operator_workflow_dir",
         str(tmp_path / "workflow-receipts"),
     )
+    monkeypatch.setattr(settings, "auth_owner", "none")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", False)
     app.openapi_schema = None
     with TestClient(app) as test_client:
         yield test_client
@@ -214,6 +217,24 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert body["operator_projection"]["baseline_rollback_projection_visible"] is True
     assert body["operator_projection"]["runtime_root_lifecycle_projection_visible"] is True
     assert body["operator_projection"]["process_execution_projection_visible"] is True
+    policy = body["ownership_access_policy"]
+    assert policy["policy_schema_id"] == access_policy.POLICY_SCHEMA_ID
+    assert policy["policy_status"] == "admitted"
+    assert policy["decision"] == "allow"
+    assert policy["route_family"] == "workflow_status"
+    assert policy["rendered_surface"] == "status"
+    assert policy["audit_event_id"].startswith(access_policy.POLICY_RECEIPT_PREFIX)
+    audit_path = (
+        Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+        / policy["audit_event_id"]
+        / "receipt.json"
+    )
+    assert audit_path.is_file()
+    audit_event = json.loads(audit_path.read_text(encoding="utf-8"))
+    assert audit_event["schema_id"] == access_policy.POLICY_AUDIT_SCHEMA_ID
+    assert audit_event["raw_operator_identity_exposed"] is False
+    assert audit_event["raw_proxy_header_exposed"] is False
+    assert audit_event["raw_local_path_exposed"] is False
     assert body["process_execution_projection"]["process_execution_projection_state"] == "not_started"
     assert body["operator_projection"]["raw_local_path_exposed"] is False
     assert body["validate_only_triplet"] is True
@@ -224,6 +245,74 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert "C:\\" not in serialized
     assert "file:///" not in serialized
     assert "https://" not in serialized
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_policy_hash(
+    client: TestClient,
+) -> None:
+    receipt_id, _receipt = _write_receipt()
+
+    response = client.post(ENDPOINT, json=_request(receipt_id, policy_hash="9" * 64))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["policy_status"] == "rejected"
+    assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_stale_policy_hash"
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_proxy_requires_server_identity(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    receipt_id, _receipt = _write_receipt()
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 401
+    body = response.json()
+    assert body["policy_status"] == "rejected"
+    assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_missing_identity_authority"
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_proxy_rejects_cross_owner_receipt(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    actor_ref_hash = access_policy._stable_hash({"auth_owner": "proxy", "actor_ref": "alice"})
+    tenant_ref_hash = access_policy._stable_hash(
+        {"auth_owner": "proxy", "tenant_or_workspace_ref": "tenant-a"}
+    )
+    receipt_id, _receipt = _write_receipt(
+        {
+            "workflow_receipt_owner_binding": {
+                "actor_ref_hash": actor_ref_hash,
+                "tenant_or_workspace_ref_hash": tenant_ref_hash,
+                "policy_hash": "8" * 64,
+            }
+        }
+    )
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+
+    allowed = client.post(
+        ENDPOINT,
+        json=_request(receipt_id),
+        headers={"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"},
+    )
+    rejected = client.post(
+        ENDPOINT,
+        json=_request(receipt_id),
+        headers={"X-Forwarded-User": "bob", "X-Forwarded-Groups": "tenant-a"},
+    )
+
+    assert allowed.status_code == 200
+    assert allowed.json()["ownership_access_policy"]["actor_ref_hash"] == actor_ref_hash
+    assert rejected.status_code == 403
+    body = rejected.json()
+    assert body["policy_status"] == "rejected"
+    assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_cross_owner_receipt"
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_incomplete_eligibility(
