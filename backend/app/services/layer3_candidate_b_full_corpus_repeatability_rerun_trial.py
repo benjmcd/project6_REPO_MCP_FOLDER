@@ -272,7 +272,13 @@ def _validate_selected_authority(
     prefix: str,
 ) -> None:
     try:
-        workflow_progress_checkpoint._validate_selected_authority(history, row, fields)
+        workflow_progress_checkpoint._validate_selected_authority(
+            history,
+            row,
+            fields,
+            route_family="rerun_trial",
+            rendered_surface="repeatability_rerun_trial",
+        )
     except workflow_progress_checkpoint.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError as exc:
         raise CandidateBFullCorpusRepeatabilityRerunTrialError(
             f"candidate_b_full_corpus_repeatability_rerun_trial_stale_{prefix}_authority",

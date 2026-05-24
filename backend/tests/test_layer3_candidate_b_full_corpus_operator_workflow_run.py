@@ -986,6 +986,48 @@ def test_candidate_b_full_corpus_operator_workflow_run_proxy_owner_can_create_bo
     assert owner_binding["tenant_or_workspace_ref_hash"] == tenant_ref_hash
 
 
+def test_candidate_b_full_corpus_operator_workflow_queue_route_uses_owner_policy_context(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_source_receipt()
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    alice_headers = {"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"}
+    bob_headers = {"X-Forwarded-User": "bob", "X-Forwarded-Groups": "tenant-a"}
+    run_body = client.post(RUN_ENDPOINT, json=_run_request(), headers=alice_headers).json()
+    history_body = client.get(HISTORY_ENDPOINT, headers=alice_headers).json()
+    row = history_body["history_rows"][0]
+    queue_payload = _queue_state_request(history_body, row)
+
+    allowed_response = client.post(QUEUE_STATE_ENDPOINT, json=queue_payload, headers=alice_headers)
+
+    assert allowed_response.status_code == 200
+    assert allowed_response.json()["operator_workflow_receipt_id"] == run_body["operator_workflow_receipt_id"]
+    policy_events = [
+        json.loads(path.read_text(encoding="utf-8"))
+        for path in Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir).glob(
+            f"{access_policy.POLICY_RECEIPT_PREFIX}-*/receipt.json"
+        )
+    ]
+    queue_events = [
+        event
+        for event in policy_events
+        if event.get("route_family") == "queue_scheduler_worker_progress_completion_retry"
+        and event.get("rendered_surface") == "queue_state"
+    ]
+    assert queue_events
+    assert all(event["raw_operator_identity_exposed"] is False for event in queue_events)
+    assert all(event["raw_local_path_exposed"] is False for event in queue_events)
+
+    blocked_response = client.post(QUEUE_STATE_ENDPOINT, json=queue_payload, headers=bob_headers)
+
+    assert blocked_response.status_code == 403
+    body = blocked_response.json()
+    assert body["policy_status"] == "rejected"
+    assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_cross_owner_receipt"
+
+
 def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_runs(
     client: TestClient,
 ) -> None:

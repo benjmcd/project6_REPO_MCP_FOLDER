@@ -6,6 +6,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy,
     layer3_candidate_b_full_corpus_operator_workflow_history as workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run,
@@ -259,6 +260,10 @@ def _validate_selected_authority(
     history: Mapping[str, Any],
     row: Mapping[str, Any],
     fields: Mapping[str, Any],
+    *,
+    route_family: str = "queue_scheduler_worker_progress_completion_retry",
+    rendered_surface: str = "progress_checkpoint",
+    requested_role: str = workflow_access_policy.OWNER_ROLE,
 ) -> None:
     expected = {
         "history_hash": history.get("history_hash"),
@@ -280,6 +285,13 @@ def _validate_selected_authority(
             http_status=409,
             details={"mismatches": mismatches},
         )
+    workflow_access_policy.authorize_history_row_access(
+        fields=fields,
+        row=row,
+        route_family=route_family,
+        rendered_surface=rendered_surface,
+        requested_role=requested_role,
+    )
 
 
 def _selected_worker_attempt_receipt(

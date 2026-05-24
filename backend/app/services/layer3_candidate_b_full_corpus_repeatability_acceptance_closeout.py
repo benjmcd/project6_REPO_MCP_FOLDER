@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from app.services import (
+    layer3_candidate_b_operator_workflow_access_policy as workflow_access_policy,
     layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status,
     layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint as acceptance,
     layer3_candidate_b_full_corpus_repeatability_rerun_trial as rerun_trial,
@@ -156,6 +157,7 @@ def record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
     trial = acceptance._rerun_trial_body(rerun_receipt)
     original = _validated_workflow_projection("original", trial)
     rerun = _validated_workflow_projection("rerun", trial)
+    _authorize_closeout_workflow_rows(fields, original, rerun)
     original_checkpoint = _validated_original_checkpoint(checkpoint)
     rerun_trial._validate_original_checkpoint_binding(original_checkpoint, original, trial)
     acceptance._validate_rerun_trial_binding(rerun_receipt, trial, checkpoint, original, rerun)
@@ -749,6 +751,28 @@ def _validated_rerun_trial_receipt(checkpoint: Mapping[str, Any]) -> dict[str, A
             http_status=exc.http_status,
             details=exc.details,
         ) from exc
+
+
+def _authorize_closeout_workflow_rows(
+    fields: Mapping[str, Any],
+    original: Mapping[str, Any],
+    rerun: Mapping[str, Any],
+) -> None:
+    for label, projection in (("original", original), ("rerun", rerun)):
+        row = projection.get("row")
+        if not isinstance(row, Mapping):
+            raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+                f"candidate_b_full_corpus_repeatability_acceptance_closeout_{label}_row_missing",
+                "Acceptance closeout policy requires original and rerun workflow-row authority.",
+                http_status=409,
+            )
+        workflow_access_policy.authorize_history_row_access(
+            fields=fields,
+            row=row,
+            route_family="acceptance_closeout",
+            rendered_surface=f"acceptance_closeout_{label}",
+            requested_role=workflow_access_policy.OWNER_ROLE,
+        )
 
 
 def _validated_workflow_projection(prefix: str, trial: Mapping[str, Any]) -> dict[str, Any]:

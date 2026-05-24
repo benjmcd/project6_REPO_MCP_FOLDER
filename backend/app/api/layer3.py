@@ -10896,6 +10896,21 @@ def _candidate_b_policy_request_context(request: Request) -> dict[str, str]:
     return {str(key): str(value) for key, value in request.headers.items()}
 
 
+def _candidate_b_policy_json_or_error(
+    request: Request,
+    handler: Callable[[], dict[str, Any]],
+) -> dict[str, Any] | JSONResponse:
+    try:
+        with layer3_candidate_b_operator_workflow_access_policy.request_context(
+            _candidate_b_policy_request_context(request),
+        ):
+            return handler()
+    except (
+        layer3_candidate_b_operator_workflow_access_policy.CandidateBOperatorWorkflowAccessPolicyError
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
 async def _payload_from_request(request: Request) -> dict[str, Any]:
     content_type = request.headers.get("content-type", "").lower()
     if "application/x-www-form-urlencoded" in content_type:
@@ -11232,11 +11247,15 @@ def post_candidate_b_full_corpus_operator_workflow_status(
 )
 def post_candidate_b_full_corpus_operator_workflow_lifecycle_expire(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowLifecycleRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_lifecycle_service = layer3_candidate_b_full_corpus_operator_workflow_lifecycle
     try:
-        return workflow_lifecycle_service.expire_candidate_b_full_corpus_operator_workflow_run(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_lifecycle_service.expire_candidate_b_full_corpus_operator_workflow_run(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_lifecycle_service.CandidateBFullCorpusOperatorWorkflowLifecycleError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11249,11 +11268,15 @@ def post_candidate_b_full_corpus_operator_workflow_lifecycle_expire(
 )
 def post_candidate_b_full_corpus_operator_workflow_queue_state(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowQueueStateRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_queue_state_service = layer3_candidate_b_full_corpus_operator_workflow_queue_state
     try:
-        return workflow_queue_state_service.record_candidate_b_full_corpus_operator_workflow_queue_state(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_queue_state_service.record_candidate_b_full_corpus_operator_workflow_queue_state(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_queue_state_service.CandidateBFullCorpusOperatorWorkflowQueueStateError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11266,11 +11289,15 @@ def post_candidate_b_full_corpus_operator_workflow_queue_state(
 )
 def post_candidate_b_full_corpus_operator_workflow_scheduler_lease(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowSchedulerLeaseRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_scheduler_lease_service = layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease
     try:
-        return workflow_scheduler_lease_service.record_candidate_b_full_corpus_operator_workflow_scheduler_lease(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_scheduler_lease_service.record_candidate_b_full_corpus_operator_workflow_scheduler_lease(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_scheduler_lease_service.CandidateBFullCorpusOperatorWorkflowSchedulerLeaseError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11283,11 +11310,15 @@ def post_candidate_b_full_corpus_operator_workflow_scheduler_lease(
 )
 def post_candidate_b_full_corpus_operator_workflow_worker_attempt(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowWorkerAttemptRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_worker_attempt_service = layer3_candidate_b_full_corpus_operator_workflow_worker_attempt
     try:
-        return workflow_worker_attempt_service.record_candidate_b_full_corpus_operator_workflow_worker_attempt(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_worker_attempt_service.record_candidate_b_full_corpus_operator_workflow_worker_attempt(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_worker_attempt_service.CandidateBFullCorpusOperatorWorkflowWorkerAttemptError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11300,11 +11331,15 @@ def post_candidate_b_full_corpus_operator_workflow_worker_attempt(
 )
 def post_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_progress_checkpoint_service = layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint
     try:
-        return workflow_progress_checkpoint_service.record_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_progress_checkpoint_service.record_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_progress_checkpoint_service.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11317,11 +11352,15 @@ def post_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
 )
 def post_candidate_b_full_corpus_operator_workflow_completion_failure(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowCompletionFailureRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_completion_failure_service = layer3_candidate_b_full_corpus_operator_workflow_completion_failure
     try:
-        return workflow_completion_failure_service.record_candidate_b_full_corpus_operator_workflow_completion_failure(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_completion_failure_service.record_candidate_b_full_corpus_operator_workflow_completion_failure(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_completion_failure_service.CandidateBFullCorpusOperatorWorkflowCompletionFailureError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11334,11 +11373,15 @@ def post_candidate_b_full_corpus_operator_workflow_completion_failure(
 )
 def post_candidate_b_full_corpus_operator_workflow_retry_policy(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryPolicyRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_retry_policy_service = layer3_candidate_b_full_corpus_operator_workflow_retry_policy
     try:
-        return workflow_retry_policy_service.record_candidate_b_full_corpus_operator_workflow_retry_policy(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_retry_policy_service.record_candidate_b_full_corpus_operator_workflow_retry_policy(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_retry_policy_service.CandidateBFullCorpusOperatorWorkflowRetryPolicyError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11351,11 +11394,15 @@ def post_candidate_b_full_corpus_operator_workflow_retry_policy(
 )
 def post_candidate_b_full_corpus_operator_workflow_retry_queue_state(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryQueueStateRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_retry_queue_state_service = layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state
     try:
-        return workflow_retry_queue_state_service.record_candidate_b_full_corpus_operator_workflow_retry_queue_state(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_retry_queue_state_service.record_candidate_b_full_corpus_operator_workflow_retry_queue_state(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_retry_queue_state_service.CandidateBFullCorpusOperatorWorkflowRetryQueueStateError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11368,11 +11415,15 @@ def post_candidate_b_full_corpus_operator_workflow_retry_queue_state(
 )
 def post_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_retry_scheduler_lease_service = layer3_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease
     try:
-        return workflow_retry_scheduler_lease_service.record_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_retry_scheduler_lease_service.record_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_retry_scheduler_lease_service.CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11385,13 +11436,15 @@ def post_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(
 )
 def post_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_retry_worker_attempt_service = layer3_candidate_b_full_corpus_operator_workflow_retry_worker_attempt
     try:
-        return (
-            workflow_retry_worker_attempt_service.record_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_retry_worker_attempt_service.record_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
                 payload.model_dump(exclude_unset=True),
-            )
+            ),
         )
     except (
         workflow_retry_worker_attempt_service.CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptError
@@ -11406,13 +11459,17 @@ def post_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
 )
 def post_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_retry_progress_checkpoint_service = (
         layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint
     )
     try:
-        return workflow_retry_progress_checkpoint_service.record_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_retry_progress_checkpoint_service.record_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except (
         workflow_retry_progress_checkpoint_service.CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointError
@@ -11427,13 +11484,17 @@ def post_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint(
 )
 def post_candidate_b_full_corpus_operator_workflow_retry_completion_failure(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryCompletionFailureRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_retry_completion_failure_service = (
         layer3_candidate_b_full_corpus_operator_workflow_retry_completion_failure
     )
     try:
-        return workflow_retry_completion_failure_service.record_candidate_b_full_corpus_operator_workflow_retry_completion_failure(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_retry_completion_failure_service.record_candidate_b_full_corpus_operator_workflow_retry_completion_failure(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except (
         workflow_retry_completion_failure_service.CandidateBFullCorpusOperatorWorkflowRetryCompletionFailureError
@@ -11448,15 +11509,17 @@ def post_candidate_b_full_corpus_operator_workflow_retry_completion_failure(
 )
 def post_candidate_b_full_corpus_operator_workflow_execution_boundary(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowExecutionBoundaryRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_execution_boundary_service = (
         layer3_candidate_b_full_corpus_operator_workflow_execution_boundary
     )
     try:
-        return (
-            workflow_execution_boundary_service.record_candidate_b_full_corpus_operator_workflow_execution_boundary(
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_execution_boundary_service.record_candidate_b_full_corpus_operator_workflow_execution_boundary(
                 payload.model_dump(exclude_unset=True),
-            )
+            ),
         )
     except workflow_execution_boundary_service.CandidateBFullCorpusOperatorWorkflowExecutionBoundaryError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11469,13 +11532,17 @@ def post_candidate_b_full_corpus_operator_workflow_execution_boundary(
 )
 def post_candidate_b_full_corpus_operator_workflow_process_execution(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowProcessExecutionRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_process_execution_service = (
         layer3_candidate_b_full_corpus_operator_workflow_process_execution
     )
     try:
-        return workflow_process_execution_service.record_candidate_b_full_corpus_operator_workflow_process_execution(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_process_execution_service.record_candidate_b_full_corpus_operator_workflow_process_execution(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except workflow_process_execution_service.CandidateBFullCorpusOperatorWorkflowProcessExecutionError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11488,13 +11555,17 @@ def post_candidate_b_full_corpus_operator_workflow_process_execution(
 )
 def post_candidate_b_full_corpus_operator_workflow_process_completion_result(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowProcessCompletionResultRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_process_completion_result_service = (
         layer3_candidate_b_full_corpus_operator_workflow_process_completion_result
     )
     try:
-        return workflow_process_completion_result_service.record_candidate_b_full_corpus_operator_workflow_process_completion_result(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_process_completion_result_service.record_candidate_b_full_corpus_operator_workflow_process_completion_result(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except (
         workflow_process_completion_result_service.CandidateBFullCorpusOperatorWorkflowProcessCompletionResultError
@@ -11509,13 +11580,17 @@ def post_candidate_b_full_corpus_operator_workflow_process_completion_result(
 )
 def post_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_adopted_result_downstream_proof_service = (
         layer3_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof
     )
     try:
-        return workflow_adopted_result_downstream_proof_service.record_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_adopted_result_downstream_proof_service.record_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except (
         workflow_adopted_result_downstream_proof_service.CandidateBFullCorpusOperatorWorkflowAdoptedResultDownstreamProofError
@@ -11530,15 +11605,17 @@ def post_candidate_b_full_corpus_operator_workflow_adopted_result_downstream_pro
 )
 def post_candidate_b_full_corpus_operator_workflow_completion_monitor(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowCompletionMonitorRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_completion_monitor_service = (
         layer3_candidate_b_full_corpus_operator_workflow_completion_monitor
     )
     try:
-        return (
-            workflow_completion_monitor_service.inspect_candidate_b_full_corpus_operator_workflow_completion_monitor(
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: workflow_completion_monitor_service.inspect_candidate_b_full_corpus_operator_workflow_completion_monitor(
                 payload.model_dump(exclude_unset=True),
-            )
+            ),
         )
     except (
         workflow_completion_monitor_service.CandidateBFullCorpusOperatorWorkflowCompletionMonitorError
@@ -11553,13 +11630,17 @@ def post_candidate_b_full_corpus_operator_workflow_completion_monitor(
 )
 def post_candidate_b_full_corpus_operator_repeatability_checkpoint(
     payload: Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     repeatability_checkpoint_service = (
         layer3_candidate_b_full_corpus_operator_repeatability_checkpoint
     )
     try:
-        return repeatability_checkpoint_service.record_candidate_b_full_corpus_operator_repeatability_checkpoint(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: repeatability_checkpoint_service.record_candidate_b_full_corpus_operator_repeatability_checkpoint(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except (
         repeatability_checkpoint_service.CandidateBFullCorpusOperatorRepeatabilityCheckpointError
@@ -11574,11 +11655,15 @@ def post_candidate_b_full_corpus_operator_repeatability_checkpoint(
 )
 def post_candidate_b_full_corpus_repeatability_rerun_trial(
     payload: Layer3CandidateBFullCorpusRepeatabilityRerunTrialRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     rerun_trial_service = layer3_candidate_b_full_corpus_repeatability_rerun_trial
     try:
-        return rerun_trial_service.record_candidate_b_full_corpus_repeatability_rerun_trial(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: rerun_trial_service.record_candidate_b_full_corpus_repeatability_rerun_trial(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except rerun_trial_service.CandidateBFullCorpusRepeatabilityRerunTrialError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11591,11 +11676,15 @@ def post_candidate_b_full_corpus_repeatability_rerun_trial(
 )
 def post_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
     payload: Layer3CandidateBFullCorpusRepeatabilityAcceptanceCheckpointRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     acceptance_checkpoint_service = layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint
     try:
-        return acceptance_checkpoint_service.record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: acceptance_checkpoint_service.record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except (
         acceptance_checkpoint_service.CandidateBFullCorpusRepeatabilityAcceptanceCheckpointError
@@ -11610,11 +11699,15 @@ def post_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
 )
 def post_candidate_b_full_corpus_repeatability_acceptance_closeout(
     payload: Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     closeout_service = layer3_candidate_b_full_corpus_repeatability_acceptance_closeout
     try:
-        return closeout_service.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: closeout_service.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except closeout_service.CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
@@ -11627,11 +11720,15 @@ def post_candidate_b_full_corpus_repeatability_acceptance_closeout(
 )
 def post_candidate_b_full_corpus_repeatability_acceptance_closeout_status(
     payload: Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     closeout_service = layer3_candidate_b_full_corpus_repeatability_acceptance_closeout
     try:
-        return closeout_service.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
-            payload.model_dump(exclude_unset=True),
+        return _candidate_b_policy_json_or_error(
+            request,
+            lambda: closeout_service.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+                payload.model_dump(exclude_unset=True),
+            ),
         )
     except closeout_service.CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
