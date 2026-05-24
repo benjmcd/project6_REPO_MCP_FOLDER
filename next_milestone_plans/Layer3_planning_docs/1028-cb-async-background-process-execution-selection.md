@@ -1,0 +1,70 @@
+# Candidate B Async Background Process Execution Selection
+
+```yaml
+milestone: candidate_b_async_background_process_execution_selection_v1
+source_execution_boundary_runtime: next_milestone_plans/Layer3_planning_docs/1027-cb-async-background-job-execution-boundary-runtime.md
+current_main_entry: fc59ebc05a889fc9471b07866d16400f85aaee36
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_background_process_execution_v1
+selected_process_execution_scope: server_owned_candidate_b_full_corpus_operator_workflow_process_over_existing_execution_boundary_receipt
+selected_process_execution_mode: server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority
+selected_process_execution_preconditions: configured_receipt_authority,current_history_row,current_execution_boundary_receipt,current_retry_terminal_projection,server_owned_runtime_root_lifecycle_receipt,server_owned_workflow_receipt_dir,server_owned_process_work_dir,server_owned_python_interpreter
+selected_process_execution_command_authority: repo_allowlisted_python_module_or_script_from_server_config
+selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py
+selected_process_execution_arguments_authority: server_resolved_receipt_ids_and_configured_runtime_roots_only
+selected_process_execution_forbidden_request_fields: command,commands,args,argv,path,paths,local_path,runtime_root,runtime_roots,url,urls,file,file_bytes,artifact_bytes,provider_object_ref,connector_destination,rag_vector_index,model_runtime,browser_storage,document_processing_engine,visual_lane_mode,default_selector,full_mockup_activation
+selected_process_execution_outputs: process_execution_receipt,process_execution_receipt_hash,process_execution_authority_hash,redacted_process_status_projection
+process_state_values: queued,started,completed,failed,blocked,expired
+stdout_capture_admitted_after_sync: redacted_summary_only
+stderr_capture_admitted_after_sync: redacted_summary_only
+raw_stdout_admitted_after_sync: false
+raw_stderr_admitted_after_sync: false
+raw_exception_trace_admitted_after_sync: false
+raw_log_excerpt_admitted_after_sync: false
+status_history_projection_required_after_process_start: true
+rendered_operator_projection_required_after_process_start: true
+headless_rendered_proof_required_after_process_start: true
+headed_rendered_proof_required_after_process_start: true
+stale_execution_boundary_must_reject: true
+stale_history_row_must_reject: true
+missing_runtime_dependency_must_reject: true
+missing_server_configured_work_dir_must_reject: true
+non_allowlisted_command_must_reject: true
+process_timeout_must_emit_failed_or_blocked_receipt: true
+idempotency_basis: client_request_id_plus_process_execution_authority_hash
+background_process_runtime_selected_after_sync: true
+job_execution_runtime_selected_after_sync: false
+actual_subprocess_spawn_admitted_after_sync: true
+actual_corpus_processing_execution_admitted_after_sync: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+cancel_runtime_selected_now: false
+retry_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_background_process_execution_v1
+```
+
+This freeze selects the first real server-owned background process execution slice after the execution-boundary receipt has been proven. The selected process is not browser-authored and not an arbitrary shell launcher: the server must derive authority from existing Candidate B workflow receipts, the execution-boundary receipt, configured receipt roots, an allowlisted repo command family, and configured runtime/work directories.
+
+The first implementation should start only the already-admitted Candidate B full-corpus operator workflow process family over existing validated runtime-root authority. It must write a separate process-execution receipt and project only redacted status. It must not accept caller commands, paths, URLs, runtime roots, document-processing selector changes, visual-lane changes, provider refs, connector destinations, model/RAG controls, artifact bytes, or browser storage authority.
+
+This selection intentionally does not admit raw Candidate B corpus generation, broad eligible-corpus expansion, provider object writes, arbitrary connector dispatch, RAG/vector/model runtime, full mockup activation, auth/security expansion, cancel/resume runtime, or frontend durable authority. Job-execution completion semantics remain a later slice after the process-start receipt and redacted process projection are proven.
+
+## Coherence Check
+
+- What is the canonical command authority? Recommended answer: a server-side allowlist bound to current-main code and configured runtime authority, not a browser request field.
+- Should this first process slice run raw Candidate B corpus generation? Recommended answer: no. It starts with the existing full-corpus operator workflow process family over already validated runtime-root authority; corpus generation remains separately admitted.
+- Should stdout, stderr, traces, or local roots be exposed? Recommended answer: no. The runtime may record redacted summaries and hashes only.
+- What comes next? Recommended answer: implement `candidate_b_async_background_process_execution_v1`, then separately select job-execution completion/result adoption only after process-start and status projection are proven.

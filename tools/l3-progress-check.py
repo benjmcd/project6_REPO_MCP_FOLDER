@@ -2815,6 +2815,9 @@ CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_SELECTION = (
 CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_RUNTIME = (
     PLANNING_DOCS / "1027-cb-async-background-job-execution-boundary-runtime.md"
 )
+CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_SELECTION = (
+    PLANNING_DOCS / "1028-cb-async-background-process-execution-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -96255,6 +96258,73 @@ def _check_candidate_b_async_background_job_execution_boundary_runtime(
                 )
 
 
+def _check_candidate_b_async_background_process_execution_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_SELECTION: (
+            "Candidate B Async Background Process Execution Selection",
+            "milestone: candidate_b_async_background_process_execution_selection_v1",
+            "source_execution_boundary_runtime: next_milestone_plans/Layer3_planning_docs/1027-cb-async-background-job-execution-boundary-runtime.md",
+            "current_main_entry: fc59ebc05a889fc9471b07866d16400f85aaee36",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_background_process_execution_v1",
+            "selected_process_execution_mode: server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority",
+            "selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py",
+            "selected_process_execution_arguments_authority: server_resolved_receipt_ids_and_configured_runtime_roots_only",
+            "selected_process_execution_outputs: process_execution_receipt,process_execution_receipt_hash,process_execution_authority_hash,redacted_process_status_projection",
+            "raw_stdout_admitted_after_sync: false",
+            "raw_stderr_admitted_after_sync: false",
+            "stale_execution_boundary_must_reject: true",
+            "missing_runtime_dependency_must_reject: true",
+            "non_allowlisted_command_must_reject: true",
+            "background_process_runtime_selected_after_sync: true",
+            "job_execution_runtime_selected_after_sync: false",
+            "actual_subprocess_spawn_admitted_after_sync: true",
+            "actual_corpus_processing_execution_admitted_after_sync: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_background_process_execution_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_background_process_execution_selection_v1",
+            "source_execution_boundary_runtime: next_milestone_plans/Layer3_planning_docs/1027-cb-async-background-job-execution-boundary-runtime.md",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_background_process_execution_v1",
+            "selected_process_execution_mode: server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority",
+            "selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py",
+            "raw_stdout_admitted_after_sync: false",
+            "raw_stderr_admitted_after_sync: false",
+            "background_process_runtime_selected_after_sync: true",
+            "job_execution_runtime_selected_after_sync: false",
+            "actual_subprocess_spawn_admitted_after_sync: true",
+            "actual_corpus_processing_execution_admitted_after_sync: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_background_process_execution_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async background process execution selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -97129,6 +97199,7 @@ def main() -> int:
     _check_candidate_b_async_retry_terminal_rendered_status_projection_runtime(errors)
     _check_candidate_b_async_background_job_execution_boundary_selection(errors)
     _check_candidate_b_async_background_job_execution_boundary_runtime(errors)
+    _check_candidate_b_async_background_process_execution_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
