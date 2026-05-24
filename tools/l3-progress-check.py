@@ -2941,6 +2941,17 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTION = (
     PLANNING_DOCS
     / "1068-cb-broader-eligible-corpus-default-scope-selection.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_SCOPE_READINESS_AUDIT = (
+    PLANNING_DOCS
+    / "1069-cb-broader-eligible-corpus-scope-readiness-audit.md"
+)
+CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_broader_scope_readiness.py"
+)
 CANDIDATE_B_OPERATOR_WORKFLOW_ACCESS_POLICY = (
     ROOT
     / "backend"
@@ -3137,6 +3148,9 @@ CANDIDATE_B_VISUAL_LANE_STATUS_TEST = (
 )
 CANDIDATE_B_DEFAULT_READINESS_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_default_readiness.py"
+)
+CANDIDATE_B_BROADER_SCOPE_READINESS_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_candidate_b_broader_scope_readiness.py"
 )
 LAYER3_PROVIDER_PUBLIC_URL_DELIVERY_USE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_provider_public_url_delivery_use.py"
@@ -100642,6 +100656,146 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_selection(
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_scope_readiness_audit(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_SCOPE_READINESS_AUDIT: (
+            "Candidate B Broader Eligible Corpus Scope Readiness Audit",
+            "milestone: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1",
+            "source_broader_eligible_corpus_default_scope_selection: next_milestone_plans/Layer3_planning_docs/1068-cb-broader-eligible-corpus-default-scope-selection.md",
+            "current_main_entry: 4d1ab21446428d4f38ddb439e3e6f63c06b05730",
+            "runtime_status: broader_scope_readiness_audit_implemented",
+            "implemented_schema_id: layer3.candidate_b_broader_eligible_corpus_scope_readiness_audit.v1",
+            "implemented_audit_mode: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit",
+            "implemented_ready_state: candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection",
+            "implemented_blocked_state: candidate_b_broader_eligible_corpus_scope_readiness_blocked",
+            "implemented_scope_classes: office_documents,images_or_ocr,zip_members,structured_json_or_csv_or_xlsx,sec_edgar,web_or_database_sources,mixed_corpus_batches",
+            "implemented_required_scope_evidence: current_parser_or_engine_authority,baseline_rollback_behavior,candidate_a_interaction,candidate_b_runtime_compatibility,layer3_material_authority_bridge_compatibility,artifact_family_preservation,redaction_and_status_projection,corpus_scale_proof,fail_closed_stale_or_missing_authority,regression_disposition",
+            "implemented_required_exclusions: selector_mutation_without_separate_freeze,source_expansion_without_separate_freeze,runtime_db_or_storage_expansion,pdf_or_image_text_material_ingestion,provider_object_writes,connector_dispatch,rag_vector_model_runtime,auth_security_expansion,full_mockup_activation,frontend_durable_authority,browser_storage_authority",
+            "implemented_contract_exposure: readiness_contract,bootstrap_contract,openapi",
+            "ready_state_meaning: ready_for_later_separately_frozen_default_scope_selection_only",
+            "default_scope_expansion_admitted: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_current_default_scope_preserved: eligible_effective_pdfs_only",
+            "verification_py_compile: python -m py_compile ./backend/app/services/layer3_candidate_b_broader_scope_readiness.py ./backend/app/api/layer3.py ./backend/app/services/layer3_readiness_contract.py ./backend/app/services/layer3_bootstrap_contract.py PASS",
+            "verification_focused_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_readiness.py ./backend/tests/test_layer3_readiness_contract.py ./backend/tests/test_layer3_bootstrap_contract.py -q PASS 6 passed",
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1",
+            "source_broader_eligible_corpus_default_scope_selection: next_milestone_plans/Layer3_planning_docs/1068-cb-broader-eligible-corpus-default-scope-selection.md",
+            "runtime_status: broader_scope_readiness_audit_implemented",
+            "implemented_audit_mode: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit",
+            "implemented_scope_classes: office_documents,images_or_ocr,zip_members,structured_json_or_csv_or_xlsx,sec_edgar,web_or_database_sources,mixed_corpus_batches",
+            "implemented_required_scope_evidence: current_parser_or_engine_authority,baseline_rollback_behavior,candidate_a_interaction,candidate_b_runtime_compatibility,layer3_material_authority_bridge_compatibility,artifact_family_preservation,redaction_and_status_projection,corpus_scale_proof,fail_closed_stale_or_missing_authority,regression_disposition",
+            "implemented_contract_exposure: readiness_contract,bootstrap_contract,openapi",
+            "ready_state_meaning: ready_for_later_separately_frozen_default_scope_selection_only",
+            "default_scope_expansion_admitted: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "candidate_b_current_default_scope_preserved: eligible_effective_pdfs_only",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_broader_eligible_corpus_scope_readiness_audit.v1"',
+            'AUDIT_MODE = "candidate_b_broader_eligible_corpus_scope_readiness_audit_v1"',
+            'READY_STATE = "candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection"',
+            'BLOCKED_STATE = "candidate_b_broader_eligible_corpus_scope_readiness_blocked"',
+            'CURRENT_DEFAULT_SCOPE = "eligible_effective_pdfs_only"',
+            '"office_documents"',
+            '"structured_json_or_csv_or_xlsx"',
+            '"selector_mutation_without_separate_freeze"',
+            '"candidate_b_broader_scope_readiness_forbidden_request_fields"',
+            '"default_scope_expansion_admitted": default_scope_expansion_admitted',
+            '"selector_mutation_performed": False',
+            '"source_expansion_admitted": False',
+            '"runtime_db_or_storage_expansion_admitted": False',
+            '"pdf_or_image_text_material_ingestion_admitted": False',
+            '"provider_object_write_enabled": False',
+            '"connector_dispatch_enabled": False',
+            '"rag_vector_model_runtime_enabled": False',
+            '"full_mockup_activation_enabled": False',
+            '"raw_local_path_exposed": False',
+            '"raw_url_exposed": False',
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_broader_scope_readiness",
+            "Layer3CandidateBBroaderEligibleCorpusScopeReadinessAuditRequest",
+            "Layer3CandidateBBroaderEligibleCorpusScopeReadinessAuditResponse",
+            "/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit",
+            "post_candidate_b_broader_eligible_corpus_scope_readiness_audit",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate-b-broader-eligible-corpus-scope-readiness-audit",
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_admitted",
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_broader_eligible_corpus_scope_readiness_audit": True',
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_admitted",
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_endpoint",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_READINESS_TEST: (
+            "test_candidate_b_broader_scope_readiness_audit_ready_for_separate_selection",
+            "test_candidate_b_broader_scope_readiness_blocks_missing_scope_evidence",
+            "test_candidate_b_broader_scope_readiness_rejects_nested_path_and_selector_fields",
+            "test_candidate_b_broader_scope_readiness_is_exposed_in_readiness_contract",
+            "candidate_b_broader_eligible_corpus_scope_ready_for_separate_selection",
+            "default_scope_expansion_admitted",
+            "selector_mutation_performed",
+            "local_path",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_admitted",
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_broader_eligible_corpus_scope_readiness_audit"',
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_admitted",
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_endpoint",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_scope_readiness_audit_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus scope readiness audit term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -101557,6 +101711,7 @@ def main() -> int:
     _check_candidate_b_operator_workflow_production_auth_storage_hardening_selection(errors)
     _check_candidate_b_operator_workflow_proxy_owner_storage_policy_runtime(errors)
     _check_candidate_b_broader_eligible_corpus_default_scope_selection(errors)
+    _check_candidate_b_broader_eligible_corpus_scope_readiness_audit(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

@@ -40,6 +40,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["candidate_b_default_promotion_operator_status"] is True
     assert direct_body["features"]["candidate_b_default_promotion_closure_evidence"] is True
     assert direct_body["features"]["candidate_b_default_promotion_readiness_audit"] is True
+    assert direct_body["features"]["candidate_b_broader_eligible_corpus_scope_readiness_audit"] is True
     assert direct_body["features"]["candidate_b_default_promotion_final_proof"] is True
     assert direct_body["features"]["candidate_b_default_promotion_final_proof_status"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_status"] is True
@@ -146,6 +147,18 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_readiness_audit_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_readiness_audit_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/readiness-audit"
+    )
+    assert (
+        direct_body["execution_readiness"][
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_admitted"
+        ]
+        is True
+    )
+    assert (
+        direct_body["execution_readiness"][
+            "candidate_b_broader_eligible_corpus_scope_readiness_audit_endpoint"
+        ]
+        == "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/scope-readiness-audit"
     )
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_final_proof_endpoint"] == (
