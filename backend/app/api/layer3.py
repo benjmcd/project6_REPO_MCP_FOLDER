@@ -43,6 +43,7 @@ from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint,
     layer3_candidate_b_full_corpus_operator_workflow_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_retry_policy,
+    layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint,
     layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease,
     layer3_candidate_b_full_corpus_operator_workflow_retry_worker_attempt,
@@ -3015,6 +3016,36 @@ class Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptRequest(BaseMo
     history_hash: str = Field(min_length=64, max_length=64)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    retry_progress_checkpoint_mode: Literal[
+        "append_only_retry_progress_checkpoint_receipt_without_retry_completion_cancel_resume_or_job_execution"
+    ]
+    operator_decision: Literal["record_candidate_b_async_retry_progress_checkpoint"]
+    retry_progress_checkpoint_sequence: int = Field(ge=1)
+    retry_attempt_number: Literal[2]
+    retry_worker_attempt_receipt_id: str = Field(min_length=1)
+    retry_worker_attempt_receipt_hash: str = Field(min_length=64, max_length=64)
+    retry_worker_attempt_authority_hash: str = Field(min_length=64, max_length=64)
+    retry_scheduler_lease_receipt_id: str = Field(min_length=1)
+    retry_scheduler_lease_receipt_hash: str = Field(min_length=64, max_length=64)
+    retry_scheduler_lease_authority_hash: str = Field(min_length=64, max_length=64)
+    retry_queue_state_receipt_id: str = Field(min_length=1)
+    retry_queue_state_receipt_hash: str = Field(min_length=64, max_length=64)
+    retry_queue_state_authority_hash: str = Field(min_length=64, max_length=64)
+    retry_policy_receipt_id: str = Field(min_length=1)
+    retry_policy_authority_hash: str = Field(min_length=64, max_length=64)
+    completion_failure_receipt_id: str = Field(min_length=1)
+    failed_worker_attempt_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -4360,6 +4391,96 @@ class Layer3CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptResponse(Layer
     rag_vector_model_runtime_enabled: bool
     full_mockup_activation_enabled: bool
     frontend_durable_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointResponse(Layer3BaseResponse):
+    mode: str
+    retry_progress_checkpoint_state: str
+    retry_progress_checkpoint_sequence: int
+    retry_progress_checkpoint_receipt_id: str
+    retry_progress_checkpoint_receipt_hash: str
+    retry_progress_checkpoint_receipt_ref: str
+    retry_attempt_number: int
+    retry_worker_attempt_receipt_id: str
+    retry_worker_attempt_receipt_hash: str
+    retry_worker_attempt_authority_hash: str
+    retry_scheduler_lease_receipt_id: str
+    retry_scheduler_lease_receipt_hash: str
+    retry_scheduler_lease_authority_hash: str
+    retry_queue_state_receipt_id: str
+    retry_queue_state_receipt_hash: str
+    retry_queue_state_authority_hash: str
+    retry_policy_receipt_id: str
+    retry_policy_receipt_hash: str
+    retry_policy_authority_hash: str
+    completion_failure_receipt_id: str
+    completion_failure_receipt_hash: str
+    completion_failure_authority_hash: str
+    failed_worker_attempt_receipt_id: str
+    failed_worker_attempt_receipt_hash: str
+    failed_worker_attempt_authority_hash: str
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    source_operator_workflow_receipt_id: str
+    source_operator_workflow_receipt_hash: str
+    authority_basis_hash: str
+    row_hash: str
+    history_hash: str
+    previous_retry_progress_checkpoint_sequence: int | None
+    previous_retry_progress_checkpoint_receipt_id: str | None
+    retry_progress_checkpoint: dict[str, Any]
+    retry_progress_checkpoint_hash: str
+    retry_progress_checkpoint_authority: dict[str, Any]
+    retry_progress_checkpoint_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_retry_progress_checkpoint_receipt: bool
+    monotonic_retry_progress_checkpoint_sequence: bool
+    retry_worker_attempt_receipt_mutated: bool
+    retry_scheduler_lease_receipt_mutated: bool
+    retry_queue_state_receipt_mutated: bool
+    retry_policy_receipt_mutated: bool
+    completion_failure_receipt_mutated: bool
+    failed_worker_attempt_receipt_mutated: bool
+    progress_checkpoint_receipt_mutated: bool
+    scheduler_lease_receipt_mutated: bool
+    queue_state_receipt_mutated: bool
+    source_run_receipt_mutated: bool
+    run_state_before_retry_progress_checkpoint: str
+    run_state_after_retry_progress_checkpoint: str
+    retry_worker_attempt_state_before_retry_progress_checkpoint: str
+    selected_retry_progress_checkpoint_mode: str
+    selected_retry_progress_checkpoint_endpoint: str
+    selected_retry_progress_checkpoint_receipt_binding: str
+    selected_retry_progress_checkpoint_idempotency_basis: str
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    retry_queue_state_endpoint: str
+    retry_scheduler_lease_endpoint: str
+    retry_worker_attempt_endpoint: str
+    retry_progress_checkpoint_endpoint: str
+    retry_progress_checkpoint_runtime_selected: bool
+    background_process_runtime_selected_now: bool
+    job_execution_runtime_selected_now: bool
+    retry_completion_failure_runtime_selected_now: bool
+    cancel_runtime_selected_now: bool
+    resume_runtime_selected_now: bool
+    expiry_enforcement_runtime_selected_now: bool
+    default_scope_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    raw_exception_trace_admitted: bool
+    raw_log_excerpt_admitted: bool
     raw_local_path_exposed: bool
     raw_url_exposed: bool
     artifact_bytes_exposed: bool
@@ -10343,6 +10464,27 @@ def post_candidate_b_full_corpus_operator_workflow_retry_worker_attempt(
         )
     except (
         workflow_retry_worker_attempt_service.CandidateBFullCorpusOperatorWorkflowRetryWorkerAttemptError
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_retry_progress_checkpoint_service = (
+        layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint
+    )
+    try:
+        return workflow_retry_progress_checkpoint_service.record_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint(
+            payload.model_dump(exclude_unset=True),
+        )
+    except (
+        workflow_retry_progress_checkpoint_service.CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointError
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
