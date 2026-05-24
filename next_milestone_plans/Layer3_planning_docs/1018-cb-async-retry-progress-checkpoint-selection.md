@@ -1,0 +1,76 @@
+# Candidate B Async Retry Progress Checkpoint Authority Selection
+
+```yaml
+milestone: candidate_b_async_retry_progress_checkpoint_authority_selection_v1
+source_retry_worker_attempt_runtime: next_milestone_plans/Layer3_planning_docs/1017-cb-async-retry-worker-attempt-runtime.md
+current_main_entry: bf4943296d62bbaf8500075eee981325b7b9a8dc
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_retry_progress_checkpoint_receipt_v1
+selected_retry_lineage_order: retry_queue_state_receipt,retry_scheduler_lease_receipt,retry_worker_attempt_receipt,retry_progress_checkpoint_receipt,retry_completion_failure_receipt
+selected_retry_progress_checkpoint_scope: server_owned_candidate_b_full_corpus_operator_workflow_retry_worker_attempt_receipts
+selected_retry_progress_checkpoint_mode: append_only_retry_progress_checkpoint_receipt_without_retry_completion_cancel_resume_or_job_execution
+selected_retry_progress_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint
+existing_retry_worker_attempt_endpoint_reused_for_retry_attempt_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/worker/attempt
+existing_retry_scheduler_lease_endpoint_reused_for_retry_lease_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease
+existing_retry_queue_state_endpoint_reused_for_retry_queue_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/queue/state
+existing_retry_policy_endpoint_reused_for_retry_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy
+existing_history_endpoint_reused_for_run_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_status_endpoint_reused_for_run_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+selected_retry_progress_checkpoint_receipt_model: append_only_retry_progress_checkpoint_receipt_without_mutating_retry_worker_attempt_retry_scheduler_lease_retry_queue_state_retry_policy_completion_failure_failed_worker_attempt_progress_checkpoint_scheduler_lease_queue_state_or_source_run_receipts
+selected_retry_progress_checkpoint_receipt_binding: retry_worker_attempt_receipt_id,retry_worker_attempt_receipt_hash,retry_worker_attempt_authority_hash,retry_scheduler_lease_receipt_id,retry_scheduler_lease_receipt_hash,retry_queue_state_receipt_id,retry_queue_state_receipt_hash,retry_policy_receipt_id,retry_policy_authority_hash,completion_failure_receipt_id,failed_worker_attempt_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_progress_checkpoint_sequence,retry_progress_checkpoint_hash
+selected_retry_progress_checkpoint_sequence_model: monotonically_increasing_append_only_sequence_per_retry_worker_attempt
+selected_retry_progress_checkpoint_idempotency_basis: client_request_id_plus_retry_progress_checkpoint_authority_hash
+retry_attempt_number_required: 2
+stale_retry_worker_attempt_receipt_must_reject: true
+stale_retry_scheduler_lease_receipt_must_reject: true
+stale_retry_queue_state_receipt_must_reject: true
+stale_retry_policy_receipt_must_reject: true
+stale_completion_failure_receipt_must_reject: true
+stale_failed_worker_attempt_receipt_must_reject: true
+stale_run_receipt_must_reject: true
+stale_history_row_must_reject: true
+missing_retry_worker_attempt_receipt_must_reject: true
+retry_worker_attempt_receipt_mutation_admitted: false
+retry_scheduler_lease_receipt_mutation_admitted: false
+retry_queue_state_receipt_mutation_admitted: false
+retry_policy_receipt_mutation_admitted: false
+completion_failure_receipt_mutation_admitted: false
+failed_worker_attempt_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+retry_progress_checkpoint_runtime_selected_after_sync: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+retry_completion_failure_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_progress_checkpoint_receipt_v1
+```
+
+This freeze selects retry progress-checkpoint receipts as the next runtime-bearing slice after retry worker-attempt receipts. Current main can now record retry attempt-number-2 identity, but it still has no append-only retry checkpoint sequence that can project retry progress before retry terminal completion/failure, cancellation, resume, or job execution authority is admitted.
+
+The next runtime must create server-owned append-only retry progress-checkpoint receipts over an existing retry worker-attempt receipt. It must bind retry worker-attempt, retry scheduler-lease, retry queue-state, retry-policy, original failed terminal lineage, current workflow-run history, and operator workflow-run authority without mutating any prior receipt or completing the retry.
+
+## Coherence Check
+
+- Should a retry progress checkpoint execute Candidate B work? Recommended answer: no. It records bounded retry progress authority and lineage; job execution remains separately selected.
+- Should a retry progress checkpoint complete the retry? Recommended answer: no. Retry completion/failure needs terminal-state authority after retry checkpoint receipts exist.
+- Should cancel or resume be implemented in this slice? Recommended answer: no. They need checkpoint and terminal-state semantics before mutation behavior is admitted.
+- Should checkpoint payloads expose raw paths, URLs, provider refs, connector destinations, RAG/vector/model inputs, raw traces/logs, or browser storage authority? Recommended answer: no. Retry progress must remain redacted server-owned authority.
