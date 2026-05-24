@@ -1,0 +1,53 @@
+# Candidate B Async Process Completion/Result Adoption Runtime
+
+```yaml
+milestone: candidate_b_async_process_completion_result_adoption_v1
+source_process_completion_result_selection: next_milestone_plans/Layer3_planning_docs/1030-cb-async-process-completion-result-adoption-selection.md
+current_main_entry: 498d11e541da0fb04b19bee4e651e63c01571f0f
+runtime_status: implemented
+selected_completion_result_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result
+selected_completion_result_mode: append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure
+selected_completion_result_action: record_candidate_b_async_process_completion_result_adoption
+selected_completion_result_receipt_model: append_only_receipt_binding_process_execution_receipt_to_validated_operator_workflow_result_receipt
+completed_result_adoption_requires: current_process_execution_receipt,current_history_row,current_execution_boundary_authority,validated_result_workflow_receipt_from_allowlisted_workflow,matching_operator_workflow_lineage,operator_safe_status_request
+failed_result_adoption_requires: current_process_execution_receipt,operator_safe_failure_code,operator_safe_failure_phase,redacted_failure_summary_hash
+missing_process_execution_receipt_rejects: true
+stale_process_execution_receipt_rejects: true
+stale_or_unrelated_result_receipt_rejects: true
+competing_completion_result_receipt_rejects: true
+status_history_projection_after_result_adoption: true
+rendered_operator_projection_after_result_adoption: true
+process_completion_result_runtime_selected: true
+result_adoption_runtime_selected_after_sync: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+source_run_receipt_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+implementation_scope: backend_service_api_readiness_status_history_rendered_operator_control_focused_tests
+next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator_proof_selection_v1
+```
+
+The runtime records a terminal Candidate B process completion/result receipt only after a started process-execution receipt is already visible for the selected workflow row. Completed adoption binds the process-execution receipt to a validated Candidate B workflow result receipt with matching baseline, Candidate A, Candidate B, compare-target, bridge, proof, and material lineage.
+
+The receipt is append-only. It does not mutate the source workflow receipt, the process-execution receipt, execution-boundary authority, Candidate B selector/default scope, source roots, provider objects, connector destinations, RAG/vector/model runtime, full mockup activation, browser storage, or frontend durable authority. It does not expose raw stdout, stderr, exception traces, log excerpts, local paths, URLs, or artifact bytes.
+
+The status/history projection is read-only and operator-safe. The rendered control can submit only receipt ids and receipt hashes from server-projected history; it cannot submit commands, local paths, URLs, raw process output, provider refs, connector dispatch controls, model runtime controls, or durable authority.

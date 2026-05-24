@@ -43,6 +43,7 @@ STATUS_HASH_KEYS = (
     "retry_terminal_status_projection",
     "execution_boundary_projection",
     "process_execution_projection",
+    "process_completion_result_projection",
     "operator_projection",
 )
 WORKFLOW_RECEIPT_HASH_KEYS = (
@@ -85,6 +86,16 @@ PROCESS_EXECUTION_RECEIPT_PREFIX = f"{WORKFLOW_RECEIPT_PREFIX}-process-execution
 PROCESS_EXECUTION_STATUS_PROJECTION_MODE = (
     "read_only_process_execution_receipt_projection_without_job_completion_or_result_adoption"
 )
+PROCESS_COMPLETION_RESULT_SCHEMA_ID = (
+    "layer3.candidate_b_full_corpus_operator_workflow_process_completion_result.v1"
+)
+PROCESS_COMPLETION_RESULT_MODE = (
+    "append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure"
+)
+PROCESS_COMPLETION_RESULT_RECEIPT_PREFIX = f"{WORKFLOW_RECEIPT_PREFIX}-process-result"
+PROCESS_COMPLETION_RESULT_STATUS_PROJECTION_MODE = (
+    "read_only_process_completion_result_receipt_projection_without_receipt_creation_or_lineage_mutation"
+)
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
     "paths",
@@ -115,6 +126,7 @@ _ALLOWED_REF_SCHEMES = (
     "candidate-b-full-corpus-operator-workflow-retry-completion-failure://",
     "candidate-b-full-corpus-operator-workflow-process-execution://",
     "candidate-b-full-corpus-operator-workflow-process://",
+    "candidate-b-full-corpus-operator-workflow-process-result://",
 )
 
 
@@ -176,6 +188,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
     retry_terminal_status_projection = _retry_terminal_status_projection(receipt_id, receipt_hash)
     execution_boundary_projection = _execution_boundary_projection(receipt_id, receipt_hash)
     process_execution_projection = _process_execution_projection(receipt_id, receipt_hash)
+    process_completion_result_projection = _process_completion_result_projection(receipt_id, receipt_hash)
     operator_projection = {
         "workflow_status_visible": True,
         "workflow_receipt_projection_visible": True,
@@ -188,6 +201,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "retry_terminal_status_projection_visible": True,
         "execution_boundary_projection_visible": True,
         "process_execution_projection_visible": True,
+        "process_completion_result_projection_visible": True,
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
         "artifact_bytes_exposed": False,
@@ -218,6 +232,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "retry_terminal_status_projection": retry_terminal_status_projection,
         "execution_boundary_projection": execution_boundary_projection,
         "process_execution_projection": process_execution_projection,
+        "process_completion_result_projection": process_completion_result_projection,
         "operator_projection": operator_projection,
     }
     status_hash = _stable_hash({key: status_input[key] for key in STATUS_HASH_KEYS})
@@ -1306,6 +1321,191 @@ def _validated_process_execution_projection(
         "cancel_runtime_selected_now": False,
         "retry_runtime_selected_now": False,
         "resume_runtime_selected_now": False,
+        "raw_stdout_admitted": False,
+        "raw_stderr_admitted": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+
+
+def _process_completion_result_projection(
+    operator_workflow_receipt_id: str,
+    operator_workflow_receipt_hash: str,
+) -> dict[str, Any]:
+    root = _workflow_receipt_root()
+    matches: list[tuple[str, dict[str, Any]]] = []
+    for receipt_file in sorted(root.glob(f"{PROCESS_COMPLETION_RESULT_RECEIPT_PREFIX}-*/receipt.json")):
+        receipt_id = receipt_file.parent.name
+        _validate_storage_id(receipt_id, prefix=PROCESS_COMPLETION_RESULT_RECEIPT_PREFIX)
+        receipt = _read_json_receipt(
+            receipt_file,
+            code="candidate_b_full_corpus_operator_workflow_status_process_completion_result_receipt_unreadable",
+            message="A Candidate B process completion/result receipt could not be read for status projection.",
+        )
+        if receipt.get("operator_workflow_receipt_id") == operator_workflow_receipt_id:
+            matches.append((receipt_id, receipt))
+    if not matches:
+        return _process_completion_result_not_recorded_projection()
+    if len(matches) > 1:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_process_completion_result_conflict",
+            "The selected Candidate B workflow has multiple process completion/result receipts.",
+            http_status=409,
+            details={
+                "operator_workflow_receipt_id": operator_workflow_receipt_id,
+                "process_completion_result_receipt_ids": [receipt_id for receipt_id, _receipt in matches],
+            },
+        )
+    receipt_id, receipt = matches[0]
+    return _validated_process_completion_result_projection(
+        receipt_id,
+        receipt,
+        operator_workflow_receipt_id=operator_workflow_receipt_id,
+        operator_workflow_receipt_hash=operator_workflow_receipt_hash,
+    )
+
+
+def _process_completion_result_not_recorded_projection() -> dict[str, Any]:
+    return {
+        "process_completion_result_projection_state": "not_recorded",
+        "process_completion_result_status_projection_mode": PROCESS_COMPLETION_RESULT_STATUS_PROJECTION_MODE,
+        "process_completion_result_status_projection_surfaces": ["status", "history"],
+        "read_only_process_completion_result_projection": True,
+        "process_completion_result_receipt_available": False,
+        "process_completion_result_receipt_id": "",
+        "process_completion_result_receipt_hash": "",
+        "process_completion_result_authority_hash": "",
+        "process_execution_receipt_id": "",
+        "process_execution_authority_hash": "",
+        "terminal_state": "",
+        "result_workflow_receipt_id": "",
+        "result_workflow_receipt_hash": "",
+        "result_authority_hash": "",
+        "result_status_request_hash": "",
+        "result_downstream_proof_hash": "",
+        "terminal_failure_code": "",
+        "terminal_failure_phase": "",
+        "redacted_failure_summary_hash": "",
+        "process_completion_result_runtime_selected": False,
+        "result_adoption_runtime_selected": False,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "source_run_receipt_mutation_admitted": False,
+        "process_execution_receipt_mutation_admitted": False,
+        "raw_stdout_admitted": False,
+        "raw_stderr_admitted": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+
+
+def _validated_process_completion_result_projection(
+    receipt_id: str,
+    receipt: Mapping[str, Any],
+    *,
+    operator_workflow_receipt_id: str,
+    operator_workflow_receipt_hash: str,
+) -> dict[str, Any]:
+    expected = {
+        "schema_id": PROCESS_COMPLETION_RESULT_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "mode": PROCESS_COMPLETION_RESULT_MODE,
+        "operator_decision": "record_candidate_b_async_process_completion_result_adoption",
+        "status": "available",
+        "process_completion_result_receipt_id": receipt_id,
+        "operator_workflow_receipt_id": operator_workflow_receipt_id,
+        "operator_workflow_receipt_hash": operator_workflow_receipt_hash,
+        "append_only_process_completion_result_receipt": True,
+        "process_execution_receipt_mutated": False,
+        "source_run_receipt_mutated": False,
+        "execution_boundary_receipt_mutated": False,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "raw_stdout_admitted": False,
+        "raw_stderr_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+    mismatches = [
+        {"field": field, "expected": value, "received": receipt.get(field)}
+        for field, value in expected.items()
+        if receipt.get(field) != value
+    ]
+    receipt_hash = _stable_hash(
+        {
+            key: value
+            for key, value in receipt.items()
+            if key not in {"process_completion_result_receipt_hash", "server_time"}
+        }
+    )
+    if receipt.get("process_completion_result_receipt_hash") != receipt_hash:
+        mismatches.append(
+            {
+                "field": "process_completion_result_receipt_hash",
+                "expected": receipt_hash,
+                "received": receipt.get("process_completion_result_receipt_hash"),
+            }
+        )
+    _assert_no_raw_authority_exposure(receipt)
+    if mismatches:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_process_completion_result_mismatch",
+            "The selected Candidate B process completion/result receipt is stale or contradictory.",
+            http_status=409,
+            details={"process_completion_result_receipt_id": receipt_id, "mismatches": mismatches},
+        )
+    return {
+        "process_completion_result_projection_state": str(receipt["terminal_state"]),
+        "process_completion_result_status_projection_mode": PROCESS_COMPLETION_RESULT_STATUS_PROJECTION_MODE,
+        "process_completion_result_status_projection_surfaces": ["status", "history"],
+        "read_only_process_completion_result_projection": True,
+        "process_completion_result_receipt_available": True,
+        "process_completion_result_receipt_id": receipt_id,
+        "process_completion_result_receipt_hash": receipt_hash,
+        "process_completion_result_authority_hash": str(receipt["process_completion_result_authority_hash"]),
+        "process_execution_receipt_id": str(receipt["process_execution_receipt_id"]),
+        "process_execution_receipt_hash": str(receipt["process_execution_receipt_hash"]),
+        "process_execution_authority_hash": str(receipt["process_execution_authority_hash"]),
+        "terminal_state": str(receipt["terminal_state"]),
+        "result_workflow_receipt_id": str(receipt["result_workflow_receipt_id"]),
+        "result_workflow_receipt_hash": str(receipt["result_workflow_receipt_hash"]),
+        "result_authority_hash": str(receipt["result_authority_hash"]),
+        "result_status_request_hash": str(receipt["result_status_request_hash"]),
+        "result_downstream_proof_hash": str(receipt["result_downstream_proof_hash"]),
+        "terminal_failure_code": str(receipt["terminal_failure_code"]),
+        "terminal_failure_phase": str(receipt["terminal_failure_phase"]),
+        "redacted_failure_summary_hash": str(receipt["redacted_failure_summary_hash"]),
+        "process_completion_result_runtime_selected": True,
+        "result_adoption_runtime_selected": bool(receipt["result_adoption_runtime_selected"]),
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "source_run_receipt_mutation_admitted": False,
+        "process_execution_receipt_mutation_admitted": False,
         "raw_stdout_admitted": False,
         "raw_stderr_admitted": False,
         "raw_exception_trace_admitted": False,

@@ -9326,6 +9326,295 @@ test('Layer 3 workbench starts Candidate B workflow process execution through re
   ]);
 });
 
+test('Layer 3 workbench adopts Candidate B workflow process completion result through rendered append-only control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let workflowProcessCompletionResultPayload = null;
+  const returnedStatusRequest = {
+    client_request_id: 'candidate-b-rendered-process-completion-result-status-request',
+    status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+    operator_decision: 'inspect_candidate_b_full_corpus_operator_workflow_status',
+    operator_workflow_receipt_id: 'cb-full-corpus-operator-run-process-completion-result-rendered-proof',
+    baseline_run_id: 'baseline-rendered-process-completion-result-proof',
+    candidate_a_run_id: 'candidate-a-rendered-process-completion-result-proof',
+    candidate_b_run_id: 'candidate-b-rendered-process-completion-result-proof',
+    bridge_receipt_id: 'cb-runtime-l3-rendered-process-completion-result-proof',
+    downstream_proof_id: 'cb-runtime-downstream-proof-rendered-process-completion-result-proof',
+  };
+  const processExecutionProjection = {
+    process_execution_projection_state: 'started',
+    process_execution_status_projection_mode: 'read_only_process_execution_receipt_projection_without_job_completion_or_result_adoption',
+    process_execution_status_projection_surfaces: ['status', 'history'],
+    read_only_process_execution_projection: true,
+    process_execution_receipt_available: true,
+    process_execution_receipt_id: 'cb-full-corpus-operator-process-execution-completion-result-rendered-proof',
+    process_execution_receipt_hash: 'p'.repeat(64),
+    process_execution_authority_hash: 'r'.repeat(64),
+    process_invocation_hash: 'q'.repeat(64),
+    allowlisted_command_family: 'tools/run_candidate_b_full_corpus_operator_workflow.py',
+    redacted_process_ref: 'candidate-b-full-corpus-operator-workflow-process://cb-full-corpus-operator-process-execution-completion-result-rendered-proof/rrrrrrrrrrrrrrrrrrrrrrrr',
+    server_process_handle_hash: 's'.repeat(64),
+    background_process_runtime_selected_now: true,
+    job_execution_runtime_selected_now: false,
+    actual_subprocess_spawn_admitted_now: true,
+    actual_corpus_processing_execution_admitted_now: false,
+    operator_supplied_command_admitted: false,
+    raw_stdout_admitted: false,
+    raw_stderr_admitted: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    artifact_bytes_exposed: false,
+  };
+  const processCompletionResultProjection = {
+    process_completion_result_projection_state: 'not_recorded',
+    process_completion_result_status_projection_mode: 'read_only_process_completion_result_receipt_projection_without_receipt_creation_or_lineage_mutation',
+    process_completion_result_status_projection_surfaces: ['status', 'history'],
+    read_only_process_completion_result_projection: true,
+    process_completion_result_receipt_available: false,
+    process_completion_result_runtime_selected: false,
+    result_adoption_runtime_selected: false,
+    actual_subprocess_spawn_admitted_now: false,
+    actual_corpus_processing_execution_admitted_now: false,
+    operator_supplied_command_admitted: false,
+    raw_stdout_admitted: false,
+    raw_stderr_admitted: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    artifact_bytes_exposed: false,
+  };
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_history.v1',
+        schema_version: 1,
+        request_id: 'candidate-b-full-corpus-operator-workflow-history',
+        server_time: '2026-05-24T00:00:00Z',
+        mode: 'candidate_b_full_corpus_operator_workflow_history_v1',
+        history_scope: 'server_owned_candidate_b_full_corpus_operator_workflow_run_receipts',
+        history_state: 'available',
+        status: 'available',
+        status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status',
+        rendered_history_mode: 'rendered_candidate_b_full_corpus_operator_workflow_run_history_control',
+        receipt_count: 1,
+        history_hash: '8'.repeat(64),
+        configured_receipt_authority_used: true,
+        read_only_history_projection: true,
+        browser_supplied_receipt_root_admitted: false,
+        operator_supplied_local_path_admitted: false,
+        operator_supplied_raw_url_admitted: false,
+        cancel_runtime_admitted: false,
+        retry_runtime_admitted: false,
+        retry_terminal_status_projection_runtime_admitted: true,
+        execution_boundary_runtime_admitted: true,
+        process_execution_runtime_admitted: true,
+        process_completion_result_runtime_admitted: true,
+        queue_state_authority_runtime_admitted: true,
+        queue_scheduler_runtime_admitted: true,
+        worker_attempt_runtime_admitted: true,
+        progress_checkpoint_runtime_admitted: true,
+        completion_failure_runtime_admitted: true,
+        background_process_runtime_admitted: true,
+        job_execution_runtime_admitted: false,
+        default_scope_expansion_admitted: false,
+        provider_object_write_enabled: false,
+        connector_dispatch_enabled: false,
+        rag_vector_model_runtime_enabled: false,
+        full_mockup_activation_enabled: false,
+        frontend_durable_authority_enabled: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+        next_allowed_actions: [
+          'record append-only process completion/result adoption after process execution is visible',
+        ],
+        history_rows: [
+          {
+            operator_workflow_receipt_id: returnedStatusRequest.operator_workflow_receipt_id,
+            operator_workflow_receipt_hash: '9'.repeat(64),
+            source_operator_workflow_receipt_id: 'cb-full-corpus-operator-source-process-completion-result-rendered-proof',
+            source_operator_workflow_receipt_hash: 'a'.repeat(64),
+            authority_basis_hash: 'b'.repeat(64),
+            runtime_root_lifecycle_receipt_id: 'cb-full-corpus-runtime-roots-process-completion-result-rendered-proof',
+            baseline_run_id: returnedStatusRequest.baseline_run_id,
+            candidate_a_run_id: returnedStatusRequest.candidate_a_run_id,
+            candidate_b_run_id: returnedStatusRequest.candidate_b_run_id,
+            compare_target_set_hash: 'c'.repeat(64),
+            bridge_receipt_id: returnedStatusRequest.bridge_receipt_id,
+            downstream_proof_id: returnedStatusRequest.downstream_proof_id,
+            material_relative_name: 'text/target-process-completion-result-00001.md',
+            run_state: 'proven',
+            status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status',
+            status_request: returnedStatusRequest,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            artifact_bytes_exposed: false,
+            selector_mutation_performed: false,
+            frontend_durable_authority_enabled: false,
+            row_hash: 'd'.repeat(64),
+            retry_terminal_status_projection: {
+              retry_completion_failure_receipt_available: true,
+              retry_terminal_projection_state: 'completed',
+            },
+            execution_boundary_projection: {
+              execution_boundary_receipt_available: true,
+              execution_boundary_projection_state: 'boundary_recorded',
+            },
+            process_execution_projection: processExecutionProjection,
+            process_completion_result_projection: processCompletionResultProjection,
+          },
+        ],
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result', async (route) => {
+    workflowProcessCompletionResultPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_process_completion_result.v1',
+        schema_version: 1,
+        request_id: workflowProcessCompletionResultPayload.client_request_id,
+        server_time: '2026-05-24T00:00:01Z',
+        mode: 'append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure',
+        status: 'available',
+        process_completion_result_state: 'completed',
+        process_completion_result_receipt_id: 'cb-full-corpus-operator-process-result-rendered-proof',
+        process_completion_result_receipt_hash: 'u'.repeat(64),
+        process_completion_result_receipt_ref: 'candidate-b-full-corpus-operator-workflow-process-result://cb-full-corpus-operator-process-result-rendered-proof/uuuuuuuuuuuuuuuuuuuuuuuu',
+        operator_workflow_receipt_id: workflowProcessCompletionResultPayload.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: workflowProcessCompletionResultPayload.operator_workflow_receipt_hash,
+        row_hash: workflowProcessCompletionResultPayload.row_hash,
+        authority_basis_hash: workflowProcessCompletionResultPayload.authority_basis_hash,
+        history_hash: workflowProcessCompletionResultPayload.history_hash,
+        process_execution_receipt_id: workflowProcessCompletionResultPayload.process_execution_receipt_id,
+        process_execution_receipt_hash: workflowProcessCompletionResultPayload.process_execution_receipt_hash,
+        process_execution_authority_hash: workflowProcessCompletionResultPayload.process_execution_authority_hash,
+        terminal_state: 'completed',
+        result_workflow_receipt_id: workflowProcessCompletionResultPayload.result_workflow_receipt_id,
+        result_workflow_receipt_hash: workflowProcessCompletionResultPayload.result_workflow_receipt_hash,
+        result_authority_hash: 'v'.repeat(64),
+        result_status_request: returnedStatusRequest,
+        result_status_request_hash: 'w'.repeat(64),
+        result_downstream_proof_hash: 'x'.repeat(64),
+        terminal_failure_code: '',
+        terminal_failure_phase: '',
+        redacted_failure_summary_hash: '',
+        process_completion_result_authority: {
+          process_execution_receipt_id: workflowProcessCompletionResultPayload.process_execution_receipt_id,
+          result_workflow_receipt_id: workflowProcessCompletionResultPayload.result_workflow_receipt_id,
+        },
+        process_completion_result_authority_hash: 'y'.repeat(64),
+        idempotency_key_hash: 'z'.repeat(64),
+        idempotent_replay: false,
+        append_only_process_completion_result_receipt: true,
+        process_execution_receipt_mutated: false,
+        source_run_receipt_mutated: false,
+        execution_boundary_receipt_mutated: false,
+        process_completion_result_runtime_selected: true,
+        result_adoption_runtime_selected: true,
+        background_process_runtime_selected_now: false,
+        job_execution_runtime_selected_now: false,
+        actual_subprocess_spawn_admitted_now: false,
+        actual_corpus_processing_execution_admitted_now: false,
+        browser_triggered_process_start_admitted: false,
+        operator_supplied_command_admitted: false,
+        operator_supplied_local_path_admitted: false,
+        operator_supplied_raw_url_admitted: false,
+        provider_object_write_enabled: false,
+        connector_dispatch_enabled: false,
+        rag_vector_model_runtime_enabled: false,
+        full_mockup_activation_enabled: false,
+        frontend_durable_authority_enabled: false,
+        default_scope_expansion_admitted: false,
+        raw_stdout_admitted: false,
+        raw_stderr_admitted: false,
+        raw_exception_trace_admitted: false,
+        raw_log_excerpt_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+        status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status',
+        status_request: returnedStatusRequest,
+        history_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history',
+        history_request: {
+          method: 'GET',
+          endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history',
+        },
+        process_completion_result_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result',
+        next_allowed_actions: [
+          'refresh workflow-run history',
+          'inspect redacted process completion/result projection through workflow status',
+        ],
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const resultCard = page.locator('.candidate-b-full-corpus-workflow-process-completion-result-card');
+  await expect(resultCard).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_full_corpus_operator_workflow_process_completion_result_control',
+  );
+  await expect(resultCard).toHaveAttribute('data-frontend-durable-authority', 'false');
+
+  await page.locator('#candidate-b-full-corpus-workflow-history-refresh').click();
+  await expect(panel).toContainText(returnedStatusRequest.operator_workflow_receipt_id);
+  await expect(panel).toContainText('process completion/result projection state');
+  await expect(panel).toContainText('not_recorded');
+  await page.locator('[data-candidate-b-workflow-process-completion-result-index="0"]').click();
+  await expect(resultCard).toContainText('candidate_b_full_corpus_workflow_process_completion_result_completed');
+  await expect(resultCard).toContainText('append-only receipt: true');
+  await expect(resultCard).toContainText('process execution receipt mutated: false');
+  await expect(resultCard).toContainText('source run receipt mutated: false');
+  await expect(resultCard).toContainText('actual subprocess spawn admitted now: false');
+  await expect(resultCard).toContainText('actual corpus processing execution admitted now: false');
+  await expect(resultCard).toContainText('raw stdout admitted: false');
+  await expect(resultCard).toContainText('raw stderr admitted: false');
+
+  expect(workflowProcessCompletionResultPayload).toMatchObject({
+    process_completion_result_mode: 'append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure',
+    operator_decision: 'record_candidate_b_async_process_completion_result_adoption',
+    terminal_state: 'completed',
+    operator_workflow_receipt_id: returnedStatusRequest.operator_workflow_receipt_id,
+    operator_workflow_receipt_hash: '9'.repeat(64),
+    row_hash: 'd'.repeat(64),
+    authority_basis_hash: 'b'.repeat(64),
+    history_hash: '8'.repeat(64),
+    process_execution_receipt_id: processExecutionProjection.process_execution_receipt_id,
+    process_execution_receipt_hash: processExecutionProjection.process_execution_receipt_hash,
+    process_execution_authority_hash: processExecutionProjection.process_execution_authority_hash,
+    result_workflow_receipt_id: 'cb-full-corpus-operator-source-process-completion-result-rendered-proof',
+    result_workflow_receipt_hash: 'a'.repeat(64),
+  });
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('raw_url');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('local_path');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('runtime_root');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('source_directory');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('command');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('process');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('stdout');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('stderr');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('job_execution');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('provider_object_ref');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('connector_destination');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('rag_vector_index');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('model_runtime');
+  expect(workflowProcessCompletionResultPayload).not.toHaveProperty('frontend_durable_authority');
+  expect(JSON.stringify(workflowProcessCompletionResultPayload)).not.toContain('file://');
+  expect(JSON.stringify(workflowProcessCompletionResultPayload)).not.toContain('https://');
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/full-corpus/operator-workflow/')
+  ))).toEqual([
+    { method: 'GET', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result' },
+  ]);
+});
+
 test('Layer 3 workbench inspects Candidate B final proof status through admitted server receipt revalidation', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let finalProofStatusPayload = null;
