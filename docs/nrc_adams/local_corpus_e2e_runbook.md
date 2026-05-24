@@ -3103,3 +3103,57 @@ next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_v1
 ```
 
 This freeze selects the post-monitor repeatability checkpoint without implementing it. The next runtime should write a single append-only checkpoint receipt over the current server-owned workflow row, status projection, completion monitor projection, runtime-root lifecycle receipt, bridge receipt, downstream proof, compare target set, and operator runbook repeatability steps. It must not rerun Candidate B or Layer 3, control processes, mutate existing receipts, accept raw local paths or URLs, expose raw process output, or broaden provider/connector/RAG/model/full-mockup/default scope.
+
+### Candidate B Full-Corpus Operator Repeatability Checkpoint Runtime
+
+```yaml
+milestone: candidate_b_full_corpus_operator_repeatability_checkpoint_v1
+source_repeatability_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1036-cb-repeatability-checkpoint-selection.md
+current_main_entry: 194fd3c3bd225736869c4152b9e1e0d6d9859763
+runtime_status: implemented
+selected_repeatability_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint
+selected_repeatability_checkpoint_mode: append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation
+selected_repeatability_checkpoint_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint
+selected_repeatability_checkpoint_model: bind_workflow_history_status_completion_monitor_and_downstream_receipts_to_repeatability_checkpoint
+repeatability_checkpoint_runtime_selected: true
+append_only_repeatability_checkpoint_receipt: true
+exclusive_repeatability_checkpoint_per_authority: true
+workflow_history_row_required: true
+workflow_status_projection_required: true
+workflow_status_required: proven
+completion_monitor_projection_required: true
+completion_monitor_state_required: completed_downstream_proven
+runtime_root_lifecycle_receipt_required: true
+bridge_receipt_required: true
+downstream_proof_required: true
+baseline_run_id_required: true
+candidate_a_run_id_required: true
+candidate_b_run_id_required: true
+compare_target_set_hash_required: true
+material_relative_name_required: true
+operator_runbook_repeatability_steps_required: true
+stale_history_hash_rejects: true
+stale_row_hash_rejects: true
+stale_workflow_status_rejects: true
+stale_completion_monitor_rejects: true
+non_downstream_proven_monitor_rejects: true
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+process_kill_cancel_retry_resume_admitted: false
+raw_pid_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_selection_v1
+```
+
+Operators can now record a repeatability checkpoint receipt for a downstream-proven Candidate B async operator workflow without rerunning corpus processing, controlling a process, or mutating prior receipts. The request supplies hashes and receipt ids; the server reloads workflow history, status, and completion-monitor authority and rejects stale, missing, mismatched, non-downstream-proven, or raw-leaking inputs.
