@@ -253,6 +253,10 @@ def build_readiness_contract(
         "candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease"
         ),
+        "candidate_b_full_corpus_operator_workflow_worker_attempt_admitted": True,
+        "candidate_b_full_corpus_operator_workflow_worker_attempt_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/worker/attempt"
+        ),
         "candidate_b_default_promotion_selector_switch_admitted": True,
         "candidate_b_default_promotion_selector_scope": ELIGIBLE_CORPUS_SCOPE,
         "source_directory_ingestion_scan_admitted": True,
