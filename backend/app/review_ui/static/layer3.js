@@ -332,6 +332,10 @@ const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_OPERATOR_DECISION = 'record_cand
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_final_proof_status_inspection_control';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_MODE = 'candidate_b_default_promotion_final_proof_status_v1';
 const CANDIDATE_B_DEFAULT_PROMOTION_FINAL_PROOF_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_final_proof_status';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_START_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_run_start_control';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_PROGRESS_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_run_progress_control';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_MODE = 'candidate_b_full_corpus_operator_workflow_run_v1';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_OPERATOR_DECISION = 'start_candidate_b_full_corpus_operator_workflow';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_status_control';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_MODE = 'candidate_b_full_corpus_operator_workflow_status_v1';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_full_corpus_operator_workflow_status';
@@ -493,6 +497,17 @@ const State = {
     candidateBFullCorpusOperatorWorkflowStatus: null,
     candidateBFullCorpusOperatorWorkflowStatusError: null,
     candidateBFullCorpusOperatorWorkflowStatusPending: false,
+    candidateBFullCorpusOperatorWorkflowRun: null,
+    candidateBFullCorpusOperatorWorkflowRunError: null,
+    candidateBFullCorpusOperatorWorkflowRunPending: false,
+    candidateBFullCorpusOperatorWorkflowRunInput: {
+        runtimeRootLifecycleReceiptId: '',
+        baselineRunId: '',
+        candidateARunId: '',
+        candidateBRunId: '',
+        compareTargetSetHash: '',
+        materialRelativeName: '',
+    },
     candidateBFullCorpusOperatorWorkflowStatusInput: {
         workflowReceiptId: '',
         baselineRunId: '',
@@ -7597,6 +7612,12 @@ function candidateBFullCorpusOperatorWorkflowStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBFullCorpusOperatorWorkflowRunEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_operator_workflow_run_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBClosureEvidenceEndpointPath(contract) {
     const endpoint = contract?.candidate_b_default_promotion_closure_evidence_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -7862,6 +7883,50 @@ function candidateBOperatorStatusInputValues() {
     };
 }
 
+function candidateBFullCorpusOperatorWorkflowRunInputValues() {
+    const lifecycleInput = document.getElementById('candidate-b-full-corpus-workflow-run-lifecycle-receipt-id');
+    const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-run-baseline-run-id');
+    const candidateAInput = document.getElementById('candidate-b-full-corpus-workflow-run-candidate-a-run-id');
+    const runInput = document.getElementById('candidate-b-full-corpus-workflow-run-candidate-b-run-id');
+    const compareInput = document.getElementById('candidate-b-full-corpus-workflow-run-compare-target-set-hash');
+    const materialInput = document.getElementById('candidate-b-full-corpus-workflow-run-material-relative-name');
+    return {
+        runtimeRootLifecycleReceiptId: (
+            lifecycleInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowRunInput.runtimeRootLifecycleReceiptId
+            || ''
+        ).trim(),
+        baselineRunId: (
+            baselineInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowRunInput.baselineRunId
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.baselineRunId
+            || ''
+        ).trim(),
+        candidateARunId: (
+            candidateAInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowRunInput.candidateARunId
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.candidateARunId
+            || ''
+        ).trim(),
+        candidateBRunId: (
+            runInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowRunInput.candidateBRunId
+            || State.candidateBFullCorpusOperatorWorkflowStatusInput.candidateBRunId
+            || ''
+        ).trim(),
+        compareTargetSetHash: (
+            compareInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowRunInput.compareTargetSetHash
+            || ''
+        ).trim(),
+        materialRelativeName: (
+            materialInput?.value
+            || State.candidateBFullCorpusOperatorWorkflowRunInput.materialRelativeName
+            || ''
+        ).trim(),
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowStatusInputValues() {
     const receiptInput = document.getElementById('candidate-b-full-corpus-workflow-receipt-id');
     const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-baseline-run-id');
@@ -7995,6 +8060,25 @@ function candidateBOperatorStatusPayload() {
     };
 }
 
+function candidateBFullCorpusOperatorWorkflowRunPayload() {
+    const values = candidateBFullCorpusOperatorWorkflowRunInputValues();
+    State.candidateBFullCorpusOperatorWorkflowRunInput = values;
+    const payload = {
+        client_request_id: requestId(),
+        run_mode: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_OPERATOR_DECISION,
+        runtime_root_lifecycle_receipt_id: values.runtimeRootLifecycleReceiptId,
+        baseline_run_id: values.baselineRunId,
+        candidate_a_run_id: values.candidateARunId,
+        candidate_b_run_id: values.candidateBRunId,
+        compare_target_set_hash: values.compareTargetSetHash,
+    };
+    if (values.materialRelativeName) {
+        payload.material_relative_name = values.materialRelativeName;
+    }
+    return payload;
+}
+
 function candidateBFullCorpusOperatorWorkflowStatusPayload() {
     const values = candidateBFullCorpusOperatorWorkflowStatusInputValues();
     State.candidateBFullCorpusOperatorWorkflowStatusInput = values;
@@ -8096,6 +8180,22 @@ function canInspectCandidateBOperatorStatus(contract = candidateBDefaultPromotio
     );
 }
 
+function canStartCandidateBFullCorpusOperatorWorkflowRun(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBFullCorpusOperatorWorkflowRunInputValues();
+    return Boolean(
+        contract?.candidate_b_full_corpus_operator_workflow_run_admitted
+        && candidateBFullCorpusOperatorWorkflowRunEndpointPath(contract)
+        && candidateBFullCorpusOperatorWorkflowStatusEndpointPath(contract)
+        && values.runtimeRootLifecycleReceiptId
+        && values.baselineRunId
+        && values.candidateARunId
+        && values.candidateBRunId
+        && values.compareTargetSetHash
+        && !State.candidateBFullCorpusOperatorWorkflowRunPending
+        && !State.candidateBFullCorpusOperatorWorkflowStatusPending
+    );
+}
+
 function canInspectCandidateBFullCorpusOperatorWorkflowStatus(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBFullCorpusOperatorWorkflowStatusInputValues();
     return Boolean(
@@ -8189,6 +8289,26 @@ function candidateBOperatorStatusPanelState() {
         return { label: 'candidate_b_operator_status_available', pill: 'ok' };
     }
     return { label: 'candidate_b_operator_status_not_inspected', pill: 'preview' };
+}
+
+function candidateBFullCorpusOperatorWorkflowRunPanelState() {
+    if (State.candidateBFullCorpusOperatorWorkflowRunPending) {
+        return { label: 'candidate_b_full_corpus_workflow_run_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowRunError) {
+        const code = State.candidateBFullCorpusOperatorWorkflowRunError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_workflow_run_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowRun?.run_state === 'proven') {
+        return { label: 'candidate_b_full_corpus_workflow_run_proven', pill: 'ok' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowRun?.run_state) {
+        return {
+            label: `candidate_b_full_corpus_workflow_run_${State.candidateBFullCorpusOperatorWorkflowRun.run_state}`,
+            pill: 'preview',
+        };
+    }
+    return { label: 'candidate_b_full_corpus_workflow_run_not_started', pill: 'preview' };
 }
 
 function candidateBFullCorpusOperatorWorkflowStatusPanelState() {
@@ -8666,6 +8786,56 @@ function candidateBOperatorStatusRows(status) {
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowRunRows(run) {
+    if (!run) return '';
+    const statusRequest = run.status_request || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_PROGRESS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>Server-Owned Workflow Run</strong>
+                <ul>
+                    ${fieldItem('schema id', run.schema_id, { code: true })}
+                    ${fieldItem('run state', run.run_state, { code: true })}
+                    ${fieldItem('operator workflow receipt id', run.operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('operator workflow receipt hash', run.operator_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('idempotent replay', run.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Binding</strong>
+                <ul>
+                    ${fieldItem('source workflow receipt id', run.source_operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('source workflow receipt hash', run.source_operator_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('authority basis hash', run.authority_basis_hash, { code: true })}
+                    ${fieldItem('idempotency key hash', run.idempotency_key_hash, { code: true })}
+                    ${fieldItem('compare target set hash', run.compare_target_set_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Status Follow-Up</strong>
+                <ul>
+                    ${fieldItem('status mode', statusRequest.status_mode, { code: true })}
+                    ${fieldItem('status operator decision', statusRequest.operator_decision, { code: true })}
+                    ${fieldItem('status receipt id', statusRequest.operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('bridge receipt id', statusRequest.bridge_receipt_id, { code: true })}
+                    ${fieldItem('downstream proof id', statusRequest.downstream_proof_id, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Run Guardrails</strong>
+                <ul>
+                    ${fieldItem('receipt persisted', run.receipt_persisted)}
+                    ${fieldItem('raw local path exposed', run.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', run.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', run.artifact_bytes_exposed)}
+                    ${fieldItem('selector mutation performed', run.selector_mutation_performed)}
+                    ${fieldItem('frontend durable authority', run.negative_invariants?.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
     if (!status) return '';
     const corpus = status.corpus || {};
@@ -8872,6 +9042,20 @@ function candidateBOperatorStatusError() {
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowRunError() {
+    const error = State.candidateBFullCorpusOperatorWorkflowRunError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_operator_workflow_run_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowStatusError() {
     const error = State.candidateBFullCorpusOperatorWorkflowStatusError;
     if (!error) return '';
@@ -8977,6 +9161,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofRecordState = candidateBDefaultPromotionFinalProofPanelState();
     const finalProofState = candidateBDefaultPromotionFinalProofStatusPanelState();
     const operatorStatusState = candidateBOperatorStatusPanelState();
+    const fullCorpusWorkflowRunState = candidateBFullCorpusOperatorWorkflowRunPanelState();
     const fullCorpusWorkflowStatusState = candidateBFullCorpusOperatorWorkflowStatusPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
@@ -8998,6 +9183,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const finalProofInputs = State.candidateBDefaultPromotionFinalProofStatusInput;
     const operatorStatus = State.candidateBOperatorStatus;
     const operatorStatusInputs = State.candidateBOperatorStatusInput;
+    const fullCorpusWorkflowRun = State.candidateBFullCorpusOperatorWorkflowRun;
+    const fullCorpusWorkflowRunInputs = State.candidateBFullCorpusOperatorWorkflowRunInput;
     const fullCorpusWorkflowStatus = State.candidateBFullCorpusOperatorWorkflowStatus;
     const fullCorpusWorkflowStatusInputs = State.candidateBFullCorpusOperatorWorkflowStatusInput;
     const closureEvidence = State.candidateBClosureEvidence;
@@ -9147,6 +9334,40 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 ${candidateBRuntimeDownstreamProofError()}
             </section>
             <section class="result-review-card candidate-b-full-corpus-workflow-status-card">
+                <strong>Full-Corpus Operator Workflow Run</strong>
+                <form id="candidate-b-full-corpus-workflow-run-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_START_RENDERED_MODE)}" data-progress-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_PROGRESS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>runtime root lifecycle receipt id</span>
+                        <input id="candidate-b-full-corpus-workflow-run-lifecycle-receipt-id" type="text" value="${escapeHtml(fullCorpusWorkflowRunInputs.runtimeRootLifecycleReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-full-corpus-runtime-roots-..." />
+                    </label>
+                    <label>
+                        <span>baseline run id</span>
+                        <input id="candidate-b-full-corpus-workflow-run-baseline-run-id" type="text" value="${escapeHtml(fullCorpusWorkflowRunInputs.baselineRunId)}" autocomplete="off" spellcheck="false" placeholder="baseline-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate A run id</span>
+                        <input id="candidate-b-full-corpus-workflow-run-candidate-a-run-id" type="text" value="${escapeHtml(fullCorpusWorkflowRunInputs.candidateARunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-a-run-001" />
+                    </label>
+                    <label>
+                        <span>Candidate B run id</span>
+                        <input id="candidate-b-full-corpus-workflow-run-candidate-b-run-id" type="text" value="${escapeHtml(fullCorpusWorkflowRunInputs.candidateBRunId)}" autocomplete="off" spellcheck="false" placeholder="candidate-b-runtime-001" />
+                    </label>
+                    <label>
+                        <span>compare target set hash</span>
+                        <input id="candidate-b-full-corpus-workflow-run-compare-target-set-hash" type="text" value="${escapeHtml(fullCorpusWorkflowRunInputs.compareTargetSetHash)}" autocomplete="off" spellcheck="false" placeholder="sha256..." />
+                    </label>
+                    <label>
+                        <span>material relative name</span>
+                        <input id="candidate-b-full-corpus-workflow-run-material-relative-name" type="text" value="${escapeHtml(fullCorpusWorkflowRunInputs.materialRelativeName)}" autocomplete="off" spellcheck="false" placeholder="text/target-00001.md" />
+                    </label>
+                    <button id="candidate-b-full-corpus-workflow-run-submit" type="submit" ${contract?.candidate_b_full_corpus_operator_workflow_run_admitted && !State.candidateBFullCorpusOperatorWorkflowRunPending && !State.candidateBFullCorpusOperatorWorkflowStatusPending ? '' : 'disabled'}>Start Server-Owned Workflow Run</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusWorkflowRunState.pill)}">${escapeHtml(fullCorpusWorkflowRunState.label)}</span>
+                    <span class="rail-label">Server starts from configured Candidate B workflow receipt authority, returns a durable run receipt, and supplies the exact status request used for progress inspection.</span>
+                </div>
+                ${candidateBFullCorpusOperatorWorkflowRunRows(fullCorpusWorkflowRun)}
+                ${candidateBFullCorpusOperatorWorkflowRunError()}
                 <strong>Full-Corpus Operator Workflow Status</strong>
                 <form id="candidate-b-full-corpus-workflow-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
                     <label>
@@ -9516,6 +9737,64 @@ async function inspectCandidateBOperatorStatus(event) {
         addEvent(`Candidate B operator-status inspection blocked: ${error.message}`);
     } finally {
         State.candidateBOperatorStatusPending = false;
+        renderAll();
+    }
+}
+
+async function startCandidateBFullCorpusOperatorWorkflowRun(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canStartCandidateBFullCorpusOperatorWorkflowRun(contract)) {
+        State.candidateBFullCorpusOperatorWorkflowRun = null;
+        State.candidateBFullCorpusOperatorWorkflowRunError = new Error(
+            'Candidate B full-corpus workflow run requires runtime-root lifecycle receipt id, run ids, and compare target set hash.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const runPath = candidateBFullCorpusOperatorWorkflowRunEndpointPath(contract);
+    const statusPath = candidateBFullCorpusOperatorWorkflowStatusEndpointPath(contract);
+    const payload = candidateBFullCorpusOperatorWorkflowRunPayload();
+    let runResponse = null;
+    State.candidateBFullCorpusOperatorWorkflowRunPending = true;
+    State.candidateBFullCorpusOperatorWorkflowRunError = null;
+    State.candidateBFullCorpusOperatorWorkflowStatusError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        runResponse = await postJson(runPath, payload);
+        State.candidateBFullCorpusOperatorWorkflowRun = runResponse;
+        State.candidateBFullCorpusOperatorWorkflowRunError = null;
+        State.candidateBFullCorpusOperatorWorkflowRunPending = false;
+        const statusRequest = runResponse?.status_request;
+        if (!statusRequest || typeof statusRequest !== 'object') {
+            throw new Error('Candidate B workflow run did not return a status request.');
+        }
+        State.candidateBFullCorpusOperatorWorkflowStatusInput = {
+            workflowReceiptId: statusRequest.operator_workflow_receipt_id || '',
+            baselineRunId: statusRequest.baseline_run_id || '',
+            candidateARunId: statusRequest.candidate_a_run_id || '',
+            candidateBRunId: statusRequest.candidate_b_run_id || '',
+            bridgeReceiptId: statusRequest.bridge_receipt_id || '',
+            downstreamProofId: statusRequest.downstream_proof_id || '',
+        };
+        State.candidateBFullCorpusOperatorWorkflowStatusPending = true;
+        renderCandidateBDefaultPromotionStatusPanel();
+        State.candidateBFullCorpusOperatorWorkflowStatus = await postJson(statusPath, statusRequest);
+        State.candidateBFullCorpusOperatorWorkflowStatusError = null;
+        addEvent('Candidate B full-corpus operator workflow run started and inspected through server receipt authority.');
+    } catch (error) {
+        if (runResponse) {
+            State.candidateBFullCorpusOperatorWorkflowStatus = null;
+            State.candidateBFullCorpusOperatorWorkflowStatusError = error;
+            addEvent(`Candidate B full-corpus workflow run status blocked: ${error.message}`);
+        } else {
+            State.candidateBFullCorpusOperatorWorkflowRun = null;
+            State.candidateBFullCorpusOperatorWorkflowRunError = error;
+            addEvent(`Candidate B full-corpus workflow run blocked: ${error.message}`);
+        }
+    } finally {
+        State.candidateBFullCorpusOperatorWorkflowRunPending = false;
+        State.candidateBFullCorpusOperatorWorkflowStatusPending = false;
         renderAll();
     }
 }
@@ -16091,6 +16370,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     }
     if (event.target?.id === 'candidate-b-operator-status-form') {
         inspectCandidateBOperatorStatus(event);
+    }
+    if (event.target?.id === 'candidate-b-full-corpus-workflow-run-form') {
+        startCandidateBFullCorpusOperatorWorkflowRun(event);
     }
     if (event.target?.id === 'candidate-b-full-corpus-workflow-status-form') {
         inspectCandidateBFullCorpusOperatorWorkflowStatus(event);
