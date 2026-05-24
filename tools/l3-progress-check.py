@@ -2770,6 +2770,9 @@ CANDIDATE_B_ASYNC_RETRY_POLICY_RUNTIME = (
 CANDIDATE_B_ASYNC_RETRY_ATTEMPT_SELECTION = (
     PLANNING_DOCS / "1012-cb-async-retry-attempt-selection.md"
 )
+CANDIDATE_B_ASYNC_RETRY_QUEUE_STATE_RUNTIME = (
+    PLANNING_DOCS / "1013-cb-async-retry-queue-state-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2824,6 +2827,13 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_POLICY_SERVICE = (
     / "app"
     / "services"
     / "layer3_candidate_b_full_corpus_operator_workflow_retry_policy.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_QUEUE_STATE_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -94377,6 +94387,130 @@ def _check_candidate_b_async_retry_attempt_selection(errors: list[str]) -> None:
                 )
 
 
+def _check_candidate_b_async_retry_queue_state_runtime(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_RETRY_QUEUE_STATE_RUNTIME: (
+            "Candidate B Async Retry Queue-State Runtime",
+            "milestone: candidate_b_async_retry_queue_state_receipt_v1",
+            "source_retry_attempt_selection: next_milestone_plans/Layer3_planning_docs/1012-cb-async-retry-attempt-selection.md",
+            "runtime_status: implemented",
+            "selected_retry_queue_state_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/queue/state",
+            "selected_retry_queue_state_mode: append_only_retry_queue_state_receipt_without_creating_scheduler_lease_worker_attempt_or_mutating_original_lineage",
+            "selected_retry_queue_state_action: record_candidate_b_async_retry_queue_state",
+            "selected_retry_queue_state_scope: server_owned_candidate_b_full_corpus_operator_workflow_eligible_retry_policy_receipts",
+            "selected_retry_queue_state_receipt_model: append_only_retry_queue_state_receipt_without_mutating_retry_policy_completion_failure_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipts",
+            "selected_retry_queue_state_receipt_binding: retry_policy_receipt_id,retry_policy_receipt_hash,retry_policy_authority_hash,retry_policy_result,completion_failure_receipt_id,completion_failure_receipt_hash,completion_failure_authority_hash,failed_worker_attempt_receipt_id,failed_worker_attempt_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_queue_state_hash",
+            "selected_retry_queue_state_idempotency_basis: client_request_id_plus_retry_queue_state_authority_hash",
+            "retry_policy_result_required: eligible",
+            "ineligible_retry_policy_rejected: true",
+            "missing_retry_policy_receipt_rejected: true",
+            "stale_retry_policy_receipt_rejected: true",
+            "retry_policy_conflict_rejected: true",
+            "retry_attempt_number_selected: 2",
+            "retry_queue_state_runtime_selected: true",
+            "retry_scheduler_lease_creation_admitted_now: false",
+            "retry_worker_attempt_creation_admitted_now: false",
+            "retry_progress_checkpoint_creation_admitted_now: false",
+            "retry_completion_failure_creation_admitted_now: false",
+            "retry_attempt_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "retry_policy_receipt_mutation_admitted: false",
+            "completion_failure_receipt_mutation_admitted: false",
+            "progress_checkpoint_receipt_mutation_admitted: false",
+            "worker_attempt_receipt_mutation_admitted: false",
+            "scheduler_lease_receipt_mutation_admitted: false",
+            "queue_state_receipt_mutation_admitted: false",
+            "source_run_receipt_mutation_admitted: false",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "next_exact_posture: candidate_b_async_retry_scheduler_lease_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_retry_queue_state_receipt_v1",
+            "source_retry_attempt_selection: next_milestone_plans/Layer3_planning_docs/1012-cb-async-retry-attempt-selection.md",
+            "runtime_status: implemented",
+            "selected_retry_queue_state_action: record_candidate_b_async_retry_queue_state",
+            "retry_policy_result_required: eligible",
+            "ineligible_retry_policy_rejected: true",
+            "retry_queue_state_runtime_selected: true",
+            "retry_scheduler_lease_creation_admitted_now: false",
+            "retry_worker_attempt_creation_admitted_now: false",
+            "retry_attempt_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_retry_scheduler_lease_authority_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_QUEUE_STATE_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_retry_queue_state.v1"',
+            '"append_only_retry_queue_state_receipt_without_creating_scheduler_lease_worker_attempt_or_mutating_original_lineage"',
+            'OPERATOR_DECISION = "record_candidate_b_async_retry_queue_state"',
+            "RETRY_QUEUE_STATE_ENDPOINT = (",
+            "record_candidate_b_full_corpus_operator_workflow_retry_queue_state",
+            "_selected_retry_policy_receipt",
+            "_validate_no_existing_retry_queue_state_receipt",
+            '"append_only_retry_queue_state_receipt": True',
+            '"exclusive_retry_queue_state_per_eligible_retry_policy_receipt": True',
+            '"retry_queue_state_runtime_selected": True',
+            '"retry_scheduler_lease_creation_admitted_now": False',
+            '"retry_worker_attempt_creation_admitted_now": False',
+            '"retry_attempt_runtime_selected_now": False',
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_ineligible_retry_policy_rejected",
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_stale_retry_policy",
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_policy_conflict",
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_forbidden_request_fields",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"retry_queue_state_runtime_admitted": True',
+            "record append-only retry queue-state authority through the admitted retry queue-state endpoint",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRetryQueueStateRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRetryQueueStateResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/queue/state"',
+            "CandidateBFullCorpusOperatorWorkflowRetryQueueStateError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_retry_queue_state": True',
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_retry_queue_state"',
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_queue_state_endpoint",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_retry_queue_state_records_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_retry_queue_state_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_retry_queue_state_rejects_ineligible_policy",
+            "test_candidate_b_full_corpus_operator_workflow_retry_queue_state_rejects_stale_policy",
+            "test_candidate_b_full_corpus_operator_workflow_retry_queue_state_rejects_policy_conflict",
+            "test_candidate_b_full_corpus_operator_workflow_retry_queue_state_service_rejects_raw_authority",
+            "RETRY_QUEUE_STATE_ENDPOINT",
+            "workflow_retry_queue_state.RETRY_QUEUE_STATE_MODE",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async retry queue-state runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -95236,6 +95370,7 @@ def main() -> int:
     _check_candidate_b_async_cancel_retry_resume_selection(errors)
     _check_candidate_b_async_retry_policy_runtime(errors)
     _check_candidate_b_async_retry_attempt_selection(errors)
+    _check_candidate_b_async_retry_queue_state_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
