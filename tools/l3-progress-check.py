@@ -2848,6 +2848,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RUNTIME = (
 CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_SELECTION = (
     PLANNING_DOCS / "1038-cb-repeatability-checkpoint-rendered-selection.md"
 )
+CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_RUNTIME = (
+    PLANNING_DOCS / "1039-cb-repeatability-checkpoint-rendered-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -97546,6 +97549,98 @@ def _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_se
                 )
 
 
+def _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_RUNTIME: (
+            "Candidate B Full-Corpus Operator Repeatability Checkpoint Rendered Control Runtime",
+            "milestone: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_v1",
+            "source_repeatability_checkpoint_rendered_selection: next_milestone_plans/Layer3_planning_docs/1038-cb-repeatability-checkpoint-rendered-selection.md",
+            "current_main_entry: e216becebf2745a976e6b92a1b57b1907bc0b939",
+            "runtime_status: implemented",
+            "selected_rendered_control_mode: rendered_candidate_b_full_corpus_operator_repeatability_checkpoint_control",
+            "selected_repeatability_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+            "selected_repeatability_checkpoint_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint",
+            "rendered_control_runtime_selected: true",
+            "history_status_completion_monitor_projection_required: true",
+            "workflow_status_required: proven",
+            "completion_monitor_state_required: completed_downstream_proven",
+            "runtime_root_lifecycle_receipt_required: true",
+            "bridge_receipt_required: true",
+            "downstream_proof_required: true",
+            "operator_runbook_repeatability_steps_required: true",
+            "stale_status_or_completion_monitor_disables_or_fails_closed: true",
+            "non_downstream_proven_monitor_disables_or_fails_closed: true",
+            "headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability checkpoint\" --project=chromium PASS",
+            "headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability checkpoint\" --project=chromium --headed PASS",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_v1",
+            "source_repeatability_checkpoint_rendered_selection: next_milestone_plans/Layer3_planning_docs/1038-cb-repeatability-checkpoint-rendered-selection.md",
+            "runtime_status: implemented",
+            "selected_rendered_control_mode: rendered_candidate_b_full_corpus_operator_repeatability_checkpoint_control",
+            "selected_repeatability_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+            "selected_repeatability_checkpoint_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint",
+            "rendered_control_runtime_selected: true",
+            "rendered_control_button_label: Record Repeatability Checkpoint",
+            "workflow_status_required: proven",
+            "completion_monitor_state_required: completed_downstream_proven",
+            "headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability checkpoint\" --project=chromium PASS",
+            "headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability checkpoint\" --project=chromium --headed PASS",
+            "process_control_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_SELECTION: (
+            "next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_v1",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_MODE",
+            "candidateBFullCorpusOperatorRepeatabilityCheckpointEndpointPath",
+            "candidateBFullCorpusOperatorRepeatabilityCheckpointPayload",
+            "canRecordCandidateBFullCorpusOperatorRepeatabilityCheckpoint",
+            "candidateBFullCorpusOperatorRepeatabilityCheckpointRows",
+            "recordCandidateBFullCorpusOperatorRepeatabilityCheckpoint",
+            "data-candidate-b-workflow-repeatability-checkpoint-index",
+            "candidate-b-full-corpus-repeatability-checkpoint-card",
+            "Record Repeatability Checkpoint",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench records Candidate B repeatability checkpoint through rendered append-only control",
+            "data-candidate-b-workflow-repeatability-checkpoint-index",
+            "append_only_repeatability_checkpoint_receipt_without_rerun_process_control_or_authority_mutation",
+            "record_candidate_b_full_corpus_operator_repeatability_checkpoint",
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint",
+            "candidate_b_full_corpus_repeatability_checkpoint_recorded",
+            "frontend durable authority enabled: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus operator repeatability checkpoint rendered runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -98431,6 +98526,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_selection(errors)
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_runtime(errors)
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_selection(errors)
+    _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

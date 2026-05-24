@@ -3202,3 +3202,44 @@ next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_re
 ```
 
 The next rendered pass should add the operator control that records the already admitted repeatability checkpoint. It should reuse current workflow history, workflow status, and completion-monitor projections; submit only receipt ids/hashes and bounded runbook step constants; and prove headed/headless rendered behavior without giving the browser durable authority.
+
+### Candidate B Full-Corpus Operator Repeatability Checkpoint Rendered Control Runtime
+
+```yaml
+milestone: candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_control_v1
+source_repeatability_checkpoint_rendered_selection: next_milestone_plans/Layer3_planning_docs/1038-cb-repeatability-checkpoint-rendered-selection.md
+current_main_entry: e216becebf2745a976e6b92a1b57b1907bc0b939
+runtime_status: implemented
+selected_rendered_control_mode: rendered_candidate_b_full_corpus_operator_repeatability_checkpoint_control
+selected_repeatability_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint
+selected_repeatability_checkpoint_action: record_candidate_b_full_corpus_operator_repeatability_checkpoint
+rendered_control_runtime_selected: true
+rendered_control_button_label: Record Repeatability Checkpoint
+history_status_completion_monitor_projection_required: true
+workflow_status_required: proven
+completion_monitor_state_required: completed_downstream_proven
+runtime_root_lifecycle_receipt_required: true
+bridge_receipt_required: true
+downstream_proof_required: true
+operator_runbook_repeatability_steps_required: true
+stale_status_or_completion_monitor_disables_or_fails_closed: true
+non_downstream_proven_monitor_disables_or_fails_closed: true
+headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability checkpoint" --project=chromium PASS
+headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability checkpoint" --project=chromium --headed PASS
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_selection_v1
+```
+
+Operators can now refresh Candidate B workflow history, inspect a selected run status, inspect the completion monitor, and record the repeatability checkpoint through rendered controls. The checkpoint control is a projection consumer only: it posts receipt ids, hashes, run ids, material identity, and fixed runbook step constants to the server-owned repeatability checkpoint endpoint. It stays disabled or fails closed when workflow status is not proven, completion monitor is not downstream-proven, or the selected history/status/monitor projections do not bind to the same row.
