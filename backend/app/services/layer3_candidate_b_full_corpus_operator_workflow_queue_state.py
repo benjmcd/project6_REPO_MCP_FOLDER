@@ -329,7 +329,8 @@ def _load_or_write_queue_state_receipt(
         "next_allowed_actions": [
             "refresh workflow-run history",
             "inspect the original workflow run through the returned status request",
-            "select queue scheduler, cancel, retry, or resume only through a separate freeze",
+            "record append-only scheduler lease authority through the admitted scheduler lease endpoint",
+            "select background worker, cancel, retry, or resume only through a separate freeze",
         ],
     }
     receipt_hash = workflow_status._stable_hash(receipt_input)
