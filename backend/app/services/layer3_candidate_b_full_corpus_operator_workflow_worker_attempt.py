@@ -463,7 +463,8 @@ def _load_or_write_worker_attempt_receipt(
             "refresh workflow-run history",
             "inspect the original workflow run through the returned status request",
             "record append-only progress-checkpoint authority through the admitted progress checkpoint endpoint",
-            "select completion, cancel, retry, or resume only through a separate freeze",
+            "record append-only completion/failure authority through the admitted completion/failure endpoint",
+            "select cancel, retry, or resume only through a separate freeze",
         ],
     }
     receipt_hash = workflow_status._stable_hash(receipt_input)
