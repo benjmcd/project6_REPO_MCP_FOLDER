@@ -2872,6 +2872,9 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_RUNTIME = (
 CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_RENDERED_SELECTION = (
     PLANNING_DOCS / "1046-cb-repeatability-acceptance-rendered-selection.md"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_RENDERED_RUNTIME = (
+    PLANNING_DOCS / "1047-cb-repeatability-acceptance-rendered-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -98384,6 +98387,120 @@ def _check_candidate_b_full_corpus_repeatability_acceptance_rendered_selection(
                 )
 
 
+def _check_candidate_b_full_corpus_repeatability_acceptance_rendered_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_RENDERED_RUNTIME: (
+            "Candidate B Full-Corpus Repeatability Acceptance Rendered Control Runtime",
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_rendered_control_v1",
+            "source_repeatability_acceptance_rendered_selection: next_milestone_plans/Layer3_planning_docs/1046-cb-repeatability-acceptance-rendered-selection.md",
+            "current_main_entry: 35113ed4ba52f9193c21f45737ba0b1e79165ab5",
+            "runtime_status: implemented",
+            "selected_rendered_control_mode: rendered_candidate_b_full_corpus_repeatability_acceptance_checkpoint_control",
+            "selected_acceptance_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint",
+            "selected_acceptance_checkpoint_mode: append_only_acceptance_checkpoint_receipt_without_process_execution_or_authority_mutation",
+            "selected_acceptance_checkpoint_action: record_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+            "rendered_control_runtime_selected: true",
+            "rendered_control_button_label: Record Acceptance Checkpoint",
+            "original_repeatability_checkpoint_required: true",
+            "repeatability_rerun_trial_receipt_required: true",
+            "rerun_trial_state_required: repeatability_rerun_trial_recorded",
+            "original_workflow_status_required: proven",
+            "original_completion_monitor_state_required: completed_downstream_proven",
+            "rerun_workflow_status_required: proven",
+            "rerun_completion_monitor_state_required: completed_downstream_proven",
+            "same_eligible_corpus_identity_required: true",
+            "same_compare_target_set_hash_required: true",
+            "same_material_relative_name_required: true",
+            "same_runtime_root_lifecycle_policy_required: true",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "blocked_disposition: regression_detected_blocked",
+            "regression_detected_must_disable_or_fail_closed: true",
+            "operator_runbook_repeatability_steps_must_be_server_bounded: true",
+            'headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability rerun trial" --project=chromium PASS',
+            'headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability rerun trial" --project=chromium --headed PASS',
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_operator_closeout_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_rendered_control_v1",
+            "source_repeatability_acceptance_rendered_selection: next_milestone_plans/Layer3_planning_docs/1046-cb-repeatability-acceptance-rendered-selection.md",
+            "current_main_entry: 35113ed4ba52f9193c21f45737ba0b1e79165ab5",
+            "runtime_status: implemented",
+            "selected_rendered_control_mode: rendered_candidate_b_full_corpus_repeatability_acceptance_checkpoint_control",
+            "selected_acceptance_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint",
+            "selected_acceptance_checkpoint_action: record_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+            "rendered_control_runtime_selected: true",
+            "rendered_control_button_label: Record Acceptance Checkpoint",
+            "original_repeatability_checkpoint_required: true",
+            "repeatability_rerun_trial_receipt_required: true",
+            "rerun_trial_state_required: repeatability_rerun_trial_recorded",
+            "original_workflow_status_required: proven",
+            "original_completion_monitor_state_required: completed_downstream_proven",
+            "rerun_workflow_status_required: proven",
+            "rerun_completion_monitor_state_required: completed_downstream_proven",
+            "same_eligible_corpus_identity_required: true",
+            "same_compare_target_set_hash_required: true",
+            "same_material_relative_name_required: true",
+            "same_runtime_root_lifecycle_policy_required: true",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "blocked_disposition: regression_detected_blocked",
+            "regression_detected_must_disable_or_fail_closed: true",
+            'headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability rerun trial" --project=chromium PASS',
+            'headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "records Candidate B repeatability rerun trial" --project=chromium --headed PASS',
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_operator_closeout_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_RENDERED_SELECTION: (
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_rendered_control_v1",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_RENDERED_MODE",
+            "candidateBFullCorpusRepeatabilityAcceptanceCheckpointEndpointPath",
+            "candidateBFullCorpusRepeatabilityAcceptanceCheckpointPayload",
+            "canRecordCandidateBFullCorpusRepeatabilityAcceptanceCheckpoint",
+            "candidateBFullCorpusRepeatabilityAcceptanceCheckpointRows",
+            "recordCandidateBFullCorpusRepeatabilityAcceptanceCheckpoint",
+            "candidate-b-full-corpus-repeatability-acceptance-checkpoint-card",
+            "Record Acceptance Checkpoint",
+            "frontend durable authority enabled",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench records Candidate B repeatability rerun trial through rendered append-only control and acceptance checkpoint",
+            "candidate-b-full-corpus-repeatability-acceptance-checkpoint-card",
+            "append_only_acceptance_checkpoint_receipt_without_process_execution_or_authority_mutation",
+            "record_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint",
+            "repeatability_acceptance_checkpoint_recorded",
+            "frontend durable authority enabled: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus repeatability acceptance rendered runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -99277,6 +99394,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_repeatability_acceptance_checkpoint_selection(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_checkpoint_runtime(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_rendered_selection(errors)
+    _check_candidate_b_full_corpus_repeatability_acceptance_rendered_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

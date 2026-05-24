@@ -8898,11 +8898,12 @@ test('Layer 3 workbench records Candidate B repeatability checkpoint through ren
   ]);
 });
 
-test('Layer 3 workbench records Candidate B repeatability rerun trial through rendered append-only control', async ({ page }) => {
+test('Layer 3 workbench records Candidate B repeatability rerun trial through rendered append-only control and acceptance checkpoint', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowHistoryRequested = false;
   let repeatabilityCheckpointPayload = null;
   let rerunTrialPayload = null;
+  let acceptanceCheckpointPayload = null;
   const statusPayloads = [];
   const monitorPayloads = [];
   const processExecutionProjection = {
@@ -9245,6 +9246,99 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial through re
       }),
     });
   });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint', async (route) => {
+    acceptanceCheckpointPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_repeatability_acceptance_checkpoint.v1',
+        schema_version: 1,
+        mode: 'append_only_acceptance_checkpoint_receipt_without_process_execution_or_authority_mutation',
+        operator_decision: 'record_candidate_b_full_corpus_repeatability_acceptance_checkpoint',
+        request_id: acceptanceCheckpointPayload.client_request_id,
+        server_time: '2026-05-24T00:00:00Z',
+        status: 'available',
+        repeatability_acceptance_checkpoint_state: 'repeatability_acceptance_checkpoint_recorded',
+        repeatability_acceptance_checkpoint_receipt_id: 'cb-full-corpus-repeatability-acceptance-checkpoint-rendered-proof',
+        repeatability_acceptance_checkpoint_receipt_hash: '2'.repeat(64),
+        repeatability_acceptance_checkpoint_receipt_ref: 'candidate-b-full-corpus-operator-workflow-repeatability-acceptance-checkpoint://rendered-proof/222222222222222222222222',
+        repeatability_acceptance_checkpoint_hash: '3'.repeat(64),
+        repeatability_acceptance_checkpoint_authority_hash: '4'.repeat(64),
+        repeatability_acceptance_checkpoint: {
+          ...acceptanceCheckpointPayload,
+          original_operator_workflow_receipt_id: originalRow.operator_workflow_receipt_id,
+          rerun_operator_workflow_receipt_id: rerunRow.operator_workflow_receipt_id,
+          baseline_run_id: commonRequest.baseline_run_id,
+          candidate_a_run_id: commonRequest.candidate_a_run_id,
+          original_candidate_b_run_id: originalRow.candidate_b_run_id,
+          rerun_candidate_b_run_id: rerunRow.candidate_b_run_id,
+          compare_target_set_hash: originalRow.compare_target_set_hash,
+          material_relative_name: originalRow.material_relative_name,
+          comparison: {
+            same_eligible_corpus_identity: true,
+            same_compare_target_set_hash: true,
+            same_material_relative_name: true,
+            same_runtime_root_lifecycle_policy: true,
+            delta_observed: false,
+            regression_disposition: acceptanceCheckpointPayload.acceptance_disposition,
+          },
+          original_status_projection: {
+            workflow_status: 'proven',
+            workflow_status_hash: originalStatus.workflow_status_hash,
+          },
+          rerun_status_projection: {
+            workflow_status: 'proven',
+            workflow_status_hash: rerunStatus.workflow_status_hash,
+          },
+          original_completion_monitor_projection: {
+            completion_monitor_state: 'completed_downstream_proven',
+            completion_monitor_hash: originalMonitor.completion_monitor_hash,
+          },
+          rerun_completion_monitor_projection: {
+            completion_monitor_state: 'completed_downstream_proven',
+            completion_monitor_hash: rerunMonitor.completion_monitor_hash,
+          },
+        },
+        repeatability_acceptance_checkpoint_authority: {
+          operator_decision: 'record_candidate_b_full_corpus_repeatability_acceptance_checkpoint',
+        },
+        append_only_repeatability_acceptance_checkpoint_receipt: true,
+        exclusive_repeatability_acceptance_checkpoint_per_authority: true,
+        original_repeatability_checkpoint_receipt_mutated: false,
+        repeatability_rerun_trial_receipt_mutated: false,
+        original_workflow_receipt_mutated: false,
+        rerun_workflow_receipt_mutated: false,
+        process_execution_receipt_mutated: false,
+        process_completion_result_receipt_mutated: false,
+        adopted_result_downstream_proof_receipt_mutated: false,
+        repeatability_acceptance_checkpoint_receipt_mutation_admitted: false,
+        actual_corpus_processing_execution_admitted_now: false,
+        actual_subprocess_spawn_admitted_now: false,
+        process_control_admitted: false,
+        process_kill_cancel_retry_resume_admitted: false,
+        provider_object_write_enabled: false,
+        connector_dispatch_enabled: false,
+        rag_vector_model_runtime_enabled: false,
+        full_mockup_activation_enabled: false,
+        frontend_durable_authority_enabled: false,
+        default_scope_expansion_admitted: false,
+        raw_pid_admitted: false,
+        raw_stdout_admitted: false,
+        raw_stderr_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+        repeatability_checkpoint_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/checkpoint',
+        repeatability_rerun_trial_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial',
+        repeatability_acceptance_checkpoint_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint',
+        next_allowed_actions: [
+          'use this receipt as Candidate B full-corpus repeatability acceptance evidence',
+        ],
+      }),
+    });
+  });
 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   const panel = page.locator('#candidate-b-default-promotion-status-panel');
@@ -9283,6 +9377,25 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial through re
   await expect(rerunTrialCard).toContainText('raw stdout admitted: false');
   await expect(rerunTrialCard).toContainText('raw stderr admitted: false');
   await expect(rerunTrialCard).toContainText('frontend durable authority enabled: false');
+
+  const acceptanceCheckpointCard = page.locator('.candidate-b-full-corpus-repeatability-acceptance-checkpoint-card');
+  await expect(acceptanceCheckpointCard).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_full_corpus_repeatability_acceptance_checkpoint_control',
+  );
+  await expect(acceptanceCheckpointCard).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#candidate-b-repeatability-acceptance-checkpoint-submit').click();
+  await expect(acceptanceCheckpointCard).toContainText('candidate_b_full_corpus_repeatability_acceptance_checkpoint_recorded');
+  await expect(acceptanceCheckpointCard).toContainText('repeatability_acceptance_checkpoint_recorded');
+  await expect(acceptanceCheckpointCard).toContainText('cb-full-corpus-repeatability-acceptance-checkpoint-rendered-proof');
+  await expect(acceptanceCheckpointCard).toContainText('same eligible corpus identity: true');
+  await expect(acceptanceCheckpointCard).toContainText('same runtime-root lifecycle policy: true');
+  await expect(acceptanceCheckpointCard).toContainText('acceptance disposition: no_regression_observed');
+  await expect(acceptanceCheckpointCard).toContainText('process control admitted: false');
+  await expect(acceptanceCheckpointCard).toContainText('raw stdout admitted: false');
+  await expect(acceptanceCheckpointCard).toContainText('raw stderr admitted: false');
+  await expect(acceptanceCheckpointCard).toContainText('frontend durable authority enabled: false');
+  await expect(acceptanceCheckpointCard).toContainText('default scope expansion admitted: false');
 
   expect(workflowHistoryRequested).toBe(true);
   expect(statusPayloads).toEqual([originalStatusRequest, rerunStatusRequest]);
@@ -9330,6 +9443,32 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial through re
       'record_repeatability_rerun_trial',
     ],
   });
+  expect(acceptanceCheckpointPayload).toMatchObject({
+    acceptance_checkpoint_mode: 'append_only_acceptance_checkpoint_receipt_without_process_execution_or_authority_mutation',
+    operator_decision: 'record_candidate_b_full_corpus_repeatability_acceptance_checkpoint',
+    operator_acceptance_decision: 'accept_candidate_b_full_corpus_repeatability',
+    original_repeatability_checkpoint_receipt_id: 'cb-full-corpus-repeatability-checkpoint-rerun-trial-rendered-proof',
+    original_repeatability_checkpoint_receipt_hash: '7'.repeat(64),
+    original_repeatability_checkpoint_hash: '5'.repeat(64),
+    original_repeatability_checkpoint_authority_hash: '6'.repeat(64),
+    repeatability_rerun_trial_receipt_id: 'cb-full-corpus-repeatability-rerun-trial-rendered-proof',
+    repeatability_rerun_trial_receipt_hash: '9'.repeat(64),
+    repeatability_rerun_trial_hash: 'a'.repeat(64),
+    repeatability_rerun_trial_authority_hash: 'b'.repeat(64),
+    original_workflow_status_hash: originalStatus.workflow_status_hash,
+    original_completion_monitor_hash: originalMonitor.completion_monitor_hash,
+    rerun_workflow_status_hash: rerunStatus.workflow_status_hash,
+    rerun_completion_monitor_hash: rerunMonitor.completion_monitor_hash,
+    acceptance_disposition: 'no_regression_observed',
+    operator_runbook_repeatability_steps: [
+      'inspect_original_repeatability_checkpoint',
+      'inspect_repeatability_rerun_trial',
+      'review_rerun_trial_comparison',
+      'record_repeatability_acceptance_checkpoint',
+    ],
+  });
+  expect(JSON.stringify(acceptanceCheckpointPayload)).not.toContain('file://');
+  expect(JSON.stringify(acceptanceCheckpointPayload)).not.toContain('https://');
   expect(JSON.stringify(rerunTrialPayload)).not.toContain('file://');
   expect(JSON.stringify(rerunTrialPayload)).not.toContain('https://');
   expect(apiRequests.filter((request) => (
@@ -9342,6 +9481,7 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial through re
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status' },
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor' },
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint' },
   ]);
 });
 
