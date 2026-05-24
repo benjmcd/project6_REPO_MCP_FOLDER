@@ -2518,3 +2518,38 @@ next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_
 ```
 
 Operators can now inspect retry terminal completion/failure authority through existing workflow status and history responses. No terminal receipt projects as `not_recorded`; completed and failed terminal receipts project only redacted receipt/outcome/progress/worker-attempt authority; stale or ambiguous terminal receipts fail closed. The projection does not change row/history authority hashes, does not create receipts, does not mutate retry lineage, and does not admit job execution, cancel, resume, raw refs, provider writes, connector dispatch, RAG/model runtime, or full mockup activation.
+
+### Candidate B Async Retry Terminal Rendered Status Projection Selection
+
+```yaml
+milestone: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1
+source_retry_terminal_status_projection_runtime: next_milestone_plans/Layer3_planning_docs/1023-cb-async-retry-terminal-status-projection-runtime.md
+current_main_entry: 0297917e4b45dcca9d9e4153cc14b61e61e440ee
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_retry_terminal_rendered_status_projection_v1
+selected_rendered_retry_terminal_projection_mode: rendered_read_only_projection_without_receipt_creation_lineage_mutation_or_frontend_authority
+selected_rendered_retry_terminal_projection_surfaces: status,history
+existing_status_endpoint_reused_for_rendered_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+existing_history_endpoint_reused_for_rendered_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_rendered_status_control_reused: candidate-b-full-corpus-workflow-status-form
+existing_rendered_history_control_reused: candidate-b-full-corpus-workflow-history-form
+missing_retry_terminal_receipt_renders_not_recorded: true
+completed_retry_terminal_receipt_renders_completed: true
+failed_retry_terminal_receipt_renders_failed: true
+stale_retry_terminal_receipt_must_fail_closed_server_side: true
+ambiguous_retry_terminal_receipt_must_fail_closed_server_side: true
+retry_terminal_receipt_creation_admitted_now: false
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+frontend_durable_authority_enabled: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_v1
+```
+
+The next rendered slice should make the already-server-projected retry terminal status visible in the existing read-only Candidate B workflow status and history controls. The browser may display only server-provided redacted retry terminal projection fields. It must not create or repair terminal receipts, mutate retry lineage, start jobs, admit cancel/resume, expose raw refs, or add frontend durable authority.

@@ -2803,6 +2803,9 @@ CANDIDATE_B_ASYNC_RETRY_TERMINAL_STATUS_PROJECTION_SELECTION = (
 CANDIDATE_B_ASYNC_RETRY_TERMINAL_STATUS_PROJECTION_RUNTIME = (
     PLANNING_DOCS / "1023-cb-async-retry-terminal-status-projection-runtime.md"
 )
+CANDIDATE_B_ASYNC_RETRY_TERMINAL_RENDERED_STATUS_PROJECTION_SELECTION = (
+    PLANNING_DOCS / "1024-cb-async-retry-terminal-rendered-status-projection-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -95779,6 +95782,103 @@ def _check_candidate_b_async_retry_terminal_status_projection_runtime(errors: li
                 )
 
 
+def _check_candidate_b_async_retry_terminal_rendered_status_projection_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_RETRY_TERMINAL_RENDERED_STATUS_PROJECTION_SELECTION: (
+            "Candidate B Async Retry Terminal Rendered Status Projection Selection",
+            "milestone: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1",
+            "source_retry_terminal_status_projection_runtime: next_milestone_plans/Layer3_planning_docs/1023-cb-async-retry-terminal-status-projection-runtime.md",
+            "current_main_entry: 0297917e4b45dcca9d9e4153cc14b61e61e440ee",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_retry_terminal_rendered_status_projection_v1",
+            "selected_rendered_retry_terminal_projection_scope: operator_visible_read_only_status_history_projection_of_retry_terminal_status_projection",
+            "selected_rendered_retry_terminal_projection_mode: rendered_read_only_projection_without_receipt_creation_lineage_mutation_or_frontend_authority",
+            "selected_rendered_retry_terminal_projection_surfaces: status,history",
+            "existing_status_endpoint_reused_for_rendered_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "existing_history_endpoint_reused_for_rendered_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history",
+            "existing_rendered_status_control_reused: candidate-b-full-corpus-workflow-status-form",
+            "existing_rendered_status_mode_reused: rendered_candidate_b_full_corpus_operator_workflow_status_control",
+            "existing_rendered_history_control_reused: candidate-b-full-corpus-workflow-history-form",
+            "existing_rendered_history_mode_reused: rendered_candidate_b_full_corpus_operator_workflow_run_history_control",
+            "existing_rendered_status_e2e_target: e2e/layer3-workbench.spec.js::Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control",
+            "missing_retry_terminal_receipt_renders_not_recorded: true",
+            "completed_retry_terminal_receipt_renders_completed: true",
+            "failed_retry_terminal_receipt_renders_failed: true",
+            "stale_retry_terminal_receipt_must_fail_closed_server_side: true",
+            "ambiguous_retry_terminal_receipt_must_fail_closed_server_side: true",
+            "retry_terminal_receipt_creation_admitted_now: false",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "frontend_durable_authority_enabled: false",
+            "proof_required_headless_chrome: true",
+            "proof_required_headed_chrome: true",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_v1",
+            "Should the browser compute or repair retry terminal authority? Recommended answer: no.",
+            "Should the rendered proof add a new API route? Recommended answer: no.",
+            "Should this selection admit cancel, resume, background execution, or job execution? Recommended answer: no.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1",
+            "source_retry_terminal_status_projection_runtime: next_milestone_plans/Layer3_planning_docs/1023-cb-async-retry-terminal-status-projection-runtime.md",
+            "current_main_entry: 0297917e4b45dcca9d9e4153cc14b61e61e440ee",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_retry_terminal_rendered_status_projection_v1",
+            "selected_rendered_retry_terminal_projection_mode: rendered_read_only_projection_without_receipt_creation_lineage_mutation_or_frontend_authority",
+            "selected_rendered_retry_terminal_projection_surfaces: status,history",
+            "existing_rendered_status_control_reused: candidate-b-full-corpus-workflow-status-form",
+            "existing_rendered_history_control_reused: candidate-b-full-corpus-workflow-history-form",
+            "missing_retry_terminal_receipt_renders_not_recorded: true",
+            "stale_retry_terminal_receipt_must_fail_closed_server_side: true",
+            "ambiguous_retry_terminal_receipt_must_fail_closed_server_side: true",
+            "retry_terminal_receipt_creation_admitted_now: false",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_v1",
+        ),
+        CANDIDATE_B_ASYNC_RETRY_TERMINAL_STATUS_PROJECTION_RUNTIME: (
+            "next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1",
+            "retry_terminal_status_projection_runtime_selected: true",
+            "job_execution_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE",
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_RENDERED_MODE",
+            "candidate-b-full-corpus-workflow-status-form",
+            "candidate-b-full-corpus-workflow-history-form",
+            "inspectCandidateBFullCorpusOperatorWorkflowStatus",
+            "refreshCandidateBFullCorpusOperatorWorkflowHistory",
+            "inspectCandidateBFullCorpusOperatorWorkflowHistoryRow",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control",
+            "rendered_candidate_b_full_corpus_operator_workflow_status_control",
+            "candidate-b-full-corpus-workflow-status-form",
+            "raw_url",
+            "local_path",
+            "frontend durable authority",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async retry terminal rendered status projection selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -96649,6 +96749,7 @@ def main() -> int:
     _check_candidate_b_async_retry_completion_failure_runtime(errors)
     _check_candidate_b_async_retry_terminal_status_projection_selection(errors)
     _check_candidate_b_async_retry_terminal_status_projection_runtime(errors)
+    _check_candidate_b_async_retry_terminal_rendered_status_projection_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
