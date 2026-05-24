@@ -452,6 +452,10 @@ const CANDIDATE_B_BUNDLE_DOWNSTREAM_PROOF_OPERATOR_DECISION = 'record_candidate_
 const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_RENDERED_MODE = 'rendered_candidate_b_runtime_visual_lane_downstream_proof_control';
 const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_MODE = 'candidate_b_visual_lane_runtime_downstream_e2e_proof_v1';
 const CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_OPERATOR_DECISION = 'record_candidate_b_visual_lane_runtime_downstream_e2e_proof';
+const CANDIDATE_B_BROADER_SCOPE_RUNTIME_RENDERED_MODE = 'rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control';
+const CANDIDATE_B_BROADER_SCOPE_RUNTIME_MODE = 'candidate_b_broader_eligible_corpus_default_scope_runtime_v1';
+const CANDIDATE_B_BROADER_SCOPE_RUNTIME_SELECTED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_runtime_selected';
+const CANDIDATE_B_BROADER_SCOPE_RUNTIME_BLOCKED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_runtime_blocked';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
@@ -681,6 +685,13 @@ const State = {
         candidateBRunId: '',
         bundleReceiptId: '',
         runtimeReceiptId: '',
+    },
+    candidateBBroaderScopeRuntime: null,
+    candidateBBroaderScopeRuntimeError: null,
+    candidateBBroaderScopeRuntimePending: false,
+    candidateBBroaderScopeRuntimeInput: {
+        readinessAuditJson: '',
+        selectedScopeClasses: 'structured_json_or_csv_or_xlsx',
     },
     candidateBArtifactFamilyStatus: null,
     candidateBArtifactFamilyStatusError: null,
@@ -7720,6 +7731,7 @@ function candidateBDefaultPromotionStatusState(contract) {
         'candidate_b_default_promotion_operator_status_admitted',
         'candidate_b_default_promotion_closure_evidence_admitted',
         'candidate_b_default_promotion_readiness_audit_admitted',
+        'candidate_b_broader_eligible_corpus_default_scope_runtime_admitted',
         'candidate_b_default_promotion_final_proof_admitted',
         'candidate_b_default_promotion_final_proof_status_admitted',
         'candidate_b_full_corpus_operator_workflow_status_admitted',
@@ -7853,6 +7865,12 @@ function candidateBClosureEvidenceEndpointPath(contract) {
 
 function candidateBReadinessAuditEndpointPath(contract) {
     const endpoint = contract?.candidate_b_default_promotion_readiness_audit_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBBroaderScopeRuntimeEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_broader_eligible_corpus_default_scope_runtime_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
     return endpoint.slice(API_ROOT.length);
 }
@@ -8242,6 +8260,43 @@ function candidateBReadinessAuditInputValues() {
             || State.candidateBReadinessAuditInput.runtimeReceiptId
             || ''
         ).trim(),
+    };
+}
+
+function candidateBBroaderScopeRuntimeInputValues() {
+    const readinessInput = document.getElementById('candidate-b-broader-scope-runtime-readiness-json');
+    const selectedInput = document.getElementById('candidate-b-broader-scope-runtime-selected-classes');
+    return {
+        readinessAuditJson: (
+            readinessInput?.value
+            || State.candidateBBroaderScopeRuntimeInput.readinessAuditJson
+            || ''
+        ).trim(),
+        selectedScopeClasses: (
+            selectedInput?.value
+            || State.candidateBBroaderScopeRuntimeInput.selectedScopeClasses
+            || ''
+        ).trim(),
+    };
+}
+
+function candidateBBroaderScopeRuntimePayload() {
+    const values = candidateBBroaderScopeRuntimeInputValues();
+    State.candidateBBroaderScopeRuntimeInput = values;
+    const readinessAudit = JSON.parse(values.readinessAuditJson);
+    const selectedScopeClasses = values.selectedScopeClasses
+        .split(',')
+        .map((scopeClass) => scopeClass.trim())
+        .filter(Boolean);
+    return {
+        client_request_id: requestId(),
+        runtime_mode: CANDIDATE_B_BROADER_SCOPE_RUNTIME_MODE,
+        readiness_audit_id: readinessAudit.audit_id,
+        readiness_audit_hash: readinessAudit.audit_hash,
+        readiness_audit: readinessAudit,
+        selected_scope_classes: selectedScopeClasses,
+        rollback_to_baseline_confirmation: true,
+        operator_confirmation: true,
     };
 }
 
@@ -9122,6 +9177,17 @@ function canRunCandidateBReadinessAudit(contract = candidateBDefaultPromotionRea
     );
 }
 
+function canRecordCandidateBBroaderScopeRuntime(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBBroaderScopeRuntimeInputValues();
+    return Boolean(
+        contract?.candidate_b_broader_eligible_corpus_default_scope_runtime_admitted
+        && candidateBBroaderScopeRuntimeEndpointPath(contract)
+        && values.readinessAuditJson
+        && values.selectedScopeClasses
+        && !State.candidateBBroaderScopeRuntimePending
+    );
+}
+
 function candidateBDefaultPromotionFinalProofPanelState() {
     if (State.candidateBDefaultPromotionFinalProofPending) {
         return { label: 'candidate_b_final_proof_pending', pill: 'preview' };
@@ -9423,6 +9489,23 @@ function candidateBReadinessAuditPanelState() {
         return { label: 'candidate_b_readiness_audit_blocked', pill: 'blocked' };
     }
     return { label: 'candidate_b_readiness_audit_not_run', pill: 'preview' };
+}
+
+function candidateBBroaderScopeRuntimePanelState() {
+    if (State.candidateBBroaderScopeRuntimePending) {
+        return { label: 'candidate_b_broader_scope_runtime_pending', pill: 'preview' };
+    }
+    if (State.candidateBBroaderScopeRuntimeError) {
+        const code = State.candidateBBroaderScopeRuntimeError?.payload?.error?.code;
+        return { label: code || 'candidate_b_broader_scope_runtime_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBBroaderScopeRuntime?.status === 'selected') {
+        return { label: 'candidate_b_broader_scope_runtime_selected', pill: 'ok' };
+    }
+    if (State.candidateBBroaderScopeRuntime?.status === 'blocked') {
+        return { label: 'candidate_b_broader_scope_runtime_blocked', pill: 'blocked' };
+    }
+    return { label: 'candidate_b_broader_scope_runtime_not_recorded', pill: 'preview' };
 }
 
 function candidateBArtifactFamilyStatusPanelState() {
@@ -10762,6 +10845,66 @@ function candidateBReadinessAuditRows(readiness) {
     `;
 }
 
+function candidateBBroaderScopeRuntimeRows(runtime) {
+    if (!runtime) return '';
+    const selectedClasses = Array.isArray(runtime.selected_scope_classes)
+        ? runtime.selected_scope_classes.join(', ')
+        : '';
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Runtime Selection</strong>
+                <ul>
+                    ${fieldItem('schema id', runtime.schema_id, { code: true })}
+                    ${fieldItem('status', runtime.status, { code: true })}
+                    ${fieldItem('runtime state', runtime.runtime_state, { code: true })}
+                    ${fieldItem('receipt status', runtime.selection_receipt_status, { code: true })}
+                    ${fieldItem('receipt id', runtime.selection_receipt_id, { code: true })}
+                    ${fieldItem('receipt hash', runtime.selection_receipt_hash, { code: true })}
+                    ${fieldItem('receipt ref', runtime.selection_receipt_ref, { code: true })}
+                    ${fieldItem('selected classes', selectedClasses, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Audit Binding</strong>
+                <ul>
+                    ${fieldItem('readiness audit id', runtime.readiness_audit_binding?.readiness_audit_id, { code: true })}
+                    ${fieldItem('readiness audit hash', runtime.readiness_audit_binding?.readiness_audit_hash, { code: true })}
+                    ${fieldItem('required state', runtime.readiness_audit_binding?.required_state, { code: true })}
+                    ${fieldItem('binding verified', runtime.readiness_audit_binding?.binding_verified)}
+                    ${fieldItem('scope classes source', runtime.selected_scope_classes_source, { code: true })}
+                    ${fieldItem('blocked reason count', Array.isArray(runtime.blocked_reasons) ? runtime.blocked_reasons.length : 0)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Operator Status</strong>
+                <ul>
+                    ${fieldItem('broader scope runtime selected', runtime.operator_visible_scope_status?.broader_scope_runtime_selected)}
+                    ${fieldItem('selected scope class count', runtime.operator_visible_scope_status?.selected_scope_class_count)}
+                    ${fieldItem('redacted receipt available', runtime.operator_visible_scope_status?.redacted_selection_receipt_available)}
+                    ${fieldItem('current PDF default preserved', runtime.current_default_scope_preserved, { code: true })}
+                    ${fieldItem('non-PDF default preserved', runtime.non_pdf_default_preserved, { code: true })}
+                    ${fieldItem('rollback selector', runtime.baseline_rollback?.selector, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Authority</strong>
+                <ul>
+                    ${fieldItem('selector mutation performed', runtime.selector_mutation_performed)}
+                    ${fieldItem('source expansion admitted', runtime.source_expansion_admitted)}
+                    ${fieldItem('runtime DB/storage expansion admitted', runtime.runtime_db_or_storage_expansion_admitted)}
+                    ${fieldItem('provider object write enabled', runtime.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', runtime.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', runtime.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('raw local path exposed', runtime.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', runtime.raw_url_exposed)}
+                    ${fieldItem('frontend durable authority enabled', runtime.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofError() {
     const error = State.candidateBDefaultPromotionFinalProofError;
     if (!error) return '';
@@ -11568,6 +11711,20 @@ function candidateBReadinessAuditError() {
     `;
 }
 
+function candidateBBroaderScopeRuntimeError() {
+    const error = State.candidateBBroaderScopeRuntimeError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_broader_scope_runtime_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBArtifactFamilyStatusError() {
     const error = State.candidateBArtifactFamilyStatusError;
     if (!error) return '';
@@ -11648,6 +11805,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusRepeatabilityAcceptanceCloseoutStatusState = candidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
+    const broaderScopeRuntimeState = candidateBBroaderScopeRuntimePanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
     const visualLaneState = candidateBVisualLaneStatusPanelState();
     const bundleDownstreamProofState = candidateBBundleDownstreamProofPanelState();
@@ -11688,6 +11846,8 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
     const readinessAuditInputs = State.candidateBReadinessAuditInput;
+    const broaderScopeRuntime = State.candidateBBroaderScopeRuntime;
+    const broaderScopeRuntimeInputs = State.candidateBBroaderScopeRuntimeInput;
     const artifactFamilyStatus = State.candidateBArtifactFamilyStatus;
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
@@ -11740,6 +11900,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('full-corpus acceptance closeout', contract?.candidate_b_full_corpus_repeatability_acceptance_closeout_endpoint, { code: true })}
                     ${fieldItem('closure evidence', contract?.candidate_b_default_promotion_closure_evidence_endpoint, { code: true })}
                     ${fieldItem('readiness audit', contract?.candidate_b_default_promotion_readiness_audit_endpoint, { code: true })}
+                    ${fieldItem('broader scope runtime', contract?.candidate_b_broader_eligible_corpus_default_scope_runtime_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
                     ${fieldItem('final proof status', contract?.candidate_b_default_promotion_final_proof_status_endpoint, { code: true })}
                 </ul>
@@ -12142,6 +12303,26 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBReadinessAuditRows(readinessAudit)}
                 ${candidateBReadinessAuditError()}
+            </section>
+            <section class="result-review-card candidate-b-broader-scope-runtime-card">
+                <strong>Broader Eligible-Corpus Runtime Status</strong>
+                <form id="candidate-b-broader-scope-runtime-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_BROADER_SCOPE_RUNTIME_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>broader scope readiness audit JSON</span>
+                        <textarea id="candidate-b-broader-scope-runtime-readiness-json" rows="7" autocomplete="off" spellcheck="false" placeholder="{&quot;schema_id&quot;:&quot;layer3.candidate_b_broader_eligible_corpus_scope_readiness_audit.v1&quot;,...}">${escapeHtml(broaderScopeRuntimeInputs.readinessAuditJson)}</textarea>
+                    </label>
+                    <label>
+                        <span>selected scope classes</span>
+                        <input id="candidate-b-broader-scope-runtime-selected-classes" type="text" value="${escapeHtml(broaderScopeRuntimeInputs.selectedScopeClasses)}" autocomplete="off" spellcheck="false" placeholder="structured_json_or_csv_or_xlsx" />
+                    </label>
+                    <button id="candidate-b-broader-scope-runtime-submit" type="submit" ${canRecordCandidateBBroaderScopeRuntime(contract) ? '' : 'disabled'}>Record Broader Scope Runtime</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(broaderScopeRuntimeState.pill)}">${escapeHtml(broaderScopeRuntimeState.label)}</span>
+                    <span class="rail-label">Server records a redacted broader-scope runtime receipt only for exact classes from a ready audit; blocked responses expose status without selector mutation or raw authority.</span>
+                </div>
+                ${candidateBBroaderScopeRuntimeRows(broaderScopeRuntime)}
+                ${candidateBBroaderScopeRuntimeError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -13027,6 +13208,46 @@ async function runCandidateBReadinessAudit(event) {
         addEvent(`Candidate B readiness-audit evaluation blocked: ${error.message}`);
     } finally {
         State.candidateBReadinessAuditPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBBroaderScopeRuntime(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canRecordCandidateBBroaderScopeRuntime(contract)) {
+        State.candidateBBroaderScopeRuntime = null;
+        State.candidateBBroaderScopeRuntimeError = new Error(
+            'Candidate B broader-scope runtime requires ready audit JSON and exact selected scope classes.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBBroaderScopeRuntimeEndpointPath(contract);
+    let payload;
+    try {
+        payload = candidateBBroaderScopeRuntimePayload();
+    } catch (error) {
+        State.candidateBBroaderScopeRuntime = null;
+        State.candidateBBroaderScopeRuntimeError = new Error(
+            `Candidate B broader-scope runtime readiness audit JSON is invalid: ${error.message}`,
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBBroaderScopeRuntimePending = true;
+    State.candidateBBroaderScopeRuntimeError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBBroaderScopeRuntime = await postJson(path, payload);
+        State.candidateBBroaderScopeRuntimeError = null;
+        addEvent('Candidate B broader eligible-corpus runtime status recorded through server audit authority.');
+    } catch (error) {
+        State.candidateBBroaderScopeRuntime = null;
+        State.candidateBBroaderScopeRuntimeError = error;
+        addEvent(`Candidate B broader-scope runtime selection blocked: ${error.message}`);
+    } finally {
+        State.candidateBBroaderScopeRuntimePending = false;
         renderAll();
     }
 }
@@ -19522,6 +19743,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     if (event.target?.id === 'candidate-b-readiness-audit-form') {
         runCandidateBReadinessAudit(event);
     }
+    if (event.target?.id === 'candidate-b-broader-scope-runtime-form') {
+        recordCandidateBBroaderScopeRuntime(event);
+    }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);
     }
@@ -19547,6 +19771,18 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('click', (event)
 elements.candidateBDefaultPromotionStatusPanel.addEventListener('change', (event) => {
     if (event.target?.id === 'candidate-b-repeatability-rerun-trial-disposition') {
         State.candidateBFullCorpusRepeatabilityRerunTrialInput = candidateBFullCorpusRepeatabilityRerunTrialInputValues();
+        renderCandidateBDefaultPromotionStatusPanel();
+    }
+});
+elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (
+        target.id === 'candidate-b-broader-scope-runtime-readiness-json'
+        || target.id === 'candidate-b-broader-scope-runtime-selected-classes'
+    ) {
+        State.candidateBBroaderScopeRuntimeInput = candidateBBroaderScopeRuntimeInputValues();
+        State.candidateBBroaderScopeRuntimeError = null;
         renderCandidateBDefaultPromotionStatusPanel();
     }
 });
