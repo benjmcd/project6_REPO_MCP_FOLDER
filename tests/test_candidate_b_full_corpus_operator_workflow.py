@@ -2,7 +2,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import sys
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "backend"))
+sys.path.insert(1, str(REPO_ROOT))
+
+from app.services import (
+    layer3_candidate_b_full_corpus_operator_workflow_completion_monitor as completion_monitor,
+)
 from tools import run_candidate_b_full_corpus_operator_workflow as workflow
 
 
@@ -228,6 +236,152 @@ def test_live_http_workflow_run_verifies_returned_status_request(monkeypatch) ->
     assert result["raw_local_path_exposed"] is False
     assert result["raw_url_exposed"] is False
     assert result["selector_mutation_performed"] is False
+
+
+def test_completion_monitor_projects_downstream_proven_state(monkeypatch) -> None:
+    row = _completion_monitor_history_row(
+        process_execution_state="started",
+        process_completion_state="completed",
+        adopted_proof_state="proven",
+    )
+    history = {"history_hash": "h" * 64, "history_rows": [row]}
+    monkeypatch.setattr(completion_monitor, "_current_history", lambda: history)
+
+    result = completion_monitor.inspect_candidate_b_full_corpus_operator_workflow_completion_monitor(
+        _completion_monitor_payload(row, history)
+    )
+
+    assert result["status"] == "available"
+    assert result["completion_monitor_state"] == "completed_downstream_proven"
+    assert result["read_only_completion_monitor_projection"] is True
+    assert result["process_control_admitted"] is False
+    assert result["process_completion_result_mutation_admitted"] is False
+    assert result["raw_pid_admitted"] is False
+    assert result["raw_stdout_admitted"] is False
+    assert result["raw_stderr_admitted"] is False
+    assert result["raw_local_path_exposed"] is False
+    assert result["raw_url_exposed"] is False
+    assert result["frontend_durable_authority_enabled"] is False
+
+
+def test_completion_monitor_projects_not_started_without_process_receipt(monkeypatch) -> None:
+    row = _completion_monitor_history_row(
+        process_execution_state="not_started",
+        process_completion_state="not_recorded",
+        adopted_proof_state="not_recorded",
+    )
+    history = {"history_hash": "h" * 64, "history_rows": [row]}
+    monkeypatch.setattr(completion_monitor, "_current_history", lambda: history)
+
+    result = completion_monitor.inspect_candidate_b_full_corpus_operator_workflow_completion_monitor(
+        _completion_monitor_payload(row, history)
+    )
+
+    assert result["completion_monitor_state"] == "not_started"
+    assert result["process_execution_projection"]["process_execution_receipt_available"] is False
+    assert result["process_control_admitted"] is False
+
+
+def test_completion_monitor_rejects_raw_process_authority() -> None:
+    try:
+        completion_monitor.inspect_candidate_b_full_corpus_operator_workflow_completion_monitor(
+            {
+                "client_request_id": "monitor-proof",
+                "completion_monitor_mode": completion_monitor.COMPLETION_MONITOR_MODE,
+                "operator_decision": completion_monitor.OPERATOR_DECISION,
+                "operator_workflow_receipt_id": "cb-full-corpus-operator-proof",
+                "operator_workflow_receipt_hash": "a" * 64,
+                "row_hash": "b" * 64,
+                "authority_basis_hash": "c" * 64,
+                "history_hash": "h" * 64,
+                "stdout": "raw process output",
+            }
+        )
+    except completion_monitor.CandidateBFullCorpusOperatorWorkflowCompletionMonitorError as exc:
+        assert exc.code == "candidate_b_full_corpus_operator_workflow_completion_monitor_forbidden_request_fields"
+        assert "stdout" in exc.details["blocked_fields"]
+    else:
+        raise AssertionError("completion monitor accepted raw process authority")
+
+
+def _completion_monitor_payload(row: dict[str, object], history: dict[str, object]) -> dict[str, object]:
+    process_execution = row["process_execution_projection"]
+    process_completion = row["process_completion_result_projection"]
+    adopted_proof = row["adopted_result_downstream_proof_projection"]
+    return {
+        "client_request_id": "monitor-proof",
+        "completion_monitor_mode": completion_monitor.COMPLETION_MONITOR_MODE,
+        "operator_decision": completion_monitor.OPERATOR_DECISION,
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+        "process_execution_receipt_id": process_execution["process_execution_receipt_id"],
+        "process_execution_receipt_hash": process_execution["process_execution_receipt_hash"],
+        "process_completion_result_receipt_id": process_completion["process_completion_result_receipt_id"],
+        "process_completion_result_receipt_hash": process_completion["process_completion_result_receipt_hash"],
+        "adopted_result_downstream_proof_receipt_id": adopted_proof[
+            "adopted_result_downstream_proof_receipt_id"
+        ],
+        "adopted_result_downstream_proof_receipt_hash": adopted_proof[
+            "adopted_result_downstream_proof_receipt_hash"
+        ],
+    }
+
+
+def _completion_monitor_history_row(
+    *,
+    process_execution_state: str,
+    process_completion_state: str,
+    adopted_proof_state: str,
+) -> dict[str, object]:
+    return {
+        "operator_workflow_receipt_id": "cb-full-corpus-operator-run-proof",
+        "operator_workflow_receipt_hash": "a" * 64,
+        "row_hash": "b" * 64,
+        "authority_basis_hash": "c" * 64,
+        "run_state": "proven",
+        "process_execution_projection": {
+            "process_execution_projection_state": process_execution_state,
+            "process_execution_receipt_available": process_execution_state == "started",
+            "process_execution_receipt_id": (
+                "cb-full-corpus-operator-process-execution-proof"
+                if process_execution_state == "started"
+                else ""
+            ),
+            "process_execution_receipt_hash": "d" * 64 if process_execution_state == "started" else "",
+            "process_execution_authority_hash": "e" * 64 if process_execution_state == "started" else "",
+        },
+        "process_completion_result_projection": {
+            "process_completion_result_projection_state": process_completion_state,
+            "process_completion_result_receipt_available": process_completion_state != "not_recorded",
+            "process_completion_result_receipt_id": (
+                "cb-full-corpus-operator-process-result-proof"
+                if process_completion_state != "not_recorded"
+                else ""
+            ),
+            "process_completion_result_receipt_hash": (
+                "f" * 64 if process_completion_state != "not_recorded" else ""
+            ),
+            "process_completion_result_authority_hash": (
+                "1" * 64 if process_completion_state != "not_recorded" else ""
+            ),
+        },
+        "adopted_result_downstream_proof_projection": {
+            "adopted_result_downstream_proof_projection_state": adopted_proof_state,
+            "adopted_result_downstream_proof_receipt_available": adopted_proof_state == "proven",
+            "adopted_result_downstream_proof_receipt_id": (
+                "cb-full-corpus-operator-adopted-result-downstream-proof-proof"
+                if adopted_proof_state == "proven"
+                else ""
+            ),
+            "adopted_result_downstream_proof_receipt_hash": "2" * 64 if adopted_proof_state == "proven" else "",
+            "adopted_result_downstream_proof_authority_hash": (
+                "3" * 64 if adopted_proof_state == "proven" else ""
+            ),
+        },
+    }
 
 
 def test_coverage_evidence_binds_delivery_artifact_authority() -> None:
