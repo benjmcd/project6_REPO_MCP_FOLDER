@@ -22,6 +22,7 @@ from app.services import layer3_candidate_b_full_corpus_operator_workflow_progre
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_retry_policy as workflow_retry_policy
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state as workflow_retry_queue_state
+from app.services import layer3_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease as workflow_retry_scheduler_lease
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease as workflow_scheduler_lease
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status
@@ -45,6 +46,9 @@ COMPLETION_FAILURE_ENDPOINT = (
 RETRY_POLICY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy"
 RETRY_QUEUE_STATE_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/queue/state"
+)
+RETRY_SCHEDULER_LEASE_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease"
 )
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
@@ -425,6 +429,34 @@ def _retry_queue_state_request(
     return payload
 
 
+def _retry_scheduler_lease_request(
+    history: dict[str, Any],
+    row: dict[str, Any],
+    retry_queue_state_body: dict[str, Any],
+    **overrides: Any,
+) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-retry-scheduler-lease",
+        "retry_scheduler_lease_mode": workflow_retry_scheduler_lease.RETRY_SCHEDULER_LEASE_MODE,
+        "operator_decision": workflow_retry_scheduler_lease.OPERATOR_DECISION,
+        "retry_queue_state_receipt_id": retry_queue_state_body["retry_queue_state_receipt_id"],
+        "retry_queue_state_receipt_hash": retry_queue_state_body["retry_queue_state_receipt_hash"],
+        "retry_queue_state_authority_hash": retry_queue_state_body["retry_queue_state_authority_hash"],
+        "retry_attempt_number": retry_queue_state_body["retry_attempt_number"],
+        "retry_policy_receipt_id": retry_queue_state_body["retry_policy_receipt_id"],
+        "retry_policy_authority_hash": retry_queue_state_body["retry_policy_authority_hash"],
+        "completion_failure_receipt_id": retry_queue_state_body["completion_failure_receipt_id"],
+        "failed_worker_attempt_receipt_id": retry_queue_state_body["failed_worker_attempt_receipt_id"],
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _worker_attempt_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     _write_source_receipt()
     client.post(RUN_ENDPOINT, json=_run_request()).json()
@@ -474,6 +506,15 @@ def _eligible_retry_policy_chain(client: TestClient) -> tuple[dict[str, Any], di
         json=_retry_policy_request(history_body, row, completion_failure_body),
     ).json()
     return history_body, row, retry_policy_body
+
+
+def _retry_queue_state_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    history_body, row, retry_policy_body = _eligible_retry_policy_chain(client)
+    retry_queue_state_body = client.post(
+        RETRY_QUEUE_STATE_ENDPOINT,
+        json=_retry_queue_state_request(history_body, row, retry_policy_body),
+    ).json()
+    return history_body, row, retry_queue_state_body
 
 
 def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt(
@@ -1642,6 +1683,172 @@ def test_candidate_b_full_corpus_operator_workflow_retry_queue_state_service_rej
         workflow_retry_queue_state.record_candidate_b_full_corpus_operator_workflow_retry_queue_state(payload)
 
     assert exc_info.value.code == "candidate_b_full_corpus_operator_workflow_retry_queue_state_forbidden_request_fields"
+    assert exc_info.value.details["blocked_fields"] == ["local_path"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_records_append_only(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+
+    response = client.post(
+        RETRY_SCHEDULER_LEASE_ENDPOINT,
+        json=_retry_scheduler_lease_request(history_body, row, retry_queue_state_body),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_retry_scheduler_lease.SCHEMA_ID
+    assert body["mode"] == workflow_retry_scheduler_lease.RETRY_SCHEDULER_LEASE_MODE
+    assert body["retry_scheduler_lease_state"] == "retry_scheduler_leased"
+    assert body["retry_attempt_number"] == 2
+    assert body["retry_queue_state_receipt_id"] == retry_queue_state_body["retry_queue_state_receipt_id"]
+    assert body["retry_queue_state_receipt_hash"] == retry_queue_state_body["retry_queue_state_receipt_hash"]
+    assert body["retry_queue_state_authority_hash"] == retry_queue_state_body["retry_queue_state_authority_hash"]
+    assert body["retry_policy_receipt_id"] == retry_queue_state_body["retry_policy_receipt_id"]
+    assert body["retry_policy_authority_hash"] == retry_queue_state_body["retry_policy_authority_hash"]
+    assert body["completion_failure_receipt_id"] == retry_queue_state_body["completion_failure_receipt_id"]
+    assert body["failed_worker_attempt_receipt_id"] == retry_queue_state_body["failed_worker_attempt_receipt_id"]
+    assert body["append_only_retry_scheduler_lease_receipt"] is True
+    assert body["exclusive_retry_queue_state_lease"] is True
+    assert body["retry_queue_state_receipt_mutated"] is False
+    assert body["retry_policy_receipt_mutated"] is False
+    assert body["completion_failure_receipt_mutated"] is False
+    assert body["progress_checkpoint_receipt_mutated"] is False
+    assert body["worker_attempt_receipt_mutated"] is False
+    assert body["scheduler_lease_receipt_mutated"] is False
+    assert body["queue_state_receipt_mutated"] is False
+    assert body["source_run_receipt_mutated"] is False
+    assert body["retry_scheduler_lease_runtime_selected"] is True
+    assert body["retry_worker_attempt_creation_admitted_now"] is False
+    assert body["retry_progress_checkpoint_creation_admitted_now"] is False
+    assert body["retry_completion_failure_creation_admitted_now"] is False
+    assert body["retry_worker_attempt_runtime_selected_now"] is False
+    assert body["cancel_runtime_selected_now"] is False
+    assert body["resume_runtime_selected_now"] is False
+    assert body["job_execution_runtime_selected_now"] is False
+    assert body["raw_exception_trace_admitted"] is False
+    assert body["raw_log_excerpt_admitted"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["artifact_bytes_exposed"] is False
+    assert body["retry_scheduler_lease_endpoint"] == RETRY_SCHEDULER_LEASE_ENDPOINT
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_is_idempotent(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+    request = _retry_scheduler_lease_request(history_body, row, retry_queue_state_body)
+
+    first = client.post(RETRY_SCHEDULER_LEASE_ENDPOINT, json=request).json()
+    second_response = client.post(RETRY_SCHEDULER_LEASE_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["retry_scheduler_lease_receipt_id"] == first["retry_scheduler_lease_receipt_id"]
+    assert second["retry_scheduler_lease_receipt_hash"] == first["retry_scheduler_lease_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_stale_queue_state(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+
+    response = client.post(
+        RETRY_SCHEDULER_LEASE_ENDPOINT,
+        json=_retry_scheduler_lease_request(
+            history_body,
+            row,
+            retry_queue_state_body,
+            retry_queue_state_receipt_hash="8" * 64,
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_scheduler_lease_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_stale_retry_queue_state"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_wrong_attempt_number(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+
+    response = client.post(
+        RETRY_SCHEDULER_LEASE_ENDPOINT,
+        json=_retry_scheduler_lease_request(
+            history_body,
+            row,
+            retry_queue_state_body,
+            retry_attempt_number=3,
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_scheduler_lease_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_stale_retry_queue_state"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_queue_state_conflict(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+    client.post(
+        RETRY_SCHEDULER_LEASE_ENDPOINT,
+        json=_retry_scheduler_lease_request(history_body, row, retry_queue_state_body),
+    )
+
+    response = client.post(
+        RETRY_SCHEDULER_LEASE_ENDPOINT,
+        json=_retry_scheduler_lease_request(
+            history_body,
+            row,
+            retry_queue_state_body,
+            client_request_id="candidate-b-full-corpus-workflow-retry-scheduler-lease-conflict",
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_scheduler_lease_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_queue_state_conflict"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_service_rejects_raw_authority(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+    payload = _retry_scheduler_lease_request(
+        history_body,
+        row,
+        retry_queue_state_body,
+        local_path="C:\\raw\\candidate-b",
+    )
+
+    with pytest.raises(
+        workflow_retry_scheduler_lease.CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseError
+    ) as exc_info:
+        workflow_retry_scheduler_lease.record_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(payload)
+
+    assert (
+        exc_info.value.code
+        == "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_forbidden_request_fields"
+    )
     assert exc_info.value.details["blocked_fields"] == ["local_path"]
 
 
