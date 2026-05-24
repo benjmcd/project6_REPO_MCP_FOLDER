@@ -3329,7 +3329,7 @@ class Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutRequest(BaseModel
         "regression_detected_blocked",
     ]
     rendered_acceptance_control_mode: Literal[
-        "rendered_candidate_b_full_corpus_repeatability_acceptance_checkpoint_control"
+        "rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control"
     ]
     rendered_acceptance_control_proof_state: Literal["headed_and_headless_passed"]
     headless_rendered_proof_label: Literal[
@@ -3340,6 +3340,33 @@ class Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutRequest(BaseModel
     ]
     operator_runbook_closeout_steps: list[str] = Field(min_length=4, max_length=4)
     negative_invariant_attestations: dict[str, bool]
+
+
+class Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    closeout_status_mode: Literal[
+        "read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority"
+    ]
+    operator_decision: Literal["inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status"]
+    repeatability_acceptance_operator_closeout_receipt_id: str | None = Field(default=None, min_length=1)
+    repeatability_acceptance_operator_closeout_receipt_hash: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+    )
+    repeatability_acceptance_checkpoint_receipt_id: str | None = Field(default=None, min_length=1)
+    repeatability_acceptance_checkpoint_receipt_hash: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+    )
+    repeatability_acceptance_checkpoint_authority_hash: str | None = Field(
+        default=None,
+        min_length=64,
+        max_length=64,
+    )
 
 
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
@@ -5330,6 +5357,41 @@ class Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutResponse(Layer3Ba
     repeatability_acceptance_checkpoint_endpoint: str
     repeatability_acceptance_operator_closeout_endpoint: str
     next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusResponse(Layer3BaseResponse):
+    mode: str
+    closeout_status_projection_state: str
+    closeout_status_hash: str
+    repeatability_acceptance_operator_closeout_receipt_available: bool
+    repeatability_acceptance_operator_closeout_receipt_id: str
+    repeatability_acceptance_operator_closeout_receipt_hash: str
+    repeatability_acceptance_operator_closeout_hash: str
+    repeatability_acceptance_operator_closeout_authority_hash: str
+    repeatability_acceptance_operator_closeout_receipt_ref: str
+    repeatability_acceptance_checkpoint_receipt_id: str
+    repeatability_acceptance_checkpoint_receipt_hash: str
+    repeatability_acceptance_checkpoint_authority_hash: str
+    original_repeatability_checkpoint_receipt_id: str
+    repeatability_rerun_trial_receipt_id: str
+    original_operator_workflow_receipt_id: str
+    rerun_operator_workflow_receipt_id: str
+    baseline_run_id: str
+    candidate_a_run_id: str
+    original_candidate_b_run_id: str
+    rerun_candidate_b_run_id: str
+    compare_target_set_hash: str
+    material_relative_name: str
+    acceptance_disposition: str
+    comparison_hash: str
+    negative_invariants_hash: str
+    rendered_acceptance_control_proof_state: str
+    comparison_summary: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    rendered_acceptance_control_proof: dict[str, Any]
+    operator_projection: dict[str, Any]
+    source_closeout_endpoint: str
+    repeatability_acceptance_operator_closeout_status_endpoint: str
 
 
 class Layer3CandidateBDefaultPromotionClosureEvidenceResponse(Layer3BaseResponse):
@@ -11527,6 +11589,23 @@ def post_candidate_b_full_corpus_repeatability_acceptance_closeout(
     closeout_service = layer3_candidate_b_full_corpus_repeatability_acceptance_closeout
     try:
         return closeout_service.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+            payload.model_dump(exclude_unset=True),
+        )
+    except closeout_service.CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status",
+    response_model=Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+    payload: Layer3CandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRequest,
+) -> dict[str, Any] | JSONResponse:
+    closeout_service = layer3_candidate_b_full_corpus_repeatability_acceptance_closeout
+    try:
+        return closeout_service.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
             payload.model_dump(exclude_unset=True),
         )
     except closeout_service.CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError as exc:
