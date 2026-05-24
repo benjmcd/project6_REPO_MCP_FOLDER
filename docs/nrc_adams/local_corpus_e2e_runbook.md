@@ -2828,3 +2828,44 @@ next_exact_posture: candidate_b_async_process_completion_result_adoption_v1
 ```
 
 The selected next runtime may adopt a terminal process result only from server-validated Candidate B workflow lineage. It must bind the current process-execution receipt, workflow row, execution-boundary authority, and validated result workflow receipt, then project an operator-safe completion/result status. It does not admit browser-supplied completion claims, arbitrary files, raw paths, raw URLs, stdout, stderr, traces, logs, artifact bytes, source-run mutation, provider writes, connector dispatch, model runtime, or broader default scope.
+
+### Candidate B Async Process Completion/Result Adoption Runtime
+
+```yaml
+milestone: candidate_b_async_process_completion_result_adoption_v1
+source_process_completion_result_selection: next_milestone_plans/Layer3_planning_docs/1030-cb-async-process-completion-result-adoption-selection.md
+runtime_status: implemented
+selected_completion_result_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result
+selected_completion_result_mode: append_only_process_completion_result_adoption_receipt_without_source_run_mutation_or_raw_output_exposure
+selected_completion_result_action: record_candidate_b_async_process_completion_result_adoption
+completed_result_adoption_requires: current_process_execution_receipt,current_history_row,current_execution_boundary_authority,validated_result_workflow_receipt_from_allowlisted_workflow,matching_operator_workflow_lineage,operator_safe_status_request
+status_history_projection_after_result_adoption: true
+rendered_operator_projection_after_result_adoption: true
+process_completion_result_runtime_selected: true
+result_adoption_runtime_selected_after_sync: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+source_run_receipt_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator_proof_selection_v1
+```
+
+Operators can now adopt a terminal process result only after the selected workflow row exposes a started process-execution receipt. Completed adoption must point at a validated Candidate B workflow result receipt from the same lineage; failed, blocked, or expired adoption must use only operator-safe failure code, phase, and summary hash. The browser control cannot provide commands, runtime roots, local paths, raw URLs, stdout, stderr, traces, logs, artifact bytes, provider refs, connector destinations, model/RAG controls, selector mutations, or durable authority.

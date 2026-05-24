@@ -47,6 +47,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "candidate_b_full_corpus_operator_workflow_queue_state": True,
     "candidate_b_full_corpus_operator_workflow_execution_boundary": True,
     "candidate_b_full_corpus_operator_workflow_process_execution": True,
+    "candidate_b_full_corpus_operator_workflow_process_completion_result": True,
     "candidate_b_full_corpus_operator_workflow_scheduler_lease": True,
     "candidate_b_full_corpus_operator_workflow_worker_attempt": True,
     "candidate_b_full_corpus_operator_workflow_progress_checkpoint": True,
@@ -248,6 +249,10 @@ def build_bootstrap_contract(
             "candidate_b_full_corpus_operator_workflow_process_execution_admitted": True,
             "candidate_b_full_corpus_operator_workflow_process_execution_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution"
+            ),
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_process_completion_result_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result"
             ),
             "candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted": True,
             "candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint": (
