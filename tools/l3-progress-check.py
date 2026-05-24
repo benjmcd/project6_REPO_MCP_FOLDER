@@ -2710,6 +2710,9 @@ CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_RUNTIME = (
 CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_LIVE_HTTP_PROOF = (
     PLANNING_DOCS / "992-cb-server-run-live-http-proof.md"
 )
+CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_START_CONTROL_FREEZE = (
+    PLANNING_DOCS / "993-cb-rendered-run-start-freeze.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -92224,6 +92227,86 @@ def _check_candidate_b_server_owned_workflow_run_api_live_http_proof(
                 )
 
 
+def _check_candidate_b_rendered_operator_workflow_run_start_control_freeze(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_START_CONTROL_FREEZE: (
+            "Candidate B Rendered Workflow Run Start Control Freeze",
+            "milestone: candidate_b_rendered_operator_workflow_run_start_control_freeze_v1",
+            "source_live_http_proof: next_milestone_plans/Layer3_planning_docs/992-cb-server-run-live-http-proof.md",
+            "current_main_entry: 45c93d83bb9b99aad6c993bca36ba3241a618902",
+            "selected_next_slice: candidate_b_rendered_operator_workflow_run_start_control_authority_v1",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_runtime_target: candidate_b_rendered_operator_workflow_run_start_control_v1",
+            "selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "existing_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "selected_rendered_start_mode: rendered_candidate_b_full_corpus_operator_workflow_run_start_control",
+            "selected_rendered_progress_mode: rendered_candidate_b_full_corpus_operator_workflow_run_progress_control",
+            "run_mode: candidate_b_full_corpus_operator_workflow_run_v1",
+            "operator_decision: start_candidate_b_full_corpus_operator_workflow",
+            "status_mode: candidate_b_full_corpus_operator_workflow_status_v1",
+            "status_operator_decision: inspect_candidate_b_full_corpus_operator_workflow_status",
+            "accepted_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server",
+            "server_resolves_source_workflow_receipt_from_configured_receipt_dir: true",
+            "rendered_start_control_admitted_after_sync: true",
+            "rendered_progress_control_admitted_after_sync: true",
+            "rendered_status_control_already_admitted: true",
+            "status_endpoint_reused_after_run: true",
+            "run_endpoint_status_request_must_be_used: true",
+            "allowed_browser_supplied_run_fields: client_request_id,run_mode,operator_decision,runtime_root_lifecycle_receipt_id,baseline_run_id,candidate_a_run_id,candidate_b_run_id,compare_target_set_hash,material_relative_name",
+            "browser_supplied_runtime_roots_admitted: false",
+            "browser_supplied_source_directory_admitted: false",
+            "browser_storage_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "selector_mutation_allowed: false",
+            "queue_scheduler_runtime_admitted: false",
+            "cancel_runtime_admitted: false",
+            "arbitrary_corpus_processing_start_admitted: false",
+            "proof_required_headless_chrome: true",
+            "proof_required_headed_chrome: true",
+            "proof_must_show_status_endpoint_called_with_returned_status_request: true",
+            "next_exact_posture: candidate_b_rendered_operator_workflow_run_start_control_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_rendered_operator_workflow_run_start_control_freeze_v1",
+            "source_live_http_proof: next_milestone_plans/Layer3_planning_docs/992-cb-server-run-live-http-proof.md",
+            "selected_runtime_target: candidate_b_rendered_operator_workflow_run_start_control_v1",
+            "selected_rendered_start_mode: rendered_candidate_b_full_corpus_operator_workflow_run_start_control",
+            "run_endpoint_status_request_must_be_used: true",
+            "browser_supplied_runtime_roots_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "proof_required_headless_chrome: true",
+            "proof_required_headed_chrome: true",
+            "next_exact_posture: candidate_b_rendered_operator_workflow_run_start_control_v1",
+        ),
+        CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_LIVE_HTTP_PROOF: (
+            "next_exact_posture: candidate_b_rendered_operator_workflow_run_start_control_freeze_v1",
+            "selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "server_run_endpoint_verified: true",
+            "rendered_run_start_control_admitted: false",
+            "rendered_progress_control_admitted: false",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE",
+            "candidate-b-full-corpus-workflow-status-form",
+            "candidateBFullCorpusOperatorWorkflowStatusPayload",
+            "inspectCandidateBFullCorpusOperatorWorkflowStatus",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B rendered workflow run start freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -93064,6 +93147,7 @@ def main() -> int:
     _check_candidate_b_server_owned_workflow_run_api_freeze(errors)
     _check_candidate_b_server_owned_workflow_run_api_runtime(errors)
     _check_candidate_b_server_owned_workflow_run_api_live_http_proof(errors)
+    _check_candidate_b_rendered_operator_workflow_run_start_control_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
