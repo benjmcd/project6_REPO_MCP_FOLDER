@@ -51,6 +51,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_process_execution"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_process_completion_result"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof"] is True
+    assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_completion_monitor"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_scheduler_lease"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_worker_attempt"] is True
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_progress_checkpoint"] is True
@@ -209,6 +210,13 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         "candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_endpoint"
     ] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof"
+    )
+    assert (
+        direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_completion_monitor_admitted"]
+        is True
+    )
+    assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_completion_monitor_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor"
     )
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint"] == (

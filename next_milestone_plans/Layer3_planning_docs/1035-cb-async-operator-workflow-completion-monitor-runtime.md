@@ -1,0 +1,54 @@
+# Candidate B Async Operator Workflow Completion Monitor Runtime
+
+```yaml
+milestone: candidate_b_async_operator_workflow_completion_monitor_v1
+source_completion_monitor_selection: next_milestone_plans/Layer3_planning_docs/1034-cb-async-operator-workflow-completion-monitor-selection.md
+current_main_entry: 105ce59c299a7c01fd53cd249450a7a4ee99e1b1
+runtime_status: implemented
+selected_completion_monitor_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor
+selected_completion_monitor_mode: read_only_operator_workflow_completion_monitor_without_process_control_result_mutation_or_reexecution
+selected_completion_monitor_action: inspect_candidate_b_async_operator_workflow_completion_monitor
+selected_completion_monitor_projection_model: read_only_projection_binding_process_execution_receipt_to_terminal_result_adoption_and_downstream_proof_status
+selected_completion_monitor_states: not_started,started_status_unknown,started_running_or_unresolved,completed_result_adopted,completed_downstream_proven,failed,blocked,expired,stale_authority,monitor_unavailable
+process_execution_projection_required: true
+process_completion_result_projection_if_present_required: true
+adopted_result_downstream_proof_projection_if_present_required: true
+stale_projection_binding_rejects: true
+contradictory_terminal_state_rejects: true
+completion_without_started_process_rejects: true
+status_history_projection_after_completion_monitor: true
+rendered_operator_projection_after_completion_monitor: true
+completion_monitor_runtime_selected: true
+process_control_admitted: false
+process_kill_cancel_retry_resume_admitted: false
+process_completion_result_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+adopted_result_workflow_receipt_mutation_admitted: false
+downstream_proof_receipt_mutation_admitted: false
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+raw_pid_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_full_corpus_operator_repeatability_checkpoint_selection_v1
+```
+
+The runtime exposes a read-only completion monitor over the current Candidate B workflow history row. It derives an operator-safe state from existing process-execution, process-completion/result, and adopted-result downstream-proof projections. It does not start, stop, retry, resume, cancel, poll arbitrary processes, mutate receipts, rerun Candidate B, rerun Layer 3, or expose raw process output, raw process ids, local paths, URLs, provider refs, connector destinations, artifact bytes, model/RAG controls, selector mutation, or frontend durable authority.
+
+The rendered operator control submits only the current history hash, row hash, workflow receipt hash, authority-basis hash, and optional projection receipt ids/hashes already projected by the server. Stale projection bindings and contradictory terminal states fail closed.
