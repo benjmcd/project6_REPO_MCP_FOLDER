@@ -764,3 +764,54 @@ next_exact_posture: candidate_b_server_owned_workflow_run_api_runtime_v1
 ```
 
 This freeze selects server-owned workflow-run authority as the next exact post-repeatability slice. It does not implement the runtime endpoint yet and does not admit rendered start/progress controls until server authority lands.
+
+## Candidate B Server-Owned Workflow Run API Runtime
+
+```yaml
+milestone: candidate_b_server_owned_workflow_run_api_runtime_v1
+source_authority_freeze: next_milestone_plans/Layer3_planning_docs/990-cb-server-run-api-freeze.md
+runtime_status: implemented
+selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run
+existing_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+run_schema_id: layer3.candidate_b_full_corpus_operator_workflow_run.v1
+run_mode: candidate_b_full_corpus_operator_workflow_run_v1
+operator_decision: start_candidate_b_full_corpus_operator_workflow
+accepted_scope: prepared_full_corpus_eligible_pdf_operator_runs_on_configured_live_server
+source_authority_model: server_owned_runtime_root_lifecycle_receipt_plus_compare_target_set
+server_resolves_source_workflow_receipt_from_configured_receipt_dir: true
+workflow_receipt_binding_required: true
+runtime_root_lifecycle_receipt_required: true
+baseline_run_id_required: true
+candidate_a_run_id_required: true
+candidate_b_run_id_required: true
+compare_target_set_hash_required: true
+idempotency_key_required: true
+idempotency_basis: client_request_id_plus_authority_basis_hash
+state_machine: accepted,running,proven,blocked,cancelled,expired
+durable_run_receipt_written: true
+status_endpoint_compatibility: proven
+status_endpoint_request_returned: true
+baseline_rollback_preserved: true
+candidate_a_semantics_changed: false
+candidate_b_default_broadened_beyond_eligible_pdf: false
+selector_mutation_allowed: false
+client_supplied_raw_runtime_roots_admitted: false
+browser_supplied_runtime_roots_admitted: false
+raw_api_base_url_persisted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+frontend_durable_authority_enabled: false
+provider_object_writes_enabled: false
+provider_public_url_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+rendered_run_start_control_admitted: false
+rendered_progress_control_admitted: false
+verification: python -m pytest .\backend\tests\test_layer3_candidate_b_full_corpus_operator_workflow_run.py .\backend\tests\test_layer3_candidate_b_full_corpus_operator_workflow_status.py .\backend\tests\test_layer3_readiness_contract.py .\backend\tests\test_layer3_bootstrap_contract.py -q
+verification_result: 14 passed
+next_exact_posture: candidate_b_server_owned_workflow_run_api_live_http_proof_v1
+```
+
+The run endpoint starts from existing configured server receipt authority. Operators provide only server authority identifiers and intent; the browser does not submit local runtime roots, raw URLs, selector changes, provider refs, connector destinations, or model/runtime controls. The server resolves the matching proven workflow receipt, revalidates runtime-root lifecycle and compare-target authority, writes an idempotent durable run receipt, and returns a status request that the existing read-only status endpoint can inspect.
