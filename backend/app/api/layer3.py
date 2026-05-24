@@ -61,6 +61,7 @@ from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease,
     layer3_candidate_b_full_corpus_operator_workflow_status,
     layer3_candidate_b_full_corpus_operator_workflow_worker_attempt,
+    layer3_candidate_b_operator_workflow_access_policy,
     layer3_candidate_b_operator_status,
     layer3_candidate_b_promotion_closure,
     layer3_candidate_b_runtime_bridge,
@@ -2796,6 +2797,8 @@ class Layer3CandidateBFullCorpusOperatorWorkflowStatusRequest(BaseModel):
     client_request_id: str = Field(min_length=1)
     status_mode: Literal["candidate_b_full_corpus_operator_workflow_status_v1"]
     operator_decision: Literal["inspect_candidate_b_full_corpus_operator_workflow_status"]
+    operator_role: Literal["owner", "auditor"] | None = None
+    policy_hash: str | None = Field(default=None, min_length=64, max_length=64)
     operator_workflow_receipt_id: str = Field(min_length=1)
     baseline_run_id: str = Field(min_length=1)
     candidate_a_run_id: str = Field(min_length=1)
@@ -2810,6 +2813,8 @@ class Layer3CandidateBFullCorpusOperatorWorkflowRunRequest(BaseModel):
     client_request_id: str = Field(min_length=1)
     run_mode: Literal["candidate_b_full_corpus_operator_workflow_run_v1"]
     operator_decision: Literal["start_candidate_b_full_corpus_operator_workflow"]
+    operator_role: Literal["owner"] | None = None
+    policy_hash: str | None = Field(default=None, min_length=64, max_length=64)
     runtime_root_lifecycle_receipt_id: str = Field(min_length=1)
     baseline_run_id: str = Field(min_length=1)
     candidate_a_run_id: str = Field(min_length=1)
@@ -10887,6 +10892,10 @@ def _json_or_error(handler: Callable[[], dict[str, Any]]) -> dict[str, Any] | JS
         )
 
 
+def _candidate_b_policy_request_context(request: Request) -> dict[str, str]:
+    return {str(key): str(value) for key, value in request.headers.items()}
+
+
 async def _payload_from_request(request: Request) -> dict[str, Any]:
     content_type = request.headers.get("content-type", "").lower()
     if "application/x-www-form-urlencoded" in content_type:
@@ -11173,13 +11182,21 @@ def post_candidate_b_default_promotion_operator_status(
 )
 def post_candidate_b_full_corpus_operator_workflow_run(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowRunRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_run_service = layer3_candidate_b_full_corpus_operator_workflow_run
     try:
-        return workflow_run_service.candidate_b_full_corpus_operator_workflow_run(
-            payload.model_dump(exclude_unset=True),
-        )
+        with layer3_candidate_b_operator_workflow_access_policy.request_context(
+            _candidate_b_policy_request_context(request),
+        ):
+            return workflow_run_service.candidate_b_full_corpus_operator_workflow_run(
+                payload.model_dump(exclude_unset=True),
+            )
     except workflow_run_service.CandidateBFullCorpusOperatorWorkflowRunError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    except (
+        layer3_candidate_b_operator_workflow_access_policy.CandidateBOperatorWorkflowAccessPolicyError
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
@@ -11190,13 +11207,21 @@ def post_candidate_b_full_corpus_operator_workflow_run(
 )
 def post_candidate_b_full_corpus_operator_workflow_status(
     payload: Layer3CandidateBFullCorpusOperatorWorkflowStatusRequest,
+    request: Request,
 ) -> dict[str, Any] | JSONResponse:
     workflow_status_service = layer3_candidate_b_full_corpus_operator_workflow_status
     try:
-        return workflow_status_service.candidate_b_full_corpus_operator_workflow_status(
-            payload.model_dump(exclude_unset=True),
-        )
+        with layer3_candidate_b_operator_workflow_access_policy.request_context(
+            _candidate_b_policy_request_context(request),
+        ):
+            return workflow_status_service.candidate_b_full_corpus_operator_workflow_status(
+                payload.model_dump(exclude_unset=True),
+            )
     except workflow_status_service.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    except (
+        layer3_candidate_b_operator_workflow_access_policy.CandidateBOperatorWorkflowAccessPolicyError
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
@@ -11633,11 +11658,20 @@ def post_candidate_b_default_promotion_closure_evidence(
     response_model=Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse,
     responses=_workbench_error_responses(404, 409),
 )
-def get_candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any] | JSONResponse:
+def get_candidate_b_full_corpus_operator_workflow_history(
+    request: Request,
+) -> dict[str, Any] | JSONResponse:
     workflow_history_service = layer3_candidate_b_full_corpus_operator_workflow_history
     try:
-        return workflow_history_service.candidate_b_full_corpus_operator_workflow_history()
+        with layer3_candidate_b_operator_workflow_access_policy.request_context(
+            _candidate_b_policy_request_context(request),
+        ):
+            return workflow_history_service.candidate_b_full_corpus_operator_workflow_history()
     except workflow_history_service.CandidateBFullCorpusOperatorWorkflowHistoryError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    except (
+        layer3_candidate_b_operator_workflow_access_policy.CandidateBOperatorWorkflowAccessPolicyError
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

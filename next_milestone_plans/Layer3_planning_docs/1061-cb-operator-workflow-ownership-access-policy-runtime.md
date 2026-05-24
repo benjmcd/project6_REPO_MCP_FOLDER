@@ -1,0 +1,73 @@
+# Candidate B Operator Workflow Ownership Access Policy Runtime
+
+```yaml
+milestone: candidate_b_operator_workflow_ownership_access_policy_runtime_v1
+source_operator_workflow_ownership_access_policy_contract: next_milestone_plans/Layer3_planning_docs/1060-cb-operator-workflow-ownership-access-policy-contract.md
+current_main_entry: d62b03bbe0d881d20236359d3300b093e0f96054
+runtime_status: core_run_status_history_implemented
+implemented_policy_module: backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py
+implemented_route_context_surface: backend/app/api/layer3.py
+implemented_service_surfaces: backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_run.py,backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_status.py,backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_history.py
+implemented_test_surfaces: backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_run.py,backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_status.py
+selected_auth_mode: session_tenant_owner_authorization
+selected_named_security_behavior: candidate_b_operator_workflow_owner_scoped_access_decision_v1
+policy_decision_schema_id: layer3.candidate_b.operator_workflow.owner_access_policy_decision.v1
+audit_event_schema_id: layer3.candidate_b.operator_workflow.ownership_access_audit_event.v1
+policy_receipt_prefix: cb-full-corpus-operator-policy
+protected_route_families_implemented: workflow_run,workflow_status,workflow_history
+protected_rendered_surfaces_implemented: run_start,status,history
+remaining_protected_route_families: lifecycle_expiry,queue_scheduler_worker_progress_completion_retry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status,review_status_projection,audit_projection
+identity_authority_runtime: AUTH_OWNER_none_local_single_operator_or_AUTH_OWNER_proxy_trusted_header_hash
+tenant_or_workspace_authority_runtime: AUTH_OWNER_none_local_single_workspace_or_AUTH_OWNER_proxy_trusted_groups_header_hash
+operator_role_runtime: owner_can_run,auditor_can_read_status_history
+workflow_receipt_owner_binding_runtime: server_owned_workflow_run.workflow_receipt_owner_binding
+storage_root_access_runtime: configured_workflow_receipt_root_only_no_client_supplied_paths
+audit_event_runtime: append_only_redacted_policy_receipt_under_configured_workflow_root
+request_admitted_fields: workflow_receipt_id,workflow_receipt_hash,actor_ref_hash,tenant_or_workspace_ref_hash,operator_role,route_family,rendered_surface,client_request_id,policy_hash
+request_forbidden_fields: auth_policy_override,auth_security_directive,security_context,browser_identity,local_storage_identity,proxy_identity_header,raw_operator_identity,raw_tenant_id,raw_workspace_id,operator_role_override,permission_override,raw_storage_root,raw_receipt_path,raw_url,provider_secret,connector_secret
+response_safe_fields: policy_schema_id,policy_hash,policy_status,actor_ref_hash,tenant_or_workspace_ref_hash,workflow_receipt_id,workflow_receipt_hash,route_family,rendered_surface,decision,reason_code,audit_event_id,audit_event_hash,audit_event_ref,next_actions
+missing_identity_policy: reject_fail_closed_for_AUTH_OWNER_proxy
+missing_tenant_or_workspace_policy: reject_fail_closed_for_AUTH_OWNER_proxy
+untrusted_proxy_header_policy: reject_fail_closed
+cross_owner_receipt_access_policy: reject_fail_closed
+stale_policy_hash_policy: reject_fail_closed
+browser_identity_policy: never_authority
+local_storage_identity_policy: never_authority
+local_proof_harness_compatibility: AUTH_OWNER_none_single_operator_dev_profile_unchanged
+audit_event_write_failure_policy: reject_fail_closed
+runtime_behavior_change_introduced_by_runtime: true
+auth_security_runtime_admitted_now: true
+multi_user_runtime_admitted_now: partially_core_surfaces_only
+storage_policy_runtime_admitted_now: configured_workflow_receipt_root_only
+audit_event_runtime_admitted_now: true
+route_level_auth_dependency_admitted_now: core_candidate_b_operator_workflow_run_status_history
+model_migration_admitted_now: false
+rendered_identity_control_admitted_now: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+proof_compile: python -m py_compile ./backend/app/services/layer3_candidate_b_operator_workflow_access_policy.py ./backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_status.py ./backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_run.py ./backend/app/services/layer3_candidate_b_full_corpus_operator_workflow_history.py ./backend/app/api/layer3.py
+proof_tests: python -m pytest ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_status.py ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_run.py -q
+proof_status: local_passed
+next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_protected_route_expansion_v1
+```
+
+This runtime slice implements the first server-owned Candidate B workflow ownership/access policy layer over the core run, status, and history surfaces. It derives local single-operator authority from `AUTH_OWNER=none` for existing proof harness compatibility. When `AUTH_OWNER=proxy`, it requires trusted proxy mode and hashes server-trusted identity and tenant/workspace headers; missing identity, missing tenant/workspace authority, untrusted proxy mode, cross-owner receipt access, stale policy hashes, browser/local-storage identity, and request-supplied auth/security override fields fail closed.
+
+Policy decisions append redacted audit receipts under the configured Candidate B workflow receipt root using the `cb-full-corpus-operator-policy` prefix. Responses expose only hashes, ids, decision labels, reason codes, and redacted audit refs. They do not expose raw operator identity, proxy headers, tenant/workspace values, local paths, raw URLs, tokens, provider/connector secrets, or artifact bytes.
+
+This slice intentionally does not add models, migrations, rendered identity controls, provider object writes, connector dispatch, RAG/vector/model runtime, full mockup activation, default-scope expansion, browser-storage authority, or frontend durable authority. The remaining protected workflow route families still need a follow-up expansion pass so policy context reaches every lifecycle, queue/scheduler/worker/progress/completion/retry/process/repeatability/acceptance/closeout surface.
+
+## Coherence Check
+
+- Does this complete all ownership/access policy enforcement? Recommended answer: no. It implements the core run/status/history policy runtime and leaves named route-family expansion for the next posture.
+- Does this preserve current local tests and operator harnesses? Recommended answer: yes. `AUTH_OWNER=none` remains the default single-operator local profile.
+- Does proxy mode accept browser or request-provided identity? Recommended answer: no. Only trusted server proxy headers are hashed as authority.
+- What comes next? Recommended answer: `candidate_b_operator_workflow_ownership_access_policy_protected_route_expansion_v1`.
