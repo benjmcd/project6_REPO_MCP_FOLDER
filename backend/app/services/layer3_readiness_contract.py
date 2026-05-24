@@ -269,6 +269,10 @@ def build_readiness_contract(
         "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary"
         ),
+        "candidate_b_full_corpus_operator_workflow_process_execution_admitted": True,
+        "candidate_b_full_corpus_operator_workflow_process_execution_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution"
+        ),
         "candidate_b_full_corpus_operator_workflow_retry_policy_admitted": True,
         "candidate_b_full_corpus_operator_workflow_retry_policy_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy"

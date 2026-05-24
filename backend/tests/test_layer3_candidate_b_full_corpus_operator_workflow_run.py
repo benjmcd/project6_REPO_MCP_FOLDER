@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_completion_failure as workflow_completion_failure
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_execution_boundary as workflow_execution_boundary
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_lifecycle as workflow_lifecycle
+from app.services import layer3_candidate_b_full_corpus_operator_workflow_process_execution as workflow_process_execution
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint as workflow_progress_checkpoint
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_retry_policy as workflow_retry_policy
@@ -65,6 +66,9 @@ RETRY_COMPLETION_FAILURE_ENDPOINT = (
 )
 EXECUTION_BOUNDARY_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary"
+)
+PROCESS_EXECUTION_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution"
 )
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
@@ -628,6 +632,29 @@ def _execution_boundary_request(
     return payload
 
 
+def _process_execution_request(
+    history: dict[str, Any],
+    row: dict[str, Any],
+    execution_boundary_body: dict[str, Any],
+    **overrides: Any,
+) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-process-execution",
+        "process_execution_mode": workflow_process_execution.PROCESS_EXECUTION_MODE,
+        "operator_decision": workflow_process_execution.OPERATOR_DECISION,
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+        "execution_boundary_receipt_id": execution_boundary_body["execution_boundary_receipt_id"],
+        "execution_boundary_receipt_hash": execution_boundary_body["execution_boundary_receipt_hash"],
+        "execution_boundary_authority_hash": execution_boundary_body["execution_boundary_authority_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _worker_attempt_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     _write_source_receipt()
     client.post(RUN_ENDPOINT, json=_run_request()).json()
@@ -722,6 +749,36 @@ def _retry_completion_failure_chain(client: TestClient) -> tuple[dict[str, Any],
         json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
     ).json()
     return history_body, row, retry_completion_failure_body
+
+
+def _execution_boundary_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    history_body, row, _retry_completion_failure_body = _retry_completion_failure_chain(client)
+    execution_boundary_body = client.post(
+        EXECUTION_BOUNDARY_ENDPOINT,
+        json=_execution_boundary_request(history_body, row),
+    ).json()
+    return history_body, row, execution_boundary_body
+
+
+def _fake_process_launch(
+    *,
+    process_execution_receipt_id: str,
+    process_invocation_hash: str,
+) -> dict[str, str]:
+    handle_hash = _stable_hash(
+        {
+            "process_execution_receipt_id": process_execution_receipt_id,
+            "process_invocation_hash": process_invocation_hash,
+            "test": "fake-process-launch",
+        }
+    )
+    return {
+        "redacted_process_ref": (
+            "candidate-b-full-corpus-operator-workflow-process://"
+            f"{process_execution_receipt_id}/{handle_hash[:24]}"
+        ),
+        "server_process_handle_hash": handle_hash,
+    }
 
 
 def _workflow_receipt_file(receipt_id: str) -> Path:
@@ -2815,6 +2872,206 @@ def test_candidate_b_full_corpus_operator_workflow_execution_boundary_service_re
         "candidate_b_full_corpus_operator_workflow_execution_boundary_forbidden_request_fields"
     )
     assert exc_info.value.details["blocked_fields"] == ["local_path"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_process_execution_records_redacted_start(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        workflow_process_execution,
+        "_launch_server_owned_process",
+        _fake_process_launch,
+    )
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+
+    response = client.post(
+        PROCESS_EXECUTION_ENDPOINT,
+        json=_process_execution_request(history_body, row, execution_boundary_body),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_process_execution.SCHEMA_ID
+    assert body["mode"] == workflow_process_execution.PROCESS_EXECUTION_MODE
+    assert body["process_execution_state"] == "started"
+    assert body["operator_workflow_receipt_id"] == row["operator_workflow_receipt_id"]
+    assert body["operator_workflow_receipt_hash"] == row["operator_workflow_receipt_hash"]
+    assert body["row_hash"] == row["row_hash"]
+    assert body["history_hash"] == history_body["history_hash"]
+    assert body["execution_boundary_receipt_id"] == execution_boundary_body["execution_boundary_receipt_id"]
+    assert body["execution_boundary_receipt_hash"] == execution_boundary_body["execution_boundary_receipt_hash"]
+    assert (
+        body["execution_boundary_authority_hash"]
+        == execution_boundary_body["execution_boundary_authority_hash"]
+    )
+    assert body["allowlisted_command_family"] == "tools/run_candidate_b_full_corpus_operator_workflow.py"
+    assert body["append_only_process_execution_receipt"] is True
+    assert body["process_started"] is True
+    assert body["source_run_receipt_mutated"] is False
+    assert body["execution_boundary_receipt_mutated"] is False
+    assert body["background_process_runtime_selected"] is True
+    assert body["background_process_runtime_selected_now"] is True
+    assert body["job_execution_runtime_selected_now"] is False
+    assert body["actual_subprocess_spawn_admitted_now"] is True
+    assert body["actual_corpus_processing_execution_admitted_now"] is False
+    assert body["browser_triggered_process_start_admitted"] is False
+    assert body["operator_supplied_command_admitted"] is False
+    assert body["operator_supplied_local_path_admitted"] is False
+    assert body["operator_supplied_raw_url_admitted"] is False
+    assert body["raw_stdout_admitted"] is False
+    assert body["raw_stderr_admitted"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["artifact_bytes_exposed"] is False
+    assert body["process_execution_endpoint"] == PROCESS_EXECUTION_ENDPOINT
+    assert body["status_request"] == row["status_request"]
+    assert body["redacted_process_ref"].startswith(
+        "candidate-b-full-corpus-operator-workflow-process://"
+    )
+    assert body["redacted_process_status_projection"]["process_execution_projection_state"] == "started"
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+    assert "stdout" in serialized
+    assert "stderr" in serialized
+
+    status_body = client.post(STATUS_ENDPOINT, json=row["status_request"]).json()
+    projection = status_body["process_execution_projection"]
+    assert projection["process_execution_projection_state"] == "started"
+    assert projection["process_execution_receipt_id"] == body["process_execution_receipt_id"]
+    assert projection["process_execution_receipt_hash"] == body["process_execution_receipt_hash"]
+    assert projection["background_process_runtime_selected_now"] is True
+    assert projection["actual_subprocess_spawn_admitted_now"] is True
+    assert projection["job_execution_runtime_selected_now"] is False
+    assert projection["actual_corpus_processing_execution_admitted_now"] is False
+
+    refreshed_history = client.get(HISTORY_ENDPOINT).json()
+    assert refreshed_history["history_hash"] == history_body["history_hash"]
+    history_projection = refreshed_history["history_rows"][0]["process_execution_projection"]
+    assert history_projection["process_execution_projection_state"] == "started"
+    assert history_projection["process_execution_receipt_id"] == body["process_execution_receipt_id"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_process_execution_is_idempotent(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    launch_calls: list[str] = []
+
+    def fake_launch(
+        *,
+        process_execution_receipt_id: str,
+        process_invocation_hash: str,
+    ) -> dict[str, str]:
+        launch_calls.append(process_execution_receipt_id)
+        return _fake_process_launch(
+            process_execution_receipt_id=process_execution_receipt_id,
+            process_invocation_hash=process_invocation_hash,
+        )
+
+    monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", fake_launch)
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+    request = _process_execution_request(history_body, row, execution_boundary_body)
+
+    first = client.post(PROCESS_EXECUTION_ENDPOINT, json=request).json()
+    second_response = client.post(PROCESS_EXECUTION_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["process_execution_receipt_id"] == first["process_execution_receipt_id"]
+    assert second["process_execution_receipt_hash"] == first["process_execution_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+    assert launch_calls == [first["process_execution_receipt_id"]]
+
+
+def test_candidate_b_full_corpus_operator_workflow_process_execution_rejects_missing_boundary(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        workflow_process_execution,
+        "_launch_server_owned_process",
+        _fake_process_launch,
+    )
+    history_body, row, _retry_completion_failure_body = _retry_completion_failure_chain(client)
+    boundary = {
+        "execution_boundary_receipt_id": "cb-full-corpus-operator-execution-boundary-missing",
+        "execution_boundary_receipt_hash": "8" * 64,
+        "execution_boundary_authority_hash": "9" * 64,
+    }
+
+    response = client.post(
+        PROCESS_EXECUTION_ENDPOINT,
+        json=_process_execution_request(history_body, row, boundary),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["process_execution_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_process_execution_boundary_missing"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_process_execution_rejects_stale_boundary(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        workflow_process_execution,
+        "_launch_server_owned_process",
+        _fake_process_launch,
+    )
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+
+    response = client.post(
+        PROCESS_EXECUTION_ENDPOINT,
+        json=_process_execution_request(
+            history_body,
+            row,
+            execution_boundary_body,
+            execution_boundary_receipt_hash="8" * 64,
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["process_execution_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_process_execution_stale_execution_boundary"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_process_execution_service_rejects_raw_authority(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        workflow_process_execution,
+        "_launch_server_owned_process",
+        _fake_process_launch,
+    )
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+    payload = _process_execution_request(
+        history_body,
+        row,
+        execution_boundary_body,
+        command="python tools/run_candidate_b_full_corpus_operator_workflow.py",
+        local_path="C:\\raw\\candidate-b",
+    )
+
+    with pytest.raises(
+        workflow_process_execution.CandidateBFullCorpusOperatorWorkflowProcessExecutionError
+    ) as exc_info:
+        workflow_process_execution.record_candidate_b_full_corpus_operator_workflow_process_execution(payload)
+
+    assert exc_info.value.code == (
+        "candidate_b_full_corpus_operator_workflow_process_execution_forbidden_request_fields"
+    )
+    assert exc_info.value.details["blocked_fields"] == ["command", "local_path"]
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_completion_failure_rejects_stale_retry_progress_checkpoint(

@@ -213,6 +213,8 @@ def test_candidate_b_full_corpus_operator_workflow_status_is_read_only_and_redac
     assert body["operator_projection"]["eligibility_summary_projection_visible"] is True
     assert body["operator_projection"]["baseline_rollback_projection_visible"] is True
     assert body["operator_projection"]["runtime_root_lifecycle_projection_visible"] is True
+    assert body["operator_projection"]["process_execution_projection_visible"] is True
+    assert body["process_execution_projection"]["process_execution_projection_state"] == "not_started"
     assert body["operator_projection"]["raw_local_path_exposed"] is False
     assert body["validate_only_triplet"] is True
     assert body["artifacts_seeded_or_generated_by_triplet_validator"] is False
