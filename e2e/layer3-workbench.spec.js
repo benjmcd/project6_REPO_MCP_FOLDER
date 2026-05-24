@@ -7776,6 +7776,33 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowStatusPayload = null;
+  const ownershipAccessPolicy = {
+    policy_schema_id: 'layer3.candidate_b.operator_workflow.owner_access_policy_decision.v1',
+    policy_status: 'admitted',
+    policy_hash: 'a'.repeat(64),
+    actor_ref_hash: 'b'.repeat(64),
+    tenant_or_workspace_ref_hash: 'c'.repeat(64),
+    workflow_receipt_id: 'cb-full-corpus-operator-rendered-proof',
+    workflow_receipt_hash: '3'.repeat(64),
+    route_family: 'workflow_status',
+    rendered_surface: 'status',
+    decision: 'allow',
+    reason_code: 'auditor_workflow_status_server_policy_allowed',
+    audit_event_id: 'cb-full-corpus-operator-policy-status-rendered-proof',
+    audit_event_hash: 'd'.repeat(64),
+    audit_event_ref: 'candidate-b-operator-workflow-policy://cb-full-corpus-operator-policy-status-rendered-proof/dddddddddddddddddddddddd',
+    next_actions: ['inspect redacted Candidate B workflow status, history, review, or audit projections'],
+    raw_operator_identity_exposed: false,
+    raw_proxy_header_exposed: false,
+    raw_tenant_or_workspace_exposed: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    raw_token_exposed: false,
+    provider_or_connector_secret_exposed: false,
+    artifact_bytes_exposed: false,
+    browser_storage_authority_used: false,
+    frontend_durable_authority_enabled: false,
+  };
   const retryTerminalProjection = {
     retry_terminal_projection_state: 'failed',
     retry_terminal_status_projection_mode: 'read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation',
@@ -7902,6 +7929,7 @@ test('Layer 3 workbench inspects Candidate B full-corpus workflow status through
           candidate_b_default_broadened_beyond_eligible_pdf: false,
           frontend_durable_authority_enabled: false,
         },
+        ownership_access_policy: ownershipAccessPolicy,
       }),
     });
   });
@@ -7940,10 +7968,16 @@ test('Layer 3 workbench inspects Candidate B full-corpus workflow status through
   await expect(panel).toContainText('terminal failure phase');
   await expect(panel).toContainText('raw exception trace admitted');
   await expect(panel).toContainText('retry terminal receipt creation admitted');
+  await expect(panel).toContainText('Workflow Status Ownership Policy');
+  await expect(panel).toContainText('route family: workflow_status');
+  await expect(panel).toContainText('rendered surface: status');
+  await expect(panel).toContainText('raw operator identity exposed: false');
+  await expect(panel).toContainText('browser storage authority used: false');
 
   expect(workflowStatusPayload).toMatchObject({
     status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
     operator_decision: 'inspect_candidate_b_full_corpus_operator_workflow_status',
+    operator_role: 'auditor',
     operator_workflow_receipt_id: 'cb-full-corpus-operator-rendered-proof',
     baseline_run_id: 'baseline-rendered-proof',
     candidate_a_run_id: 'candidate-a-rendered-proof',
@@ -8149,6 +8183,33 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
   const apiRequests = trackLayer3ApiRequests(page);
   let workflowHistoryRequested = false;
   let workflowStatusPayload = null;
+  const historyOwnershipAccessPolicy = {
+    policy_schema_id: 'layer3.candidate_b.operator_workflow.owner_access_policy_decision.v1',
+    policy_status: 'admitted',
+    policy_hash: 'a'.repeat(64),
+    actor_ref_hash: 'b'.repeat(64),
+    tenant_or_workspace_ref_hash: 'c'.repeat(64),
+    workflow_receipt_id: 'cb-full-corpus-operator-history-rendered-proof',
+    workflow_receipt_hash: '9'.repeat(64),
+    route_family: 'workflow_history',
+    rendered_surface: 'history',
+    decision: 'allow',
+    reason_code: 'auditor_workflow_history_server_policy_allowed',
+    audit_event_id: 'cb-full-corpus-operator-policy-history-rendered-proof',
+    audit_event_hash: 'd'.repeat(64),
+    audit_event_ref: 'candidate-b-operator-workflow-policy://cb-full-corpus-operator-policy-history-rendered-proof/dddddddddddddddddddddddd',
+    next_actions: ['inspect redacted Candidate B workflow status, history, review, or audit projections'],
+    raw_operator_identity_exposed: false,
+    raw_proxy_header_exposed: false,
+    raw_tenant_or_workspace_exposed: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    raw_token_exposed: false,
+    provider_or_connector_secret_exposed: false,
+    artifact_bytes_exposed: false,
+    browser_storage_authority_used: false,
+    frontend_durable_authority_enabled: false,
+  };
   const retryTerminalProjection = {
     retry_terminal_projection_state: 'completed',
     retry_terminal_status_projection_mode: 'read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation',
@@ -8270,6 +8331,7 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
             artifact_bytes_exposed: false,
             selector_mutation_performed: false,
             frontend_durable_authority_enabled: false,
+            ownership_access_policy: historyOwnershipAccessPolicy,
             retry_terminal_status_projection: retryTerminalProjection,
             row_hash: 'd'.repeat(64),
           },
@@ -8347,6 +8409,9 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
   await expect(historyCard).toContainText('completed');
   await expect(historyCard).toContainText('cb-full-corpus-operator-history-rendered-proof-retry-completion-failure');
   await expect(historyCard).toContainText('retry terminal receipt creation admitted: false');
+  await expect(historyCard).toContainText('route family: workflow_history');
+  await expect(historyCard).toContainText('rendered surface: history');
+  await expect(historyCard).toContainText('raw proxy header exposed: false');
 
   await page.locator('[data-candidate-b-workflow-history-inspect-index="0"]').click();
   await expect(panel).toContainText('candidate_b_full_corpus_workflow_status_available');
@@ -8357,7 +8422,10 @@ test('Layer 3 workbench refreshes Candidate B workflow history and inspects a se
   await expect(panel).toContainText('completed');
 
   expect(workflowHistoryRequested).toBe(true);
-  expect(workflowStatusPayload).toEqual(returnedStatusRequest);
+  expect(workflowStatusPayload).toEqual({
+    ...returnedStatusRequest,
+    operator_role: 'auditor',
+  });
   expect(JSON.stringify(workflowStatusPayload)).not.toContain('file://');
   expect(JSON.stringify(workflowStatusPayload)).not.toContain('https://');
   expect(apiRequests.filter((request) => (
@@ -9093,6 +9161,36 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
     frontend_durable_authority_enabled: false,
     default_scope_expansion_admitted: false,
   };
+  const renderedPolicyDecision = (routeFamily, renderedSurface, hashSeed) => ({
+    policy_schema_id: 'layer3.candidate_b.operator_workflow.owner_access_policy_decision.v1',
+    policy_status: 'admitted',
+    policy_hash: hashSeed.repeat(64),
+    actor_ref_hash: 'e'.repeat(64),
+    tenant_or_workspace_ref_hash: 'f'.repeat(64),
+    workflow_receipt_id: payloadAuthorityReceiptId(routeFamily),
+    workflow_receipt_hash: '1'.repeat(64),
+    route_family: routeFamily,
+    rendered_surface: renderedSurface,
+    decision: 'allow',
+    reason_code: `auditor_${routeFamily}_server_policy_allowed`,
+    audit_event_id: `cb-full-corpus-operator-policy-${routeFamily}`,
+    audit_event_hash: hashSeed.repeat(64),
+    audit_event_ref: `candidate-b-operator-workflow-policy://cb-full-corpus-operator-policy-${routeFamily}/${hashSeed.repeat(24)}`,
+    next_actions: ['inspect redacted Candidate B workflow status, history, review, or audit projections'],
+    raw_operator_identity_exposed: false,
+    raw_proxy_header_exposed: false,
+    raw_tenant_or_workspace_exposed: false,
+    raw_local_path_exposed: false,
+    raw_url_exposed: false,
+    raw_token_exposed: false,
+    provider_or_connector_secret_exposed: false,
+    artifact_bytes_exposed: false,
+    browser_storage_authority_used: false,
+    frontend_durable_authority_enabled: false,
+  });
+  const payloadAuthorityReceiptId = (routeFamily) => (
+    `candidate-b-rendered-policy-authority-${routeFamily}`
+  );
   const closeoutStatusResponseForPayload = (payload) => {
     const available = Boolean(payload.repeatability_acceptance_operator_closeout_receipt_id);
     return {
@@ -9153,6 +9251,10 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
       operator_projection: {
         read_only_acceptance_closeout_status_projection: true,
         closeout_receipt_projection_visible: available,
+        closeout_status_policy_enforced: true,
+        review_status_projection_policy_enforced: true,
+        audit_projection_policy_enforced: true,
+        ownership_access_policy_audit_event_appended: true,
         acceptance_closeout_receipt_creation_admitted_now: false,
         acceptance_closeout_receipt_mutation_admitted: false,
         actual_corpus_processing_execution_admitted_now: false,
@@ -9166,6 +9268,42 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
         full_mockup_activation_enabled: false,
         frontend_durable_authority_enabled: false,
         default_scope_expansion_admitted: false,
+      },
+      ownership_access_policy: {
+        policy_scope: 'candidate_b_acceptance_closeout_status_review_audit_projection',
+        projection_authority_kind: available
+          ? 'repeatability_acceptance_operator_closeout_receipt'
+          : 'repeatability_acceptance_checkpoint_selector',
+        protected_route_families: [
+          'closeout_status',
+          'review_status_projection',
+          'audit_projection',
+        ],
+        closeout_status: renderedPolicyDecision(
+          'closeout_status',
+          'acceptance_closeout_status',
+          'b',
+        ),
+        review_status_projection: renderedPolicyDecision(
+          'review_status_projection',
+          'acceptance_closeout_status_review',
+          'c',
+        ),
+        audit_projection: renderedPolicyDecision(
+          'audit_projection',
+          'acceptance_closeout_status_audit',
+          'd',
+        ),
+        raw_operator_identity_exposed: false,
+        raw_proxy_header_exposed: false,
+        raw_tenant_or_workspace_exposed: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        raw_token_exposed: false,
+        provider_or_connector_secret_exposed: false,
+        artifact_bytes_exposed: false,
+        browser_storage_authority_used: false,
+        frontend_durable_authority_enabled: false,
       },
       source_closeout_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout',
       repeatability_acceptance_operator_closeout_status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status',
@@ -9602,6 +9740,12 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
   await page.locator('#candidate-b-repeatability-acceptance-closeout-status-submit').click();
   await expect(acceptanceCloseoutCard).toContainText('candidate_b_full_corpus_repeatability_acceptance_closeout_status_not_recorded');
   await expect(acceptanceCloseoutCard).toContainText('closeout status state: not_recorded');
+  await expect(acceptanceCloseoutCard).toContainText('policy scope: candidate_b_acceptance_closeout_status_review_audit_projection');
+  await expect(acceptanceCloseoutCard).toContainText('projection authority kind: repeatability_acceptance_checkpoint_selector');
+  await expect(acceptanceCloseoutCard).toContainText('route family: closeout_status');
+  await expect(acceptanceCloseoutCard).toContainText('rendered surface: acceptance_closeout_status');
+  await expect(acceptanceCloseoutCard).toContainText('raw operator identity exposed: false');
+  await expect(acceptanceCloseoutCard).toContainText('browser storage authority used: false');
   await expect(acceptanceCloseoutCard).toContainText('receipt creation admitted now: false');
   await expect(acceptanceCloseoutCard).toContainText('frontend durable authority enabled: false');
   await page.locator('#candidate-b-repeatability-acceptance-closeout-submit').click();
@@ -9623,10 +9767,17 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
   await expect(acceptanceCloseoutCard).toContainText('closeout status state: available');
   await expect(acceptanceCloseoutCard).toContainText('closeout receipt available: true');
   await expect(acceptanceCloseoutCard).toContainText('closeout receipt projection visible: true');
+  await expect(acceptanceCloseoutCard).toContainText('projection authority kind: repeatability_acceptance_operator_closeout_receipt');
+  await expect(acceptanceCloseoutCard).toContainText('route family: review_status_projection');
+  await expect(acceptanceCloseoutCard).toContainText('route family: audit_projection');
+  await expect(acceptanceCloseoutCard).toContainText('audit event ref: candidate-b-operator-workflow-policy://');
   await expect(acceptanceCloseoutCard).toContainText('rendered acceptance control proof state: headed_and_headless_passed');
 
   expect(workflowHistoryRequested).toBe(true);
-  expect(statusPayloads).toEqual([originalStatusRequest, rerunStatusRequest]);
+  expect(statusPayloads).toEqual([
+    { ...originalStatusRequest, operator_role: 'auditor' },
+    { ...rerunStatusRequest, operator_role: 'auditor' },
+  ]);
   expect(monitorPayloads.map((payload) => payload.operator_workflow_receipt_id)).toEqual([
     originalRow.operator_workflow_receipt_id,
     rerunRow.operator_workflow_receipt_id,
@@ -9720,6 +9871,7 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
       client_request_id: closeoutStatusPayloads[0].client_request_id,
       closeout_status_mode: 'read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority',
       operator_decision: 'inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status',
+      operator_role: 'auditor',
       repeatability_acceptance_checkpoint_receipt_id: 'cb-full-corpus-repeatability-acceptance-checkpoint-rendered-proof',
       repeatability_acceptance_checkpoint_receipt_hash: '2'.repeat(64),
       repeatability_acceptance_checkpoint_authority_hash: '4'.repeat(64),
@@ -9728,6 +9880,7 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
       client_request_id: closeoutStatusPayloads[1].client_request_id,
       closeout_status_mode: 'read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority',
       operator_decision: 'inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status',
+      operator_role: 'auditor',
       repeatability_acceptance_operator_closeout_receipt_id: 'cb-full-corpus-repeatability-acceptance-closeout-rendered-proof',
       repeatability_acceptance_operator_closeout_receipt_hash: '5'.repeat(64),
     },

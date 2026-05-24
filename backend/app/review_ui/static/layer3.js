@@ -8313,6 +8313,7 @@ function candidateBFullCorpusOperatorWorkflowStatusPayload() {
         client_request_id: requestId(),
         status_mode: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_MODE,
         operator_decision: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_OPERATOR_DECISION,
+        operator_role: 'auditor',
         operator_workflow_receipt_id: values.workflowReceiptId,
         baseline_run_id: values.baselineRunId,
         candidate_a_run_id: values.candidateARunId,
@@ -8609,6 +8610,7 @@ function candidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusPayload() {
         client_request_id: requestId(),
         closeout_status_mode: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_STATUS_MODE,
         operator_decision: CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_STATUS_OPERATOR_DECISION,
+        operator_role: 'auditor',
     };
     if (hasCloseoutReceipt) {
         payload.repeatability_acceptance_operator_closeout_receipt_id = closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_id;
@@ -9899,6 +9901,7 @@ function candidateBFullCorpusOperatorWorkflowRunRows(run) {
                     ${fieldItem('frontend durable authority', run.negative_invariants?.frontend_durable_authority_enabled)}
                 </ul>
             </section>
+            ${candidateBRenderedPolicyDecisionRows(run.ownership_access_policy, 'Workflow Run Ownership Policy')}
         </div>
     `;
 }
@@ -9993,6 +9996,7 @@ function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
                     ${candidateBAdoptedResultDownstreamProofProjectionItems(adoptedResultDownstreamProofProjection)}
                 </ul>
             </section>
+            ${candidateBRenderedPolicyDecisionRows(status.ownership_access_policy, 'Workflow Status Ownership Policy')}
         </div>
     `;
 }
@@ -10177,6 +10181,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                     ${fieldItem('raw local path exposed', row.raw_local_path_exposed)}
                     ${fieldItem('raw URL exposed', row.raw_url_exposed)}
                     ${fieldItem('frontend durable authority', row.frontend_durable_authority_enabled)}
+                    ${candidateBRenderedPolicyDecisionItems(row.ownership_access_policy)}
                     ${candidateBRetryTerminalProjectionItems(row.retry_terminal_status_projection)}
                     ${candidateBExecutionBoundaryProjectionItems(row.execution_boundary_projection)}
                     ${candidateBProcessExecutionProjectionItems(row.process_execution_projection)}
@@ -10647,6 +10652,7 @@ function candidateBFullCorpusOperatorWorkflowCompletionMonitorRows(monitor) {
                     ${fieldItem('operator projection visible', projection.completion_monitor_visible)}
                 </ul>
             </section>
+            ${candidateBRenderedPolicyDecisionRows(monitor.ownership_access_policy, 'Completion Monitor Ownership Policy')}
         </div>
     `;
 }
@@ -10999,6 +11005,7 @@ function candidateBFullCorpusOperatorRepeatabilityCheckpointRows(checkpoint) {
                     ${fieldItem('frontend durable authority enabled', checkpoint.frontend_durable_authority_enabled)}
                 </ul>
             </section>
+            ${candidateBRenderedPolicyDecisionRows(checkpoint.ownership_access_policy, 'Repeatability Checkpoint Ownership Policy')}
         </div>
     `;
 }
@@ -11079,6 +11086,7 @@ function candidateBFullCorpusRepeatabilityRerunTrialRows(trialReceipt) {
                     ${fieldItem('frontend durable authority enabled', trialReceipt.frontend_durable_authority_enabled)}
                 </ul>
             </section>
+            ${candidateBRenderedPolicyDecisionRows(trialReceipt.ownership_access_policy, 'Rerun Trial Ownership Policy')}
         </div>
     `;
 }
@@ -11168,6 +11176,7 @@ function candidateBFullCorpusRepeatabilityAcceptanceCheckpointRows(acceptanceRec
                     ${fieldItem('default scope expansion admitted', acceptanceReceipt.default_scope_expansion_admitted)}
                 </ul>
             </section>
+            ${candidateBRenderedPolicyDecisionRows(acceptanceReceipt.ownership_access_policy, 'Acceptance Checkpoint Ownership Policy')}
         </div>
     `;
 }
@@ -11298,6 +11307,7 @@ function candidateBFullCorpusRepeatabilityAcceptanceCloseoutRows(closeoutReceipt
                     ${fieldItem('default scope expansion admitted', negativeInvariants.default_scope_expansion_admitted)}
                 </ul>
             </section>
+            ${candidateBRenderedPolicyDecisionRows(closeoutReceipt.ownership_access_policy, 'Acceptance Closeout Ownership Policy')}
         </div>
     `;
 }
@@ -11341,6 +11351,70 @@ function candidateBFullCorpusRepeatabilityAcceptanceCloseoutError() {
             <strong>${escapeHtml(code)}</strong>
             <p>${escapeHtml(message)}</p>
         </div>
+    `;
+}
+
+function candidateBRenderedPolicyDecisionItems(policy) {
+    if (!policy) return '';
+    return `
+        ${fieldItem('policy status', policy.policy_status, { code: true })}
+        ${fieldItem('route family', policy.route_family, { code: true })}
+        ${fieldItem('rendered surface', policy.rendered_surface, { code: true })}
+        ${fieldItem('policy hash', policy.policy_hash, { code: true })}
+        ${fieldItem('audit event ref', policy.audit_event_ref, { code: true })}
+        ${fieldItem('actor ref hash', policy.actor_ref_hash, { code: true })}
+        ${fieldItem('tenant/workspace ref hash', policy.tenant_or_workspace_ref_hash, { code: true })}
+        ${fieldItem('decision', policy.decision, { code: true })}
+        ${fieldItem('raw operator identity exposed', policy.raw_operator_identity_exposed)}
+        ${fieldItem('raw proxy header exposed', policy.raw_proxy_header_exposed)}
+        ${fieldItem('raw tenant/workspace exposed', policy.raw_tenant_or_workspace_exposed)}
+        ${fieldItem('raw local path exposed', policy.raw_local_path_exposed)}
+        ${fieldItem('raw URL exposed', policy.raw_url_exposed)}
+        ${fieldItem('provider or connector secret exposed', policy.provider_or_connector_secret_exposed)}
+        ${fieldItem('artifact bytes exposed', policy.artifact_bytes_exposed)}
+        ${fieldItem('browser storage authority used', policy.browser_storage_authority_used)}
+        ${fieldItem('frontend durable authority enabled', policy.frontend_durable_authority_enabled)}
+    `;
+}
+
+function candidateBRenderedPolicyDecisionRows(policy, label) {
+    if (!policy) return '';
+    return `
+        <section class="result-review-card">
+            <strong>${escapeHtml(label)}</strong>
+            <ul>
+                ${candidateBRenderedPolicyDecisionItems(policy)}
+            </ul>
+        </section>
+    `;
+}
+
+function candidateBRenderedOwnershipPolicyRows(statusProjection) {
+    const policy = statusProjection?.ownership_access_policy;
+    if (!policy) return '';
+    const families = Array.isArray(policy.protected_route_families)
+        ? policy.protected_route_families.join(', ')
+        : '';
+    return `
+        <section class="result-review-card">
+            <strong>Ownership Access Policy</strong>
+            <ul>
+                ${fieldItem('policy scope', policy.policy_scope, { code: true })}
+                ${fieldItem('projection authority kind', policy.projection_authority_kind, { code: true })}
+                ${fieldItem('protected route families', families, { code: true })}
+                ${fieldItem('raw operator identity exposed', policy.raw_operator_identity_exposed)}
+                ${fieldItem('raw proxy header exposed', policy.raw_proxy_header_exposed)}
+                ${fieldItem('raw tenant/workspace exposed', policy.raw_tenant_or_workspace_exposed)}
+                ${fieldItem('raw local path exposed', policy.raw_local_path_exposed)}
+                ${fieldItem('raw URL exposed', policy.raw_url_exposed)}
+                ${fieldItem('provider or connector secret exposed', policy.provider_or_connector_secret_exposed)}
+                ${fieldItem('browser storage authority used', policy.browser_storage_authority_used)}
+                ${fieldItem('frontend durable authority enabled', policy.frontend_durable_authority_enabled)}
+            </ul>
+        </section>
+        ${candidateBRenderedPolicyDecisionRows(policy.closeout_status, 'Closeout Status Policy')}
+        ${candidateBRenderedPolicyDecisionRows(policy.review_status_projection, 'Review Status Projection Policy')}
+        ${candidateBRenderedPolicyDecisionRows(policy.audit_projection, 'Audit Projection Policy')}
     `;
 }
 
@@ -11416,6 +11490,10 @@ function candidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRows(statusPro
             <section class="result-review-card">
                 <strong>Status Guardrails</strong>
                 <ul>
+                    ${fieldItem('closeout status policy enforced', operatorProjection.closeout_status_policy_enforced)}
+                    ${fieldItem('review status projection policy enforced', operatorProjection.review_status_projection_policy_enforced)}
+                    ${fieldItem('audit projection policy enforced', operatorProjection.audit_projection_policy_enforced)}
+                    ${fieldItem('policy audit event appended', operatorProjection.ownership_access_policy_audit_event_appended)}
                     ${fieldItem('receipt creation admitted now', operatorProjection.acceptance_closeout_receipt_creation_admitted_now)}
                     ${fieldItem('closeout receipt mutation admitted', operatorProjection.acceptance_closeout_receipt_mutation_admitted)}
                     ${fieldItem('actual corpus processing execution admitted now', operatorProjection.actual_corpus_processing_execution_admitted_now)}
@@ -11431,6 +11509,7 @@ function candidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRows(statusPro
                     ${fieldItem('default scope expansion admitted', operatorProjection.default_scope_expansion_admitted)}
                 </ul>
             </section>
+            ${candidateBRenderedOwnershipPolicyRows(statusProjection)}
         </div>
     `;
 }
@@ -11445,6 +11524,13 @@ function candidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusError() {
         <div class="error-panel">
             <strong>${escapeHtml(code)}</strong>
             <p>${escapeHtml(message)}</p>
+            <ul>
+                ${fieldItem('identity authority', 'server_derived_identity_only', { code: true })}
+                ${fieldItem('browser storage authority', 'blocked', { code: true })}
+                ${fieldItem('raw proxy header exposed', false)}
+                ${fieldItem('raw operator identity exposed', false)}
+                ${fieldItem('frontend durable authority enabled', false)}
+            </ul>
         </div>
     `;
 }
@@ -12433,11 +12519,15 @@ async function inspectCandidateBFullCorpusOperatorWorkflowHistoryRow(event) {
     State.candidateBFullCorpusOperatorWorkflowHistorySelectedReceiptId = (
         statusRequest.operator_workflow_receipt_id || ''
     );
+    const renderedStatusRequest = {
+        ...statusRequest,
+        operator_role: statusRequest.operator_role || 'auditor',
+    };
     State.candidateBFullCorpusOperatorWorkflowStatusPending = true;
     State.candidateBFullCorpusOperatorWorkflowStatusError = null;
     renderCandidateBDefaultPromotionStatusPanel();
     try {
-        State.candidateBFullCorpusOperatorWorkflowStatus = await postJson(statusPath, statusRequest);
+        State.candidateBFullCorpusOperatorWorkflowStatus = await postJson(statusPath, renderedStatusRequest);
         State.candidateBFullCorpusOperatorWorkflowStatusError = null;
         addEvent('Candidate B full-corpus workflow history row inspected through returned status request.');
     } catch (error) {
