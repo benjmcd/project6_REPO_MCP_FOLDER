@@ -2908,6 +2908,9 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_OPERATOR_WORKFLOW_COMPLETION_AUDIT = (
 CANDIDATE_B_POST_REPEATABILITY_PRODUCTION_HARDENING_SELECTION = (
     PLANNING_DOCS / "1058-cb-post-repeatability-production-hardening-selection.md"
 )
+CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_FREEZE = (
+    PLANNING_DOCS / "1059-cb-operator-workflow-ownership-access-policy-freeze.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -99649,6 +99652,131 @@ def _check_candidate_b_post_repeatability_production_hardening_selection(
                 )
 
 
+def _check_candidate_b_operator_workflow_ownership_access_policy_freeze(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_OPERATOR_WORKFLOW_OWNERSHIP_ACCESS_POLICY_FREEZE: (
+            "Candidate B Operator Workflow Ownership Access Policy Freeze",
+            "milestone: candidate_b_operator_workflow_ownership_access_policy_freeze_v1",
+            "source_post_repeatability_production_hardening_selection: next_milestone_plans/Layer3_planning_docs/1058-cb-post-repeatability-production-hardening-selection.md",
+            "current_main_entry: 6c8e58f31f7850b6b81a87b639ee7705ee672012",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_auth_mode: session_tenant_owner_authorization",
+            "selected_policy_scope: candidate_b_full_corpus_operator_workflow_receipts_and_rendered_operator_controls",
+            "selected_named_security_behavior: candidate_b_operator_workflow_owner_scoped_access_decision_v1",
+            "selected_next_target: candidate_b_operator_workflow_ownership_access_policy_contract_v1",
+            "implementation_admitted_after_current_main_sync: true",
+            "identity_authority: server_derived_operator_identity_ref_required_before_runtime",
+            "tenant_or_workspace_authority: server_derived_tenant_or_workspace_ref_required_before_runtime",
+            "operator_role_matrix: owner,auditor",
+            "workflow_receipt_owner_binding: actor_ref_hash,tenant_or_workspace_ref_hash,workflow_receipt_id,workflow_receipt_hash,authority_basis_hash,policy_hash",
+            "storage_root_access_policy: server_owned_receipt_refs_only_no_client_supplied_paths",
+            "audit_event_contract: append_only_policy_decision_event_required_before_runtime",
+            "audit_event_required_fields: event_id,policy_hash,actor_ref_hash,tenant_or_workspace_ref_hash,workflow_receipt_id,workflow_receipt_hash,route_family,decision,reason_code,request_id,created_at",
+            "audit_event_forbidden_fields: raw_operator_identity,raw_proxy_header,raw_tenant_id,raw_workspace_id,raw_local_path,raw_url,raw_token,provider_secret,connector_secret,artifact_bytes",
+            "forbidden_request_fields: auth_policy_override,auth_security_directive,security_context,browser_identity,local_storage_identity,proxy_identity_header,raw_tenant_id,raw_workspace_id,operator_role_override,permission_override,raw_storage_root,raw_receipt_path,raw_url",
+            "owner_role_policy: may_create_and_mutate_own_workflow_receipts_when_runtime_admitted",
+            "auditor_role_policy: may_read_status_history_review_and_audit_projection_when_runtime_admitted",
+            "cross_owner_receipt_access_policy: reject_fail_closed",
+            "missing_identity_policy: reject_fail_closed_for_nonlocal_runtime",
+            "missing_tenant_or_workspace_policy: reject_fail_closed_for_nonlocal_runtime",
+            "stale_policy_hash_policy: reject_fail_closed",
+            "local_proof_harness_compatibility: AUTH_OWNER_none_single_operator_dev_profile_unchanged",
+            "nonlocal_identity_prerequisite: AUTH_OWNER_proxy_and_TRUSTED_PROXY_MODE_true_with_explicit_future_header_contract",
+            "storage_exposure_prerequisite: nonlocal_direct_storage_exposure_remains_disabled_or_auto",
+            "backwards_compatibility_policy: current_local_default_routes_remain_unchanged_until_runtime_contract",
+            "rollback_fail_closed_behavior: disable_policy_runtime_returns_to_current_receipt_validated_workflow_behavior_without_owner_enforcement",
+            "negative_tests_required: rejects_missing_identity_authority,rejects_untrusted_proxy_identity,rejects_cross_owner_receipt,rejects_stale_policy_hash,rejects_browser_storage_identity,rejects_raw_path_url_token_response,rejects_storage_root_escape,rejects_provider_connector_secret_exposure",
+            "protected_route_families: workflow_run,workflow_history,workflow_status,queue_scheduler_worker_progress_completion_retry,lifecycle_expiry,process_execution,completion_result_adoption,downstream_proof,completion_monitor,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status",
+            "protected_rendered_surfaces: run_start,history,status,progress,repeatability_checkpoint,rerun_trial,acceptance_checkpoint,acceptance_closeout,closeout_status",
+            "runtime_behavior_change_introduced_by_freeze: false",
+            "route_api_dto_model_migration_service_behavior_change_introduced_by_freeze: false",
+            "rendered_behavior_change_introduced_by_freeze: false",
+            "auth_security_runtime_admitted_now: false",
+            "multi_user_runtime_admitted_now: false",
+            "storage_policy_runtime_admitted_now: false",
+            "audit_event_runtime_admitted_now: false",
+            "route_level_auth_dependency_admitted_now: false",
+            "model_migration_admitted_now: false",
+            "rendered_identity_control_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_contract_v1",
+            "This freeze names the first Candidate B post-repeatability ownership/access policy without implementing it.",
+            "Local proof-harness behavior remains unchanged: `AUTH_OWNER=none` stays a single-operator local development profile",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_operator_workflow_ownership_access_policy_freeze_v1",
+            "source_post_repeatability_production_hardening_selection: next_milestone_plans/Layer3_planning_docs/1058-cb-post-repeatability-production-hardening-selection.md",
+            "current_main_entry: 6c8e58f31f7850b6b81a87b639ee7705ee672012",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_auth_mode: session_tenant_owner_authorization",
+            "selected_policy_scope: candidate_b_full_corpus_operator_workflow_receipts_and_rendered_operator_controls",
+            "selected_named_security_behavior: candidate_b_operator_workflow_owner_scoped_access_decision_v1",
+            "selected_next_target: candidate_b_operator_workflow_ownership_access_policy_contract_v1",
+            "implementation_admitted_after_current_main_sync: true",
+            "identity_authority: server_derived_operator_identity_ref_required_before_runtime",
+            "tenant_or_workspace_authority: server_derived_tenant_or_workspace_ref_required_before_runtime",
+            "operator_role_matrix: owner,auditor",
+            "workflow_receipt_owner_binding: actor_ref_hash,tenant_or_workspace_ref_hash,workflow_receipt_id,workflow_receipt_hash,authority_basis_hash,policy_hash",
+            "storage_root_access_policy: server_owned_receipt_refs_only_no_client_supplied_paths",
+            "audit_event_contract: append_only_policy_decision_event_required_before_runtime",
+            "forbidden_request_fields: auth_policy_override,auth_security_directive,security_context,browser_identity,local_storage_identity,proxy_identity_header,raw_tenant_id,raw_workspace_id,operator_role_override,permission_override,raw_storage_root,raw_receipt_path,raw_url",
+            "owner_role_policy: may_create_and_mutate_own_workflow_receipts_when_runtime_admitted",
+            "auditor_role_policy: may_read_status_history_review_and_audit_projection_when_runtime_admitted",
+            "cross_owner_receipt_access_policy: reject_fail_closed",
+            "missing_identity_policy: reject_fail_closed_for_nonlocal_runtime",
+            "missing_tenant_or_workspace_policy: reject_fail_closed_for_nonlocal_runtime",
+            "stale_policy_hash_policy: reject_fail_closed",
+            "local_proof_harness_compatibility: AUTH_OWNER_none_single_operator_dev_profile_unchanged",
+            "nonlocal_identity_prerequisite: AUTH_OWNER_proxy_and_TRUSTED_PROXY_MODE_true_with_explicit_future_header_contract",
+            "storage_exposure_prerequisite: nonlocal_direct_storage_exposure_remains_disabled_or_auto",
+            "backwards_compatibility_policy: current_local_default_routes_remain_unchanged_until_runtime_contract",
+            "negative_tests_required: rejects_missing_identity_authority,rejects_untrusted_proxy_identity,rejects_cross_owner_receipt,rejects_stale_policy_hash,rejects_browser_storage_identity,rejects_raw_path_url_token_response,rejects_storage_root_escape,rejects_provider_connector_secret_exposure",
+            "runtime_behavior_change_introduced_by_freeze: false",
+            "auth_security_runtime_admitted_now: false",
+            "multi_user_runtime_admitted_now: false",
+            "storage_policy_runtime_admitted_now: false",
+            "audit_event_runtime_admitted_now: false",
+            "route_level_auth_dependency_admitted_now: false",
+            "model_migration_admitted_now: false",
+            "rendered_identity_control_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_contract_v1",
+        ),
+        CANDIDATE_B_POST_REPEATABILITY_PRODUCTION_HARDENING_SELECTION: (
+            "next_exact_posture: candidate_b_operator_workflow_ownership_access_policy_freeze_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B operator workflow ownership access policy freeze term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -100554,6 +100682,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_repeatability_operator_workflow_completion_audit_selection(errors)
     _check_candidate_b_full_corpus_repeatability_operator_workflow_completion_audit(errors)
     _check_candidate_b_post_repeatability_production_hardening_selection(errors)
+    _check_candidate_b_operator_workflow_ownership_access_policy_freeze(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
