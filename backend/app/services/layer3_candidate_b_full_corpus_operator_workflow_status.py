@@ -41,6 +41,7 @@ STATUS_HASH_KEYS = (
     "artifact_family",
     "runtime_root_lifecycle",
     "retry_terminal_status_projection",
+    "execution_boundary_projection",
     "operator_projection",
 )
 WORKFLOW_RECEIPT_HASH_KEYS = (
@@ -68,6 +69,12 @@ RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX = (
 )
 RETRY_TERMINAL_STATUS_PROJECTION_MODE = (
     "read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation"
+)
+EXECUTION_BOUNDARY_SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_execution_boundary.v1"
+EXECUTION_BOUNDARY_MODE = "append_only_execution_boundary_receipt_without_process_start_or_job_execution"
+EXECUTION_BOUNDARY_RECEIPT_PREFIX = f"{WORKFLOW_RECEIPT_PREFIX}-execution-boundary"
+EXECUTION_BOUNDARY_STATUS_PROJECTION_MODE = (
+    "read_only_execution_boundary_receipt_projection_without_process_start_or_job_execution"
 )
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
@@ -156,6 +163,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
     artifact_family = _workflow_artifact_family(receipt)
     runtime_root_lifecycle = _workflow_runtime_root_lifecycle(receipt)
     retry_terminal_status_projection = _retry_terminal_status_projection(receipt_id, receipt_hash)
+    execution_boundary_projection = _execution_boundary_projection(receipt_id, receipt_hash)
     operator_projection = {
         "workflow_status_visible": True,
         "workflow_receipt_projection_visible": True,
@@ -166,6 +174,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "baseline_rollback_projection_visible": True,
         "runtime_root_lifecycle_projection_visible": runtime_root_lifecycle["available"],
         "retry_terminal_status_projection_visible": True,
+        "execution_boundary_projection_visible": True,
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
         "artifact_bytes_exposed": False,
@@ -194,6 +203,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "artifact_family": artifact_family,
         "runtime_root_lifecycle": runtime_root_lifecycle,
         "retry_terminal_status_projection": retry_terminal_status_projection,
+        "execution_boundary_projection": execution_boundary_projection,
         "operator_projection": operator_projection,
     }
     status_hash = _stable_hash({key: status_input[key] for key in STATUS_HASH_KEYS})
@@ -890,6 +900,207 @@ def _validated_retry_terminal_projection(
         "background_process_runtime_selected_now": False,
         "job_execution_runtime_selected_now": False,
         "cancel_runtime_selected_now": False,
+        "resume_runtime_selected_now": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+
+
+def _execution_boundary_projection(
+    operator_workflow_receipt_id: str,
+    operator_workflow_receipt_hash: str,
+) -> dict[str, Any]:
+    root = _workflow_receipt_root()
+    matches: list[tuple[str, dict[str, Any]]] = []
+    for receipt_file in sorted(root.glob(f"{EXECUTION_BOUNDARY_RECEIPT_PREFIX}-*/receipt.json")):
+        receipt_id = receipt_file.parent.name
+        _validate_storage_id(receipt_id, prefix=EXECUTION_BOUNDARY_RECEIPT_PREFIX)
+        receipt = _read_json_receipt(
+            receipt_file,
+            code="candidate_b_full_corpus_operator_workflow_status_execution_boundary_receipt_unreadable",
+            message="A Candidate B execution-boundary receipt could not be read for status projection.",
+        )
+        if receipt.get("operator_workflow_receipt_id") == operator_workflow_receipt_id:
+            matches.append((receipt_id, receipt))
+    if not matches:
+        return _execution_boundary_not_started_projection()
+    if len(matches) > 1:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_execution_boundary_conflict",
+            "The selected Candidate B workflow has multiple execution-boundary receipts.",
+            http_status=409,
+            details={
+                "operator_workflow_receipt_id": operator_workflow_receipt_id,
+                "execution_boundary_receipt_ids": [receipt_id for receipt_id, _receipt in matches],
+            },
+        )
+    receipt_id, receipt = matches[0]
+    return _validated_execution_boundary_projection(
+        receipt_id,
+        receipt,
+        operator_workflow_receipt_id=operator_workflow_receipt_id,
+        operator_workflow_receipt_hash=operator_workflow_receipt_hash,
+    )
+
+
+def _execution_boundary_not_started_projection() -> dict[str, Any]:
+    return {
+        "execution_boundary_projection_state": "not_started",
+        "execution_boundary_status_projection_mode": EXECUTION_BOUNDARY_STATUS_PROJECTION_MODE,
+        "execution_boundary_status_projection_surfaces": ["status", "history"],
+        "read_only_execution_boundary_projection": True,
+        "execution_boundary_receipt_available": False,
+        "execution_boundary_receipt_id": "",
+        "execution_boundary_receipt_hash": "",
+        "execution_boundary_authority_hash": "",
+        "terminal_projection_visibility": False,
+        "execution_boundary_runtime_selected": False,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "browser_triggered_process_start_admitted": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "source_run_receipt_mutation_admitted": False,
+        "queue_state_receipt_mutation_admitted": False,
+        "scheduler_lease_receipt_mutation_admitted": False,
+        "worker_attempt_receipt_mutation_admitted": False,
+        "progress_checkpoint_receipt_mutation_admitted": False,
+        "completion_failure_receipt_mutation_admitted": False,
+        "retry_completion_failure_receipt_mutation_admitted": False,
+        "cancel_runtime_selected_now": False,
+        "retry_runtime_selected_now": False,
+        "resume_runtime_selected_now": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+
+
+def _validated_execution_boundary_projection(
+    receipt_id: str,
+    receipt: Mapping[str, Any],
+    *,
+    operator_workflow_receipt_id: str,
+    operator_workflow_receipt_hash: str,
+) -> dict[str, Any]:
+    expected = {
+        "schema_id": EXECUTION_BOUNDARY_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "mode": EXECUTION_BOUNDARY_MODE,
+        "operator_decision": "record_candidate_b_async_background_job_execution_boundary",
+        "status": "available",
+        "execution_boundary_state": "boundary_recorded",
+        "execution_boundary_receipt_id": receipt_id,
+        "operator_workflow_receipt_id": operator_workflow_receipt_id,
+        "operator_workflow_receipt_hash": operator_workflow_receipt_hash,
+        "append_only_execution_boundary_receipt": True,
+        "source_run_receipt_mutated": False,
+        "queue_state_receipt_mutated": False,
+        "scheduler_lease_receipt_mutated": False,
+        "worker_attempt_receipt_mutated": False,
+        "progress_checkpoint_receipt_mutated": False,
+        "completion_failure_receipt_mutated": False,
+        "retry_completion_failure_receipt_mutated": False,
+        "execution_boundary_runtime_selected": True,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "browser_triggered_process_start_admitted": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+    mismatches = [
+        {"field": field, "expected": expected_value, "received": receipt.get(field)}
+        for field, expected_value in expected.items()
+        if receipt.get(field) != expected_value
+    ]
+    receipt_hash = _stable_hash(
+        {
+            key: value
+            for key, value in receipt.items()
+            if key not in {"execution_boundary_receipt_hash", "server_time"}
+        }
+    )
+    if receipt.get("execution_boundary_receipt_hash") != receipt_hash:
+        mismatches.append(
+            {
+                "field": "execution_boundary_receipt_hash",
+                "expected": receipt_hash,
+                "received": receipt.get("execution_boundary_receipt_hash"),
+            }
+        )
+    boundary = receipt.get("execution_boundary")
+    if not isinstance(boundary, Mapping):
+        mismatches.append({"field": "execution_boundary", "expected": "object", "received": type(boundary).__name__})
+    elif boundary.get("terminal_projection_visibility") is not True:
+        mismatches.append(
+            {
+                "field": "execution_boundary.terminal_projection_visibility",
+                "expected": True,
+                "received": boundary.get("terminal_projection_visibility"),
+            }
+        )
+    _assert_no_raw_authority_exposure(receipt)
+    if mismatches:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_execution_boundary_mismatch",
+            "The selected Candidate B execution-boundary receipt is stale or contradictory.",
+            http_status=409,
+            details={"execution_boundary_receipt_id": receipt_id, "mismatches": mismatches},
+        )
+    boundary = boundary if isinstance(boundary, Mapping) else {}
+    return {
+        "execution_boundary_projection_state": "boundary_recorded",
+        "execution_boundary_status_projection_mode": EXECUTION_BOUNDARY_STATUS_PROJECTION_MODE,
+        "execution_boundary_status_projection_surfaces": ["status", "history"],
+        "read_only_execution_boundary_projection": True,
+        "execution_boundary_receipt_available": True,
+        "execution_boundary_receipt_id": receipt_id,
+        "execution_boundary_receipt_hash": receipt_hash,
+        "execution_boundary_authority_hash": str(receipt["execution_boundary_authority_hash"]),
+        "scheduler_lease_receipt_id": str(boundary.get("scheduler_lease_receipt_id") or ""),
+        "worker_attempt_receipt_id": str(boundary.get("worker_attempt_receipt_id") or ""),
+        "latest_progress_checkpoint_receipt_id": str(
+            boundary.get("latest_progress_checkpoint_receipt_id") or ""
+        ),
+        "completion_failure_receipt_id": str(boundary.get("completion_failure_receipt_id") or ""),
+        "retry_completion_failure_receipt_id": str(boundary.get("retry_completion_failure_receipt_id") or ""),
+        "retry_terminal_projection_state": str(boundary.get("retry_terminal_projection_state") or ""),
+        "terminal_projection_visibility": boundary.get("terminal_projection_visibility") is True,
+        "execution_boundary_runtime_selected": True,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "browser_triggered_process_start_admitted": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "source_run_receipt_mutation_admitted": False,
+        "queue_state_receipt_mutation_admitted": False,
+        "scheduler_lease_receipt_mutation_admitted": False,
+        "worker_attempt_receipt_mutation_admitted": False,
+        "progress_checkpoint_receipt_mutation_admitted": False,
+        "completion_failure_receipt_mutation_admitted": False,
+        "retry_completion_failure_receipt_mutation_admitted": False,
+        "cancel_runtime_selected_now": False,
+        "retry_runtime_selected_now": False,
         "resume_runtime_selected_now": False,
         "raw_exception_trace_admitted": False,
         "raw_log_excerpt_admitted": False,

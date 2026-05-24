@@ -2812,6 +2812,9 @@ CANDIDATE_B_ASYNC_RETRY_TERMINAL_RENDERED_STATUS_PROJECTION_RUNTIME = (
 CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_SELECTION = (
     PLANNING_DOCS / "1026-cb-async-background-job-execution-boundary-selection.md"
 )
+CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_RUNTIME = (
+    PLANNING_DOCS / "1027-cb-async-background-job-execution-boundary-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2839,6 +2842,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_queue_state.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_execution_boundary.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_SCHEDULER_LEASE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease.py"
@@ -95764,7 +95770,7 @@ def _check_candidate_b_async_retry_terminal_status_projection_runtime(errors: li
             '"retry_terminal_status_projection_runtime_admitted": True',
             "inspect retry terminal authority through status/history projection",
             "def _history_hash_row",
-            'if key != "retry_terminal_status_projection"',
+            '"retry_terminal_status_projection", "execution_boundary_projection"',
             '"retry_terminal_status_projection": _retry_terminal_status_projection',
         ),
         LAYER3_API: (
@@ -96087,6 +96093,165 @@ def _check_candidate_b_async_background_job_execution_boundary_selection(
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing Candidate B async background job execution boundary selection term: {term}"
+                )
+
+
+def _check_candidate_b_async_background_job_execution_boundary_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_RUNTIME: (
+            "Candidate B Async Background Job Execution Boundary Runtime",
+            "milestone: candidate_b_async_background_job_execution_boundary_v1",
+            "source_background_job_execution_boundary_selection: next_milestone_plans/Layer3_planning_docs/1026-cb-async-background-job-execution-boundary-selection.md",
+            "current_main_entry: 351d22068cb26cb7e2b48f3ba9a42243c8561c39",
+            "runtime_status: implemented",
+            "selected_execution_boundary_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary",
+            "selected_execution_boundary_mode: append_only_execution_boundary_receipt_without_process_start_or_job_execution",
+            "selected_execution_boundary_action: record_candidate_b_async_background_job_execution_boundary",
+            "selected_execution_boundary_outputs: execution_boundary_receipt,execution_boundary_receipt_hash,execution_boundary_authority_hash,execution_boundary_projection",
+            "status_history_projection_after_boundary: true",
+            "rendered_operator_projection_after_boundary: true",
+            "missing_retry_terminal_receipt_must_reject: true",
+            "execution_boundary_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_background_process_execution_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_background_job_execution_boundary_v1",
+            "source_background_job_execution_boundary_selection: next_milestone_plans/Layer3_planning_docs/1026-cb-async-background-job-execution-boundary-selection.md",
+            "runtime_status: implemented",
+            "selected_execution_boundary_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary",
+            "selected_execution_boundary_mode: append_only_execution_boundary_receipt_without_process_start_or_job_execution",
+            "selected_execution_boundary_action: record_candidate_b_async_background_job_execution_boundary",
+            "status_history_projection_after_boundary: true",
+            "rendered_operator_projection_after_boundary: true",
+            "execution_boundary_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "next_exact_posture: candidate_b_async_background_process_execution_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_execution_boundary.v1"',
+            'EXECUTION_BOUNDARY_MODE = "append_only_execution_boundary_receipt_without_process_start_or_job_execution"',
+            'OPERATOR_DECISION = "record_candidate_b_async_background_job_execution_boundary"',
+            'EXECUTION_BOUNDARY_STATE = "boundary_recorded"',
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_forbidden_request_fields",
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_retry_terminal_not_recorded",
+            "stale_scheduler_lease",
+            "stale_worker_attempt",
+            "stale_progress_checkpoint",
+            '"append_only_execution_boundary_receipt": True',
+            '"execution_boundary_runtime_selected": True',
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+            '"actual_subprocess_spawn_admitted_now": False',
+            '"actual_corpus_processing_execution_admitted_now": False',
+            '"browser_triggered_process_start_admitted": False',
+            '"operator_supplied_command_admitted": False',
+            '"raw_exception_trace_admitted": False',
+            '"raw_log_excerpt_admitted": False',
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE: (
+            "EXECUTION_BOUNDARY_SCHEMA_ID",
+            "EXECUTION_BOUNDARY_STATUS_PROJECTION_MODE",
+            '"execution_boundary_projection"',
+            "def _execution_boundary_projection",
+            "def _validated_execution_boundary_projection",
+            "candidate_b_full_corpus_operator_workflow_status_execution_boundary_conflict",
+            "candidate_b_full_corpus_operator_workflow_status_execution_boundary_mismatch",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"execution_boundary_runtime_admitted": True',
+            '"execution_boundary_projection"',
+            '"retry_terminal_status_projection", "execution_boundary_projection"',
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_execution_boundary",
+            "Layer3CandidateBFullCorpusOperatorWorkflowExecutionBoundaryRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowExecutionBoundaryResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary"',
+            "CandidateBFullCorpusOperatorWorkflowExecutionBoundaryError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_admitted",
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_execution_boundary": True',
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_admitted",
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_admitted",
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_execution_boundary"',
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_admitted",
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_RENDERED_MODE",
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_MODE",
+            "candidateBFullCorpusOperatorWorkflowExecutionBoundaryEndpointPath",
+            "candidateBFullCorpusOperatorWorkflowExecutionBoundaryPayload",
+            "canRecordCandidateBFullCorpusOperatorWorkflowExecutionBoundary",
+            "candidateBExecutionBoundaryProjectionItems",
+            "candidateBFullCorpusOperatorWorkflowExecutionBoundaryRows",
+            "recordCandidateBFullCorpusOperatorWorkflowExecutionBoundary",
+            "data-candidate-b-workflow-execution-boundary-index",
+            "candidate-b-full-corpus-workflow-execution-boundary-card",
+            "execution_boundary_projection",
+        ),
+        LAYER3_PAGE_TEST: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_RENDERED_MODE",
+            "function candidateBFullCorpusOperatorWorkflowExecutionBoundaryRows",
+            "function candidateBExecutionBoundaryProjectionItems",
+            "async function recordCandidateBFullCorpusOperatorWorkflowExecutionBoundary",
+            "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary" not in js.text',
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench records Candidate B workflow execution boundary through rendered append-only control",
+            "rendered_candidate_b_full_corpus_operator_workflow_execution_boundary_control",
+            "append_only_execution_boundary_receipt_without_process_start_or_job_execution",
+            "record_candidate_b_async_background_job_execution_boundary",
+            "data-candidate-b-workflow-execution-boundary-index",
+            "append-only receipt: true",
+            "source run receipt mutated: false",
+            "background process runtime selected now: false",
+            "expect(workflowExecutionBoundaryPayload).not.toHaveProperty('command')",
+            "expect(workflowExecutionBoundaryPayload).not.toHaveProperty('frontend_durable_authority')",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "EXECUTION_BOUNDARY_ENDPOINT",
+            "_execution_boundary_request",
+            "test_candidate_b_full_corpus_operator_workflow_execution_boundary_records_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_execution_boundary_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_execution_boundary_rejects_missing_retry_terminal",
+            "test_candidate_b_full_corpus_operator_workflow_execution_boundary_rejects_stale_history",
+            "test_candidate_b_full_corpus_operator_workflow_execution_boundary_service_rejects_raw_authority",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async background job execution boundary runtime term: {term}"
                 )
 
 
@@ -96963,6 +97128,7 @@ def main() -> int:
     _check_candidate_b_async_retry_terminal_rendered_status_projection_selection(errors)
     _check_candidate_b_async_retry_terminal_rendered_status_projection_runtime(errors)
     _check_candidate_b_async_background_job_execution_boundary_selection(errors)
+    _check_candidate_b_async_background_job_execution_boundary_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

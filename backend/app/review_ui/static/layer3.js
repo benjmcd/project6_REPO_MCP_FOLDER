@@ -346,6 +346,9 @@ const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_OPERATOR_DECISION = 'e
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_queue_state_control';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_MODE = 'append_only_queue_state_receipt_without_background_scheduler';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_OPERATOR_DECISION = 'record_candidate_b_async_workflow_queue_state';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_execution_boundary_control';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_MODE = 'append_only_execution_boundary_receipt_without_process_start_or_job_execution';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_OPERATOR_DECISION = 'record_candidate_b_async_background_job_execution_boundary';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
@@ -514,6 +517,9 @@ const State = {
     candidateBFullCorpusOperatorWorkflowQueueState: null,
     candidateBFullCorpusOperatorWorkflowQueueStateError: null,
     candidateBFullCorpusOperatorWorkflowQueueStatePending: false,
+    candidateBFullCorpusOperatorWorkflowExecutionBoundary: null,
+    candidateBFullCorpusOperatorWorkflowExecutionBoundaryError: null,
+    candidateBFullCorpusOperatorWorkflowExecutionBoundaryPending: false,
     candidateBFullCorpusOperatorWorkflowRun: null,
     candidateBFullCorpusOperatorWorkflowRunError: null,
     candidateBFullCorpusOperatorWorkflowRunPending: false,
@@ -7599,6 +7605,7 @@ function candidateBDefaultPromotionStatusState(contract) {
         'candidate_b_full_corpus_operator_workflow_history_admitted',
         'candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted',
         'candidate_b_full_corpus_operator_workflow_queue_state_admitted',
+        'candidate_b_full_corpus_operator_workflow_execution_boundary_admitted',
         'candidate_b_default_promotion_selector_switch_admitted',
     ];
     const missing = required.filter((field) => contract[field] !== true);
@@ -7652,6 +7659,12 @@ function candidateBFullCorpusOperatorWorkflowLifecycleEndpointPath(contract) {
 
 function candidateBFullCorpusOperatorWorkflowQueueStateEndpointPath(contract) {
     const endpoint = contract?.candidate_b_full_corpus_operator_workflow_queue_state_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBFullCorpusOperatorWorkflowExecutionBoundaryEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
     return endpoint.slice(API_ROOT.length);
 }
@@ -8161,6 +8174,20 @@ function candidateBFullCorpusOperatorWorkflowQueueStatePayload(row) {
     };
 }
 
+function candidateBFullCorpusOperatorWorkflowExecutionBoundaryPayload(row) {
+    const history = State.candidateBFullCorpusOperatorWorkflowHistory || {};
+    return {
+        client_request_id: requestId(),
+        execution_boundary_mode: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_OPERATOR_DECISION,
+        operator_workflow_receipt_id: row.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: row.operator_workflow_receipt_hash,
+        row_hash: row.row_hash,
+        authority_basis_hash: row.authority_basis_hash,
+        history_hash: history.history_hash,
+    };
+}
+
 function candidateBClosureEvidencePayload() {
     const values = candidateBClosureEvidenceInputValues();
     State.candidateBClosureEvidenceInput = values;
@@ -8309,6 +8336,22 @@ function canRecordCandidateBFullCorpusOperatorWorkflowQueueState(row, contract =
         && row?.row_hash
         && row?.authority_basis_hash
         && !State.candidateBFullCorpusOperatorWorkflowQueueStatePending
+        && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
+    );
+}
+
+function canRecordCandidateBFullCorpusOperatorWorkflowExecutionBoundary(row, contract = candidateBDefaultPromotionReadinessContract()) {
+    const retryTerminal = row?.retry_terminal_status_projection || {};
+    return Boolean(
+        contract?.candidate_b_full_corpus_operator_workflow_execution_boundary_admitted
+        && candidateBFullCorpusOperatorWorkflowExecutionBoundaryEndpointPath(contract)
+        && State.candidateBFullCorpusOperatorWorkflowHistory?.history_hash
+        && row?.operator_workflow_receipt_id
+        && row?.operator_workflow_receipt_hash
+        && row?.row_hash
+        && row?.authority_basis_hash
+        && retryTerminal.retry_completion_failure_receipt_available === true
+        && !State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryPending
         && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
     );
 }
@@ -8467,6 +8510,20 @@ function candidateBFullCorpusOperatorWorkflowQueueStatePanelState() {
         return { label: 'candidate_b_full_corpus_workflow_queue_state_recorded', pill: 'ok' };
     }
     return { label: 'candidate_b_full_corpus_workflow_queue_state_ready', pill: 'preview' };
+}
+
+function candidateBFullCorpusOperatorWorkflowExecutionBoundaryPanelState() {
+    if (State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryPending) {
+        return { label: 'candidate_b_full_corpus_workflow_execution_boundary_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryError) {
+        const code = State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_workflow_execution_boundary_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowExecutionBoundary?.execution_boundary_state === 'boundary_recorded') {
+        return { label: 'candidate_b_full_corpus_workflow_execution_boundary_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_full_corpus_workflow_execution_boundary_ready', pill: 'preview' };
 }
 
 function candidateBClosureEvidencePanelState() {
@@ -8987,6 +9044,7 @@ function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
     const artifactFamily = status.artifact_family || {};
     const roleCounts = artifactFamily.role_counts || {};
     const retryTerminalProjection = status.retry_terminal_status_projection || {};
+    const executionBoundaryProjection = status.execution_boundary_projection || {};
     return `
         <div class="candidate-b-final-proof-status-grid">
             <section class="result-review-card">
@@ -9042,6 +9100,12 @@ function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
                     ${candidateBRetryTerminalProjectionItems(retryTerminalProjection)}
                 </ul>
             </section>
+            <section class="result-review-card">
+                <strong>Execution Boundary Projection</strong>
+                <ul>
+                    ${candidateBExecutionBoundaryProjectionItems(executionBoundaryProjection)}
+                </ul>
+            </section>
         </div>
     `;
 }
@@ -9074,6 +9138,35 @@ function candidateBRetryTerminalProjectionItems(projection) {
     `;
 }
 
+function candidateBExecutionBoundaryProjectionItems(projection) {
+    const boundary = projection && typeof projection === 'object' ? projection : {};
+    return `
+        ${fieldItem('execution boundary projection state', boundary.execution_boundary_projection_state, { code: true })}
+        ${fieldItem('execution boundary receipt available', boundary.execution_boundary_receipt_available)}
+        ${fieldItem('execution boundary receipt id', boundary.execution_boundary_receipt_id, { code: true })}
+        ${fieldItem('execution boundary receipt hash', boundary.execution_boundary_receipt_hash, { code: true })}
+        ${fieldItem('execution boundary authority hash', boundary.execution_boundary_authority_hash, { code: true })}
+        ${fieldItem('scheduler lease receipt id', boundary.scheduler_lease_receipt_id, { code: true })}
+        ${fieldItem('worker attempt receipt id', boundary.worker_attempt_receipt_id, { code: true })}
+        ${fieldItem('latest progress checkpoint receipt id', boundary.latest_progress_checkpoint_receipt_id, { code: true })}
+        ${fieldItem('completion/failure receipt id', boundary.completion_failure_receipt_id, { code: true })}
+        ${fieldItem('retry completion/failure receipt id', boundary.retry_completion_failure_receipt_id, { code: true })}
+        ${fieldItem('retry terminal projection state', boundary.retry_terminal_projection_state, { code: true })}
+        ${fieldItem('terminal projection visibility', boundary.terminal_projection_visibility)}
+        ${fieldItem('execution boundary runtime selected', boundary.execution_boundary_runtime_selected)}
+        ${fieldItem('background process runtime selected now', boundary.background_process_runtime_selected_now)}
+        ${fieldItem('job execution runtime selected now', boundary.job_execution_runtime_selected_now)}
+        ${fieldItem('actual subprocess spawn admitted now', boundary.actual_subprocess_spawn_admitted_now)}
+        ${fieldItem('actual corpus processing execution admitted now', boundary.actual_corpus_processing_execution_admitted_now)}
+        ${fieldItem('browser triggered process start admitted', boundary.browser_triggered_process_start_admitted)}
+        ${fieldItem('operator supplied command admitted', boundary.operator_supplied_command_admitted)}
+        ${fieldItem('raw local path exposed', boundary.raw_local_path_exposed)}
+        ${fieldItem('raw URL exposed', boundary.raw_url_exposed)}
+        ${fieldItem('artifact bytes exposed', boundary.artifact_bytes_exposed)}
+        ${fieldItem('frontend durable authority', boundary.frontend_durable_authority_enabled)}
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
     if (!history) return '';
     const contract = candidateBDefaultPromotionReadinessContract();
@@ -9084,6 +9177,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
         const isSelected = selectedReceiptId && selectedReceiptId === row.operator_workflow_receipt_id;
         const lifecycleDisabled = canExpireCandidateBFullCorpusOperatorWorkflowRow(row, contract) ? '' : 'disabled';
         const queueStateDisabled = canRecordCandidateBFullCorpusOperatorWorkflowQueueState(row, contract) ? '' : 'disabled';
+        const executionBoundaryDisabled = canRecordCandidateBFullCorpusOperatorWorkflowExecutionBoundary(row, contract) ? '' : 'disabled';
         return `
             <section class="result-review-card candidate-b-full-corpus-workflow-history-row" data-workflow-run-receipt-id="${escapeHtml(row.operator_workflow_receipt_id)}">
                 <strong>${isSelected ? 'Selected Workflow Run' : 'Workflow Run'} ${escapeHtml(index + 1)}</strong>
@@ -9105,10 +9199,12 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                     ${fieldItem('raw URL exposed', row.raw_url_exposed)}
                     ${fieldItem('frontend durable authority', row.frontend_durable_authority_enabled)}
                     ${candidateBRetryTerminalProjectionItems(row.retry_terminal_status_projection)}
+                    ${candidateBExecutionBoundaryProjectionItems(row.execution_boundary_projection)}
                 </ul>
                 <button type="button" data-candidate-b-workflow-history-inspect-index="${escapeHtml(index)}" ${State.candidateBFullCorpusOperatorWorkflowStatusPending ? 'disabled' : ''}>Inspect Run Status</button>
                 <button type="button" data-candidate-b-workflow-lifecycle-expire-index="${escapeHtml(index)}" ${lifecycleDisabled}>Expire/Close Run</button>
                 <button type="button" data-candidate-b-workflow-queue-state-index="${escapeHtml(index)}" ${queueStateDisabled}>Record Queue State</button>
+                <button type="button" data-candidate-b-workflow-execution-boundary-index="${escapeHtml(index)}" ${executionBoundaryDisabled}>Record Execution Boundary</button>
             </section>
         `;
     }).join('') : `
@@ -9254,6 +9350,79 @@ function candidateBFullCorpusOperatorWorkflowQueueStateRows(queueState) {
                     ${fieldItem('artifact bytes exposed', queueState.artifact_bytes_exposed)}
                     ${fieldItem('frontend durable authority', queueState.frontend_durable_authority_enabled)}
                     ${fieldItem('selector mutation performed', queueState.selector_mutation_performed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function candidateBFullCorpusOperatorWorkflowExecutionBoundaryRows(boundary) {
+    if (!boundary) return '';
+    const executionBoundary = boundary.execution_boundary || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>Workflow Execution Boundary Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', boundary.schema_id, { code: true })}
+                    ${fieldItem('execution boundary state', boundary.execution_boundary_state, { code: true })}
+                    ${fieldItem('execution boundary receipt id', boundary.execution_boundary_receipt_id, { code: true })}
+                    ${fieldItem('execution boundary receipt hash', boundary.execution_boundary_receipt_hash, { code: true })}
+                    ${fieldItem('execution boundary hash', boundary.execution_boundary_hash, { code: true })}
+                    ${fieldItem('idempotent replay', boundary.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Bound Run Authority</strong>
+                <ul>
+                    ${fieldItem('workflow receipt id', boundary.operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('workflow receipt hash', boundary.operator_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('row hash', boundary.row_hash, { code: true })}
+                    ${fieldItem('history hash', boundary.history_hash, { code: true })}
+                    ${fieldItem('authority basis hash', boundary.authority_basis_hash, { code: true })}
+                    ${fieldItem('execution boundary authority hash', boundary.execution_boundary_authority_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Terminal Lineage</strong>
+                <ul>
+                    ${fieldItem('scheduler lease receipt id', executionBoundary.scheduler_lease_receipt_id, { code: true })}
+                    ${fieldItem('worker attempt receipt id', executionBoundary.worker_attempt_receipt_id, { code: true })}
+                    ${fieldItem('latest progress checkpoint receipt id', executionBoundary.latest_progress_checkpoint_receipt_id, { code: true })}
+                    ${fieldItem('completion/failure receipt id', executionBoundary.completion_failure_receipt_id, { code: true })}
+                    ${fieldItem('retry completion/failure receipt id', executionBoundary.retry_completion_failure_receipt_id, { code: true })}
+                    ${fieldItem('retry terminal projection state', executionBoundary.retry_terminal_projection_state, { code: true })}
+                    ${fieldItem('terminal projection visibility', executionBoundary.terminal_projection_visibility)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Execution Boundary Guardrails</strong>
+                <ul>
+                    ${fieldItem('append-only receipt', boundary.append_only_execution_boundary_receipt)}
+                    ${fieldItem('source run receipt mutated', boundary.source_run_receipt_mutated)}
+                    ${fieldItem('execution boundary runtime selected', boundary.execution_boundary_runtime_selected)}
+                    ${fieldItem('background process runtime selected now', boundary.background_process_runtime_selected_now)}
+                    ${fieldItem('job execution runtime selected now', boundary.job_execution_runtime_selected_now)}
+                    ${fieldItem('actual subprocess spawn admitted now', boundary.actual_subprocess_spawn_admitted_now)}
+                    ${fieldItem('actual corpus processing execution admitted now', boundary.actual_corpus_processing_execution_admitted_now)}
+                    ${fieldItem('browser triggered process start admitted', boundary.browser_triggered_process_start_admitted)}
+                    ${fieldItem('operator supplied command admitted', boundary.operator_supplied_command_admitted)}
+                    ${fieldItem('provider object write enabled', boundary.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', boundary.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', boundary.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('full mockup activation enabled', boundary.full_mockup_activation_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Exposure Boundary</strong>
+                <ul>
+                    ${fieldItem('raw exception trace admitted', boundary.raw_exception_trace_admitted)}
+                    ${fieldItem('raw log excerpt admitted', boundary.raw_log_excerpt_admitted)}
+                    ${fieldItem('raw local path exposed', boundary.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', boundary.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', boundary.artifact_bytes_exposed)}
+                    ${fieldItem('frontend durable authority', boundary.frontend_durable_authority_enabled)}
+                    ${fieldItem('selector mutation performed', boundary.selector_mutation_performed)}
                 </ul>
             </section>
         </div>
@@ -9477,6 +9646,20 @@ function candidateBFullCorpusOperatorWorkflowQueueStateError() {
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowExecutionBoundaryError() {
+    const error = State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_operator_workflow_execution_boundary_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBClosureEvidenceError() {
     const error = State.candidateBClosureEvidenceError;
     if (!error) return '';
@@ -9573,6 +9756,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowHistoryState = candidateBFullCorpusOperatorWorkflowHistoryPanelState();
     const fullCorpusWorkflowLifecycleState = candidateBFullCorpusOperatorWorkflowLifecyclePanelState();
     const fullCorpusWorkflowQueueStateState = candidateBFullCorpusOperatorWorkflowQueueStatePanelState();
+    const fullCorpusWorkflowExecutionBoundaryState = candidateBFullCorpusOperatorWorkflowExecutionBoundaryPanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
@@ -9600,6 +9784,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowHistory = State.candidateBFullCorpusOperatorWorkflowHistory;
     const fullCorpusWorkflowLifecycle = State.candidateBFullCorpusOperatorWorkflowLifecycle;
     const fullCorpusWorkflowQueueState = State.candidateBFullCorpusOperatorWorkflowQueueState;
+    const fullCorpusWorkflowExecutionBoundary = State.candidateBFullCorpusOperatorWorkflowExecutionBoundary;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
@@ -9650,6 +9835,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('operator status', contract?.candidate_b_default_promotion_operator_status_endpoint, { code: true })}
                     ${fieldItem('full-corpus workflow status', contract?.candidate_b_full_corpus_operator_workflow_status_endpoint, { code: true })}
                     ${fieldItem('full-corpus workflow history', contract?.candidate_b_full_corpus_operator_workflow_history_endpoint, { code: true })}
+                    ${fieldItem('full-corpus workflow execution boundary', contract?.candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint, { code: true })}
                     ${fieldItem('closure evidence', contract?.candidate_b_default_promotion_closure_evidence_endpoint, { code: true })}
                     ${fieldItem('readiness audit', contract?.candidate_b_default_promotion_readiness_audit_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
@@ -9846,6 +10032,15 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBFullCorpusOperatorWorkflowQueueStateRows(fullCorpusWorkflowQueueState)}
                 ${candidateBFullCorpusOperatorWorkflowQueueStateError()}
+            </section>
+            <section class="result-review-card candidate-b-full-corpus-workflow-execution-boundary-card" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                <strong>Full-Corpus Operator Workflow Execution Boundary</strong>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusWorkflowExecutionBoundaryState.pill)}">${escapeHtml(fullCorpusWorkflowExecutionBoundaryState.label)}</span>
+                    <span class="rail-label">Server records append-only execution-boundary authority for a selected workflow-run row after terminal retry visibility, without starting a background process or job execution.</span>
+                </div>
+                ${candidateBFullCorpusOperatorWorkflowExecutionBoundaryRows(fullCorpusWorkflowExecutionBoundary)}
+                ${candidateBFullCorpusOperatorWorkflowExecutionBoundaryError()}
             </section>
             <section class="result-review-card candidate-b-operator-status-card">
                 <strong>Default-Promotion Operator Status</strong>
@@ -10421,6 +10616,42 @@ async function recordCandidateBFullCorpusOperatorWorkflowQueueState(event) {
         addEvent(`Candidate B full-corpus workflow queue-state authority blocked: ${error.message}`);
     } finally {
         State.candidateBFullCorpusOperatorWorkflowQueueStatePending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBFullCorpusOperatorWorkflowExecutionBoundary(event) {
+    const button = event.target?.closest?.('[data-candidate-b-workflow-execution-boundary-index]');
+    if (!button) return;
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    const path = candidateBFullCorpusOperatorWorkflowExecutionBoundaryEndpointPath(contract);
+    const rows = State.candidateBFullCorpusOperatorWorkflowHistory?.history_rows;
+    const index = Number(button.dataset.candidateBWorkflowExecutionBoundaryIndex);
+    const row = Array.isArray(rows) ? rows[index] : null;
+    if (!path || !canRecordCandidateBFullCorpusOperatorWorkflowExecutionBoundary(row, contract)) {
+        State.candidateBFullCorpusOperatorWorkflowExecutionBoundary = null;
+        State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryError = new Error(
+            'Candidate B workflow execution-boundary authority requires a selected current history row, terminal retry visibility, and the admitted execution-boundary endpoint.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBFullCorpusOperatorWorkflowHistorySelectedReceiptId = row.operator_workflow_receipt_id || '';
+    const payload = candidateBFullCorpusOperatorWorkflowExecutionBoundaryPayload(row);
+    State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryPending = true;
+    State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBFullCorpusOperatorWorkflowExecutionBoundary = await postJson(path, payload);
+        State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryError = null;
+        addEvent('Candidate B full-corpus workflow execution boundary recorded through append-only receipt authority without process or job execution.');
+    } catch (error) {
+        State.candidateBFullCorpusOperatorWorkflowExecutionBoundary = null;
+        State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryError = error;
+        addEvent(`Candidate B full-corpus workflow execution boundary blocked: ${error.message}`);
+    } finally {
+        State.candidateBFullCorpusOperatorWorkflowExecutionBoundaryPending = false;
         renderAll();
     }
 }
@@ -16993,6 +17224,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('click', (event)
     inspectCandidateBFullCorpusOperatorWorkflowHistoryRow(event);
     expireCandidateBFullCorpusOperatorWorkflowHistoryRow(event);
     recordCandidateBFullCorpusOperatorWorkflowQueueState(event);
+    recordCandidateBFullCorpusOperatorWorkflowExecutionBoundary(event);
 });
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);

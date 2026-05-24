@@ -445,6 +445,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_status_control'" in js.text
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_MODE = 'candidate_b_full_corpus_operator_workflow_status_v1'" in js.text
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_full_corpus_operator_workflow_status'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_execution_boundary_control'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_MODE = 'append_only_execution_boundary_receipt_without_process_start_or_job_execution'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_OPERATOR_DECISION = 'record_candidate_b_async_background_job_execution_boundary'" in js.text
     assert "function candidateBDefaultPromotionReadinessContract" in js.text
     assert "function candidateBDefaultPromotionStatusState" in js.text
     assert "function candidateBDefaultPromotionFinalProofPayload" in js.text
@@ -455,8 +458,13 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "function candidateBOperatorStatusDeliveryPreviewRows" in js.text
     assert "function candidateBFullCorpusOperatorWorkflowStatusRows" in js.text
     assert "async function inspectCandidateBFullCorpusOperatorWorkflowStatus" in js.text
+    assert "function candidateBFullCorpusOperatorWorkflowExecutionBoundaryRows" in js.text
+    assert "function candidateBExecutionBoundaryProjectionItems" in js.text
+    assert "async function recordCandidateBFullCorpusOperatorWorkflowExecutionBoundary" in js.text
     assert "Operator Status Delivery Preview" in js.text
     assert "Full-Corpus Operator Workflow Status" in js.text
+    assert "Full-Corpus Operator Workflow Execution Boundary" in js.text
+    assert "execution_boundary_projection" in js.text
     assert "Redacted retained role previews" in js.text
     assert "Redacted runtime delivery artifact previews" in js.text
     assert "function renderCandidateBDefaultPromotionStatusPanel" in js.text
@@ -473,10 +481,12 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "State.bootstrap?.execution_readiness" in js.text
     assert "candidate_b_default_promotion_operator_status_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_status_endpoint" in js.text
+    assert "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_status_endpoint" in js.text
     assert "/source/ingestion/candidate-b/default-promotion/operator-status" not in js.text
     assert "/source/ingestion/candidate-b/full-corpus/operator-workflow/status" not in js.text
+    assert "/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary" not in js.text
     assert "/source/ingestion/candidate-b/default-promotion/final-proof" not in js.text
     assert "/source/ingestion/candidate-b/default-promotion/final-proof/status" not in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'" in js.text

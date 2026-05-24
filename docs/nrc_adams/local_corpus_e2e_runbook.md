@@ -2633,3 +2633,57 @@ next_exact_posture: candidate_b_async_background_job_execution_boundary_v1
 ```
 
 The next runtime should record a server-owned background execution-boundary receipt over the existing Candidate B async lineage. It should prove the workflow row, queue/lease/attempt/progress/terminal authority, retry lineage, and rendered status/history projection are coherent enough to become a future execution target without starting a worker or executing corpus processing in the same slice.
+
+### Candidate B Async Background Job Execution Boundary Runtime
+
+```yaml
+milestone: candidate_b_async_background_job_execution_boundary_v1
+source_background_job_execution_boundary_selection: next_milestone_plans/Layer3_planning_docs/1026-cb-async-background-job-execution-boundary-selection.md
+current_main_entry: 351d22068cb26cb7e2b48f3ba9a42243c8561c39
+runtime_status: implemented
+selected_execution_boundary_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary
+selected_execution_boundary_mode: append_only_execution_boundary_receipt_without_process_start_or_job_execution
+selected_execution_boundary_action: record_candidate_b_async_background_job_execution_boundary
+selected_execution_boundary_scope: server_owned_candidate_b_full_corpus_workflow_execution_boundary_over_existing_queue_lease_attempt_progress_terminal_receipts
+selected_execution_boundary_source_lineage: operator_workflow_receipt,queue_state_receipt,scheduler_lease_receipt,worker_attempt_receipt,progress_checkpoint_receipt,completion_failure_receipt,retry_completion_failure_receipt
+selected_execution_boundary_outputs: execution_boundary_receipt,execution_boundary_receipt_hash,execution_boundary_authority_hash,execution_boundary_projection
+status_history_projection_after_boundary: true
+rendered_operator_projection_after_boundary: true
+stale_history_row_must_reject: true
+stale_scheduler_lease_must_reject: true
+stale_worker_attempt_must_reject: true
+stale_progress_checkpoint_must_reject: true
+terminal_receipt_conflict_must_reject: true
+missing_retry_terminal_receipt_must_reject: true
+source_run_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+worker_attempt_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+completion_failure_receipt_mutation_admitted: false
+retry_completion_failure_receipt_mutation_admitted: false
+execution_boundary_runtime_selected: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_scope: backend_service_api_readiness_status_history_rendered_operator_control_focused_tests
+next_exact_posture: candidate_b_async_background_process_execution_selection_v1
+```
+
+Operators can now record an append-only execution-boundary receipt for a selected workflow row after terminal retry projection is visible. The server revalidates configured receipt authority and projects the boundary through workflow status/history plus the rendered operator surface. This still does not start a background process, execute a job, accept commands/paths/URLs from the browser, mutate source lineage, broaden Candidate B scope, or enable provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage authority, or frontend durable authority.
