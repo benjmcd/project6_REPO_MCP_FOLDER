@@ -3328,3 +3328,44 @@ next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_c
 ```
 
 Operators can now record repeatability evidence for two independently produced, downstream-proven Candidate B full-corpus workflows. The endpoint compares server-owned original-checkpoint, original-status, original-monitor, rerun-status, and rerun-monitor authority; it writes an append-only rerun-trial receipt and does not execute Candidate B, spawn subprocesses, control processes, expose raw stdout/stderr, or accept raw local paths or URLs from the browser.
+
+### Candidate B Full-Corpus Repeatability Rerun Trial Rendered Control Selection
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_selection_v1
+source_repeatability_rerun_trial_runtime: next_milestone_plans/Layer3_planning_docs/1041-cb-repeatability-rerun-trial-runtime.md
+current_main_entry: 2a10ca531a36a89b23da740056df5fa5608c8150
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1
+selected_rendered_control_scope: server_projection_consumer_for_candidate_b_repeatability_rerun_trial_receipts
+selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial
+selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial
+selected_rendered_control_action: record_candidate_b_full_corpus_repeatability_rerun_trial_from_current_original_checkpoint_and_rerun_workflow_projection
+rendered_control_button_label: Record Rerun Trial
+headless_rendered_proof_required: true
+headed_rendered_proof_required: true
+original_repeatability_checkpoint_required: true
+original_workflow_status_required: proven
+original_completion_monitor_state_required: completed_downstream_proven
+rerun_workflow_status_required: proven
+rerun_completion_monitor_state_required: completed_downstream_proven
+stale_original_checkpoint_must_disable_or_fail_closed: true
+stale_rerun_status_or_monitor_must_disable_or_fail_closed: true
+mismatched_corpus_identity_must_disable_or_fail_closed: true
+regression_or_delta_disposition_required: true
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+frontend_durable_authority_enabled: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1
+```
+
+The next rendered pass should add the operator control for recording a rerun-trial receipt. The UI may pair an original repeatability checkpoint with a second downstream-proven workflow and choose an admitted regression/delta disposition, but it remains a server-projection consumer only. It must post bounded ids/hashes and runbook constants to the server endpoint, then render the server comparison and receipt without local paths, raw URLs, commands, stdout/stderr, process controls, browser storage authority, or frontend durable authority.
