@@ -1,0 +1,63 @@
+# Candidate B Full-Corpus Repeatability Acceptance Closeout Rendered Control Selection
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_control_selection_v1
+source_repeatability_acceptance_closeout_runtime: next_milestone_plans/Layer3_planning_docs/1049-cb-repeatability-acceptance-closeout-runtime.md
+current_main_entry: e49f954bbb3c8e28c9b8a62487f3d0a993390787
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_control_v1
+selected_rendered_control_mode: rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control
+selected_rendered_control_scope: operator_visible_record_and_inspect_acceptance_closeout_receipt
+selected_rendered_control_button_label: Record Acceptance Closeout
+source_acceptance_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint
+source_closeout_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout
+selected_closeout_action: record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout
+repeatability_acceptance_checkpoint_receipt_required: true
+acceptance_checkpoint_state_required: repeatability_acceptance_checkpoint_recorded
+acceptance_closeout_state_required_after_submit: repeatability_acceptance_operator_closeout_recorded
+accepted_dispositions: no_regression_observed,delta_reviewed_no_regression
+blocked_disposition: regression_detected_blocked
+regression_detected_must_disable_or_fail_closed: true
+rendered_acceptance_control_proof_state_submitted: headed_and_headless_passed
+headless_rendered_proof_label_submitted: candidate_b_repeatability_acceptance_rendered_control_headless_chromium_pass
+headed_rendered_proof_label_submitted: candidate_b_repeatability_acceptance_rendered_control_headed_chromium_pass
+operator_runbook_closeout_steps_submitted: true
+negative_invariant_attestations_submitted: true
+server_owned_closeout_receipt_required: true
+append_only_closeout_receipt_required: true
+closeout_receipt_ref_rendered_redacted: true
+raw_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+raw_stdout_rendered: false
+raw_stderr_rendered: false
+artifact_bytes_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+process_kill_cancel_retry_resume_admitted: false
+browser_triggered_process_start_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_control_v1
+```
+
+This freeze selects the rendered operator control for recording and inspecting the already-implemented acceptance closeout receipt. The control should become available only after a server-owned acceptance checkpoint receipt is present with an admitted non-regression disposition. It should post bounded receipt ids/hashes, admitted rendered-proof labels, closeout runbook constants, and the negative invariant attestation set to the closeout endpoint, then render the returned closeout state, redacted receipt ref, hashes, bound comparison summary, and negative invariants.
+
+The rendered control must not run Candidate B or Layer 3, mutate predecessor receipts, promote Candidate B beyond eligible/effective PDFs, expose raw paths/URLs/output/artifact bytes, dispatch connectors, write provider objects, add RAG/model runtime, activate the full mockup, or create frontend durable authority.
+
+## Coherence Check
+
+- Does this selection implement the rendered closeout control? Recommended answer: no. It freezes the exact UI/runtime target after current-main closeout authority exists.
+- Should the control be enabled when the acceptance checkpoint is regression-blocked or missing? Recommended answer: no. It must disable or fail closed.
+- Does the browser become durable authority for closeout? Recommended answer: no. It posts bounded server receipt/hash evidence and renders the server response.
