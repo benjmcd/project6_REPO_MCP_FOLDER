@@ -2788,6 +2788,9 @@ CANDIDATE_B_ASYNC_RETRY_WORKER_ATTEMPT_RUNTIME = (
 CANDIDATE_B_ASYNC_RETRY_PROGRESS_CHECKPOINT_SELECTION = (
     PLANNING_DOCS / "1018-cb-async-retry-progress-checkpoint-selection.md"
 )
+CANDIDATE_B_ASYNC_RETRY_PROGRESS_CHECKPOINT_RUNTIME = (
+    PLANNING_DOCS / "1019-cb-async-retry-progress-checkpoint-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2863,6 +2866,13 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_WORKER_ATTEMPT_SERVICE = (
     / "app"
     / "services"
     / "layer3_candidate_b_full_corpus_operator_workflow_retry_worker_attempt.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_PROGRESS_CHECKPOINT_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -95146,6 +95156,143 @@ def _check_candidate_b_async_retry_progress_checkpoint_selection(
                 )
 
 
+def _check_candidate_b_async_retry_progress_checkpoint_runtime(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_RETRY_PROGRESS_CHECKPOINT_RUNTIME: (
+            "Candidate B Async Retry Progress Checkpoint Runtime",
+            "milestone: candidate_b_async_retry_progress_checkpoint_receipt_v1",
+            "source_retry_progress_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1018-cb-async-retry-progress-checkpoint-selection.md",
+            "runtime_status: implemented",
+            "selected_retry_progress_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint",
+            "selected_retry_progress_checkpoint_mode: append_only_retry_progress_checkpoint_receipt_without_retry_completion_cancel_resume_or_job_execution",
+            "selected_retry_progress_checkpoint_action: record_candidate_b_async_retry_progress_checkpoint",
+            "selected_retry_progress_checkpoint_scope: server_owned_candidate_b_full_corpus_operator_workflow_retry_worker_attempt_receipts",
+            "selected_retry_progress_checkpoint_receipt_model: append_only_retry_progress_checkpoint_receipt_without_mutating_retry_worker_attempt_retry_scheduler_lease_retry_queue_state_retry_policy_completion_failure_failed_worker_attempt_progress_checkpoint_scheduler_lease_queue_state_or_source_run_receipts",
+            "selected_retry_progress_checkpoint_sequence_model: monotonically_increasing_append_only_sequence_per_retry_worker_attempt",
+            "selected_retry_progress_checkpoint_idempotency_basis: client_request_id_plus_retry_progress_checkpoint_authority_hash",
+            "retry_attempt_number_required: 2",
+            "missing_retry_worker_attempt_receipt_rejected: true",
+            "stale_retry_worker_attempt_receipt_rejected: true",
+            "non_next_retry_progress_checkpoint_sequence_rejected: true",
+            "append_only_retry_progress_checkpoint_receipt: true",
+            "monotonic_retry_progress_checkpoint_sequence: true",
+            "retry_progress_checkpoint_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "retry_completion_failure_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "retry_worker_attempt_receipt_mutation_admitted: false",
+            "retry_scheduler_lease_receipt_mutation_admitted: false",
+            "retry_queue_state_receipt_mutation_admitted: false",
+            "retry_policy_receipt_mutation_admitted: false",
+            "completion_failure_receipt_mutation_admitted: false",
+            "failed_worker_attempt_receipt_mutation_admitted: false",
+            "default_scope_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "selector_mutation_performed: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_completion_failure_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_retry_progress_checkpoint_receipt_v1",
+            "source_retry_progress_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1018-cb-async-retry-progress-checkpoint-selection.md",
+            "runtime_status: implemented",
+            "selected_retry_progress_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint",
+            "selected_retry_progress_checkpoint_action: record_candidate_b_async_retry_progress_checkpoint",
+            "retry_attempt_number_required: 2",
+            "missing_retry_worker_attempt_receipt_rejected: true",
+            "stale_retry_worker_attempt_receipt_rejected: true",
+            "non_next_retry_progress_checkpoint_sequence_rejected: true",
+            "append_only_retry_progress_checkpoint_receipt: true",
+            "monotonic_retry_progress_checkpoint_sequence: true",
+            "retry_progress_checkpoint_runtime_selected: true",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "retry_completion_failure_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_completion_failure_authority_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_PROGRESS_CHECKPOINT_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint.v1"',
+            "append_only_retry_progress_checkpoint_receipt_without_retry_completion_cancel_resume_or_job_execution",
+            'OPERATOR_DECISION = "record_candidate_b_async_retry_progress_checkpoint"',
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint",
+            "def record_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint",
+            "def _selected_retry_worker_attempt_receipt",
+            "def _validate_next_retry_progress_checkpoint_sequence",
+            '"append_only_retry_progress_checkpoint_receipt": True',
+            '"monotonic_retry_progress_checkpoint_sequence": True',
+            '"retry_progress_checkpoint_runtime_selected": True',
+            '"background_process_runtime_selected_now": False',
+            '"job_execution_runtime_selected_now": False',
+            '"retry_completion_failure_runtime_selected_now": False',
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_worker_attempt_receipt_missing",
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_stale_retry_worker_attempt_receipt",
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_sequence_not_next",
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_forbidden_request_fields",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"retry_progress_checkpoint_runtime_admitted": True',
+            "record append-only retry progress-checkpoint authority through the admitted retry progress-checkpoint endpoint",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointResponse",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/progress/checkpoint",
+            "CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint": True',
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint"',
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_endpoint",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_records_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_appends_next_sequence",
+            "test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_rejects_stale_retry_worker_attempt",
+            "test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_rejects_non_next_sequence",
+            "test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_service_rejects_raw_authority",
+            "RETRY_PROGRESS_CHECKPOINT_ENDPOINT",
+            "workflow_retry_progress_checkpoint.RETRY_PROGRESS_CHECKPOINT_MODE",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async retry progress checkpoint runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -96011,6 +96158,7 @@ def main() -> int:
     _check_candidate_b_async_retry_worker_attempt_selection(errors)
     _check_candidate_b_async_retry_worker_attempt_runtime(errors)
     _check_candidate_b_async_retry_progress_checkpoint_selection(errors)
+    _check_candidate_b_async_retry_progress_checkpoint_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
