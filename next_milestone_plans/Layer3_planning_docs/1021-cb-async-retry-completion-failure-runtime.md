@@ -1,0 +1,62 @@
+# Candidate B Async Retry Completion/Failure Runtime
+
+```yaml
+milestone: candidate_b_async_retry_completion_failure_receipt_v1
+source_retry_completion_failure_selection: next_milestone_plans/Layer3_planning_docs/1020-cb-async-retry-completion-failure-selection.md
+runtime_status: implemented
+selected_retry_completion_failure_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure
+selected_retry_completion_failure_mode: append_only_retry_completion_failure_receipt_without_cancel_resume_job_execution_or_source_receipt_mutation
+selected_retry_completion_failure_action: record_candidate_b_async_retry_completion_failure
+selected_retry_completion_failure_scope: server_owned_candidate_b_full_corpus_operator_workflow_retry_worker_attempts_with_retry_progress_checkpoint_receipts
+selected_retry_completion_failure_receipt_model: append_only_retry_terminal_receipt_without_mutating_retry_progress_checkpoint_retry_worker_attempt_retry_scheduler_lease_retry_queue_state_retry_policy_original_completion_failure_failed_worker_attempt_progress_checkpoint_scheduler_lease_queue_state_or_source_run_receipts
+selected_retry_completion_failure_receipt_binding: retry_worker_attempt_receipt_id,retry_worker_attempt_receipt_hash,retry_worker_attempt_authority_hash,latest_retry_progress_checkpoint_receipt_id,latest_retry_progress_checkpoint_receipt_hash,latest_retry_progress_checkpoint_authority_hash,retry_progress_checkpoint_sequence,retry_scheduler_lease_receipt_id,retry_queue_state_receipt_id,retry_policy_receipt_id,completion_failure_receipt_id,failed_worker_attempt_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_terminal_outcome,retry_terminal_outcome_hash
+selected_retry_completion_failure_idempotency_basis: client_request_id_plus_retry_completion_failure_authority_hash
+selected_retry_terminal_outcomes: completed,failed
+retry_attempt_number_required: 2
+minimum_retry_progress_checkpoint_required: true
+missing_retry_progress_checkpoint_receipt_rejected: true
+stale_retry_progress_checkpoint_receipt_rejected: true
+non_latest_retry_progress_checkpoint_receipt_rejected: true
+retry_terminal_conflict_rejected: true
+retry_terminal_failure_payload_operator_safe: true
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+retry_progress_checkpoint_receipt_mutation_admitted: false
+retry_worker_attempt_receipt_mutation_admitted: false
+retry_scheduler_lease_receipt_mutation_admitted: false
+retry_queue_state_receipt_mutation_admitted: false
+retry_policy_receipt_mutation_admitted: false
+completion_failure_receipt_mutation_admitted: false
+failed_worker_attempt_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+retry_completion_failure_runtime_selected: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_terminal_status_projection_selection_v1
+```
+
+The runtime records a separate append-only retry terminal receipt over the latest retry progress-checkpoint receipt for retry attempt number 2. It distinguishes completed retries from operator-safe retry failures without executing Candidate B work, mutating retry lineage, mutating original failed-lineage receipts, exposing raw traces or refs, or admitting cancel/resume/job execution.
+
+## Coherence Check
+
+- Should retry completion/failure execute Candidate B work? Recommended answer: no. It records terminal authority over existing retry lineage; job execution remains separately unselected.
+- Should retry terminal authority mutate retry progress, retry worker-attempt, retry lease, retry queue, retry policy, original failure, or source-run receipts? Recommended answer: no. The runtime writes a separate append-only receipt.
+- Should failed retry outcomes include raw traces, logs, paths, URLs, provider refs, connector destinations, or artifact bytes? Recommended answer: no. The runtime admits only short operator-safe failure code and phase tokens.
+- What should come next? Recommended answer: select a retry terminal status/history projection slice so operators can inspect retry terminal authority from rendered/status surfaces before any cancel, resume, or job-execution expansion.
