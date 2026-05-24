@@ -2957,6 +2957,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_RENDERED_STATUS = (
     PLANNING_DOCS
     / "1072-cb-broader-eligible-corpus-default-scope-runtime-rendered-status.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1073-cb-broader-eligible-corpus-default-scope-runtime-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -101171,6 +101175,97 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_st
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_CURRENT_MAIN_SYNC: (
+            "Candidate B Broader Eligible Corpus Default Scope Runtime Current-Main Sync",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync_v1",
+            "source_broader_eligible_corpus_default_scope_runtime_rendered_status: next_milestone_plans/Layer3_planning_docs/1072-cb-broader-eligible-corpus-default-scope-runtime-rendered-status.md",
+            "base_authority: project6-origin/main@b7c7bd75e853250338ea3c7335c02ed2f9ade777",
+            'merged_pr: "#1775"',
+            "source_branch: codex/cb-scope-runtime-rendered",
+            "source_commit: 4d9dfdac830d10b0e8b807d8c0c82eb39723bf80",
+            "merge_commit: b7c7bd75e853250338ea3c7335c02ed2f9ade777",
+            "sync_status: current_main_synced_candidate_b_broader_scope_runtime_rendered_status",
+            "synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control",
+            "synced_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_runtime_v1",
+            "synced_runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime",
+            "synced_selected_state: candidate_b_broader_eligible_corpus_default_scope_runtime_selected",
+            "synced_blocked_state: candidate_b_broader_eligible_corpus_default_scope_runtime_blocked",
+            "synced_operator_surface: /review/layer3 Candidate B default-promotion status panel",
+            "synced_input_authority: ready_broader_scope_readiness_audit_json_plus_exact_selected_scope_classes",
+            "synced_server_authority: readiness_audit_id_hash_binding_and_redacted_runtime_receipt",
+            "ci_backend_layer3_api: pass",
+            "ci_test: pass",
+            "review_threads_total_count: 0",
+            "unresolved_review_threads_total_count: 0",
+            "merge_state_before_merge: CLEAN",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "route_api_dto_model_migration_service_behavior_introduced_by_this_sync: false",
+            "executable_test_behavior_introduced_by_this_sync: false",
+            "production_ui_behavior_introduced_by_this_sync: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync_v1",
+            "source_broader_eligible_corpus_default_scope_runtime_rendered_status: next_milestone_plans/Layer3_planning_docs/1072-cb-broader-eligible-corpus-default-scope-runtime-rendered-status.md",
+            "base_authority: project6-origin/main@b7c7bd75e853250338ea3c7335c02ed2f9ade777",
+            'merged_pr: "#1775"',
+            "source_branch: codex/cb-scope-runtime-rendered",
+            "source_commit: 4d9dfdac830d10b0e8b807d8c0c82eb39723bf80",
+            "merge_commit: b7c7bd75e853250338ea3c7335c02ed2f9ade777",
+            "sync_status: current_main_synced_candidate_b_broader_scope_runtime_rendered_status",
+            "synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_runtime_status_control",
+            "synced_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_runtime_v1",
+            "synced_runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime",
+            "synced_selected_state: candidate_b_broader_eligible_corpus_default_scope_runtime_selected",
+            "synced_blocked_state: candidate_b_broader_eligible_corpus_default_scope_runtime_blocked",
+            "synced_input_authority: ready_broader_scope_readiness_audit_json_plus_exact_selected_scope_classes",
+            "synced_server_authority: readiness_audit_id_hash_binding_and_redacted_runtime_receipt",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_RUNTIME_RENDERED_STATUS: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope runtime current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -102090,6 +102185,7 @@ def main() -> int:
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime_selection(errors)
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime(errors)
     _check_candidate_b_broader_eligible_corpus_default_scope_runtime_rendered_status(errors)
+    _check_candidate_b_broader_eligible_corpus_default_scope_runtime_current_main_sync(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
