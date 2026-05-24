@@ -1,0 +1,78 @@
+# Candidate B Full-Corpus Repeatability Acceptance Closeout Status Selection
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_closeout_status_selection_v1
+source_repeatability_acceptance_closeout_rendered_runtime: next_milestone_plans/Layer3_planning_docs/1051-cb-repeatability-acceptance-closeout-rendered-runtime.md
+current_main_entry: 470cac93ddace9c212ad2cd3557b7b0174e015bb
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_full_corpus_repeatability_acceptance_closeout_status_v1
+selected_closeout_status_scope: server_owned_read_only_status_review_projection_of_persisted_acceptance_closeout_receipts
+selected_closeout_status_mode: read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority
+selected_closeout_status_surfaces: status,history,rendered_review
+source_closeout_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout
+selected_closeout_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status
+existing_workflow_status_endpoint_reused_for_lineage_context: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+existing_workflow_history_endpoint_reused_for_lineage_context: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+selected_closeout_status_model: redacted_read_only_projection_of_latest_acceptance_closeout_receipt_bound_to_acceptance_checkpoint_authority
+selected_closeout_status_binding: repeatability_acceptance_operator_closeout_receipt_id,repeatability_acceptance_operator_closeout_receipt_hash,repeatability_acceptance_operator_closeout_hash,repeatability_acceptance_operator_closeout_authority_hash,repeatability_acceptance_checkpoint_receipt_id,repeatability_acceptance_checkpoint_receipt_hash,repeatability_acceptance_checkpoint_authority_hash,original_repeatability_checkpoint_receipt_id,repeatability_rerun_trial_receipt_id,original_operator_workflow_receipt_id,rerun_operator_workflow_receipt_id,baseline_run_id,candidate_a_run_id,original_candidate_b_run_id,rerun_candidate_b_run_id,compare_target_set_hash,material_relative_name,acceptance_disposition,comparison_hash,negative_invariants_hash,rendered_acceptance_control_proof_state
+selected_closeout_status_idempotency_basis: read_only_projection_from_server_owned_acceptance_closeout_receipts
+closeout_status_values: not_recorded,available,blocked
+missing_closeout_receipt_projects_not_recorded: true
+stale_closeout_receipt_must_reject: true
+ambiguous_closeout_receipt_must_reject: true
+closeout_status_projection_must_be_redacted: true
+closeout_receipt_ref_rendered_redacted: true
+closeout_status_negative_invariants_visible: true
+closeout_status_comparison_summary_visible: true
+closeout_status_rendered_proof_summary_visible: true
+acceptance_closeout_receipt_creation_admitted_now: false
+acceptance_closeout_receipt_mutation_admitted: false
+acceptance_checkpoint_receipt_mutation_admitted: false
+original_repeatability_checkpoint_receipt_mutation_admitted: false
+repeatability_rerun_trial_receipt_mutation_admitted: false
+original_workflow_receipt_mutation_admitted: false
+rerun_workflow_receipt_mutation_admitted: false
+process_execution_receipt_mutation_admitted: false
+process_completion_result_receipt_mutation_admitted: false
+adopted_result_downstream_proof_receipt_mutation_admitted: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+process_kill_cancel_retry_resume_admitted: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+raw_pid_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_status_v1
+```
+
+This freeze selects the next read-only operator status/review slice after the rendered acceptance-closeout control. Current main can record a server-owned append-only closeout receipt, but operators still need a status path that can reload persisted closeout authority and project it back without replaying the closeout action.
+
+The next runtime should expose a redacted status projection for a selected acceptance-checkpoint or closeout receipt. Missing closeout authority should project `not_recorded`; a current closeout receipt should project `available`; stale, contradictory, or ambiguous closeout authority must fail closed. The projection should show receipt ids/hashes, bound acceptance/rerun/original workflow lineage, comparison summary, rendered-proof summary, and negative invariants, without raw paths, URLs, stdout/stderr, logs, traces, PIDs, artifact bytes, process control, receipt mutation, selector mutation, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser-storage authority, or frontend durable authority.
+
+## Coherence Check
+
+- Should this selection implement the closeout status endpoint? Recommended answer: no. It freezes the exact read-only runtime target after current-main rendered closeout authority exists.
+- Should missing closeout authority fail the status review? Recommended answer: no. Missing authority should project `not_recorded`; stale or ambiguous authority should fail closed.
+- Should the status path create, repair, or supersede a closeout receipt? Recommended answer: no. It should reload and project server-owned receipt authority only.
+- Does this admit broader Candidate B default scope, job execution, provider writes, connector dispatch, RAG/model runtime, or full mockup activation? Recommended answer: no. Those remain separate selections.

@@ -3739,3 +3739,45 @@ next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_st
 ```
 
 Operators can now click `Record Acceptance Closeout` after the acceptance checkpoint is recorded. The browser posts only bounded server receipt/hash evidence, proof labels, runbook constants, and negative invariant attestations. The server remains durable authority for the closeout receipt, and the rendered response stays redacted.
+
+### Candidate B Full-Corpus Repeatability Acceptance Closeout Status Selection
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_closeout_status_selection_v1
+source_repeatability_acceptance_closeout_rendered_runtime: next_milestone_plans/Layer3_planning_docs/1051-cb-repeatability-acceptance-closeout-rendered-runtime.md
+current_main_entry: 470cac93ddace9c212ad2cd3557b7b0174e015bb
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_full_corpus_repeatability_acceptance_closeout_status_v1
+selected_closeout_status_scope: server_owned_read_only_status_review_projection_of_persisted_acceptance_closeout_receipts
+selected_closeout_status_mode: read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority
+selected_closeout_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status
+source_closeout_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout
+selected_closeout_status_binding: repeatability_acceptance_operator_closeout_receipt_id,repeatability_acceptance_operator_closeout_receipt_hash,repeatability_acceptance_operator_closeout_hash,repeatability_acceptance_operator_closeout_authority_hash,repeatability_acceptance_checkpoint_receipt_id,repeatability_acceptance_checkpoint_receipt_hash,repeatability_acceptance_checkpoint_authority_hash,original_repeatability_checkpoint_receipt_id,repeatability_rerun_trial_receipt_id,original_operator_workflow_receipt_id,rerun_operator_workflow_receipt_id,baseline_run_id,candidate_a_run_id,original_candidate_b_run_id,rerun_candidate_b_run_id,compare_target_set_hash,material_relative_name,acceptance_disposition,comparison_hash,negative_invariants_hash,rendered_acceptance_control_proof_state
+closeout_status_values: not_recorded,available,blocked
+missing_closeout_receipt_projects_not_recorded: true
+stale_closeout_receipt_must_reject: true
+ambiguous_closeout_receipt_must_reject: true
+closeout_status_projection_must_be_redacted: true
+acceptance_closeout_receipt_creation_admitted_now: false
+acceptance_closeout_receipt_mutation_admitted: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+frontend_durable_authority_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_status_v1
+```
+
+The next runtime should add a read-only closeout status/review projection over persisted acceptance-closeout receipts. It should report `not_recorded` when no closeout exists, `available` when current closeout authority is present, and fail closed for stale, contradictory, or ambiguous closeout receipts. It must not create or mutate receipts, re-run Candidate B or Layer 3, expose raw paths/URLs/output/artifact bytes, or admit provider, connector, RAG/model, full mockup, default-scope, browser-storage, or frontend durable authority.

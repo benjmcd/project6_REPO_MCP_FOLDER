@@ -21,7 +21,7 @@ CLOSEOUT_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout"
 )
 ACCEPTANCE_CHECKPOINT_ENDPOINT = acceptance.ACCEPTANCE_CHECKPOINT_ENDPOINT
-RENDERED_CONTROL_MODE = "rendered_candidate_b_full_corpus_repeatability_acceptance_checkpoint_control"
+RENDERED_CONTROL_MODE = "rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control"
 RENDERED_PROOF_STATE = "headed_and_headless_passed"
 HEADLESS_RENDERED_PROOF_LABEL = "candidate_b_repeatability_acceptance_rendered_control_headless_chromium_pass"
 HEADED_RENDERED_PROOF_LABEL = "candidate_b_repeatability_acceptance_rendered_control_headed_chromium_pass"

@@ -39,6 +39,10 @@ def _closeout_request(
     client_request_id: str = "acceptance-closeout",
     acceptance_disposition: str = "no_regression_observed",
 ) -> dict[str, Any]:
+    assert (
+        closeout.RENDERED_CONTROL_MODE
+        == "rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control"
+    )
     return {
         "client_request_id": client_request_id,
         "acceptance_closeout_mode": closeout.CLOSEOUT_MODE,
