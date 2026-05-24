@@ -8908,6 +8908,7 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
   let rerunTrialPayload = null;
   let acceptanceCheckpointPayload = null;
   let acceptanceCloseoutPayload = null;
+  const closeoutStatusPayloads = [];
   const statusPayloads = [];
   const monitorPayloads = [];
   const processExecutionProjection = {
@@ -9091,6 +9092,84 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
     full_mockup_activation_enabled: false,
     frontend_durable_authority_enabled: false,
     default_scope_expansion_admitted: false,
+  };
+  const closeoutStatusResponseForPayload = (payload) => {
+    const available = Boolean(payload.repeatability_acceptance_operator_closeout_receipt_id);
+    return {
+      schema_id: 'layer3.candidate_b_full_corpus_repeatability_acceptance_operator_closeout_status.v1',
+      schema_version: 1,
+      request_id: payload.client_request_id,
+      server_time: '2026-05-24T00:00:00Z',
+      status: 'available',
+      mode: 'read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority',
+      closeout_status_projection_state: available ? 'available' : 'not_recorded',
+      closeout_status_hash: available ? '8'.repeat(64) : '0'.repeat(64),
+      repeatability_acceptance_operator_closeout_receipt_available: available,
+      repeatability_acceptance_operator_closeout_receipt_id: available
+        ? 'cb-full-corpus-repeatability-acceptance-closeout-rendered-proof'
+        : '',
+      repeatability_acceptance_operator_closeout_receipt_hash: available ? '5'.repeat(64) : '',
+      repeatability_acceptance_operator_closeout_hash: available ? '6'.repeat(64) : '',
+      repeatability_acceptance_operator_closeout_authority_hash: available ? '7'.repeat(64) : '',
+      repeatability_acceptance_operator_closeout_receipt_ref: available
+        ? 'candidate-b-full-corpus-operator-workflow-repeatability-acceptance-closeout://rendered-proof/555555555555555555555555'
+        : '',
+      repeatability_acceptance_checkpoint_receipt_id: 'cb-full-corpus-repeatability-acceptance-checkpoint-rendered-proof',
+      repeatability_acceptance_checkpoint_receipt_hash: '2'.repeat(64),
+      repeatability_acceptance_checkpoint_authority_hash: '4'.repeat(64),
+      original_repeatability_checkpoint_receipt_id: available
+        ? 'cb-full-corpus-repeatability-checkpoint-rerun-trial-rendered-proof'
+        : '',
+      repeatability_rerun_trial_receipt_id: available
+        ? 'cb-full-corpus-repeatability-rerun-trial-rendered-proof'
+        : '',
+      original_operator_workflow_receipt_id: available ? originalRow.operator_workflow_receipt_id : '',
+      rerun_operator_workflow_receipt_id: available ? rerunRow.operator_workflow_receipt_id : '',
+      baseline_run_id: available ? commonRequest.baseline_run_id : '',
+      candidate_a_run_id: available ? commonRequest.candidate_a_run_id : '',
+      original_candidate_b_run_id: available ? originalRow.candidate_b_run_id : '',
+      rerun_candidate_b_run_id: available ? rerunRow.candidate_b_run_id : '',
+      compare_target_set_hash: available ? originalRow.compare_target_set_hash : '',
+      material_relative_name: available ? originalRow.material_relative_name : '',
+      acceptance_disposition: available ? 'no_regression_observed' : '',
+      comparison_hash: available ? '9'.repeat(64) : '',
+      negative_invariants_hash: available ? 'a'.repeat(64) : '',
+      rendered_acceptance_control_proof_state: available ? 'headed_and_headless_passed' : '',
+      comparison_summary: available ? {
+        same_eligible_corpus_identity: true,
+        same_compare_target_set_hash: true,
+        same_material_relative_name: true,
+        same_runtime_root_lifecycle_policy: true,
+        delta_observed: false,
+        regression_disposition: 'no_regression_observed',
+      } : {},
+      negative_invariants: closeoutNegativeInvariants,
+      rendered_acceptance_control_proof: available ? {
+        rendered_acceptance_control_mode: 'rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control',
+        rendered_acceptance_control_proof_state: 'headed_and_headless_passed',
+        headless_rendered_proof_label: 'candidate_b_repeatability_acceptance_rendered_control_headless_chromium_pass',
+        headed_rendered_proof_label: 'candidate_b_repeatability_acceptance_rendered_control_headed_chromium_pass',
+      } : {},
+      operator_projection: {
+        read_only_acceptance_closeout_status_projection: true,
+        closeout_receipt_projection_visible: available,
+        acceptance_closeout_receipt_creation_admitted_now: false,
+        acceptance_closeout_receipt_mutation_admitted: false,
+        actual_corpus_processing_execution_admitted_now: false,
+        process_control_admitted: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        provider_object_write_enabled: false,
+        connector_dispatch_enabled: false,
+        rag_vector_model_runtime_enabled: false,
+        full_mockup_activation_enabled: false,
+        frontend_durable_authority_enabled: false,
+        default_scope_expansion_admitted: false,
+      },
+      source_closeout_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout',
+      repeatability_acceptance_operator_closeout_status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status',
+    };
   };
 
   await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history', async (route) => {
@@ -9367,6 +9446,15 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
       }),
     });
   });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status', async (route) => {
+    const payload = route.request().postDataJSON();
+    closeoutStatusPayloads.push(payload);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(closeoutStatusResponseForPayload(payload)),
+    });
+  });
   await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout', async (route) => {
     acceptanceCloseoutPayload = route.request().postDataJSON();
     await route.fulfill({
@@ -9511,6 +9599,11 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
     'rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control',
   );
   await expect(acceptanceCloseoutCard).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await page.locator('#candidate-b-repeatability-acceptance-closeout-status-submit').click();
+  await expect(acceptanceCloseoutCard).toContainText('candidate_b_full_corpus_repeatability_acceptance_closeout_status_not_recorded');
+  await expect(acceptanceCloseoutCard).toContainText('closeout status state: not_recorded');
+  await expect(acceptanceCloseoutCard).toContainText('receipt creation admitted now: false');
+  await expect(acceptanceCloseoutCard).toContainText('frontend durable authority enabled: false');
   await page.locator('#candidate-b-repeatability-acceptance-closeout-submit').click();
   await expect(acceptanceCloseoutCard).toContainText('candidate_b_full_corpus_repeatability_acceptance_closeout_recorded');
   await expect(acceptanceCloseoutCard).toContainText('repeatability_acceptance_operator_closeout_recorded');
@@ -9525,6 +9618,12 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
   await expect(acceptanceCloseoutCard).toContainText('raw stderr admitted: false');
   await expect(acceptanceCloseoutCard).toContainText('frontend durable authority enabled: false');
   await expect(acceptanceCloseoutCard).toContainText('default scope expansion admitted: false');
+  await page.locator('#candidate-b-repeatability-acceptance-closeout-status-submit').click();
+  await expect(acceptanceCloseoutCard).toContainText('candidate_b_full_corpus_repeatability_acceptance_closeout_status_available');
+  await expect(acceptanceCloseoutCard).toContainText('closeout status state: available');
+  await expect(acceptanceCloseoutCard).toContainText('closeout receipt available: true');
+  await expect(acceptanceCloseoutCard).toContainText('closeout receipt projection visible: true');
+  await expect(acceptanceCloseoutCard).toContainText('rendered acceptance control proof state: headed_and_headless_passed');
 
   expect(workflowHistoryRequested).toBe(true);
   expect(statusPayloads).toEqual([originalStatusRequest, rerunStatusRequest]);
@@ -9616,10 +9715,29 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
     ],
     negative_invariant_attestations: closeoutNegativeInvariants,
   });
+  expect(closeoutStatusPayloads).toEqual([
+    {
+      client_request_id: closeoutStatusPayloads[0].client_request_id,
+      closeout_status_mode: 'read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority',
+      operator_decision: 'inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status',
+      repeatability_acceptance_checkpoint_receipt_id: 'cb-full-corpus-repeatability-acceptance-checkpoint-rendered-proof',
+      repeatability_acceptance_checkpoint_receipt_hash: '2'.repeat(64),
+      repeatability_acceptance_checkpoint_authority_hash: '4'.repeat(64),
+    },
+    {
+      client_request_id: closeoutStatusPayloads[1].client_request_id,
+      closeout_status_mode: 'read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority',
+      operator_decision: 'inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status',
+      repeatability_acceptance_operator_closeout_receipt_id: 'cb-full-corpus-repeatability-acceptance-closeout-rendered-proof',
+      repeatability_acceptance_operator_closeout_receipt_hash: '5'.repeat(64),
+    },
+  ]);
   expect(JSON.stringify(acceptanceCheckpointPayload)).not.toContain('file://');
   expect(JSON.stringify(acceptanceCheckpointPayload)).not.toContain('https://');
   expect(JSON.stringify(acceptanceCloseoutPayload)).not.toContain('file://');
   expect(JSON.stringify(acceptanceCloseoutPayload)).not.toContain('https://');
+  expect(JSON.stringify(closeoutStatusPayloads)).not.toContain('file://');
+  expect(JSON.stringify(closeoutStatusPayloads)).not.toContain('https://');
   expect(JSON.stringify(rerunTrialPayload)).not.toContain('file://');
   expect(JSON.stringify(rerunTrialPayload)).not.toContain('https://');
   expect(apiRequests.filter((request) => (
@@ -9633,7 +9751,9 @@ test('Layer 3 workbench records Candidate B repeatability rerun trial, acceptanc
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/monitor' },
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial' },
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status' },
     { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status' },
   ]);
 });
 
