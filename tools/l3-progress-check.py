@@ -2827,6 +2827,9 @@ CANDIDATE_B_ASYNC_PROCESS_COMPLETION_RESULT_ADOPTION_SELECTION = (
 CANDIDATE_B_ASYNC_PROCESS_COMPLETION_RESULT_ADOPTION_RUNTIME = (
     PLANNING_DOCS / "1031-cb-async-process-completion-result-adoption-runtime.md"
 )
+CANDIDATE_B_ASYNC_ADOPTED_PROCESS_RESULT_DOWNSTREAM_PROOF_SELECTION = (
+    PLANNING_DOCS / "1032-cb-async-adopted-process-result-downstream-proof-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -96697,6 +96700,103 @@ def _check_candidate_b_async_process_completion_result_adoption_runtime(
                 )
 
 
+def _check_candidate_b_async_adopted_process_result_downstream_proof_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_ADOPTED_PROCESS_RESULT_DOWNSTREAM_PROOF_SELECTION: (
+            "Candidate B Async Adopted Process Result Downstream Operator Proof Selection",
+            "milestone: candidate_b_async_adopted_process_result_downstream_operator_proof_selection_v1",
+            "source_process_completion_result_runtime: next_milestone_plans/Layer3_planning_docs/1031-cb-async-process-completion-result-adoption-runtime.md",
+            "current_main_entry: e47446b193e94f50de2822a2393d011376278414",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_adopted_process_result_downstream_operator_proof_v1",
+            "selected_downstream_proof_mode: read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution",
+            "selected_downstream_proof_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof",
+            "selected_downstream_proof_action: record_candidate_b_async_adopted_process_result_downstream_operator_proof",
+            "selected_downstream_proof_receipt_model: append_only_receipt_binding_process_completion_result_receipt_to_validated_adopted_result_status_and_downstream_proof",
+            "selected_downstream_proof_receipt_binding: process_completion_result_receipt_id,process_completion_result_receipt_hash,process_completion_result_authority_hash,operator_workflow_receipt_id,operator_workflow_receipt_hash,process_execution_receipt_id,process_execution_receipt_hash,process_execution_authority_hash,result_workflow_receipt_id,result_workflow_receipt_hash,result_authority_hash,result_status_request_hash,result_downstream_proof_hash,adopted_result_status_hash",
+            "completed_process_result_required: true",
+            "failed_blocked_or_expired_process_result_must_reject: true",
+            "adopted_result_status_request_revalidation_required: true",
+            "adopted_result_downstream_proof_status_required: proven",
+            "missing_process_completion_result_receipt_must_reject: true",
+            "stale_process_completion_result_receipt_must_reject: true",
+            "stale_or_unrelated_adopted_result_status_must_reject: true",
+            "unproven_downstream_result_must_reject: true",
+            "competing_adopted_result_downstream_proof_receipt_must_reject: true",
+            "status_history_projection_required_after_downstream_proof: true",
+            "rendered_operator_projection_required_after_downstream_proof: true",
+            "headless_rendered_proof_required_after_downstream_proof: true",
+            "headed_rendered_proof_required_after_downstream_proof: true",
+            "raw_stdout_admitted_after_sync: false",
+            "raw_stderr_admitted_after_sync: false",
+            "raw_local_path_exposed_after_sync: false",
+            "raw_url_exposed_after_sync: false",
+            "artifact_bytes_exposed_after_sync: false",
+            "process_completion_result_receipt_mutation_admitted: false",
+            "adopted_result_workflow_receipt_mutation_admitted: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator_proof_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_adopted_process_result_downstream_operator_proof_selection_v1",
+            "source_process_completion_result_runtime: next_milestone_plans/Layer3_planning_docs/1031-cb-async-process-completion-result-adoption-runtime.md",
+            "current_main_entry: e47446b193e94f50de2822a2393d011376278414",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_async_adopted_process_result_downstream_operator_proof_v1",
+            "selected_downstream_proof_mode: read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution",
+            "selected_downstream_proof_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof",
+            "selected_downstream_proof_action: record_candidate_b_async_adopted_process_result_downstream_operator_proof",
+            "selected_downstream_proof_receipt_model: append_only_receipt_binding_process_completion_result_receipt_to_validated_adopted_result_status_and_downstream_proof",
+            "completed_process_result_required: true",
+            "failed_blocked_or_expired_process_result_must_reject: true",
+            "adopted_result_status_request_revalidation_required: true",
+            "adopted_result_downstream_proof_status_required: proven",
+            "missing_process_completion_result_receipt_must_reject: true",
+            "stale_process_completion_result_receipt_must_reject: true",
+            "stale_or_unrelated_adopted_result_status_must_reject: true",
+            "unproven_downstream_result_must_reject: true",
+            "competing_adopted_result_downstream_proof_receipt_must_reject: true",
+            "status_history_projection_required_after_downstream_proof: true",
+            "rendered_operator_projection_required_after_downstream_proof: true",
+            "actual_subprocess_spawn_admitted_now: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "raw_stdout_admitted_after_sync: false",
+            "raw_stderr_admitted_after_sync: false",
+            "raw_local_path_exposed_after_sync: false",
+            "raw_url_exposed_after_sync: false",
+            "artifact_bytes_exposed_after_sync: false",
+            "process_completion_result_receipt_mutation_admitted: false",
+            "adopted_result_workflow_receipt_mutation_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator_proof_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async adopted process result downstream proof selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -97575,6 +97675,7 @@ def main() -> int:
     _check_candidate_b_async_background_process_execution_runtime(errors)
     _check_candidate_b_async_process_completion_result_adoption_selection(errors)
     _check_candidate_b_async_process_completion_result_adoption_runtime(errors)
+    _check_candidate_b_async_adopted_process_result_downstream_proof_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
