@@ -2857,6 +2857,9 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_SELECTION = (
 CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RUNTIME = (
     PLANNING_DOCS / "1041-cb-repeatability-rerun-trial-runtime.md"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RENDERED_SELECTION = (
+    PLANNING_DOCS / "1042-cb-repeatability-rerun-trial-rendered-selection.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -97846,6 +97849,111 @@ def _check_candidate_b_full_corpus_repeatability_rerun_trial_runtime(
                 )
 
 
+def _check_candidate_b_full_corpus_repeatability_rerun_trial_rendered_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RENDERED_SELECTION: (
+            "Candidate B Full-Corpus Repeatability Rerun Trial Rendered Control Selection",
+            "milestone: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_selection_v1",
+            "source_repeatability_rerun_trial_runtime: next_milestone_plans/Layer3_planning_docs/1041-cb-repeatability-rerun-trial-runtime.md",
+            "current_main_entry: 2a10ca531a36a89b23da740056df5fa5608c8150",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1",
+            "selected_rendered_control_scope: server_projection_consumer_for_candidate_b_repeatability_rerun_trial_receipts",
+            "selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial",
+            "selected_repeatability_trial_mode: append_only_repeatability_rerun_trial_receipt_without_process_execution_or_authority_mutation",
+            "selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial",
+            "selected_rendered_control_action: record_candidate_b_full_corpus_repeatability_rerun_trial_from_current_original_checkpoint_and_rerun_workflow_projection",
+            "selected_rendered_control_model: pair_original_checkpointed_workflow_with_second_downstream_proven_workflow_for_same_eligible_pdf_corpus",
+            "existing_history_panel_reused: true",
+            "existing_status_projection_reused: true",
+            "existing_completion_monitor_projection_reused: true",
+            "existing_repeatability_checkpoint_panel_reused: true",
+            "rendered_control_button_label: Record Rerun Trial",
+            "headless_rendered_proof_required: true",
+            "headed_rendered_proof_required: true",
+            "original_repeatability_checkpoint_required: true",
+            "original_workflow_status_required: proven",
+            "original_completion_monitor_state_required: completed_downstream_proven",
+            "rerun_workflow_status_required: proven",
+            "rerun_completion_monitor_state_required: completed_downstream_proven",
+            "stale_original_checkpoint_must_disable_or_fail_closed: true",
+            "stale_rerun_status_or_monitor_must_disable_or_fail_closed: true",
+            "mismatched_corpus_identity_must_disable_or_fail_closed: true",
+            "artifact_family_hash_comparison_required: true",
+            "layer3_downstream_projection_comparison_required: true",
+            "regression_or_delta_disposition_required: true",
+            "browser_supplied_local_authority_admitted: false",
+            "browser_supplied_raw_url_admitted: false",
+            "browser_supplied_command_admitted: false",
+            "browser_supplied_process_control_admitted: false",
+            "browser_storage_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_selection_v1",
+            "source_repeatability_rerun_trial_runtime: next_milestone_plans/Layer3_planning_docs/1041-cb-repeatability-rerun-trial-runtime.md",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1",
+            "selected_rendered_control_scope: server_projection_consumer_for_candidate_b_repeatability_rerun_trial_receipts",
+            "selected_repeatability_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/rerun-trial",
+            "selected_repeatability_trial_action: record_candidate_b_full_corpus_repeatability_rerun_trial",
+            "selected_rendered_control_action: record_candidate_b_full_corpus_repeatability_rerun_trial_from_current_original_checkpoint_and_rerun_workflow_projection",
+            "rendered_control_button_label: Record Rerun Trial",
+            "headless_rendered_proof_required: true",
+            "headed_rendered_proof_required: true",
+            "original_repeatability_checkpoint_required: true",
+            "rerun_workflow_status_required: proven",
+            "stale_original_checkpoint_must_disable_or_fail_closed: true",
+            "stale_rerun_status_or_monitor_must_disable_or_fail_closed: true",
+            "mismatched_corpus_identity_must_disable_or_fail_closed: true",
+            "browser_supplied_local_authority_admitted: false",
+            "browser_supplied_raw_url_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RUNTIME: (
+            "next_exact_posture: candidate_b_full_corpus_repeatability_rerun_trial_rendered_control_selection_v1",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_REPEATABILITY_CHECKPOINT_RENDERED_MODE",
+            "candidateBFullCorpusOperatorRepeatabilityCheckpointEndpointPath",
+            "candidateBFullCorpusOperatorRepeatabilityCheckpointPayload",
+            "candidate-b-full-corpus-repeatability-checkpoint-card",
+            "Record Repeatability Checkpoint",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus repeatability rerun trial rendered selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -98734,6 +98842,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_operator_repeatability_checkpoint_rendered_runtime(errors)
     _check_candidate_b_full_corpus_repeatability_rerun_trial_selection(errors)
     _check_candidate_b_full_corpus_repeatability_rerun_trial_runtime(errors)
+    _check_candidate_b_full_corpus_repeatability_rerun_trial_rendered_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
