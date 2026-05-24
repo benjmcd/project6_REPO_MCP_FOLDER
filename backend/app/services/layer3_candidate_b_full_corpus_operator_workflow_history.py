@@ -83,7 +83,7 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
         "retry_runtime_admitted": False,
         "resume_runtime_admitted": False,
         "queue_state_authority_runtime_admitted": True,
-        "queue_scheduler_runtime_admitted": False,
+        "queue_scheduler_runtime_admitted": True,
         "expiry_mutation_runtime_admitted": True,
         "default_scope_expansion_admitted": False,
         "provider_object_write_enabled": False,
@@ -99,7 +99,8 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
             "inspect a selected workflow-run row through the returned status request",
             "expire or close a selected workflow-run row through the admitted lifecycle endpoint",
             "record append-only queue-state authority for a selected workflow-run row",
-            "select queue scheduling, cancel, retry, or resume only through a separate freeze",
+            "record append-only scheduler lease authority for a selected queue-state receipt",
+            "select background worker, cancel, retry, or resume only through a separate freeze",
         ],
     }
 
