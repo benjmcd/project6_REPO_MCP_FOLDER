@@ -1,0 +1,50 @@
+# Candidate B Async Retry-Policy Runtime
+
+```yaml
+milestone: candidate_b_async_retry_policy_receipt_v1
+source_cancel_retry_resume_selection: next_milestone_plans/Layer3_planning_docs/1010-cb-async-cancel-retry-resume-selection.md
+runtime_status: implemented
+selected_retry_policy_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy
+selected_retry_policy_mode: append_only_retry_policy_receipt_without_creating_retry_attempt_or_mutating_terminal_receipts
+selected_retry_policy_action: record_candidate_b_async_retry_policy
+selected_retry_policy_scope: server_owned_candidate_b_full_corpus_operator_workflow_failed_terminal_receipts
+selected_retry_policy_receipt_model: append_only_retry_policy_receipt_without_mutating_completion_failure_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipts
+selected_retry_policy_receipt_binding: completion_failure_receipt_id,completion_failure_receipt_hash,completion_failure_authority_hash,terminal_outcome,terminal_outcome_hash,worker_attempt_receipt_id,worker_attempt_receipt_hash,worker_attempt_authority_hash,latest_progress_checkpoint_receipt_id,latest_progress_checkpoint_receipt_hash,queue_state_receipt_id,scheduler_lease_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_policy_hash
+selected_retry_policy_idempotency_basis: client_request_id_plus_retry_policy_authority_hash
+terminal_outcome_required_for_retry: failed
+completed_terminal_receipt_retry_rejected: true
+missing_terminal_receipt_retry_rejected: true
+stale_terminal_receipt_retry_rejected: true
+terminal_conflict_retry_rejected: true
+retry_policy_runtime_selected: true
+retry_attempt_creation_admitted_now: false
+retry_attempt_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+completion_failure_receipt_mutation_admitted: false
+progress_checkpoint_receipt_mutation_admitted: false
+worker_attempt_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_exception_trace_admitted: false
+raw_log_excerpt_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+next_exact_posture: candidate_b_async_retry_attempt_authority_selection_v1
+```
+
+This runtime records server-owned append-only retry-policy receipts over existing failed terminal completion/failure receipts. It rejects completed terminal receipts, stale terminal authority, duplicate retry-policy receipts for the same failed terminal receipt, and raw paths, URLs, traces, logs, artifact bytes, provider refs, connector controls, selector mutation, job execution, cancel, retry-attempt, or resume requests.
+
+The runtime intentionally does not create a retry attempt. The next useful slice is a separate retry-attempt authority selection that decides how a retry-policy receipt can admit new queue/lease/attempt lineage without mutating the failed terminal receipt or the original attempt chain.

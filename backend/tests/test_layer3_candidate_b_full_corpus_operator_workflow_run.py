@@ -20,6 +20,7 @@ from app.services import layer3_candidate_b_full_corpus_operator_workflow_comple
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_lifecycle as workflow_lifecycle
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint as workflow_progress_checkpoint
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state
+from app.services import layer3_candidate_b_full_corpus_operator_workflow_retry_policy as workflow_retry_policy
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease as workflow_scheduler_lease
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status
@@ -40,6 +41,7 @@ PROGRESS_CHECKPOINT_ENDPOINT = (
 COMPLETION_FAILURE_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/completion/failure"
 )
+RETRY_POLICY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/policy"
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
 CANDIDATE_B_RUN_ID = "candidate-b-run"
@@ -350,6 +352,46 @@ def _completion_failure_request(
     return payload
 
 
+def _retry_policy_request(
+    history: dict[str, Any],
+    row: dict[str, Any],
+    completion_failure_body: dict[str, Any],
+    **overrides: Any,
+) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-retry-policy",
+        "retry_policy_mode": workflow_retry_policy.RETRY_POLICY_MODE,
+        "operator_decision": workflow_retry_policy.OPERATOR_DECISION,
+        "retry_policy_result": "eligible",
+        "retry_policy_reason": "operator_safe_retryable_failure",
+        "completion_failure_receipt_id": completion_failure_body["completion_failure_receipt_id"],
+        "completion_failure_receipt_hash": completion_failure_body["completion_failure_receipt_hash"],
+        "completion_failure_authority_hash": completion_failure_body["completion_failure_authority_hash"],
+        "terminal_outcome": completion_failure_body["terminal_outcome"],
+        "terminal_outcome_hash": completion_failure_body["terminal_outcome_hash"],
+        "latest_progress_checkpoint_receipt_id": completion_failure_body["latest_progress_checkpoint_receipt_id"],
+        "latest_progress_checkpoint_receipt_hash": completion_failure_body["latest_progress_checkpoint_receipt_hash"],
+        "latest_progress_checkpoint_authority_hash": completion_failure_body["latest_progress_checkpoint_authority_hash"],
+        "progress_checkpoint_sequence": completion_failure_body["progress_checkpoint_sequence"],
+        "worker_attempt_receipt_id": completion_failure_body["worker_attempt_receipt_id"],
+        "worker_attempt_receipt_hash": completion_failure_body["worker_attempt_receipt_hash"],
+        "worker_attempt_authority_hash": completion_failure_body["worker_attempt_authority_hash"],
+        "scheduler_lease_receipt_id": completion_failure_body["scheduler_lease_receipt_id"],
+        "scheduler_lease_receipt_hash": completion_failure_body["scheduler_lease_receipt_hash"],
+        "scheduler_lease_authority_hash": completion_failure_body["scheduler_lease_authority_hash"],
+        "queue_state_receipt_id": completion_failure_body["queue_state_receipt_id"],
+        "queue_state_receipt_hash": completion_failure_body["queue_state_receipt_hash"],
+        "queue_state_authority_hash": completion_failure_body["queue_state_authority_hash"],
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
 def _worker_attempt_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     _write_source_receipt()
     client.post(RUN_ENDPOINT, json=_run_request()).json()
@@ -374,6 +416,22 @@ def _progress_checkpoint_chain(client: TestClient) -> tuple[dict[str, Any], dict
         json=_progress_checkpoint_request(history_body, row, worker_attempt_body),
     ).json()
     return history_body, row, progress_checkpoint_body
+
+
+def _failed_completion_failure_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    history_body, row, progress_checkpoint_body = _progress_checkpoint_chain(client)
+    completion_failure_body = client.post(
+        COMPLETION_FAILURE_ENDPOINT,
+        json=_completion_failure_request(
+            history_body,
+            row,
+            progress_checkpoint_body,
+            terminal_outcome="failed",
+            terminal_failure_code="operator_safe_failure",
+            terminal_failure_phase="analysis",
+        ),
+    ).json()
+    return history_body, row, completion_failure_body
 
 
 def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt(
@@ -1263,6 +1321,127 @@ def test_candidate_b_full_corpus_operator_workflow_completion_failure_service_re
     assert exc_info.value.code == (
         "candidate_b_full_corpus_operator_workflow_completion_failure_forbidden_request_fields"
     )
+    assert exc_info.value.details["blocked_fields"] == ["local_path"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_policy_records_append_only(
+    client: TestClient,
+) -> None:
+    history_body, row, completion_failure_body = _failed_completion_failure_chain(client)
+
+    response = client.post(
+        RETRY_POLICY_ENDPOINT,
+        json=_retry_policy_request(history_body, row, completion_failure_body),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_retry_policy.SCHEMA_ID
+    assert body["mode"] == workflow_retry_policy.RETRY_POLICY_MODE
+    assert body["retry_policy_state"] == "retry_policy_recorded"
+    assert body["retry_policy_result"] == "eligible"
+    assert body["completion_failure_receipt_id"] == completion_failure_body["completion_failure_receipt_id"]
+    assert body["completion_failure_receipt_hash"] == completion_failure_body["completion_failure_receipt_hash"]
+    assert body["completion_failure_authority_hash"] == completion_failure_body["completion_failure_authority_hash"]
+    assert body["terminal_outcome"] == "failed"
+    assert body["terminal_failure_code"] == "operator_safe_failure"
+    assert body["terminal_failure_phase"] == "analysis"
+    assert body["append_only_retry_policy_receipt"] is True
+    assert body["exclusive_retry_policy_per_failed_terminal_receipt"] is True
+    assert body["retry_attempt_created"] is False
+    assert body["completion_failure_receipt_mutated"] is False
+    assert body["progress_checkpoint_receipt_mutated"] is False
+    assert body["worker_attempt_receipt_mutated"] is False
+    assert body["scheduler_lease_receipt_mutated"] is False
+    assert body["queue_state_receipt_mutated"] is False
+    assert body["source_run_receipt_mutated"] is False
+    assert body["retry_policy_runtime_selected"] is True
+    assert body["retry_attempt_runtime_selected_now"] is False
+    assert body["cancel_runtime_selected_now"] is False
+    assert body["resume_runtime_selected_now"] is False
+    assert body["raw_exception_trace_admitted"] is False
+    assert body["raw_log_excerpt_admitted"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["retry_policy_endpoint"] == RETRY_POLICY_ENDPOINT
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_policy_is_idempotent(
+    client: TestClient,
+) -> None:
+    history_body, row, completion_failure_body = _failed_completion_failure_chain(client)
+    request = _retry_policy_request(history_body, row, completion_failure_body)
+
+    first = client.post(RETRY_POLICY_ENDPOINT, json=request).json()
+    second_response = client.post(RETRY_POLICY_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["retry_policy_receipt_id"] == first["retry_policy_receipt_id"]
+    assert second["retry_policy_receipt_hash"] == first["retry_policy_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_policy_rejects_completed_terminal(
+    client: TestClient,
+) -> None:
+    history_body, row, progress_checkpoint_body = _progress_checkpoint_chain(client)
+    completion_failure_body = client.post(
+        COMPLETION_FAILURE_ENDPOINT,
+        json=_completion_failure_request(history_body, row, progress_checkpoint_body),
+    ).json()
+
+    response = client.post(
+        RETRY_POLICY_ENDPOINT,
+        json=_retry_policy_request(history_body, row, completion_failure_body),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_policy_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_retry_policy_completed_terminal_receipt_rejected"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_policy_rejects_stale_terminal(
+    client: TestClient,
+) -> None:
+    history_body, row, completion_failure_body = _failed_completion_failure_chain(client)
+
+    response = client.post(
+        RETRY_POLICY_ENDPOINT,
+        json=_retry_policy_request(
+            history_body,
+            row,
+            completion_failure_body,
+            completion_failure_receipt_hash="6" * 64,
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_policy_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_retry_policy_stale_terminal_receipt"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_policy_service_rejects_raw_authority(
+    client: TestClient,
+) -> None:
+    history_body, row, completion_failure_body = _failed_completion_failure_chain(client)
+    payload = _retry_policy_request(history_body, row, completion_failure_body, local_path="C:\\raw\\candidate-b")
+
+    with pytest.raises(workflow_retry_policy.CandidateBFullCorpusOperatorWorkflowRetryPolicyError) as exc_info:
+        workflow_retry_policy.record_candidate_b_full_corpus_operator_workflow_retry_policy(payload)
+
+    assert exc_info.value.code == "candidate_b_full_corpus_operator_workflow_retry_policy_forbidden_request_fields"
     assert exc_info.value.details["blocked_fields"] == ["local_path"]
 
 
