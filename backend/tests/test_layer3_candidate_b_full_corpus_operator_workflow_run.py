@@ -692,6 +692,10 @@ def _retry_progress_checkpoint_chain(client: TestClient) -> tuple[dict[str, Any]
     return history_body, row, retry_progress_checkpoint_body
 
 
+def _workflow_receipt_file(receipt_id: str) -> Path:
+    return Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir) / receipt_id / "receipt.json"
+
+
 def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt(
     client: TestClient,
 ) -> None:
@@ -731,6 +735,13 @@ def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatibl
     assert status_body["workflow_receipt_id"] == body["operator_workflow_receipt_id"]
     assert status_body["workflow_receipt_hash"] == body["operator_workflow_receipt_hash"]
     assert status_body["workflow_status"] == "proven"
+    retry_terminal_projection = status_body["retry_terminal_status_projection"]
+    assert retry_terminal_projection["retry_terminal_projection_state"] == "not_recorded"
+    assert retry_terminal_projection["read_only_retry_terminal_projection"] is True
+    assert retry_terminal_projection["retry_completion_failure_receipt_available"] is False
+    assert retry_terminal_projection["missing_retry_terminal_receipt_projects_not_recorded"] is True
+    assert retry_terminal_projection["retry_terminal_receipt_creation_admitted_now"] is False
+    assert retry_terminal_projection["retry_terminal_status_projection_runtime_selected"] is True
 
 
 def test_candidate_b_full_corpus_operator_workflow_run_is_idempotent(client: TestClient) -> None:
@@ -767,6 +778,7 @@ def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_ru
     assert body["cancel_runtime_admitted"] is False
     assert body["queue_state_authority_runtime_admitted"] is True
     assert body["queue_scheduler_runtime_admitted"] is True
+    assert body["retry_terminal_status_projection_runtime_admitted"] is True
     assert body["worker_attempt_runtime_admitted"] is True
     assert body["background_process_runtime_admitted"] is False
     assert body["job_execution_runtime_admitted"] is False
@@ -782,6 +794,9 @@ def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_ru
     assert row["compare_target_set_hash"] == COMPARE_TARGET_SET_HASH
     assert row["run_state"] == "proven"
     assert row["status_endpoint"] == STATUS_ENDPOINT
+    assert row["retry_terminal_status_projection"]["retry_terminal_projection_state"] == "not_recorded"
+    assert row["retry_terminal_status_projection"]["read_only_retry_terminal_projection"] is True
+    assert row["retry_terminal_status_projection"]["retry_terminal_receipt_creation_admitted_now"] is False
     assert row["raw_local_path_exposed"] is False
     assert row["raw_url_exposed"] is False
     assert row["selector_mutation_performed"] is False
@@ -2458,6 +2473,176 @@ def test_candidate_b_full_corpus_operator_workflow_retry_completion_failure_reco
     assert body["retry_terminal_failure_payload_operator_safe"] is True
     assert body["raw_exception_trace_admitted"] is False
     assert body["raw_log_excerpt_admitted"] is False
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_reports_completed(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_response = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    )
+    assert terminal_response.status_code == 200
+    terminal_body = terminal_response.json()
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 200
+    projection = status_response.json()["retry_terminal_status_projection"]
+    assert projection["retry_terminal_projection_state"] == "completed"
+    assert projection["read_only_retry_terminal_projection"] is True
+    assert projection["retry_completion_failure_receipt_available"] is True
+    assert (
+        projection["retry_completion_failure_receipt_id"]
+        == terminal_body["retry_completion_failure_receipt_id"]
+    )
+    assert (
+        projection["retry_completion_failure_receipt_hash"]
+        == terminal_body["retry_completion_failure_receipt_hash"]
+    )
+    assert (
+        projection["retry_completion_failure_authority_hash"]
+        == terminal_body["retry_completion_failure_authority_hash"]
+    )
+    assert projection["retry_worker_attempt_receipt_id"] == terminal_body["retry_worker_attempt_receipt_id"]
+    assert (
+        projection["latest_retry_progress_checkpoint_receipt_id"]
+        == terminal_body["latest_retry_progress_checkpoint_receipt_id"]
+    )
+    assert projection["retry_terminal_outcome"] == "completed"
+    assert projection["terminal_failure_code"] == ""
+    assert projection["terminal_failure_phase"] == ""
+    assert projection["operator_safe_retry_terminal_failure_code_visible"] is False
+    assert projection["operator_safe_retry_terminal_failure_phase_visible"] is False
+    assert projection["retry_terminal_status_projection_runtime_selected"] is True
+    assert projection["retry_terminal_receipt_creation_admitted_now"] is False
+    assert projection["retry_completion_failure_receipt_mutation_admitted"] is False
+    assert projection["retry_progress_checkpoint_receipt_mutation_admitted"] is False
+    assert projection["retry_worker_attempt_receipt_mutation_admitted"] is False
+    assert projection["job_execution_runtime_selected_now"] is False
+    assert projection["cancel_runtime_selected_now"] is False
+    assert projection["resume_runtime_selected_now"] is False
+    assert projection["raw_local_path_exposed"] is False
+    assert projection["raw_url_exposed"] is False
+    assert projection["artifact_bytes_exposed"] is False
+
+    history_response = client.get(HISTORY_ENDPOINT)
+    assert history_response.status_code == 200
+    refreshed_history = history_response.json()
+    assert refreshed_history["history_hash"] == history_body["history_hash"]
+    assert refreshed_history["history_rows"][0]["row_hash"] == row["row_hash"]
+    history_projection = refreshed_history["history_rows"][0]["retry_terminal_status_projection"]
+    assert history_projection["retry_terminal_projection_state"] == "completed"
+    assert (
+        history_projection["retry_completion_failure_receipt_id"]
+        == terminal_body["retry_completion_failure_receipt_id"]
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_reports_failed(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_response = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(
+            history_body,
+            row,
+            retry_progress_checkpoint_body,
+            retry_terminal_outcome="failed",
+            terminal_failure_code="operator_safe_retry_failure",
+            terminal_failure_phase="analysis",
+        ),
+    )
+    assert terminal_response.status_code == 200
+    terminal_body = terminal_response.json()
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 200
+    projection = status_response.json()["retry_terminal_status_projection"]
+    assert projection["retry_terminal_projection_state"] == "failed"
+    assert projection["retry_terminal_outcome"] == "failed"
+    assert projection["terminal_failure_code"] == "operator_safe_retry_failure"
+    assert projection["terminal_failure_phase"] == "analysis"
+    assert projection["operator_safe_retry_terminal_failure_code_visible"] is True
+    assert projection["operator_safe_retry_terminal_failure_phase_visible"] is True
+    assert projection["retry_terminal_failure_payload_operator_safe"] is True
+    assert projection["retry_completion_failure_receipt_id"] == terminal_body["retry_completion_failure_receipt_id"]
+    assert projection["retry_completion_failure_authority_hash"] == terminal_body[
+        "retry_completion_failure_authority_hash"
+    ]
+    assert projection["raw_exception_trace_admitted"] is False
+    assert projection["raw_log_excerpt_admitted"] is False
+    assert projection["raw_local_path_exposed"] is False
+    assert projection["raw_url_exposed"] is False
+    assert projection["artifact_bytes_exposed"] is False
+
+    history_response = client.get(HISTORY_ENDPOINT)
+    assert history_response.status_code == 200
+    refreshed_history = history_response.json()
+    assert refreshed_history["history_hash"] == history_body["history_hash"]
+    assert refreshed_history["history_rows"][0]["row_hash"] == row["row_hash"]
+    history_projection = refreshed_history["history_rows"][0]["retry_terminal_status_projection"]
+    assert history_projection["retry_terminal_projection_state"] == "failed"
+    assert history_projection["terminal_failure_code"] == "operator_safe_retry_failure"
+    assert history_projection["terminal_failure_phase"] == "analysis"
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_rejects_stale_receipt(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    ).json()
+    receipt_file = _workflow_receipt_file(terminal_body["retry_completion_failure_receipt_id"])
+    receipt = json.loads(receipt_file.read_text(encoding="utf-8"))
+    receipt["operator_workflow_receipt_hash"] = "6" * 64
+    receipt_file.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 409
+    assert status_response.json()["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_mismatch"
+    )
+    history_response = client.get(HISTORY_ENDPOINT)
+    assert history_response.status_code == 409
+    assert history_response.json()["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_history_"
+        "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_mismatch"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_rejects_ambiguous_receipts(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    ).json()
+    receipt_file = _workflow_receipt_file(terminal_body["retry_completion_failure_receipt_id"])
+    duplicate_id = f"{workflow_status.RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-{'9' * 24}"
+    duplicate_file = _workflow_receipt_file(duplicate_id)
+    duplicate_file.parent.mkdir(parents=True, exist_ok=True)
+    duplicate_file.write_text(receipt_file.read_text(encoding="utf-8"), encoding="utf-8")
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 409
+    assert status_response.json()["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous"
+    )
+    history_response = client.get(HISTORY_ENDPOINT)
+    assert history_response.status_code == 409
+    assert history_response.json()["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_history_"
+        "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous"
+    )
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_completion_failure_rejects_stale_retry_progress_checkpoint(

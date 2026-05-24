@@ -40,6 +40,7 @@ STATUS_HASH_KEYS = (
     "layer3",
     "artifact_family",
     "runtime_root_lifecycle",
+    "retry_terminal_status_projection",
     "operator_projection",
 )
 WORKFLOW_RECEIPT_HASH_KEYS = (
@@ -55,6 +56,18 @@ WORKFLOW_RECEIPT_HASH_KEYS = (
     "downstream_proof_id",
     "downstream_proof_hash",
     "coverage_count",
+)
+RETRY_COMPLETION_FAILURE_SCHEMA_ID = (
+    "layer3.candidate_b_full_corpus_operator_workflow_retry_completion_failure.v1"
+)
+RETRY_COMPLETION_FAILURE_MODE = (
+    "append_only_retry_completion_failure_receipt_without_cancel_resume_job_execution_or_source_receipt_mutation"
+)
+RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX = (
+    f"{WORKFLOW_RECEIPT_PREFIX}-retry-completion-failure"
+)
+RETRY_TERMINAL_STATUS_PROJECTION_MODE = (
+    "read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation"
 )
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
@@ -83,6 +96,7 @@ _ALLOWED_REF_SCHEMES = (
     "redacted://",
     "candidate-b-runtime-bridge://",
     "candidate-b-full-corpus-operator-workflow://",
+    "candidate-b-full-corpus-operator-workflow-retry-completion-failure://",
 )
 
 
@@ -141,6 +155,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
     layer3 = _workflow_layer3_projection(receipt)
     artifact_family = _workflow_artifact_family(receipt)
     runtime_root_lifecycle = _workflow_runtime_root_lifecycle(receipt)
+    retry_terminal_status_projection = _retry_terminal_status_projection(receipt_id, receipt_hash)
     operator_projection = {
         "workflow_status_visible": True,
         "workflow_receipt_projection_visible": True,
@@ -150,6 +165,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "eligibility_summary_projection_visible": True,
         "baseline_rollback_projection_visible": True,
         "runtime_root_lifecycle_projection_visible": runtime_root_lifecycle["available"],
+        "retry_terminal_status_projection_visible": True,
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
         "artifact_bytes_exposed": False,
@@ -177,6 +193,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "layer3": layer3,
         "artifact_family": artifact_family,
         "runtime_root_lifecycle": runtime_root_lifecycle,
+        "retry_terminal_status_projection": retry_terminal_status_projection,
         "operator_projection": operator_projection,
     }
     status_hash = _stable_hash({key: status_input[key] for key in STATUS_HASH_KEYS})
@@ -255,15 +272,7 @@ def _validate_storage_id(value: str, *, prefix: str) -> None:
 
 
 def _read_workflow_receipt(receipt_id: str) -> dict[str, Any]:
-    configured = str(settings.layer3_candidate_b_full_corpus_operator_workflow_dir or "").strip()
-    root = Path(configured)
-    if not configured or not root.is_absolute():
-        raise CandidateBFullCorpusOperatorWorkflowStatusError(
-            "candidate_b_full_corpus_operator_workflow_status_dir_invalid",
-            "The configured Candidate B full-corpus operator workflow receipt directory is missing or not absolute.",
-            http_status=409,
-        )
-    path = root / receipt_id / "receipt.json"
+    path = _workflow_receipt_root() / receipt_id / "receipt.json"
     if not path.is_file():
         raise CandidateBFullCorpusOperatorWorkflowStatusError(
             "candidate_b_full_corpus_operator_workflow_receipt_missing",
@@ -287,6 +296,24 @@ def _read_workflow_receipt(receipt_id: str) -> dict[str, Any]:
             http_status=409,
         )
     return receipt
+
+
+def _workflow_receipt_root() -> Path:
+    configured = str(settings.layer3_candidate_b_full_corpus_operator_workflow_dir or "").strip()
+    root = Path(configured)
+    if not configured or not root.is_absolute():
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_dir_invalid",
+            "The configured Candidate B full-corpus operator workflow receipt directory is missing or not absolute.",
+            http_status=409,
+        )
+    if not root.is_dir():
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_dir_missing",
+            "The configured Candidate B full-corpus operator workflow receipt directory does not exist.",
+            http_status=404,
+        )
+    return root
 
 
 def _validate_workflow_receipt(receipt: Mapping[str, Any], *, receipt_id: str, fields: Mapping[str, Any]) -> str:
@@ -622,6 +649,274 @@ def _workflow_runtime_root_lifecycle(receipt: Mapping[str, Any]) -> dict[str, An
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
     }
+
+
+def _retry_terminal_status_projection(
+    operator_workflow_receipt_id: str,
+    operator_workflow_receipt_hash: str,
+) -> dict[str, Any]:
+    root = _workflow_receipt_root()
+    matches: list[tuple[str, dict[str, Any]]] = []
+    for receipt_file in sorted(root.glob(f"{RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-*/receipt.json")):
+        receipt_id = receipt_file.parent.name
+        _validate_storage_id(receipt_id, prefix=RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX)
+        receipt = _read_json_receipt(
+            receipt_file,
+            code="candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_unreadable",
+            message="A Candidate B retry terminal receipt could not be read for status projection.",
+        )
+        if receipt.get("operator_workflow_receipt_id") == operator_workflow_receipt_id:
+            matches.append((receipt_id, receipt))
+    if not matches:
+        return _retry_terminal_not_recorded_projection()
+    if len(matches) > 1:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous",
+            "Candidate B workflow status found multiple retry terminal receipts for the selected workflow run.",
+            http_status=409,
+            details={
+                "operator_workflow_receipt_id": operator_workflow_receipt_id,
+                "retry_completion_failure_receipt_ids": [receipt_id for receipt_id, _receipt in matches],
+            },
+        )
+    receipt_id, receipt = matches[0]
+    return _validated_retry_terminal_projection(
+        receipt_id,
+        receipt,
+        operator_workflow_receipt_id=operator_workflow_receipt_id,
+        operator_workflow_receipt_hash=operator_workflow_receipt_hash,
+    )
+
+
+def _retry_terminal_not_recorded_projection() -> dict[str, Any]:
+    return {
+        "retry_terminal_projection_state": "not_recorded",
+        "retry_terminal_status_projection_mode": RETRY_TERMINAL_STATUS_PROJECTION_MODE,
+        "retry_terminal_status_projection_surfaces": ["status", "history"],
+        "read_only_retry_terminal_projection": True,
+        "retry_completion_failure_receipt_available": False,
+        "retry_completion_failure_receipt_id": "",
+        "retry_completion_failure_receipt_hash": "",
+        "retry_completion_failure_authority_hash": "",
+        "retry_worker_attempt_receipt_id": "",
+        "retry_worker_attempt_authority_hash": "",
+        "latest_retry_progress_checkpoint_receipt_id": "",
+        "latest_retry_progress_checkpoint_authority_hash": "",
+        "retry_terminal_outcome": "not_recorded",
+        "retry_terminal_outcome_hash": "",
+        "terminal_failure_code": "",
+        "terminal_failure_phase": "",
+        "missing_retry_terminal_receipt_projects_not_recorded": True,
+        "stale_retry_terminal_receipt_rejected": True,
+        "ambiguous_retry_terminal_receipt_rejected": True,
+        "retry_terminal_failure_payload_operator_safe": True,
+        "operator_safe_retry_terminal_failure_code_visible": False,
+        "operator_safe_retry_terminal_failure_phase_visible": False,
+        "retry_terminal_receipt_creation_admitted_now": False,
+        "retry_completion_failure_receipt_mutation_admitted": False,
+        "retry_progress_checkpoint_receipt_mutation_admitted": False,
+        "retry_worker_attempt_receipt_mutation_admitted": False,
+        "retry_scheduler_lease_receipt_mutation_admitted": False,
+        "retry_queue_state_receipt_mutation_admitted": False,
+        "retry_policy_receipt_mutation_admitted": False,
+        "completion_failure_receipt_mutation_admitted": False,
+        "failed_worker_attempt_receipt_mutation_admitted": False,
+        "progress_checkpoint_receipt_mutation_admitted": False,
+        "scheduler_lease_receipt_mutation_admitted": False,
+        "queue_state_receipt_mutation_admitted": False,
+        "source_run_receipt_mutation_admitted": False,
+        "retry_terminal_status_projection_runtime_selected": True,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "cancel_runtime_selected_now": False,
+        "resume_runtime_selected_now": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+
+
+def _validated_retry_terminal_projection(
+    receipt_id: str,
+    receipt: Mapping[str, Any],
+    *,
+    operator_workflow_receipt_id: str,
+    operator_workflow_receipt_hash: str,
+) -> dict[str, Any]:
+    expected = {
+        "schema_id": RETRY_COMPLETION_FAILURE_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "mode": RETRY_COMPLETION_FAILURE_MODE,
+        "operator_decision": "record_candidate_b_async_retry_completion_failure",
+        "status": "available",
+        "retry_completion_failure_state": "retry_completion_failure_recorded",
+        "retry_completion_failure_receipt_id": receipt_id,
+        "operator_workflow_receipt_id": operator_workflow_receipt_id,
+        "operator_workflow_receipt_hash": operator_workflow_receipt_hash,
+        "append_only_retry_completion_failure_receipt": True,
+        "exclusive_retry_terminal_receipt_per_retry_worker_attempt": True,
+        "retry_progress_checkpoint_receipt_mutated": False,
+        "retry_worker_attempt_receipt_mutated": False,
+        "retry_scheduler_lease_receipt_mutated": False,
+        "retry_queue_state_receipt_mutated": False,
+        "retry_policy_receipt_mutated": False,
+        "completion_failure_receipt_mutated": False,
+        "failed_worker_attempt_receipt_mutated": False,
+        "progress_checkpoint_receipt_mutated": False,
+        "scheduler_lease_receipt_mutated": False,
+        "queue_state_receipt_mutated": False,
+        "source_run_receipt_mutated": False,
+        "retry_completion_failure_runtime_selected": True,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "cancel_runtime_selected_now": False,
+        "resume_runtime_selected_now": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+        "retry_terminal_failure_payload_operator_safe": True,
+    }
+    mismatches = [
+        {"field": field, "expected": expected_value, "received": receipt.get(field)}
+        for field, expected_value in expected.items()
+        if receipt.get(field) != expected_value
+    ]
+    receipt_hash = _stable_hash(
+        {
+            key: value
+            for key, value in receipt.items()
+            if key not in {"retry_completion_failure_receipt_hash", "server_time"}
+        }
+    )
+    if receipt.get("retry_completion_failure_receipt_hash") != receipt_hash:
+        mismatches.append(
+            {
+                "field": "retry_completion_failure_receipt_hash",
+                "expected": receipt_hash,
+                "received": receipt.get("retry_completion_failure_receipt_hash"),
+            }
+        )
+    retry_terminal_outcome = str(receipt.get("retry_terminal_outcome") or "")
+    if retry_terminal_outcome not in {"completed", "failed"}:
+        mismatches.append(
+            {
+                "field": "retry_terminal_outcome",
+                "expected": ["completed", "failed"],
+                "received": retry_terminal_outcome,
+            }
+        )
+    terminal_failure_code = receipt.get("terminal_failure_code")
+    terminal_failure_phase = receipt.get("terminal_failure_phase")
+    if retry_terminal_outcome == "completed" and (
+        terminal_failure_code not in (None, "") or terminal_failure_phase not in (None, "")
+    ):
+        mismatches.append(
+            {
+                "field": "terminal_failure_code/terminal_failure_phase",
+                "expected": None,
+                "received": [terminal_failure_code, terminal_failure_phase],
+            }
+        )
+    if retry_terminal_outcome == "failed":
+        for field, value in {
+            "terminal_failure_code": terminal_failure_code,
+            "terminal_failure_phase": terminal_failure_phase,
+        }.items():
+            if not isinstance(value, str) or not re.fullmatch(r"[a-z0-9_-]{1,80}", value):
+                mismatches.append(
+                    {
+                        "field": field,
+                        "expected": "operator-safe lowercase token",
+                        "received": value,
+                    }
+                )
+    _assert_no_raw_authority_exposure(receipt)
+    if mismatches:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_mismatch",
+            "The selected Candidate B retry terminal receipt is stale or contradictory.",
+            http_status=409,
+            details={"retry_completion_failure_receipt_id": receipt_id, "mismatches": mismatches},
+        )
+    return {
+        "retry_terminal_projection_state": retry_terminal_outcome,
+        "retry_terminal_status_projection_mode": RETRY_TERMINAL_STATUS_PROJECTION_MODE,
+        "retry_terminal_status_projection_surfaces": ["status", "history"],
+        "read_only_retry_terminal_projection": True,
+        "retry_completion_failure_receipt_available": True,
+        "retry_completion_failure_receipt_id": receipt_id,
+        "retry_completion_failure_receipt_hash": receipt_hash,
+        "retry_completion_failure_authority_hash": str(
+            receipt["retry_completion_failure_authority_hash"]
+        ),
+        "retry_worker_attempt_receipt_id": str(receipt["retry_worker_attempt_receipt_id"]),
+        "retry_worker_attempt_authority_hash": str(receipt["retry_worker_attempt_authority_hash"]),
+        "latest_retry_progress_checkpoint_receipt_id": str(
+            receipt["latest_retry_progress_checkpoint_receipt_id"]
+        ),
+        "latest_retry_progress_checkpoint_authority_hash": str(
+            receipt["latest_retry_progress_checkpoint_authority_hash"]
+        ),
+        "retry_terminal_outcome": retry_terminal_outcome,
+        "retry_terminal_outcome_hash": str(receipt["retry_terminal_outcome_hash"]),
+        "terminal_failure_code": str(terminal_failure_code or ""),
+        "terminal_failure_phase": str(terminal_failure_phase or ""),
+        "missing_retry_terminal_receipt_projects_not_recorded": True,
+        "stale_retry_terminal_receipt_rejected": True,
+        "ambiguous_retry_terminal_receipt_rejected": True,
+        "retry_terminal_failure_payload_operator_safe": True,
+        "operator_safe_retry_terminal_failure_code_visible": retry_terminal_outcome == "failed",
+        "operator_safe_retry_terminal_failure_phase_visible": retry_terminal_outcome == "failed",
+        "retry_terminal_receipt_creation_admitted_now": False,
+        "retry_completion_failure_receipt_mutation_admitted": False,
+        "retry_progress_checkpoint_receipt_mutation_admitted": False,
+        "retry_worker_attempt_receipt_mutation_admitted": False,
+        "retry_scheduler_lease_receipt_mutation_admitted": False,
+        "retry_queue_state_receipt_mutation_admitted": False,
+        "retry_policy_receipt_mutation_admitted": False,
+        "completion_failure_receipt_mutation_admitted": False,
+        "failed_worker_attempt_receipt_mutation_admitted": False,
+        "progress_checkpoint_receipt_mutation_admitted": False,
+        "scheduler_lease_receipt_mutation_admitted": False,
+        "queue_state_receipt_mutation_admitted": False,
+        "source_run_receipt_mutation_admitted": False,
+        "retry_terminal_status_projection_runtime_selected": True,
+        "background_process_runtime_selected_now": False,
+        "job_execution_runtime_selected_now": False,
+        "cancel_runtime_selected_now": False,
+        "resume_runtime_selected_now": False,
+        "raw_exception_trace_admitted": False,
+        "raw_log_excerpt_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "selector_mutation_performed": False,
+    }
+
+
+def _read_json_receipt(path: Path, *, code: str, message: str) -> dict[str, Any]:
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            code,
+            message,
+            http_status=409,
+            details={"reason": str(exc)},
+        ) from exc
+    if not isinstance(receipt, dict):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_receipt_invalid",
+            "Candidate B workflow status encountered a non-object receipt.",
+            http_status=409,
+        )
+    return receipt
 
 
 def _negative_invariants(receipt: Mapping[str, Any]) -> dict[str, bool]:

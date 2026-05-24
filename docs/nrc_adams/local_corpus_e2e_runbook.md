@@ -2485,3 +2485,36 @@ next_exact_posture: candidate_b_async_retry_terminal_status_projection_v1
 ```
 
 The selected next slice should project retry terminal completion/failure authority through existing status and history surfaces. Missing retry terminal authority should show `not_recorded`; stale or ambiguous retry terminal authority must fail closed. This slice does not admit receipt creation, retry-lineage mutation, job execution, cancel/resume, source expansion, connector/provider writes, RAG/model runtime, or raw refs.
+
+## Candidate B Async Retry Terminal Status Projection Runtime
+
+```yaml
+milestone: candidate_b_async_retry_terminal_status_projection_v1
+source_retry_terminal_status_projection_selection: next_milestone_plans/Layer3_planning_docs/1022-cb-async-retry-terminal-status-projection-selection.md
+current_main_entry: f775019701ba0312e1638164e22d2de33c6564e3
+runtime_status: implemented
+selected_retry_terminal_status_projection_mode: read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation
+selected_retry_terminal_status_projection_surfaces: status,history
+existing_status_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+existing_history_endpoint_reused_for_retry_terminal_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_retry_completion_failure_endpoint_reused_for_retry_terminal_authority: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/completion/failure
+missing_retry_terminal_receipt_projects_not_recorded: true
+stale_retry_terminal_receipt_rejected: true
+ambiguous_retry_terminal_receipt_rejected: true
+history_row_hash_excludes_retry_terminal_status_projection: true
+history_hash_excludes_retry_terminal_status_projection: true
+retry_terminal_receipt_creation_admitted_now: false
+retry_completion_failure_receipt_mutation_admitted: false
+retry_progress_checkpoint_receipt_mutation_admitted: false
+retry_worker_attempt_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+retry_terminal_status_projection_runtime_selected: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+cancel_runtime_selected_now: false
+resume_runtime_selected_now: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_async_retry_terminal_rendered_status_projection_selection_v1
+```
+
+Operators can now inspect retry terminal completion/failure authority through existing workflow status and history responses. No terminal receipt projects as `not_recorded`; completed and failed terminal receipts project only redacted receipt/outcome/progress/worker-attempt authority; stale or ambiguous terminal receipts fail closed. The projection does not change row/history authority hashes, does not create receipts, does not mutate retry lineage, and does not admit job execution, cancel, resume, raw refs, provider writes, connector dispatch, RAG/model runtime, or full mockup activation.
