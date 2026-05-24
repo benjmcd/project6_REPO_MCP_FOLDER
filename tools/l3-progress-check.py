@@ -2716,9 +2716,15 @@ CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_START_CONTROL_FREEZE = (
 CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_START_CONTROL = (
     PLANNING_DOCS / "994-cb-rendered-run-start-control.md"
 )
+CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_LIVE_HTTP_PROOF = (
+    PLANNING_DOCS / "995-cb-rendered-run-live-http-proof.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
+)
+CANDIDATE_B_RENDERED_WORKFLOW_RUN_LIVE_HTTP_PROOF_SCRIPT = (
+    ROOT / "tools" / "prove_candidate_b_rendered_workflow_run_live_http.js"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST = (
     ROOT / "tests" / "test_candidate_b_full_corpus_operator_workflow.py"
@@ -92390,6 +92396,74 @@ def _check_candidate_b_rendered_operator_workflow_run_start_control(
                 )
 
 
+def _check_candidate_b_rendered_operator_workflow_run_live_http_proof(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_RENDERED_OPERATOR_WORKFLOW_RUN_LIVE_HTTP_PROOF: (
+            "Candidate B Rendered Workflow Run Live HTTP Proof",
+            "milestone: candidate_b_rendered_operator_workflow_run_live_http_operator_proof_v1",
+            "source_rendered_control_checkpoint: next_milestone_plans/Layer3_planning_docs/994-cb-rendered-run-start-control.md",
+            "source_live_http_api_checkpoint: next_milestone_plans/Layer3_planning_docs/992-cb-server-run-live-http-proof.md",
+            "current_main_entry: 1a124dfcfd548181acb633a9cacadcc1446f3228",
+            "execution_mode: live-http-rendered-browser",
+            "live_http_layer3_api_used: true",
+            "testclient_dependency_used: false",
+            "in_memory_db_used: false",
+            "playwright_browser_surface_used: true",
+            "selected_rendered_start_mode: rendered_candidate_b_full_corpus_operator_workflow_run_start_control",
+            "selected_rendered_progress_mode: rendered_candidate_b_full_corpus_operator_workflow_run_progress_control",
+            "run_endpoint_verified: true",
+            "status_endpoint_verified_after_rendered_run: true",
+            "run_endpoint_status_request_used_for_progress: true",
+            "rendered_payload_allowed_fields_only: true",
+            "headless_chromium_proof_hash: 3e92b0d89030d0d329b52c4cb6c77c3bc08adce41fd304676b76e0d02758791e",
+            "headed_chromium_proof_hash: 62a856b709e3504edf1307a33fc0275d5e8915dca7f0160563c5ec62d869869f",
+            "runtime_roots_submitted_by_browser: false",
+            "source_directory_submitted_by_browser: false",
+            "bridge_dir_submitted_by_browser: false",
+            "selector_mutation_performed: false",
+            "verification_headless_rendered_live_http: passed",
+            "verification_headed_rendered_live_http: passed",
+            "next_exact_posture: candidate_b_operator_workflow_run_history_and_lifecycle_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_rendered_operator_workflow_run_live_http_operator_proof_v1",
+            "source_rendered_control_checkpoint: next_milestone_plans/Layer3_planning_docs/994-cb-rendered-run-start-control.md",
+            "execution_mode: live-http-rendered-browser",
+            "run_endpoint_verified: true",
+            "status_endpoint_verified_after_rendered_run: true",
+            "run_endpoint_status_request_used_for_progress: true",
+            "rendered_payload_allowed_fields_only: true",
+            "verification_headless_rendered_live_http: passed",
+            "verification_headed_rendered_live_http: passed",
+            "next_exact_posture: candidate_b_operator_workflow_run_history_and_lifecycle_selection_v1",
+        ),
+        CANDIDATE_B_RENDERED_WORKFLOW_RUN_LIVE_HTTP_PROOF_SCRIPT: (
+            "candidate_b_rendered_operator_workflow_run_live_http_operator_proof_v1",
+            "rendered_candidate_b_full_corpus_operator_workflow_run_start_control",
+            "rendered_candidate_b_full_corpus_operator_workflow_run_progress_control",
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status",
+            "run_endpoint_status_request_used_for_progress",
+            "rendered_payload_allowed_fields_only",
+            "forbidden_rendered_payload_fields_present",
+            "runtime_roots_submitted_by_browser",
+            "source_directory_submitted_by_browser",
+            "bridge_dir_submitted_by_browser",
+            "frontend_durable_authority",
+            "full_mockup_activation_enabled",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B rendered workflow run live HTTP proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -93232,6 +93306,7 @@ def main() -> int:
     _check_candidate_b_server_owned_workflow_run_api_live_http_proof(errors)
     _check_candidate_b_rendered_operator_workflow_run_start_control_freeze(errors)
     _check_candidate_b_rendered_operator_workflow_run_start_control(errors)
+    _check_candidate_b_rendered_operator_workflow_run_live_http_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
