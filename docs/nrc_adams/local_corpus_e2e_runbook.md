@@ -2869,3 +2869,47 @@ next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator
 ```
 
 Operators can now adopt a terminal process result only after the selected workflow row exposes a started process-execution receipt. Completed adoption must point at a validated Candidate B workflow result receipt from the same lineage; failed, blocked, or expired adoption must use only operator-safe failure code, phase, and summary hash. The browser control cannot provide commands, runtime roots, local paths, raw URLs, stdout, stderr, traces, logs, artifact bytes, provider refs, connector destinations, model/RAG controls, selector mutations, or durable authority.
+
+### Candidate B Async Adopted Process Result Downstream Operator Proof Selection
+
+```yaml
+milestone: candidate_b_async_adopted_process_result_downstream_operator_proof_selection_v1
+source_process_completion_result_runtime: next_milestone_plans/Layer3_planning_docs/1031-cb-async-process-completion-result-adoption-runtime.md
+current_main_entry: e47446b193e94f50de2822a2393d011376278414
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: candidate_b_async_adopted_process_result_downstream_operator_proof_v1
+selected_downstream_proof_mode: read_only_adopted_process_result_downstream_operator_proof_without_result_mutation_or_reexecution
+selected_downstream_proof_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/completion/result/downstream-proof
+selected_downstream_proof_action: record_candidate_b_async_adopted_process_result_downstream_operator_proof
+selected_downstream_proof_receipt_model: append_only_receipt_binding_process_completion_result_receipt_to_validated_adopted_result_status_and_downstream_proof
+completed_process_result_required: true
+failed_blocked_or_expired_process_result_must_reject: true
+adopted_result_status_request_revalidation_required: true
+adopted_result_downstream_proof_status_required: proven
+missing_process_completion_result_receipt_must_reject: true
+stale_process_completion_result_receipt_must_reject: true
+stale_or_unrelated_adopted_result_status_must_reject: true
+unproven_downstream_result_must_reject: true
+competing_adopted_result_downstream_proof_receipt_must_reject: true
+status_history_projection_required_after_downstream_proof: true
+rendered_operator_projection_required_after_downstream_proof: true
+actual_subprocess_spawn_admitted_now: false
+actual_corpus_processing_execution_admitted_now: false
+raw_stdout_admitted_after_sync: false
+raw_stderr_admitted_after_sync: false
+raw_local_path_exposed_after_sync: false
+raw_url_exposed_after_sync: false
+artifact_bytes_exposed_after_sync: false
+process_completion_result_receipt_mutation_admitted: false
+adopted_result_workflow_receipt_mutation_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_async_adopted_process_result_downstream_operator_proof_v1
+```
+
+The next selected runtime should prove that an adopted completed process result is downstream-usable by revalidating its stored result status request and existing downstream proof. It should not re-run Candidate B, replay Layer 3, mutate any source/result receipt, expose raw process output, or broaden source/provider/connector/RAG/model/full-mockup/default scope.
