@@ -934,3 +934,43 @@ next_exact_posture: candidate_b_rendered_operator_workflow_run_start_control_v1
 ```
 
 The next implementation may add a rendered start/progress control for the already-proven server-owned run endpoint. The browser may submit only bounded server authority identifiers and intent, then must use the returned `status_request` to inspect progress through the existing read-only status endpoint. It must not submit runtime roots, source directories, bridge directories, raw paths, raw URLs, provider refs, connector destinations, selector mutations, or frontend durable authority.
+
+## Candidate B Rendered Workflow Run Start Control
+
+```yaml
+milestone: candidate_b_rendered_operator_workflow_run_start_control_v1
+source_authority_freeze: next_milestone_plans/Layer3_planning_docs/993-cb-rendered-run-start-freeze.md
+current_main_entry: 27d36a3c8c28cc5def58ac6a2b0cf63c532ee9ab
+runtime_status: implemented
+selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run
+existing_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+selected_rendered_start_mode: rendered_candidate_b_full_corpus_operator_workflow_run_start_control
+selected_rendered_progress_mode: rendered_candidate_b_full_corpus_operator_workflow_run_progress_control
+run_schema_id: layer3.candidate_b_full_corpus_operator_workflow_run.v1
+run_mode: candidate_b_full_corpus_operator_workflow_run_v1
+operator_decision: start_candidate_b_full_corpus_operator_workflow
+status_mode: candidate_b_full_corpus_operator_workflow_status_v1
+status_operator_decision: inspect_candidate_b_full_corpus_operator_workflow_status
+rendered_start_control_admitted: true
+rendered_progress_control_admitted: true
+rendered_status_control_remains_read_only: true
+run_endpoint_status_request_used_for_progress: true
+browser_supplied_runtime_roots_admitted: false
+browser_supplied_source_directory_admitted: false
+browser_supplied_bridge_dir_admitted: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+selector_mutation_performed: false
+queue_scheduler_runtime_admitted: contract_only
+cancel_runtime_admitted: contract_only
+proof_headless_chrome: passed
+proof_headed_chrome: passed
+verification_node_check: passed
+verification_backend_pytest: 25 passed
+verification_headless_e2e: 1 passed
+verification_headed_e2e: 1 passed
+next_exact_posture: candidate_b_rendered_operator_workflow_run_live_http_operator_proof_v1
+```
+
+The rendered control starts only a server-owned workflow run from already prepared Candidate B full-corpus server authority. It then follows the run endpoint's returned `status_request` into the existing read-only status endpoint. This does not add broad corpus processing start, browser-owned runtime roots, source-directory selection, queue scheduling beyond the existing contract-only response, cancel runtime, selector mutation, provider writes, connector dispatch, model runtime, or full mockup activation.

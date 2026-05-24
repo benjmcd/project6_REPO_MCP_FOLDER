@@ -7917,6 +7917,189 @@ test('Layer 3 workbench inspects Candidate B full-corpus workflow status through
   ]);
 });
 
+test('Layer 3 workbench starts Candidate B full-corpus workflow through rendered server-owned run control', async ({ page }) => {
+  const apiRequests = trackLayer3ApiRequests(page);
+  let workflowRunPayload = null;
+  let workflowStatusPayload = null;
+  const returnedStatusRequest = {
+    client_request_id: 'candidate-b-rendered-run-status-request',
+    status_mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+    operator_decision: 'inspect_candidate_b_full_corpus_operator_workflow_status',
+    operator_workflow_receipt_id: 'cb-full-corpus-operator-run-rendered-proof',
+    baseline_run_id: 'baseline-rendered-run-proof',
+    candidate_a_run_id: 'candidate-a-rendered-run-proof',
+    candidate_b_run_id: 'candidate-b-rendered-run-proof',
+    bridge_receipt_id: 'cb-runtime-l3-rendered-run-proof',
+    downstream_proof_id: 'cb-runtime-downstream-proof-rendered-run-proof',
+  };
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run', async (route) => {
+    workflowRunPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_run.v1',
+        schema_version: 1,
+        request_id: workflowRunPayload.client_request_id,
+        server_time: '2026-05-24T00:00:00Z',
+        mode: 'candidate_b_full_corpus_operator_workflow_run_v1',
+        status: 'proven',
+        run_state: 'proven',
+        state_machine: ['accepted', 'running', 'proven', 'blocked', 'cancelled', 'expired'],
+        operator_workflow_receipt_id: returnedStatusRequest.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: '2'.repeat(64),
+        run_receipt_id: returnedStatusRequest.operator_workflow_receipt_id,
+        run_receipt_hash: '3'.repeat(64),
+        run_receipt_ref: 'candidate-b-full-corpus-operator-workflow://cb-full-corpus-operator-run-rendered-proof/222222222222222222222222',
+        source_operator_workflow_receipt_id: 'cb-full-corpus-operator-source-rendered-proof',
+        source_operator_workflow_receipt_hash: '4'.repeat(64),
+        authority_basis_hash: '5'.repeat(64),
+        idempotency_key_hash: '6'.repeat(64),
+        idempotent_replay: false,
+        runtime_root_lifecycle: {
+          lifecycle_receipt_id: workflowRunPayload.runtime_root_lifecycle_receipt_id,
+          lifecycle_receipt_hash: '7'.repeat(64),
+        },
+        baseline_run_id: workflowRunPayload.baseline_run_id,
+        candidate_a_run_id: workflowRunPayload.candidate_a_run_id,
+        candidate_b_run_id: workflowRunPayload.candidate_b_run_id,
+        compare_target_set_hash: workflowRunPayload.compare_target_set_hash,
+        bridge_receipt_id: returnedStatusRequest.bridge_receipt_id,
+        bridge_receipt_hash: '8'.repeat(64),
+        downstream_proof_id: returnedStatusRequest.downstream_proof_id,
+        downstream_proof_hash: '9'.repeat(64),
+        coverage_count: 17,
+        corpus: { material_relative_name: workflowRunPayload.material_relative_name },
+        layer3: { downstream_proof_status: 'proven' },
+        artifact_family: { governed_retained_artifact_family_hash: 'a'.repeat(64) },
+        baseline_rollback: { available: true, selector: 'baseline' },
+        status_endpoint: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status',
+        status_request: returnedStatusRequest,
+        receipt_persisted: true,
+        queue_scheduler_admitted: 'contract_only',
+        cancel_endpoint_admitted: 'contract_only',
+        rendered_run_start_control_admitted: true,
+        rendered_progress_control_admitted: true,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+        negative_invariants: {
+          baseline_default_changed: false,
+          candidate_a_semantics_changed: false,
+          candidate_b_default_broadened_beyond_eligible_pdf: false,
+          frontend_durable_authority_enabled: false,
+        },
+        next_allowed_actions: [
+          'inspect the returned workflow receipt through the read-only status endpoint',
+        ],
+      }),
+    });
+  });
+  await page.route('**/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status', async (route) => {
+    workflowStatusPayload = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        schema_id: 'layer3.candidate_b_full_corpus_operator_workflow_status.v1',
+        schema_version: 1,
+        request_id: workflowStatusPayload.client_request_id,
+        server_time: '2026-05-24T00:00:01Z',
+        status: 'available',
+        mode: 'candidate_b_full_corpus_operator_workflow_status_v1',
+        workflow_receipt_id: workflowStatusPayload.operator_workflow_receipt_id,
+        workflow_receipt_hash: '2'.repeat(64),
+        workflow_status: 'proven',
+        workflow_status_hash: 'b'.repeat(64),
+        workflow_status_ref: 'candidate-b-full-corpus-operator-workflow-status://cb-full-corpus-operator-run-rendered-proof/bbbbbbbbbbbbbbbbbbbbbbbb',
+        baseline_run_id: workflowStatusPayload.baseline_run_id,
+        candidate_a_run_id: workflowStatusPayload.candidate_a_run_id,
+        candidate_b_run_id: workflowStatusPayload.candidate_b_run_id,
+        compare_target_set_hash: '5'.repeat(64),
+        bridge_receipt_id: workflowStatusPayload.bridge_receipt_id,
+        bridge_receipt_hash: '8'.repeat(64),
+        downstream_proof_id: workflowStatusPayload.downstream_proof_id,
+        downstream_proof_hash: '9'.repeat(64),
+        coverage_count: 17,
+        corpus: {
+          corpus_pdf_count: 69,
+          eligible_file_count: 71,
+          material_relative_name: 'text/target-00001.md',
+        },
+        layer3: {
+          bridge_status: 'prepared',
+          source_directory_scan_status: 'available',
+          downstream_proof_status: 'proven',
+          same_origin_delivery_available: true,
+        },
+        artifact_family: {
+          governed_retained_artifact_family_hash: 'a'.repeat(64),
+          role_counts: { visual_page_evidence: 1805, delivery_artifacts: 1873 },
+        },
+        operator_projection: {
+          raw_local_path_exposed: false,
+          raw_url_exposed: false,
+          frontend_durable_authority_enabled: false,
+        },
+        validate_only_triplet: true,
+        artifacts_seeded_or_generated_by_triplet_validator: false,
+        raw_local_path_exposed: false,
+        raw_url_exposed: false,
+        artifact_bytes_exposed: false,
+        selector_mutation_performed: false,
+      }),
+    });
+  });
+
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#candidate-b-default-promotion-status-panel');
+  const runForm = page.locator('#candidate-b-full-corpus-workflow-run-form');
+  await expect(runForm).toHaveAttribute('data-rendered-mode', 'rendered_candidate_b_full_corpus_operator_workflow_run_start_control');
+  await expect(runForm).toHaveAttribute('data-progress-rendered-mode', 'rendered_candidate_b_full_corpus_operator_workflow_run_progress_control');
+  await expect(runForm).toHaveAttribute('data-frontend-durable-authority', 'false');
+
+  await page.locator('#candidate-b-full-corpus-workflow-run-lifecycle-receipt-id').fill('cb-full-corpus-runtime-roots-rendered-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-run-baseline-run-id').fill('baseline-rendered-run-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-run-candidate-a-run-id').fill('candidate-a-rendered-run-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-run-candidate-b-run-id').fill('candidate-b-rendered-run-proof');
+  await page.locator('#candidate-b-full-corpus-workflow-run-compare-target-set-hash').fill('5'.repeat(64));
+  await page.locator('#candidate-b-full-corpus-workflow-run-material-relative-name').fill('text/target-00001.md');
+  await page.locator('#candidate-b-full-corpus-workflow-run-submit').click();
+
+  await expect(panel).toContainText('candidate_b_full_corpus_workflow_run_proven');
+  await expect(panel).toContainText('candidate_b_full_corpus_workflow_status_available');
+  await expect(panel).toContainText('cb-full-corpus-operator-run-rendered-proof');
+  await expect(panel).toContainText('authority basis hash');
+  await expect(panel).toContainText('raw local path exposed');
+  await expect(panel).toContainText('false');
+
+  expect(workflowRunPayload).toMatchObject({
+    run_mode: 'candidate_b_full_corpus_operator_workflow_run_v1',
+    operator_decision: 'start_candidate_b_full_corpus_operator_workflow',
+    runtime_root_lifecycle_receipt_id: 'cb-full-corpus-runtime-roots-rendered-proof',
+    baseline_run_id: 'baseline-rendered-run-proof',
+    candidate_a_run_id: 'candidate-a-rendered-run-proof',
+    candidate_b_run_id: 'candidate-b-rendered-run-proof',
+    compare_target_set_hash: '5'.repeat(64),
+    material_relative_name: 'text/target-00001.md',
+  });
+  expect(workflowRunPayload).not.toHaveProperty('raw_url');
+  expect(workflowRunPayload).not.toHaveProperty('local_path');
+  expect(workflowRunPayload).not.toHaveProperty('runtime_root');
+  expect(workflowRunPayload).not.toHaveProperty('source_directory');
+  expect(workflowRunPayload).not.toHaveProperty('bridge_dir');
+  expect(workflowRunPayload).not.toHaveProperty('selector_mutation_performed');
+  expect(workflowRunPayload).not.toHaveProperty('frontend_durable_authority');
+  expect(workflowStatusPayload).toEqual(returnedStatusRequest);
+  expect(apiRequests.filter((request) => (
+    request.path.includes('/source/ingestion/candidate-b/full-corpus/operator-workflow/')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run' },
+    { method: 'POST', path: '/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status' },
+  ]);
+});
+
 test('Layer 3 workbench inspects Candidate B final proof status through admitted server receipt revalidation', async ({ page }) => {
   const apiRequests = trackLayer3ApiRequests(page);
   let finalProofStatusPayload = null;

@@ -206,7 +206,8 @@ def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatibl
     assert body["source_operator_workflow_receipt_hash"] == source_receipt["receipt_hash"]
     assert body["runtime_root_lifecycle"]["lifecycle_receipt_id"] == RUNTIME_ROOT_LIFECYCLE_RECEIPT_ID
     assert body["compare_target_set_hash"] == COMPARE_TARGET_SET_HASH
-    assert body["rendered_run_start_control_admitted"] is False
+    assert body["rendered_run_start_control_admitted"] is True
+    assert body["rendered_progress_control_admitted"] is True
     assert body["selector_mutation_performed"] is False
     assert body["raw_local_path_exposed"] is False
     assert body["raw_url_exposed"] is False
