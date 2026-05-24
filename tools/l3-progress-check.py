@@ -2707,6 +2707,9 @@ CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_FREEZE = (
 CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_RUNTIME = (
     PLANNING_DOCS / "991-cb-server-run-api-runtime.md"
 )
+CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_LIVE_HTTP_PROOF = (
+    PLANNING_DOCS / "992-cb-server-run-live-http-proof.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -92143,6 +92146,84 @@ def _check_candidate_b_server_owned_workflow_run_api_runtime(errors: list[str]) 
                 )
 
 
+def _check_candidate_b_server_owned_workflow_run_api_live_http_proof(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_SERVER_OWNED_WORKFLOW_RUN_API_LIVE_HTTP_PROOF: (
+            "Candidate B Server-Owned Workflow Run API Live HTTP Proof",
+            "milestone: candidate_b_server_owned_workflow_run_api_live_http_proof_v1",
+            "source_runtime_checkpoint: next_milestone_plans/Layer3_planning_docs/991-cb-server-run-api-runtime.md",
+            "execution_mode: live-http",
+            "live_http_layer3_api_used: true",
+            "testclient_dependency_used: false",
+            "in_memory_db_used: false",
+            "durable_database_used: true",
+            "server_run_endpoint_verification_required: true",
+            "selected_run_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+            "run_mode: candidate_b_full_corpus_operator_workflow_run_v1",
+            "operator_decision: start_candidate_b_full_corpus_operator_workflow",
+            "server_run_endpoint_verified: true",
+            "status_endpoint_verified_after_server_run: true",
+            "server_run_state: proven",
+            "workflow_status_after_server_run: proven",
+            "operator_workflow_receipt_id: cb-full-corpus-operator-run-a281171ae1718620ff0dfdb8",
+            "operator_workflow_receipt_hash: 2c365c456eea0300c60a4d99c8ff28b8c3b79413087d6df03ffe962d292a9d87",
+            "source_operator_workflow_receipt_id: cb-full-corpus-operator-2c365c456eea0300c60a4d99",
+            "authority_basis_hash: b10068440d99e496dbace35fd004eb3d7b0e6b46bc703b3f2bdd435e3cac98b9",
+            "idempotency_key_hash: a281171ae1718620ff0dfdb8625d1561aa034fe750b9e164037999114353de5b",
+            "workflow_status_hash_after_server_run: 0e6005881f8b10f454fb40a0b06c298a8f4922c9da5343c5e9b21e051a5c002f",
+            "bridge_receipt_id: cb-runtime-l3-0110fe894c68d6a0291f9979",
+            "downstream_proof_id: cb-runtime-downstream-proof-b63d0968304450c4031312ba",
+            "runtime_root_lifecycle_receipt_id: cb-full-corpus-runtime-roots-ab3c4fd0b54ca670ada781f9",
+            "compare_target_set_hash: 1052eea1153d6fdb21abd18384abc5c2db73497c9d34f18ecf52239f71c82a2f",
+            "live_http_runtime_dirs_isolated: true",
+            "bridge_dir_outside_storage_root_required: true",
+            "raw_api_base_url_persisted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "selector_mutation_performed: false",
+            "rendered_run_start_control_admitted: false",
+            "rendered_progress_control_admitted: false",
+            "verification_result: proven",
+            "next_exact_posture: candidate_b_rendered_operator_workflow_run_start_control_freeze_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_server_owned_workflow_run_api_live_http_proof_v1",
+            "source_runtime_checkpoint: next_milestone_plans/Layer3_planning_docs/991-cb-server-run-api-runtime.md",
+            "execution_mode: live-http",
+            "durable_database_used: true",
+            "server_run_endpoint_verified: true",
+            "operator_workflow_receipt_id: cb-full-corpus-operator-run-a281171ae1718620ff0dfdb8",
+            "workflow_status_hash_after_server_run: 0e6005881f8b10f454fb40a0b06c298a8f4922c9da5343c5e9b21e051a5c002f",
+            "bridge_dir_outside_storage_root_required: true",
+            "next_exact_posture: candidate_b_rendered_operator_workflow_run_start_control_freeze_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER: (
+            "server_run_endpoint_verification_required",
+            "_verify_live_http_workflow_run",
+            "_workflow_run_payload",
+            "candidate_b_full_corpus_operator_workflow_run_admitted",
+            "live_http_server_run_check",
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_TEST: (
+            "test_live_http_readiness_requires_server_run_endpoint",
+            "test_workflow_run_payload_binds_live_http_server_authority",
+            "test_live_http_workflow_run_verifies_returned_status_request",
+            "_FakeWorkflowRunClient",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B server-owned workflow run API live HTTP proof term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -92982,6 +93063,7 @@ def main() -> int:
     _check_candidate_b_operator_repeatability_completion_audit(errors)
     _check_candidate_b_server_owned_workflow_run_api_freeze(errors)
     _check_candidate_b_server_owned_workflow_run_api_runtime(errors)
+    _check_candidate_b_server_owned_workflow_run_api_live_http_proof(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
