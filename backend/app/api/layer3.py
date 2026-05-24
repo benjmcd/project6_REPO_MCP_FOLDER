@@ -39,6 +39,7 @@ from app.services import (
     layer3_candidate_b_final_proof,
     layer3_candidate_b_full_corpus_operator_workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_lifecycle,
+    layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint,
     layer3_candidate_b_full_corpus_operator_workflow_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease,
@@ -180,6 +181,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint: str
     candidate_b_full_corpus_operator_workflow_worker_attempt_admitted: bool
     candidate_b_full_corpus_operator_workflow_worker_attempt_endpoint: str
+    candidate_b_full_corpus_operator_workflow_progress_checkpoint_admitted: bool
+    candidate_b_full_corpus_operator_workflow_progress_checkpoint_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2835,6 +2838,31 @@ class Layer3CandidateBFullCorpusOperatorWorkflowWorkerAttemptRequest(BaseModel):
     history_hash: str = Field(min_length=64, max_length=64)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    progress_checkpoint_mode: Literal[
+        "append_only_progress_checkpoint_receipt_without_completion_or_cancel_retry_resume"
+    ]
+    operator_decision: Literal["record_candidate_b_async_progress_checkpoint"]
+    progress_checkpoint_sequence: int = Field(ge=1)
+    worker_attempt_receipt_id: str = Field(min_length=1)
+    worker_attempt_receipt_hash: str = Field(min_length=64, max_length=64)
+    worker_attempt_authority_hash: str = Field(min_length=64, max_length=64)
+    scheduler_lease_receipt_id: str = Field(min_length=1)
+    scheduler_lease_receipt_hash: str = Field(min_length=64, max_length=64)
+    scheduler_lease_authority_hash: str = Field(min_length=64, max_length=64)
+    queue_state_receipt_id: str = Field(min_length=1)
+    queue_state_receipt_hash: str = Field(min_length=64, max_length=64)
+    queue_state_authority_hash: str = Field(min_length=64, max_length=64)
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3749,6 +3777,80 @@ class Layer3CandidateBFullCorpusOperatorWorkflowWorkerAttemptResponse(Layer3Base
     background_process_runtime_selected_now: bool
     job_execution_runtime_selected_now: bool
     progress_checkpoint_runtime_selected_now: bool
+    completion_runtime_selected_now: bool
+    cancel_runtime_selected_now: bool
+    retry_runtime_selected_now: bool
+    resume_runtime_selected_now: bool
+    expiry_enforcement_runtime_selected_now: bool
+    default_scope_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointResponse(Layer3BaseResponse):
+    mode: str
+    status: str
+    progress_checkpoint_state: str
+    progress_checkpoint_sequence: int
+    progress_checkpoint_receipt_id: str
+    progress_checkpoint_receipt_hash: str
+    progress_checkpoint_receipt_ref: str
+    worker_attempt_receipt_id: str
+    worker_attempt_receipt_hash: str
+    worker_attempt_authority_hash: str
+    scheduler_lease_receipt_id: str
+    scheduler_lease_receipt_hash: str
+    scheduler_lease_authority_hash: str
+    queue_state_receipt_id: str
+    queue_state_receipt_hash: str
+    queue_state_authority_hash: str
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    source_operator_workflow_receipt_id: str
+    source_operator_workflow_receipt_hash: str
+    authority_basis_hash: str
+    row_hash: str
+    history_hash: str
+    previous_progress_checkpoint_sequence: int | None
+    previous_progress_checkpoint_receipt_id: str | None
+    progress_checkpoint: dict[str, Any]
+    progress_checkpoint_hash: str
+    progress_checkpoint_authority: dict[str, Any]
+    progress_checkpoint_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_progress_checkpoint_receipt: bool
+    monotonic_progress_checkpoint_sequence: bool
+    worker_attempt_receipt_mutated: bool
+    scheduler_lease_receipt_mutated: bool
+    queue_state_receipt_mutated: bool
+    source_run_receipt_mutated: bool
+    run_state_before_progress_checkpoint: str
+    run_state_after_progress_checkpoint: str
+    worker_attempt_state_before_progress_checkpoint: str
+    selected_progress_checkpoint_mode: str
+    selected_progress_checkpoint_endpoint: str
+    selected_progress_checkpoint_receipt_binding: str
+    selected_progress_checkpoint_idempotency_basis: str
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    queue_state_endpoint: str
+    scheduler_lease_endpoint: str
+    worker_attempt_endpoint: str
+    progress_checkpoint_endpoint: str
+    progress_checkpoint_runtime_selected: bool
+    background_process_runtime_selected_now: bool
+    job_execution_runtime_selected_now: bool
     completion_runtime_selected_now: bool
     cancel_runtime_selected_now: bool
     retry_runtime_selected_now: bool
@@ -9638,6 +9740,23 @@ def post_candidate_b_full_corpus_operator_workflow_worker_attempt(
             payload.model_dump(exclude_unset=True),
         )
     except workflow_worker_attempt_service.CandidateBFullCorpusOperatorWorkflowWorkerAttemptError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/progress/checkpoint",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowProgressCheckpointRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_progress_checkpoint_service = layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint
+    try:
+        return workflow_progress_checkpoint_service.record_candidate_b_full_corpus_operator_workflow_progress_checkpoint(
+            payload.model_dump(exclude_unset=True),
+        )
+    except workflow_progress_checkpoint_service.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 

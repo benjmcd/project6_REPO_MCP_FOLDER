@@ -1,0 +1,49 @@
+# Candidate B Async Progress Checkpoint Runtime
+
+```yaml
+milestone: candidate_b_async_progress_checkpoint_receipt_v1
+source_progress_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1006-cb-async-progress-checkpoint-selection.md
+runtime_status: implemented
+selected_progress_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/progress/checkpoint
+selected_progress_checkpoint_mode: append_only_progress_checkpoint_receipt_without_completion_or_cancel_retry_resume
+selected_progress_checkpoint_action: record_candidate_b_async_progress_checkpoint
+selected_progress_checkpoint_scope: server_owned_candidate_b_full_corpus_operator_workflow_worker_attempt_receipts
+selected_progress_checkpoint_receipt_model: append_only_progress_checkpoint_receipt_without_mutating_worker_attempt_scheduler_lease_queue_state_or_source_run_receipt
+selected_progress_checkpoint_receipt_binding: worker_attempt_receipt_id,worker_attempt_receipt_hash,worker_attempt_authority_hash,scheduler_lease_receipt_id,queue_state_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,progress_checkpoint_sequence,progress_checkpoint_hash
+selected_progress_checkpoint_sequence_model: monotonically_increasing_append_only_sequence_per_worker_attempt
+selected_progress_checkpoint_idempotency_basis: client_request_id_plus_progress_checkpoint_authority_hash
+stale_worker_attempt_receipt_rejected: true
+stale_scheduler_lease_receipt_rejected: true
+stale_queue_state_receipt_rejected: true
+stale_run_receipt_rejected: true
+stale_history_row_rejected: true
+missing_worker_attempt_receipt_rejected: true
+non_next_progress_checkpoint_sequence_rejected: true
+worker_attempt_receipt_mutation_admitted: false
+scheduler_lease_receipt_mutation_admitted: false
+queue_state_receipt_mutation_admitted: false
+source_run_receipt_mutation_admitted: false
+progress_checkpoint_runtime_selected: true
+background_process_runtime_selected_now: false
+job_execution_runtime_selected_now: false
+completion_runtime_selected_now: false
+cancel_runtime_selected_now: false
+retry_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+next_exact_posture: candidate_b_async_completion_failure_authority_selection_v1
+```
+
+This runtime records server-owned append-only progress-checkpoint receipts over existing worker-attempt receipts. Checkpoint sequence is monotonic per worker attempt; replaying the same request returns the same receipt, a non-next sequence fails closed, and stale worker-attempt/scheduler/queue/run/history authority fails closed.
+
+The checkpoint runtime intentionally does not start a background process, execute Candidate B work, complete the workflow, cancel, retry, resume, enforce expiry, broaden Candidate B default scope, write provider objects, dispatch connectors, run RAG/vector/model logic, expose raw paths or URLs, or activate full mockup behavior.

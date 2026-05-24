@@ -17,6 +17,7 @@ sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_lifecycle as workflow_lifecycle
+from app.services import layer3_candidate_b_full_corpus_operator_workflow_progress_checkpoint as workflow_progress_checkpoint
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_queue_state as workflow_queue_state
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_run as workflow_run
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease as workflow_scheduler_lease
@@ -32,6 +33,9 @@ LIFECYCLE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/op
 QUEUE_STATE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state"
 SCHEDULER_LEASE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease"
 WORKER_ATTEMPT_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/worker/attempt"
+PROGRESS_CHECKPOINT_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/progress/checkpoint"
+)
 BASELINE_RUN_ID = "baseline-run"
 CANDIDATE_A_RUN_ID = "candidate-a-run"
 CANDIDATE_B_RUN_ID = "candidate-b-run"
@@ -278,6 +282,53 @@ def _worker_attempt_request(
     return payload
 
 
+def _progress_checkpoint_request(
+    history: dict[str, Any],
+    row: dict[str, Any],
+    worker_attempt_body: dict[str, Any],
+    **overrides: Any,
+) -> dict[str, Any]:
+    payload = {
+        "client_request_id": "candidate-b-full-corpus-workflow-progress-checkpoint",
+        "progress_checkpoint_mode": workflow_progress_checkpoint.PROGRESS_CHECKPOINT_MODE,
+        "operator_decision": workflow_progress_checkpoint.OPERATOR_DECISION,
+        "progress_checkpoint_sequence": 1,
+        "worker_attempt_receipt_id": worker_attempt_body["worker_attempt_receipt_id"],
+        "worker_attempt_receipt_hash": worker_attempt_body["worker_attempt_receipt_hash"],
+        "worker_attempt_authority_hash": worker_attempt_body["worker_attempt_authority_hash"],
+        "scheduler_lease_receipt_id": worker_attempt_body["scheduler_lease_receipt_id"],
+        "scheduler_lease_receipt_hash": worker_attempt_body["scheduler_lease_receipt_hash"],
+        "scheduler_lease_authority_hash": worker_attempt_body["scheduler_lease_authority_hash"],
+        "queue_state_receipt_id": worker_attempt_body["queue_state_receipt_id"],
+        "queue_state_receipt_hash": worker_attempt_body["queue_state_receipt_hash"],
+        "queue_state_authority_hash": worker_attempt_body["queue_state_authority_hash"],
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "row_hash": row["row_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "history_hash": history["history_hash"],
+    }
+    payload.update(overrides)
+    return payload
+
+
+def _worker_attempt_chain(client: TestClient) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    queue_state_body = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row)).json()
+    scheduler_lease_body = client.post(
+        SCHEDULER_LEASE_ENDPOINT,
+        json=_scheduler_lease_request(history_body, row, queue_state_body),
+    ).json()
+    worker_attempt_body = client.post(
+        WORKER_ATTEMPT_ENDPOINT,
+        json=_worker_attempt_request(history_body, row, scheduler_lease_body),
+    ).json()
+    return history_body, row, worker_attempt_body
+
+
 def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt(
     client: TestClient,
 ) -> None:
@@ -356,7 +407,7 @@ def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_ru
     assert body["worker_attempt_runtime_admitted"] is True
     assert body["background_process_runtime_admitted"] is False
     assert body["job_execution_runtime_admitted"] is False
-    assert body["progress_checkpoint_runtime_admitted"] is False
+    assert body["progress_checkpoint_runtime_admitted"] is True
     assert body["expiry_mutation_runtime_admitted"] is True
     assert body["frontend_durable_authority_enabled"] is False
     row = body["history_rows"][0]
@@ -841,6 +892,162 @@ def test_candidate_b_full_corpus_operator_workflow_worker_attempt_service_reject
         workflow_worker_attempt.record_candidate_b_full_corpus_operator_workflow_worker_attempt(payload)
 
     assert exc_info.value.code == "candidate_b_full_corpus_operator_workflow_worker_attempt_forbidden_request_fields"
+    assert exc_info.value.details["blocked_fields"] == ["local_path"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_progress_checkpoint_records_append_only(
+    client: TestClient,
+) -> None:
+    history_body, row, worker_attempt_body = _worker_attempt_chain(client)
+
+    response = client.post(
+        PROGRESS_CHECKPOINT_ENDPOINT,
+        json=_progress_checkpoint_request(history_body, row, worker_attempt_body),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    serialized = json.dumps(body, sort_keys=True)
+    assert body["schema_id"] == workflow_progress_checkpoint.SCHEMA_ID
+    assert body["mode"] == workflow_progress_checkpoint.PROGRESS_CHECKPOINT_MODE
+    assert body["progress_checkpoint_state"] == "progress_checkpoint_recorded"
+    assert body["progress_checkpoint_sequence"] == 1
+    assert body["worker_attempt_receipt_id"] == worker_attempt_body["worker_attempt_receipt_id"]
+    assert body["worker_attempt_receipt_hash"] == worker_attempt_body["worker_attempt_receipt_hash"]
+    assert body["worker_attempt_authority_hash"] == worker_attempt_body["worker_attempt_authority_hash"]
+    assert body["operator_workflow_receipt_id"] == row["operator_workflow_receipt_id"]
+    assert body["append_only_progress_checkpoint_receipt"] is True
+    assert body["monotonic_progress_checkpoint_sequence"] is True
+    assert body["worker_attempt_receipt_mutated"] is False
+    assert body["scheduler_lease_receipt_mutated"] is False
+    assert body["queue_state_receipt_mutated"] is False
+    assert body["source_run_receipt_mutated"] is False
+    assert body["run_state_before_progress_checkpoint"] == "proven"
+    assert body["run_state_after_progress_checkpoint"] == "proven"
+    assert body["worker_attempt_state_before_progress_checkpoint"] == "attempt_authority_recorded"
+    assert body["progress_checkpoint_runtime_selected"] is True
+    assert body["background_process_runtime_selected_now"] is False
+    assert body["job_execution_runtime_selected_now"] is False
+    assert body["completion_runtime_selected_now"] is False
+    assert body["cancel_runtime_selected_now"] is False
+    assert body["retry_runtime_selected_now"] is False
+    assert body["resume_runtime_selected_now"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["progress_checkpoint_endpoint"] == PROGRESS_CHECKPOINT_ENDPOINT
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+
+    history_response = client.get(HISTORY_ENDPOINT)
+    assert history_response.status_code == 200
+    assert history_response.json()["receipt_count"] == 1
+
+
+def test_candidate_b_full_corpus_operator_workflow_progress_checkpoint_is_idempotent(
+    client: TestClient,
+) -> None:
+    history_body, row, worker_attempt_body = _worker_attempt_chain(client)
+    request = _progress_checkpoint_request(history_body, row, worker_attempt_body)
+
+    first = client.post(PROGRESS_CHECKPOINT_ENDPOINT, json=request).json()
+    second_response = client.post(PROGRESS_CHECKPOINT_ENDPOINT, json=request)
+
+    assert second_response.status_code == 200
+    second = second_response.json()
+    assert second["progress_checkpoint_receipt_id"] == first["progress_checkpoint_receipt_id"]
+    assert second["progress_checkpoint_receipt_hash"] == first["progress_checkpoint_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_progress_checkpoint_appends_next_sequence(
+    client: TestClient,
+) -> None:
+    history_body, row, worker_attempt_body = _worker_attempt_chain(client)
+    client.post(
+        PROGRESS_CHECKPOINT_ENDPOINT,
+        json=_progress_checkpoint_request(history_body, row, worker_attempt_body),
+    )
+
+    response = client.post(
+        PROGRESS_CHECKPOINT_ENDPOINT,
+        json=_progress_checkpoint_request(
+            history_body,
+            row,
+            worker_attempt_body,
+            client_request_id="candidate-b-full-corpus-workflow-progress-checkpoint-2",
+            progress_checkpoint_sequence=2,
+        ),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["progress_checkpoint_sequence"] == 2
+    assert body["previous_progress_checkpoint_sequence"] == 1
+    assert body["previous_progress_checkpoint_receipt_id"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_progress_checkpoint_rejects_stale_worker_attempt(
+    client: TestClient,
+) -> None:
+    history_body, row, worker_attempt_body = _worker_attempt_chain(client)
+
+    response = client.post(
+        PROGRESS_CHECKPOINT_ENDPOINT,
+        json=_progress_checkpoint_request(
+            history_body,
+            row,
+            worker_attempt_body,
+            worker_attempt_receipt_hash="6" * 64,
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["progress_checkpoint_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_progress_checkpoint_stale_worker_attempt_receipt"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_progress_checkpoint_rejects_non_next_sequence(
+    client: TestClient,
+) -> None:
+    history_body, row, worker_attempt_body = _worker_attempt_chain(client)
+
+    response = client.post(
+        PROGRESS_CHECKPOINT_ENDPOINT,
+        json=_progress_checkpoint_request(
+            history_body,
+            row,
+            worker_attempt_body,
+            progress_checkpoint_sequence=2,
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["progress_checkpoint_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_progress_checkpoint_sequence_not_next"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_progress_checkpoint_service_rejects_raw_authority(
+    client: TestClient,
+) -> None:
+    history_body, row, worker_attempt_body = _worker_attempt_chain(client)
+    payload = _progress_checkpoint_request(history_body, row, worker_attempt_body, local_path="C:\\raw\\candidate-b")
+
+    with pytest.raises(
+        workflow_progress_checkpoint.CandidateBFullCorpusOperatorWorkflowProgressCheckpointError
+    ) as exc_info:
+        workflow_progress_checkpoint.record_candidate_b_full_corpus_operator_workflow_progress_checkpoint(payload)
+
+    assert exc_info.value.code == (
+        "candidate_b_full_corpus_operator_workflow_progress_checkpoint_forbidden_request_fields"
+    )
     assert exc_info.value.details["blocked_fields"] == ["local_path"]
 
 
