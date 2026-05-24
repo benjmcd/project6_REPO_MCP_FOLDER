@@ -2896,6 +2896,9 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_STATUS_RUNTIME = (
 CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_STATUS_SELECTION = (
     PLANNING_DOCS / "1054-cb-repeatability-acceptance-closeout-rendered-status-selection.md"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_STATUS_RUNTIME = (
+    PLANNING_DOCS / "1055-cb-repeatability-acceptance-closeout-rendered-status-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -99252,6 +99255,116 @@ def _check_candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_st
                 )
 
 
+def _check_candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_STATUS_RUNTIME: (
+            "Candidate B Full-Corpus Repeatability Acceptance Closeout Rendered Status Runtime",
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_v1",
+            "source_repeatability_acceptance_closeout_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1054-cb-repeatability-acceptance-closeout-rendered-status-selection.md",
+            "current_main_entry: a1eb838a7fc9338ee94f7612dc7dbb33057cb53a",
+            "runtime_status: implemented",
+            "implemented_rendered_status_control: rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_status_control",
+            "implemented_status_button: candidate-b-repeatability-acceptance-closeout-status-submit",
+            "implemented_rendered_status_surface: candidate-b-full-corpus-repeatability-acceptance-closeout-card",
+            "implemented_static_runtime: backend/app/review_ui/static/layer3.js",
+            "implemented_rendered_proof: e2e/layer3-workbench.spec.js",
+            "existing_status_endpoint_reused_for_rendered_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status",
+            "status_api_mode: read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority",
+            "status_operator_decision: inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status",
+            "closeout_status_values_rendered: not_recorded,available,blocked",
+            "missing_closeout_receipt_renders_not_recorded: true",
+            "available_closeout_receipt_renders_available: true",
+            "status_can_use_acceptance_checkpoint_receipt: true",
+            "status_can_use_closeout_receipt: true",
+            "status_payload_excludes_raw_paths_urls_and_artifact_bytes: true",
+            "redacted_closeout_receipt_ref_required: true",
+            "acceptance_closeout_receipt_creation_admitted_now: false",
+            "acceptance_closeout_receipt_mutation_admitted: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "process_control_admitted: false",
+            "browser_storage_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium PASS",
+            "headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium --headed PASS",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_operator_workflow_completion_audit_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_v1",
+            "source_repeatability_acceptance_closeout_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1054-cb-repeatability-acceptance-closeout-rendered-status-selection.md",
+            "current_main_entry: a1eb838a7fc9338ee94f7612dc7dbb33057cb53a",
+            "runtime_status: implemented",
+            "implemented_rendered_status_control: rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_status_control",
+            "implemented_status_button: candidate-b-repeatability-acceptance-closeout-status-submit",
+            "implemented_rendered_status_surface: candidate-b-full-corpus-repeatability-acceptance-closeout-card",
+            "implemented_static_runtime: backend/app/review_ui/static/layer3.js",
+            "implemented_rendered_proof: e2e/layer3-workbench.spec.js",
+            "existing_status_endpoint_reused_for_rendered_projection: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status",
+            "status_api_mode: read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority",
+            "status_operator_decision: inspect_candidate_b_full_corpus_repeatability_acceptance_closeout_status",
+            "closeout_status_values_rendered: not_recorded,available,blocked",
+            "missing_closeout_receipt_renders_not_recorded: true",
+            "available_closeout_receipt_renders_available: true",
+            "status_can_use_acceptance_checkpoint_receipt: true",
+            "status_can_use_closeout_receipt: true",
+            "status_payload_excludes_raw_paths_urls_and_artifact_bytes: true",
+            "redacted_closeout_receipt_ref_required: true",
+            "acceptance_closeout_receipt_creation_admitted_now: false",
+            "acceptance_closeout_receipt_mutation_admitted: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "process_control_admitted: false",
+            "browser_storage_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_only",
+            "headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium PASS",
+            "headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep \"records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout\" --project=chromium --headed PASS",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_operator_workflow_completion_audit_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_RENDERED_STATUS_SELECTION: (
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_v1",
+        ),
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js": (
+            "CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_STATUS_RENDERED_MODE = 'rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_status_control'",
+            "CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CLOSEOUT_STATUS_MODE = 'read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority'",
+            "candidate-b-repeatability-acceptance-closeout-status-submit",
+            "candidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusPayload",
+            "candidateBFullCorpusRepeatabilityAcceptanceCloseoutStatusRows",
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_not_recorded",
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_available",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "closeoutStatusPayloads",
+            "closeout_status_mode: 'read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority'",
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_not_recorded",
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_status_available",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus repeatability acceptance closeout rendered status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -100153,6 +100266,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_repeatability_acceptance_closeout_status_selection(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_closeout_status_runtime(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_selection(errors)
+    _check_candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
