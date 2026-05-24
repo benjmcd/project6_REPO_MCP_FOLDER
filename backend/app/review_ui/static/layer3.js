@@ -8986,6 +8986,7 @@ function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
     const layer3 = status.layer3 || {};
     const artifactFamily = status.artifact_family || {};
     const roleCounts = artifactFamily.role_counts || {};
+    const retryTerminalProjection = status.retry_terminal_status_projection || {};
     return `
         <div class="candidate-b-final-proof-status-grid">
             <section class="result-review-card">
@@ -9035,7 +9036,41 @@ function candidateBFullCorpusOperatorWorkflowStatusRows(status) {
                     ${fieldItem('selector mutation performed', status.selector_mutation_performed)}
                 </ul>
             </section>
+            <section class="result-review-card">
+                <strong>Retry Terminal Projection</strong>
+                <ul>
+                    ${candidateBRetryTerminalProjectionItems(retryTerminalProjection)}
+                </ul>
+            </section>
         </div>
+    `;
+}
+
+function candidateBRetryTerminalProjectionItems(projection) {
+    const retryTerminal = projection && typeof projection === 'object' ? projection : {};
+    return `
+        ${fieldItem('retry terminal projection state', retryTerminal.retry_terminal_projection_state, { code: true })}
+        ${fieldItem('retry terminal outcome', retryTerminal.retry_terminal_outcome, { code: true })}
+        ${fieldItem('retry completion/failure receipt id', retryTerminal.retry_completion_failure_receipt_id, { code: true })}
+        ${fieldItem('retry completion/failure receipt hash', retryTerminal.retry_completion_failure_receipt_hash, { code: true })}
+        ${fieldItem('retry completion/failure authority hash', retryTerminal.retry_completion_failure_authority_hash, { code: true })}
+        ${fieldItem('retry worker attempt receipt id', retryTerminal.retry_worker_attempt_receipt_id, { code: true })}
+        ${fieldItem('latest retry progress checkpoint receipt id', retryTerminal.latest_retry_progress_checkpoint_receipt_id, { code: true })}
+        ${fieldItem('terminal failure code', retryTerminal.terminal_failure_code, { code: true })}
+        ${fieldItem('terminal failure phase', retryTerminal.terminal_failure_phase, { code: true })}
+        ${fieldItem('read-only retry terminal projection', retryTerminal.read_only_retry_terminal_projection)}
+        ${fieldItem('missing terminal receipt projects not recorded', retryTerminal.missing_retry_terminal_receipt_projects_not_recorded)}
+        ${fieldItem('retry terminal receipt creation admitted', retryTerminal.retry_terminal_receipt_creation_admitted_now)}
+        ${fieldItem('retry completion/failure receipt mutation admitted', retryTerminal.retry_completion_failure_receipt_mutation_admitted)}
+        ${fieldItem('background process runtime selected', retryTerminal.background_process_runtime_selected_now)}
+        ${fieldItem('job execution runtime selected', retryTerminal.job_execution_runtime_selected_now)}
+        ${fieldItem('cancel runtime selected', retryTerminal.cancel_runtime_selected_now)}
+        ${fieldItem('resume runtime selected', retryTerminal.resume_runtime_selected_now)}
+        ${fieldItem('raw exception trace admitted', retryTerminal.raw_exception_trace_admitted)}
+        ${fieldItem('raw log excerpt admitted', retryTerminal.raw_log_excerpt_admitted)}
+        ${fieldItem('raw local path exposed', retryTerminal.raw_local_path_exposed)}
+        ${fieldItem('raw URL exposed', retryTerminal.raw_url_exposed)}
+        ${fieldItem('artifact bytes exposed', retryTerminal.artifact_bytes_exposed)}
     `;
 }
 
@@ -9069,6 +9104,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                     ${fieldItem('raw local path exposed', row.raw_local_path_exposed)}
                     ${fieldItem('raw URL exposed', row.raw_url_exposed)}
                     ${fieldItem('frontend durable authority', row.frontend_durable_authority_enabled)}
+                    ${candidateBRetryTerminalProjectionItems(row.retry_terminal_status_projection)}
                 </ul>
                 <button type="button" data-candidate-b-workflow-history-inspect-index="${escapeHtml(index)}" ${State.candidateBFullCorpusOperatorWorkflowStatusPending ? 'disabled' : ''}>Inspect Run Status</button>
                 <button type="button" data-candidate-b-workflow-lifecycle-expire-index="${escapeHtml(index)}" ${lifecycleDisabled}>Expire/Close Run</button>
