@@ -51,6 +51,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "candidate_b_full_corpus_operator_workflow_completion_failure": True,
     "candidate_b_full_corpus_operator_workflow_retry_policy": True,
     "candidate_b_full_corpus_operator_workflow_retry_queue_state": True,
+    "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease": True,
     "source_directory_ingestion_scan": True,
     "source_directory_ingestion_status": True,
     "source_directory_material_preview": True,
@@ -258,6 +259,10 @@ def build_bootstrap_contract(
             "candidate_b_full_corpus_operator_workflow_retry_queue_state_admitted": True,
             "candidate_b_full_corpus_operator_workflow_retry_queue_state_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/queue/state"
+            ),
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_admitted": True,
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease"
             ),
             "candidate_b_default_promotion_selector_switch_admitted": True,
             "candidate_b_default_promotion_selector_scope": ELIGIBLE_CORPUS_SCOPE,

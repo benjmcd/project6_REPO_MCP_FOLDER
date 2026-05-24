@@ -2776,6 +2776,9 @@ CANDIDATE_B_ASYNC_RETRY_QUEUE_STATE_RUNTIME = (
 CANDIDATE_B_ASYNC_RETRY_SCHEDULER_LEASE_SELECTION = (
     PLANNING_DOCS / "1014-cb-async-retry-scheduler-lease-selection.md"
 )
+CANDIDATE_B_ASYNC_RETRY_SCHEDULER_LEASE_RUNTIME = (
+    PLANNING_DOCS / "1015-cb-async-retry-scheduler-lease-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2837,6 +2840,13 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_QUEUE_STATE_SERVICE = (
     / "app"
     / "services"
     / "layer3_candidate_b_full_corpus_operator_workflow_retry_queue_state.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_SCHEDULER_LEASE_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -94601,6 +94611,147 @@ def _check_candidate_b_async_retry_scheduler_lease_selection(errors: list[str]) 
                 )
 
 
+def _check_candidate_b_async_retry_scheduler_lease_runtime(errors: list[str]) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_RETRY_SCHEDULER_LEASE_RUNTIME: (
+            "Candidate B Async Retry Scheduler-Lease Runtime",
+            "milestone: candidate_b_async_retry_scheduler_lease_receipt_v1",
+            "source_retry_scheduler_lease_selection: next_milestone_plans/Layer3_planning_docs/1014-cb-async-retry-scheduler-lease-selection.md",
+            "runtime_status: implemented",
+            "selected_retry_scheduler_lease_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease",
+            "selected_retry_scheduler_lease_mode: append_only_retry_scheduler_lease_receipt_without_creating_worker_attempt_or_mutating_retry_queue_state_original_lineage",
+            "selected_retry_scheduler_lease_action: record_candidate_b_async_retry_scheduler_lease",
+            "selected_retry_scheduler_lease_scope: server_owned_candidate_b_full_corpus_operator_workflow_retry_queue_state_receipts",
+            "selected_retry_scheduler_lease_receipt_model: append_only_retry_scheduler_lease_receipt_without_mutating_retry_queue_state_retry_policy_completion_failure_progress_checkpoint_worker_attempt_scheduler_lease_queue_state_or_source_run_receipts",
+            "selected_retry_scheduler_lease_receipt_binding: retry_queue_state_receipt_id,retry_queue_state_receipt_hash,retry_queue_state_authority_hash,retry_attempt_number,retry_policy_receipt_id,retry_policy_authority_hash,completion_failure_receipt_id,failed_worker_attempt_receipt_id,operator_workflow_receipt_id,operator_workflow_receipt_hash,retry_scheduler_lease_hash",
+            "selected_retry_scheduler_lease_idempotency_basis: client_request_id_plus_retry_scheduler_lease_authority_hash",
+            "retry_queue_state_receipt_required: true",
+            "retry_queue_state_runtime_required: true",
+            "retry_attempt_number_required: 2",
+            "missing_retry_queue_state_receipt_rejected: true",
+            "stale_retry_queue_state_receipt_rejected: true",
+            "retry_queue_state_conflict_rejected: true",
+            "append_only_retry_scheduler_lease_receipt: true",
+            "exclusive_retry_queue_state_lease: true",
+            "retry_scheduler_lease_runtime_selected: true",
+            "retry_worker_attempt_creation_admitted_now: false",
+            "retry_progress_checkpoint_creation_admitted_now: false",
+            "retry_completion_failure_creation_admitted_now: false",
+            "retry_worker_attempt_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "background_process_runtime_selected_now: false",
+            "job_execution_runtime_selected_now: false",
+            "retry_queue_state_receipt_mutation_admitted: false",
+            "retry_policy_receipt_mutation_admitted: false",
+            "completion_failure_receipt_mutation_admitted: false",
+            "progress_checkpoint_receipt_mutation_admitted: false",
+            "worker_attempt_receipt_mutation_admitted: false",
+            "scheduler_lease_receipt_mutation_admitted: false",
+            "queue_state_receipt_mutation_admitted: false",
+            "source_run_receipt_mutation_admitted: false",
+            "default_scope_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_exception_trace_admitted: false",
+            "raw_log_excerpt_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "selector_mutation_performed: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_worker_attempt_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_retry_scheduler_lease_receipt_v1",
+            "source_retry_scheduler_lease_selection: next_milestone_plans/Layer3_planning_docs/1014-cb-async-retry-scheduler-lease-selection.md",
+            "runtime_status: implemented",
+            "selected_retry_scheduler_lease_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease",
+            "selected_retry_scheduler_lease_mode: append_only_retry_scheduler_lease_receipt_without_creating_worker_attempt_or_mutating_retry_queue_state_original_lineage",
+            "selected_retry_scheduler_lease_action: record_candidate_b_async_retry_scheduler_lease",
+            "retry_queue_state_receipt_required: true",
+            "stale_retry_queue_state_receipt_rejected: true",
+            "retry_queue_state_conflict_rejected: true",
+            "append_only_retry_scheduler_lease_receipt: true",
+            "exclusive_retry_queue_state_lease: true",
+            "retry_scheduler_lease_runtime_selected: true",
+            "retry_worker_attempt_creation_admitted_now: false",
+            "retry_worker_attempt_runtime_selected_now: false",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_async_retry_worker_attempt_authority_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RETRY_SCHEDULER_LEASE_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_retry_scheduler_lease.v1"',
+            "append_only_retry_scheduler_lease_receipt_without_creating_worker_attempt_or_mutating_retry_queue_state_original_lineage",
+            'OPERATOR_DECISION = "record_candidate_b_async_retry_scheduler_lease"',
+            "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease",
+            "def record_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease",
+            "def _selected_retry_queue_state_receipt",
+            "def _validate_no_existing_retry_scheduler_lease_receipt",
+            '"append_only_retry_scheduler_lease_receipt": True',
+            '"exclusive_retry_queue_state_lease": True',
+            '"retry_scheduler_lease_runtime_selected": True',
+            '"retry_worker_attempt_creation_admitted_now": False',
+            '"retry_worker_attempt_runtime_selected_now": False',
+            '"retry_attempt_number_required": RETRY_ATTEMPT_NUMBER',
+            'fields.get("retry_attempt_number") != RETRY_ATTEMPT_NUMBER',
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_retry_queue_state_missing",
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_stale_retry_queue_state",
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_queue_state_conflict",
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_forbidden_request_fields",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"retry_scheduler_lease_runtime_admitted": True',
+            "record append-only retry scheduler-lease authority through the admitted retry scheduler-lease endpoint",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseResponse",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/retry/scheduler/lease",
+            "CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_retry_scheduler_lease": True',
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_retry_scheduler_lease"',
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_admitted",
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_endpoint",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_records_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_stale_queue_state",
+            "test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_wrong_attempt_number",
+            "test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_queue_state_conflict",
+            "test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_service_rejects_raw_authority",
+            "RETRY_SCHEDULER_LEASE_ENDPOINT",
+            "workflow_retry_scheduler_lease.RETRY_SCHEDULER_LEASE_MODE",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async retry scheduler-lease runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -95462,6 +95613,7 @@ def main() -> int:
     _check_candidate_b_async_retry_attempt_selection(errors)
     _check_candidate_b_async_retry_queue_state_runtime(errors)
     _check_candidate_b_async_retry_scheduler_lease_selection(errors)
+    _check_candidate_b_async_retry_scheduler_lease_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
