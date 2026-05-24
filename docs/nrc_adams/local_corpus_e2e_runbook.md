@@ -3781,3 +3781,48 @@ next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_st
 ```
 
 The next runtime should add a read-only closeout status/review projection over persisted acceptance-closeout receipts. It should report `not_recorded` when no closeout exists, `available` when current closeout authority is present, and fail closed for stale, contradictory, or ambiguous closeout receipts. It must not create or mutate receipts, re-run Candidate B or Layer 3, expose raw paths/URLs/output/artifact bytes, or admit provider, connector, RAG/model, full mockup, default-scope, browser-storage, or frontend durable authority.
+
+### Candidate B Full-Corpus Repeatability Acceptance Closeout Status Runtime
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_closeout_status_v1
+source_repeatability_acceptance_closeout_status_selection: next_milestone_plans/Layer3_planning_docs/1052-cb-repeatability-acceptance-closeout-status-selection.md
+current_main_entry: 030a4934fb0b37cbcf9890121b7fe18fb003f3a7
+runtime_status: implemented
+implemented_closeout_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout/status
+implemented_closeout_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout
+implemented_bootstrap_readiness: true
+selected_closeout_status_mode: read_only_acceptance_closeout_status_without_receipt_creation_lineage_mutation_or_frontend_authority
+closeout_status_values: not_recorded,available,blocked
+missing_closeout_receipt_projects_not_recorded: true
+available_closeout_receipt_projects_available: true
+stale_closeout_receipt_rejected: true
+ambiguous_closeout_receipt_rejected: true
+closeout_status_projection_must_be_redacted: true
+closeout_receipt_ref_rendered_redacted: true
+closeout_status_negative_invariants_visible: true
+closeout_status_comparison_summary_visible: true
+closeout_status_rendered_proof_summary_visible: true
+acceptance_closeout_api_rendered_mode_literal_fixed: rendered_candidate_b_full_corpus_repeatability_acceptance_closeout_control
+acceptance_closeout_receipt_creation_admitted_now: false
+acceptance_closeout_receipt_mutation_admitted: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+frontend_durable_authority_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+focused_service_proof: python -m pytest .\backend\tests\test_layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py PASS
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_status_selection_v1
+```
+
+The status endpoint is read-only. It can inspect an explicit closeout receipt or scan for a closeout receipt bound to a selected acceptance-checkpoint receipt. It returns `not_recorded` when no closeout receipt exists, `available` when current closeout authority exists, and rejects stale or ambiguous authority without mutating any repeatability, workflow, process, provider, connector, model, or default-selector state.

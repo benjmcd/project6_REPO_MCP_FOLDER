@@ -6,6 +6,7 @@ from pathlib import Path
 import sys
 from typing import Any
 
+from fastapi.testclient import TestClient
 import pytest
 
 os.environ["DB_INIT_MODE"] = "none"
@@ -17,11 +18,16 @@ from app.services import layer3_candidate_b_full_corpus_repeatability_acceptance
 from app.services import layer3_candidate_b_full_corpus_repeatability_acceptance_closeout as closeout
 from app.services import layer3_candidate_b_full_corpus_repeatability_rerun_trial as rerun_trial
 from app.services import layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status
+from main import app
 from test_layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint import (
     _acceptance_request,
     _rerun_request,
     acceptance_authority,
 )
+
+
+ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout"
+STATUS_ENDPOINT = f"{ENDPOINT}/status"
 
 
 def _acceptance_receipt(checkpoint_receipt: dict[str, Any]) -> dict[str, Any]:
@@ -69,6 +75,16 @@ def _closeout_request(
     }
 
 
+def _status_request(**overrides: str) -> dict[str, str]:
+    payload = {
+        "client_request_id": "acceptance-closeout-status",
+        "closeout_status_mode": closeout.STATUS_MODE,
+        "operator_decision": closeout.STATUS_OPERATOR_DECISION,
+    }
+    payload.update(overrides)
+    return payload
+
+
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_records_append_only(
     acceptance_authority: dict[str, Any],
 ) -> None:
@@ -100,6 +116,130 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_records_appen
             "rendered_acceptance_control_proof_state"
         ]
         == closeout.RENDERED_PROOF_STATE
+    )
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projects_not_recorded(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+
+    response = closeout.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+        _status_request(
+            repeatability_acceptance_checkpoint_receipt_id=acceptance_receipt[
+                "repeatability_acceptance_checkpoint_receipt_id"
+            ],
+            repeatability_acceptance_checkpoint_receipt_hash=acceptance_receipt[
+                "repeatability_acceptance_checkpoint_receipt_hash"
+            ],
+            repeatability_acceptance_checkpoint_authority_hash=acceptance_receipt[
+                "repeatability_acceptance_checkpoint_authority_hash"
+            ],
+        )
+    )
+
+    assert response["status"] == "available"
+    assert response["closeout_status_projection_state"] == "not_recorded"
+    assert response["repeatability_acceptance_operator_closeout_receipt_available"] is False
+    assert response["operator_projection"]["read_only_acceptance_closeout_status_projection"] is True
+    assert response["operator_projection"]["acceptance_closeout_receipt_creation_admitted_now"] is False
+    assert response["operator_projection"]["frontend_durable_authority_enabled"] is False
+    assert response["operator_projection"]["default_scope_expansion_admitted"] is False
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projects_available(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+    closeout_response = closeout.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+        _closeout_request(acceptance_receipt)
+    )
+
+    response = closeout.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+        _status_request(
+            repeatability_acceptance_checkpoint_receipt_id=acceptance_receipt[
+                "repeatability_acceptance_checkpoint_receipt_id"
+            ],
+            repeatability_acceptance_checkpoint_receipt_hash=acceptance_receipt[
+                "repeatability_acceptance_checkpoint_receipt_hash"
+            ],
+            repeatability_acceptance_checkpoint_authority_hash=acceptance_receipt[
+                "repeatability_acceptance_checkpoint_authority_hash"
+            ],
+        )
+    )
+
+    assert response["closeout_status_projection_state"] == "available"
+    assert response["repeatability_acceptance_operator_closeout_receipt_available"] is True
+    assert response["repeatability_acceptance_operator_closeout_receipt_id"] == closeout_response[
+        "repeatability_acceptance_operator_closeout_receipt_id"
+    ]
+    assert response["repeatability_acceptance_operator_closeout_receipt_hash"] == closeout_response[
+        "repeatability_acceptance_operator_closeout_receipt_hash"
+    ]
+    assert response["repeatability_acceptance_operator_closeout_receipt_ref"].startswith(
+        "candidate-b-full-corpus-operator-workflow-repeatability-acceptance-closeout://"
+    )
+    assert response["rendered_acceptance_control_proof_state"] == closeout.RENDERED_PROOF_STATE
+    assert response["negative_invariants"] == dict(closeout.REQUIRED_NEGATIVE_INVARIANTS)
+    assert response["operator_projection"]["closeout_receipt_projection_visible"] is True
+    assert response["operator_projection"]["acceptance_closeout_receipt_mutation_admitted"] is False
+    assert response["operator_projection"]["actual_corpus_processing_execution_admitted_now"] is False
+    assert response["operator_projection"]["provider_object_write_enabled"] is False
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_api_accepts_closeout_mode(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+    app.openapi_schema = None
+    with TestClient(app) as test_client:
+        closeout_response = test_client.post(ENDPOINT, json=_closeout_request(acceptance_receipt))
+        assert closeout_response.status_code == 200, closeout_response.text
+        closeout_body = closeout_response.json()
+        status_response = test_client.post(
+            STATUS_ENDPOINT,
+            json=_status_request(
+                repeatability_acceptance_operator_closeout_receipt_id=closeout_body[
+                    "repeatability_acceptance_operator_closeout_receipt_id"
+                ],
+                repeatability_acceptance_operator_closeout_receipt_hash=closeout_body[
+                    "repeatability_acceptance_operator_closeout_receipt_hash"
+                ],
+            ),
+        )
+        assert status_response.status_code == 200, status_response.text
+    app.openapi_schema = None
+
+    status_body = status_response.json()
+    assert status_body["closeout_status_projection_state"] == "available"
+    assert status_body["repeatability_acceptance_operator_closeout_receipt_id"] == closeout_body[
+        "repeatability_acceptance_operator_closeout_receipt_id"
+    ]
+    assert status_body["operator_projection"]["read_only_acceptance_closeout_status_projection"] is True
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_rejects_stale_hash(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+    closeout_response = closeout.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+        _closeout_request(acceptance_receipt)
+    )
+
+    with pytest.raises(closeout.CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError) as exc_info:
+        closeout.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+            _status_request(
+                repeatability_acceptance_operator_closeout_receipt_id=closeout_response[
+                    "repeatability_acceptance_operator_closeout_receipt_id"
+                ],
+                repeatability_acceptance_operator_closeout_receipt_hash="0" * 64,
+            )
+        )
+
+    assert (
+        exc_info.value.code
+        == "candidate_b_full_corpus_repeatability_acceptance_closeout_status_stale_closeout_receipt"
     )
 
 
