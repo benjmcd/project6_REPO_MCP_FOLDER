@@ -484,6 +484,12 @@ def _workflow_owner_binding(receipt: Mapping[str, Any]) -> Mapping[str, Any] | N
 def _policy_projection(policy_decision: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "policy_schema_id": str(policy_decision["policy_schema_id"]),
+        "policy_runtime": str(policy_decision["policy_runtime"]),
+        "auth_owner_mode": str(policy_decision["auth_owner_mode"]),
+        "identity_authority": str(policy_decision["identity_authority"]),
+        "tenant_workspace_authority": str(policy_decision["tenant_workspace_authority"]),
+        "storage_access_policy": str(policy_decision["storage_access_policy"]),
+        "audit_event_policy": str(policy_decision["audit_event_policy"]),
         "policy_status": str(policy_decision["policy_status"]),
         "policy_hash": str(policy_decision["policy_hash"]),
         "actor_ref_hash": str(policy_decision["actor_ref_hash"]),
@@ -508,6 +514,9 @@ def _policy_projection(policy_decision: Mapping[str, Any]) -> dict[str, Any]:
         "artifact_bytes_exposed": False,
         "browser_storage_authority_used": False,
         "frontend_durable_authority_enabled": False,
+        "workflow_receipt_owner_binding_required": bool(
+            policy_decision["workflow_receipt_owner_binding_required"]
+        ),
     }
 
 

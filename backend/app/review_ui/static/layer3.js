@@ -11358,6 +11358,10 @@ function candidateBRenderedPolicyDecisionItems(policy) {
     if (!policy) return '';
     return `
         ${fieldItem('policy status', policy.policy_status, { code: true })}
+        ${fieldItem('policy runtime', policy.policy_runtime, { code: true })}
+        ${fieldItem('auth owner mode', policy.auth_owner_mode, { code: true })}
+        ${fieldItem('storage access policy', policy.storage_access_policy, { code: true })}
+        ${fieldItem('audit event policy', policy.audit_event_policy, { code: true })}
         ${fieldItem('route family', policy.route_family, { code: true })}
         ${fieldItem('rendered surface', policy.rendered_surface, { code: true })}
         ${fieldItem('policy hash', policy.policy_hash, { code: true })}
@@ -11374,6 +11378,7 @@ function candidateBRenderedPolicyDecisionItems(policy) {
         ${fieldItem('artifact bytes exposed', policy.artifact_bytes_exposed)}
         ${fieldItem('browser storage authority used', policy.browser_storage_authority_used)}
         ${fieldItem('frontend durable authority enabled', policy.frontend_durable_authority_enabled)}
+        ${fieldItem('workflow receipt owner binding required', policy.workflow_receipt_owner_binding_required)}
     `;
 }
 

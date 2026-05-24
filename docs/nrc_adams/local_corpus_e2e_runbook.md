@@ -4379,3 +4379,28 @@ next_exact_posture: candidate_b_operator_workflow_proxy_owner_storage_policy_run
 ```
 
 The next production-hardening pass is selected but not implemented here. It should bind existing Candidate B workflow receipts, status/history/review/audit projections, and rendered controls to proxy-derived owner and tenant/workspace authority under `AUTH_OWNER=proxy` with `TRUSTED_PROXY_MODE=true`, while preserving the local `AUTH_OWNER=none` single-operator proof harness. Storage remains limited to configured workflow receipt roots and receipt-bound refs; raw paths, URLs, provider secrets, connector secrets, browser/local-storage identity, frontend durable authority, provider writes, connector dispatch, RAG/vector/model runtime, full mockup activation, and broader Candidate B default scope remain outside this selection.
+
+### Candidate B Operator Workflow Proxy Owner Storage Policy Runtime
+
+```yaml
+milestone: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1
+source_operator_workflow_production_auth_storage_hardening_selection: next_milestone_plans/Layer3_planning_docs/1066-cb-operator-workflow-production-auth-storage-hardening-selection.md
+current_main_entry: 46a414c57e0e9ba78eaecd635f85297c97a61bbf
+runtime_status: proxy_owner_storage_policy_runtime_implemented
+implemented_policy_runtime: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1
+implemented_auth_owner_mode: AUTH_OWNER_proxy_with_TRUSTED_PROXY_MODE_true
+implemented_storage_access_policy: configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths
+implemented_audit_event_policy: append_only_redacted_policy_receipt_under_configured_workflow_root
+missing_tenant_fail_closed_proven: true
+untrusted_proxy_fail_closed_proven: true
+storage_root_escape_fail_closed_proven: true
+AUTH_OWNER_none_compatibility_proven: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_status.py ./backend/tests/test_layer3_candidate_b_full_corpus_operator_workflow_run.py -q PASS 112 passed
+verification_node_check: node --check ./backend/app/review_ui/static/layer3.js PASS
+headless_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout" --project=chromium PASS 3 passed
+headed_rendered_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B full-corpus workflow status|Candidate B workflow history|records Candidate B repeatability rerun trial, acceptance checkpoint, and closeout" --project=chromium --headed PASS 3 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selection_v1
+```
+
+Candidate B workflow policy decisions and audit receipts now name the proxy-owner storage policy runtime, auth-owner mode, configured server identity/tenant authority, configured workflow-receipt-root storage policy, and redacted audit-event policy. `AUTH_OWNER=proxy` fails closed without trusted proxy mode, server identity, and tenant/workspace authority; existing owner bindings reject cross-owner access; stale policy hashes reject contradictory authority; caller storage roots remain forbidden; and local `AUTH_OWNER=none` single-operator proof remains compatible.
