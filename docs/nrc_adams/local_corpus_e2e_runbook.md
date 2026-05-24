@@ -3600,3 +3600,48 @@ next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_operator_cl
 ```
 
 The next runtime should close out the accepted repeatability chain by writing one append-only operator closeout receipt over server-owned workflow history/status/monitor projections, original checkpoint, rerun-trial receipt, acceptance-checkpoint receipt, headed/headless rendered proof labels, and bounded runbook closeout steps. It should not rerun Candidate B or Layer 3, mutate prior receipts, broaden Candidate B default scope, expose raw paths/URLs/output, or add process/provider/connector/model/full-mockup/frontend durable authority.
+
+### Candidate B Full-Corpus Repeatability Acceptance Operator Closeout Runtime
+
+```yaml
+milestone: candidate_b_full_corpus_repeatability_acceptance_operator_closeout_v1
+source_repeatability_acceptance_closeout_selection: next_milestone_plans/Layer3_planning_docs/1048-cb-repeatability-acceptance-closeout-selection.md
+current_main_entry: 894c82f70ddcd79cf3ef5976f1696eb279777078
+runtime_status: implemented
+selected_closeout_scope: server_owned_operator_closeout_receipt_over_accepted_candidate_b_full_corpus_repeatability_evidence
+implemented_closeout_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-closeout
+implemented_service: backend/app/services/layer3_candidate_b_full_corpus_repeatability_acceptance_closeout.py
+implemented_api_route: backend/app/api/layer3.py
+repeatability_acceptance_checkpoint_receipt_required: true
+acceptance_checkpoint_state_required: repeatability_acceptance_checkpoint_recorded
+original_repeatability_checkpoint_revalidated: true
+repeatability_rerun_trial_receipt_revalidated: true
+full_corpus_workflow_history_status_monitor_chain_revalidated: true
+accepted_dispositions: no_regression_observed,delta_reviewed_no_regression
+blocked_disposition: regression_detected_blocked
+regression_detected_must_block_closeout: true
+rendered_acceptance_control_proof_state_required: headed_and_headless_passed
+operator_runbook_closeout_steps_required: true
+negative_invariants_bound: true
+append_only_closeout_receipt: true
+exclusive_closeout_receipt_per_authority: true
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_only
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+default_scope_expansion_admitted: false
+next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_closeout_rendered_control_selection_v1
+```
+
+Operators can now record a server-owned closeout receipt after the final acceptance checkpoint is available. The closeout reloads and revalidates the accepted checkpoint chain, requires headed and headless rendered acceptance proof labels, records bounded closeout runbook steps, binds the negative invariant set, and writes its own append-only receipt without mutating the checkpoint, rerun-trial, workflow, process, completion, or downstream-proof receipts.
