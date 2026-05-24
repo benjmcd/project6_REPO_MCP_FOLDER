@@ -2818,6 +2818,9 @@ CANDIDATE_B_ASYNC_BACKGROUND_JOB_EXECUTION_BOUNDARY_RUNTIME = (
 CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_SELECTION = (
     PLANNING_DOCS / "1028-cb-async-background-process-execution-selection.md"
 )
+CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_RUNTIME = (
+    PLANNING_DOCS / "1029-cb-async-background-process-execution-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2848,6 +2851,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_execution_boundary.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_process_execution.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_SCHEDULER_LEASE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease.py"
@@ -96325,6 +96331,133 @@ def _check_candidate_b_async_background_process_execution_selection(
                 )
 
 
+def _check_candidate_b_async_background_process_execution_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_BACKGROUND_PROCESS_EXECUTION_RUNTIME: (
+            "Candidate B Async Background Process Execution Runtime",
+            "milestone: candidate_b_async_background_process_execution_v1",
+            "source_process_execution_selection: next_milestone_plans/Layer3_planning_docs/1028-cb-async-background-process-execution-selection.md",
+            "runtime_status: implemented",
+            "selected_process_execution_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution",
+            "selected_process_execution_mode: server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority",
+            "selected_process_execution_action: record_candidate_b_async_background_process_execution",
+            "selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py",
+            "selected_process_execution_outputs: process_execution_receipt,process_execution_receipt_hash,process_execution_authority_hash,redacted_process_status_projection",
+            "status_history_projection_after_process_start: true",
+            "rendered_operator_projection_after_process_start: true",
+            "background_process_runtime_selected_now: true",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: true",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_process_completion_result_adoption_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_background_process_execution_v1",
+            "source_process_execution_selection: next_milestone_plans/Layer3_planning_docs/1028-cb-async-background-process-execution-selection.md",
+            "runtime_status: implemented",
+            "selected_process_execution_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution",
+            "selected_process_execution_mode: server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority",
+            "selected_process_execution_action: record_candidate_b_async_background_process_execution",
+            "selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py",
+            "status_history_projection_after_process_start: true",
+            "rendered_operator_projection_after_process_start: true",
+            "background_process_runtime_selected_now: true",
+            "job_execution_runtime_selected_now: false",
+            "actual_subprocess_spawn_admitted_now: true",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "browser_triggered_process_start_admitted: false",
+            "operator_supplied_command_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_process_completion_result_adoption_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_process_execution.v1"',
+            "PROCESS_EXECUTION_MODE = (",
+            'OPERATOR_DECISION = "record_candidate_b_async_background_process_execution"',
+            'ALLOWLISTED_COMMAND_FAMILY = "tools/run_candidate_b_full_corpus_operator_workflow.py"',
+            "candidate_b_full_corpus_operator_workflow_process_execution_forbidden_request_fields",
+            "candidate_b_full_corpus_operator_workflow_process_execution_boundary_missing",
+            "candidate_b_full_corpus_operator_workflow_process_execution_stale_execution_boundary",
+            "_launch_server_owned_process",
+            "raw_stdout_admitted",
+            "raw_stderr_admitted",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_STATUS_SERVICE: (
+            "PROCESS_EXECUTION_SCHEMA_ID",
+            "PROCESS_EXECUTION_STATUS_PROJECTION_MODE",
+            "process_execution_projection",
+            "process_execution_projection_state",
+            "candidate_b_full_corpus_operator_workflow_status_process_execution_mismatch",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            "process_execution_runtime_admitted",
+            "process_execution_projection",
+            "_process_execution_projection",
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBFullCorpusOperatorWorkflowProcessExecutionRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowProcessExecutionResponse",
+            "post_candidate_b_full_corpus_operator_workflow_process_execution",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_RENDERED_MODE",
+            "candidateBFullCorpusOperatorWorkflowProcessExecutionPayload",
+            "canRecordCandidateBFullCorpusOperatorWorkflowProcessExecution",
+            "candidateBProcessExecutionProjectionItems",
+            "candidateBFullCorpusOperatorWorkflowProcessExecutionRows",
+            "recordCandidateBFullCorpusOperatorWorkflowProcessExecution",
+            "data-candidate-b-workflow-process-execution-index",
+            "candidate-b-full-corpus-workflow-process-execution-card",
+            "process_execution_projection",
+        ),
+        LAYER3_PAGE_TEST: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_RENDERED_MODE",
+            "process_execution_projection",
+            "candidate_b_full_corpus_operator_workflow_process_execution_endpoint",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench starts Candidate B workflow process execution through rendered server-owned control",
+            "rendered_candidate_b_full_corpus_operator_workflow_process_execution_control",
+            "candidate-b-full-corpus-workflow-process-execution-card",
+            "data-candidate-b-workflow-process-execution-index",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution",
+            "server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority",
+            "record_candidate_b_async_background_process_execution",
+            "expect(workflowProcessExecutionPayload).not.toHaveProperty('command')",
+            "expect(workflowProcessExecutionPayload).not.toHaveProperty('stdout')",
+            "expect(workflowProcessExecutionPayload).not.toHaveProperty('stderr')",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "PROCESS_EXECUTION_ENDPOINT",
+            "_process_execution_request",
+            "test_candidate_b_full_corpus_operator_workflow_process_execution_records_redacted_start",
+            "test_candidate_b_full_corpus_operator_workflow_process_execution_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_process_execution_rejects_missing_boundary",
+            "test_candidate_b_full_corpus_operator_workflow_process_execution_rejects_stale_boundary",
+            "test_candidate_b_full_corpus_operator_workflow_process_execution_service_rejects_raw_authority",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async background process execution runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -97200,6 +97333,7 @@ def main() -> int:
     _check_candidate_b_async_background_job_execution_boundary_selection(errors)
     _check_candidate_b_async_background_job_execution_boundary_runtime(errors)
     _check_candidate_b_async_background_process_execution_selection(errors)
+    _check_candidate_b_async_background_process_execution_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

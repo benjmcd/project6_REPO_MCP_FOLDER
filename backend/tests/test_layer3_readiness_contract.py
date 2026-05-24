@@ -111,6 +111,10 @@ def test_layer3_readiness_contract_is_shared() -> None:
     assert direct["candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary"
     )
+    assert direct["candidate_b_full_corpus_operator_workflow_process_execution_admitted"] is True
+    assert direct["candidate_b_full_corpus_operator_workflow_process_execution_endpoint"] == (
+        "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution"
+    )
     assert direct["candidate_b_full_corpus_operator_workflow_scheduler_lease_admitted"] is True
     assert direct["candidate_b_full_corpus_operator_workflow_scheduler_lease_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/scheduler/lease"

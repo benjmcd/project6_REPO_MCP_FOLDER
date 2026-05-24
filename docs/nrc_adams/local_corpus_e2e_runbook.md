@@ -2733,3 +2733,43 @@ next_exact_posture: candidate_b_async_background_process_execution_v1
 ```
 
 The selected next slice is a server-owned process-start receipt over the already-proven execution boundary. It must use a server-side allowlist and configured runtime authority, not browser-supplied commands, paths, URLs, runtime roots, selector fields, provider refs, connector destinations, model/RAG controls, or artifact bytes. It may admit a real subprocess start only after the implementation freeze sync, and it must record redacted process status plus timeout/failure receipts without raw stdout, stderr, traces, logs, local roots, or URLs.
+
+### Candidate B Async Background Process Execution Runtime
+
+```yaml
+milestone: candidate_b_async_background_process_execution_v1
+source_process_execution_selection: next_milestone_plans/Layer3_planning_docs/1028-cb-async-background-process-execution-selection.md
+runtime_status: implemented
+selected_process_execution_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution
+selected_process_execution_mode: server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority
+selected_process_execution_action: record_candidate_b_async_background_process_execution
+selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py
+selected_process_execution_arguments_authority: server_resolved_receipt_ids_and_configured_runtime_roots_only
+selected_process_execution_outputs: process_execution_receipt,process_execution_receipt_hash,process_execution_authority_hash,redacted_process_status_projection
+status_history_projection_after_process_start: true
+rendered_operator_projection_after_process_start: true
+stale_history_row_must_reject: true
+stale_execution_boundary_must_reject: true
+missing_execution_boundary_must_reject: true
+background_process_runtime_selected_now: true
+job_execution_runtime_selected_now: false
+actual_subprocess_spawn_admitted_now: true
+actual_corpus_processing_execution_admitted_now: false
+browser_triggered_process_start_admitted: false
+operator_supplied_command_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+next_exact_posture: candidate_b_async_process_completion_result_adoption_selection_v1
+```
+
+Operators can now start only the server-owned allowlisted Candidate B full-corpus operator workflow process after an execution-boundary receipt is visible. The receipt and UI expose a redacted process reference, receipt hashes, and status/history projection; they do not expose raw command lines, local paths, URLs, stdout, stderr, traces, logs, job-completion authority, or result-adoption authority.

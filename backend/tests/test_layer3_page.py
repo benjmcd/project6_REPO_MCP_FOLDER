@@ -448,6 +448,9 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_execution_boundary_control'" in js.text
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_MODE = 'append_only_execution_boundary_receipt_without_process_start_or_job_execution'" in js.text
     assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_EXECUTION_BOUNDARY_OPERATOR_DECISION = 'record_candidate_b_async_background_job_execution_boundary'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_process_execution_control'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_MODE = 'server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority'" in js.text
+    assert "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_PROCESS_EXECUTION_OPERATOR_DECISION = 'record_candidate_b_async_background_process_execution'" in js.text
     assert "function candidateBDefaultPromotionReadinessContract" in js.text
     assert "function candidateBDefaultPromotionStatusState" in js.text
     assert "function candidateBDefaultPromotionFinalProofPayload" in js.text
@@ -465,6 +468,8 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Full-Corpus Operator Workflow Status" in js.text
     assert "Full-Corpus Operator Workflow Execution Boundary" in js.text
     assert "execution_boundary_projection" in js.text
+    assert "Full-Corpus Operator Workflow Process Execution" in js.text
+    assert "process_execution_projection" in js.text
     assert "Redacted retained role previews" in js.text
     assert "Redacted runtime delivery artifact previews" in js.text
     assert "function renderCandidateBDefaultPromotionStatusPanel" in js.text
@@ -482,6 +487,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "candidate_b_default_promotion_operator_status_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_status_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint" in js.text
+    assert "candidate_b_full_corpus_operator_workflow_process_execution_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_status_endpoint" in js.text
     assert "/source/ingestion/candidate-b/default-promotion/operator-status" not in js.text
