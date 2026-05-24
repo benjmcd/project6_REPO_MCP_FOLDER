@@ -2866,6 +2866,9 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_RENDERED_RUNTIME = (
 CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_SELECTION = (
     PLANNING_DOCS / "1044-cb-repeatability-acceptance-checkpoint-selection.md"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_RUNTIME = (
+    PLANNING_DOCS / "1045-cb-repeatability-acceptance-checkpoint-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2935,6 +2938,13 @@ CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_SERVICE = (
     / "services"
     / "layer3_candidate_b_full_corpus_repeatability_rerun_trial.py"
 )
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint.py"
+)
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_SCHEDULER_LEASE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_scheduler_lease.py"
 )
@@ -3002,6 +3012,12 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
 )
 CANDIDATE_B_FULL_CORPUS_REPEATABILITY_RERUN_TRIAL_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_repeatability_rerun_trial.py"
+)
+CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_TEST = (
+    ROOT
+    / "backend"
+    / "tests"
+    / "test_layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_CLI_TEST = (
     ROOT / "tests" / "test_candidate_b_full_corpus_operator_workflow.py"
@@ -98133,6 +98149,109 @@ def _check_candidate_b_full_corpus_repeatability_acceptance_checkpoint_selection
                 )
 
 
+def _check_candidate_b_full_corpus_repeatability_acceptance_checkpoint_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_RUNTIME: (
+            "Candidate B Full-Corpus Repeatability Acceptance Checkpoint Runtime",
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_checkpoint_v1",
+            "source_repeatability_acceptance_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1044-cb-repeatability-acceptance-checkpoint-selection.md",
+            "current_main_entry: a928e288ee3a5aa32ad0a43a3ebe7eab11588caa",
+            "runtime_status: implemented",
+            "selected_acceptance_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint",
+            "selected_acceptance_checkpoint_mode: append_only_acceptance_checkpoint_receipt_without_process_execution_or_authority_mutation",
+            "selected_acceptance_checkpoint_action: record_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+            "repeatability_acceptance_checkpoint_runtime_selected: true",
+            "original_repeatability_checkpoint_required: true",
+            "repeatability_rerun_trial_receipt_required: true",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "blocked_disposition: regression_detected_blocked",
+            "regression_detected_must_block_acceptance: true",
+            "append_only_repeatability_acceptance_checkpoint_receipt: true",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "default_scope_expansion_admitted: false",
+            "focused_pytest: py -3.12 -m pytest .\\backend\\tests\\test_layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint.py -q PASS",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_rendered_control_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_full_corpus_repeatability_acceptance_checkpoint_v1",
+            "source_repeatability_acceptance_checkpoint_selection: next_milestone_plans/Layer3_planning_docs/1044-cb-repeatability-acceptance-checkpoint-selection.md",
+            "runtime_status: implemented",
+            "selected_acceptance_checkpoint_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint",
+            "selected_acceptance_checkpoint_action: record_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+            "repeatability_acceptance_checkpoint_runtime_selected: true",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "blocked_disposition: regression_detected_blocked",
+            "regression_detected_must_block_acceptance: true",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "process_control_admitted: false",
+            "raw_stdout_admitted: false",
+            "raw_stderr_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "frontend_durable_authority_enabled: false",
+            "focused_pytest: py -3.12 -m pytest .\\backend\\tests\\test_layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint.py -q PASS",
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_rendered_control_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_SELECTION: (
+            "next_exact_posture: candidate_b_full_corpus_repeatability_acceptance_checkpoint_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_SERVICE: (
+            "SCHEMA_ID = \"layer3.candidate_b_full_corpus_repeatability_acceptance_checkpoint.v1\"",
+            "ACCEPTANCE_CHECKPOINT_MODE = (",
+            "OPERATOR_DECISION = \"record_candidate_b_full_corpus_repeatability_acceptance_checkpoint\"",
+            "ACCEPTANCE_CHECKPOINT_ENDPOINT = (",
+            "ACCEPTED_DISPOSITIONS = {",
+            "BLOCKED_DISPOSITION = \"regression_detected_blocked\"",
+            "record_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+            "_validated_rerun_trial_receipt",
+            "_validated_acceptance_comparison",
+            "append_only_repeatability_acceptance_checkpoint_receipt",
+            "actual_corpus_processing_execution_admitted_now\": False",
+            "raw_local_path_exposed\": False",
+            "raw_url_exposed\": False",
+        ),
+        CANDIDATE_B_FULL_CORPUS_REPEATABILITY_ACCEPTANCE_CHECKPOINT_TEST: (
+            "test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_records_append_only",
+            "test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_is_idempotent",
+            "test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_blocks_regression",
+            "test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_rejects_raw_authority",
+            "acceptance.ACCEPTANCE_CHECKPOINT_MODE",
+            "regression_detected_blocked",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+            "Layer3CandidateBFullCorpusRepeatabilityAcceptanceCheckpointRequest",
+            "Layer3CandidateBFullCorpusRepeatabilityAcceptanceCheckpointResponse",
+            "/source/ingestion/candidate-b/full-corpus/operator-workflow/repeatability/acceptance-checkpoint",
+            "record_candidate_b_full_corpus_repeatability_acceptance_checkpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_repeatability_acceptance_checkpoint_admitted",
+            "candidate_b_full_corpus_repeatability_acceptance_checkpoint_endpoint",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_repeatability_acceptance_checkpoint_admitted",
+            "candidate_b_full_corpus_repeatability_acceptance_checkpoint_endpoint",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B full-corpus repeatability acceptance checkpoint runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -99024,6 +99143,7 @@ def main() -> int:
     _check_candidate_b_full_corpus_repeatability_rerun_trial_rendered_selection(errors)
     _check_candidate_b_full_corpus_repeatability_rerun_trial_rendered_runtime(errors)
     _check_candidate_b_full_corpus_repeatability_acceptance_checkpoint_selection(errors)
+    _check_candidate_b_full_corpus_repeatability_acceptance_checkpoint_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
