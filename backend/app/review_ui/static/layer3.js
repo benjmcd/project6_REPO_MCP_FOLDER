@@ -343,6 +343,9 @@ const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_RENDERED_MODE = 'rendere
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_lifecycle_expire_control';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_MODE = 'candidate_b_operator_workflow_run_expiry_closeout_receipt_v1';
 const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_OPERATOR_DECISION = 'expire_or_close_server_owned_workflow_run_receipt';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_RENDERED_MODE = 'rendered_candidate_b_full_corpus_operator_workflow_queue_state_control';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_MODE = 'append_only_queue_state_receipt_without_background_scheduler';
+const CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_OPERATOR_DECISION = 'record_candidate_b_async_workflow_queue_state';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_RENDERED_MODE = 'rendered_candidate_b_retained_artifact_family_status_control';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_MODE = 'candidate_b_retained_artifact_family_status_v1';
 const CANDIDATE_B_ARTIFACT_FAMILY_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_governed_retained_artifact_family_status';
@@ -508,6 +511,9 @@ const State = {
     candidateBFullCorpusOperatorWorkflowLifecycle: null,
     candidateBFullCorpusOperatorWorkflowLifecycleError: null,
     candidateBFullCorpusOperatorWorkflowLifecyclePending: false,
+    candidateBFullCorpusOperatorWorkflowQueueState: null,
+    candidateBFullCorpusOperatorWorkflowQueueStateError: null,
+    candidateBFullCorpusOperatorWorkflowQueueStatePending: false,
     candidateBFullCorpusOperatorWorkflowRun: null,
     candidateBFullCorpusOperatorWorkflowRunError: null,
     candidateBFullCorpusOperatorWorkflowRunPending: false,
@@ -7592,6 +7598,7 @@ function candidateBDefaultPromotionStatusState(contract) {
         'candidate_b_full_corpus_operator_workflow_status_admitted',
         'candidate_b_full_corpus_operator_workflow_history_admitted',
         'candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted',
+        'candidate_b_full_corpus_operator_workflow_queue_state_admitted',
         'candidate_b_default_promotion_selector_switch_admitted',
     ];
     const missing = required.filter((field) => contract[field] !== true);
@@ -7639,6 +7646,12 @@ function candidateBFullCorpusOperatorWorkflowHistoryEndpointPath(contract) {
 
 function candidateBFullCorpusOperatorWorkflowLifecycleEndpointPath(contract) {
     const endpoint = contract?.candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
+function candidateBFullCorpusOperatorWorkflowQueueStateEndpointPath(contract) {
+    const endpoint = contract?.candidate_b_full_corpus_operator_workflow_queue_state_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
     return endpoint.slice(API_ROOT.length);
 }
@@ -8134,6 +8147,20 @@ function candidateBFullCorpusOperatorWorkflowLifecyclePayload(row) {
     };
 }
 
+function candidateBFullCorpusOperatorWorkflowQueueStatePayload(row) {
+    const history = State.candidateBFullCorpusOperatorWorkflowHistory || {};
+    return {
+        client_request_id: requestId(),
+        queue_state_mode: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_MODE,
+        operator_decision: CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_OPERATOR_DECISION,
+        operator_workflow_receipt_id: row.operator_workflow_receipt_id,
+        operator_workflow_receipt_hash: row.operator_workflow_receipt_hash,
+        row_hash: row.row_hash,
+        authority_basis_hash: row.authority_basis_hash,
+        history_hash: history.history_hash,
+    };
+}
+
 function candidateBClosureEvidencePayload() {
     const values = candidateBClosureEvidenceInputValues();
     State.candidateBClosureEvidenceInput = values;
@@ -8268,6 +8295,20 @@ function canExpireCandidateBFullCorpusOperatorWorkflowRow(row, contract = candid
         && row?.row_hash
         && row?.authority_basis_hash
         && !State.candidateBFullCorpusOperatorWorkflowLifecyclePending
+        && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
+    );
+}
+
+function canRecordCandidateBFullCorpusOperatorWorkflowQueueState(row, contract = candidateBDefaultPromotionReadinessContract()) {
+    return Boolean(
+        contract?.candidate_b_full_corpus_operator_workflow_queue_state_admitted
+        && candidateBFullCorpusOperatorWorkflowQueueStateEndpointPath(contract)
+        && State.candidateBFullCorpusOperatorWorkflowHistory?.history_hash
+        && row?.operator_workflow_receipt_id
+        && row?.operator_workflow_receipt_hash
+        && row?.row_hash
+        && row?.authority_basis_hash
+        && !State.candidateBFullCorpusOperatorWorkflowQueueStatePending
         && !State.candidateBFullCorpusOperatorWorkflowHistoryPending
     );
 }
@@ -8412,6 +8453,20 @@ function candidateBFullCorpusOperatorWorkflowLifecyclePanelState() {
         return { label: 'candidate_b_full_corpus_workflow_lifecycle_expired', pill: 'ok' };
     }
     return { label: 'candidate_b_full_corpus_workflow_lifecycle_ready', pill: 'preview' };
+}
+
+function candidateBFullCorpusOperatorWorkflowQueueStatePanelState() {
+    if (State.candidateBFullCorpusOperatorWorkflowQueueStatePending) {
+        return { label: 'candidate_b_full_corpus_workflow_queue_state_pending', pill: 'preview' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowQueueStateError) {
+        const code = State.candidateBFullCorpusOperatorWorkflowQueueStateError?.payload?.error?.code;
+        return { label: code || 'candidate_b_full_corpus_workflow_queue_state_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBFullCorpusOperatorWorkflowQueueState?.queue_state === 'queue_state_authority_recorded') {
+        return { label: 'candidate_b_full_corpus_workflow_queue_state_recorded', pill: 'ok' };
+    }
+    return { label: 'candidate_b_full_corpus_workflow_queue_state_ready', pill: 'preview' };
 }
 
 function candidateBClosureEvidencePanelState() {
@@ -8993,6 +9048,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
         const statusRequest = row.status_request || {};
         const isSelected = selectedReceiptId && selectedReceiptId === row.operator_workflow_receipt_id;
         const lifecycleDisabled = canExpireCandidateBFullCorpusOperatorWorkflowRow(row, contract) ? '' : 'disabled';
+        const queueStateDisabled = canRecordCandidateBFullCorpusOperatorWorkflowQueueState(row, contract) ? '' : 'disabled';
         return `
             <section class="result-review-card candidate-b-full-corpus-workflow-history-row" data-workflow-run-receipt-id="${escapeHtml(row.operator_workflow_receipt_id)}">
                 <strong>${isSelected ? 'Selected Workflow Run' : 'Workflow Run'} ${escapeHtml(index + 1)}</strong>
@@ -9016,6 +9072,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                 </ul>
                 <button type="button" data-candidate-b-workflow-history-inspect-index="${escapeHtml(index)}" ${State.candidateBFullCorpusOperatorWorkflowStatusPending ? 'disabled' : ''}>Inspect Run Status</button>
                 <button type="button" data-candidate-b-workflow-lifecycle-expire-index="${escapeHtml(index)}" ${lifecycleDisabled}>Expire/Close Run</button>
+                <button type="button" data-candidate-b-workflow-queue-state-index="${escapeHtml(index)}" ${queueStateDisabled}>Record Queue State</button>
             </section>
         `;
     }).join('') : `
@@ -9050,6 +9107,7 @@ function candidateBFullCorpusOperatorWorkflowHistoryRows(history) {
                     ${fieldItem('cancel runtime admitted', history.cancel_runtime_admitted)}
                     ${fieldItem('retry runtime admitted', history.retry_runtime_admitted)}
                     ${fieldItem('resume runtime admitted', history.resume_runtime_admitted)}
+                    ${fieldItem('queue-state authority admitted', history.queue_state_authority_runtime_admitted)}
                     ${fieldItem('expiry mutation admitted', history.expiry_mutation_runtime_admitted)}
                     ${fieldItem('queue scheduler admitted', history.queue_scheduler_runtime_admitted)}
                     ${fieldItem('raw local path exposed', history.raw_local_path_exposed)}
@@ -9107,6 +9165,59 @@ function candidateBFullCorpusOperatorWorkflowLifecycleRows(lifecycle) {
                     ${fieldItem('artifact bytes exposed', lifecycle.artifact_bytes_exposed)}
                     ${fieldItem('frontend durable authority', lifecycle.frontend_durable_authority_enabled)}
                     ${fieldItem('selector mutation performed', lifecycle.selector_mutation_performed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function candidateBFullCorpusOperatorWorkflowQueueStateRows(queueState) {
+    if (!queueState) return '';
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>Workflow Queue-State Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', queueState.schema_id, { code: true })}
+                    ${fieldItem('queue state', queueState.queue_state, { code: true })}
+                    ${fieldItem('queue-state receipt id', queueState.queue_state_receipt_id, { code: true })}
+                    ${fieldItem('queue-state receipt hash', queueState.queue_state_receipt_hash, { code: true })}
+                    ${fieldItem('queue-state hash', queueState.queue_state_hash, { code: true })}
+                    ${fieldItem('idempotent replay', queueState.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Bound Queue Authority</strong>
+                <ul>
+                    ${fieldItem('workflow receipt id', queueState.operator_workflow_receipt_id, { code: true })}
+                    ${fieldItem('workflow receipt hash', queueState.operator_workflow_receipt_hash, { code: true })}
+                    ${fieldItem('row hash', queueState.row_hash, { code: true })}
+                    ${fieldItem('history hash', queueState.history_hash, { code: true })}
+                    ${fieldItem('authority basis hash', queueState.authority_basis_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Queue-State Guardrails</strong>
+                <ul>
+                    ${fieldItem('append-only receipt', queueState.append_only_queue_state_receipt)}
+                    ${fieldItem('source run receipt mutated', queueState.source_run_receipt_mutated)}
+                    ${fieldItem('queue-state authority selected', queueState.queue_state_authority_runtime_selected)}
+                    ${fieldItem('queue scheduler selected now', queueState.queue_scheduler_runtime_selected_now)}
+                    ${fieldItem('background worker selected now', queueState.background_worker_runtime_selected_now)}
+                    ${fieldItem('cancel selected now', queueState.cancel_runtime_selected_now)}
+                    ${fieldItem('retry selected now', queueState.retry_runtime_selected_now)}
+                    ${fieldItem('resume selected now', queueState.resume_runtime_selected_now)}
+                    ${fieldItem('expiry enforcement selected now', queueState.expiry_enforcement_runtime_selected_now)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Exposure Boundary</strong>
+                <ul>
+                    ${fieldItem('raw local path exposed', queueState.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', queueState.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', queueState.artifact_bytes_exposed)}
+                    ${fieldItem('frontend durable authority', queueState.frontend_durable_authority_enabled)}
+                    ${fieldItem('selector mutation performed', queueState.selector_mutation_performed)}
                 </ul>
             </section>
         </div>
@@ -9316,6 +9427,20 @@ function candidateBFullCorpusOperatorWorkflowLifecycleError() {
     `;
 }
 
+function candidateBFullCorpusOperatorWorkflowQueueStateError() {
+    const error = State.candidateBFullCorpusOperatorWorkflowQueueStateError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_full_corpus_operator_workflow_queue_state_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBClosureEvidenceError() {
     const error = State.candidateBClosureEvidenceError;
     if (!error) return '';
@@ -9411,6 +9536,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowStatusState = candidateBFullCorpusOperatorWorkflowStatusPanelState();
     const fullCorpusWorkflowHistoryState = candidateBFullCorpusOperatorWorkflowHistoryPanelState();
     const fullCorpusWorkflowLifecycleState = candidateBFullCorpusOperatorWorkflowLifecyclePanelState();
+    const fullCorpusWorkflowQueueStateState = candidateBFullCorpusOperatorWorkflowQueueStatePanelState();
     const closureEvidenceState = candidateBClosureEvidencePanelState();
     const readinessAuditState = candidateBReadinessAuditPanelState();
     const artifactFamilyState = candidateBArtifactFamilyStatusPanelState();
@@ -9437,6 +9563,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const fullCorpusWorkflowStatusInputs = State.candidateBFullCorpusOperatorWorkflowStatusInput;
     const fullCorpusWorkflowHistory = State.candidateBFullCorpusOperatorWorkflowHistory;
     const fullCorpusWorkflowLifecycle = State.candidateBFullCorpusOperatorWorkflowLifecycle;
+    const fullCorpusWorkflowQueueState = State.candidateBFullCorpusOperatorWorkflowQueueState;
     const closureEvidence = State.candidateBClosureEvidence;
     const closureEvidenceInputs = State.candidateBClosureEvidenceInput;
     const readinessAudit = State.candidateBReadinessAudit;
@@ -9674,6 +9801,15 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBFullCorpusOperatorWorkflowLifecycleRows(fullCorpusWorkflowLifecycle)}
                 ${candidateBFullCorpusOperatorWorkflowLifecycleError()}
+            </section>
+            <section class="result-review-card candidate-b-full-corpus-workflow-queue-state-card" data-rendered-mode="${escapeHtml(CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                <strong>Full-Corpus Operator Workflow Queue State</strong>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(fullCorpusWorkflowQueueStateState.pill)}">${escapeHtml(fullCorpusWorkflowQueueStateState.label)}</span>
+                    <span class="rail-label">Server records append-only queue-state authority for a selected workflow-run row without starting a scheduler, worker, cancel, retry, or resume runtime.</span>
+                </div>
+                ${candidateBFullCorpusOperatorWorkflowQueueStateRows(fullCorpusWorkflowQueueState)}
+                ${candidateBFullCorpusOperatorWorkflowQueueStateError()}
             </section>
             <section class="result-review-card candidate-b-operator-status-card">
                 <strong>Default-Promotion Operator Status</strong>
@@ -10213,6 +10349,42 @@ async function expireCandidateBFullCorpusOperatorWorkflowHistoryRow(event) {
         addEvent(`Candidate B full-corpus workflow lifecycle expiry blocked: ${error.message}`);
     } finally {
         State.candidateBFullCorpusOperatorWorkflowLifecyclePending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBFullCorpusOperatorWorkflowQueueState(event) {
+    const button = event.target?.closest?.('[data-candidate-b-workflow-queue-state-index]');
+    if (!button) return;
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    const path = candidateBFullCorpusOperatorWorkflowQueueStateEndpointPath(contract);
+    const rows = State.candidateBFullCorpusOperatorWorkflowHistory?.history_rows;
+    const index = Number(button.dataset.candidateBWorkflowQueueStateIndex);
+    const row = Array.isArray(rows) ? rows[index] : null;
+    if (!path || !canRecordCandidateBFullCorpusOperatorWorkflowQueueState(row, contract)) {
+        State.candidateBFullCorpusOperatorWorkflowQueueState = null;
+        State.candidateBFullCorpusOperatorWorkflowQueueStateError = new Error(
+            'Candidate B workflow queue-state authority requires a selected current history row and the admitted queue-state endpoint.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    State.candidateBFullCorpusOperatorWorkflowHistorySelectedReceiptId = row.operator_workflow_receipt_id || '';
+    const payload = candidateBFullCorpusOperatorWorkflowQueueStatePayload(row);
+    State.candidateBFullCorpusOperatorWorkflowQueueStatePending = true;
+    State.candidateBFullCorpusOperatorWorkflowQueueStateError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBFullCorpusOperatorWorkflowQueueState = await postJson(path, payload);
+        State.candidateBFullCorpusOperatorWorkflowQueueStateError = null;
+        addEvent('Candidate B full-corpus workflow queue-state authority recorded through append-only receipt authority.');
+    } catch (error) {
+        State.candidateBFullCorpusOperatorWorkflowQueueState = null;
+        State.candidateBFullCorpusOperatorWorkflowQueueStateError = error;
+        addEvent(`Candidate B full-corpus workflow queue-state authority blocked: ${error.message}`);
+    } finally {
+        State.candidateBFullCorpusOperatorWorkflowQueueStatePending = false;
         renderAll();
     }
 }
@@ -16784,6 +16956,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
 elements.candidateBDefaultPromotionStatusPanel.addEventListener('click', (event) => {
     inspectCandidateBFullCorpusOperatorWorkflowHistoryRow(event);
     expireCandidateBFullCorpusOperatorWorkflowHistoryRow(event);
+    recordCandidateBFullCorpusOperatorWorkflowQueueState(event);
 });
 elements.resultReviewDecision.addEventListener('change', setGateControls);
 elements.resultReviewNotes.addEventListener('input', setGateControls);

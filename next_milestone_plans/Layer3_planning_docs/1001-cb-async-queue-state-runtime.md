@@ -1,0 +1,53 @@
+# Candidate B Async Queue-State Runtime
+
+```yaml
+milestone: candidate_b_async_workflow_queue_state_authority_v1
+source_async_selection: next_milestone_plans/Layer3_planning_docs/1000-cb-async-cancel-retry-queue-selection.md
+runtime_status: implemented
+selected_queue_state_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state
+selected_queue_state_mode: append_only_queue_state_receipt_without_background_scheduler
+selected_queue_state_action: record_candidate_b_async_workflow_queue_state
+selected_queue_state_scope: server_owned_candidate_b_full_corpus_operator_workflow_queue_state_receipts
+selected_source_authority: configured_L3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR
+existing_run_start_endpoint_reused_for_current_sync_start: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/run
+existing_history_endpoint_reused_for_list: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history
+existing_status_endpoint_reused_for_detail: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/status
+existing_expiry_closeout_endpoint_remains_only_lifecycle_mutation: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/expire
+selected_rendered_queue_state_mode: rendered_candidate_b_full_corpus_operator_workflow_queue_state_control
+selected_queue_state_receipt_model: append_only_queue_state_receipt_without_mutating_source_run_receipt
+selected_queue_state_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash,queue_state_hash
+selected_queue_state_idempotency_basis: client_request_id_plus_queue_state_authority_hash
+stale_run_receipt_rejected: true
+stale_history_row_rejected: true
+missing_run_receipt_rejected: true
+source_run_receipt_mutation_admitted: false
+browser_supplied_receipt_root_admitted: false
+browser_supplied_runtime_roots_admitted: false
+browser_supplied_source_directory_admitted: false
+browser_supplied_bridge_dir_admitted: false
+operator_supplied_local_path_admitted: false
+operator_supplied_raw_url_admitted: false
+queue_state_authority_runtime_selected: true
+queue_scheduler_runtime_selected_now: false
+background_worker_runtime_selected_now: false
+cancel_runtime_selected_now: false
+retry_runtime_selected_now: false
+resume_runtime_selected_now: false
+expiry_enforcement_runtime_selected_now: false
+default_scope_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selector_mutation_performed: false
+implementation_scope: backend_service_api_readiness_rendered_operator_control_focused_tests
+next_exact_posture: candidate_b_async_queue_scheduler_authority_selection_v1
+```
+
+This runtime implements the queue-state receipt authority selected in `1000-cb-async-cancel-retry-queue-selection.md`. The endpoint revalidates the current server-owned workflow-run history row, binds the request to the current `history_hash`, `row_hash`, `operator_workflow_receipt_hash`, `authority_basis_hash`, and derived `queue_state_hash`, then writes a separate append-only queue-state receipt.
+
+The source workflow-run receipt is not mutated. The rendered operator control can record queue-state authority from a current history row, but it does not start a background scheduler or worker and does not admit cancel, retry, resume, expiry enforcement, broader default scope, provider object writes, connector dispatch, RAG/vector/model runtime, full mockup activation, browser storage authority, or frontend durable authority.

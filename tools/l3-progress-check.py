@@ -2734,6 +2734,9 @@ CANDIDATE_B_WORKFLOW_RUN_EXPIRY_CLOSEOUT_RUNTIME = (
 CANDIDATE_B_ASYNC_CANCEL_RETRY_QUEUE_SELECTION = (
     PLANNING_DOCS / "1000-cb-async-cancel-retry-queue-selection.md"
 )
+CANDIDATE_B_ASYNC_QUEUE_STATE_RUNTIME = (
+    PLANNING_DOCS / "1001-cb-async-queue-state-runtime.md"
+)
 LOCAL_CORPUS_E2E_RUNBOOK = ROOT / "docs" / "nrc_adams" / "local_corpus_e2e_runbook.md"
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUNNER = (
     ROOT / "tools" / "run_candidate_b_full_corpus_operator_workflow.py"
@@ -2758,6 +2761,9 @@ CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE = (
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_lifecycle.py"
+)
+CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_candidate_b_full_corpus_operator_workflow_queue_state.py"
 )
 CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_candidate_b_full_corpus_operator_workflow_run.py"
@@ -92781,7 +92787,8 @@ def _check_candidate_b_workflow_run_lifecycle_selection(
             '"queue_scheduler_runtime_admitted": False',
             '"expiry_mutation_runtime_admitted": True',
             "expire or close a selected workflow-run row through the admitted lifecycle endpoint",
-            "select cancel, retry, resume, or queue scheduling only through a separate freeze",
+            "record append-only queue-state authority for a selected workflow-run row",
+            "select queue scheduling, cancel, retry, or resume only through a separate freeze",
         ),
         LAYER3_API: (
             "layer3_candidate_b_full_corpus_operator_workflow_lifecycle",
@@ -92939,9 +92946,11 @@ def _check_candidate_b_async_cancel_retry_queue_selection(
             '"cancel_runtime_admitted": False',
             '"retry_runtime_admitted": False',
             '"resume_runtime_admitted": False',
+            '"queue_state_authority_runtime_admitted": True',
             '"queue_scheduler_runtime_admitted": False',
             '"expiry_mutation_runtime_admitted": True',
-            "select cancel, retry, resume, or queue scheduling only through a separate freeze",
+            "record append-only queue-state authority for a selected workflow-run row",
+            "select queue scheduling, cancel, retry, or resume only through a separate freeze",
         ),
         CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_LIFECYCLE_SERVICE: (
             "Workflow-run lifecycle expiry does not admit caller paths, URLs, selector mutation, connector/model controls, browser authority, queue scheduling, cancel, retry, or resume.",
@@ -92964,13 +92973,150 @@ def _check_candidate_b_async_cancel_retry_queue_selection(
         '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/cancel"',
         '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/retry"',
         '"/source/ingestion/candidate-b/full-corpus/operator-workflow/lifecycle/resume"',
-        '"/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state"',
     )
     for route in forbidden_routes:
         if route in api_text:
             errors.append(
                 f"{_rel(LAYER3_API)} exposes non-implemented Candidate B async selection route: {route}"
             )
+
+
+def _check_candidate_b_async_queue_state_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_ASYNC_QUEUE_STATE_RUNTIME: (
+            "Candidate B Async Queue-State Runtime",
+            "milestone: candidate_b_async_workflow_queue_state_authority_v1",
+            "source_async_selection: next_milestone_plans/Layer3_planning_docs/1000-cb-async-cancel-retry-queue-selection.md",
+            "runtime_status: implemented",
+            "selected_queue_state_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state",
+            "selected_queue_state_mode: append_only_queue_state_receipt_without_background_scheduler",
+            "selected_queue_state_action: record_candidate_b_async_workflow_queue_state",
+            "selected_rendered_queue_state_mode: rendered_candidate_b_full_corpus_operator_workflow_queue_state_control",
+            "selected_queue_state_receipt_model: append_only_queue_state_receipt_without_mutating_source_run_receipt",
+            "selected_queue_state_receipt_binding: operator_workflow_receipt_id,operator_workflow_receipt_hash,row_hash,authority_basis_hash,history_hash,queue_state_hash",
+            "selected_queue_state_idempotency_basis: client_request_id_plus_queue_state_authority_hash",
+            "stale_run_receipt_rejected: true",
+            "stale_history_row_rejected: true",
+            "source_run_receipt_mutation_admitted: false",
+            "queue_state_authority_runtime_selected: true",
+            "queue_scheduler_runtime_selected_now: false",
+            "background_worker_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_async_queue_scheduler_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_async_workflow_queue_state_authority_v1",
+            "source_async_selection: next_milestone_plans/Layer3_planning_docs/1000-cb-async-cancel-retry-queue-selection.md",
+            "runtime_status: implemented",
+            "selected_queue_state_endpoint: /api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state",
+            "selected_queue_state_mode: append_only_queue_state_receipt_without_background_scheduler",
+            "selected_queue_state_action: record_candidate_b_async_workflow_queue_state",
+            "selected_rendered_queue_state_mode: rendered_candidate_b_full_corpus_operator_workflow_queue_state_control",
+            "selected_queue_state_receipt_model: append_only_queue_state_receipt_without_mutating_source_run_receipt",
+            "queue_state_authority_runtime_selected: true",
+            "queue_scheduler_runtime_selected_now: false",
+            "background_worker_runtime_selected_now: false",
+            "cancel_runtime_selected_now: false",
+            "retry_runtime_selected_now: false",
+            "resume_runtime_selected_now: false",
+            "expiry_enforcement_runtime_selected_now: false",
+            "next_exact_posture: candidate_b_async_queue_scheduler_authority_selection_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_SERVICE: (
+            'SCHEMA_ID = "layer3.candidate_b_full_corpus_operator_workflow_queue_state.v1"',
+            'QUEUE_STATE_MODE = "append_only_queue_state_receipt_without_background_scheduler"',
+            'OPERATOR_DECISION = "record_candidate_b_async_workflow_queue_state"',
+            'QUEUE_STATE_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state"',
+            'RENDERED_QUEUE_STATE_MODE = "rendered_candidate_b_full_corpus_operator_workflow_queue_state_control"',
+            "record_candidate_b_full_corpus_operator_workflow_queue_state",
+            "_selected_history_row",
+            "_validate_selected_authority",
+            "_load_or_write_queue_state_receipt",
+            '"append_only_queue_state_receipt": True',
+            '"source_run_receipt_mutated": False',
+            '"queue_state_authority_runtime_selected": True',
+            '"queue_scheduler_runtime_selected_now": False',
+            '"background_worker_runtime_selected_now": False',
+            '"cancel_runtime_selected_now": False',
+            '"retry_runtime_selected_now": False',
+            '"resume_runtime_selected_now": False',
+            "candidate_b_full_corpus_operator_workflow_queue_state_forbidden_request_fields",
+            "candidate_b_full_corpus_operator_workflow_queue_state_stale_authority",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_HISTORY_SERVICE: (
+            '"queue_state_authority_runtime_admitted": True',
+            '"queue_scheduler_runtime_admitted": False',
+            "record append-only queue-state authority for a selected workflow-run row",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_full_corpus_operator_workflow_queue_state",
+            "Layer3CandidateBFullCorpusOperatorWorkflowQueueStateRequest",
+            "Layer3CandidateBFullCorpusOperatorWorkflowQueueStateResponse",
+            '"/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state"',
+            "CandidateBFullCorpusOperatorWorkflowQueueStateError",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_full_corpus_operator_workflow_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_queue_state_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"candidate_b_full_corpus_operator_workflow_queue_state": True',
+            "candidate_b_full_corpus_operator_workflow_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_queue_state_endpoint",
+        ),
+        LAYER3_READINESS_CONTRACT_TEST: (
+            "candidate_b_full_corpus_operator_workflow_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_queue_state_endpoint",
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"candidate_b_full_corpus_operator_workflow_queue_state"',
+            "candidate_b_full_corpus_operator_workflow_queue_state_admitted",
+            "candidate_b_full_corpus_operator_workflow_queue_state_endpoint",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_RENDERED_MODE",
+            "CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_QUEUE_STATE_MODE",
+            "candidateBFullCorpusOperatorWorkflowQueueStateEndpointPath",
+            "candidateBFullCorpusOperatorWorkflowQueueStatePayload",
+            "canRecordCandidateBFullCorpusOperatorWorkflowQueueState",
+            "candidateBFullCorpusOperatorWorkflowQueueStateRows",
+            "recordCandidateBFullCorpusOperatorWorkflowQueueState",
+            "data-candidate-b-workflow-queue-state-index",
+            "candidate-b-full-corpus-workflow-queue-state-card",
+        ),
+        CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_RUN_TEST: (
+            "test_candidate_b_full_corpus_operator_workflow_queue_state_records_append_only",
+            "test_candidate_b_full_corpus_operator_workflow_queue_state_is_idempotent",
+            "test_candidate_b_full_corpus_operator_workflow_queue_state_rejects_stale_authority",
+            "test_candidate_b_full_corpus_operator_workflow_queue_state_service_rejects_raw_authority",
+            "QUEUE_STATE_ENDPOINT",
+            "workflow_queue_state.QUEUE_STATE_MODE",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "Layer 3 workbench records Candidate B workflow queue state through rendered append-only control",
+            "rendered_candidate_b_full_corpus_operator_workflow_queue_state_control",
+            "append_only_queue_state_receipt_without_background_scheduler",
+            "record_candidate_b_async_workflow_queue_state",
+            "data-candidate-b-workflow-queue-state-index",
+            "append-only receipt: true",
+            "source run receipt mutated: false",
+            "expect(workflowQueueStatePayload).not.toHaveProperty('local_path')",
+            "expect(workflowQueueStatePayload).not.toHaveProperty('frontend_durable_authority')",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B async queue-state runtime term: {term}"
+                )
 
 
 def main() -> int:
@@ -93820,6 +93966,7 @@ def main() -> int:
     _check_candidate_b_workflow_run_history_projection(errors)
     _check_candidate_b_workflow_run_lifecycle_selection(errors)
     _check_candidate_b_async_cancel_retry_queue_selection(errors)
+    _check_candidate_b_async_queue_state_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

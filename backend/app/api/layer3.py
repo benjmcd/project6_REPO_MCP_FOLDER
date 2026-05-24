@@ -39,6 +39,7 @@ from app.services import (
     layer3_candidate_b_final_proof,
     layer3_candidate_b_full_corpus_operator_workflow_history,
     layer3_candidate_b_full_corpus_operator_workflow_lifecycle,
+    layer3_candidate_b_full_corpus_operator_workflow_queue_state,
     layer3_candidate_b_full_corpus_operator_workflow_run,
     layer3_candidate_b_full_corpus_operator_workflow_status,
     layer3_candidate_b_operator_status,
@@ -171,6 +172,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_full_corpus_operator_workflow_history_endpoint: str
     candidate_b_full_corpus_operator_workflow_lifecycle_expire_admitted: bool
     candidate_b_full_corpus_operator_workflow_lifecycle_expire_endpoint: str
+    candidate_b_full_corpus_operator_workflow_queue_state_admitted: bool
+    candidate_b_full_corpus_operator_workflow_queue_state_endpoint: str
     candidate_b_default_promotion_selector_switch_admitted: bool
     candidate_b_default_promotion_selector_scope: str
     source_directory_ingestion_scan_admitted: bool
@@ -2777,6 +2780,19 @@ class Layer3CandidateBFullCorpusOperatorWorkflowLifecycleRequest(BaseModel):
     history_hash: str = Field(min_length=64, max_length=64)
 
 
+class Layer3CandidateBFullCorpusOperatorWorkflowQueueStateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    queue_state_mode: Literal["append_only_queue_state_receipt_without_background_scheduler"]
+    operator_decision: Literal["record_candidate_b_async_workflow_queue_state"]
+    operator_workflow_receipt_id: str = Field(min_length=1)
+    operator_workflow_receipt_hash: str = Field(min_length=64, max_length=64)
+    row_hash: str = Field(min_length=64, max_length=64)
+    authority_basis_hash: str = Field(min_length=64, max_length=64)
+    history_hash: str = Field(min_length=64, max_length=64)
+
+
 class Layer3CandidateBDefaultPromotionClosureEvidenceRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -3425,6 +3441,7 @@ class Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse(Layer3BaseRespon
     cancel_runtime_admitted: bool
     retry_runtime_admitted: bool
     resume_runtime_admitted: bool
+    queue_state_authority_runtime_admitted: bool
     queue_scheduler_runtime_admitted: bool
     expiry_mutation_runtime_admitted: bool
     default_scope_expansion_admitted: bool
@@ -3517,6 +3534,57 @@ class Layer3CandidateBFullCorpusOperatorWorkflowLifecycleResponse(Layer3BaseResp
     resume_runtime_selected_now: bool
     queue_scheduler_runtime_selected_now: bool
     expiry_closeout_runtime_selected: bool
+    default_scope_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    selector_mutation_performed: bool
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBFullCorpusOperatorWorkflowQueueStateResponse(Layer3BaseResponse):
+    mode: str
+    status: str
+    queue_state: str
+    queue_state_receipt_id: str
+    queue_state_receipt_hash: str
+    queue_state_receipt_ref: str
+    operator_workflow_receipt_id: str
+    operator_workflow_receipt_hash: str
+    source_operator_workflow_receipt_id: str
+    source_operator_workflow_receipt_hash: str
+    authority_basis_hash: str
+    row_hash: str
+    history_hash: str
+    queue_state_record: dict[str, Any]
+    queue_state_hash: str
+    queue_state_authority: dict[str, Any]
+    queue_state_authority_hash: str
+    idempotency_key_hash: str
+    idempotent_replay: bool
+    append_only_queue_state_receipt: bool
+    source_run_receipt_mutated: bool
+    run_state_before_queue_state: str
+    run_state_after_queue_state: str
+    selected_queue_state_mode: str
+    selected_queue_state_endpoint: str
+    rendered_queue_state_mode: str
+    status_endpoint: str
+    status_request: dict[str, Any]
+    history_endpoint: str
+    history_request: dict[str, Any]
+    queue_state_authority_runtime_selected: bool
+    queue_scheduler_runtime_selected_now: bool
+    background_worker_runtime_selected_now: bool
+    cancel_runtime_selected_now: bool
+    retry_runtime_selected_now: bool
+    resume_runtime_selected_now: bool
+    expiry_enforcement_runtime_selected_now: bool
     default_scope_expansion_admitted: bool
     provider_object_write_enabled: bool
     connector_dispatch_enabled: bool
@@ -9350,6 +9418,23 @@ def post_candidate_b_full_corpus_operator_workflow_lifecycle_expire(
             payload.model_dump(exclude_unset=True),
         )
     except workflow_lifecycle_service.CandidateBFullCorpusOperatorWorkflowLifecycleError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/full-corpus/operator-workflow/queue/state",
+    response_model=Layer3CandidateBFullCorpusOperatorWorkflowQueueStateResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_full_corpus_operator_workflow_queue_state(
+    payload: Layer3CandidateBFullCorpusOperatorWorkflowQueueStateRequest,
+) -> dict[str, Any] | JSONResponse:
+    workflow_queue_state_service = layer3_candidate_b_full_corpus_operator_workflow_queue_state
+    try:
+        return workflow_queue_state_service.record_candidate_b_full_corpus_operator_workflow_queue_state(
+            payload.model_dump(exclude_unset=True),
+        )
+    except workflow_queue_state_service.CandidateBFullCorpusOperatorWorkflowQueueStateError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
