@@ -7765,6 +7765,7 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use');
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status');
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial');
+  await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness');
   await expect(panel).toContainText('baseline rollback preserved');
   await expect(panel).toContainText('selector mutation from this panel');
   await expect(panel).toContainText('frontend durable authority');
@@ -7816,6 +7817,12 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   );
   await expect(page.locator('#candidate-b-broader-scope-operator-repeatability-trial-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
   await expect(page.locator('#candidate-b-broader-scope-operator-repeatability-trial-submit')).toBeDisabled();
+  await expect(page.locator('#candidate-b-broader-scope-promotion-readiness-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_control',
+  );
+  await expect(page.locator('#candidate-b-broader-scope-promotion-readiness-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-broader-scope-promotion-readiness-submit')).toBeDisabled();
   await expect(page.locator('#candidate-b-final-proof-status-form')).toHaveAttribute(
     'data-rendered-mode',
     'rendered_candidate_b_default_promotion_final_proof_status_inspection_control',
@@ -7834,10 +7841,11 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
     '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use',
     '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status',
     '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial',
+    '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness',
   ]);
 });
 
-test('Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control', async ({ page, request }) => {
+test('Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control and promotion readiness', async ({ page, request }) => {
   const readinessPayload = {
     client_request_id: 'cb-broader-scope-rendered-readiness-test',
     audit_mode: 'candidate_b_broader_eligible_corpus_scope_readiness_audit_v1',
@@ -7908,6 +7916,7 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   const consumptionReceiptUsePayloads = [];
   const consumptionReceiptUseStatusPayloads = [];
   const operatorRepeatabilityTrialPayloads = [];
+  const promotionReadinessPayloads = [];
   await page.route(
     '**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime',
     async (route) => {
@@ -8695,6 +8704,11 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
       const payload = route.request().postDataJSON();
       operatorRepeatabilityTrialPayloads.push(payload);
       const accepted = payload.operator_repeatability_disposition !== 'regression_detected_blocked';
+      const trialReceiptId = accepted
+        ? 'cb-broader-scope-operator-repeatability-trial-rendered-proof'
+        : 'cb-broader-scope-operator-repeatability-trial-blocked-rendered-proof';
+      const trialReceiptHash = accepted ? 'e'.repeat(64) : '4'.repeat(64);
+      const authorityPairHash = accepted ? 'f'.repeat(64) : '0'.repeat(64);
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -8710,12 +8724,12 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
             ? 'candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_accepted'
             : 'candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_blocked',
           operator_repeatability_disposition: payload.operator_repeatability_disposition,
-          trial_receipt_id: 'cb-broader-scope-operator-repeatability-trial-rendered-proof',
-          trial_receipt_hash: 'e'.repeat(64),
+          trial_receipt_id: trialReceiptId,
+          trial_receipt_hash: trialReceiptHash,
           trial_receipt_ref: 'candidate-b-broader-scope-repeatability-trial://rendered-proof/eeeeeeeeeeeeeeeeeeeeeeee',
           trial_receipt_status: 'recorded',
-          trial_authority_hash: 'e'.repeat(64),
-          authority_pair_hash: 'f'.repeat(64),
+          trial_authority_hash: trialReceiptHash,
+          authority_pair_hash: authorityPairHash,
           idempotent_replay: false,
           append_only_repeatability_trial_receipt: true,
           exclusive_trial_per_original_repeat_authority_pair: true,
@@ -8839,6 +8853,145 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
           raw_local_path_exposed: false,
           raw_url_exposed: false,
           artifact_bytes_exposed: false,
+        }),
+      });
+    },
+  );
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness',
+    async (route) => {
+      const payload = route.request().postDataJSON();
+      promotionReadinessPayloads.push(payload);
+      const policy = payload.production_ownership_storage_policy || {};
+      const validPolicy = (
+        policy.policy_runtime === 'candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1'
+        && policy.storage_access_policy === 'configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths'
+        && policy.policy_status === 'admitted'
+        && String(policy.policy_hash || '').length === 64
+      );
+      const blockedTrial = payload.trial_receipt_id.includes('blocked');
+      const staleTrial = payload.trial_receipt_hash === 'stale-trial-hash';
+      const ready = validPolicy && !blockedTrial && !staleTrial;
+      const blockedReasons = [
+        ...(!validPolicy ? [{ code: 'candidate_b_broader_scope_promotion_readiness_production_policy_hash_invalid' }] : []),
+        ...(blockedTrial ? [{ code: 'candidate_b_broader_scope_promotion_readiness_repeatability_trial_not_accepted' }] : []),
+        ...(staleTrial ? [{ code: 'candidate_b_broader_scope_promotion_readiness_trial_receipt_field_mismatch' }] : []),
+      ];
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_promotion_readiness.v1',
+          schema_version: 1,
+          request_id: payload.client_request_id,
+          server_time: '2026-05-24T00:00:00Z',
+          status: ready ? 'ready' : 'blocked',
+          mode: 'candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1',
+          operator_decision: 'evaluate_candidate_b_broader_scope_default_promotion_readiness',
+          promotion_readiness_state: ready
+            ? 'candidate_b_broader_eligible_corpus_default_scope_promotion_ready_for_separate_selection'
+            : 'candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_blocked',
+          promotion_readiness_audit_id: ready
+            ? 'cb-broader-scope-promotion-readiness-rendered-proof'
+            : 'cb-broader-scope-promotion-readiness-blocked-rendered-proof',
+          promotion_readiness_audit_hash: ready ? 'b'.repeat(64) : 'c'.repeat(64),
+          blocked_reasons: blockedReasons,
+          required_promotion_authority_chain: [
+            'broader_scope_repeatability_trial_receipt',
+            'operator_visible_status_confirmation',
+            'baseline_rollback_confirmation',
+            'production_ownership_storage_policy',
+          ],
+          trial_receipt_binding: {
+            binding_verified: ready,
+            trial_receipt_id: payload.trial_receipt_id,
+            trial_receipt_hash: payload.trial_receipt_hash,
+            trial_receipt_ref: `candidate-b-broader-scope-repeatability-trial://${payload.trial_receipt_id}/${payload.trial_receipt_hash.slice(0, 24)}`,
+            trial_authority_hash: payload.trial_authority_hash,
+            authority_pair_hash: payload.authority_pair_hash,
+            operator_repeatability_trial_state: blockedTrial
+              ? 'candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_blocked'
+              : 'candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_accepted',
+            operator_repeatability_disposition: blockedTrial ? 'regression_detected_blocked' : 'no_regression_observed',
+            selected_scope_classes: payload.selected_scope_classes,
+            selected_scope_classes_hash: '1'.repeat(64),
+            receipt_chain_hash_comparison: staleTrial ? 'mismatch' : 'match',
+            negative_invariants_hash_comparison: 'match',
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            artifact_bytes_exposed: false,
+          },
+          production_ownership_storage_policy: {
+            available: validPolicy,
+            binding_verified: validPolicy,
+            policy_runtime: policy.policy_runtime,
+            storage_access_policy: policy.storage_access_policy,
+            policy_status: policy.policy_status,
+            policy_hash: policy.policy_hash || null,
+            required_policy_runtime: 'candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1',
+            required_storage_access_policy: 'configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths',
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            provider_or_connector_secret_exposed: false,
+          },
+          operator_visible_status_evidence: {
+            operator_visible_status_confirmed: payload.operator_visible_status_confirmed,
+            operator_repeatability_trial_status_visible: payload.operator_visible_status_confirmed,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            artifact_bytes_exposed: false,
+          },
+          selected_scope_classes: payload.selected_scope_classes,
+          current_default_scope_before_promotion_readiness_audit: 'eligible_effective_pdfs_only_plus_receipt_bound_selected_classes_only',
+          scope_class_policy: 'receipt_bound_selected_classes_only',
+          baseline_rollback: {
+            selector: 'baseline',
+            available: payload.rollback_to_baseline_confirmation,
+            non_selected_classes_remain_baseline: true,
+          },
+          candidate_a_semantics: {
+            visual_lane_mode: 'candidate_a_page_evidence_v1',
+            preserved: true,
+          },
+          candidate_b_scope_authority: {
+            document_processing_engine: 'candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only',
+            visual_lane_mode: 'candidate_b_opendataloader_page_evidence_v1_explicit_only',
+            bundle_and_runtime_authority_remain_distinct: true,
+          },
+          fail_closed_behavior: {
+            blocked_repeatability_disposition_blocks_promotion: true,
+            missing_or_stale_receipt_blocks_promotion: true,
+            mismatched_selected_classes_blocks_promotion: true,
+            missing_operator_visible_status_blocks_promotion: true,
+            missing_production_ownership_storage_policy_blocks_promotion: true,
+            baseline_rollback_missing_blocks_promotion: true,
+          },
+          default_scope_promotion_ready_for_separate_selection: ready,
+          selector_mutation_admitted_now: false,
+          selector_mutation_performed: false,
+          default_scope_expansion_admitted: false,
+          default_scope_mutation_performed: false,
+          source_expansion_admitted: false,
+          runtime_db_or_storage_expansion_admitted: false,
+          pdf_or_image_text_material_ingestion_admitted: false,
+          provider_object_write_enabled: false,
+          connector_dispatch_enabled: false,
+          rag_vector_model_runtime_enabled: false,
+          auth_security_expansion_enabled: false,
+          full_mockup_activation_enabled: false,
+          frontend_durable_authority_enabled: false,
+          browser_storage_authority_enabled: false,
+          raw_local_path_exposed: false,
+          raw_url_exposed: false,
+          artifact_bytes_exposed: false,
+          negative_invariants: {
+            selector_mutation_performed: false,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+          },
+          next_allowed_actions: ready
+            ? ['select a separate broader default-scope mutation freeze for the accepted receipt-bound classes']
+            : ['repair the blocked receipt, status, repeatability, rollback, or production policy authority'],
         }),
       });
     },
@@ -9237,6 +9390,75 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   await expect(panel).toContainText('default scope mutation performed: false');
   await expect(panel).toContainText('raw local path exposed: false');
   await expect(panel).toContainText('raw URL exposed: false');
+  const promotionReadinessForm = page.locator('#candidate-b-broader-scope-promotion-readiness-form');
+  await expect(promotionReadinessForm).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_control',
+  );
+  await expect(promotionReadinessForm).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-broader-scope-promotion-readiness-submit')).toBeEnabled();
+  const promotionReadinessRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness')
+  ));
+  await page.locator('#candidate-b-broader-scope-promotion-readiness-submit').click();
+  const promotionReadinessPayload = (await promotionReadinessRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(promotionReadinessPayload, [
+    'client_request_id',
+    'readiness_mode',
+    'operator_decision',
+    'trial_receipt_id',
+    'trial_receipt_hash',
+    'trial_authority_hash',
+    'authority_pair_hash',
+    'selected_scope_classes',
+    'production_ownership_storage_policy',
+    'operator_visible_status_confirmed',
+    'rollback_to_baseline_confirmation',
+    'operator_confirmation',
+  ]);
+  expectOnlyPayloadKeys(promotionReadinessPayload.production_ownership_storage_policy, [
+    'policy_runtime',
+    'storage_access_policy',
+    'policy_status',
+    'policy_hash',
+  ]);
+  expect(promotionReadinessPayload).toMatchObject({
+    readiness_mode: 'candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1',
+    operator_decision: 'evaluate_candidate_b_broader_scope_default_promotion_readiness',
+    trial_receipt_id: 'cb-broader-scope-operator-repeatability-trial-rendered-proof',
+    trial_receipt_hash: 'e'.repeat(64),
+    trial_authority_hash: 'e'.repeat(64),
+    authority_pair_hash: 'f'.repeat(64),
+    selected_scope_classes: ['structured_json_or_csv_or_xlsx'],
+    production_ownership_storage_policy: {
+      policy_runtime: 'candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1',
+      storage_access_policy: 'configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths',
+      policy_status: 'admitted',
+      policy_hash: 'b'.repeat(64),
+    },
+    operator_visible_status_confirmed: true,
+    rollback_to_baseline_confirmation: true,
+    operator_confirmation: true,
+  });
+  expect(JSON.stringify(promotionReadinessPayload)).not.toContain('file://');
+  expect(JSON.stringify(promotionReadinessPayload)).not.toContain('https://');
+  expect(JSON.stringify(promotionReadinessPayload)).not.toContain('C:\\');
+  expect(JSON.stringify(promotionReadinessPayload)).not.toContain('command');
+  await expect(panel).toContainText('candidate_b_broader_scope_promotion_readiness_ready');
+  await expect(panel).toContainText('promotion readiness state: candidate_b_broader_eligible_corpus_default_scope_promotion_ready_for_separate_selection');
+  await expect(panel).toContainText('promotion readiness audit id: cb-broader-scope-promotion-readiness-rendered-proof');
+  await expect(panel).toContainText('policy runtime: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1');
+  await expect(panel).toContainText('storage access policy: configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths');
+  await expect(panel).toContainText('default promotion ready for separate selection: true');
+  await expect(panel).toContainText('selector mutation admitted now: false');
+  await expect(panel).toContainText('source expansion admitted: false');
+  await expect(panel).toContainText('runtime DB/storage expansion admitted: false');
+  await expect(panel).toContainText('provider object write enabled: false');
+  await expect(panel).toContainText('connector dispatch enabled: false');
+  await expect(panel).toContainText('RAG/vector/model runtime enabled: false');
+  await expect(panel).toContainText('full mockup activation enabled: false');
+  await expect(panel).toContainText('frontend durable authority enabled: false');
   await page.locator('#candidate-b-broader-scope-operator-repeatability-trial-disposition').selectOption(
     'regression_detected_blocked',
   );
@@ -9256,6 +9478,30 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   await expect(panel).toContainText('trial state: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_blocked');
   await expect(panel).toContainText('disposition: regression_detected_blocked');
   await expect(panel).toContainText('trial accepted: false');
+  await expect(page.locator('#candidate-b-broader-scope-promotion-readiness-submit')).toBeEnabled();
+  const blockedPromotionReadinessRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness')
+  ));
+  await page.locator('#candidate-b-broader-scope-promotion-readiness-submit').click();
+  const blockedPromotionReadinessPayload = (
+    await blockedPromotionReadinessRequestPromise
+  ).postDataJSON();
+  expect(blockedPromotionReadinessPayload.trial_receipt_id).toBe(
+    'cb-broader-scope-operator-repeatability-trial-blocked-rendered-proof',
+  );
+  await expect(panel).toContainText('candidate_b_broader_scope_promotion_readiness_blocked');
+  await expect(panel).toContainText('promotion readiness state: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_blocked');
+  await expect(panel).toContainText('candidate_b_broader_scope_promotion_readiness_repeatability_trial_not_accepted');
+  await expect(panel).toContainText('default promotion ready for separate selection: false');
+  await page.locator('#candidate-b-broader-scope-promotion-readiness-trial-receipt-hash').fill('stale-trial-hash');
+  await expect(page.locator('#candidate-b-broader-scope-promotion-readiness-submit')).toBeEnabled();
+  await page.locator('#candidate-b-broader-scope-promotion-readiness-submit').click();
+  await expect(panel).toContainText('candidate_b_broader_scope_promotion_readiness_trial_receipt_field_mismatch');
+  await page.locator('#candidate-b-broader-scope-promotion-readiness-production-policy-hash').fill('short');
+  await expect(page.locator('#candidate-b-broader-scope-promotion-readiness-submit')).toBeEnabled();
+  await page.locator('#candidate-b-broader-scope-promotion-readiness-submit').click();
+  await expect(panel).toContainText('candidate_b_broader_scope_promotion_readiness_production_policy_hash_invalid');
   await page.locator('#candidate-b-broader-scope-consumption-receipt-use-consumption-receipt-hash').fill('stale-consumption-hash');
   await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit')).toBeEnabled();
   await page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit').click();
@@ -9352,6 +9598,7 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   expect(consumptionReceiptUsePayloads).toHaveLength(3);
   expect(consumptionReceiptUseStatusPayloads).toHaveLength(1);
   expect(operatorRepeatabilityTrialPayloads).toHaveLength(2);
+  expect(promotionReadinessPayloads).toHaveLength(4);
 });
 
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
