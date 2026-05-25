@@ -26,6 +26,7 @@ from app.services import (
     layer3_replacement_package_namespace,
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
+    layer3_sec_edgar_authority_envelope,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
     layer3_provider_public_url_delivery_use,
@@ -378,6 +379,22 @@ class Layer3MaterialPreviewRequest(BaseModel):
     dataset_version_ids: list[str] | None = None
     aps_content_document_ids: list[str] | None = None
     query_basis: dict[str, Any] | None = None
+    actor: str | None = None
+
+
+class Layer3SecEdgarTextTableAuthorityEnvelopeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    authority_envelope_mode: str | None = None
+    dataset_version_id: str = Field(min_length=1)
+    expected_authority_envelope_hash: str | None = None
+    expected_parser_family: str | None = None
+    expected_source_family: str | None = None
+    expected_typed_content_contract_id: str | None = None
+    rollback_confirmed: bool = False
+    operator_confirmed: bool = False
     actor: str | None = None
 
 
@@ -7254,6 +7271,26 @@ class Layer3DatasetVersionCandidatesResponse(Layer3BaseResponse):
     authority_rail: dict[str, Any]
 
 
+class Layer3SecEdgarTextTableAuthorityEnvelopeResponse(Layer3BaseResponse):
+    authority_envelope_mode: str
+    authority_envelope_state: str
+    dataset_version_id: str
+    dataset_version_hash: str | None
+    source_family: str
+    parser_family: str
+    typed_content_contract_id: str
+    authority_envelope_id: str | None
+    authority_envelope_hash: str | None
+    authority_envelope_ref: str | None
+    materialization_receipt_model: str
+    materialization_receipt_id: str | None
+    materialization_receipt_hash: str | None
+    material_analysis_payload: dict[str, Any]
+    provenance_summary: dict[str, Any]
+    status_projection: dict[str, Any]
+    negative_invariants: dict[str, Any]
+
+
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     aps_content_document_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -13762,6 +13799,23 @@ def post_material_preview(
 )
 def get_dataset_version_candidates(limit: int = 50, db: Session = Depends(get_db)) -> dict[str, Any] | JSONResponse:
     return _json_or_error(lambda: layer3_workbench.aps_dataset_version_candidates(db, limit=limit))
+
+
+@router.post(
+    "/source/sec-edgar/text-table/authority-envelope/validate",
+    response_model=Layer3SecEdgarTextTableAuthorityEnvelopeResponse,
+    responses=_workbench_error_responses(400),
+)
+def post_sec_edgar_text_table_authority_envelope_validate(
+    payload: Layer3SecEdgarTextTableAuthorityEnvelopeRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_authority_envelope.validate_sec_edgar_text_table_authority_envelope(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
 
 
 @router.get(

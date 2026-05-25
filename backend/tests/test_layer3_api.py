@@ -820,6 +820,45 @@ def test_layer3_api_lists_aps_derived_dataset_version_candidates(client: TestCli
     assert body["source_family_summary"]["observed_candidate_counts"] == {"csv_table": 1}
 
 
+def test_layer3_api_validates_sec_edgar_text_table_authority_envelope(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        dataset_version_id = _seed_aps_derived_dataset_version(
+            db,
+            tmp_path,
+            dataset_version_id="dv-aps-sec-edgar-api-001",
+            parser_family="sec_edgar_filing",
+            typed_content_contract_id="aps_sec_edgar_filing_units_v1",
+            source_mode="artifact_sec_edgar_filing_parser",
+            parser_contract_id="aps_sec_edgar_filing_parser_v1",
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+        json={
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_text_table_authority_envelope_validation.v1"
+    assert body["authority_envelope_state"] == "sec_edgar_text_table_authority_envelope_ready"
+    assert body["source_family"] == "sec_edgar_text_table"
+    assert body["parser_family"] == "sec_edgar_filing"
+    assert body["typed_content_contract_id"] == "aps_sec_edgar_filing_units_v1"
+    assert body["material_analysis_payload"]["payload_shape"] == "mixed_narrative_table"
+    assert body["material_analysis_payload"]["layer3_material_bridge_admitted_now"] is False
+    assert body["negative_invariants"]["sec_edgar_network_fetch_admitted"] is False
+    assert body["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert "aps-target-artifacts/run-001" not in response.text
+
+
 def test_layer3_api_lists_aps_content_document_candidates(client: TestClient, tmp_path) -> None:
     run_id = "api-aps-doc-run-001"
     target_id = "api-aps-doc-target-001"
