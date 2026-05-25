@@ -496,6 +496,11 @@ const CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_BLOCKED_STATE = 'candidate_b
 const CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_POLICY_RUNTIME = 'candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1';
 const CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_STORAGE_POLICY = 'configured_workflow_receipt_root_only_receipt_bound_refs_only_no_client_supplied_paths';
 const CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_POLICY_HASH = 'b'.repeat(64);
+const CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_RENDERED_MODE = 'rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control';
+const CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_MODE = 'candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1';
+const CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_OPERATOR_DECISION = 'record_candidate_b_broader_scope_default_promotion';
+const CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_SELECTED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_default_promotion_selected';
+const CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_BLOCKED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_default_promotion_blocked';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
@@ -827,6 +832,17 @@ const State = {
         trialReceiptHash: '',
         trialAuthorityHash: '',
         authorityPairHash: '',
+        selectedScopeClasses: 'structured_json_or_csv_or_xlsx',
+        productionPolicyHash: CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_POLICY_HASH,
+    },
+    candidateBBroaderScopeDefaultPromotion: null,
+    candidateBBroaderScopeDefaultPromotionError: null,
+    candidateBBroaderScopeDefaultPromotionPending: false,
+    candidateBBroaderScopeDefaultPromotionInput: {
+        promotionReadinessAuditId: '',
+        promotionReadinessAuditHash: '',
+        trialReceiptId: '',
+        trialReceiptHash: '',
         selectedScopeClasses: 'structured_json_or_csv_or_xlsx',
         productionPolicyHash: CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_POLICY_HASH,
     },
@@ -8070,6 +8086,14 @@ function candidateBBroaderScopePromotionReadinessEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBBroaderScopeDefaultPromotionEndpointPath(contract) {
+    const endpoint = (
+        contract?.candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint || ''
+    );
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBArtifactFamilyStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_artifact_family_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -9267,6 +9291,101 @@ function candidateBBroaderScopePromotionReadinessPayload() {
     };
 }
 
+function candidateBBroaderScopeDefaultPromotionInputValues() {
+    const readiness = State.candidateBBroaderScopePromotionReadiness || {};
+    const trial = readiness.trial_receipt_binding || {};
+    const policy = readiness.production_ownership_storage_policy || {};
+    const stored = State.candidateBBroaderScopeDefaultPromotionInput || {};
+    const selectedScopeClasses = Array.isArray(readiness.selected_scope_classes)
+        ? readiness.selected_scope_classes.join(', ')
+        : '';
+    const readInput = (id, fallback = '') => (
+        document.getElementById(id)?.value
+        || fallback
+        || ''
+    ).trim();
+    return {
+        promotionReadinessAuditId: readInput(
+            'candidate-b-broader-scope-default-promotion-readiness-audit-id',
+            stored.promotionReadinessAuditId || readiness.promotion_readiness_audit_id,
+        ),
+        promotionReadinessAuditHash: readInput(
+            'candidate-b-broader-scope-default-promotion-readiness-audit-hash',
+            stored.promotionReadinessAuditHash || readiness.promotion_readiness_audit_hash,
+        ),
+        trialReceiptId: readInput(
+            'candidate-b-broader-scope-default-promotion-trial-receipt-id',
+            stored.trialReceiptId || trial.trial_receipt_id,
+        ),
+        trialReceiptHash: readInput(
+            'candidate-b-broader-scope-default-promotion-trial-receipt-hash',
+            stored.trialReceiptHash || trial.trial_receipt_hash,
+        ),
+        selectedScopeClasses: readInput(
+            'candidate-b-broader-scope-default-promotion-selected-classes',
+            stored.selectedScopeClasses || selectedScopeClasses,
+        ),
+        productionPolicyHash: readInput(
+            'candidate-b-broader-scope-default-promotion-production-policy-hash',
+            stored.productionPolicyHash || policy.policy_hash,
+        ),
+    };
+}
+
+function syncCandidateBBroaderScopeDefaultPromotionInputsFromReadiness(readiness) {
+    const trial = readiness?.trial_receipt_binding || {};
+    const policy = readiness?.production_ownership_storage_policy || {};
+    const selectedScopeClasses = Array.isArray(readiness?.selected_scope_classes)
+        ? readiness.selected_scope_classes.join(', ')
+        : '';
+    const values = {
+        promotionReadinessAuditId: readiness?.promotion_readiness_audit_id || '',
+        promotionReadinessAuditHash: readiness?.promotion_readiness_audit_hash || '',
+        trialReceiptId: trial.trial_receipt_id || '',
+        trialReceiptHash: trial.trial_receipt_hash || '',
+        selectedScopeClasses,
+        productionPolicyHash: policy.policy_hash || '',
+    };
+    const ids = {
+        promotionReadinessAuditId: 'candidate-b-broader-scope-default-promotion-readiness-audit-id',
+        promotionReadinessAuditHash: 'candidate-b-broader-scope-default-promotion-readiness-audit-hash',
+        trialReceiptId: 'candidate-b-broader-scope-default-promotion-trial-receipt-id',
+        trialReceiptHash: 'candidate-b-broader-scope-default-promotion-trial-receipt-hash',
+        selectedScopeClasses: 'candidate-b-broader-scope-default-promotion-selected-classes',
+        productionPolicyHash: 'candidate-b-broader-scope-default-promotion-production-policy-hash',
+    };
+    for (const [key, id] of Object.entries(ids)) {
+        const input = document.getElementById(id);
+        if (input) input.value = values[key];
+    }
+    State.candidateBBroaderScopeDefaultPromotionInput = values;
+}
+
+function candidateBBroaderScopeDefaultPromotionPayload() {
+    const values = candidateBBroaderScopeDefaultPromotionInputValues();
+    State.candidateBBroaderScopeDefaultPromotionInput = values;
+    const selectedScopeClasses = candidateBBroaderScopeParsedSelectedScopeClasses(
+        values.selectedScopeClasses,
+    );
+    return {
+        client_request_id: requestId(),
+        promotion_mode: CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_MODE,
+        operator_decision: CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_OPERATOR_DECISION,
+        promotion_readiness_audit_id: values.promotionReadinessAuditId,
+        promotion_readiness_audit_hash: values.promotionReadinessAuditHash,
+        promotion_readiness_audit: State.candidateBBroaderScopePromotionReadiness,
+        trial_receipt_id: values.trialReceiptId,
+        trial_receipt_hash: values.trialReceiptHash,
+        selected_scope_classes: selectedScopeClasses,
+        production_policy_hash: values.productionPolicyHash,
+        operator_visible_status_confirmed: true,
+        promotion_readiness_rendered_status_confirmed: true,
+        promotion_readiness_closeout_confirmed: true,
+        rollback_to_baseline_confirmation: true,
+        operator_confirmation: true,
+    };
+}
+
 function candidateBDefaultPromotionFinalProofPayload() {
     const values = candidateBDefaultPromotionFinalProofInputValues();
     State.candidateBDefaultPromotionFinalProofInput = values;
@@ -10305,6 +10424,28 @@ function canRecordCandidateBBroaderScopePromotionReadiness(contract = candidateB
     );
 }
 
+function canRecordCandidateBBroaderScopeDefaultPromotion(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBBroaderScopeDefaultPromotionInputValues();
+    const selectedScopeClasses = candidateBBroaderScopeParsedSelectedScopeClasses(
+        values.selectedScopeClasses,
+    );
+    return Boolean(
+        contract?.candidate_b_broader_eligible_corpus_default_scope_default_promotion_admitted
+        && candidateBBroaderScopeDefaultPromotionEndpointPath(contract)
+        && State.candidateBBroaderScopePromotionReadiness?.status === 'ready'
+        && State.candidateBBroaderScopePromotionReadiness?.promotion_readiness_state === (
+            CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_READY_STATE
+        )
+        && values.promotionReadinessAuditId
+        && values.promotionReadinessAuditHash
+        && values.trialReceiptId
+        && values.trialReceiptHash
+        && selectedScopeClasses.length > 0
+        && values.productionPolicyHash
+        && !State.candidateBBroaderScopeDefaultPromotionPending
+    );
+}
+
 function candidateBDefaultPromotionFinalProofPanelState() {
     if (State.candidateBDefaultPromotionFinalProofPending) {
         return { label: 'candidate_b_final_proof_pending', pill: 'preview' };
@@ -10762,6 +10903,26 @@ function candidateBBroaderScopePromotionReadinessPanelState() {
         return { label: 'candidate_b_broader_scope_promotion_readiness_error', pill: 'blocked' };
     }
     return { label: 'candidate_b_broader_scope_promotion_readiness_not_started', pill: 'preview' };
+}
+
+function candidateBBroaderScopeDefaultPromotionPanelState() {
+    if (State.candidateBBroaderScopeDefaultPromotionPending) {
+        return { label: 'candidate_b_broader_scope_default_promotion_pending', pill: 'preview' };
+    }
+    if (State.candidateBBroaderScopeDefaultPromotionError) {
+        const code = State.candidateBBroaderScopeDefaultPromotionError?.payload?.error?.code;
+        return { label: code || 'candidate_b_broader_scope_default_promotion_error', pill: 'blocked' };
+    }
+    if (State.candidateBBroaderScopeDefaultPromotion?.status === 'selected') {
+        return { label: 'candidate_b_broader_scope_default_promotion_selected', pill: 'ok' };
+    }
+    if (State.candidateBBroaderScopeDefaultPromotion?.status === 'blocked') {
+        return { label: 'candidate_b_broader_scope_default_promotion_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBBroaderScopeDefaultPromotion?.status === 'error') {
+        return { label: 'candidate_b_broader_scope_default_promotion_error', pill: 'blocked' };
+    }
+    return { label: 'candidate_b_broader_scope_default_promotion_not_started', pill: 'preview' };
 }
 
 function candidateBArtifactFamilyStatusPanelState() {
@@ -12780,6 +12941,101 @@ function candidateBBroaderScopePromotionReadinessError() {
     `;
 }
 
+function candidateBBroaderScopeDefaultPromotionRows(promotion) {
+    if (!promotion) return '';
+    const selectedClasses = Array.isArray(promotion.selected_scope_classes)
+        ? promotion.selected_scope_classes.join(', ')
+        : '';
+    const blockedReasons = Array.isArray(promotion.blocked_reasons)
+        ? promotion.blocked_reasons.map((reason) => reason.code || '').filter(Boolean).join(', ')
+        : '';
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Default Promotion Receipt</strong>
+                <ul>
+                    ${fieldItem('schema id', promotion.schema_id, { code: true })}
+                    ${fieldItem('status', promotion.status, { code: true })}
+                    ${fieldItem('mode', promotion.mode, { code: true })}
+                    ${fieldItem('operator decision', promotion.operator_decision, { code: true })}
+                    ${fieldItem('default promotion state', promotion.default_promotion_state, { code: true })}
+                    ${fieldItem('receipt id', promotion.default_promotion_receipt_id, { code: true })}
+                    ${fieldItem('receipt hash', promotion.default_promotion_receipt_hash, { code: true })}
+                    ${fieldItem('receipt ref', promotion.default_promotion_receipt_ref, { code: true })}
+                    ${fieldItem('receipt status', promotion.default_promotion_receipt_status, { code: true })}
+                    ${fieldItem('idempotent replay', promotion.idempotent_replay)}
+                    ${fieldItem('blocked reason codes', blockedReasons, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Promotion Readiness Binding</strong>
+                <ul>
+                    ${fieldItem('binding verified', promotion.promotion_readiness_audit_binding?.binding_verified)}
+                    ${fieldItem('promotion readiness audit id', promotion.promotion_readiness_audit_binding?.promotion_readiness_audit_id, { code: true })}
+                    ${fieldItem('promotion readiness audit hash', promotion.promotion_readiness_audit_binding?.promotion_readiness_audit_hash, { code: true })}
+                    ${fieldItem('required state', promotion.promotion_readiness_audit_binding?.required_state, { code: true })}
+                    ${fieldItem('trial receipt id', promotion.trial_receipt_binding?.trial_receipt_id, { code: true })}
+                    ${fieldItem('trial receipt hash', promotion.trial_receipt_binding?.trial_receipt_hash, { code: true })}
+                    ${fieldItem('policy runtime', promotion.production_ownership_storage_policy?.policy_runtime, { code: true })}
+                    ${fieldItem('storage access policy', promotion.production_ownership_storage_policy?.storage_access_policy, { code: true })}
+                    ${fieldItem('policy hash', promotion.production_ownership_storage_policy?.policy_hash, { code: true })}
+                    ${fieldItem('selected classes', selectedClasses, { code: true })}
+                    ${fieldItem('selected classes hash', promotion.selected_scope_classes_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Default Scope Guardrails</strong>
+                <ul>
+                    ${fieldItem('default scope promotion enabled for selected classes', promotion.default_scope_promotion_enabled_for_selected_classes)}
+                    ${fieldItem('default scope policy mutation performed', promotion.default_scope_policy_mutation_performed)}
+                    ${fieldItem('default scope expansion mutation performed', promotion.default_scope_expansion_mutation_performed)}
+                    ${fieldItem('selector mutation performed', promotion.selector_mutation_performed)}
+                    ${fieldItem('current default scope before promotion', promotion.current_default_scope_before_promotion, { code: true })}
+                    ${fieldItem('non-selected class default', promotion.non_selected_class_default, { code: true })}
+                    ${fieldItem('baseline rollback selector', promotion.baseline_rollback?.selector, { code: true })}
+                    ${fieldItem('baseline rollback available', promotion.baseline_rollback?.available)}
+                    ${fieldItem('Candidate A visual lane', promotion.candidate_a_semantics?.visual_lane_mode, { code: true })}
+                    ${fieldItem('Candidate A preserved', promotion.candidate_a_semantics?.preserved)}
+                    ${fieldItem('Candidate B document-processing engine', promotion.candidate_b_scope_authority?.document_processing_engine, { code: true })}
+                    ${fieldItem('Candidate B visual lane', promotion.candidate_b_scope_authority?.visual_lane_mode, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Negative Authority Invariants</strong>
+                <ul>
+                    ${fieldItem('redacted default promotion receipt available', promotion.operator_visible_status_evidence?.redacted_default_promotion_receipt_available)}
+                    ${fieldItem('raw local path exposed', promotion.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', promotion.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', promotion.artifact_bytes_exposed)}
+                    ${fieldItem('source expansion admitted', promotion.source_expansion_admitted)}
+                    ${fieldItem('runtime DB/storage expansion admitted', promotion.runtime_db_or_storage_expansion_admitted)}
+                    ${fieldItem('PDF/image text material ingestion admitted', promotion.pdf_or_image_text_material_ingestion_admitted)}
+                    ${fieldItem('provider object write enabled', promotion.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', promotion.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', promotion.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('full mockup activation enabled', promotion.full_mockup_activation_enabled)}
+                    ${fieldItem('frontend durable authority enabled', promotion.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', promotion.browser_storage_authority_enabled)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function candidateBBroaderScopeDefaultPromotionError() {
+    const error = State.candidateBBroaderScopeDefaultPromotionError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_broader_scope_default_promotion_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofError() {
     const error = State.candidateBDefaultPromotionFinalProofError;
     if (!error) return '';
@@ -13855,6 +14111,13 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const broaderScopePromotionReadinessState = (
         candidateBBroaderScopePromotionReadinessPanelState()
     );
+    const broaderScopeDefaultPromotion = State.candidateBBroaderScopeDefaultPromotion;
+    const broaderScopeDefaultPromotionInputs = (
+        candidateBBroaderScopeDefaultPromotionInputValues()
+    );
+    const broaderScopeDefaultPromotionState = (
+        candidateBBroaderScopeDefaultPromotionPanelState()
+    );
     const artifactFamilyStatus = State.candidateBArtifactFamilyStatus;
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
@@ -13916,6 +14179,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('broader scope consumption receipt use status', contract?.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_endpoint, { code: true })}
                     ${fieldItem('broader scope operator repeatability trial', contract?.candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_endpoint, { code: true })}
                     ${fieldItem('broader scope promotion readiness', contract?.candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint, { code: true })}
+                    ${fieldItem('broader scope default promotion', contract?.candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
                     ${fieldItem('final proof status', contract?.candidate_b_default_promotion_final_proof_status_endpoint, { code: true })}
                 </ul>
@@ -14652,6 +14916,42 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBBroaderScopePromotionReadinessRows(broaderScopePromotionReadiness)}
                 ${candidateBBroaderScopePromotionReadinessError()}
+            </section>
+            <section class="result-review-card candidate-b-broader-scope-default-promotion-card">
+                <strong>Broader Eligible-Corpus Default Promotion</strong>
+                <form id="candidate-b-broader-scope-default-promotion-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>promotion readiness audit id</span>
+                        <input id="candidate-b-broader-scope-default-promotion-readiness-audit-id" type="text" value="${escapeHtml(broaderScopeDefaultPromotionInputs.promotionReadinessAuditId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-promotion-readiness-..." />
+                    </label>
+                    <label>
+                        <span>promotion readiness audit hash</span>
+                        <input id="candidate-b-broader-scope-default-promotion-readiness-audit-hash" type="text" value="${escapeHtml(broaderScopeDefaultPromotionInputs.promotionReadinessAuditHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>trial receipt id</span>
+                        <input id="candidate-b-broader-scope-default-promotion-trial-receipt-id" type="text" value="${escapeHtml(broaderScopeDefaultPromotionInputs.trialReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-operator-repeatability-trial-..." />
+                    </label>
+                    <label>
+                        <span>trial receipt hash</span>
+                        <input id="candidate-b-broader-scope-default-promotion-trial-receipt-hash" type="text" value="${escapeHtml(broaderScopeDefaultPromotionInputs.trialReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>selected scope classes</span>
+                        <input id="candidate-b-broader-scope-default-promotion-selected-classes" type="text" value="${escapeHtml(broaderScopeDefaultPromotionInputs.selectedScopeClasses)}" autocomplete="off" spellcheck="false" placeholder="structured_json_or_csv_or_xlsx" />
+                    </label>
+                    <label>
+                        <span>production policy hash</span>
+                        <input id="candidate-b-broader-scope-default-promotion-production-policy-hash" type="text" value="${escapeHtml(broaderScopeDefaultPromotionInputs.productionPolicyHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <button id="candidate-b-broader-scope-default-promotion-submit" type="submit" ${canRecordCandidateBBroaderScopeDefaultPromotion(contract) ? '' : 'disabled'}>Record Default Promotion</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(broaderScopeDefaultPromotionState.pill)}">${escapeHtml(broaderScopeDefaultPromotionState.label)}</span>
+                    <span class="rail-label">Server records broader-scope default promotion only from a ready promotion-readiness audit, rendered-status proof, closeout confirmation, rollback confirmation, and receipt-bound selected classes; this control submits no default policy, commands, paths, URLs, provider refs, or browser storage authority.</span>
+                </div>
+                ${candidateBBroaderScopeDefaultPromotionRows(broaderScopeDefaultPromotion)}
+                ${candidateBBroaderScopeDefaultPromotionError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -15959,6 +16259,8 @@ async function recordCandidateBBroaderScopeOperatorRepeatabilityTrial(event) {
         );
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         renderCandidateBDefaultPromotionStatusPanel();
         return;
     }
@@ -15970,6 +16272,10 @@ async function recordCandidateBBroaderScopeOperatorRepeatabilityTrial(event) {
     try {
         State.candidateBBroaderScopeOperatorRepeatabilityTrial = await postJson(path, payload);
         State.candidateBBroaderScopeOperatorRepeatabilityTrialError = null;
+        State.candidateBBroaderScopePromotionReadiness = null;
+        State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         syncCandidateBBroaderScopePromotionReadinessInputsFromTrial(
             State.candidateBBroaderScopeOperatorRepeatabilityTrial,
         );
@@ -15979,6 +16285,8 @@ async function recordCandidateBBroaderScopeOperatorRepeatabilityTrial(event) {
         State.candidateBBroaderScopeOperatorRepeatabilityTrialError = error;
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         addEvent(`Candidate B broader-scope operator repeatability trial blocked: ${error.message}`);
     } finally {
         State.candidateBBroaderScopeOperatorRepeatabilityTrialPending = false;
@@ -15994,6 +16302,8 @@ async function recordCandidateBBroaderScopePromotionReadiness(event) {
         State.candidateBBroaderScopePromotionReadinessError = new Error(
             'Candidate B broader-scope promotion readiness requires a recorded repeatability-trial receipt, selected classes, and redacted production policy binding.',
         );
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         renderCandidateBDefaultPromotionStatusPanel();
         return;
     }
@@ -16005,13 +16315,50 @@ async function recordCandidateBBroaderScopePromotionReadiness(event) {
     try {
         State.candidateBBroaderScopePromotionReadiness = await postJson(path, payload);
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
+        syncCandidateBBroaderScopeDefaultPromotionInputsFromReadiness(
+            State.candidateBBroaderScopePromotionReadiness,
+        );
         addEvent('Candidate B broader eligible-corpus promotion readiness evaluated through server-revalidated repeatability-trial authority.');
     } catch (error) {
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = error;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         addEvent(`Candidate B broader-scope promotion readiness blocked: ${error.message}`);
     } finally {
         State.candidateBBroaderScopePromotionReadinessPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBBroaderScopeDefaultPromotion(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canRecordCandidateBBroaderScopeDefaultPromotion(contract)) {
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = new Error(
+            'Candidate B broader-scope default promotion requires a ready promotion-readiness audit, matching trial receipt, selected classes, and production policy hash.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBBroaderScopeDefaultPromotionEndpointPath(contract);
+    const payload = candidateBBroaderScopeDefaultPromotionPayload();
+    State.candidateBBroaderScopeDefaultPromotionPending = true;
+    State.candidateBBroaderScopeDefaultPromotionError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBBroaderScopeDefaultPromotion = await postJson(path, payload);
+        State.candidateBBroaderScopeDefaultPromotionError = null;
+        addEvent('Candidate B broader eligible-corpus default promotion recorded through server-revalidated promotion-readiness authority.');
+    } catch (error) {
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = error;
+        addEvent(`Candidate B broader-scope default promotion blocked: ${error.message}`);
+    } finally {
+        State.candidateBBroaderScopeDefaultPromotionPending = false;
         renderAll();
     }
 }
@@ -22534,6 +22881,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     if (event.target?.id === 'candidate-b-broader-scope-promotion-readiness-form') {
         recordCandidateBBroaderScopePromotionReadiness(event);
     }
+    if (event.target?.id === 'candidate-b-broader-scope-default-promotion-form') {
+        recordCandidateBBroaderScopeDefaultPromotion(event);
+    }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);
     }
@@ -22569,6 +22919,8 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('change', (event
         State.candidateBBroaderScopeOperatorRepeatabilityTrialError = null;
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         renderCandidateBDefaultPromotionStatusPanel();
     }
 });
@@ -22654,6 +23006,8 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopeOperatorRepeatabilityTrialError = null;
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUseStatusInput = {
             useReceiptId: '',
             useReceiptHash: '',
@@ -22696,6 +23050,8 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopeOperatorRepeatabilityTrialError = null;
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         renderCandidateBDefaultPromotionStatusPanel();
     }
     if (
@@ -22710,6 +23066,8 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopeOperatorRepeatabilityTrialError = null;
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         renderCandidateBDefaultPromotionStatusPanel();
     }
     if (
@@ -22725,6 +23083,23 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         );
         State.candidateBBroaderScopePromotionReadiness = null;
         State.candidateBBroaderScopePromotionReadinessError = null;
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
+        renderCandidateBDefaultPromotionStatusPanel();
+    }
+    if (
+        target.id === 'candidate-b-broader-scope-default-promotion-readiness-audit-id'
+        || target.id === 'candidate-b-broader-scope-default-promotion-readiness-audit-hash'
+        || target.id === 'candidate-b-broader-scope-default-promotion-trial-receipt-id'
+        || target.id === 'candidate-b-broader-scope-default-promotion-trial-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-default-promotion-selected-classes'
+        || target.id === 'candidate-b-broader-scope-default-promotion-production-policy-hash'
+    ) {
+        State.candidateBBroaderScopeDefaultPromotionInput = (
+            candidateBBroaderScopeDefaultPromotionInputValues()
+        );
+        State.candidateBBroaderScopeDefaultPromotion = null;
+        State.candidateBBroaderScopeDefaultPromotionError = null;
         renderCandidateBDefaultPromotionStatusPanel();
     }
 });
