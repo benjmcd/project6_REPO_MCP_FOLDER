@@ -324,6 +324,59 @@ def prepare_sec_edgar_text_table_live_source_artifact_material_authority_bridge(
     return response
 
 
+def read_sec_edgar_text_table_live_source_artifact_material_authority_bridge_receipt(
+    bridge_receipt_id: str,
+    *,
+    expected_bridge_receipt_hash: str | None = None,
+    live_source_artifact_receipt_hash: str | None = None,
+    source_acquisition_receipt_hash: str | None = None,
+) -> dict[str, Any]:
+    receipt_id = str(bridge_receipt_id or "").strip()
+    suffix = receipt_id.removeprefix(f"{RECEIPT_PREFIX}-")
+    if (
+        not receipt_id.startswith(f"{RECEIPT_PREFIX}-")
+        or len(suffix) != 24
+        or any(ch not in "0123456789abcdefABCDEF" for ch in suffix)
+    ):
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_id_invalid",
+            "SEC EDGAR live source-artifact material bridge receipt id is not admitted.",
+            http_status=400,
+            blocked_fields=["bridge_receipt_id"],
+        )
+    receipt = _read_receipt(_receipt_root() / f"{receipt_id}.json")
+    if str(receipt.get("bridge_receipt_id") or "") != receipt_id:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_id_mismatch",
+            "SEC EDGAR live source-artifact material bridge receipt id does not match its payload.",
+            http_status=409,
+            blocked_fields=["bridge_receipt_id"],
+        )
+    receipt_hash = str(receipt.get("bridge_receipt_hash") or "").strip()
+    if not _is_hash(receipt_hash):
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_hash_invalid",
+            "SEC EDGAR live source-artifact material bridge receipt hash is invalid.",
+            http_status=409,
+            blocked_fields=["bridge_receipt_hash"],
+        )
+    expected_hash = str(expected_bridge_receipt_hash or "").strip()
+    if expected_hash and receipt_hash != expected_hash:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_hash_mismatch",
+            "SEC EDGAR live source-artifact material bridge receipt hash is stale or mismatched.",
+            http_status=409,
+            blocked_fields=["bridge_receipt_hash"],
+        )
+    if live_source_artifact_receipt_hash or source_acquisition_receipt_hash:
+        _verify_receipt_hash_payload(
+            receipt,
+            live_source_artifact_receipt_hash=str(live_source_artifact_receipt_hash or ""),
+            source_acquisition_receipt_hash=str(source_acquisition_receipt_hash or ""),
+        )
+    return receipt
+
+
 def _normalise_request(fields: Mapping[str, Any]) -> dict[str, Any]:
     request = {str(key): value for key, value in dict(fields or {}).items() if value is not None}
     blocked = sorted(key for key in request if key in _FORBIDDEN_INPUT_KEYS)
@@ -540,6 +593,61 @@ def _write_receipt(
     return f"{RECEIPT_PREFIX}:{receipt_hash[:24]}", False
 
 
+def _verify_receipt_hash_payload(
+    receipt: Mapping[str, Any],
+    *,
+    live_source_artifact_receipt_hash: str,
+    source_acquisition_receipt_hash: str,
+) -> None:
+    if not _is_hash(live_source_artifact_receipt_hash) or not _is_hash(source_acquisition_receipt_hash):
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_binding_hash_missing",
+            "SEC EDGAR live source-artifact material bridge receipt hash verification requires live and source-acquisition receipt hashes.",
+            http_status=400,
+            blocked_fields=["live_source_artifact_receipt_hash", "source_acquisition_receipt_hash"],
+        )
+    live_authority = receipt.get("live_source_artifact_authority")
+    source_authority = receipt.get("source_acquisition_authority")
+    material_bridge = receipt.get("material_authority_bridge")
+    if not isinstance(live_authority, Mapping) or not isinstance(source_authority, Mapping):
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_authority_missing",
+            "SEC EDGAR live source-artifact material bridge receipt is missing live/source authority.",
+            http_status=409,
+        )
+    if not isinstance(material_bridge, Mapping):
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_material_bridge_missing",
+            "SEC EDGAR live source-artifact material bridge receipt is missing material bridge authority.",
+            http_status=409,
+        )
+    recomputed = stable_hash(
+        {
+            "hash_version": AUTHORITY_HASH_VERSION,
+            "bridge_mode": BRIDGE_MODE,
+            "live_source_artifact_receipt_hash": live_source_artifact_receipt_hash,
+            "source_acquisition_receipt_hash": source_acquisition_receipt_hash,
+            "source_artifact_receipt_hash": str(live_authority.get("source_artifact_receipt_hash") or ""),
+            "source_artifact_ref_hash": str(live_authority.get("source_artifact_ref_hash") or ""),
+            "content_sha256": str(live_authority.get("content_sha256") or ""),
+            "dataset_version_id": str(source_authority.get("dataset_version_id") or ""),
+            "dataset_version_hash": str(source_authority.get("dataset_version_hash") or ""),
+            "materialization_receipt_hash": str(source_authority.get("materialization_receipt_hash") or ""),
+            "authority_envelope_hash": str(source_authority.get("authority_envelope_hash") or ""),
+            "material_preview_hash": str(material_bridge.get("material_preview_hash") or ""),
+            "gate_b_decision_manifest_id": str(material_bridge.get("gate_b_decision_manifest_id") or ""),
+            "material_bridge_receipt_hash": str(material_bridge.get("bridge_receipt_hash") or ""),
+        }
+    )
+    if recomputed != str(receipt.get("bridge_receipt_hash") or ""):
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_hash_invalid",
+            "SEC EDGAR live source-artifact material bridge receipt payload no longer matches its hash.",
+            http_status=409,
+            blocked_fields=["bridge_receipt_hash"],
+        )
+
+
 def _read_receipt(path: Path) -> dict[str, Any]:
     try:
         receipt = json.loads(path.read_text(encoding="utf-8"))
@@ -672,7 +780,6 @@ def _require_exact(fields: Mapping[str, Any], key: str, expected: str) -> None:
             f"sec_edgar_text_table_live_source_artifact_material_bridge_{key}_mismatch",
             f"SEC EDGAR live source-artifact material bridge requires {key}={expected}.",
             blocked_fields=[key],
-            details={"expected": expected, "received": received},
         )
 
 
@@ -720,7 +827,6 @@ def _blocked(
     *,
     http_status: int = 400,
     blocked_fields: list[str] | None = None,
-    details: dict[str, Any] | None = None,
 ) -> None:
     raise Layer3WorkbenchError(
         code,
@@ -728,7 +834,6 @@ def _blocked(
         status="blocked",
         http_status=http_status,
         blocked_fields=blocked_fields or [],
-        details=details or {},
     )
 
 
