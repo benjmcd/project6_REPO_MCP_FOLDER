@@ -5774,3 +5774,49 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumptio
 ```
 
 The rendered status control projects existing use-receipt authority after the use receipt is recorded. Operators can inspect the use status hash, server-owned receipt reload, predecessor bindings, readiness binding, and redacted use-status projection without creating use receipts, mutating selector/default authority, expanding source/runtime scope, or exposing raw paths/URLs.
+
+### Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Status Inspection Current-Main Sync
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_current_main_sync_v1
+source_consumption_receipt_use_status_inspection_rendered_status: next_milestone_plans/Layer3_planning_docs/1097-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-rendered-status.md
+current_main_entry: 67f7e822fc9d728084f1d708485956ea3a1723b4
+source_pr: "#1800"
+source_branch: codex/cb-consumption-use-status-rendered
+source_commit: 2051e0d6
+source_merge_commit: 67f7e822fc9d728084f1d708485956ea3a1723b4
+merge_state_before_merge: CLEAN
+ci_status: passed
+ci_successful_checks: 10
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_control
+synced_status_mode: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_v1
+synced_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+synced_response_authority: State.candidateBBroaderScopeConsumptionReceiptUseStatus
+synced_source_use_authority: State.candidateBBroaderScopeConsumptionReceiptUse
+synced_server_owned_use_receipt_reload_displayed: true
+synced_operator_visible_use_status_projection_displayed: true
+synced_default_promotion_contract_lists_status_endpoint: true
+synced_no_route_contract_proven: true
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+use_receipt_mutation_performed: false
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_closeout_readiness_v1
+```
+
+The use-status inspection rendered control is current-main behavior after PR `#1800`. The next checkpoint should close or name the remaining gap in the broader eligible-corpus default-scope operator path, using only the already-landed receipt/status chain unless a concrete defect is found.
