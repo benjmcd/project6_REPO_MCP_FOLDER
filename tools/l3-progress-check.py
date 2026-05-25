@@ -2977,6 +2977,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_RENDERED_STALE_IN
     PLANNING_DOCS
     / "1077-cb-broader-eligible-corpus-default-scope-selector-use-rendered-stale-input-review-remediation.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_REMEDIATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1078-cb-broader-eligible-corpus-default-scope-selector-use-remediation-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -101796,6 +101800,98 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_render
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_remediation_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_REMEDIATION_CURRENT_MAIN_SYNC: (
+            "Candidate B Broader Eligible Corpus Default Scope Selector-Use Remediation Current-Main Sync",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_current_main_sync_v1",
+            "source_broader_eligible_corpus_default_scope_selector_use_rendered_stale_input_review_remediation: next_milestone_plans/Layer3_planning_docs/1077-cb-broader-eligible-corpus-default-scope-selector-use-rendered-stale-input-review-remediation.md",
+            "base_authority: project6-origin/main@d400a3ac7965e3e7d3221751bc4ab09665633818",
+            'merged_pr: "#1780"',
+            "source_branch: codex/cb-selector-use-sync",
+            "source_commit: 15109675064df2d156bd1b67936edda941c39c46",
+            "merge_commit: d400a3ac7965e3e7d3221751bc4ab09665633818",
+            "sync_status: current_main_synced_candidate_b_broader_scope_selector_use_stale_input_remediation",
+            "synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_selector_use_status_control",
+            "synced_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1",
+            "synced_runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use",
+            "synced_operator_surface: /review/layer3 Candidate B default-promotion status panel",
+            "synced_runtime_default_helper: candidateBBroaderScopeSelectorUseRuntimeDefaults",
+            "synced_operator_edit_tracking: candidateBBroaderScopeSelectorUseInputEdited",
+            "synced_latest_runtime_receipt_default: true",
+            "synced_stale_selector_use_status_cleared_on_runtime_success: true",
+            "synced_second_runtime_receipt_proof: cb-broader-scope-runtime-rendered-proof-2",
+            "ci_backend_layer3_api: pass",
+            "ci_test: pass",
+            "review_threads_total_count: 0",
+            "unresolved_review_threads_total_count: 0",
+            "source_pr_1779_review_threads_total_count: 1",
+            "source_pr_1779_unresolved_review_threads_after_remediation: 0",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "route_api_dto_model_migration_service_behavior_introduced_by_this_sync: false",
+            "executable_test_behavior_introduced_by_this_sync: false",
+            "production_ui_behavior_introduced_by_this_sync: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_current_main_sync_v1",
+            "source_broader_eligible_corpus_default_scope_selector_use_rendered_stale_input_review_remediation: next_milestone_plans/Layer3_planning_docs/1077-cb-broader-eligible-corpus-default-scope-selector-use-rendered-stale-input-review-remediation.md",
+            "base_authority: project6-origin/main@d400a3ac7965e3e7d3221751bc4ab09665633818",
+            'merged_pr: "#1780"',
+            "source_branch: codex/cb-selector-use-sync",
+            "source_commit: 15109675064df2d156bd1b67936edda941c39c46",
+            "merge_commit: d400a3ac7965e3e7d3221751bc4ab09665633818",
+            "sync_status: current_main_synced_candidate_b_broader_scope_selector_use_stale_input_remediation",
+            "synced_runtime_default_helper: candidateBBroaderScopeSelectorUseRuntimeDefaults",
+            "synced_operator_edit_tracking: candidateBBroaderScopeSelectorUseInputEdited",
+            "synced_latest_runtime_receipt_default: true",
+            "synced_stale_selector_use_status_cleared_on_runtime_success: true",
+            "source_pr_1779_unresolved_review_threads_after_remediation: 0",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_RENDERED_STALE_INPUT_REMEDIATION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope selector-use remediation current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -102726,6 +102822,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_rendered_stale_input_remediation(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_remediation_current_main_sync(
         errors
     )
 
