@@ -3270,6 +3270,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_RUNTIME = (
     PLANNING_DOCS
     / "1151-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1152-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-runtime-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -109887,6 +109891,68 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_run
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_RUNTIME_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Layer 3 Proof Runtime Current Main Sync",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1151-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-runtime.md",
+            "current_main_entry: a9aef8fe090e86d7ab3be6eaf7c266c65378b7c1",
+            "source_runtime_pr: \"#1854\"",
+            "source_runtime_merge_commit: a9aef8fe090e86d7ab3be6eaf7c266c65378b7c1",
+            "entry_decision: current_main_sync",
+            "current_main_contains_live_downstream_proof_runtime: true",
+            "current_main_sync_introduces_runtime_behavior: false",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+            "implemented_service: backend/app/services/layer3_sec_edgar_live_downstream_proof.py",
+            "live_source_artifact_receipt_bound: true",
+            "source_acquisition_receipt_bound: true",
+            "live_material_bridge_receipt_bound: true",
+            "underlying_downstream_proof_bound: true",
+            "material_preview_gate_b_compatibility_preserved: true",
+            "rendered_live_downstream_status_implemented_now: false",
+            "selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1",
+            "selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1153-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md",
+            "direct_live_artifact_to_material_without_source_acquisition_admitted: false",
+            "direct_raw_artifact_parse_or_materialization_admitted: false",
+            "live_sec_network_fetch_admitted_for_proof: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "verification_current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "verification_current_main_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync_v1",
+            "source_runtime_pr: \"#1854\"",
+            "source_runtime_merge_commit: a9aef8fe090e86d7ab3be6eaf7c266c65378b7c1",
+            "current_main_contains_live_downstream_proof_runtime: true",
+            "rendered_live_downstream_status_implemented_now: false",
+            "selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1",
+            "selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1153-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_RUNTIME: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream Layer 3 proof runtime current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -111014,6 +111080,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync(
         errors
     )
 
