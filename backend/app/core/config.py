@@ -79,6 +79,17 @@ class Settings(BaseSettings):
         alias="LAYER3_CANDIDATE_B_FULL_CORPUS_OPERATOR_WORKFLOW_DIR",
     )
     layer3_source_ingestion_dir: str = Field(default="", alias="LAYER3_SOURCE_INGESTION_DIR")
+    layer3_sec_edgar_user_agent: str = Field(default="", alias="LAYER3_SEC_EDGAR_USER_AGENT")
+    layer3_sec_edgar_live_network_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
+    )
+    layer3_sec_edgar_rate_limit_per_second: int = Field(
+        default=1,
+        alias="LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND",
+    )
+    layer3_sec_edgar_max_bytes: int = Field(default=25_000_000, alias="LAYER3_SEC_EDGAR_MAX_BYTES")
+    layer3_sec_edgar_timeout_seconds: int = Field(default=20, alias="LAYER3_SEC_EDGAR_TIMEOUT_SECONDS")
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
     cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
     auth_owner: Literal["none", "proxy"] = Field(default="none", alias="AUTH_OWNER")
