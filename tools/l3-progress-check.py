@@ -3109,6 +3109,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_SELECTION = 
     PLANNING_DOCS
     / "1110-cb-broader-eligible-corpus-default-scope-default-promotion-selection.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_RUNTIME = (
+    PLANNING_DOCS
+    / "1111-cb-broader-eligible-corpus-default-scope-default-promotion-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -3143,6 +3147,13 @@ CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_SERVICE = (
     / "app"
     / "services"
     / "layer3_candidate_b_broader_scope_promotion_readiness.py"
+)
+CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_broader_scope_default_promotion.py"
 )
 CANDIDATE_B_OPERATOR_WORKFLOW_ACCESS_POLICY = (
     ROOT
@@ -104921,6 +104932,143 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_s
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime(
+    errors: list[str],
+) -> None:
+    endpoint = (
+        "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/"
+        "default-promotion"
+    )
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_RUNTIME: (
+            "Candidate B Broader Eligible Corpus Default Scope Default Promotion Runtime",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1",
+            "source_default_promotion_selection: next_milestone_plans/Layer3_planning_docs/1110-cb-broader-eligible-corpus-default-scope-default-promotion-selection.md",
+            "current_main_entry: e0823777554483f085eeafcd7a97fbb562a72f4c",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_service: backend/app/services/layer3_candidate_b_broader_scope_default_promotion.py",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion",
+            "selected_runtime_target: candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1",
+            "required_promotion_mode: candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1",
+            "required_operator_decision: record_candidate_b_broader_scope_default_promotion",
+            "required_promotion_readiness_state: candidate_b_broader_eligible_corpus_default_scope_promotion_ready_for_separate_selection",
+            "blocked_promotion_readiness_state_must_block_default_promotion: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_blocked",
+            "selected_state: candidate_b_broader_eligible_corpus_default_scope_default_promotion_selected",
+            "blocked_state: candidate_b_broader_eligible_corpus_default_scope_default_promotion_blocked",
+            "required_default_promotion_authority_chain: readiness_audit,runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial,promotion_readiness_audit,promotion_readiness_rendered_status,promotion_readiness_closeout",
+            "required_promotion_readiness_bindings: promotion_readiness_audit_id,promotion_readiness_audit_hash,trial_receipt_id,trial_receipt_hash,selected_scope_classes,production_policy_hash",
+            "required_non_selected_class_default: baseline",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "server_owned_default_policy_required: true",
+            "browser_supplied_default_policy_admitted: false",
+            "browser_supplied_scope_classes_admitted: false",
+            "stale_or_missing_promotion_readiness_receipt_must_block: true",
+            "blocked_promotion_readiness_must_block: true",
+            "selected_class_mismatch_must_block: true",
+            "production_policy_mismatch_must_block: true",
+            "operator_visible_status_missing_must_block: true",
+            "rendered_status_missing_must_block: true",
+            "promotion_readiness_closeout_missing_must_block: true",
+            "rollback_confirmation_missing_must_block: true",
+            "default_promotion_receipt_id_prefix: cb-broader-scope-default-promotion",
+            "default_promotion_receipt_dir: broader-scope-default-promotion",
+            "default_scope_promotion_enabled_for_selected_classes: true",
+            "default_scope_policy_mutation_performed: true",
+            "default_scope_expansion_mutation_performed: true",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "focused_pytest: pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1",
+            "implemented_service: backend/app/services/layer3_candidate_b_broader_scope_default_promotion.py",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion",
+            "required_promotion_mode: candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1",
+            "required_operator_decision: record_candidate_b_broader_scope_default_promotion",
+            "required_promotion_readiness_state: candidate_b_broader_eligible_corpus_default_scope_promotion_ready_for_separate_selection",
+            "blocked_promotion_readiness_state_must_block_default_promotion: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_blocked",
+            "required_default_promotion_authority_chain: readiness_audit,runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial,promotion_readiness_audit,promotion_readiness_rendered_status,promotion_readiness_closeout",
+            "default_promotion_receipt_id_prefix: cb-broader-scope-default-promotion",
+            "default_scope_promotion_enabled_for_selected_classes: true",
+            "default_scope_policy_mutation_performed: true",
+            "default_scope_expansion_mutation_performed: true",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_SERVICE: (
+            "SCHEMA_ID = \"layer3.candidate_b_broader_eligible_corpus_default_scope_default_promotion.v1\"",
+            "PROMOTION_MODE = \"candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1\"",
+            "OPERATOR_DECISION = \"record_candidate_b_broader_scope_default_promotion\"",
+            "SELECTED_STATE = \"candidate_b_broader_eligible_corpus_default_scope_default_promotion_selected\"",
+            "BLOCKED_STATE = \"candidate_b_broader_eligible_corpus_default_scope_default_promotion_blocked\"",
+            "RECEIPT_PREFIX = \"cb-broader-scope-default-promotion\"",
+            "RECEIPT_DIR = \"broader-scope-default-promotion\"",
+            "promotion_readiness_rendered_status_confirmed",
+            "promotion_readiness_closeout_confirmed",
+            "default_scope_promotion_enabled_for_selected_classes",
+            "default_scope_policy_mutation_performed",
+            "selector_mutation_performed\": False",
+            "source_expansion_admitted\": False",
+            "runtime_db_or_storage_expansion_admitted\": False",
+            "raw_local_path_exposed\": False",
+            "raw_url_exposed\": False",
+            "artifact_bytes_exposed\": False",
+        ),
+        LAYER3_API: (
+            "layer3_candidate_b_broader_scope_default_promotion",
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopeDefaultPromotionRequest",
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopeDefaultPromotionResponse",
+            endpoint,
+            "record_candidate_b_broader_scope_default_promotion",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_admitted",
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint",
+            endpoint,
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "\"candidate_b_broader_eligible_corpus_default_scope_default_promotion\": True",
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_admitted",
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint",
+            endpoint,
+        ),
+        CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_TEST: (
+            "DEFAULT_PROMOTION_ENDPOINT",
+            "test_candidate_b_broader_scope_default_promotion_records_redacted_receipt",
+            "test_candidate_b_broader_scope_default_promotion_blocks_blocked_readiness",
+            "test_candidate_b_broader_scope_default_promotion_blocks_stale_readiness_hash",
+            "test_candidate_b_broader_scope_default_promotion_rejects_browser_default_authority",
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_SELECTION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope default promotion runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -105950,6 +106098,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_selection(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime(
         errors
     )
 
