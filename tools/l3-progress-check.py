@@ -3081,6 +3081,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_R
     PLANNING_DOCS
     / "1103-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-runtime.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_CLOSEOUT_READINESS = (
+    PLANNING_DOCS
+    / "1104-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-closeout-readiness.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -104273,6 +104277,78 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatabil
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_CLOSEOUT_READINESS: (
+            "Candidate B Broader Eligible Corpus Default Scope Operator Repeatability Trial Closeout Readiness",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness_v1",
+            "source_operator_repeatability_trial_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1103-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-runtime.md",
+            "current_main_entry: 4a15ebc4f04bd691f0dd5b76aed243615a9b687d",
+            'source_sync_pr: "#1807"',
+            "entry_decision: closeout_readiness_checkpoint",
+            "runtime_status: already_implemented",
+            "rendered_status: already_implemented",
+            "closeout_readiness_state: ready_for_broader_eligible_corpus_default_scope_promotion_readiness_selection",
+            "selected_next_selection_target: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_selection_v1",
+            "required_closeout_authority: accepted_or_blocked_operator_repeatability_trial_over_server_owned_use_status_receipt_chain",
+            "required_receipt_chain: runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial",
+            "required_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial",
+            "required_rendered_trial_control: rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control",
+            "required_trial_model: append_only_trial_receipt_over_original_and_repeat_use_status_authority_without_processing_execution",
+            "required_trial_states_visible: accepted,blocked",
+            "required_scope_class_policy: receipt_bound_selected_classes_only",
+            "required_non_selected_class_default: baseline",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only",
+            "candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only",
+            "operator_repeatability_trial_closeout_ready: true",
+            "named_defect_remaining: false",
+            "promotion_readiness_selection_admitted_next: true",
+            "selector_mutation_performed: false",
+            "default_scope_expansion_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness_v1",
+            "source_operator_repeatability_trial_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1103-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-runtime.md",
+            "current_main_entry: 4a15ebc4f04bd691f0dd5b76aed243615a9b687d",
+            "closeout_readiness_state: ready_for_broader_eligible_corpus_default_scope_promotion_readiness_selection",
+            "required_closeout_authority: accepted_or_blocked_operator_repeatability_trial_over_server_owned_use_status_receipt_chain",
+            "required_receipt_chain: runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial",
+            "required_rendered_trial_control: rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control",
+            "operator_repeatability_trial_closeout_ready: true",
+            "named_defect_remaining: false",
+            "promotion_readiness_selection_admitted_next: true",
+            "selector_mutation_performed: false",
+            "default_scope_expansion_mutation_performed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_RENDERED_STATUS_RUNTIME: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope operator repeatability trial closeout readiness term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -105281,6 +105357,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_runtime(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness(
         errors
     )
 
