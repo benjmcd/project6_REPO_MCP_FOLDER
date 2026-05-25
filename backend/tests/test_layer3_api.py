@@ -1025,6 +1025,85 @@ def _sec_edgar_source_acquisition_payload(
     }
 
 
+def _bind_sec_edgar_dataset_to_live_source_artifact(
+    client: TestClient,
+    tmp_path,
+    *,
+    dataset_version_id: str,
+    live_artifact: dict,
+) -> str:
+    db = client.layer3_session_factory()
+    try:
+        _seed_aps_derived_dataset_version(
+            db,
+            tmp_path,
+            dataset_version_id=dataset_version_id,
+            parser_family="sec_edgar_filing",
+            typed_content_contract_id="aps_sec_edgar_filing_units_v1",
+            source_mode="artifact_sec_edgar_filing_parser",
+            parser_contract_id="aps_sec_edgar_filing_parser_v1",
+        )
+        provenance = (
+            db.query(DatasetSourceProvenance)
+            .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
+            .one()
+        )
+        source_artifact = live_artifact["source_artifact_receipt"]
+        source_identity = live_artifact["source_identity"]
+        provenance.downloaded_sha256 = source_artifact["content_sha256"]
+        source_reference = dict(provenance.source_reference_json or {})
+        source_reference.update(
+            {
+                "accession_or_submission_id": "0000320193-24-000123",
+                "cik": "320193",
+                "form_type": source_identity["form_type"],
+                "filing_date": source_identity["filing_date"],
+                "content_length": source_artifact["content_length"],
+                "source_artifact_receipt_id": source_artifact["source_artifact_receipt_id"],
+                "source_artifact_receipt_hash": source_artifact["source_artifact_receipt_hash"],
+                "source_artifact_ref_hash": source_artifact["source_artifact_ref_hash"],
+            }
+        )
+        provenance.source_reference_json = source_reference
+        db.commit()
+    finally:
+        db.close()
+    return dataset_version_id
+
+
+def _sec_edgar_source_acquisition_payload_from_live(
+    *,
+    dataset_version_id: str,
+    envelope: dict,
+    live_artifact: dict,
+    client_request_id: str,
+) -> dict[str, object]:
+    source_artifact = live_artifact["source_artifact_receipt"]
+    source_identity = live_artifact["source_identity"]
+    return {
+        "client_request_id": client_request_id,
+        "acquisition_mode": "sec_edgar_text_table_source_acquisition_authority_v1",
+        "operator_decision": "record_sec_edgar_text_table_source_acquisition_authority",
+        "dataset_version_id": dataset_version_id,
+        "source_artifact_receipt_id": source_artifact["source_artifact_receipt_id"],
+        "source_artifact_receipt_hash": source_artifact["source_artifact_receipt_hash"],
+        "source_artifact_ref_hash": source_artifact["source_artifact_ref_hash"],
+        "accession_or_submission_id_hash": source_identity["accession_or_submission_id_hash"],
+        "cik_or_filer_ref_hash": source_identity["cik_or_filer_ref_hash"],
+        "form_type": source_identity["form_type"],
+        "filing_date": source_identity["filing_date"],
+        "content_sha256": source_artifact["content_sha256"],
+        "content_length": source_artifact["content_length"],
+        "parser_family": "sec_edgar_filing",
+        "parser_contract_id": "aps_sec_edgar_filing_parser_v1",
+        "typed_content_contract_id": "aps_sec_edgar_filing_units_v1",
+        "materialization_receipt_hash": envelope["materialization_receipt_hash"],
+        "dataset_version_hash": envelope["dataset_version_hash"],
+        "authority_envelope_hash": envelope["authority_envelope_hash"],
+        "operator_confirmation": True,
+    }
+
+
 def test_layer3_api_records_sec_edgar_text_table_source_acquisition_authority(
     client: TestClient,
     tmp_path,
@@ -1374,6 +1453,221 @@ def test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_request_co
         "sec_edgar_text_table_live_source_artifact_client_request_id_conflict"
     )
     assert len(fake_client.calls) == 1
+
+
+def test_layer3_api_bridges_live_sec_edgar_source_artifact_to_material_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    content = b"<SEC-DOCUMENT>live sec filing material bridge text</SEC-DOCUMENT>\n"
+    fake_client = _FakeSecEdgarClient(
+        [
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=content,
+                final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+            )
+        ]
+    )
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+    live_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=_sec_edgar_live_source_artifact_payload(client_request_id="sec-edgar-live-material-acq-001"),
+    )
+    assert live_response.status_code == 200, live_response.text
+    live_artifact = live_response.json()
+    dataset_version_id = _bind_sec_edgar_dataset_to_live_source_artifact(
+        client,
+        tmp_path,
+        dataset_version_id="dv-aps-sec-edgar-api-live-material-001",
+        live_artifact=live_artifact,
+    )
+    envelope_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+        json={
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert envelope_response.status_code == 200, envelope_response.text
+    envelope = envelope_response.json()
+    source_acquisition_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+        json=_sec_edgar_source_acquisition_payload_from_live(
+            dataset_version_id=dataset_version_id,
+            envelope=envelope,
+            live_artifact=live_artifact,
+            client_request_id="sec-edgar-live-material-source-acq",
+        ),
+    )
+    assert source_acquisition_response.status_code == 200, source_acquisition_response.text
+    source_acquisition = source_acquisition_response.json()
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        json={
+            "client_request_id": "sec-edgar-live-material-bridge",
+            "bridge_mode": "sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1",
+            "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "expected_materialization_receipt_hash": envelope["materialization_receipt_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_text_table_live_source_artifact_material_authority_bridge.v1"
+    assert body["bridge_state"] == "sec_edgar_text_table_live_source_artifact_material_authority_bridge_ready"
+    assert body["source_artifact_authority"]["source_artifact_receipt_hash"] == (
+        live_artifact["source_artifact_receipt"]["source_artifact_receipt_hash"]
+    )
+    assert body["compatibility"]["source_acquisition_authority_reused"] is True
+    assert body["compatibility"]["material_authority_bridge_reused"] is True
+    assert body["compatibility"]["direct_raw_artifact_parse_or_materialization_admitted"] is False
+    assert body["compatibility"]["dataset_version_creation_admitted"] is False
+    assert body["compatibility"]["gate_b_mutation_admitted_in_bridge"] is False
+    assert body["material_preview_request_basis"]["dataset_version_ids"] == [dataset_version_id]
+    assert body["material_preview_hash"]
+    assert body["gate_b_decision_manifest_id"]
+    assert body["negative_invariants"]["live_sec_network_fetch_admitted_for_bridge"] is False
+    assert body["negative_invariants"]["provider_object_write_enabled"] is False
+    assert body["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert "https://www.sec.gov" not in response.text
+    assert "0000320193-24-000123" not in response.text
+    assert str(tmp_path) not in response.text
+
+    receipt_root = tmp_path / "storage" / "layer3-sec-edgar-live-source-artifact-material-bridge"
+    receipt_files = list(receipt_root.glob("*.json"))
+    assert len(receipt_files) == 1
+    receipt_text = receipt_files[0].read_text(encoding="utf-8")
+    assert body["bridge_receipt_hash"] in receipt_text
+    assert "https://www.sec.gov" not in receipt_text
+    assert "0000320193-24-000123" not in receipt_text
+    assert str(tmp_path) not in receipt_text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        json={
+            "client_request_id": "sec-edgar-live-material-bridge-replay",
+            "bridge_mode": "sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1",
+            "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["idempotent_replay"] is True
+    assert replay_response.json()["bridge_receipt_hash"] == body["bridge_receipt_hash"]
+
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=body["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    gate_b = gate_b_response.json()
+    assert gate_b["material_preview_hash"] == body["material_preview_hash"]
+    assert gate_b["gate_b_decision_manifest_id"] == body["gate_b_decision_manifest_id"]
+
+
+def test_layer3_api_rejects_live_sec_edgar_material_bridge_stale_or_missing_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", _FakeSecEdgarClient([
+        layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+            status_code=200,
+            content=b"<SEC-DOCUMENT>stale bridge</SEC-DOCUMENT>\n",
+            final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+        )
+    ]))
+    live_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=_sec_edgar_live_source_artifact_payload(client_request_id="sec-edgar-live-material-reject-acq"),
+    )
+    assert live_response.status_code == 200, live_response.text
+    live_artifact = live_response.json()
+    dataset_version_id = _bind_sec_edgar_dataset_to_live_source_artifact(
+        client,
+        tmp_path,
+        dataset_version_id="dv-aps-sec-edgar-api-live-material-reject-001",
+        live_artifact=live_artifact,
+    )
+    envelope_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+        json={
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert envelope_response.status_code == 200, envelope_response.text
+    envelope = envelope_response.json()
+    source_acquisition_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+        json=_sec_edgar_source_acquisition_payload_from_live(
+            dataset_version_id=dataset_version_id,
+            envelope=envelope,
+            live_artifact=live_artifact,
+            client_request_id="sec-edgar-live-material-reject-source-acq",
+        ),
+    )
+    assert source_acquisition_response.status_code == 200, source_acquisition_response.text
+    source_acquisition = source_acquisition_response.json()
+    base_payload = {
+        "client_request_id": "sec-edgar-live-material-reject",
+        "bridge_mode": "sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1",
+        "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+        "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+        "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+        "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+        "dataset_version_id": dataset_version_id,
+        "authority_envelope_hash": envelope["authority_envelope_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    stale_live_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        json={**base_payload, "live_source_artifact_receipt_hash": "f" * 64},
+    )
+    assert stale_live_response.status_code == 409, stale_live_response.text
+    assert stale_live_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_receipt_hash_mismatch"
+    )
+
+    stale_source_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        json={**base_payload, "source_acquisition_receipt_hash": "e" * 64},
+    )
+    assert stale_source_response.status_code == 409, stale_source_response.text
+    assert stale_source_response.json()["error_code"] == (
+        "sec_edgar_text_table_source_acquisition_receipt_hash_mismatch"
+    )
+
+    unconfirmed_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        json={**base_payload, "operator_confirmed": False},
+    )
+    assert unconfirmed_response.status_code == 200, unconfirmed_response.text
+    unconfirmed_body = unconfirmed_response.json()
+    assert unconfirmed_body["bridge_state"] == (
+        "sec_edgar_text_table_live_source_artifact_material_authority_bridge_blocked"
+    )
+    assert unconfirmed_body["status_projection"]["blocked_reasons"][0]["reason"] == "missing_operator_confirmation"
 
 
 def _sec_edgar_api_snapshot(client: TestClient, *, session_id: str, dataset_version_id: str) -> L3MaterialSnapshot:

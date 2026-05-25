@@ -30,6 +30,7 @@ from app.services import (
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_live_source_artifact,
+    layer3_sec_edgar_live_material_bridge,
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
@@ -463,6 +464,27 @@ class Layer3SecEdgarTextTableLiveSourceArtifactAcquireRequest(BaseModel):
     filing_date: str = Field(min_length=1)
     expected_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
     operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    bridge_mode: Literal["sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1"]
+    live_source_artifact_receipt_id: str = Field(min_length=1)
+    live_source_artifact_receipt_hash: str = Field(min_length=64, max_length=64)
+    source_acquisition_receipt_id: str = Field(min_length=1)
+    source_acquisition_receipt_hash: str = Field(min_length=64, max_length=64)
+    dataset_version_id: str = Field(min_length=1)
+    authority_envelope_hash: str = Field(min_length=64, max_length=64)
+    expected_materialization_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_material_preview_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_gate_b_decision_manifest_id: str | None = None
+    rollback_confirmed: bool = False
+    operator_confirmed: bool = False
     actor: str | None = None
 
 
@@ -7492,6 +7514,23 @@ class Layer3SecEdgarTextTableLiveSourceArtifactResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse(Layer3BaseResponse):
+    mode: str
+    bridge_state: str
+    dataset_version_id: str
+    source_family: str
+    parser_family: str
+    parser_contract_id: str
+    typed_content_contract_id: str
+    live_source_artifact_receipt_hash: str | None = None
+    source_acquisition_receipt_hash: str | None = None
+    material_preview_request_basis: dict[str, Any] | None = None
+    material_preview_hash: str | None = None
+    gate_b_decision_manifest_id: str | None = None
+    status_projection: dict[str, Any] | None = None
+    negative_invariants: dict[str, Any]
+
+
 class Layer3SecEdgarTextTableDownstreamProofResponse(Layer3BaseResponse):
     mode: str
     proof_state: str
@@ -14138,6 +14177,23 @@ def post_sec_edgar_text_table_material_authority_bridge(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_sec_edgar_material_bridge.prepare_sec_edgar_text_table_material_authority_bridge(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+    response_model=Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_text_table_live_source_artifact_material_authority_bridge(
+    payload: Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_live_material_bridge.prepare_sec_edgar_text_table_live_source_artifact_material_authority_bridge(
             payload.model_dump(exclude_none=True),
             db,
         )

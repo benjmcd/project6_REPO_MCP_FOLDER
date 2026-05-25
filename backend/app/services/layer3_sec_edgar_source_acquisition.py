@@ -104,6 +104,7 @@ CIK_KEYS = ("cik_or_filer_ref", "filer_or_cik", "cik")
 CONTENT_LENGTH_KEYS = ("content_length", "content_length_bytes", "byte_length", "size_bytes")
 _RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
 _LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
+_RECEIPT_ID_RE = re.compile(r"^sec-edgar-text-table-source-acquisition-[a-f0-9]{24}$")
 
 
 def record_sec_edgar_text_table_source_acquisition_authority(
@@ -258,6 +259,73 @@ def record_sec_edgar_text_table_source_acquisition_authority(
     return response
 
 
+def read_sec_edgar_text_table_source_acquisition_receipt(
+    source_acquisition_receipt_id: str,
+    *,
+    expected_source_acquisition_receipt_hash: str | None = None,
+) -> dict[str, Any]:
+    receipt_id = str(source_acquisition_receipt_id or "").strip()
+    if not _RECEIPT_ID_RE.fullmatch(receipt_id):
+        _blocked(
+            "sec_edgar_text_table_source_acquisition_receipt_id_invalid",
+            "SEC EDGAR source-acquisition receipt id is not server issued.",
+            http_status=400,
+            blocked_fields=["source_acquisition_receipt_id"],
+        )
+    receipt = _read_receipt(_receipt_root() / f"{receipt_id}.json")
+    if receipt.get("source_acquisition_receipt_id") != receipt_id:
+        _blocked(
+            "sec_edgar_text_table_source_acquisition_receipt_id_mismatch",
+            "SEC EDGAR source-acquisition receipt id is stale or mismatched.",
+            http_status=409,
+            blocked_fields=["source_acquisition_receipt_id"],
+        )
+    receipt_hash = str(receipt.get("source_acquisition_receipt_hash") or "")
+    expected_hash = str(expected_source_acquisition_receipt_hash or "").strip()
+    if expected_hash and receipt_hash != expected_hash:
+        _blocked(
+            "sec_edgar_text_table_source_acquisition_receipt_hash_mismatch",
+            "SEC EDGAR source-acquisition receipt hash is stale or mismatched.",
+            http_status=409,
+            blocked_fields=["source_acquisition_receipt_hash"],
+        )
+    source_artifact = receipt.get("source_artifact_authority")
+    if not isinstance(source_artifact, Mapping):
+        _blocked(
+            "sec_edgar_text_table_source_acquisition_receipt_source_artifact_missing",
+            "SEC EDGAR source-acquisition receipt is missing source-artifact authority.",
+            http_status=409,
+            blocked_fields=["source_artifact_authority"],
+        )
+    recomputed_hash = stable_hash(
+        {
+            "hash_version": "sec_edgar_text_table_source_acquisition_authority_hash_v1",
+            "schema_id": SCHEMA_ID,
+            "acquisition_mode": ACQUISITION_MODE,
+            "operator_decision": OPERATOR_DECISION,
+            "dataset_version_id": source_artifact.get("dataset_version_id"),
+            "dataset_version_hash": source_artifact.get("dataset_version_hash"),
+            "materialization_receipt_hash": source_artifact.get("materialization_receipt_hash"),
+            "authority_envelope_hash": source_artifact.get("authority_envelope_hash"),
+            "source_artifact_receipt_hash": source_artifact.get("source_artifact_receipt_hash"),
+            "source_artifact_ref_hash": source_artifact.get("source_artifact_ref_hash"),
+            "parser_family": PARSER_FAMILY,
+            "parser_contract_id": PARSER_CONTRACT_ID,
+            "typed_content_contract_id": TYPED_CONTENT_CONTRACT_ID,
+            "source_mode": SOURCE_MODE,
+            "redaction_policy_id": REDACTION_POLICY_ID,
+        }
+    )
+    if receipt_hash != recomputed_hash:
+        _blocked(
+            "sec_edgar_text_table_source_acquisition_receipt_hash_mismatch",
+            "SEC EDGAR source-acquisition receipt hash no longer matches its authority payload.",
+            http_status=409,
+            blocked_fields=["source_acquisition_receipt_hash"],
+        )
+    return receipt
+
+
 def _load_ready_authority_envelope(
     *,
     request: Mapping[str, Any],
@@ -355,34 +423,75 @@ def _load_source_artifact_authority(
             blocked_fields=sorted(set(blocked)),
         )
 
-    source_artifact_ref_hash = _sha256_text(refs[0])
+    explicit_source_artifact_ref_hashes = _unique_reference_text(references, ("source_artifact_ref_hash",))
+    explicit_source_artifact_receipt_ids = _unique_reference_text(references, ("source_artifact_receipt_id",))
+    explicit_source_artifact_receipt_hashes = _unique_reference_text(references, ("source_artifact_receipt_hash",))
+    explicit_receipt_fields_present = any(
+        (
+            explicit_source_artifact_ref_hashes,
+            explicit_source_artifact_receipt_ids,
+            explicit_source_artifact_receipt_hashes,
+        )
+    )
+    if explicit_receipt_fields_present and not (
+        len(explicit_source_artifact_ref_hashes) == 1
+        and len(explicit_source_artifact_receipt_ids) == 1
+        and len(explicit_source_artifact_receipt_hashes) == 1
+        and _is_hash(explicit_source_artifact_ref_hashes[0])
+        and _is_hash(explicit_source_artifact_receipt_hashes[0])
+    ):
+        _blocked(
+            "sec_edgar_text_table_source_acquisition_explicit_source_artifact_receipt_incomplete",
+            "Explicit SEC EDGAR source-artifact receipt provenance must include one valid receipt id, receipt hash, and ref hash.",
+            http_status=409,
+            blocked_fields=[
+                "source_artifact_receipt_id",
+                "source_artifact_receipt_hash",
+                "source_artifact_ref_hash",
+            ],
+        )
+
+    source_artifact_ref_hash = (
+        explicit_source_artifact_ref_hashes[0]
+        if explicit_receipt_fields_present
+        else _sha256_text(refs[0])
+    )
     content_sha256 = content_hashes[0]
-    source_artifact_receipt_id = f"{SOURCE_ARTIFACT_RECEIPT_PREFIX}-{source_artifact_ref_hash[:24]}"
+    source_artifact_receipt_id = (
+        explicit_source_artifact_receipt_ids[0]
+        if explicit_receipt_fields_present
+        else f"{SOURCE_ARTIFACT_RECEIPT_PREFIX}-{source_artifact_ref_hash[:24]}"
+    )
     accession_hash = _sha256_text(accession_values[0])
     cik_hash = _sha256_text(cik_values[0])
-    source_artifact_receipt_hash = stable_hash(
-        {
-            "schema_id": SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID,
-            "schema_version": SCHEMA_VERSION,
-            "source_artifact_receipt_id": source_artifact_receipt_id,
-            "dataset_version_id": dataset_version_id,
-            "source_artifact_ref_hash": source_artifact_ref_hash,
-            "content_sha256": content_sha256,
-            "content_length": content_lengths[0],
-            "accession_or_submission_id_hash": accession_hash,
-            "cik_or_filer_ref_hash": cik_hash,
-            "form_type": form_types[0],
-            "filing_date": filing_dates[0],
-            "parser_family": PARSER_FAMILY,
-            "parser_contract_id": PARSER_CONTRACT_ID,
-            "typed_content_contract_id": TYPED_CONTENT_CONTRACT_ID,
-            "source_mode": SOURCE_MODE,
-            "dataset_version_hash": envelope.get("dataset_version_hash"),
-            "materialization_receipt_hash": envelope.get("materialization_receipt_hash"),
-            "authority_envelope_hash": envelope.get("authority_envelope_hash"),
-        }
+    source_artifact_receipt_hash = (
+        explicit_source_artifact_receipt_hashes[0]
+        if explicit_receipt_fields_present
+        else stable_hash(
+            {
+                "schema_id": SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID,
+                "schema_version": SCHEMA_VERSION,
+                "source_artifact_receipt_id": source_artifact_receipt_id,
+                "dataset_version_id": dataset_version_id,
+                "source_artifact_ref_hash": source_artifact_ref_hash,
+                "content_sha256": content_sha256,
+                "content_length": content_lengths[0],
+                "accession_or_submission_id_hash": accession_hash,
+                "cik_or_filer_ref_hash": cik_hash,
+                "form_type": form_types[0],
+                "filing_date": filing_dates[0],
+                "parser_family": PARSER_FAMILY,
+                "parser_contract_id": PARSER_CONTRACT_ID,
+                "typed_content_contract_id": TYPED_CONTENT_CONTRACT_ID,
+                "source_mode": SOURCE_MODE,
+                "dataset_version_hash": envelope.get("dataset_version_hash"),
+                "materialization_receipt_hash": envelope.get("materialization_receipt_hash"),
+                "authority_envelope_hash": envelope.get("authority_envelope_hash"),
+            }
+        )
     )
     return {
+        "dataset_version_id": dataset_version_id,
         "source_artifact_receipt_id": source_artifact_receipt_id,
         "source_artifact_receipt_hash": source_artifact_receipt_hash,
         "source_artifact_ref_hash": source_artifact_ref_hash,
