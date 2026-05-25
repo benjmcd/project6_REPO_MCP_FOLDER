@@ -106,6 +106,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     ]
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
+    assert "/__test/layer3/sec-edgar-live-source-artifact-acquisition" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-source-acquisition-authority" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-downstream-status" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-repeatability-trial" in payload["seed_routes"]
@@ -118,6 +119,111 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     posix_user_prefix = "/" + "Users" + "/"
     assert windows_user_prefix not in str(payload)
     assert posix_user_prefix not in str(payload)
+
+
+def test_review_browser_server_prepares_sec_edgar_live_source_artifact_acquisition(client: TestClient) -> None:
+    setup_response = client.post("/__test/layer3/sec-edgar-live-source-artifact-acquisition")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["acquisition_endpoint"] == (
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire"
+    )
+    assert setup["status_endpoint_prefix"] == (
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/"
+    )
+    assert setup["raw_local_path_exposed"] is False
+    assert setup["raw_url_exposed"] is False
+    assert setup["artifact_bytes_exposed"] is False
+    assert setup["server_user_agent_exposed"] is False
+    assert setup["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(setup)
+    assert "http://" not in str(setup)
+    assert "https://" not in str(setup)
+
+    payload = {
+        "client_request_id": "review-browser-sec-edgar-live-source-artifact",
+        "acquisition_mode": "sec_edgar_text_table_live_source_artifact_acquisition_v1",
+        "operator_decision": "acquire_sec_edgar_text_table_live_source_artifact",
+        **setup["live_acquisition_request"],
+        "operator_confirmation": True,
+    }
+
+    missing_confirmation_response = client.post(
+        setup["acquisition_endpoint"],
+        json={**payload, "operator_confirmation": False},
+    )
+    assert missing_confirmation_response.status_code == 409, missing_confirmation_response.text
+    assert missing_confirmation_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_operator_confirmation_missing"
+    )
+
+    raw_url_response = client.post(
+        setup["acquisition_endpoint"],
+        json={**payload, "raw_url": "https://www.sec.gov/Archives/edgar/data/320193/raw.txt"},
+    )
+    assert raw_url_response.status_code == 400, raw_url_response.text
+    assert raw_url_response.json()["error_code"] == "sec_edgar_text_table_live_source_artifact_forbidden_request_fields"
+    assert "https://www.sec.gov" not in raw_url_response.text
+
+    mismatch_response = client.post(
+        setup["acquisition_endpoint"],
+        json={**payload, "expected_content_sha256": "0" * 64},
+    )
+    assert mismatch_response.status_code == 409, mismatch_response.text
+    assert mismatch_response.json()["error_code"] == "sec_edgar_text_table_live_source_artifact_content_hash_mismatch"
+
+    setup_response = client.post("/__test/layer3/sec-edgar-live-source-artifact-acquisition")
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    payload = {
+        "client_request_id": "review-browser-sec-edgar-live-source-artifact-available",
+        "acquisition_mode": "sec_edgar_text_table_live_source_artifact_acquisition_v1",
+        "operator_decision": "acquire_sec_edgar_text_table_live_source_artifact",
+        **setup["live_acquisition_request"],
+        "operator_confirmation": True,
+    }
+
+    acquire_response = client.post(setup["acquisition_endpoint"], json=payload)
+    assert acquire_response.status_code == 200, acquire_response.text
+    acquired = acquire_response.json()
+    assert acquired["schema_id"] == "layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1"
+    assert acquired["live_source_artifact_receipt_status"] == "available"
+    assert acquired["source_artifact_receipt"]["content_sha256"] == setup["expected_content_sha256"]
+    assert acquired["retained_source_artifact_manifest"]["retained_source_artifact_available"] is True
+    assert acquired["cache"]["cache_status"] == "miss"
+    assert acquired["cache"]["network_request_made"] is True
+    assert acquired["idempotency"]["idempotent_replay"] is False
+    assert acquired["operator_visible_live_source_artifact_status"]["raw_url_exposed"] is False
+    assert acquired["operator_visible_live_source_artifact_status"]["raw_local_path_exposed"] is False
+    assert acquired["operator_visible_live_source_artifact_status"]["artifact_bytes_exposed"] is False
+    assert acquired["negative_invariants"]["frontend_durable_authority_enabled"] is False
+    assert "Layer3 Review Browser" not in acquire_response.text
+    assert "https://www.sec.gov" not in acquire_response.text
+    assert "C:\\" not in acquire_response.text
+
+    status_response = client.get(f"{setup['status_endpoint_prefix']}{acquired['live_source_artifact_receipt_id']}")
+    assert status_response.status_code == 200, status_response.text
+    status = status_response.json()
+    assert status["schema_id"] == "layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1"
+    assert status["live_source_artifact_receipt_hash"] == acquired["live_source_artifact_receipt_hash"]
+    assert status["cache"]["cache_status"] == "status"
+    assert status["cache"]["network_request_made"] is False
+    assert "Layer3 Review Browser" not in status_response.text
+    assert "https://www.sec.gov" not in status_response.text
+    assert "C:\\" not in status_response.text
+
+    replay_response = client.post(
+        setup["acquisition_endpoint"],
+        json={**payload, "client_request_id": "review-browser-sec-edgar-live-source-artifact-replay"},
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    replay = replay_response.json()
+    assert replay["cache"]["cache_status"] == "hit"
+    assert replay["idempotency"]["idempotent_replay"] is True
+    assert replay["live_source_artifact_receipt_hash"] == acquired["live_source_artifact_receipt_hash"]
 
 
 def test_review_browser_server_prepares_sec_edgar_source_acquisition_authority(client: TestClient) -> None:

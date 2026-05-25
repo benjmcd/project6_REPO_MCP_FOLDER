@@ -8377,3 +8377,69 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_render
 ```
 
 This selection admits only a future rendered/operator acquire/status control over the already merged SEC EDGAR live source-artifact runtime. It does not implement rendered controls, run live SEC network smoke, parse SEC content, materialize DatasetVersion rows, mutate Gate B, expose raw SEC URLs or server User-Agent identity, dispatch connectors, write provider objects, add RAG/model runtime, or activate full mockups.
+
+### SEC EDGAR Text Table Live Source Artifact Acquisition Rendered Status Runtime
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_v1
+selection_freeze: next_milestone_plans/Layer3_planning_docs/1143-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-selection.md
+current_main_entry: 4b773f21d3bdbe7ee5dc45de990e4ce513878701
+entry_decision: rendered_runtime_implementation
+runtime_status: already_implemented
+rendered_status: implemented
+implemented_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_acquisition_control
+implemented_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1
+implemented_operator_decision: acquire_sec_edgar_text_table_live_source_artifact
+implemented_live_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire
+implemented_live_acquisition_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}
+implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_acquisition
+implemented_bootstrap_endpoint_field: sec_edgar_text_table_live_source_artifact_acquisition_endpoint
+implemented_bootstrap_status_endpoint_field: sec_edgar_text_table_live_source_artifact_acquisition_status_endpoint
+implemented_panel: sec-edgar-live-source-artifact-acquisition-panel
+implemented_form: sec-edgar-live-source-artifact-acquisition-form
+implemented_submit: sec-edgar-live-source-artifact-acquisition-submit
+implemented_submit_label: Acquire SEC Filing Text Artifact
+implemented_status_submit: sec-edgar-live-source-artifact-acquisition-status-submit
+implemented_request_input: sec-edgar-live-source-artifact-acquisition-request-json
+implemented_status_input: sec-edgar-live-source-artifact-acquisition-status-receipt-id
+implemented_operator_confirmation_input: sec-edgar-live-source-artifact-acquisition-operator-confirmation
+implemented_payload_policy: browser_constructs_only_admitted_identity_expected_hash_and_confirmation_fields
+implemented_rendered_payload_fields: client_request_id,acquisition_mode,operator_decision,cik_or_filer_ref,accession_or_submission_id,form_type,filing_date,expected_content_sha256,operator_confirmation
+implemented_test_fixture_route: /__test/layer3/sec-edgar-live-source-artifact-acquisition
+implemented_fixture_schema_id: project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1
+implemented_success_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1
+implemented_status_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1
+implemented_source_artifact_family: complete_submission_text_filing_artifact
+implemented_redaction_contract: hashes_status_and_redacted_metadata_only_no_raw_url_no_local_path_no_artifact_bytes_no_user_agent_secret
+client_side_raw_url_or_path_authority_rejected: true
+server_side_forbidden_request_fields_rejected: true
+missing_operator_confirmation_fails_closed: true
+expected_content_hash_mismatch_fails_closed: true
+status_endpoint_renders_redacted_receipt_only: true
+cache_hit_and_idempotent_replay_rendered: true
+server_derived_sec_archives_url_required: true
+server_configured_user_agent_required: true
+raw_sec_filing_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+server_user_agent_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+headless_rendered_status_proof_command: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep "SEC EDGAR live source artifact"
+headed_rendered_status_proof_command: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep "SEC EDGAR live source artifact"
+progress_check_command: python ./tools/l3-progress-check.py
+target_selection_command: python ./tools/l3-target-selection-validate.py --expect frozen
+next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_current_main_sync_v1
+```
+
+The rendered runtime gives operators a bounded acquire/status surface over the existing server-owned live source-artifact acquisition API. It accepts only SEC filing identity fields, optional expected content hash, and operator confirmation; raw SEC URLs, local paths, artifact bytes, User-Agent values, commands, storage roots, parser controls, Gate B/materialization, provider writes, connector dispatch, RAG/model runtime, browser storage authority, frontend durable authority, and full mockup activation remain outside this slice.

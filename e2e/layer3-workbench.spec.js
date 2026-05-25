@@ -4747,6 +4747,222 @@ test('Layer 3 workbench records SEC EDGAR source acquisition authority through s
   ]);
 });
 
+test('Layer 3 workbench acquires SEC EDGAR live source artifact through server-owned rendered controls', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-live-source-artifact-acquisition'));
+  expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1');
+  expect(setup.raw_local_path_exposed).toBe(false);
+  expect(setup.raw_url_exposed).toBe(false);
+  expect(setup.artifact_bytes_exposed).toBe(false);
+  expect(setup.server_user_agent_exposed).toBe(false);
+  expect(setup.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(setup)).not.toContain('C:\\');
+  expect(JSON.stringify(setup)).not.toContain('http://');
+  expect(JSON.stringify(setup)).not.toContain('https://');
+  expect(JSON.stringify(setup)).not.toContain('Layer3 Review Browser');
+
+  const acquirePath = '/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire';
+  const statusPathPrefix = '/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/';
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-edgar-live-source-artifact-acquisition-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#sec-edgar-live-source-artifact-acquisition-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_sec_edgar_text_table_live_source_artifact_acquisition_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  const submit = page.locator('#sec-edgar-live-source-artifact-acquisition-submit');
+  const statusSubmit = page.locator('#sec-edgar-live-source-artifact-acquisition-status-submit');
+  const requestJson = page.locator('#sec-edgar-live-source-artifact-acquisition-request-json');
+  const confirmation = page.locator('#sec-edgar-live-source-artifact-acquisition-operator-confirmation');
+  const statusReceiptInput = page.locator('#sec-edgar-live-source-artifact-acquisition-status-receipt-id');
+  await expect(submit).toBeDisabled();
+  await expect(statusSubmit).toBeDisabled();
+
+  await requestJson.fill(JSON.stringify(setup.live_acquisition_request));
+  await expect(submit).toBeDisabled();
+  await confirmation.check();
+  await expect(submit).toBeEnabled();
+
+  const acquireRequestsBeforeRawUrl = apiRequests.filter((apiRequest) => apiRequest.path === acquirePath).length;
+  await requestJson.fill(JSON.stringify({
+    ...setup.live_acquisition_request,
+    raw_url: 'https://www.sec.gov/Archives/edgar/data/320193/raw.txt',
+  }));
+  await submit.click();
+  await expect(panel).toContainText('request JSON contains non-admitted fields: raw_url');
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === acquirePath).length).toBe(acquireRequestsBeforeRawUrl);
+
+  await requestJson.fill(JSON.stringify({
+    ...setup.live_acquisition_request,
+    expected_content_sha256: '0'.repeat(64),
+  }));
+  const mismatchRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && new URL(apiRequest.url()).pathname === acquirePath
+  ));
+  const mismatchResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && new URL(response.url()).pathname === acquirePath
+  ));
+  await submit.click();
+  const mismatchPayload = (await mismatchRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(mismatchPayload, [
+    'client_request_id',
+    'acquisition_mode',
+    'operator_decision',
+    'cik_or_filer_ref',
+    'accession_or_submission_id',
+    'form_type',
+    'filing_date',
+    'expected_content_sha256',
+    'operator_confirmation',
+  ]);
+  expect(mismatchPayload.acquisition_mode).toBe('sec_edgar_text_table_live_source_artifact_acquisition_v1');
+  expect(mismatchPayload.operator_decision).toBe('acquire_sec_edgar_text_table_live_source_artifact');
+  expect(mismatchPayload.operator_confirmation).toBe(true);
+  expect(mismatchPayload.expected_content_sha256).toBe('0'.repeat(64));
+  const mismatch = await expectJsonStatus(await mismatchResponsePromise, 409);
+  expect(mismatch.error_code).toBe('sec_edgar_text_table_live_source_artifact_content_hash_mismatch');
+  await expect(panel).toContainText('sec_edgar_text_table_live_source_artifact_content_hash_mismatch');
+
+  const availableSetup = await expectJson(await request.post('/__test/layer3/sec-edgar-live-source-artifact-acquisition'));
+  expect(availableSetup.schema_id).toBe('project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1');
+  expect(JSON.stringify(availableSetup)).not.toContain('C:\\');
+  expect(JSON.stringify(availableSetup)).not.toContain('http://');
+  expect(JSON.stringify(availableSetup)).not.toContain('https://');
+  expect(JSON.stringify(availableSetup)).not.toContain('Layer3 Review Browser');
+  await requestJson.fill(JSON.stringify(availableSetup.live_acquisition_request));
+  const availableRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && new URL(apiRequest.url()).pathname === acquirePath
+  ));
+  const availableResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && new URL(response.url()).pathname === acquirePath
+  ));
+  await submit.click();
+  const availablePayload = (await availableRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(availablePayload, [
+    'client_request_id',
+    'acquisition_mode',
+    'operator_decision',
+    'cik_or_filer_ref',
+    'accession_or_submission_id',
+    'form_type',
+    'filing_date',
+    'expected_content_sha256',
+    'operator_confirmation',
+  ]);
+  expect(availablePayload.acquisition_mode).toBe('sec_edgar_text_table_live_source_artifact_acquisition_v1');
+  expect(availablePayload.operator_decision).toBe('acquire_sec_edgar_text_table_live_source_artifact');
+  expect(availablePayload.operator_confirmation).toBe(true);
+  for (const forbidden of [
+    'path',
+    'local_path',
+    'raw_path',
+    'raw_url',
+    'url',
+    'source_url',
+    'filing_url',
+    'user_agent',
+    'server_user_agent',
+    'artifact_bytes',
+    'file_bytes',
+    'command',
+    'process',
+    'stdout',
+    'stderr',
+    'storage_root',
+    'parser',
+    'gate_b',
+    'provider_public_url',
+    'provider_private_url',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+  ]) {
+    expect(availablePayload).not.toHaveProperty(forbidden);
+  }
+  expect(JSON.stringify(availablePayload)).not.toContain('C:\\');
+  expect(JSON.stringify(availablePayload)).not.toContain('http://');
+  expect(JSON.stringify(availablePayload)).not.toContain('https://');
+  const available = await expectJson(await availableResponsePromise);
+  expect(available.schema_id).toBe('layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1');
+  expect(available.live_source_artifact_receipt_status).toBe('available');
+  expect(available.source_artifact_receipt.content_sha256).toBe(availableSetup.expected_content_sha256);
+  expect(available.retained_source_artifact_manifest.retained_source_artifact_available).toBe(true);
+  expect(available.cache.cache_status).toBe('miss');
+  expect(available.cache.network_request_made).toBe(true);
+  expect(available.idempotency.idempotent_replay).toBe(false);
+  expect(available.operator_visible_live_source_artifact_status.raw_url_exposed).toBe(false);
+  expect(available.operator_visible_live_source_artifact_status.raw_local_path_exposed).toBe(false);
+  expect(available.operator_visible_live_source_artifact_status.artifact_bytes_exposed).toBe(false);
+  expect(available.fail_closed_behavior.browser_supplied_raw_url_rejected).toBe(true);
+  expect(available.fail_closed_behavior.content_hash_mismatch_rejected).toBe(true);
+  expect(available.negative_invariants.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(available)).not.toContain('C:\\');
+  expect(JSON.stringify(available)).not.toContain('http://');
+  expect(JSON.stringify(available)).not.toContain('https://');
+  expect(JSON.stringify(available)).not.toContain('Layer3 Review Browser');
+  await expect(statusReceiptInput).toHaveValue(available.live_source_artifact_receipt_id);
+  await expect(statusSubmit).toBeEnabled();
+  await expect(panel).toContainText('sec_edgar_live_source_artifact_acquisition_available');
+  await expect(panel).toContainText('raw URL exposed: false');
+  await expect(panel).toContainText('network request made: true');
+  await expect(panel).toContainText('idempotent replay: false');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+  await expect(panel).not.toContainText('https://www.sec.gov');
+  await expect(panel).not.toContainText('Layer3 Review Browser');
+
+  const statusRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'GET'
+    && new URL(apiRequest.url()).pathname === `${statusPathPrefix}${available.live_source_artifact_receipt_id}`
+  ));
+  const statusResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'GET'
+    && new URL(response.url()).pathname === `${statusPathPrefix}${available.live_source_artifact_receipt_id}`
+  ));
+  await statusSubmit.click();
+  await statusRequestPromise;
+  const status = await expectJson(await statusResponsePromise);
+  expect(status.schema_id).toBe('layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1');
+  expect(status.live_source_artifact_receipt_hash).toBe(available.live_source_artifact_receipt_hash);
+  expect(status.cache.cache_status).toBe('status');
+  expect(status.cache.network_request_made).toBe(false);
+  await expect(panel).toContainText('cache status: status');
+  await expect(panel).toContainText('network request made: false');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+  await expect(panel).not.toContainText('https://www.sec.gov');
+  await expect(panel).not.toContainText('Layer3 Review Browser');
+
+  const replayResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && new URL(response.url()).pathname === acquirePath
+  ));
+  await submit.click();
+  const replay = await expectJson(await replayResponsePromise);
+  expect(replay.cache.cache_status).toBe('hit');
+  expect(replay.cache.network_request_made).toBe(false);
+  expect(replay.idempotency.idempotent_replay).toBe(true);
+  expect(replay.live_source_artifact_receipt_hash).toBe(available.live_source_artifact_receipt_hash);
+  await expect(panel).toContainText('cache status: hit');
+  await expect(panel).toContainText('idempotent replay: true');
+
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === acquirePath)).toEqual([
+    { method: 'POST', path: acquirePath },
+    { method: 'POST', path: acquirePath },
+    { method: 'POST', path: acquirePath },
+  ]);
+  expect(apiRequests.filter((apiRequest) => apiRequest.path.startsWith(statusPathPrefix))).toEqual([
+    { method: 'GET', path: `${statusPathPrefix}${available.live_source_artifact_receipt_id}` },
+  ]);
+});
+
 test('Layer 3 workbench renders SEC EDGAR downstream operator status through server revalidation', async ({ page, request }) => {
   const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-downstream-status'));
   expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_downstream_status_setup.v1');
