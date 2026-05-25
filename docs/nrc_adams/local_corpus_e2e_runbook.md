@@ -7695,3 +7695,64 @@ next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_v1
 ```
 
 This selection admits only the next server-owned source-artifact authority runtime for SEC EDGAR text/table filings. It does not admit live SEC network fetch, raw SEC URL authority, new parser behavior, XML/HTML/inline XBRL parsing, provider writes, connector dispatch, RAG/model runtime, or frontend durable authority.
+
+### SEC EDGAR Text Table Source Acquisition Authority Runtime
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1133-sec-edgar-text-table-source-acquisition-authority-selection.md
+current_main_entry: 51f560cb527acc2e0435333546b242612b3da9d5
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+implemented_action: record_sec_edgar_text_table_source_acquisition_authority
+implemented_service: backend/app/services/layer3_sec_edgar_source_acquisition.py
+implemented_receipt_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority.v1
+implemented_request_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority_request.v1
+implemented_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1
+implemented_receipt_prefix: sec-edgar-text-table-source-acquisition
+implemented_receipt_storage: existing_layer3_storage_root_append_only_receipt
+implemented_status_states: not_recorded,available,blocked
+implemented_source_family: sec_edgar_text_table
+implemented_parser_family: sec_edgar_filing
+implemented_parser_contract_id: aps_sec_edgar_filing_parser_v1
+implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+implemented_source_mode: artifact_sec_edgar_filing_parser
+implemented_input_authority: server_owned_dataset_source_provenance_plus_ready_authority_envelope
+implemented_output_authority: append_only_redacted_source_acquisition_authority_receipt
+implemented_material_preview_gate_b_compatibility: true
+implemented_idempotent_replay: true
+implemented_stale_source_artifact_hash_rejection: true
+implemented_operator_confirmation_required: true
+live_sec_network_fetch_admitted: false
+sec_network_cache_or_rate_behavior_admitted: false
+raw_sec_filing_url_as_authority_admitted: false
+xml_html_inline_xbrl_parser_admitted: false
+broad_source_expansion_admitted: false
+source_family_expansion_scope: sec_edgar_text_table_only
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+browser_supplied_local_path_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_sec_url_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+browser_supplied_command_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_token_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync_v1
+```
+
+This runtime records a redacted append-only authority receipt for an already retained, server-owned SEC filing source artifact and a ready SEC EDGAR text/table DatasetVersion authority envelope. Operators should use it only after the existing authority-envelope validation is ready; it does not download from SEC, accept raw URLs or paths, expand parser scope, or add provider/connector/model/full-mockup behavior.
