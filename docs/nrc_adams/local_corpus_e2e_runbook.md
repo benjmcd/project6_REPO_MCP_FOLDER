@@ -7648,3 +7648,50 @@ next_exact_posture: sec_edgar_text_table_source_acquisition_authority_selection_
 ```
 
 The repeatability closeout keeps the current SEC EDGAR path bounded to materialized DatasetVersion authority envelopes. Any SEC source acquisition, parser expansion, retained source artifact model, or raw filing URL authority must be selected separately before implementation.
+
+### SEC EDGAR Text Table Source Acquisition Authority Selection
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_selection_v1
+source_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1132-sec-edgar-text-table-downstream-repeatability-closeout-readiness.md
+current_main_entry: d14b1d8320da48839c693c926ada7929a36cbc39
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_source_acquisition_authority_runtime_v1
+selected_source_family: sec_edgar_text_table
+selected_parser_family: sec_edgar_filing
+selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+selected_existing_parser_contract_id: aps_sec_edgar_filing_parser_v1
+selected_existing_source_mode: artifact_sec_edgar_filing_parser
+selected_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1
+selected_first_runtime_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+selected_first_runtime_action: record_sec_edgar_text_table_source_acquisition_authority
+required_input_authority: server_owned_source_artifact_receipt_and_existing_materialized_dataset_version_linkage
+required_output_authority: append_only_redacted_source_acquisition_authority_receipt
+server_owned_source_artifact_authority_admitted_for_first_runtime: true
+existing_sec_edgar_parser_reuse_admitted_for_first_runtime: true
+live_sec_network_fetch_admitted_for_first_runtime: false
+sec_network_cache_or_rate_behavior_admitted_for_first_runtime: false
+raw_sec_filing_url_as_authority_admitted_for_first_runtime: false
+xml_html_inline_xbrl_parser_admitted_for_first_runtime: false
+broad_source_expansion_admitted: false
+source_family_expansion_scope: sec_edgar_text_table_only
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_supplied_local_path_admitted: false
+browser_supplied_raw_url_admitted: false
+artifact_bytes_exposed: false
+stale_source_artifact_hash_must_reject: true
+operator_confirmation_required: true
+runtime_implementation_in_this_freeze: false
+rendered_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_v1
+```
+
+This selection admits only the next server-owned source-artifact authority runtime for SEC EDGAR text/table filings. It does not admit live SEC network fetch, raw SEC URL authority, new parser behavior, XML/HTML/inline XBRL parsing, provider writes, connector dispatch, RAG/model runtime, or frontend durable authority.
