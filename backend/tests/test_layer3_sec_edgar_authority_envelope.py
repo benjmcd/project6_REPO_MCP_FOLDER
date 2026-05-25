@@ -22,6 +22,7 @@ from app.models.models import L3MaterialSnapshot
 from app.services import (
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
+    layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_material_bridge,
     layer3_workbench,
 )
@@ -475,3 +476,176 @@ def test_sec_edgar_text_table_downstream_proof_rejects_raw_url_evidence_ref(db_s
         layer3_sec_edgar_downstream_proof.record_sec_edgar_text_table_downstream_layer3_proof(payload, db_session)
 
     assert exc.value.error_code == "sec_edgar_text_table_downstream_proof_coverage_exposes_forbidden_reference"
+
+
+def test_sec_edgar_text_table_downstream_operator_status_renders_not_recorded(db_session) -> None:
+    result = layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
+        {
+            "client_request_id": "sec-edgar-downstream-status-not-recorded",
+            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+        },
+        db_session,
+    )
+
+    assert result["schema_id"] == "layer3.sec_edgar_text_table_downstream_operator_status.v1"
+    assert result["operator_status_state"] == "not_recorded"
+    assert result["proof_available"] is False
+    assert result["proof_summary"] == {}
+    assert result["raw_local_path_rendered"] is False
+    assert result["raw_url_rendered"] is False
+    assert result["runtime_db_or_storage_expansion_admitted"] is False
+
+
+def test_sec_edgar_text_table_downstream_operator_status_renders_available(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_sec_edgar_dataset(db_session, tmp_path)
+    envelope = layer3_sec_edgar_authority_envelope.validate_sec_edgar_text_table_authority_envelope(
+        {
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db_session,
+    )
+    bridge = layer3_sec_edgar_material_bridge.prepare_sec_edgar_text_table_material_authority_bridge(
+        {
+            "client_request_id": "sec-edgar-downstream-status-bridge",
+            "bridge_mode": "sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db_session,
+    )
+    gate_b = layer3_workbench.gate_b_decision(db_session, bridge["gate_b_decision_payload"])
+    snapshot = _sec_edgar_snapshot(db_session, session_id=gate_b["session_id"], dataset_version_id=dataset_version_id)
+    proof_payload = _sec_edgar_downstream_proof_payload(
+        dataset_version_id=dataset_version_id,
+        bridge=bridge,
+        gate_b=gate_b,
+        snapshot=snapshot,
+    )
+    proof = layer3_sec_edgar_downstream_proof.record_sec_edgar_text_table_downstream_layer3_proof(
+        proof_payload,
+        db_session,
+    )
+
+    result = layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
+        {
+            "client_request_id": "sec-edgar-downstream-status-available",
+            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "downstream_proof_request": proof_payload,
+            "expected_proof_hash": proof["proof_hash"],
+        },
+        db_session,
+    )
+
+    assert result["operator_status_state"] == "available"
+    assert result["proof_available"] is True
+    assert result["proof_hash"] == proof["proof_hash"]
+    assert result["proof_summary"]["coverage_evidence_hash"] == proof["coverage_evidence_hash"]
+    assert result["status_projection"]["server_revalidated"] is True
+    assert result["raw_local_path_rendered"] is False
+    assert result["raw_url_rendered"] is False
+    assert result["frontend_durable_authority_enabled"] is False
+    assert "aps-target-artifacts/run-001" not in str(result)
+    assert str(tmp_path) not in str(result)
+
+
+def test_sec_edgar_text_table_downstream_operator_status_blocks_stale_proof_hash(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_sec_edgar_dataset(db_session, tmp_path)
+    envelope = layer3_sec_edgar_authority_envelope.validate_sec_edgar_text_table_authority_envelope(
+        {
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db_session,
+    )
+    bridge = layer3_sec_edgar_material_bridge.prepare_sec_edgar_text_table_material_authority_bridge(
+        {
+            "client_request_id": "sec-edgar-downstream-status-stale-bridge",
+            "bridge_mode": "sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db_session,
+    )
+    gate_b = layer3_workbench.gate_b_decision(db_session, bridge["gate_b_decision_payload"])
+    snapshot = _sec_edgar_snapshot(db_session, session_id=gate_b["session_id"], dataset_version_id=dataset_version_id)
+    proof_payload = _sec_edgar_downstream_proof_payload(
+        dataset_version_id=dataset_version_id,
+        bridge=bridge,
+        gate_b=gate_b,
+        snapshot=snapshot,
+    )
+
+    result = layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
+        {
+            "client_request_id": "sec-edgar-downstream-status-stale",
+            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "downstream_proof_request": proof_payload,
+            "expected_proof_hash": "b" * 64,
+        },
+        db_session,
+    )
+
+    assert result["operator_status_state"] == "blocked"
+    assert result["proof_available"] is False
+    assert result["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_text_table_downstream_operator_status_proof_hash_mismatch"
+    )
+
+
+def test_sec_edgar_text_table_downstream_operator_status_blocks_raw_url_proof(db_session, tmp_path) -> None:
+    dataset_version_id = _seed_sec_edgar_dataset(db_session, tmp_path)
+    envelope = layer3_sec_edgar_authority_envelope.validate_sec_edgar_text_table_authority_envelope(
+        {
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db_session,
+    )
+    bridge = layer3_sec_edgar_material_bridge.prepare_sec_edgar_text_table_material_authority_bridge(
+        {
+            "client_request_id": "sec-edgar-downstream-status-raw-url-bridge",
+            "bridge_mode": "sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db_session,
+    )
+    gate_b = layer3_workbench.gate_b_decision(db_session, bridge["gate_b_decision_payload"])
+    snapshot = _sec_edgar_snapshot(db_session, session_id=gate_b["session_id"], dataset_version_id=dataset_version_id)
+    proof_payload = _sec_edgar_downstream_proof_payload(
+        dataset_version_id=dataset_version_id,
+        bridge=bridge,
+        gate_b=gate_b,
+        snapshot=snapshot,
+    )
+    proof_payload["coverage_evidence"]["gate_b_commit"]["evidence_ref"] = "https://example.test/raw-proof"
+
+    result = layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
+        {
+            "client_request_id": "sec-edgar-downstream-status-raw-url",
+            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "downstream_proof_request": proof_payload,
+            "expected_proof_hash": "c" * 64,
+        },
+        db_session,
+    )
+
+    assert result["operator_status_state"] == "blocked"
+    assert result["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_text_table_downstream_proof_coverage_exposes_forbidden_reference"
+    )
+    assert "https://example.test/raw-proof" not in str(result)
