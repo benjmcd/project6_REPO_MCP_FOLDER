@@ -12,6 +12,11 @@ selected_process_execution_scope: server_owned_candidate_b_full_corpus_operator_
 selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py
 selected_process_execution_arguments_authority: server_resolved_receipt_ids_and_configured_runtime_roots_only
 selected_process_execution_outputs: process_execution_receipt,process_execution_receipt_hash,process_execution_authority_hash,redacted_process_status_projection
+process_state_values_implemented: started,blocked
+process_launch_failure_receipt_state: blocked
+process_launch_timeout_receipt_state: blocked
+process_timeout_must_emit_failed_or_blocked_receipt: true
+redacted_launch_failure_summary_hash_required: true
 status_history_projection_after_process_start: true
 rendered_operator_projection_after_process_start: true
 stale_history_row_must_reject: true
@@ -19,6 +24,8 @@ stale_execution_boundary_must_reject: true
 missing_execution_boundary_must_reject: true
 missing_runtime_dependency_must_reject: true
 non_allowlisted_command_must_reject: true
+launch_failure_must_record_blocked_receipt: true
+launch_timeout_must_record_blocked_receipt: true
 source_run_receipt_mutation_admitted: false
 execution_boundary_receipt_mutation_admitted: false
 background_process_runtime_selected_now: true
@@ -46,7 +53,7 @@ implementation_scope: backend_service_api_readiness_status_history_rendered_oper
 next_exact_posture: candidate_b_async_process_completion_result_adoption_selection_v1
 ```
 
-This runtime implements the selected process-start slice. A browser/operator request can select only a current workflow row and its current execution-boundary receipt. The server derives the allowlisted process command from current-main code, configured receipt authority, and server-owned runtime context, then writes an append-only process-execution receipt plus a redacted status projection.
+This runtime implements the selected process-start slice. A browser/operator request can select only a current workflow row and its current execution-boundary receipt. The server derives the allowlisted process command from current-main code, configured receipt authority, and server-owned runtime context, then writes an append-only process-execution receipt plus a redacted status projection. Server-owned launch failure and launch timeout now write blocked process-execution receipts with operator-safe failure code, phase, and redacted summary hash; they remain visible through status/history without exposing stdout, stderr, local roots, raw paths, URLs, PIDs, traces, or logs.
 
 The implementation intentionally stops before job completion or result adoption. It proves that a real server-owned subprocess start is admitted and visible without exposing raw paths, URLs, stdout, stderr, exception traces, local roots, provider keys, connector destinations, model/RAG controls, browser storage authority, or frontend durable authority.
 
