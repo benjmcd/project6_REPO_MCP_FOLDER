@@ -473,6 +473,9 @@ const CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_SELECTED_STATE = 'candida
 const CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_BLOCKED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_blocked';
 const CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_RENDERED_MODE = 'rendered_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_control';
 const CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_MODE = 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1';
+const CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_RENDERED_MODE = 'rendered_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_control';
+const CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_MODE = 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_v1';
+const CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status';
 const CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_SELECTED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_selected';
 const CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_BLOCKED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_blocked';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
@@ -768,6 +771,25 @@ const State = {
         selectorUseReceiptHash: '',
         runtimeSelectionReceiptId: '',
         runtimeSelectionReceiptHash: '',
+        selectedScopeClasses: 'structured_json_or_csv_or_xlsx',
+    },
+    candidateBBroaderScopeConsumptionReceiptUseStatus: null,
+    candidateBBroaderScopeConsumptionReceiptUseStatusError: null,
+    candidateBBroaderScopeConsumptionReceiptUseStatusPending: false,
+    candidateBBroaderScopeConsumptionReceiptUseStatusInput: {
+        useReceiptId: '',
+        useReceiptHash: '',
+        consumptionReceiptId: '',
+        consumptionReceiptHash: '',
+        activationReceiptId: '',
+        activationReceiptHash: '',
+        selectorUseStatusHash: '',
+        selectorUseReceiptId: '',
+        selectorUseReceiptHash: '',
+        runtimeSelectionReceiptId: '',
+        runtimeSelectionReceiptHash: '',
+        readinessAuditId: '',
+        readinessAuditHash: '',
         selectedScopeClasses: 'structured_json_or_csv_or_xlsx',
     },
     candidateBArtifactFamilyStatus: null,
@@ -7986,6 +8008,14 @@ function candidateBBroaderScopeConsumptionReceiptUseEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBBroaderScopeConsumptionReceiptUseStatusEndpointPath(contract) {
+    const endpoint = (
+        contract?.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_endpoint || ''
+    );
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBArtifactFamilyStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_artifact_family_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8827,6 +8857,132 @@ function candidateBBroaderScopeConsumptionReceiptUsePayload() {
         selected_scope_classes: selectedScopeClasses,
         rollback_to_baseline_confirmation: true,
         operator_confirmation: true,
+    };
+}
+
+function candidateBBroaderScopeConsumptionReceiptUseStatusInputValues() {
+    const useReceipt = State.candidateBBroaderScopeConsumptionReceiptUse;
+    const consumptionBinding = useReceipt?.consumption_receipt_binding || {};
+    const activationBinding = useReceipt?.activation_receipt_binding || {};
+    const selectorStatusBinding = useReceipt?.selector_use_status_binding || {};
+    const selectorUseBinding = useReceipt?.selector_use_receipt_binding || {};
+    const runtimeBinding = useReceipt?.runtime_selection_receipt_binding || {};
+    const readinessBinding = useReceipt?.readiness_audit_binding || {};
+    const selectedClasses = Array.isArray(useReceipt?.selected_scope_classes)
+        ? useReceipt.selected_scope_classes.join(', ')
+        : '';
+    const useReceiptInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-use-receipt-id');
+    const useHashInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-use-receipt-hash');
+    const consumptionReceiptInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-consumption-receipt-id');
+    const consumptionHashInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-consumption-receipt-hash');
+    const activationReceiptInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-activation-receipt-id');
+    const activationHashInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-activation-receipt-hash');
+    const statusHashInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-selector-status-hash');
+    const selectorUseReceiptInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-selector-use-receipt-id');
+    const selectorUseHashInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-selector-use-receipt-hash');
+    const runtimeReceiptInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-runtime-receipt-id');
+    const runtimeHashInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-runtime-receipt-hash');
+    const readinessAuditInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-readiness-audit-id');
+    const readinessHashInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-readiness-audit-hash');
+    const selectedInput = document.getElementById('candidate-b-broader-scope-consumption-receipt-use-status-selected-classes');
+    const stored = State.candidateBBroaderScopeConsumptionReceiptUseStatusInput;
+    return {
+        useReceiptId: (useReceiptInput?.value || stored.useReceiptId || useReceipt?.use_receipt_id || '').trim(),
+        useReceiptHash: (useHashInput?.value || stored.useReceiptHash || useReceipt?.use_receipt_hash || '').trim(),
+        consumptionReceiptId: (
+            consumptionReceiptInput?.value
+            || stored.consumptionReceiptId
+            || consumptionBinding.consumption_receipt_id
+            || ''
+        ).trim(),
+        consumptionReceiptHash: (
+            consumptionHashInput?.value
+            || stored.consumptionReceiptHash
+            || consumptionBinding.consumption_receipt_hash
+            || ''
+        ).trim(),
+        activationReceiptId: (
+            activationReceiptInput?.value
+            || stored.activationReceiptId
+            || activationBinding.activation_receipt_id
+            || ''
+        ).trim(),
+        activationReceiptHash: (
+            activationHashInput?.value
+            || stored.activationReceiptHash
+            || activationBinding.activation_receipt_hash
+            || ''
+        ).trim(),
+        selectorUseStatusHash: (
+            statusHashInput?.value
+            || stored.selectorUseStatusHash
+            || selectorStatusBinding.selector_use_status_hash
+            || ''
+        ).trim(),
+        selectorUseReceiptId: (
+            selectorUseReceiptInput?.value
+            || stored.selectorUseReceiptId
+            || selectorUseBinding.selector_use_receipt_id
+            || ''
+        ).trim(),
+        selectorUseReceiptHash: (
+            selectorUseHashInput?.value
+            || stored.selectorUseReceiptHash
+            || selectorUseBinding.selector_use_receipt_hash
+            || ''
+        ).trim(),
+        runtimeSelectionReceiptId: (
+            runtimeReceiptInput?.value
+            || stored.runtimeSelectionReceiptId
+            || runtimeBinding.runtime_selection_receipt_id
+            || ''
+        ).trim(),
+        runtimeSelectionReceiptHash: (
+            runtimeHashInput?.value
+            || stored.runtimeSelectionReceiptHash
+            || runtimeBinding.runtime_selection_receipt_hash
+            || ''
+        ).trim(),
+        readinessAuditId: (
+            readinessAuditInput?.value
+            || stored.readinessAuditId
+            || readinessBinding.readiness_audit_id
+            || ''
+        ).trim(),
+        readinessAuditHash: (
+            readinessHashInput?.value
+            || stored.readinessAuditHash
+            || readinessBinding.readiness_audit_hash
+            || ''
+        ).trim(),
+        selectedScopeClasses: (selectedInput?.value || stored.selectedScopeClasses || selectedClasses || '').trim(),
+    };
+}
+
+function candidateBBroaderScopeConsumptionReceiptUseStatusPayload() {
+    const values = candidateBBroaderScopeConsumptionReceiptUseStatusInputValues();
+    State.candidateBBroaderScopeConsumptionReceiptUseStatusInput = values;
+    const selectedScopeClasses = candidateBBroaderScopeParsedSelectedScopeClasses(
+        values.selectedScopeClasses,
+    );
+    return {
+        client_request_id: requestId(),
+        status_mode: CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_MODE,
+        operator_decision: CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_OPERATOR_DECISION,
+        use_receipt_id: values.useReceiptId,
+        use_receipt_hash: values.useReceiptHash,
+        consumption_receipt_id: values.consumptionReceiptId,
+        consumption_receipt_hash: values.consumptionReceiptHash,
+        activation_receipt_id: values.activationReceiptId,
+        activation_receipt_hash: values.activationReceiptHash,
+        selector_use_status_hash: values.selectorUseStatusHash,
+        selector_use_receipt_id: values.selectorUseReceiptId,
+        selector_use_receipt_hash: values.selectorUseReceiptHash,
+        runtime_selection_receipt_id: values.runtimeSelectionReceiptId,
+        runtime_selection_receipt_hash: values.runtimeSelectionReceiptHash,
+        readiness_audit_id: values.readinessAuditId,
+        readiness_audit_hash: values.readinessAuditHash,
+        selected_scope_classes: selectedScopeClasses,
     };
 }
 
@@ -9800,6 +9956,32 @@ function canRecordCandidateBBroaderScopeConsumptionReceiptUse(contract = candida
     );
 }
 
+function canInspectCandidateBBroaderScopeConsumptionReceiptUseStatus(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBBroaderScopeConsumptionReceiptUseStatusInputValues();
+    const selectedScopeClasses = candidateBBroaderScopeParsedSelectedScopeClasses(
+        values.selectedScopeClasses,
+    );
+    return Boolean(
+        contract?.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_admitted
+        && candidateBBroaderScopeConsumptionReceiptUseStatusEndpointPath(contract)
+        && values.useReceiptId
+        && values.useReceiptHash
+        && values.consumptionReceiptId
+        && values.consumptionReceiptHash
+        && values.activationReceiptId
+        && values.activationReceiptHash
+        && values.selectorUseStatusHash
+        && values.selectorUseReceiptId
+        && values.selectorUseReceiptHash
+        && values.runtimeSelectionReceiptId
+        && values.runtimeSelectionReceiptHash
+        && values.readinessAuditId
+        && values.readinessAuditHash
+        && selectedScopeClasses.length > 0
+        && !State.candidateBBroaderScopeConsumptionReceiptUseStatusPending
+    );
+}
+
 function candidateBDefaultPromotionFinalProofPanelState() {
     if (State.candidateBDefaultPromotionFinalProofPending) {
         return { label: 'candidate_b_final_proof_pending', pill: 'preview' };
@@ -10200,6 +10382,23 @@ function candidateBBroaderScopeConsumptionReceiptUsePanelState() {
         return { label: 'candidate_b_broader_scope_consumption_receipt_use_blocked', pill: 'blocked' };
     }
     return { label: 'candidate_b_broader_scope_consumption_receipt_use_not_recorded', pill: 'preview' };
+}
+
+function candidateBBroaderScopeConsumptionReceiptUseStatusPanelState() {
+    if (State.candidateBBroaderScopeConsumptionReceiptUseStatusPending) {
+        return { label: 'candidate_b_broader_scope_consumption_receipt_use_status_pending', pill: 'preview' };
+    }
+    if (State.candidateBBroaderScopeConsumptionReceiptUseStatusError) {
+        const code = State.candidateBBroaderScopeConsumptionReceiptUseStatusError?.payload?.error?.code;
+        return { label: code || 'candidate_b_broader_scope_consumption_receipt_use_status_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBBroaderScopeConsumptionReceiptUseStatus?.status === 'available') {
+        return { label: 'candidate_b_broader_scope_consumption_receipt_use_status_available', pill: 'ok' };
+    }
+    if (State.candidateBBroaderScopeConsumptionReceiptUseStatus?.status === 'not_recorded') {
+        return { label: 'candidate_b_broader_scope_consumption_receipt_use_status_not_recorded', pill: 'preview' };
+    }
+    return { label: 'candidate_b_broader_scope_consumption_receipt_use_status_not_inspected', pill: 'preview' };
 }
 
 function candidateBArtifactFamilyStatusPanelState() {
@@ -11945,6 +12144,80 @@ function candidateBBroaderScopeConsumptionReceiptUseRows(useReceipt) {
     `;
 }
 
+function candidateBBroaderScopeConsumptionReceiptUseStatusRows(useStatus) {
+    if (!useStatus) return '';
+    const selectedClasses = Array.isArray(useStatus.selected_scope_classes)
+        ? useStatus.selected_scope_classes.join(', ')
+        : '';
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Consumption Receipt Use Status</strong>
+                <ul>
+                    ${fieldItem('schema id', useStatus.schema_id, { code: true })}
+                    ${fieldItem('status', useStatus.status, { code: true })}
+                    ${fieldItem('mode', useStatus.mode, { code: true })}
+                    ${fieldItem('operator decision', useStatus.operator_decision, { code: true })}
+                    ${fieldItem('use receipt status hash', useStatus.use_receipt_status_hash, { code: true })}
+                    ${fieldItem('use receipt id', useStatus.use_receipt_id, { code: true })}
+                    ${fieldItem('use receipt hash', useStatus.use_receipt_hash, { code: true })}
+                    ${fieldItem('use receipt status', useStatus.use_receipt_status, { code: true })}
+                    ${fieldItem('use receipt state', useStatus.consumption_receipt_use_state, { code: true })}
+                    ${fieldItem('selected classes', selectedClasses, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Status Authority</strong>
+                <ul>
+                    ${fieldItem('use authority source', useStatus.use_authority?.source, { code: true })}
+                    ${fieldItem('server-owned receipt reloaded', useStatus.use_authority?.server_owned_receipt_reloaded)}
+                    ${fieldItem('receipt bound', useStatus.use_authority?.receipt_bound)}
+                    ${fieldItem('stale authority rejected', useStatus.use_authority?.stale_authority_rejected)}
+                    ${fieldItem('consumption receipt binding verified', useStatus.consumption_receipt_binding?.binding_verified)}
+                    ${fieldItem('activation receipt binding verified', useStatus.activation_receipt_binding?.binding_verified)}
+                    ${fieldItem('selector-use status revalidated', useStatus.selector_use_status_binding?.status_revalidated)}
+                    ${fieldItem('selector-use binding verified', useStatus.selector_use_receipt_binding?.binding_verified)}
+                    ${fieldItem('runtime binding verified', useStatus.runtime_selection_receipt_binding?.binding_verified)}
+                    ${fieldItem('readiness binding verified', useStatus.readiness_audit_binding?.binding_verified)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Operator Use Status Projection</strong>
+                <ul>
+                    ${fieldItem('use recorded', useStatus.operator_visible_use_status?.use_recorded)}
+                    ${fieldItem('selected scope class count', useStatus.operator_visible_use_status?.selected_scope_class_count)}
+                    ${fieldItem('redacted default-scope use receipt available', useStatus.operator_visible_use_status?.redacted_default_scope_use_receipt_available)}
+                    ${fieldItem('default scope use enabled', useStatus.default_scope_use_enabled)}
+                    ${fieldItem('default scope expansion enabled', useStatus.default_scope_expansion_enabled)}
+                    ${fieldItem('default scope application scope', useStatus.default_scope_application_scope, { code: true })}
+                    ${fieldItem('non-selected class default', useStatus.non_selected_class_default, { code: true })}
+                    ${fieldItem('baseline rollback selector', useStatus.baseline_rollback?.selector, { code: true })}
+                    ${fieldItem('Candidate A visual lane', useStatus.candidate_a_semantics?.visual_lane_mode, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Authority</strong>
+                <ul>
+                    ${fieldItem('default scope use authority recorded', useStatus.default_scope_use_authority_recorded)}
+                    ${fieldItem('use receipt mutation performed', useStatus.use_receipt_mutation_performed)}
+                    ${fieldItem('selector mutation performed', useStatus.selector_mutation_performed)}
+                    ${fieldItem('default scope mutation performed', useStatus.default_scope_mutation_performed)}
+                    ${fieldItem('source expansion admitted', useStatus.source_expansion_admitted)}
+                    ${fieldItem('runtime DB/storage expansion admitted', useStatus.runtime_db_or_storage_expansion_admitted)}
+                    ${fieldItem('provider object write enabled', useStatus.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', useStatus.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', useStatus.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('full mockup activation enabled', useStatus.full_mockup_activation_enabled)}
+                    ${fieldItem('frontend durable authority enabled', useStatus.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', useStatus.browser_storage_authority_enabled)}
+                    ${fieldItem('raw local path exposed', useStatus.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', useStatus.raw_url_exposed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofError() {
     const error = State.candidateBDefaultPromotionFinalProofError;
     if (!error) return '';
@@ -12835,6 +13108,20 @@ function candidateBBroaderScopeConsumptionReceiptUseError() {
     `;
 }
 
+function candidateBBroaderScopeConsumptionReceiptUseStatusError() {
+    const error = State.candidateBBroaderScopeConsumptionReceiptUseStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_broader_scope_consumption_receipt_use_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBArtifactFamilyStatusError() {
     const error = State.candidateBArtifactFamilyStatusError;
     if (!error) return '';
@@ -12973,6 +13260,11 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const broaderScopeConsumptionReceiptUse = State.candidateBBroaderScopeConsumptionReceiptUse;
     const broaderScopeConsumptionReceiptUseInputs = candidateBBroaderScopeConsumptionReceiptUseInputValues();
     const broaderScopeConsumptionReceiptUseState = candidateBBroaderScopeConsumptionReceiptUsePanelState();
+    const broaderScopeConsumptionReceiptUseStatus = State.candidateBBroaderScopeConsumptionReceiptUseStatus;
+    const broaderScopeConsumptionReceiptUseStatusInputs = candidateBBroaderScopeConsumptionReceiptUseStatusInputValues();
+    const broaderScopeConsumptionReceiptUseStatusState = (
+        candidateBBroaderScopeConsumptionReceiptUseStatusPanelState()
+    );
     const artifactFamilyStatus = State.candidateBArtifactFamilyStatus;
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
@@ -13030,6 +13322,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('broader scope selector-use status', contract?.candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint, { code: true })}
                     ${fieldItem('broader scope selector activation', contract?.candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint, { code: true })}
                     ${fieldItem('broader scope activation consumption', contract?.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_endpoint, { code: true })}
+                    ${fieldItem('broader scope consumption receipt use status', contract?.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
                     ${fieldItem('final proof status', contract?.candidate_b_default_promotion_final_proof_status_endpoint, { code: true })}
                 </ul>
@@ -13636,6 +13929,74 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBBroaderScopeConsumptionReceiptUseRows(broaderScopeConsumptionReceiptUse)}
                 ${candidateBBroaderScopeConsumptionReceiptUseError()}
+            </section>
+            <section class="result-review-card candidate-b-broader-scope-consumption-receipt-use-status-card">
+                <strong>Broader Eligible-Corpus Consumption Receipt Use Status</strong>
+                <form id="candidate-b-broader-scope-consumption-receipt-use-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>use receipt id</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-use-receipt-id" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.useReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-consumption-receipt-use-..." />
+                    </label>
+                    <label>
+                        <span>use receipt hash</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-use-receipt-hash" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.useReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>consumption receipt id</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-consumption-receipt-id" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.consumptionReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-activation-consumption-..." />
+                    </label>
+                    <label>
+                        <span>consumption receipt hash</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-consumption-receipt-hash" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.consumptionReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>activation receipt id</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-activation-receipt-id" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.activationReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-selector-activation-..." />
+                    </label>
+                    <label>
+                        <span>activation receipt hash</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-activation-receipt-hash" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.activationReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>selector-use status hash</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-selector-status-hash" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.selectorUseStatusHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>selector-use receipt id</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-selector-use-receipt-id" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.selectorUseReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-selector-use-..." />
+                    </label>
+                    <label>
+                        <span>selector-use receipt hash</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-selector-use-receipt-hash" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.selectorUseReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>runtime selection receipt id</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-runtime-receipt-id" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.runtimeSelectionReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-runtime-..." />
+                    </label>
+                    <label>
+                        <span>runtime selection receipt hash</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-runtime-receipt-hash" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.runtimeSelectionReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>readiness audit id</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-readiness-audit-id" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.readinessAuditId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-readiness-..." />
+                    </label>
+                    <label>
+                        <span>readiness audit hash</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-readiness-audit-hash" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.readinessAuditHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>selected scope classes</span>
+                        <input id="candidate-b-broader-scope-consumption-receipt-use-status-selected-classes" type="text" value="${escapeHtml(broaderScopeConsumptionReceiptUseStatusInputs.selectedScopeClasses)}" autocomplete="off" spellcheck="false" placeholder="structured_json_or_csv_or_xlsx" />
+                    </label>
+                    <button id="candidate-b-broader-scope-consumption-receipt-use-status-submit" type="submit" ${canInspectCandidateBBroaderScopeConsumptionReceiptUseStatus(contract) ? '' : 'disabled'}>Inspect Use Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(broaderScopeConsumptionReceiptUseStatusState.pill)}">${escapeHtml(broaderScopeConsumptionReceiptUseStatusState.label)}</span>
+                    <span class="rail-label">Server projects read-only use status by reloading use-receipt authority and predecessor bindings; this control creates no use receipt, mutates no default scope, and exposes no raw paths or URLs.</span>
+                </div>
+                ${candidateBBroaderScopeConsumptionReceiptUseStatusRows(broaderScopeConsumptionReceiptUseStatus)}
+                ${candidateBBroaderScopeConsumptionReceiptUseStatusError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -14870,17 +15231,54 @@ async function recordCandidateBBroaderScopeConsumptionReceiptUse(event) {
     const payload = candidateBBroaderScopeConsumptionReceiptUsePayload();
     State.candidateBBroaderScopeConsumptionReceiptUsePending = true;
     State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+    State.candidateBBroaderScopeConsumptionReceiptUseStatus = null;
+    State.candidateBBroaderScopeConsumptionReceiptUseStatusError = null;
     renderCandidateBDefaultPromotionStatusPanel();
     try {
         State.candidateBBroaderScopeConsumptionReceiptUse = await postJson(path, payload);
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusInput = (
+            candidateBBroaderScopeConsumptionReceiptUseStatusInputValues()
+        );
         addEvent('Candidate B broader eligible-corpus consumption receipt use recorded through server revalidated consumption authority.');
     } catch (error) {
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
         State.candidateBBroaderScopeConsumptionReceiptUseError = error;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatus = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusError = null;
         addEvent(`Candidate B broader-scope consumption receipt use blocked: ${error.message}`);
     } finally {
         State.candidateBBroaderScopeConsumptionReceiptUsePending = false;
+        renderAll();
+    }
+}
+
+async function inspectCandidateBBroaderScopeConsumptionReceiptUseStatus(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canInspectCandidateBBroaderScopeConsumptionReceiptUseStatus(contract)) {
+        State.candidateBBroaderScopeConsumptionReceiptUseStatus = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusError = new Error(
+            'Candidate B broader-scope consumption receipt use status inspection requires use receipt, predecessor receipt bindings, readiness audit binding, and exact selected classes.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBBroaderScopeConsumptionReceiptUseStatusEndpointPath(contract);
+    const payload = candidateBBroaderScopeConsumptionReceiptUseStatusPayload();
+    State.candidateBBroaderScopeConsumptionReceiptUseStatusPending = true;
+    State.candidateBBroaderScopeConsumptionReceiptUseStatusError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBBroaderScopeConsumptionReceiptUseStatus = await postJson(path, payload);
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusError = null;
+        addEvent('Candidate B broader eligible-corpus consumption receipt use status inspected through server-owned receipt authority.');
+    } catch (error) {
+        State.candidateBBroaderScopeConsumptionReceiptUseStatus = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusError = error;
+        addEvent(`Candidate B broader-scope consumption receipt use status blocked: ${error.message}`);
+    } finally {
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusPending = false;
         renderAll();
     }
 }
@@ -21394,6 +21792,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     if (event.target?.id === 'candidate-b-broader-scope-consumption-receipt-use-form') {
         recordCandidateBBroaderScopeConsumptionReceiptUse(event);
     }
+    if (event.target?.id === 'candidate-b-broader-scope-consumption-receipt-use-status-form') {
+        inspectCandidateBBroaderScopeConsumptionReceiptUseStatus(event);
+    }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);
     }
@@ -21498,6 +21899,46 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
             candidateBBroaderScopeConsumptionReceiptUseInputValues()
         );
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatus = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusInput = {
+            useReceiptId: '',
+            useReceiptHash: '',
+            consumptionReceiptId: '',
+            consumptionReceiptHash: '',
+            activationReceiptId: '',
+            activationReceiptHash: '',
+            selectorUseStatusHash: '',
+            selectorUseReceiptId: '',
+            selectorUseReceiptHash: '',
+            runtimeSelectionReceiptId: '',
+            runtimeSelectionReceiptHash: '',
+            readinessAuditId: '',
+            readinessAuditHash: '',
+            selectedScopeClasses: '',
+        };
+        renderCandidateBDefaultPromotionStatusPanel();
+    }
+    if (
+        target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-use-receipt-id'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-use-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-consumption-receipt-id'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-consumption-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-activation-receipt-id'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-activation-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-selector-status-hash'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-selector-use-receipt-id'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-selector-use-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-runtime-receipt-id'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-runtime-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-readiness-audit-id'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-readiness-audit-hash'
+        || target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-selected-classes'
+    ) {
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusInput = (
+            candidateBBroaderScopeConsumptionReceiptUseStatusInputValues()
+        );
+        State.candidateBBroaderScopeConsumptionReceiptUseStatusError = null;
         renderCandidateBDefaultPromotionStatusPanel();
     }
 });
