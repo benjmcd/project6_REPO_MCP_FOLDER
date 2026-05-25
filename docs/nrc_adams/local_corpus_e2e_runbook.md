@@ -8699,3 +8699,95 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_material_authority
 ```
 
 The runtime binds a verified live source-artifact receipt to source-acquisition authority and a ready materialized SEC EDGAR authority envelope, then reuses the existing material-authority bridge for material-preview and Gate B compatibility. It keeps retained filing bytes as governed source/provenance/inspection evidence and does not add live SEC fetch, parser/materialization expansion, DatasetVersion creation, Gate B mutation, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or frontend/browser durable authority.
+
+### SEC EDGAR Text Table Live Source Artifact Material Authority Bridge Runtime Current Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1148-sec-edgar-text-table-live-source-artifact-material-authority-bridge-runtime.md
+current_main_entry: 5147e5815d3df71b4a790706894b9191c01ce918
+source_runtime_pr: "#1852"
+source_runtime_merge_commit: 5147e5815d3df71b4a790706894b9191c01ce918
+entry_decision: current_main_sync
+runtime_status: implemented
+rendered_status: not_implemented
+current_main_contains_live_material_bridge_runtime: true
+current_main_sync_introduces_runtime_behavior: false
+implemented_bridge_mode: sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge
+implemented_service: backend/app/services/layer3_sec_edgar_live_material_bridge.py
+implemented_source_acquisition_live_receipt_compatibility: explicit_source_artifact_receipt_id_hash_ref_hash_from_materialized_provenance
+implemented_existing_material_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1
+live_source_artifact_receipt_bound: true
+source_acquisition_receipt_bound: true
+underlying_material_bridge_receipt_bound: true
+material_preview_gate_b_compatibility_preserved: true
+gate_b_commit_in_bridge: false
+direct_live_artifact_to_material_without_source_acquisition_admitted: false
+direct_raw_artifact_parse_or_materialization_admitted: false
+live_sec_network_fetch_admitted_for_bridge: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_selection_v1
+selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1150-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-selection.md
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_selection_v1
+```
+
+The merged current-main tree contains the live source-artifact material-authority bridge from PR `#1852`. This sync records that the bridge remains bounded to live source-artifact, source-acquisition, DatasetVersion, material-preview, and Gate B payload authority. The bridge does not commit Gate B or prove downstream use by itself.
+
+### SEC EDGAR Text Table Live Source Artifact Downstream Layer 3 Proof Selection
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_selection_v1
+source_live_material_bridge_current_main_sync: next_milestone_plans/Layer3_planning_docs/1149-sec-edgar-text-table-live-source-artifact-material-authority-bridge-runtime-current-main-sync.md
+source_existing_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1120-sec-edgar-text-table-downstream-layer3-proof-runtime.md
+current_main_entry: 5147e5815d3df71b4a790706894b9191c01ce918
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_v1
+selected_proof_mode: sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1
+selected_operator_decision: record_sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof
+selected_live_material_bridge_mode: sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1
+selected_existing_material_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1
+selected_existing_downstream_proof_mode_to_compose: sec_edgar_text_table_downstream_layer3_e2e_proof_v1
+required_live_source_artifact_receipt_authority: live_source_artifact_receipt_id,live_source_artifact_receipt_hash,source_artifact_receipt_id,source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256
+required_live_bridge_authority: live_source_artifact_material_bridge_receipt_id,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id
+required_downstream_session_authority: L3Session,L3SelectionManifest,L3MaterialSnapshot
+required_coverage_steps: live_source_artifact_acquisition,source_acquisition_authority,live_material_authority_bridge,authority_envelope_validation,material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection
+required_evidence_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only
+runtime_implementation_in_this_freeze: false
+rendered_runtime_in_this_freeze: false
+direct_live_artifact_to_material_without_source_acquisition_admitted: false
+direct_raw_artifact_parse_or_materialization_admitted: false
+dataset_version_creation_admitted: false
+gate_b_mutation_admitted_in_proof: false
+live_sec_network_fetch_admitted_for_proof: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+broad_source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_v1
+```
+
+This freeze selects the next runtime that will make live source-artifact material authority downstream-provable. The future runtime must bind the live source-artifact receipt and live material bridge receipt in addition to the underlying material bridge, Gate B session, material snapshot, and downstream coverage evidence. It must not rely on the non-live downstream proof alone, because that proof does not bind retained live source-artifact authority.
