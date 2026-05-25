@@ -7174,3 +7174,61 @@ next_exact_posture: sec_edgar_text_table_downstream_layer3_rendered_operator_sta
 ```
 
 This freeze selects the rendered/operator inspection surface for the existing SEC EDGAR downstream operator-status endpoint. The future rendered control may submit the exact proof request and expected proof hash required for server revalidation, but it must render only the redacted server projection and keep source expansion, parser expansion, proof mutation, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage authority, and frontend durable authority out of scope.
+
+### SEC EDGAR Text Table Downstream Layer 3 Rendered Operator Status Runtime
+
+```yaml
+milestone: sec_edgar_text_table_downstream_layer3_rendered_operator_status_runtime_v1
+source_rendered_operator_status_selection: next_milestone_plans/Layer3_planning_docs/1123-sec-edgar-text-table-downstream-rendered-operator-status-selection.md
+current_main_entry: 1412bab08f45e1d8a5c69de64282841baa801ac4
+runtime_status: implemented
+rendered_status: implemented
+implemented_bootstrap_capability: sec_edgar_text_table_downstream_operator_status
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status
+implemented_rendered_mode: rendered_sec_edgar_text_table_downstream_layer3_operator_status_control
+implemented_status_mode: sec_edgar_text_table_downstream_layer3_operator_status_v1
+implemented_operator_decision: inspect_sec_edgar_text_table_downstream_layer3_operator_status
+implemented_panel: sec-edgar-downstream-operator-status-panel
+implemented_form: sec-edgar-downstream-operator-status-form
+implemented_submit: sec-edgar-downstream-operator-status-submit
+implemented_status_states_rendered: not_recorded,available,blocked
+available_requires_server_revalidated_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_fails_closed: true
+test_only_fixture_route: /__test/layer3/sec-edgar-downstream-status
+test_only_fixture_route_user_facing_authority: false
+rendered_status_creates_downstream_proof: false
+rendered_status_mutates_gate_b_session: false
+rendered_status_fetches_sec_content: false
+rendered_status_parses_xml_html_inline_xbrl: false
+rendered_status_dispatches_connector: false
+rendered_status_writes_provider_object: false
+rendered_status_adds_rag_or_model_runtime: false
+raw_proof_request_rendered_in_status_projection: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+focused_node_check: node --check ./backend/app/review_ui/static/layer3.js PASS
+focused_page_pytest: python -m pytest ./backend/tests/test_layer3_page.py -q PASS
+focused_review_browser_pytest: python -m pytest ./backend/tests/test_review_browser_server.py -q -k "harness_info or sec_edgar_downstream_status" PASS
+headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "SEC EDGAR downstream operator status" --project=chromium PASS
+headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "SEC EDGAR downstream operator status" --project=chromium --headed PASS
+next_exact_posture: sec_edgar_text_table_downstream_layer3_operator_status_current_main_sync_v1
+```
+
+The rendered workbench now shows SEC EDGAR downstream status as `not_recorded`, `available`, or `blocked` through the production status endpoint. The browser proof uses a test-only fixture only to prepare existing SEC EDGAR authority and proof input; the operator-facing rendered action still calls the server status endpoint and renders only redacted projection fields.
