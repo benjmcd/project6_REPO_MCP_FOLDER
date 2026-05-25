@@ -36,6 +36,9 @@ SELECTOR_ACTIVATION_ENDPOINT = (
 ACTIVATION_CONSUMPTION_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume"
 )
+CONSUMPTION_RECEIPT_USE_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use"
+)
 SCOPE_CLASSES = list(layer3_candidate_b_broader_scope_readiness.SCOPE_CLASSES)
 EXCLUSIONS = list(layer3_candidate_b_broader_scope_readiness.REQUIRED_EXCLUSIONS)
 SELECTED_CLASS = "structured_json_or_csv_or_xlsx"
@@ -202,6 +205,47 @@ def _activation_consumption_payload(
         "runtime_selection_receipt_id": runtime_binding["runtime_selection_receipt_id"],
         "runtime_selection_receipt_hash": runtime_binding["runtime_selection_receipt_hash"],
         "selected_scope_classes": selector_activation["selected_scope_classes"],
+        "rollback_to_baseline_confirmation": True,
+        "operator_confirmation": True,
+    }
+
+
+def _activation_consumption(
+    client: TestClient,
+    selector_use_status: dict[str, object] | None = None,
+    selector_activation: dict[str, object] | None = None,
+) -> dict[str, object]:
+    selector_use_status = selector_use_status or _selector_use_status(client)
+    selector_activation = selector_activation or _selector_activation(client, selector_use_status)
+    response = client.post(
+        ACTIVATION_CONSUMPTION_ENDPOINT,
+        json=_activation_consumption_payload(selector_use_status, selector_activation),
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "selected"
+    return body
+
+
+def _consumption_receipt_use_payload(
+    selector_use_status: dict[str, object],
+    activation_consumption: dict[str, object],
+) -> dict[str, object]:
+    runtime_binding = selector_use_status["runtime_selection_receipt_binding"]
+    activation_binding = activation_consumption["activation_receipt_binding"]
+    return {
+        "client_request_id": "cb-broader-scope-consumption-receipt-use-test",
+        "use_mode": layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_MODE,
+        "consumption_receipt_id": activation_consumption["consumption_receipt_id"],
+        "consumption_receipt_hash": activation_consumption["consumption_receipt_hash"],
+        "activation_receipt_id": activation_binding["activation_receipt_id"],
+        "activation_receipt_hash": activation_binding["activation_receipt_hash"],
+        "selector_use_status_hash": selector_use_status["selector_use_status_hash"],
+        "selector_use_receipt_id": selector_use_status["selector_use_receipt_id"],
+        "selector_use_receipt_hash": selector_use_status["selector_use_receipt_hash"],
+        "runtime_selection_receipt_id": runtime_binding["runtime_selection_receipt_id"],
+        "runtime_selection_receipt_hash": runtime_binding["runtime_selection_receipt_hash"],
+        "selected_scope_classes": activation_consumption["selected_scope_classes"],
         "rollback_to_baseline_confirmation": True,
         "operator_confirmation": True,
     }
@@ -656,6 +700,150 @@ def test_candidate_b_broader_scope_activation_consumption_fails_closed_on_unsele
     assert "candidate_b_broader_scope_activation_consumption_unselected_scope_class" in codes
 
 
+def test_candidate_b_broader_scope_consumption_receipt_use_records_redacted_receipt(client: TestClient) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    selector_activation = _selector_activation(client, selector_use_status)
+    activation_consumption = _activation_consumption(client, selector_use_status, selector_activation)
+
+    response = client.post(
+        CONSUMPTION_RECEIPT_USE_ENDPOINT,
+        json=_consumption_receipt_use_payload(selector_use_status, activation_consumption),
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_SCHEMA_ID
+    assert body["mode"] == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_MODE
+    assert body["status"] == "selected"
+    assert body["consumption_receipt_use_state"] == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_SELECTED_STATE
+    assert body["selected_scope_classes"] == [SELECTED_CLASS]
+    assert body["use_authority"]["consumption_receipt_reloaded"] is True
+    assert body["consumption_receipt_binding"]["binding_verified"] is True
+    assert body["activation_receipt_binding"]["binding_verified"] is True
+    assert body["selector_use_status_binding"]["status_revalidated"] is True
+    assert body["selector_use_receipt_binding"]["binding_verified"] is True
+    assert body["runtime_selection_receipt_binding"]["binding_verified"] is True
+    assert body["readiness_audit_binding"]["binding_verified"] is True
+    assert body["default_scope_use_enabled"] is True
+    assert body["default_scope_expansion_enabled"] is True
+    assert body["default_scope_application_scope"] == "consumed_receipt_bound_selected_classes_only"
+    assert body["non_selected_class_default"] == "baseline"
+    assert body["operator_visible_use_status"]["redacted_default_scope_use_receipt_available"] is True
+    assert body["default_scope_use_authority_recorded"] is True
+    assert body["selector_mutation_performed"] is False
+    assert body["default_scope_mutation_performed"] is False
+    assert body["source_expansion_admitted"] is False
+    assert body["runtime_db_or_storage_expansion_admitted"] is False
+    assert body["provider_object_write_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["rag_vector_model_runtime_enabled"] is False
+    assert body["full_mockup_activation_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["use_receipt_ref"].startswith("candidate-b-broader-scope-consumption-receipt-use://")
+    assert "C:" not in json.dumps(body, sort_keys=True)
+    assert "https://" not in json.dumps(body, sort_keys=True)
+
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-consumption-receipt-use"
+        / f"{body['use_receipt_id']}.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["use_receipt_hash"] == body["use_receipt_hash"]
+    assert receipt["consumption_receipt_id"] == activation_consumption["consumption_receipt_id"]
+    assert receipt["activation_receipt_id"] == selector_activation["activation_receipt_id"]
+    assert receipt["selector_use_status_hash"] == selector_use_status["selector_use_status_hash"]
+    assert receipt["selector_use_receipt_id"] == selector_use["selector_use_receipt_id"]
+    assert receipt["runtime_selection_receipt_id"] == runtime_selection["selection_receipt_id"]
+    assert receipt["selected_scope_classes"] == [SELECTED_CLASS]
+    assert receipt["raw_local_path_exposed"] is False
+    assert receipt["raw_url_exposed"] is False
+
+
+def test_candidate_b_broader_scope_consumption_receipt_use_fails_closed_on_missing_consumption_receipt(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    selector_activation = _selector_activation(client, selector_use_status)
+    activation_consumption = _activation_consumption(client, selector_use_status, selector_activation)
+    payload = _consumption_receipt_use_payload(selector_use_status, activation_consumption)
+    payload["consumption_receipt_id"] = (
+        f"{layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_RECEIPT_PREFIX}-missing"
+    )
+    payload["consumption_receipt_hash"] = "c" * 64
+
+    response = client.post(CONSUMPTION_RECEIPT_USE_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert (
+        body["consumption_receipt_use_state"]
+        == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_BLOCKED_STATE
+    )
+    assert body["use_receipt_status"] == "not_recorded"
+    assert body["use_receipt_id"] is None
+    assert body["default_scope_use_enabled"] is False
+    assert body["default_scope_use_authority_recorded"] is False
+    assert body["selector_mutation_performed"] is False
+    assert body["default_scope_mutation_performed"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_consumption_receipt_use_missing_consumption_receipt" in codes
+
+
+def test_candidate_b_broader_scope_consumption_receipt_use_fails_closed_on_stale_consumption_hash(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    selector_activation = _selector_activation(client, selector_use_status)
+    activation_consumption = _activation_consumption(client, selector_use_status, selector_activation)
+    payload = _consumption_receipt_use_payload(selector_use_status, activation_consumption)
+    payload["consumption_receipt_hash"] = "d" * 64
+
+    response = client.post(CONSUMPTION_RECEIPT_USE_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["use_receipt_status"] == "not_recorded"
+    assert body["default_scope_use_enabled"] is False
+    assert body["selector_mutation_performed"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_consumption_receipt_use_stale_consumption_receipt_hash" in codes
+
+
+def test_candidate_b_broader_scope_consumption_receipt_use_fails_closed_on_unselected_class(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    selector_activation = _selector_activation(client, selector_use_status)
+    activation_consumption = _activation_consumption(client, selector_use_status, selector_activation)
+    payload = _consumption_receipt_use_payload(selector_use_status, activation_consumption)
+    payload["selected_scope_classes"] = ["office_documents"]
+
+    response = client.post(CONSUMPTION_RECEIPT_USE_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["use_receipt_status"] == "not_recorded"
+    assert body["default_scope_use_enabled"] is False
+    assert body["selector_mutation_performed"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_consumption_receipt_use_selected_classes_do_not_match_consumption" in codes
+    assert "candidate_b_broader_scope_consumption_receipt_use_unselected_scope_class" in codes
+
+
 def test_candidate_b_broader_scope_selector_use_rejects_forbidden_browser_authority(
     client: TestClient,
 ) -> None:
@@ -701,6 +889,13 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
         ]
         == ACTIVATION_CONSUMPTION_ENDPOINT
     )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_admitted"] is True
+    )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_endpoint"]
+        == CONSUMPTION_RECEIPT_USE_ENDPOINT
+    )
 
     assert bootstrap.status_code == 200, bootstrap.text
     bootstrap_body = bootstrap.json()
@@ -714,6 +909,9 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
             "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption"
         ]
         is True
+    )
+    assert (
+        bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use"] is True
     )
     assert (
         bootstrap_body["execution_readiness"]["candidate_b_broader_eligible_corpus_default_scope_selector_use_endpoint"]
@@ -736,6 +934,12 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
             "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_endpoint"
         ]
         == ACTIVATION_CONSUMPTION_ENDPOINT
+    )
+    assert (
+        bootstrap_body["execution_readiness"][
+            "candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_endpoint"
+        ]
+        == CONSUMPTION_RECEIPT_USE_ENDPOINT
     )
 
     schema = client.app.openapi()
@@ -763,3 +967,9 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
     assert consumption_request_schema["additionalProperties"] is False
     for field in ("visual_lane_mode", "document_processing_engine", "local_path", "url", "default_selector"):
         assert field not in consumption_request_schema["properties"]
+    use_route = schema["paths"][CONSUMPTION_RECEIPT_USE_ENDPOINT]["post"]
+    use_request_ref = use_route["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    use_request_schema = schema["components"]["schemas"][use_request_ref.rsplit("/", 1)[-1]]
+    assert use_request_schema["additionalProperties"] is False
+    for field in ("visual_lane_mode", "document_processing_engine", "local_path", "url", "default_selector"):
+        assert field not in use_request_schema["properties"]

@@ -44,6 +44,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "candidate_b_broader_eligible_corpus_default_scope_selector_use_status": True,
     "candidate_b_broader_eligible_corpus_default_scope_selector_activation": True,
     "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption": True,
+    "candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use": True,
     "candidate_b_default_promotion_final_proof": True,
     "candidate_b_default_promotion_final_proof_status": True,
     "candidate_b_full_corpus_operator_workflow_status": True,
@@ -249,6 +250,10 @@ def build_bootstrap_contract(
             "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_admitted": True,
             "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume"
+            ),
+            "candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_admitted": True,
+            "candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_endpoint": (
+                f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use"
             ),
             "candidate_b_default_promotion_final_proof_admitted": True,
             "candidate_b_default_promotion_final_proof_endpoint": (
