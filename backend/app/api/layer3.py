@@ -28,6 +28,7 @@ from app.services import (
     layer3_replacement_package_set_authority,
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
+    layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_material_bridge,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
@@ -435,6 +436,19 @@ class Layer3SecEdgarTextTableDownstreamProofRequest(BaseModel):
     material_snapshot_payload_hash: str = Field(min_length=64, max_length=64)
     coverage_evidence: dict[str, Any]
     operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarTextTableDownstreamOperatorStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["sec_edgar_text_table_downstream_layer3_operator_status_v1"]
+    operator_decision: Literal["inspect_sec_edgar_text_table_downstream_layer3_operator_status"]
+    downstream_proof_request: dict[str, Any] | None = None
+    expected_proof_hash: str | None = Field(default=None, min_length=64, max_length=64)
     actor: str | None = None
 
 
@@ -7384,6 +7398,44 @@ class Layer3SecEdgarTextTableDownstreamProofResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarTextTableDownstreamOperatorStatusResponse(Layer3BaseResponse):
+    mode: str
+    operator_status_state: str
+    expected_proof_hash: str
+    proof_hash: str
+    proof_state: str
+    dataset_version_id: str
+    bridge_receipt_hash: str
+    material_preview_hash: str
+    gate_b_decision_manifest_id: str
+    session_id: str
+    selection_manifest_id: str
+    material_snapshot_payload_hash: str
+    coverage_evidence_hash: str
+    negative_invariants_hash: str
+    blocked_reason_codes: list[str]
+    operator_status_hash: str
+    operator_status_projection_ref: str
+    selected_status_states: list[str]
+    proof_available: bool
+    proof_summary: dict[str, Any]
+    status_projection: dict[str, Any]
+    blocked_reasons: list[dict[str, Any]]
+    raw_proof_receipt_path_rendered: bool
+    raw_local_path_rendered: bool
+    raw_url_rendered: bool
+    artifact_bytes_rendered: bool
+    provider_private_token_rendered: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    full_mockup_activation_enabled: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     aps_content_document_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -13939,6 +13991,23 @@ def post_sec_edgar_text_table_downstream_proof(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_sec_edgar_downstream_proof.record_sec_edgar_text_table_downstream_layer3_proof(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/text-table/downstream-proof/status",
+    response_model=Layer3SecEdgarTextTableDownstreamOperatorStatusResponse,
+    responses=_workbench_error_responses(400),
+)
+def post_sec_edgar_text_table_downstream_operator_status(
+    payload: Layer3SecEdgarTextTableDownstreamOperatorStatusRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
             payload.model_dump(exclude_none=True),
             db,
         )

@@ -1045,24 +1045,25 @@ def test_layer3_api_records_sec_edgar_text_table_downstream_proof(client: TestCl
     assert gate_b_response.status_code == 200, gate_b_response.text
     gate_b = gate_b_response.json()
     snapshot = _sec_edgar_api_snapshot(client, session_id=gate_b["session_id"], dataset_version_id=dataset_version_id)
+    proof_request = {
+        "client_request_id": "sec-edgar-api-downstream-proof",
+        "proof_mode": "sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
+        "operator_decision": "record_sec_edgar_text_table_downstream_layer3_e2e_proof",
+        "dataset_version_id": dataset_version_id,
+        "authority_envelope_hash": bridge["authority_envelope_hash"],
+        "bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "material_preview_hash": bridge["material_preview_hash"],
+        "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "session_id": gate_b["session_id"],
+        "selection_manifest_id": gate_b["selection_manifest_id"],
+        "material_snapshot_payload_hash": snapshot.payload_hash,
+        "coverage_evidence": _sec_edgar_api_coverage(bridge, gate_b, snapshot),
+        "operator_confirmation": True,
+    }
 
     response = client.post(
         "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof",
-        json={
-            "client_request_id": "sec-edgar-api-downstream-proof",
-            "proof_mode": "sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
-            "operator_decision": "record_sec_edgar_text_table_downstream_layer3_e2e_proof",
-            "dataset_version_id": dataset_version_id,
-            "authority_envelope_hash": bridge["authority_envelope_hash"],
-            "bridge_receipt_hash": bridge["bridge_receipt_hash"],
-            "material_preview_hash": bridge["material_preview_hash"],
-            "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
-            "session_id": gate_b["session_id"],
-            "selection_manifest_id": gate_b["selection_manifest_id"],
-            "material_snapshot_payload_hash": snapshot.payload_hash,
-            "coverage_evidence": _sec_edgar_api_coverage(bridge, gate_b, snapshot),
-            "operator_confirmation": True,
-        },
+        json=proof_request,
     )
 
     assert response.status_code == 200, response.text
@@ -1078,6 +1079,45 @@ def test_layer3_api_records_sec_edgar_text_table_downstream_proof(client: TestCl
     assert body["connector_dispatch_enabled"] is False
     assert "aps-target-artifacts/run-001" not in response.text
     assert str(tmp_path) not in response.text
+
+    status_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
+        json={
+            "client_request_id": "sec-edgar-api-downstream-proof-status",
+            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "downstream_proof_request": proof_request,
+            "expected_proof_hash": body["proof_hash"],
+        },
+    )
+    assert status_response.status_code == 200, status_response.text
+    status_body = status_response.json()
+    assert status_body["schema_id"] == "layer3.sec_edgar_text_table_downstream_operator_status.v1"
+    assert status_body["operator_status_state"] == "available"
+    assert status_body["proof_available"] is True
+    assert status_body["proof_hash"] == body["proof_hash"]
+    assert status_body["status_projection"]["server_revalidated"] is True
+    assert status_body["raw_local_path_rendered"] is False
+    assert status_body["raw_url_rendered"] is False
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_reports_sec_edgar_downstream_status_not_recorded(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
+        json={
+            "client_request_id": "sec-edgar-api-downstream-status-not-recorded",
+            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["operator_status_state"] == "not_recorded"
+    assert body["proof_available"] is False
+    assert body["runtime_db_or_storage_expansion_admitted"] is False
+    assert body["frontend_durable_authority_enabled"] is False
 
 
 def test_layer3_api_lists_aps_content_document_candidates(client: TestClient, tmp_path) -> None:
