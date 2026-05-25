@@ -1,0 +1,88 @@
+# SEC EDGAR Text Table Source Acquisition Authority Selection
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_selection_v1
+source_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1132-sec-edgar-text-table-downstream-repeatability-closeout-readiness.md
+current_main_entry: d14b1d8320da48839c693c926ada7929a36cbc39
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_source_acquisition_authority_runtime_v1
+selected_source_family: sec_edgar_text_table
+selected_parser_family: sec_edgar_filing
+selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+selected_existing_parser_contract_id: aps_sec_edgar_filing_parser_v1
+selected_existing_source_mode: artifact_sec_edgar_filing_parser
+selected_authority_shape: server_owned_sec_filing_source_artifact_authority_to_materialized_dataset_version_envelope
+selected_acquisition_scope: bind_retained_server_owned_sec_filing_source_artifact_manifest_to_existing_sec_edgar_text_table_materialization
+selected_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1
+selected_source_artifact_family: complete_submission_text_filing_artifact
+selected_source_artifact_evidence: source_artifact_receipt_id,source_artifact_receipt_hash,source_artifact_ref_hash,accession_or_submission_id_hash,cik_or_filer_ref_hash,form_type,filing_date,content_sha256,content_length,parser_family,typed_content_contract_id,materialization_receipt_hash,dataset_version_hash
+selected_retained_artifact_roles: source_evidence_artifact,parser_input_artifact,provenance_audit_artifact,operator_inspection_artifact
+selected_material_payload_roles: parsed_narrative_units,parsed_table_units,time_series_units,normalized_text,redacted_filing_metadata
+selected_operator_status_states: not_recorded,available,blocked
+selected_first_runtime_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+selected_first_runtime_action: record_sec_edgar_text_table_source_acquisition_authority
+selected_first_runtime_receipt_prefix: sec-edgar-text-table-source-acquisition
+selected_hash_bindings: source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256,parser_contract_id,typed_content_contract_id,materialization_receipt_hash,dataset_version_hash,authority_envelope_hash
+required_input_authority: server_owned_source_artifact_receipt_and_existing_materialized_dataset_version_linkage
+required_output_authority: append_only_redacted_source_acquisition_authority_receipt
+required_compatibility_target: existing_sec_edgar_text_table_authority_envelope_validation_runtime
+required_downstream_target: material_preview_gate_b_downstream_proof_status_repeatability_package_delivery_operator_inspection_after_authority_envelope
+server_owned_source_artifact_authority_admitted_for_first_runtime: true
+existing_sec_edgar_parser_reuse_admitted_for_first_runtime: true
+live_sec_network_fetch_admitted_for_first_runtime: false
+sec_network_cache_or_rate_behavior_admitted_for_first_runtime: false
+raw_sec_filing_url_as_authority_admitted_for_first_runtime: false
+xml_html_inline_xbrl_parser_admitted_for_first_runtime: false
+broad_source_expansion_admitted: false
+source_family_expansion_scope: sec_edgar_text_table_only
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+browser_supplied_local_path_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_sec_url_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+browser_supplied_command_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_token_exposed: false
+stale_source_artifact_hash_must_reject: true
+missing_source_artifact_receipt_must_reject: true
+missing_materialization_linkage_must_reject: true
+parser_contract_mismatch_must_reject: true
+typed_content_contract_mismatch_must_reject: true
+dataset_version_hash_mismatch_must_reject: true
+authority_envelope_hash_mismatch_must_reject: true
+operator_confirmation_required: true
+rollback_to_materialized_dataset_version_authority_preserved: true
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+runtime_implementation_in_this_freeze: false
+rendered_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_v1
+```
+
+This freeze selects the first SEC EDGAR source-acquisition authority slice after the downstream repeatability chain reached closeout. The selected runtime should not fetch SEC content from the network. It should bind a retained server-owned complete-submission filing artifact receipt to the existing SEC EDGAR filing parser/materialization chain, produce an append-only redacted acquisition authority receipt, and make that receipt compatible with the existing `sec_edgar_text_table_authority_envelope_validation_runtime_v1` path.
+
+The first runtime is allowed to reuse the existing `sec_edgar_filing` parser contract and `artifact_sec_edgar_filing_parser` source mode only when the server can prove source artifact receipt identity, content hash, parser contract, typed content contract, materialization receipt, DatasetVersion hash, and authority envelope hash. It must fail closed for missing or stale source artifacts, missing materialization linkage, parser or contract mismatch, raw path/URL authority, browser-owned authority, artifact bytes, provider/connector/model authority, and missing operator confirmation.
+
+Live SEC network acquisition, SEC URL authority, cache/rate semantics, XML/HTML/inline XBRL parsing, parser expansion, runtime DB/storage expansion, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage, and frontend durable authority remain blocked for this first runtime and require separate selection.
+
+## Coherence Check
+
+- Does this freeze implement source acquisition? Recommended answer: no. It admits the next runtime contract only.
+- Does the first runtime fetch from SEC or accept a raw SEC URL? Recommended answer: no. It binds a server-owned retained filing artifact receipt to existing materialization authority.
+- Does this create a new parser? Recommended answer: no. It reuses the existing `sec_edgar_filing` parser contract and keeps XML/HTML/inline XBRL parser expansion blocked.
+- Why is this still progress toward source acquisition? Recommended answer: it establishes durable server-owned acquisition authority and retained source artifact provenance upstream of the current materialized DatasetVersion envelope.
+- What comes next? Recommended answer: implement `sec_edgar_text_table_source_acquisition_authority_runtime_v1` with append-only redacted receipts, stale-hash rejection, parser/materialization linkage checks, status projection, and no network fetch or parser expansion.
