@@ -8489,3 +8489,50 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_render
 ```
 
 The review remediation is test-harness-only. It addresses post-merge review threads on PR `#1848` by making SEC EDGAR browser fixture setup seed-bound and restore-safe; it does not add parser expansion, materialization, Gate B mutation, provider writes, connector dispatch, RAG/model runtime, or full mockup activation.
+
+### SEC EDGAR Text Table Live Source Artifact Acquisition Rendered Status Review Remediation Current-Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation_current_main_sync_v1
+source_review_remediation: next_milestone_plans/Layer3_planning_docs/1145-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-review-remediation.md
+current_main_entry: c99384ece24ba90659c026adf37f869b0586adfc
+source_pr: 1849
+source_merge_commit: c99384ece24ba90659c026adf37f869b0586adfc
+entry_decision: current_main_sync
+runtime_status: unchanged
+rendered_status: unchanged
+review_remediation_status: merged_on_current_main
+source_pr_review_threads: none
+source_pr_review_comments: none
+github_checks: passed
+github_successful_checks: 10
+open_prs_after_merge: none
+legacy_pr_1848_review_threads_found_before_remediation: 3
+legacy_pr_1848_review_thread_resolution_claimed: false
+legacy_pr_1848_review_thread_code_defects_addressed: true
+implemented_seeded_sec_client: _ReviewBrowserSeededSecEdgarClient
+implemented_seed_registration: register_complete_submission_text
+implemented_seed_identity_function: _sec_edgar_live_source_artifact_identity
+implemented_fixture_cache_policy: each_setup_seed_registers_distinct_identity_and_content_hash
+implemented_patch_state_restore: sec_client_sec_sleep_sec_user_agent_sec_rate_limit_restored
+current_main_sync_introduces_runtime_behavior: false
+current_main_sync_introduces_rendered_behavior: false
+production_sec_acquisition_behavior_changed: false
+production_api_behavior_changed: false
+production_rendered_behavior_changed: false
+live_sec_manual_smoke_in_this_sync: false
+parser_expansion_enabled: false
+dataset_version_or_gate_b_mutation_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+server_user_agent_exposed: false
+next_exact_posture: sec_edgar_text_table_live_source_artifact_material_authority_bridge_selection_v1
+```
+
+Current main now contains the SEC EDGAR live source-artifact rendered-status review remediation. The next selected work should be the retained source-artifact to Layer 3 material-authority bridge selection; this sync does not itself materialize SEC content or mutate Gate B.
