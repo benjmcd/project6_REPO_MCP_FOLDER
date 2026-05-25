@@ -7280,3 +7280,52 @@ next_exact_posture: sec_edgar_text_table_downstream_layer3_closeout_readiness_v1
 ```
 
 The merged current-main tree now contains the SEC EDGAR rendered downstream operator-status surface from PR `#1828`. This sync adds no runtime behavior; it records that the current-main status panel remains read-only over server-revalidated downstream proof authority and keeps SEC fetch, parser expansion, proof mutation, provider writes, connector dispatch, RAG/model runtime, full mockup activation, and frontend durable authority out of scope.
+
+### SEC EDGAR Text Table Downstream Layer 3 Closeout Readiness
+
+```yaml
+milestone: sec_edgar_text_table_downstream_layer3_closeout_readiness_v1
+source_operator_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1125-sec-edgar-text-table-downstream-operator-status-current-main-sync.md
+current_main_entry: 2eccf2b7cfb122d6818f9bcb79d551f94ae12016
+source_sync_pr: "#1829"
+source_sync_merge_commit: 2eccf2b7cfb122d6818f9bcb79d551f94ae12016
+entry_decision: closeout_readiness_checkpoint
+runtime_status: already_implemented
+rendered_status: already_implemented
+closeout_readiness_state: ready_for_sec_edgar_text_table_downstream_operator_repeatability_trial_selection
+selected_next_selection_target: sec_edgar_text_table_downstream_operator_repeatability_trial_selection_v1
+required_authority_envelope_runtime: next_milestone_plans/Layer3_planning_docs/1116-sec-edgar-text-table-authority-envelope-validation-runtime.md
+required_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1118-sec-edgar-text-table-layer3-material-authority-bridge-runtime.md
+required_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1120-sec-edgar-text-table-downstream-layer3-proof-runtime.md
+required_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1122-sec-edgar-text-table-downstream-operator-status-runtime.md
+required_rendered_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md
+required_operator_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1125-sec-edgar-text-table-downstream-operator-status-current-main-sync.md
+required_closeout_authority: rendered_operator_status_over_server_revalidated_downstream_proof_material_bridge_and_authority_envelope_chain
+required_source_family: sec_edgar_text_table
+required_parser_family: sec_edgar_filing
+required_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+required_authority_envelope_shape: mixed_narrative_table
+required_downstream_proof_mode: sec_edgar_text_table_downstream_layer3_e2e_proof_v1
+required_status_mode: sec_edgar_text_table_downstream_layer3_operator_status_v1
+required_rendered_status_mode: rendered_sec_edgar_text_table_downstream_layer3_operator_status_control
+required_downstream_coverage_steps: authority_envelope_validation,material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection
+required_proof_authority_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only
+required_status_authority_model: downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+downstream_chain_closeout_ready: true
+named_defect_remaining: false
+operator_repeatability_trial_admitted_now: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_selection_v1
+```
+
+The current SEC EDGAR downstream chain is closeout-ready for a separately selected operator repeatability trial. This does not admit new SEC acquisition, parser expansion, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or frontend durable authority. The next step is to freeze the exact repeatability-trial selection before any trial runtime or broader source-family expansion is implemented.
