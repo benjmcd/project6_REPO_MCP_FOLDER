@@ -4684,6 +4684,141 @@ test('Layer 3 workbench renders SEC EDGAR downstream operator status through ser
   ]);
 });
 
+test('Layer 3 workbench records SEC EDGAR downstream repeatability trial through server revalidation', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-repeatability-trial'));
+  expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_repeatability_trial_setup.v1');
+  expect(setup.raw_local_path_exposed).toBe(false);
+  expect(setup.raw_url_exposed).toBe(false);
+  expect(setup.original_operator_status_hash).toBe(setup.repeat_operator_status_hash);
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-edgar-downstream-repeatability-trial-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#sec-edgar-downstream-repeatability-trial-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#sec-edgar-downstream-repeatability-trial-submit')).toBeDisabled();
+
+  await page.locator('#sec-edgar-downstream-repeatability-original-status-request-json').fill(
+    JSON.stringify(setup.original_operator_status_request),
+  );
+  await page.locator('#sec-edgar-downstream-repeatability-original-status-hash').fill(
+    setup.original_operator_status_hash,
+  );
+  await page.locator('#sec-edgar-downstream-repeatability-repeat-status-request-json').fill(
+    JSON.stringify(setup.repeat_operator_status_request),
+  );
+  await page.locator('#sec-edgar-downstream-repeatability-repeat-status-hash').fill(
+    setup.repeat_operator_status_hash,
+  );
+  await page.locator('#sec-edgar-downstream-repeatability-disposition').selectOption('no_regression_observed');
+  await page.locator('#sec-edgar-downstream-repeatability-operator-confirmation').check();
+  await expect(page.locator('#sec-edgar-downstream-repeatability-trial-submit')).toBeEnabled();
+
+  const acceptedRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial')
+  ));
+  const acceptedResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial')
+  ));
+  await page.locator('#sec-edgar-downstream-repeatability-trial-submit').click();
+  const acceptedPayload = (await acceptedRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(acceptedPayload, [
+    'client_request_id',
+    'trial_mode',
+    'operator_decision',
+    'original_operator_status_request',
+    'original_operator_status_hash',
+    'repeat_operator_status_request',
+    'repeat_operator_status_hash',
+    'operator_repeatability_disposition',
+    'operator_confirmation',
+  ]);
+  expect(acceptedPayload.trial_mode).toBe(
+    'append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution',
+  );
+  expect(acceptedPayload.operator_decision).toBe(
+    'record_sec_edgar_text_table_downstream_operator_repeatability_trial',
+  );
+  expect(acceptedPayload.operator_repeatability_disposition).toBe('no_regression_observed');
+  expect(acceptedPayload.operator_confirmation).toBe(true);
+  for (const forbidden of [
+    'path',
+    'local_path',
+    'raw_url',
+    'url',
+    'provider_private_url',
+    'provider_public_url',
+    'command',
+    'process',
+    'stdout',
+    'stderr',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+  ]) {
+    expect(acceptedPayload).not.toHaveProperty(forbidden);
+  }
+  expect(JSON.stringify(acceptedPayload)).not.toContain('C:\\');
+  expect(JSON.stringify(acceptedPayload)).not.toContain('http://');
+  expect(JSON.stringify(acceptedPayload)).not.toContain('https://');
+  const accepted = await expectJson(await acceptedResponsePromise);
+  expect(accepted.schema_id).toBe('layer3.sec_edgar_text_table_downstream_operator_repeatability_trial.v1');
+  expect(accepted.operator_repeatability_trial_state).toBe(
+    'sec_edgar_text_table_downstream_operator_repeatability_trial_accepted',
+  );
+  expect(accepted.operator_status_hash_comparison).toBe('match');
+  expect(accepted.proof_hash_comparison).toBe('match');
+  expect(accepted.coverage_step_set_comparison).toBe('match');
+  expect(accepted.actual_sec_processing_execution_admitted).toBe(false);
+  expect(accepted.actual_subprocess_spawn_admitted).toBe(false);
+  expect(accepted.raw_local_path_exposed).toBe(false);
+  expect(accepted.raw_url_exposed).toBe(false);
+  expect(accepted.artifact_bytes_exposed).toBe(false);
+  expect(accepted.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(accepted)).not.toContain('C:\\');
+  expect(JSON.stringify(accepted)).not.toContain('http://');
+  expect(JSON.stringify(accepted)).not.toContain('https://');
+  await expect(panel).toContainText('sec_edgar_downstream_repeatability_trial_accepted');
+  await expect(panel).toContainText('operator status hash comparison: match');
+  await expect(panel).toContainText('raw URL exposed: false');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+
+  await page.locator('#sec-edgar-downstream-repeatability-original-status-hash').fill('0'.repeat(64));
+  await expect(page.locator('#sec-edgar-downstream-repeatability-trial-submit')).toBeEnabled();
+  const blockedResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial')
+  ));
+  await page.locator('#sec-edgar-downstream-repeatability-trial-submit').click();
+  const blocked = await expectJsonStatus(await blockedResponsePromise, 409);
+  expect(blocked.error_code).toBe(
+    'sec_edgar_text_table_downstream_operator_repeatability_trial_stale_original_operator_status_hash',
+  );
+  await expect(panel).toContainText(
+    'sec_edgar_text_table_downstream_operator_repeatability_trial_stale_original_operator_status_hash',
+  );
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/sec-edgar/text-table/downstream/operator-repeatability/trial')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial' },
+    { method: 'POST', path: '/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial' },
+  ]);
+});
+
 test('Layer 3 workbench uses raw mixed seed bridge setup for rendered material review', async ({ page, request }) => {
   const seed = await seedRawMixedBridgeSetup(request);
 

@@ -107,6 +107,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-downstream-status" in payload["seed_routes"]
+    assert "/__test/layer3/sec-edgar-repeatability-trial" in payload["seed_routes"]
     assert "/__test/layer3/source-directory-fixture-reset" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-readiness-audit" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-realistic-readiness-audit" in payload["seed_routes"]
@@ -153,6 +154,58 @@ def test_review_browser_server_prepares_sec_edgar_downstream_status_authority(cl
     assert status["raw_url_rendered"] is False
     assert status["frontend_durable_authority_enabled"] is False
     assert "C:\\" not in str(status)
+
+
+def test_review_browser_server_prepares_sec_edgar_repeatability_trial_authority(client: TestClient) -> None:
+    setup_response = client.post("/__test/layer3/sec-edgar-repeatability-trial")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_sec_edgar_repeatability_trial_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["dataset_version_id"].startswith("dv-sec-edgar-status-")
+    assert setup["original_operator_status_hash"] == setup["repeat_operator_status_hash"]
+    assert setup["trial_endpoint"] == "/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial"
+    assert setup["status_endpoint"] == "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status"
+    assert setup["raw_local_path_exposed"] is False
+    assert setup["raw_url_exposed"] is False
+    assert setup["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(setup)
+
+    trial_response = client.post(
+        setup["trial_endpoint"],
+        json={
+            "client_request_id": "review-browser-sec-edgar-repeatability-trial",
+            "trial_mode": (
+                "append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_"
+                "without_sec_fetch_or_processing_execution"
+            ),
+            "operator_decision": "record_sec_edgar_text_table_downstream_operator_repeatability_trial",
+            "original_operator_status_request": setup["original_operator_status_request"],
+            "original_operator_status_hash": setup["original_operator_status_hash"],
+            "repeat_operator_status_request": setup["repeat_operator_status_request"],
+            "repeat_operator_status_hash": setup["repeat_operator_status_hash"],
+            "operator_repeatability_disposition": "no_regression_observed",
+            "operator_confirmation": True,
+        },
+    )
+    assert trial_response.status_code == 200, trial_response.text
+    trial = trial_response.json()
+    assert trial["schema_id"] == "layer3.sec_edgar_text_table_downstream_operator_repeatability_trial.v1"
+    assert trial["operator_repeatability_trial_state"] == (
+        "sec_edgar_text_table_downstream_operator_repeatability_trial_accepted"
+    )
+    assert trial["operator_status_hash_comparison"] == "match"
+    assert trial["proof_hash_comparison"] == "match"
+    assert trial["coverage_step_set_comparison"] == "match"
+    assert trial["actual_sec_processing_execution_admitted"] is False
+    assert trial["actual_subprocess_spawn_admitted"] is False
+    assert trial["raw_local_path_exposed"] is False
+    assert trial["raw_url_exposed"] is False
+    assert trial["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(trial)
+    assert "http://" not in str(trial)
+    assert "https://" not in str(trial)
 
 
 def test_review_browser_server_prepares_candidate_b_readiness_audit(client: TestClient) -> None:

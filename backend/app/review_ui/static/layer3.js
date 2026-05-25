@@ -322,6 +322,11 @@ const CANDIDATE_B_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_defau
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_layer3_operator_status_control';
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_downstream_layer3_operator_status_v1';
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_text_table_downstream_layer3_operator_status';
+const SEC_EDGAR_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control';
+const SEC_EDGAR_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution';
+const SEC_EDGAR_REPEATABILITY_TRIAL_OPERATOR_DECISION = 'record_sec_edgar_text_table_downstream_operator_repeatability_trial';
+const SEC_EDGAR_REPEATABILITY_TRIAL_ACCEPTED_STATE = 'sec_edgar_text_table_downstream_operator_repeatability_trial_accepted';
+const SEC_EDGAR_REPEATABILITY_TRIAL_BLOCKED_STATE = 'sec_edgar_text_table_downstream_operator_repeatability_trial_blocked';
 const CANDIDATE_B_CLOSURE_EVIDENCE_RENDERED_MODE = 'rendered_candidate_b_default_promotion_closure_evidence_control';
 const CANDIDATE_B_CLOSURE_EVIDENCE_MODE = 'candidate_b_default_promotion_closure_evidence_v1';
 const CANDIDATE_B_CLOSURE_EVIDENCE_OPERATOR_DECISION = 'record_candidate_b_default_promotion_closure_evidence';
@@ -654,6 +659,17 @@ const State = {
         downstreamProofRequestJson: '',
         expectedProofHash: '',
     },
+    secEdgarDownstreamRepeatabilityTrial: null,
+    secEdgarDownstreamRepeatabilityTrialError: null,
+    secEdgarDownstreamRepeatabilityTrialPending: false,
+    secEdgarDownstreamRepeatabilityTrialInput: {
+        originalOperatorStatusRequestJson: '',
+        originalOperatorStatusHash: '',
+        repeatOperatorStatusRequestJson: '',
+        repeatOperatorStatusHash: '',
+        disposition: 'no_regression_observed',
+        operatorConfirmation: true,
+    },
     candidateBFullCorpusOperatorWorkflowStatus: null,
     candidateBFullCorpusOperatorWorkflowStatusError: null,
     candidateBFullCorpusOperatorWorkflowStatusPending: false,
@@ -901,6 +917,7 @@ const elements = {
     authorityMatrixReviewPanel: document.getElementById('authority-matrix-review-panel'),
     candidateBDefaultPromotionStatusPanel: document.getElementById('candidate-b-default-promotion-status-panel'),
     secEdgarDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-downstream-operator-status-panel'),
+    secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
@@ -7943,6 +7960,12 @@ function secEdgarDownstreamOperatorStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function secEdgarDownstreamRepeatabilityTrialEndpointPath(contract) {
+    const endpoint = contract?.sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBFullCorpusOperatorWorkflowStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_full_corpus_operator_workflow_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8384,6 +8407,61 @@ function secEdgarDownstreamOperatorStatusInputValues() {
             || State.secEdgarDownstreamOperatorStatusInput.expectedProofHash
             || ''
         ).trim(),
+    };
+}
+
+function secEdgarDownstreamRepeatabilityTrialInputValues() {
+    const originalRequestInput = document.getElementById(
+        'sec-edgar-downstream-repeatability-original-status-request-json',
+    );
+    const originalHashInput = document.getElementById(
+        'sec-edgar-downstream-repeatability-original-status-hash',
+    );
+    const repeatRequestInput = document.getElementById(
+        'sec-edgar-downstream-repeatability-repeat-status-request-json',
+    );
+    const repeatHashInput = document.getElementById(
+        'sec-edgar-downstream-repeatability-repeat-status-hash',
+    );
+    const dispositionInput = document.getElementById(
+        'sec-edgar-downstream-repeatability-disposition',
+    );
+    const confirmationInput = document.getElementById(
+        'sec-edgar-downstream-repeatability-operator-confirmation',
+    );
+    const stored = State.secEdgarDownstreamRepeatabilityTrialInput;
+    const disposition = (
+        dispositionInput?.value
+        || stored.disposition
+        || 'no_regression_observed'
+    ).trim();
+    return {
+        originalOperatorStatusRequestJson: (
+            originalRequestInput?.value
+            || stored.originalOperatorStatusRequestJson
+            || ''
+        ).trim(),
+        originalOperatorStatusHash: (
+            originalHashInput?.value
+            || stored.originalOperatorStatusHash
+            || ''
+        ).trim(),
+        repeatOperatorStatusRequestJson: (
+            repeatRequestInput?.value
+            || stored.repeatOperatorStatusRequestJson
+            || ''
+        ).trim(),
+        repeatOperatorStatusHash: (
+            repeatHashInput?.value
+            || stored.repeatOperatorStatusHash
+            || ''
+        ).trim(),
+        disposition: ['no_regression_observed', 'delta_reviewed_no_regression', 'regression_detected_blocked'].includes(disposition)
+            ? disposition
+            : 'no_regression_observed',
+        operatorConfirmation: confirmationInput
+            ? confirmationInput.checked
+            : stored.operatorConfirmation !== false,
     };
 }
 
@@ -9485,6 +9563,22 @@ function secEdgarDownstreamOperatorStatusPayload() {
     return payload;
 }
 
+function secEdgarDownstreamRepeatabilityTrialPayload() {
+    const values = secEdgarDownstreamRepeatabilityTrialInputValues();
+    State.secEdgarDownstreamRepeatabilityTrialInput = values;
+    return {
+        client_request_id: requestId(),
+        trial_mode: SEC_EDGAR_REPEATABILITY_TRIAL_MODE,
+        operator_decision: SEC_EDGAR_REPEATABILITY_TRIAL_OPERATOR_DECISION,
+        original_operator_status_request: JSON.parse(values.originalOperatorStatusRequestJson),
+        original_operator_status_hash: values.originalOperatorStatusHash,
+        repeat_operator_status_request: JSON.parse(values.repeatOperatorStatusRequestJson),
+        repeat_operator_status_hash: values.repeatOperatorStatusHash,
+        operator_repeatability_disposition: values.disposition,
+        operator_confirmation: values.operatorConfirmation,
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowRunPayload() {
     const values = candidateBFullCorpusOperatorWorkflowRunInputValues();
     State.candidateBFullCorpusOperatorWorkflowRunInput = values;
@@ -9911,6 +10005,20 @@ function canInspectSecEdgarDownstreamOperatorStatus(contract = layer3ExecutionRe
         contract?.sec_edgar_text_table_downstream_operator_status_admitted
         && secEdgarDownstreamOperatorStatusEndpointPath(contract)
         && !State.secEdgarDownstreamOperatorStatusPending
+    );
+}
+
+function canRecordSecEdgarDownstreamRepeatabilityTrial(contract = layer3ExecutionReadinessContract()) {
+    const values = secEdgarDownstreamRepeatabilityTrialInputValues();
+    return Boolean(
+        contract?.sec_edgar_text_table_downstream_operator_repeatability_trial_admitted
+        && secEdgarDownstreamRepeatabilityTrialEndpointPath(contract)
+        && values.originalOperatorStatusRequestJson
+        && values.originalOperatorStatusHash
+        && values.repeatOperatorStatusRequestJson
+        && values.repeatOperatorStatusHash
+        && values.operatorConfirmation
+        && !State.secEdgarDownstreamRepeatabilityTrialPending
     );
 }
 
@@ -10572,6 +10680,27 @@ function secEdgarDownstreamOperatorStatusPanelState() {
         return { label: 'sec_edgar_downstream_operator_status_not_recorded', pill: 'preview' };
     }
     return { label: 'sec_edgar_downstream_operator_status_not_inspected', pill: 'preview' };
+}
+
+function secEdgarDownstreamRepeatabilityTrialPanelState() {
+    if (State.secEdgarDownstreamRepeatabilityTrialPending) {
+        return { label: 'sec_edgar_downstream_repeatability_trial_pending', pill: 'preview' };
+    }
+    if (State.secEdgarDownstreamRepeatabilityTrialError) {
+        const code = (
+            State.secEdgarDownstreamRepeatabilityTrialError?.payload?.error?.code
+            || State.secEdgarDownstreamRepeatabilityTrialError?.payload?.error_code
+        );
+        return { label: code || 'sec_edgar_downstream_repeatability_trial_blocked', pill: 'blocked' };
+    }
+    const state = State.secEdgarDownstreamRepeatabilityTrial?.operator_repeatability_trial_state;
+    if (state === SEC_EDGAR_REPEATABILITY_TRIAL_ACCEPTED_STATE) {
+        return { label: 'sec_edgar_downstream_repeatability_trial_accepted', pill: 'ok' };
+    }
+    if (state === SEC_EDGAR_REPEATABILITY_TRIAL_BLOCKED_STATE) {
+        return { label: 'sec_edgar_downstream_repeatability_trial_blocked', pill: 'blocked' };
+    }
+    return { label: 'sec_edgar_downstream_repeatability_trial_not_recorded', pill: 'preview' };
 }
 
 function candidateBFullCorpusOperatorWorkflowRunPanelState() {
@@ -11499,6 +11628,86 @@ function secEdgarDownstreamOperatorStatusRows(status) {
                     ${fieldItem('frontend durable authority enabled', status.frontend_durable_authority_enabled)}
                     ${fieldItem('browser storage authority enabled', status.browser_storage_authority_enabled)}
                     ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secEdgarDownstreamRepeatabilityTrialRows(trial) {
+    if (!trial) return '';
+    const bindings = trial.authority_bindings || {};
+    const visibleStatus = trial.operator_visible_repeatability_trial_status || {};
+    const original = trial.original_operator_status || {};
+    const repeat = trial.repeat_operator_status || {};
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>SEC EDGAR Repeatability Trial</strong>
+                <ul>
+                    ${fieldItem('schema id', trial.schema_id, { code: true })}
+                    ${fieldItem('status', trial.status, { code: true })}
+                    ${fieldItem('mode', trial.mode, { code: true })}
+                    ${fieldItem('operator decision', trial.operator_decision, { code: true })}
+                    ${fieldItem('trial state', trial.operator_repeatability_trial_state, { code: true })}
+                    ${fieldItem('disposition', trial.operator_repeatability_disposition, { code: true })}
+                    ${fieldItem('trial receipt id', trial.trial_receipt_id, { code: true })}
+                    ${fieldItem('trial receipt hash', trial.trial_receipt_hash, { code: true })}
+                    ${fieldItem('trial receipt ref', trial.trial_receipt_ref, { code: true })}
+                    ${fieldItem('trial authority hash', trial.trial_authority_hash, { code: true })}
+                    ${fieldItem('authority pair hash', trial.authority_pair_hash, { code: true })}
+                    ${fieldItem('idempotent replay', trial.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Original And Repeat Status</strong>
+                <ul>
+                    ${fieldItem('original operator status hash', original.operator_status_hash, { code: true })}
+                    ${fieldItem('repeat operator status hash', repeat.operator_status_hash, { code: true })}
+                    ${fieldItem('original proof hash', original.proof_hash, { code: true })}
+                    ${fieldItem('repeat proof hash', repeat.proof_hash, { code: true })}
+                    ${fieldItem('operator status hash comparison', trial.operator_status_hash_comparison, { code: true })}
+                    ${fieldItem('proof hash comparison', trial.proof_hash_comparison, { code: true })}
+                    ${fieldItem('coverage step set comparison', trial.coverage_step_set_comparison, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Bindings</strong>
+                <ul>
+                    ${fieldItem('dataset version id', bindings.dataset_version_id, { code: true })}
+                    ${fieldItem('dataset version hash', bindings.dataset_version_hash, { code: true })}
+                    ${fieldItem('materialization receipt hash', bindings.materialization_receipt_hash, { code: true })}
+                    ${fieldItem('authority envelope hash', bindings.authority_envelope_hash, { code: true })}
+                    ${fieldItem('bridge receipt hash', bindings.bridge_receipt_hash, { code: true })}
+                    ${fieldItem('material preview hash', bindings.material_preview_hash, { code: true })}
+                    ${fieldItem('Gate B decision manifest id', bindings.gate_b_decision_manifest_id, { code: true })}
+                    ${fieldItem('session id', bindings.session_id, { code: true })}
+                    ${fieldItem('selection manifest id', bindings.selection_manifest_id, { code: true })}
+                    ${fieldItem('material snapshot payload hash', bindings.material_snapshot_payload_hash, { code: true })}
+                    ${fieldItem('coverage evidence hash', bindings.coverage_evidence_hash, { code: true })}
+                    ${fieldItem('negative invariants hash', bindings.negative_invariants_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Guardrails And Redaction</strong>
+                <ul>
+                    ${fieldItem('trial receipt recorded', visibleStatus.trial_receipt_recorded)}
+                    ${fieldItem('trial accepted', visibleStatus.trial_accepted)}
+                    ${fieldItem('redacted trial receipt available', visibleStatus.redacted_trial_receipt_available)}
+                    ${fieldItem('actual SEC processing execution admitted', trial.actual_sec_processing_execution_admitted)}
+                    ${fieldItem('actual subprocess spawn admitted', trial.actual_subprocess_spawn_admitted)}
+                    ${fieldItem('process control admitted', trial.process_control_admitted)}
+                    ${fieldItem('source expansion admitted', trial.source_expansion_admitted)}
+                    ${fieldItem('runtime DB/storage expansion admitted', trial.runtime_db_or_storage_expansion_admitted)}
+                    ${fieldItem('provider object write enabled', trial.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', trial.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', trial.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('full mockup activation enabled', trial.full_mockup_activation_enabled)}
+                    ${fieldItem('frontend durable authority enabled', trial.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', trial.browser_storage_authority_enabled)}
+                    ${fieldItem('raw local path exposed', trial.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', trial.raw_url_exposed)}
+                    ${fieldItem('artifact bytes exposed', trial.artifact_bytes_exposed)}
                 </ul>
             </section>
         </div>
@@ -13242,6 +13451,20 @@ function secEdgarDownstreamOperatorStatusError() {
     `;
 }
 
+function secEdgarDownstreamRepeatabilityTrialError() {
+    const error = State.secEdgarDownstreamRepeatabilityTrialError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || error.payload?.error_code || 'sec_edgar_downstream_repeatability_trial_error';
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunError() {
     const error = State.candidateBFullCorpusOperatorWorkflowRunError;
     if (!error) return '';
@@ -14214,6 +14437,76 @@ function renderSecEdgarDownstreamOperatorStatusPanel() {
             </section>
         </div>
     `;
+}
+
+function renderSecEdgarDownstreamRepeatabilityTrialPanel() {
+    if (!elements.secEdgarDownstreamRepeatabilityTrialPanel) return;
+    const contract = layer3ExecutionReadinessContract();
+    const statusState = secEdgarDownstreamRepeatabilityTrialPanelState();
+    const inputs = secEdgarDownstreamRepeatabilityTrialInputValues();
+    const endpointAvailable = Boolean(
+        contract?.sec_edgar_text_table_downstream_operator_repeatability_trial_admitted
+        && secEdgarDownstreamRepeatabilityTrialEndpointPath(contract)
+    );
+    const dispositions = ['no_regression_observed', 'delta_reviewed_no_regression', 'regression_detected_blocked'];
+    elements.secEdgarDownstreamRepeatabilityTrialPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC EDGAR source-family repeatability</span>
+                <h2>Downstream Repeatability Trial</h2>
+            </div>
+            <span class="status-pill ${endpointAvailable ? 'ok' : 'blocked'}">${endpointAvailable ? 'admitted' : 'blocked'}</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-edgar-downstream-repeatability-trial-card">
+                <strong>SEC EDGAR Downstream Status Repeatability</strong>
+                <form id="sec-edgar-downstream-repeatability-trial-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_REPEATABILITY_TRIAL_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>original operator-status request JSON</span>
+                        <textarea id="sec-edgar-downstream-repeatability-original-status-request-json" rows="7" autocomplete="off" spellcheck="false" placeholder="{&quot;status_mode&quot;:&quot;sec_edgar_text_table_downstream_layer3_operator_status_v1&quot;,...}">${escapeHtml(inputs.originalOperatorStatusRequestJson)}</textarea>
+                    </label>
+                    <label>
+                        <span>original operator-status hash</span>
+                        <input id="sec-edgar-downstream-repeatability-original-status-hash" type="text" value="${escapeHtml(inputs.originalOperatorStatusHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>repeat operator-status request JSON</span>
+                        <textarea id="sec-edgar-downstream-repeatability-repeat-status-request-json" rows="7" autocomplete="off" spellcheck="false" placeholder="{&quot;status_mode&quot;:&quot;sec_edgar_text_table_downstream_layer3_operator_status_v1&quot;,...}">${escapeHtml(inputs.repeatOperatorStatusRequestJson)}</textarea>
+                    </label>
+                    <label>
+                        <span>repeat operator-status hash</span>
+                        <input id="sec-edgar-downstream-repeatability-repeat-status-hash" type="text" value="${escapeHtml(inputs.repeatOperatorStatusHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>repeatability disposition</span>
+                        <select id="sec-edgar-downstream-repeatability-disposition">
+                            ${dispositions.map((disposition) => `
+                                <option value="${escapeHtml(disposition)}" ${inputs.disposition === disposition ? 'selected' : ''}>${escapeHtml(disposition)}</option>
+                            `).join('')}
+                        </select>
+                    </label>
+                    <label class="checkbox-row">
+                        <input id="sec-edgar-downstream-repeatability-operator-confirmation" type="checkbox" ${inputs.operatorConfirmation ? 'checked' : ''} />
+                        <span>operator confirmation</span>
+                    </label>
+                    <button id="sec-edgar-downstream-repeatability-trial-submit" type="submit" ${canRecordSecEdgarDownstreamRepeatabilityTrial(contract) ? '' : 'disabled'}>Record Repeatability Trial</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server revalidates original and repeat downstream operator-status projections before recording an append-only redacted trial receipt; this surface cannot fetch SEC content, run parsers or processes, submit paths or URLs, expose raw authority, or create frontend durable authority.</span>
+                </div>
+                ${secEdgarDownstreamRepeatabilityTrialRows(State.secEdgarDownstreamRepeatabilityTrial)}
+                ${secEdgarDownstreamRepeatabilityTrialError()}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecEdgarDownstreamRepeatabilityTrialControls() {
+    const submit = document.getElementById('sec-edgar-downstream-repeatability-trial-submit');
+    if (submit) {
+        submit.disabled = !canRecordSecEdgarDownstreamRepeatabilityTrial(layer3ExecutionReadinessContract());
+    }
 }
 
 function renderCandidateBDefaultPromotionStatusPanel() {
@@ -15423,6 +15716,46 @@ async function inspectSecEdgarDownstreamOperatorStatus(event) {
         addEvent(`SEC EDGAR downstream operator status blocked: ${error.message}`);
     } finally {
         State.secEdgarDownstreamOperatorStatusPending = false;
+        renderAll();
+    }
+}
+
+async function recordSecEdgarDownstreamRepeatabilityTrial(event) {
+    event.preventDefault();
+    const contract = layer3ExecutionReadinessContract();
+    if (!canRecordSecEdgarDownstreamRepeatabilityTrial(contract)) {
+        State.secEdgarDownstreamRepeatabilityTrial = null;
+        State.secEdgarDownstreamRepeatabilityTrialError = new Error(
+            'SEC EDGAR repeatability trial requires original and repeat status requests, hashes, and operator confirmation.',
+        );
+        renderSecEdgarDownstreamRepeatabilityTrialPanel();
+        return;
+    }
+    const path = secEdgarDownstreamRepeatabilityTrialEndpointPath(contract);
+    let payload;
+    try {
+        payload = secEdgarDownstreamRepeatabilityTrialPayload();
+    } catch (error) {
+        State.secEdgarDownstreamRepeatabilityTrial = null;
+        State.secEdgarDownstreamRepeatabilityTrialError = new Error(
+            `SEC EDGAR repeatability trial status request JSON is invalid: ${error.message}`,
+        );
+        renderSecEdgarDownstreamRepeatabilityTrialPanel();
+        return;
+    }
+    State.secEdgarDownstreamRepeatabilityTrialPending = true;
+    State.secEdgarDownstreamRepeatabilityTrialError = null;
+    renderSecEdgarDownstreamRepeatabilityTrialPanel();
+    try {
+        State.secEdgarDownstreamRepeatabilityTrial = await postJson(path, payload);
+        State.secEdgarDownstreamRepeatabilityTrialError = null;
+        addEvent('SEC EDGAR downstream repeatability trial recorded through server status revalidation.');
+    } catch (error) {
+        State.secEdgarDownstreamRepeatabilityTrial = null;
+        State.secEdgarDownstreamRepeatabilityTrialError = error;
+        addEvent(`SEC EDGAR downstream repeatability trial blocked: ${error.message}`);
+    } finally {
+        State.secEdgarDownstreamRepeatabilityTrialPending = false;
         renderAll();
     }
 }
@@ -19370,6 +19703,7 @@ function renderAll() {
     renderAuthorityMatrixReviewPanel();
     renderCandidateBDefaultPromotionStatusPanel();
     renderSecEdgarDownstreamOperatorStatusPanel();
+    renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
@@ -23071,6 +23405,35 @@ elements.providerPublicUrlRevoke.addEventListener('click', revokeProviderPublicU
 elements.secEdgarDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
     if (event.target?.id === 'sec-edgar-downstream-operator-status-form') {
         inspectSecEdgarDownstreamOperatorStatus(event);
+    }
+});
+elements.secEdgarDownstreamRepeatabilityTrialPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-edgar-downstream-repeatability-trial-form') {
+        recordSecEdgarDownstreamRepeatabilityTrial(event);
+    }
+});
+elements.secEdgarDownstreamRepeatabilityTrialPanel.addEventListener('input', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-downstream-repeatability-')) {
+        const hadError = Boolean(State.secEdgarDownstreamRepeatabilityTrialError);
+        State.secEdgarDownstreamRepeatabilityTrialInput = secEdgarDownstreamRepeatabilityTrialInputValues();
+        State.secEdgarDownstreamRepeatabilityTrialError = null;
+        if (hadError) {
+            renderSecEdgarDownstreamRepeatabilityTrialPanel();
+        } else {
+            updateSecEdgarDownstreamRepeatabilityTrialControls();
+        }
+    }
+});
+elements.secEdgarDownstreamRepeatabilityTrialPanel.addEventListener('change', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-downstream-repeatability-')) {
+        const hadError = Boolean(State.secEdgarDownstreamRepeatabilityTrialError);
+        State.secEdgarDownstreamRepeatabilityTrialInput = secEdgarDownstreamRepeatabilityTrialInputValues();
+        State.secEdgarDownstreamRepeatabilityTrialError = null;
+        if (hadError) {
+            renderSecEdgarDownstreamRepeatabilityTrialPanel();
+        } else {
+            updateSecEdgarDownstreamRepeatabilityTrialControls();
+        }
     }
 });
 elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event) => {
