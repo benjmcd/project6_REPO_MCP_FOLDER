@@ -5669,3 +5669,38 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumptio
 ```
 
 The remediation is synced to current main. The next selected planning step should decide the read-only operator status inspection contract for consumption-receipt use authority before any broader default-scope closeout or mutation behavior is considered.
+
+### Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Status Inspection Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_selection_v1
+source_consumption_receipt_use_current_main_sync: next_milestone_plans/Layer3_planning_docs/1094-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-remediation-current-main-sync.md
+current_main_entry: f94fdf7779beb071e88fc24f9d5b183da140aa44
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_v1
+selected_status_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status.v1
+selected_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+selected_status_authority: server_owned_redacted_default_scope_use_receipt
+selected_status_must_reload_use_receipt: true
+selected_status_must_project_missing_as_not_recorded: true
+selected_status_must_reject_stale_use_receipt_hash: true
+selected_status_must_preserve_baseline_for_non_selected_classes: true
+selected_status_must_preserve_candidate_a_semantics: true
+selected_status_must_not_create_or_mutate_use_receipts: true
+consumption_receipt_use_status_behavior_introduced_by_selection: false
+runtime_behavior_introduced_by_selection: false
+rendered_behavior_introduced_by_selection: false
+backend_behavior_introduced_by_selection: false
+selector_mutation_performed_now: false
+default_scope_mutation_performed_now: false
+source_expansion_admitted_now: false
+runtime_db_or_storage_expansion_admitted_now: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_runtime_v1
+```
+
+The next runtime slice should inspect existing redacted use-receipt authority only. It should not create receipts, mutate default scope, expand sources, or activate provider/connector/model/full-mockup behavior.
