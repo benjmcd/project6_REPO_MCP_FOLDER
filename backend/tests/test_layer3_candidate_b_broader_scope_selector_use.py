@@ -15,6 +15,7 @@ sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_broader_scope_default_promotion,
     layer3_candidate_b_broader_scope_promotion_readiness,
     layer3_candidate_b_broader_scope_readiness,
     layer3_candidate_b_broader_scope_repeatability_trial,
@@ -49,6 +50,9 @@ OPERATOR_REPEATABILITY_TRIAL_ENDPOINT = (
 )
 PROMOTION_READINESS_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness"
+)
+DEFAULT_PROMOTION_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion"
 )
 SCOPE_CLASSES = list(layer3_candidate_b_broader_scope_readiness.SCOPE_CLASSES)
 EXCLUSIONS = list(layer3_candidate_b_broader_scope_readiness.REQUIRED_EXCLUSIONS)
@@ -411,6 +415,48 @@ def _promotion_readiness_payload(
             else _production_ownership_storage_policy()
         ),
         "operator_visible_status_confirmed": operator_visible_status_confirmed,
+        "rollback_to_baseline_confirmation": True,
+        "operator_confirmation": True,
+    }
+
+
+def _promotion_readiness(
+    client: TestClient,
+    trial: dict[str, object] | None = None,
+    *,
+    operator_visible_status_confirmed: bool = True,
+    production_ownership_storage_policy: dict[str, object] | None = None,
+) -> dict[str, object]:
+    trial = trial or _operator_repeatability_trial(client)
+    response = client.post(
+        PROMOTION_READINESS_ENDPOINT,
+        json=_promotion_readiness_payload(
+            trial,
+            operator_visible_status_confirmed=operator_visible_status_confirmed,
+            production_ownership_storage_policy=production_ownership_storage_policy,
+        ),
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def _default_promotion_payload(readiness: dict[str, object]) -> dict[str, object]:
+    trial_binding = readiness["trial_receipt_binding"]
+    policy = readiness["production_ownership_storage_policy"]
+    return {
+        "client_request_id": "cb-broader-scope-default-promotion-test",
+        "promotion_mode": layer3_candidate_b_broader_scope_default_promotion.PROMOTION_MODE,
+        "operator_decision": layer3_candidate_b_broader_scope_default_promotion.OPERATOR_DECISION,
+        "promotion_readiness_audit_id": readiness["promotion_readiness_audit_id"],
+        "promotion_readiness_audit_hash": readiness["promotion_readiness_audit_hash"],
+        "promotion_readiness_audit": readiness,
+        "trial_receipt_id": trial_binding["trial_receipt_id"],
+        "trial_receipt_hash": trial_binding["trial_receipt_hash"],
+        "selected_scope_classes": readiness["selected_scope_classes"],
+        "production_policy_hash": policy["policy_hash"],
+        "operator_visible_status_confirmed": True,
+        "promotion_readiness_rendered_status_confirmed": True,
+        "promotion_readiness_closeout_confirmed": True,
         "rollback_to_baseline_confirmation": True,
         "operator_confirmation": True,
     }
@@ -1371,6 +1417,132 @@ def test_candidate_b_broader_scope_promotion_readiness_blocks_missing_policy_and
     assert body["selector_mutation_performed"] is False
 
 
+def test_candidate_b_broader_scope_default_promotion_records_redacted_receipt(
+    client: TestClient,
+) -> None:
+    readiness = _promotion_readiness(client)
+
+    response = client.post(DEFAULT_PROMOTION_ENDPOINT, json=_default_promotion_payload(readiness))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_default_promotion.SCHEMA_ID
+    assert body["mode"] == layer3_candidate_b_broader_scope_default_promotion.PROMOTION_MODE
+    assert body["status"] == "selected"
+    assert (
+        body["default_promotion_state"]
+        == layer3_candidate_b_broader_scope_default_promotion.SELECTED_STATE
+    )
+    assert body["default_promotion_receipt_id"].startswith("cb-broader-scope-default-promotion-")
+    assert body["default_promotion_receipt_status"] == "recorded"
+    assert body["idempotent_replay"] is False
+    assert body["promotion_readiness_audit_binding"]["binding_verified"] is True
+    assert body["trial_receipt_binding"]["binding_verified"] is True
+    assert body["production_ownership_storage_policy"]["binding_verified"] is True
+    assert body["selected_scope_classes"] == [SELECTED_CLASS]
+    assert body["default_scope_promotion_enabled_for_selected_classes"] is True
+    assert body["default_scope_policy_mutation_performed"] is True
+    assert body["default_scope_expansion_mutation_performed"] is True
+    assert body["non_selected_class_default"] == "baseline"
+    assert body["baseline_rollback"]["available"] is True
+    assert body["candidate_a_semantics"]["preserved"] is True
+    assert body["candidate_b_scope_authority"]["bundle_and_runtime_authority_remain_distinct"] is True
+    assert body["operator_visible_status_evidence"]["redacted_default_promotion_receipt_available"] is True
+    assert body["selector_mutation_performed"] is False
+    assert body["source_expansion_admitted"] is False
+    assert body["runtime_db_or_storage_expansion_admitted"] is False
+    assert body["provider_object_write_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["rag_vector_model_runtime_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["artifact_bytes_exposed"] is False
+    assert body["default_promotion_receipt_ref"].startswith(
+        "candidate-b-broader-scope-default-promotion://"
+    )
+    assert "C:" not in json.dumps(body, sort_keys=True)
+    assert "https://" not in json.dumps(body, sort_keys=True)
+
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-default-promotion"
+        / f"{body['default_promotion_receipt_id']}.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["default_promotion_receipt_hash"] == body["default_promotion_receipt_hash"]
+    assert receipt["promotion_readiness_audit_hash"] == readiness["promotion_readiness_audit_hash"]
+    assert receipt["trial_receipt_hash"] == readiness["trial_receipt_binding"]["trial_receipt_hash"]
+    assert receipt["selected_scope_classes"] == [SELECTED_CLASS]
+    assert receipt["default_scope_promotion_enabled_for_selected_classes"] is True
+    assert receipt["raw_local_path_exposed"] is False
+    assert receipt["raw_url_exposed"] is False
+
+    replay = client.post(DEFAULT_PROMOTION_ENDPOINT, json=_default_promotion_payload(readiness))
+    assert replay.status_code == 200, replay.text
+    replay_body = replay.json()
+    assert replay_body["default_promotion_receipt_id"] == body["default_promotion_receipt_id"]
+    assert replay_body["default_promotion_receipt_status"] == "idempotent_replay"
+    assert replay_body["idempotent_replay"] is True
+
+
+def test_candidate_b_broader_scope_default_promotion_blocks_blocked_readiness(
+    client: TestClient,
+) -> None:
+    trial = _operator_repeatability_trial(
+        client,
+        disposition=layer3_candidate_b_broader_scope_repeatability_trial.BLOCKED_DISPOSITION,
+    )
+    readiness = _promotion_readiness(client, trial)
+
+    response = client.post(DEFAULT_PROMOTION_ENDPOINT, json=_default_promotion_payload(readiness))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert (
+        body["default_promotion_state"]
+        == layer3_candidate_b_broader_scope_default_promotion.BLOCKED_STATE
+    )
+    assert body["default_promotion_receipt_status"] == "not_recorded"
+    assert body["default_promotion_receipt_id"] is None
+    assert body["default_scope_promotion_enabled_for_selected_classes"] is False
+    assert body["default_scope_policy_mutation_performed"] is False
+    codes = {reason["code"] for reason in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_default_promotion_readiness_audit_blocked" in codes
+    assert "candidate_b_broader_scope_default_promotion_readiness_not_ready" in codes
+
+
+def test_candidate_b_broader_scope_default_promotion_blocks_stale_readiness_hash(
+    client: TestClient,
+) -> None:
+    readiness = _promotion_readiness(client)
+    payload = _default_promotion_payload(readiness)
+    payload["promotion_readiness_audit_hash"] = "a" * 64
+
+    response = client.post(DEFAULT_PROMOTION_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["default_promotion_receipt_status"] == "not_recorded"
+    codes = {reason["code"] for reason in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_default_promotion_readiness_audit_field_mismatch" in codes
+    assert "candidate_b_broader_scope_default_promotion_stale_readiness_audit_hash" in codes
+
+
+def test_candidate_b_broader_scope_default_promotion_rejects_browser_default_authority(
+    client: TestClient,
+) -> None:
+    readiness = _promotion_readiness(client)
+    payload = _default_promotion_payload(readiness)
+    payload["default_selector"] = "candidate_b"
+
+    response = client.post(DEFAULT_PROMOTION_ENDPOINT, json=payload)
+
+    assert response.status_code == 422, response.text
+
+
 def test_candidate_b_broader_scope_consumption_receipt_use_fails_closed_on_missing_consumption_receipt(
     client: TestClient,
 ) -> None:
@@ -1527,6 +1699,14 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
         readiness_body["candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint"]
         == PROMOTION_READINESS_ENDPOINT
     )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_default_promotion_admitted"]
+        is True
+    )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint"]
+        == DEFAULT_PROMOTION_ENDPOINT
+    )
 
     assert bootstrap.status_code == 200, bootstrap.text
     bootstrap_body = bootstrap.json()
@@ -1554,6 +1734,10 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
     )
     assert (
         bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_promotion_readiness"]
+        is True
+    )
+    assert (
+        bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_default_promotion"]
         is True
     )
     assert (
@@ -1601,6 +1785,12 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
             "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint"
         ]
         == PROMOTION_READINESS_ENDPOINT
+    )
+    assert (
+        bootstrap_body["execution_readiness"][
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint"
+        ]
+        == DEFAULT_PROMOTION_ENDPOINT
     )
 
     schema = client.app.openapi()
@@ -1667,3 +1857,22 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
         "provider_private_signed_url_token",
     ):
         assert field not in promotion_request_schema["properties"]
+    default_promotion_route = schema["paths"][DEFAULT_PROMOTION_ENDPOINT]["post"]
+    default_promotion_request_ref = default_promotion_route["requestBody"]["content"]["application/json"]["schema"][
+        "$ref"
+    ]
+    default_promotion_request_schema = schema["components"]["schemas"][
+        default_promotion_request_ref.rsplit("/", 1)[-1]
+    ]
+    assert default_promotion_request_schema["additionalProperties"] is False
+    for field in (
+        "visual_lane_mode",
+        "document_processing_engine",
+        "local_path",
+        "url",
+        "default_selector",
+        "process_command",
+        "provider_private_signed_url_token",
+        "runtime_storage_dir",
+    ):
+        assert field not in default_promotion_request_schema["properties"]
