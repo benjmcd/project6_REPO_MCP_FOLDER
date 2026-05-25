@@ -6561,3 +6561,58 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_pr
 ```
 
 The next implementation should add a rendered default-promotion control over the existing default-promotion endpoint. The browser may submit only fixed mode/decision values, opaque server receipt ids and hashes, selected classes already bound by promotion-readiness authority, confirmation booleans, and no raw authority. The server remains responsible for revalidating readiness, selected-class, production-policy, rendered-status, closeout, rollback, and negative-invariant evidence before recording or replaying a default-promotion receipt.
+
+### Candidate B Broader Eligible Corpus Default Scope Default Promotion Rendered Status Runtime
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_v1
+source_default_promotion_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1112-cb-broader-eligible-corpus-default-scope-default-promotion-rendered-status-selection.md
+current_main_entry: 792bea9848e6883e35f65b3fa7086991f86eab52
+entry_decision: rendered_status_runtime_implementation
+runtime_status: implemented
+rendered_status: implemented
+implemented_rendered_control: rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control
+implemented_form: candidate-b-broader-scope-default-promotion-form
+implemented_submit: candidate-b-broader-scope-default-promotion-submit
+implemented_payload_builder: candidateBBroaderScopeDefaultPromotionPayload
+implemented_status_rows: candidateBBroaderScopeDefaultPromotionRows
+existing_default_promotion_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion
+existing_promotion_readiness_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness
+promotion_readiness_audit_source: prior_server_response_state_only_no_rendered_json_textarea
+selected_state_rendered: candidate_b_broader_scope_default_promotion_selected
+blocked_state_rendered: candidate_b_broader_scope_default_promotion_blocked
+not_started_state_rendered: candidate_b_broader_scope_default_promotion_not_started
+error_state_rendered: candidate_b_broader_scope_default_promotion_error
+redacted_default_promotion_receipt_ref_rendered: true
+raw_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+browser_supplied_default_policy_admitted: false
+browser_supplied_scope_classes_as_new_authority_admitted: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+selector_mutation_from_browser_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+non_selected_class_default: baseline
+focused_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PASS
+focused_backend_static_test: pytest ./backend/tests/test_layer3_page.py -q PASS
+focused_headless_rendered_test: npx playwright test e2e/layer3-workbench.spec.js --grep "broader eligible-corpus runtime status" --project=chromium PASS
+focused_headed_rendered_test: npx playwright test e2e/layer3-workbench.spec.js --grep "broader eligible-corpus runtime status" --project=chromium --headed PASS
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_closeout_readiness_v1
+```
+
+The workbench now exposes the existing broader-scope default-promotion runtime as a rendered operator control. It reuses the server default-promotion endpoint, binds the prior server promotion-readiness response instead of accepting a free-form readiness JSON textarea, and renders selected/blocked receipt status without raw path, URL, artifact byte, provider, connector, command, process, browser-storage, or frontend-durable authority.

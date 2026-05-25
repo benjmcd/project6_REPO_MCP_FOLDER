@@ -3117,6 +3117,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_RENDERED_STA
     PLANNING_DOCS
     / "1112-cb-broader-eligible-corpus-default-scope-default-promotion-rendered-status-selection.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_RENDERED_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1113-cb-broader-eligible-corpus-default-scope-default-promotion-rendered-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -105164,6 +105168,141 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_r
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_RENDERED_STATUS_RUNTIME: (
+            "Candidate B Broader Eligible Corpus Default Scope Default Promotion Rendered Status Runtime",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_v1",
+            "source_default_promotion_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1112-cb-broader-eligible-corpus-default-scope-default-promotion-rendered-status-selection.md",
+            "current_main_entry: 792bea9848e6883e35f65b3fa7086991f86eab52",
+            "entry_decision: rendered_status_runtime_implementation",
+            "runtime_status: implemented",
+            "rendered_status: implemented",
+            "implemented_rendered_control: rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control",
+            "implemented_form: candidate-b-broader-scope-default-promotion-form",
+            "implemented_submit: candidate-b-broader-scope-default-promotion-submit",
+            "implemented_payload_builder: candidateBBroaderScopeDefaultPromotionPayload",
+            "implemented_status_rows: candidateBBroaderScopeDefaultPromotionRows",
+            "existing_default_promotion_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion",
+            "existing_promotion_readiness_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness",
+            "promotion_readiness_audit_source: prior_server_response_state_only_no_rendered_json_textarea",
+            "selected_state_rendered: candidate_b_broader_scope_default_promotion_selected",
+            "blocked_state_rendered: candidate_b_broader_scope_default_promotion_blocked",
+            "not_started_state_rendered: candidate_b_broader_scope_default_promotion_not_started",
+            "error_state_rendered: candidate_b_broader_scope_default_promotion_error",
+            "redacted_default_promotion_receipt_ref_rendered: true",
+            "raw_receipt_path_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "browser_supplied_default_policy_admitted: false",
+            "browser_supplied_scope_classes_as_new_authority_admitted: false",
+            "browser_supplied_command_admitted: false",
+            "browser_supplied_process_control_admitted: false",
+            "browser_storage_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "selector_mutation_from_browser_admitted: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only",
+            "candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only",
+            "non_selected_class_default: baseline",
+            "focused_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PASS",
+            "focused_backend_static_test: pytest ./backend/tests/test_layer3_page.py -q PASS",
+            "focused_headless_rendered_test: npx playwright test e2e/layer3-workbench.spec.js --grep \"broader eligible-corpus runtime status\" --project=chromium PASS",
+            "focused_headed_rendered_test: npx playwright test e2e/layer3-workbench.spec.js --grep \"broader eligible-corpus runtime status\" --project=chromium --headed PASS",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_closeout_readiness_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_v1",
+            "source_default_promotion_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1112-cb-broader-eligible-corpus-default-scope-default-promotion-rendered-status-selection.md",
+            "current_main_entry: 792bea9848e6883e35f65b3fa7086991f86eab52",
+            "entry_decision: rendered_status_runtime_implementation",
+            "implemented_rendered_control: rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control",
+            "implemented_form: candidate-b-broader-scope-default-promotion-form",
+            "implemented_submit: candidate-b-broader-scope-default-promotion-submit",
+            "implemented_payload_builder: candidateBBroaderScopeDefaultPromotionPayload",
+            "implemented_status_rows: candidateBBroaderScopeDefaultPromotionRows",
+            "promotion_readiness_audit_source: prior_server_response_state_only_no_rendered_json_textarea",
+            "selected_state_rendered: candidate_b_broader_scope_default_promotion_selected",
+            "blocked_state_rendered: candidate_b_broader_scope_default_promotion_blocked",
+            "browser_supplied_default_policy_admitted: false",
+            "browser_supplied_scope_classes_as_new_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_closeout_readiness_v1",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_RENDERED_MODE = 'rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control'",
+            "CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_MODE = 'candidate_b_broader_eligible_corpus_default_scope_default_promotion_runtime_v1'",
+            "CANDIDATE_B_BROADER_SCOPE_DEFAULT_PROMOTION_OPERATOR_DECISION = 'record_candidate_b_broader_scope_default_promotion'",
+            "candidateBBroaderScopeDefaultPromotionEndpointPath",
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint",
+            "candidateBBroaderScopeDefaultPromotionInputValues",
+            "syncCandidateBBroaderScopeDefaultPromotionInputsFromReadiness",
+            "candidateBBroaderScopeDefaultPromotionPayload",
+            "promotion_readiness_audit: State.candidateBBroaderScopePromotionReadiness",
+            "canRecordCandidateBBroaderScopeDefaultPromotion",
+            "candidateBBroaderScopeDefaultPromotionPanelState",
+            "candidateBBroaderScopeDefaultPromotionRows",
+            "candidate-b-broader-scope-default-promotion-form",
+            "candidate-b-broader-scope-default-promotion-submit",
+            "data-frontend-durable-authority=\"false\"",
+            "recordCandidateBBroaderScopeDefaultPromotion",
+            "candidate_b_broader_scope_default_promotion_selected",
+            "candidate_b_broader_scope_default_promotion_blocked",
+            "Server records broader-scope default promotion only from a ready promotion-readiness audit",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control and promotion readiness",
+            "defaultPromotionPayloads",
+            "**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion",
+            "candidate-b-broader-scope-default-promotion-form",
+            "rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control",
+            "candidate-b-broader-scope-default-promotion-submit",
+            "promotion_readiness_audit_id",
+            "promotion_readiness_audit_hash",
+            "promotion_readiness_audit",
+            "promotion_readiness_rendered_status_confirmed",
+            "promotion_readiness_closeout_confirmed",
+            "candidate_b_broader_scope_default_promotion_selected",
+            "candidate_b_broader_scope_default_promotion_blocked",
+            "candidate_b_broader_scope_default_promotion_stale_readiness_audit_hash",
+            "default scope promotion enabled for selected classes: true",
+            "default scope policy mutation performed: true",
+            "redacted default promotion receipt available: true",
+        ),
+        LAYER3_PAGE_TEST: (
+            "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint",
+            "candidate-b-broader-scope-default-promotion-form",
+            "candidate-b-broader-scope-default-promotion-submit",
+            "rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control",
+            "candidateBBroaderScopeDefaultPromotionPayload",
+            "Server records broader-scope default promotion only from a ready promotion-readiness audit",
+            "\"/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion\" not in js.text",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_RENDERED_STATUS_SELECTION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope default promotion rendered status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -106199,6 +106338,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_selection(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_runtime(
         errors
     )
 
