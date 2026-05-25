@@ -3222,6 +3222,10 @@ SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_CLOSEOUT_READINESS = (
     PLANNING_DOCS
     / "1139-sec-edgar-text-table-source-acquisition-closeout-readiness.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_SELECTION = (
+    PLANNING_DOCS
+    / "1140-sec-edgar-text-table-live-source-artifact-acquisition-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -108492,6 +108496,123 @@ def _check_sec_edgar_text_table_source_acquisition_authority_closeout_readiness(
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_acquisition_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_SELECTION: (
+            "SEC EDGAR Text Table Live Source Artifact Acquisition Selection",
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_selection_v1",
+            "source_acquisition_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1139-sec-edgar-text-table-source-acquisition-closeout-readiness.md",
+            "current_main_entry: b4e40adeb18287fafd1dca4b6eb4323f078fff3b",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_acquisition_runtime_v1",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_parser_family: sec_edgar_filing",
+            "selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "selected_existing_parser_contract_id: aps_sec_edgar_filing_parser_v1",
+            "selected_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+            "selected_acquisition_scope: allowlisted_single_complete_submission_text_filing_by_cik_accession_form_type_and_filing_date",
+            "selected_source_identity_fields: cik_or_filer_ref,accession_or_submission_id,form_type,filing_date",
+            "selected_server_derived_url_shape: sec_archives_complete_submission_text_url_derived_from_cik_and_accession",
+            "selected_source_artifact_family: complete_submission_text_filing_artifact",
+            "selected_output_authority: append_only_redacted_live_source_artifact_receipt_and_retained_source_artifact_manifest",
+            "selected_compatibility_target: sec_edgar_text_table_source_acquisition_authority_v1",
+            "official_sec_developer_resources_reference: https://www.sec.gov/about/developer-resources",
+            "official_sec_rate_control_reference: https://www.sec.gov/filergroup/announcements-old/new-rate-control-limits",
+            "selected_sec_fair_access_policy: efficient_minimal_downloads_identified_automated_tool_moderated_requests",
+            "selected_sec_rate_limit_ceiling: no_more_than_10_requests_per_second_total_per_user",
+            "selected_runtime_default_rate_limit: one_request_per_second_until_operator_configured_below_official_ceiling",
+            "selected_sec_user_agent_model: server_configured_contact_identity_required",
+            "selected_sec_user_agent_missing_behavior: fail_closed_without_network_request",
+            "selected_sec_cache_policy: server_owned_content_addressed_cache_by_cik_accession_and_content_sha256",
+            "selected_cache_hit_behavior: no_network_request_when_matching_retained_artifact_receipt_exists",
+            "selected_cache_miss_behavior: one_allowlisted_sec_archives_request_under_rate_limit",
+            "selected_retry_policy: bounded_retry_after_or_backoff_for_429_403_5xx_timeout_without_duplicate_receipt",
+            "selected_partial_download_policy: discard_or_quarantine_partial_bytes_without_source_artifact_receipt",
+            "selected_content_hash_policy: sha256_required_before_receipt_authority",
+            "selected_storage_policy: existing_layer3_storage_root_only_no_new_runtime_storage_root",
+            "selected_network_policy: sec_gov_https_only_no_redirect_outside_sec_gov_no_browser_supplied_url",
+            "selected_parser_boundary: acquisition_only_no_xml_html_inline_xbrl_parse_no_parser_expansion",
+            "selected_materialization_boundary: no_dataset_version_or_gate_b_mutation_in_acquisition_runtime",
+            "selected_operator_surface: api_first_status_endpoint_rendered_controls_separately_selected",
+            "selected_proof_architecture: fake_sec_client_contract_double_api_tests_first_optional_manual_live_smoke_outside_ci",
+            "selected_ci_network_policy: live_sec_network_disabled_in_ci",
+            "browser_supplied_raw_url_must_reject: true",
+            "browser_supplied_local_path_must_reject: true",
+            "browser_supplied_command_must_reject: true",
+            "missing_operator_confirmation_must_reject: true",
+            "missing_user_agent_configuration_must_fail_closed: true",
+            "rate_limit_exceeded_must_fail_closed_or_defer: true",
+            "partial_download_must_not_create_authority: true",
+            "content_hash_mismatch_must_reject: true",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "live_sec_network_fetch_in_this_freeze: false",
+            "sec_parser_expansion_in_this_freeze: false",
+            "raw_sec_filing_url_authority_in_this_freeze: false",
+            "new_runtime_storage_root_in_this_freeze: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_selection_v1",
+            "source_acquisition_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1139-sec-edgar-text-table-source-acquisition-closeout-readiness.md",
+            "current_main_entry: b4e40adeb18287fafd1dca4b6eb4323f078fff3b",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_acquisition_runtime_v1",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+            "selected_acquisition_scope: allowlisted_single_complete_submission_text_filing_by_cik_accession_form_type_and_filing_date",
+            "selected_source_artifact_family: complete_submission_text_filing_artifact",
+            "selected_sec_rate_limit_ceiling: no_more_than_10_requests_per_second_total_per_user",
+            "selected_runtime_default_rate_limit: one_request_per_second_until_operator_configured_below_official_ceiling",
+            "selected_sec_user_agent_missing_behavior: fail_closed_without_network_request",
+            "selected_cache_hit_behavior: no_network_request_when_matching_retained_artifact_receipt_exists",
+            "selected_network_policy: sec_gov_https_only_no_redirect_outside_sec_gov_no_browser_supplied_url",
+            "selected_parser_boundary: acquisition_only_no_xml_html_inline_xbrl_parse_no_parser_expansion",
+            "selected_proof_architecture: fake_sec_client_contract_double_api_tests_first_optional_manual_live_smoke_outside_ci",
+            "selected_ci_network_policy: live_sec_network_disabled_in_ci",
+            "browser_supplied_raw_url_must_reject: true",
+            "missing_user_agent_configuration_must_fail_closed: true",
+            "runtime_implementation_in_this_freeze: false",
+            "live_sec_network_fetch_in_this_freeze: false",
+            "sec_parser_expansion_in_this_freeze: false",
+            "raw_sec_filing_url_authority_in_this_freeze: false",
+            "new_runtime_storage_root_in_this_freeze: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_runtime_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_CLOSEOUT_READINESS: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact acquisition selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -109586,6 +109707,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_source_acquisition_authority_closeout_readiness(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_acquisition_selection(
         errors
     )
 
