@@ -7329,3 +7329,60 @@ next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial
 ```
 
 The current SEC EDGAR downstream chain is closeout-ready for a separately selected operator repeatability trial. This does not admit new SEC acquisition, parser expansion, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or frontend durable authority. The next step is to freeze the exact repeatability-trial selection before any trial runtime or broader source-family expansion is implemented.
+
+### SEC EDGAR Text Table Downstream Operator Repeatability Trial Selection
+
+```yaml
+milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_selection_v1
+source_downstream_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1126-sec-edgar-text-table-downstream-closeout-readiness.md
+current_main_entry: 002e3c929a23f48d403f09915bb787bd6fa6fb4f
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_downstream_operator_repeatability_trial_runtime_v1
+selected_trial_scope: compare_two_server_owned_sec_edgar_downstream_operator_status_projections_for_same_material_authority_and_proof_chain
+selected_trial_model: append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution
+selected_trial_action: record_sec_edgar_text_table_downstream_operator_repeatability_trial
+selected_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial
+original_operator_status_required: available
+repeat_operator_status_required: available
+same_dataset_version_hash_required: true
+same_authority_envelope_hash_required: true
+same_bridge_receipt_hash_required: true
+same_gate_b_decision_manifest_id_required: true
+same_selection_manifest_id_required: true
+same_material_snapshot_payload_hash_required: true
+same_coverage_evidence_hash_required: true
+operator_status_hash_comparison_required: true
+proof_hash_comparison_required: true
+accepted_dispositions: no_regression_observed,delta_reviewed_no_regression
+blocked_disposition: regression_detected_blocked
+append_only_repeatability_trial_receipt_required: true
+stale_original_operator_status_must_reject: true
+stale_repeat_operator_status_must_reject: true
+missing_downstream_proof_must_reject: true
+mismatched_material_authority_must_reject: true
+mismatched_coverage_evidence_must_reject: true
+non_available_original_or_repeat_status_must_reject: true
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_sec_url_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+actual_sec_processing_execution_admitted_by_trial_endpoint: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_runtime_v1
+```
+
+This freeze selects the server-owned SEC EDGAR downstream operator repeatability-trial runtime. The future runtime should compare two already server-revalidated downstream status projections and write an append-only trial receipt only after reloading matching envelope, material bridge, Gate B, selection, material snapshot, proof, and coverage authority. It must not run SEC processing, fetch SEC content, expand parsers, accept browser paths/URLs/artifact bytes, write provider objects, dispatch connectors, add RAG/model runtime, activate full mockup behavior, or rely on frontend durable authority.
