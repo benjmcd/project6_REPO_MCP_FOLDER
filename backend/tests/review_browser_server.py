@@ -60,6 +60,7 @@ from app.services import (
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
+    layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_source_acquisition,
     layer3_workbench,
@@ -782,6 +783,81 @@ def _sec_edgar_browser_coverage(bridge: dict[str, Any], gate_b: dict[str, Any], 
 
 def _sec_edgar_text_hash(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+class _ReviewBrowserFakeSecEdgarClient:
+    def __init__(self, content: bytes) -> None:
+        self.content = content
+        self.calls: list[dict[str, object]] = []
+
+    def fetch_complete_submission_text(
+        self,
+        *,
+        url: str,
+        user_agent: str,
+        timeout_seconds: int,
+        max_bytes: int,
+    ) -> layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult:
+        self.calls.append(
+            {
+                "url": url,
+                "user_agent": user_agent,
+                "timeout_seconds": timeout_seconds,
+                "max_bytes": max_bytes,
+            }
+        )
+        return layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+            status_code=200,
+            content=self.content,
+            final_url=url,
+        )
+
+
+def _reset_sec_edgar_live_source_artifact_rate_marker() -> None:
+    root = layer3_sec_edgar_live_source_artifact._root()
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "rate-limit-state.json").write_text(
+        json.dumps(
+            {
+                "last_network_request_at": 0,
+                "rate_policy_id": layer3_sec_edgar_live_source_artifact.RATE_POLICY_ID,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def _prepare_sec_edgar_live_source_artifact_acquisition_fixture(*, seed_id: str) -> dict[str, object]:
+    content = f"<SEC-DOCUMENT>review browser SEC EDGAR filing text {seed_id}</SEC-DOCUMENT>\n".encode("utf-8")
+    fake_client = _ReviewBrowserFakeSecEdgarClient(content)
+    settings.layer3_sec_edgar_user_agent = "Layer3 Review Browser contact@example.com"
+    settings.layer3_sec_edgar_rate_limit_per_second = 10
+    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = fake_client
+    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = lambda _seconds: None
+    _reset_sec_edgar_live_source_artifact_rate_marker()
+    acquisition_request = {
+        "cik_or_filer_ref": "0000320193",
+        "accession_or_submission_id": "0000320193-24-000123",
+        "form_type": "10-K",
+        "filing_date": "2024-11-01",
+        "expected_content_sha256": hashlib.sha256(content).hexdigest(),
+    }
+    return {
+        "schema_id": "project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "live_acquisition_request": acquisition_request,
+        "expected_content_sha256": acquisition_request["expected_content_sha256"],
+        "acquisition_endpoint": "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        "status_endpoint_prefix": "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/",
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "server_user_agent_exposed": False,
+        "frontend_durable_authority_enabled": False,
+    }
 
 
 def _prepare_sec_edgar_source_acquisition_authority_fixture(
@@ -1612,6 +1688,7 @@ def create_app() -> FastAPI:
     temp_path = Path(temp_dir.name)
     raw_mixed_seed_counter = count(1)
     raw_mixed_materialization_counter = count(1)
+    sec_edgar_live_source_artifact_counter = count(1)
     sec_edgar_source_acquisition_counter = count(1)
     sec_edgar_status_counter = count(1)
     sec_edgar_repeatability_counter = count(1)
@@ -1721,6 +1798,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-cohort-aps-handoff",
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
+                "/__test/layer3/sec-edgar-live-source-artifact-acquisition",
                 "/__test/layer3/sec-edgar-source-acquisition-authority",
                 "/__test/layer3/sec-edgar-downstream-status",
                 "/__test/layer3/sec-edgar-repeatability-trial",
@@ -1921,6 +1999,17 @@ def create_app() -> FastAPI:
     def materialize_layer3_raw_mixed_setup() -> dict[str, object]:
         seed_id = f"raw-mixed-materialize-browser-{next(raw_mixed_materialization_counter):03d}"
         return _build_browser_raw_mixed_materialization_setup(seed_id=seed_id)
+
+    @app.post("/__test/layer3/sec-edgar-live-source-artifact-acquisition")
+    def sec_edgar_live_source_artifact_acquisition_setup() -> dict[str, object]:
+        try:
+            seed_id = f"browser-live-source-artifact-{next(sec_edgar_live_source_artifact_counter):03d}"
+            return _prepare_sec_edgar_live_source_artifact_acquisition_fixture(seed_id=seed_id)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR live source-artifact acquisition setup failed: {exc}",
+            ) from exc
 
     @app.post("/__test/layer3/sec-edgar-source-acquisition-authority")
     def sec_edgar_source_acquisition_authority_setup() -> dict[str, object]:
