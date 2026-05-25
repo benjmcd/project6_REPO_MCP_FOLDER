@@ -3089,6 +3089,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_PROMOTION_READINESS_SELECTION 
     PLANNING_DOCS
     / "1105-cb-broader-eligible-corpus-default-scope-promotion-readiness-selection.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_PROMOTION_READINESS_AUDIT = (
+    PLANNING_DOCS
+    / "1106-cb-broader-eligible-corpus-default-scope-promotion-readiness-audit.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -3116,6 +3120,13 @@ CANDIDATE_B_BROADER_SCOPE_REPEATABILITY_TRIAL_SERVICE = (
     / "app"
     / "services"
     / "layer3_candidate_b_broader_scope_repeatability_trial.py"
+)
+CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_candidate_b_broader_scope_promotion_readiness.py"
 )
 CANDIDATE_B_OPERATOR_WORKFLOW_ACCESS_POLICY = (
     ROOT
@@ -104426,6 +104437,110 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_PROMOTION_READINESS_AUDIT: (
+            "Candidate B Broader Eligible Corpus Default Scope Promotion Readiness Audit",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1",
+            "source_promotion_readiness_selection: next_milestone_plans/Layer3_planning_docs/1105-cb-broader-eligible-corpus-default-scope-promotion-readiness-selection.md",
+            "current_main_entry: 035bc892d21cf8279440a73a87734f44af64330b",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness",
+            "implemented_service: backend/app/services/layer3_candidate_b_broader_scope_promotion_readiness.py",
+            "implemented_api: backend/app/api/layer3.py",
+            "readiness_mode: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1",
+            "operator_decision: evaluate_candidate_b_broader_scope_default_promotion_readiness",
+            "required_promotion_authority_chain: readiness_audit,runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial",
+            "accepted_repeatability_dispositions_required: no_regression_observed,delta_reviewed_no_regression",
+            "blocked_repeatability_disposition_must_block_promotion: true",
+            "missing_or_stale_receipt_must_block_promotion: true",
+            "mismatched_selected_classes_must_block_promotion: true",
+            "missing_operator_visible_status_must_block_promotion: true",
+            "required_production_ownership_storage_policy: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1",
+            "production_policy_missing_must_block_promotion: true",
+            "default_scope_promotion_ready_for_separate_selection: true",
+            "selector_mutation_admitted_now: false",
+            "selector_mutation_performed: false",
+            "default_scope_expansion_admitted: false",
+            "default_scope_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 38 passed",
+            "verification_py_compile: python -m py_compile ./backend/app/services/layer3_candidate_b_broader_scope_promotion_readiness.py ./backend/app/api/layer3.py ./backend/app/services/layer3_readiness_contract.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py ./tools/l3-progress-check.py PASS",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_PROMOTION_READINESS_SERVICE: (
+            "SCHEMA_ID = \"layer3.candidate_b_broader_eligible_corpus_default_scope_promotion_readiness.v1\"",
+            "READINESS_MODE = \"candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1\"",
+            "OPERATOR_DECISION = \"evaluate_candidate_b_broader_scope_default_promotion_readiness\"",
+            "READY_STATE =",
+            "BLOCKED_STATE = \"candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_blocked\"",
+            "REQUIRED_PRODUCTION_OWNERSHIP_STORAGE_POLICY",
+            "evaluate_candidate_b_broader_scope_default_promotion_readiness",
+            "candidate_b_broader_scope_promotion_readiness_repeatability_trial_not_accepted",
+            "candidate_b_broader_scope_promotion_readiness_production_policy_missing",
+            "\"selector_mutation_admitted_now\": False",
+            "\"default_scope_mutation_performed\": False",
+            "\"raw_local_path_exposed\": False",
+            "\"raw_url_exposed\": False",
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopePromotionReadinessRequest",
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopePromotionReadinessResponse",
+            "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness",
+            "evaluate_candidate_b_broader_scope_default_promotion_readiness",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_TEST: (
+            "PROMOTION_READINESS_ENDPOINT",
+            "test_candidate_b_broader_scope_promotion_readiness_accepts_receipt_bound_trial",
+            "test_candidate_b_broader_scope_promotion_readiness_blocks_blocked_repeatability_trial",
+            "test_candidate_b_broader_scope_promotion_readiness_blocks_stale_trial_hash",
+            "test_candidate_b_broader_scope_promotion_readiness_blocks_missing_policy_and_status",
+            "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate-b-broader-eligible-corpus-default-scope-promotion-readiness",
+            "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_admitted",
+            "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness",
+            "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_admitted",
+            "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness",
+            "default_scope_promotion_ready_for_separate_selection: true",
+            "selector_mutation_admitted_now: false",
+            "default_scope_mutation_performed: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_PROMOTION_READINESS_SELECTION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope promotion readiness audit term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -105440,6 +105555,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_selection(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit(
         errors
     )
 

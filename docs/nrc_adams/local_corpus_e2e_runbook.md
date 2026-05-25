@@ -6193,3 +6193,45 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_
 ```
 
 The next selected slice is a promotion-readiness audit, not broader default promotion. It must require the complete receipt/status/repeatability chain, accepted repeatability disposition, operator-visible status, production ownership/storage policy, rollback behavior, and negative boundary checks before any later default mutation can be admitted.
+
+### Candidate B Broader Eligible Corpus Default Scope Promotion Readiness Audit
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1
+source_promotion_readiness_selection: next_milestone_plans/Layer3_planning_docs/1105-cb-broader-eligible-corpus-default-scope-promotion-readiness-selection.md
+current_main_entry: 035bc892d21cf8279440a73a87734f44af64330b
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness
+implemented_service: backend/app/services/layer3_candidate_b_broader_scope_promotion_readiness.py
+implemented_contract_exposure: readiness_contract,bootstrap_contract,openapi
+readiness_mode: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1
+operator_decision: evaluate_candidate_b_broader_scope_default_promotion_readiness
+required_promotion_authority_chain: readiness_audit,runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial
+accepted_repeatability_dispositions_required: no_regression_observed,delta_reviewed_no_regression
+blocked_repeatability_disposition_must_block_promotion: true
+missing_or_stale_receipt_must_block_promotion: true
+mismatched_selected_classes_must_block_promotion: true
+missing_operator_visible_status_must_block_promotion: true
+required_production_ownership_storage_policy: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1
+production_policy_missing_must_block_promotion: true
+default_scope_promotion_ready_for_separate_selection: true
+selector_mutation_admitted_now: false
+selector_mutation_performed: false
+default_scope_expansion_admitted: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 38 passed
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_selection_v1
+```
+
+The promotion-readiness audit now turns the accepted broader-scope repeatability chain into a ready/blocked server-side decision point. It still does not mutate Candidate B defaults, expand source ingestion, run provider/connector/RAG/model behavior, or create frontend durable authority. Operators need a separately selected rendered/status pass before this readiness audit becomes a first-class workbench control.
