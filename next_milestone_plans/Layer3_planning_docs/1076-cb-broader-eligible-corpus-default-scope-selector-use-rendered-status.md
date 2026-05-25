@@ -41,7 +41,7 @@ verification_node_check: node --check ./backend/app/review_ui/static/layer3.js P
 headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium PASS 2 passed
 headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium --headed PASS 2 passed
 proof_status: local_passed
-next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_current_main_sync_v1
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_rendered_stale_input_review_remediation_v1
 ```
 
 This rendered status pass exposes the selector-use runtime to the Candidate B default-promotion status panel. Operators can record selector-use authority only by providing the server-owned broader-scope runtime selection receipt id/hash plus exact selected classes. The browser does not provide runtime roots, receipt JSON, raw paths, raw URLs, provider refs, connector destinations, model controls, selector fields, browser storage authority, or frontend durable authority.
@@ -53,4 +53,4 @@ The rendered panel shows selected and blocked states, runtime receipt binding, a
 - Does this rendered control mutate defaults by itself? Recommended answer: no. It invokes only the admitted selector-use endpoint and displays the server response.
 - Does the browser own durable selector authority? Recommended answer: no. Durable authority is the server response and redacted selector-use receipt.
 - What remains blocked? Recommended answer: raw paths/URLs, receipt JSON, runtime roots, source expansion, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage authority, and frontend durable authority.
-- What comes next? Recommended answer: current-main sync after merge, then a downstream/operator status pass proving selected selector-use receipts are inspectable before any broader default-promotion closeout.
+- What comes next? Recommended answer: remediate the stale selector-use input review finding, then current-main sync after merge, then a downstream/operator status pass proving selected selector-use receipts are inspectable before any broader default-promotion closeout.
