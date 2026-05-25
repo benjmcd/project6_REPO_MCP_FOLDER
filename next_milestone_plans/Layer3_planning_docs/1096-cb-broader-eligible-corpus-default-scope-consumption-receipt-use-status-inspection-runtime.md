@@ -1,0 +1,48 @@
+# Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Status Inspection Runtime
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_runtime_v1
+source_consumption_receipt_use_status_inspection_selection: next_milestone_plans/Layer3_planning_docs/1095-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-selection.md
+current_main_entry: cfdacdd061a5a9cce5c7070ad5d613c6c9016602
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status.v1
+implemented_status_mode: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_v1
+implemented_operator_decision: inspect_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status
+implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+implemented_status_authority: server_owned_redacted_default_scope_use_receipt
+implemented_use_receipt_reload_required: true
+implemented_missing_use_receipt_projects_not_recorded: true
+implemented_stale_use_receipt_hash_fail_closed: true
+implemented_stale_consumption_receipt_hash_fail_closed: true
+implemented_stale_activation_receipt_binding_fail_closed: true
+implemented_stale_selector_use_status_hash_fail_closed: true
+implemented_stale_runtime_selection_receipt_hash_fail_closed: true
+implemented_readiness_binding_revalidated: true
+implemented_unknown_or_unselected_scope_class_fail_closed: true
+implemented_operator_visible_redacted_use_status: true
+implemented_no_use_receipt_mutation: true
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+use_receipt_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_focused_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 29 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_rendered_status_v1
+```
+
+This runtime adds a read-only status inspection endpoint for Candidate B broader default-scope consumption-receipt use authority. It reloads the server-owned redacted use receipt, revalidates consumption, activation, selector-use status, selector-use receipt, runtime-selection, readiness, and exact selected-class bindings, and projects missing use authority as `not_recorded`.
+
+The status endpoint does not create, replace, mutate, retry, revoke, or apply use receipts. It does not mutate selector/default state, broaden source or runtime ingestion, enable provider writes, dispatch connectors, start RAG/vector/model runtime, activate full mockups, create browser/frontend durable authority, or expose raw paths/URLs.
