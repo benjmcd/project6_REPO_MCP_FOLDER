@@ -7611,3 +7611,40 @@ next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial
 ```
 
 The current-main sync records PR `#1834` as a no-runtime checkpoint. It does not mutate proof, Gate B, material snapshots, packages, delivery, source acquisition, parser scope, provider behavior, connector behavior, RAG/model runtime, full mockup behavior, browser storage, or frontend durable authority.
+
+### SEC EDGAR Text Table Downstream Repeatability Closeout Readiness
+
+```yaml
+milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness_v1
+source_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1131-sec-edgar-text-table-downstream-repeatability-rendered-status-current-main-sync.md
+current_main_entry: b23f48e6f0b3eb92dde43e65975832131cff61fe
+source_sync_pr: "#1835"
+source_sync_merge_commit: b23f48e6f0b3eb92dde43e65975832131cff61fe
+entry_decision: closeout_readiness_checkpoint
+runtime_status: already_implemented
+rendered_status: already_implemented
+closeout_readiness_state: ready_for_sec_edgar_text_table_source_acquisition_authority_selection
+selected_next_selection_target: sec_edgar_text_table_source_acquisition_authority_selection_v1
+required_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1131-sec-edgar-text-table-downstream-repeatability-rendered-status-current-main-sync.md
+required_closeout_authority: rendered_repeatability_trial_over_server_revalidated_downstream_status_material_bridge_and_authority_envelope_chain
+required_source_family: sec_edgar_text_table
+required_material_source_class: dataset_version
+required_repeatability_authority_model: two_server_revalidated_operator_status_requests_plus_expected_status_hashes
+repeatability_chain_closeout_ready: true
+named_defect_remaining: false
+source_acquisition_admitted_now: false
+parser_expansion_admitted_now: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_trial_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_selection_v1
+```
+
+The repeatability closeout keeps the current SEC EDGAR path bounded to materialized DatasetVersion authority envelopes. Any SEC source acquisition, parser expansion, retained source artifact model, or raw filing URL authority must be selected separately before implementation.
