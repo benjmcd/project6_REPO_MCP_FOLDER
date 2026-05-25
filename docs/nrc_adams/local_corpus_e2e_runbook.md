@@ -5704,3 +5704,39 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumptio
 ```
 
 The next runtime slice should inspect existing redacted use-receipt authority only. It should not create receipts, mutate default scope, expand sources, or activate provider/connector/model/full-mockup behavior.
+
+### Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Status Inspection Runtime
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_runtime_v1
+source_consumption_receipt_use_status_inspection_selection: next_milestone_plans/Layer3_planning_docs/1095-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-selection.md
+implemented_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status.v1
+implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+implemented_status_authority: server_owned_redacted_default_scope_use_receipt
+implemented_missing_use_receipt_projects_not_recorded: true
+implemented_stale_use_receipt_hash_fail_closed: true
+implemented_stale_consumption_receipt_hash_fail_closed: true
+implemented_readiness_binding_revalidated: true
+implemented_no_use_receipt_mutation: true
+operator_visible_redacted_use_status: true
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+use_receipt_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_focused_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 29 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_rendered_status_v1
+```
+
+The runtime status endpoint inspects existing server-owned consumption-receipt use authority. A missing use receipt projects as `not_recorded`; stale or mismatched use, consumption, activation, selector-use, runtime-selection, readiness, or selected-class authority fails closed. The endpoint is read-only and does not create or mutate use receipts, selector/default state, source/runtime scope, provider/connector behavior, model runtime, mockup activation, or browser/frontend durable authority.
