@@ -3238,6 +3238,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_STATUS_SELECTION 
     PLANNING_DOCS
     / "1143-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1144-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -109036,6 +109040,171 @@ def _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_STATUS_RUNTIME: (
+            "SEC EDGAR Text Table Live Source Artifact Acquisition Rendered Status Runtime",
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_v1",
+            "selection_freeze: next_milestone_plans/Layer3_planning_docs/1143-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-selection.md",
+            "current_main_entry: 4b773f21d3bdbe7ee5dc45de990e4ce513878701",
+            "entry_decision: rendered_runtime_implementation",
+            "runtime_status: already_implemented",
+            "rendered_status: implemented",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_acquisition_control",
+            "implemented_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "implemented_operator_decision: acquire_sec_edgar_text_table_live_source_artifact",
+            "implemented_live_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "implemented_live_acquisition_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+            "implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_acquisition",
+            "implemented_panel: sec-edgar-live-source-artifact-acquisition-panel",
+            "implemented_form: sec-edgar-live-source-artifact-acquisition-form",
+            "implemented_submit: sec-edgar-live-source-artifact-acquisition-submit",
+            "implemented_status_submit: sec-edgar-live-source-artifact-acquisition-status-submit",
+            "implemented_request_input: sec-edgar-live-source-artifact-acquisition-request-json",
+            "implemented_status_input: sec-edgar-live-source-artifact-acquisition-status-receipt-id",
+            "implemented_operator_confirmation_input: sec-edgar-live-source-artifact-acquisition-operator-confirmation",
+            "implemented_payload_policy: browser_constructs_only_admitted_identity_expected_hash_and_confirmation_fields",
+            "implemented_test_fixture_route: /__test/layer3/sec-edgar-live-source-artifact-acquisition",
+            "implemented_fixture_schema_id: project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1",
+            "implemented_success_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1",
+            "implemented_status_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1",
+            "client_side_raw_url_or_path_authority_rejected: true",
+            "server_side_forbidden_request_fields_rejected: true",
+            "expected_content_hash_mismatch_fails_closed: true",
+            "cache_hit_and_idempotent_replay_rendered: true",
+            "raw_sec_filing_url_rendered: false",
+            "raw_local_path_rendered: false",
+            "artifact_bytes_rendered: false",
+            "server_user_agent_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "headless_rendered_status_proof_command: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep \"SEC EDGAR live source artifact\"",
+            "headed_rendered_status_proof_command: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"SEC EDGAR live source artifact\"",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_v1",
+            "selection_freeze: next_milestone_plans/Layer3_planning_docs/1143-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-selection.md",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_acquisition_control",
+            "implemented_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "implemented_operator_decision: acquire_sec_edgar_text_table_live_source_artifact",
+            "implemented_live_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "implemented_live_acquisition_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+            "implemented_panel: sec-edgar-live-source-artifact-acquisition-panel",
+            "implemented_form: sec-edgar-live-source-artifact-acquisition-form",
+            "implemented_submit: sec-edgar-live-source-artifact-acquisition-submit",
+            "implemented_status_submit: sec-edgar-live-source-artifact-acquisition-status-submit",
+            "implemented_test_fixture_route: /__test/layer3/sec-edgar-live-source-artifact-acquisition",
+            "client_side_raw_url_or_path_authority_rejected: true",
+            "expected_content_hash_mismatch_fails_closed: true",
+            "cache_hit_and_idempotent_replay_rendered: true",
+            "headless_rendered_status_proof_command: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep \"SEC EDGAR live source artifact\"",
+            "headed_rendered_status_proof_command: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"SEC EDGAR live source artifact\"",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_current_main_sync_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_STATUS_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py": (
+            '"sec_edgar_text_table_live_source_artifact_acquisition_admitted": True',
+            '"sec_edgar_text_table_live_source_artifact_acquisition_endpoint":',
+            '"sec_edgar_text_table_live_source_artifact_acquisition_status_admitted": True',
+            '"sec_edgar_text_table_live_source_artifact_acquisition_status_endpoint":',
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+            "Layer3SecEdgarTextTableLiveSourceArtifactAcquireRequest",
+            "Layer3SecEdgarTextTableLiveSourceArtifactResponse",
+        ),
+        LAYER3_HTML: (
+            'id="sec-edgar-live-source-artifact-acquisition-panel"',
+            'data-rendered-mode="rendered_sec_edgar_text_table_live_source_artifact_acquisition_control"',
+            'data-frontend-durable-authority="false"',
+            "SEC EDGAR live source-artifact acquisition bootstrap contract is not available.",
+        ),
+        LAYER3_JS: (
+            "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_MODE = 'rendered_sec_edgar_text_table_live_source_artifact_acquisition_control'",
+            "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_MODE = 'sec_edgar_text_table_live_source_artifact_acquisition_v1'",
+            "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_OPERATOR_DECISION = 'acquire_sec_edgar_text_table_live_source_artifact'",
+            "function secEdgarLiveSourceArtifactAcquisitionEndpointPath",
+            "function secEdgarLiveSourceArtifactAcquisitionStatusEndpointPath",
+            "function secEdgarLiveSourceArtifactAcquisitionPayload",
+            "function canAcquireSecEdgarLiveSourceArtifact",
+            "function canInspectSecEdgarLiveSourceArtifactStatus",
+            "function secEdgarLiveSourceArtifactAcquisitionRows",
+            "function renderSecEdgarLiveSourceArtifactAcquisitionPanel",
+            "async function acquireSecEdgarLiveSourceArtifact",
+            "async function inspectSecEdgarLiveSourceArtifactStatus",
+            "sec-edgar-live-source-artifact-acquisition-form",
+            "sec-edgar-live-source-artifact-acquisition-submit",
+            "sec-edgar-live-source-artifact-acquisition-status-submit",
+            "sec-edgar-live-source-artifact-acquisition-request-json",
+            "sec-edgar-live-source-artifact-acquisition-status-receipt-id",
+            "sec-edgar-live-source-artifact-acquisition-operator-confirmation",
+            "request JSON contains non-admitted fields",
+            "raw SEC filing URL exposed",
+            "server configured User-Agent hash",
+            "frontend durable authority enabled",
+        ),
+        REVIEW_BROWSER_SERVER: (
+            "_ReviewBrowserFakeSecEdgarClient",
+            "_prepare_sec_edgar_live_source_artifact_acquisition_fixture",
+            "project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1",
+            "/__test/layer3/sec-edgar-live-source-artifact-acquisition",
+            "live_acquisition_request",
+            "expected_content_sha256",
+            '"raw_local_path_exposed": False',
+            '"raw_url_exposed": False',
+            '"artifact_bytes_exposed": False',
+            '"server_user_agent_exposed": False',
+        ),
+        ROOT / "backend" / "tests" / "test_review_browser_server.py": (
+            "test_review_browser_server_prepares_sec_edgar_live_source_artifact_acquisition",
+            "/__test/layer3/sec-edgar-live-source-artifact-acquisition",
+            "sec_edgar_text_table_live_source_artifact_operator_confirmation_missing",
+            "sec_edgar_text_table_live_source_artifact_forbidden_request_fields",
+            "sec_edgar_text_table_live_source_artifact_content_hash_mismatch",
+            "layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1",
+            "Layer3 Review Browser",
+            "idempotent_replay",
+        ),
+        LAYER3_PAGE_TEST: (
+            'id="sec-edgar-live-source-artifact-acquisition-panel"',
+            "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_MODE",
+            "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_OPERATOR_DECISION",
+            "function secEdgarLiveSourceArtifactAcquisitionPayload",
+            "async function acquireSecEdgarLiveSourceArtifact",
+            "async function inspectSecEdgarLiveSourceArtifactStatus",
+            "sec-edgar-live-source-artifact-acquisition-status-submit",
+            "request JSON contains non-admitted fields",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench acquires SEC EDGAR live source artifact through server-owned rendered controls",
+            "/__test/layer3/sec-edgar-live-source-artifact-acquisition",
+            "sec-edgar-live-source-artifact-acquisition-panel",
+            "sec-edgar-live-source-artifact-acquisition-form",
+            "sec-edgar-live-source-artifact-acquisition-submit",
+            "sec-edgar-live-source-artifact-acquisition-status-submit",
+            "request JSON contains non-admitted fields: raw_url",
+            "sec_edgar_text_table_live_source_artifact_content_hash_mismatch",
+            "layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1",
+            "raw URL exposed: false",
+            "cache status: status",
+            "idempotent replay: true",
+            "Layer3 Review Browser",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact acquisition rendered status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -110142,6 +110311,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_runtime(
         errors
     )
 

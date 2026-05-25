@@ -176,6 +176,12 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
         in response.text
     )
     assert "SEC EDGAR source-acquisition authority bootstrap contract is not available." in response.text
+    assert 'id="sec-edgar-live-source-artifact-acquisition-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_sec_edgar_text_table_live_source_artifact_acquisition_control"'
+        in response.text
+    )
+    assert "SEC EDGAR live source-artifact acquisition bootstrap contract is not available." in response.text
     assert 'id="sec-edgar-downstream-operator-status-panel"' in response.text
     assert (
         'data-rendered-mode="rendered_sec_edgar_text_table_downstream_layer3_operator_status_control"'
@@ -494,6 +500,34 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "async function recordSecEdgarSourceAcquisitionAuthority" in js.text
     assert "sec-edgar-source-acquisition-authority-form" in js.text
     assert "raw source artifact ref rendered" in js.text
+    assert (
+        "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_MODE = "
+        "'rendered_sec_edgar_text_table_live_source_artifact_acquisition_control'"
+        in js.text
+    )
+    assert (
+        "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_MODE = "
+        "'sec_edgar_text_table_live_source_artifact_acquisition_v1'"
+        in js.text
+    )
+    assert (
+        "SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_OPERATOR_DECISION = "
+        "'acquire_sec_edgar_text_table_live_source_artifact'"
+        in js.text
+    )
+    assert "function secEdgarLiveSourceArtifactAcquisitionPayload" in js.text
+    assert "function renderSecEdgarLiveSourceArtifactAcquisitionPanel" in js.text
+    assert "async function acquireSecEdgarLiveSourceArtifact" in js.text
+    assert "async function inspectSecEdgarLiveSourceArtifactStatus" in js.text
+    assert "sec-edgar-live-source-artifact-acquisition-form" in js.text
+    assert "sec-edgar-live-source-artifact-acquisition-submit" in js.text
+    assert "sec-edgar-live-source-artifact-acquisition-status-submit" in js.text
+    assert "sec-edgar-live-source-artifact-acquisition-request-json" in js.text
+    assert "sec-edgar-live-source-artifact-acquisition-status-receipt-id" in js.text
+    assert "sec-edgar-live-source-artifact-acquisition-operator-confirmation" in js.text
+    assert "request JSON contains non-admitted fields" in js.text
+    assert "server-derived URL hash" in js.text
+    assert "browser supplied raw URL rejected" in js.text
     assert "SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_layer3_operator_status_control'" in js.text
     assert "SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_downstream_layer3_operator_status_v1'" in js.text
     assert "function secEdgarDownstreamOperatorStatusPayload" in js.text
