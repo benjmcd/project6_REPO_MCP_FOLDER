@@ -33,6 +33,7 @@ from app.services import (
     layer3_server_owned_local_outbox_write,
     layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_artifact_status,
+    layer3_candidate_b_broader_scope_promotion_readiness,
     layer3_candidate_b_broader_scope_readiness,
     layer3_candidate_b_broader_scope_repeatability_trial,
     layer3_candidate_b_broader_scope_runtime,
@@ -3602,6 +3603,25 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeOperatorRepeatabilityTria
     operator_confirmation: bool
 
 
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopePromotionReadinessRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    readiness_mode: Literal[
+        "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1"
+    ]
+    operator_decision: Literal["evaluate_candidate_b_broader_scope_default_promotion_readiness"]
+    trial_receipt_id: str = Field(min_length=1)
+    trial_receipt_hash: str = Field(min_length=1)
+    trial_authority_hash: str = Field(min_length=1)
+    authority_pair_hash: str = Field(min_length=1)
+    selected_scope_classes: list[str]
+    production_ownership_storage_policy: dict[str, Any] | None = None
+    operator_visible_status_confirmed: bool
+    rollback_to_baseline_confirmation: bool
+    operator_confirmation: bool
+
+
 class Layer3CandidateBDefaultPromotionFinalProofRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -6012,6 +6032,46 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeOperatorRepeatabilityTria
     actual_subprocess_spawn_admitted: bool
     process_control_admitted: bool
     selector_mutation_performed: bool
+    default_scope_mutation_performed: bool
+    source_expansion_admitted: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    pdf_or_image_text_material_ingestion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    auth_security_expansion_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopePromotionReadinessResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    promotion_readiness_state: str
+    promotion_readiness_audit_id: str
+    promotion_readiness_audit_hash: str
+    blocked_reasons: list[dict[str, Any]]
+    required_promotion_authority_chain: list[str]
+    trial_receipt_binding: dict[str, Any]
+    production_ownership_storage_policy: dict[str, Any]
+    operator_visible_status_evidence: dict[str, Any]
+    selected_scope_classes: list[str]
+    current_default_scope_before_promotion_readiness_audit: str
+    scope_class_policy: str
+    baseline_rollback: dict[str, Any]
+    candidate_a_semantics: dict[str, Any]
+    candidate_b_scope_authority: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
+    default_scope_promotion_ready_for_separate_selection: bool
+    selector_mutation_admitted_now: bool
+    selector_mutation_performed: bool
+    default_scope_expansion_admitted: bool
     default_scope_mutation_performed: bool
     source_expansion_admitted: bool
     runtime_db_or_storage_expansion_admitted: bool
@@ -12542,6 +12602,28 @@ def post_candidate_b_broader_eligible_corpus_default_scope_operator_repeatabilit
     except (
         layer3_candidate_b_broader_scope_repeatability_trial
         .CandidateBBroaderScopeOperatorRepeatabilityTrialError
+    ) as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness",
+    response_model=Layer3CandidateBBroaderEligibleCorpusDefaultScopePromotionReadinessResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness(
+    payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopePromotionReadinessRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_candidate_b_broader_scope_promotion_readiness
+            .evaluate_candidate_b_broader_scope_default_promotion_readiness(
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_candidate_b_broader_scope_promotion_readiness
+        .CandidateBBroaderScopePromotionReadinessError
     ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
