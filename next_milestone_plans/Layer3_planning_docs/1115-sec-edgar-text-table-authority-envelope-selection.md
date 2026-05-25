@@ -1,0 +1,63 @@
+# SEC EDGAR Text Table Authority Envelope Selection
+
+```yaml
+milestone: sec_edgar_text_table_authority_envelope_selection_v1
+source_default_promotion_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1114-cb-broader-eligible-corpus-default-scope-default-promotion-closeout-readiness.md
+current_main_entry: c80c777297c0445b69562677315518d7212a5815
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+selected_next_runtime_target: sec_edgar_text_table_authority_envelope_validation_runtime_v1
+selected_source_family: sec_edgar_text_table
+selected_parser_family: sec_edgar_filing
+selected_source_family_label: SEC/EDGAR text table
+selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+selected_authority_envelope_shape: mixed_narrative_table
+selected_current_authority_basis: materialized_dataset_version_source_provenance_and_parser_contract_metadata
+existing_admission_state_required: admitted_materialized_dataset_version
+selected_runtime_scope: validate_and_project_existing_materialized_dataset_version_sec_edgar_text_table_envelope_only
+selected_material_analysis_payload: text_filing_narrative_units_and_table_units_from_existing_aps_sec_edgar_filing_units_v1_materialization
+selected_visual_or_product_evidence_scope: retained_source_provenance_form_metadata_redacted_materialization_refs_and_operator_inspection_summary
+selected_provenance_fields: dataset_version_id,dataset_version_hash,parser_family,source_family,typed_content_contract_id,materialization_receipt_id,materialization_receipt_hash,form_type,accession_or_submission_id,filer_or_cik,filing_date
+selected_status_projection: ready,blocked,not_started,error
+required_layer3_downstream_target: material_preview_gate_b_then_retrieval_context_analysis_package_review_handoff_export_delivery_status_operator_inspection_after_runtime_bridge
+required_failure_behavior: fail_closed_on_missing_dataset_version_missing_materialization_stale_hash_parser_mismatch_source_family_mismatch_contract_mismatch_raw_path_raw_url_or_unsupported_nested_authority
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+bundle_and_runtime_authority_remain_distinct: true
+sec_edgar_runtime_admitted_now: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: sec_edgar_text_table_authority_envelope_validation_runtime_v1
+```
+
+This selection freezes the first source-family authority-envelope step after Candidate B broader default-promotion closeout. It deliberately uses the repo-confirmed APS metadata vocabulary for `parser_family=sec_edgar_filing`, `source_family=sec_edgar_text_table`, and `typed_content_contract_id=aps_sec_edgar_filing_units_v1`. The selected runtime is a validation/projection envelope over existing materialized DatasetVersion authority only.
+
+The envelope should make SEC EDGAR filing-derived text and table units available as governed Layer 3 authority only after the server validates dataset-version identity, materialization receipt/hash, parser family, source family, typed-content contract, form/submission metadata, redacted provenance, and stale-authority behavior. It must not fetch SEC content, add a parser, reinterpret XML/HTML/inline XBRL, accept raw filing URLs as authority, expand source ingestion, dispatch connectors, write provider objects, run RAG/model logic, activate full mockups, or treat frontend/browser state as durable authority.
+
+## Coherence Check
+
+- Is this a runtime implementation? Recommended answer: no. It is a selection/freeze for the next runtime slice.
+- What is the canonical source-family name? Recommended answer: `sec_edgar_text_table`, because current source-family metadata maps `sec_edgar_filing` to that source family and `aps_sec_edgar_filing_units_v1`.
+- Does this admit SEC network retrieval or parser expansion? Recommended answer: no. The next runtime must validate existing materialized DatasetVersion authority only.
+- What should fail closed? Recommended answer: missing or stale dataset/materialization authority, parser/source-family/contract mismatch, unsupported XML/HTML/inline XBRL authority, raw path/URL evidence, browser authority, runtime storage expansion, connector/provider/RAG/model/full-mockup expansion, and missing rollback/status provenance.
+- What comes next? Recommended answer: implement `sec_edgar_text_table_authority_envelope_validation_runtime_v1` as a server-owned validation/status projection before any Layer 3 material-authority bridge.

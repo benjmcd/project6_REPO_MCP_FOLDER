@@ -6673,3 +6673,52 @@ next_exact_posture: sec_edgar_text_table_authority_envelope_selection_v1
 ```
 
 This checkpoint closes the Candidate B broader-scope default-promotion rendered/status chain and moves the operator workflow toward the next source-family authority-envelope decision. It does not implement SEC EDGAR runtime, broaden source ingestion, change default behavior for non-selected classes, expose raw authority, or admit parser/runtime expansion. The next repeatable operator planning step is to freeze the exact `sec_edgar_text_table` mixed narrative/table authority envelope before any processing or Layer 3 material-authority implementation.
+
+### SEC EDGAR Text Table Authority Envelope Selection
+
+```yaml
+milestone: sec_edgar_text_table_authority_envelope_selection_v1
+source_default_promotion_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1114-cb-broader-eligible-corpus-default-scope-default-promotion-closeout-readiness.md
+current_main_entry: c80c777297c0445b69562677315518d7212a5815
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+selected_next_runtime_target: sec_edgar_text_table_authority_envelope_validation_runtime_v1
+selected_source_family: sec_edgar_text_table
+selected_parser_family: sec_edgar_filing
+selected_source_family_label: SEC/EDGAR text table
+selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+selected_authority_envelope_shape: mixed_narrative_table
+selected_current_authority_basis: materialized_dataset_version_source_provenance_and_parser_contract_metadata
+existing_admission_state_required: admitted_materialized_dataset_version
+selected_runtime_scope: validate_and_project_existing_materialized_dataset_version_sec_edgar_text_table_envelope_only
+selected_material_analysis_payload: text_filing_narrative_units_and_table_units_from_existing_aps_sec_edgar_filing_units_v1_materialization
+selected_provenance_fields: dataset_version_id,dataset_version_hash,parser_family,source_family,typed_content_contract_id,materialization_receipt_id,materialization_receipt_hash,form_type,accession_or_submission_id,filer_or_cik,filing_date
+selected_status_projection: ready,blocked,not_started,error
+required_failure_behavior: fail_closed_on_missing_dataset_version_missing_materialization_stale_hash_parser_mismatch_source_family_mismatch_contract_mismatch_raw_path_raw_url_or_unsupported_nested_authority
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+sec_edgar_runtime_admitted_now: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+implementation_admitted_after_current_main_sync: true
+next_exact_posture: sec_edgar_text_table_authority_envelope_validation_runtime_v1
+```
+
+The selected next step is a server-owned SEC EDGAR text-table envelope validation runtime over existing materialized DatasetVersion authority. It must validate the repo-confirmed `sec_edgar_filing` parser metadata and `aps_sec_edgar_filing_units_v1` typed-content contract before any Layer 3 material bridge, and it must keep network fetch, parser expansion, raw URL authority, connector/provider behavior, RAG/model runtime, full mockup activation, and frontend durable authority out of scope.
