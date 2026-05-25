@@ -7232,3 +7232,51 @@ next_exact_posture: sec_edgar_text_table_downstream_layer3_operator_status_curre
 ```
 
 The rendered workbench now shows SEC EDGAR downstream status as `not_recorded`, `available`, or `blocked` through the production status endpoint. The browser proof uses a test-only fixture only to prepare existing SEC EDGAR authority and proof input; the operator-facing rendered action still calls the server status endpoint and renders only redacted projection fields.
+
+### SEC EDGAR Text Table Downstream Layer 3 Operator Status Current-Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_downstream_layer3_operator_status_current_main_sync_v1
+source_rendered_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md
+current_main_entry: ffec83dc39518f96640d36bdadda53efa45d5ab0
+source_pr: "#1828"
+source_branch: codex/sec-edgar-rendered-status-runtime
+source_commit: fa3abd2797b452be2970dfa32f8acccd8938e1fa
+source_merge_commit: ffec83dc39518f96640d36bdadda53efa45d5ab0
+merge_state_before_merge: CLEAN
+ci_status: passed
+ci_successful_checks: 10
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+synced_bootstrap_capability: sec_edgar_text_table_downstream_operator_status
+synced_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status
+synced_rendered_mode: rendered_sec_edgar_text_table_downstream_layer3_operator_status_control
+synced_status_mode: sec_edgar_text_table_downstream_layer3_operator_status_v1
+synced_operator_decision: inspect_sec_edgar_text_table_downstream_layer3_operator_status
+synced_panel: sec-edgar-downstream-operator-status-panel
+synced_status_states_rendered: not_recorded,available,blocked
+synced_available_requires_server_revalidated_proof_request: true
+synced_browser_held_hash_alone_is_not_authority: true
+synced_test_only_fixture_user_facing_authority: false
+synced_headless_rendered_status_proof: true
+synced_headed_rendered_status_proof: true
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+proof_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_proof_request_rendered_in_status_projection: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+next_exact_posture: sec_edgar_text_table_downstream_layer3_closeout_readiness_v1
+```
+
+The merged current-main tree now contains the SEC EDGAR rendered downstream operator-status surface from PR `#1828`. This sync adds no runtime behavior; it records that the current-main status panel remains read-only over server-revalidated downstream proof authority and keeps SEC fetch, parser expansion, proof mutation, provider writes, connector dispatch, RAG/model runtime, full mockup activation, and frontend durable authority out of scope.
