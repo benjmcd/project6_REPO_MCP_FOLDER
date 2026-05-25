@@ -61,6 +61,7 @@ from app.services import (
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_material_bridge,
+    layer3_sec_edgar_source_acquisition,
     layer3_workbench,
 )
 from app.services import layer3_pass_entry as layer3_pass_entry_module
@@ -779,6 +780,135 @@ def _sec_edgar_browser_coverage(bridge: dict[str, Any], gate_b: dict[str, Any], 
     return coverage
 
 
+def _sec_edgar_text_hash(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _prepare_sec_edgar_source_acquisition_authority_fixture(
+    db,
+    temp_path: Path,
+    *,
+    seed_id: str,
+) -> dict[str, object]:
+    dataset_version_id = _seed_aps_derived_dataset_version(
+        db,
+        temp_path,
+        dataset_version_id=f"dv-sec-edgar-source-acq-{seed_id}",
+        parser_family="sec_edgar_filing",
+        typed_content_contract_id="aps_sec_edgar_filing_units_v1",
+        source_mode="artifact_sec_edgar_filing_parser",
+        parser_contract_id="aps_sec_edgar_filing_parser_v1",
+    )
+    provenance = (
+        db.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
+        .one()
+    )
+    source_reference = dict(provenance.source_reference_json or {})
+    source_reference.update(
+        {
+            "accession_or_submission_id": "0000320193-24-000123",
+            "cik": "0000320193",
+            "form_type": "10-K",
+            "filing_date": "2024-11-01",
+            "content_length": 91337,
+        }
+    )
+    provenance.source_reference_json = source_reference
+    db.commit()
+    envelope = layer3_sec_edgar_authority_envelope.validate_sec_edgar_text_table_authority_envelope(
+        {
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db,
+    )
+    source_artifact_ref_hash = _sec_edgar_text_hash(provenance.source_artifact_key)
+    source_artifact_receipt_id = f"sec-edgar-text-table-source-artifact-{source_artifact_ref_hash[:24]}"
+    accession_hash = _sec_edgar_text_hash("0000320193-24-000123")
+    cik_hash = _sec_edgar_text_hash("0000320193")
+    source_artifact_receipt_hash = stable_hash(
+        {
+            "schema_id": layer3_sec_edgar_source_acquisition.SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID,
+            "schema_version": layer3_sec_edgar_source_acquisition.SCHEMA_VERSION,
+            "source_artifact_receipt_id": source_artifact_receipt_id,
+            "dataset_version_id": dataset_version_id,
+            "source_artifact_ref_hash": source_artifact_ref_hash,
+            "content_sha256": provenance.downloaded_sha256,
+            "content_length": 91337,
+            "accession_or_submission_id_hash": accession_hash,
+            "cik_or_filer_ref_hash": cik_hash,
+            "form_type": "10-K",
+            "filing_date": "2024-11-01",
+            "parser_family": layer3_sec_edgar_source_acquisition.PARSER_FAMILY,
+            "parser_contract_id": layer3_sec_edgar_source_acquisition.PARSER_CONTRACT_ID,
+            "typed_content_contract_id": layer3_sec_edgar_source_acquisition.TYPED_CONTENT_CONTRACT_ID,
+            "source_mode": layer3_sec_edgar_source_acquisition.SOURCE_MODE,
+            "dataset_version_hash": envelope["dataset_version_hash"],
+            "materialization_receipt_hash": envelope["materialization_receipt_hash"],
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+        }
+    )
+    source_acquisition_request = {
+        "schema_id": layer3_sec_edgar_source_acquisition.REQUEST_SCHEMA_ID,
+        "client_request_id": f"browser-sec-edgar-source-acq-{seed_id}",
+        "acquisition_mode": layer3_sec_edgar_source_acquisition.ACQUISITION_MODE,
+        "operator_decision": layer3_sec_edgar_source_acquisition.OPERATOR_DECISION,
+        "dataset_version_id": dataset_version_id,
+        "source_artifact_receipt_id": source_artifact_receipt_id,
+        "source_artifact_receipt_hash": source_artifact_receipt_hash,
+        "source_artifact_ref_hash": source_artifact_ref_hash,
+        "accession_or_submission_id_hash": accession_hash,
+        "cik_or_filer_ref_hash": cik_hash,
+        "form_type": "10-K",
+        "filing_date": "2024-11-01",
+        "content_sha256": provenance.downloaded_sha256,
+        "content_length": 91337,
+        "parser_family": layer3_sec_edgar_source_acquisition.PARSER_FAMILY,
+        "parser_contract_id": layer3_sec_edgar_source_acquisition.PARSER_CONTRACT_ID,
+        "typed_content_contract_id": layer3_sec_edgar_source_acquisition.TYPED_CONTENT_CONTRACT_ID,
+        "materialization_receipt_hash": envelope["materialization_receipt_hash"],
+        "dataset_version_hash": envelope["dataset_version_hash"],
+        "authority_envelope_hash": envelope["authority_envelope_hash"],
+        "operator_confirmation": True,
+    }
+    return {
+        "schema_id": "project6.review_browser_sec_edgar_source_acquisition_authority_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "dataset_version_id": dataset_version_id,
+        "source_acquisition_request": source_acquisition_request,
+        "stale_source_acquisition_request": {
+            **source_acquisition_request,
+            "source_artifact_receipt_hash": "f" * 64,
+        },
+        "expected_source_acquisition_receipt_hash": stable_hash(
+            {
+                "hash_version": "sec_edgar_text_table_source_acquisition_authority_hash_v1",
+                "schema_id": layer3_sec_edgar_source_acquisition.SCHEMA_ID,
+                "acquisition_mode": layer3_sec_edgar_source_acquisition.ACQUISITION_MODE,
+                "operator_decision": layer3_sec_edgar_source_acquisition.OPERATOR_DECISION,
+                "dataset_version_id": dataset_version_id,
+                "dataset_version_hash": envelope["dataset_version_hash"],
+                "materialization_receipt_hash": envelope["materialization_receipt_hash"],
+                "authority_envelope_hash": envelope["authority_envelope_hash"],
+                "source_artifact_receipt_hash": source_artifact_receipt_hash,
+                "source_artifact_ref_hash": source_artifact_ref_hash,
+                "parser_family": layer3_sec_edgar_source_acquisition.PARSER_FAMILY,
+                "parser_contract_id": layer3_sec_edgar_source_acquisition.PARSER_CONTRACT_ID,
+                "typed_content_contract_id": layer3_sec_edgar_source_acquisition.TYPED_CONTENT_CONTRACT_ID,
+                "source_mode": layer3_sec_edgar_source_acquisition.SOURCE_MODE,
+                "redaction_policy_id": layer3_sec_edgar_source_acquisition.REDACTION_POLICY_ID,
+            }
+        ),
+        "source_acquisition_endpoint": "/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
 def _prepare_sec_edgar_downstream_status_fixture(db, temp_path: Path, *, seed_id: str) -> dict[str, object]:
     dataset_version_id = _seed_aps_derived_dataset_version(
         db,
@@ -1482,6 +1612,7 @@ def create_app() -> FastAPI:
     temp_path = Path(temp_dir.name)
     raw_mixed_seed_counter = count(1)
     raw_mixed_materialization_counter = count(1)
+    sec_edgar_source_acquisition_counter = count(1)
     sec_edgar_status_counter = count(1)
     sec_edgar_repeatability_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
@@ -1590,6 +1721,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-cohort-aps-handoff",
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
+                "/__test/layer3/sec-edgar-source-acquisition-authority",
                 "/__test/layer3/sec-edgar-downstream-status",
                 "/__test/layer3/sec-edgar-repeatability-trial",
                 "/__test/layer3/source-directory-hybrid-authority",
@@ -1789,6 +1921,20 @@ def create_app() -> FastAPI:
     def materialize_layer3_raw_mixed_setup() -> dict[str, object]:
         seed_id = f"raw-mixed-materialize-browser-{next(raw_mixed_materialization_counter):03d}"
         return _build_browser_raw_mixed_materialization_setup(seed_id=seed_id)
+
+    @app.post("/__test/layer3/sec-edgar-source-acquisition-authority")
+    def sec_edgar_source_acquisition_authority_setup() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = f"browser-source-acq-{next(sec_edgar_source_acquisition_counter):03d}"
+            return _prepare_sec_edgar_source_acquisition_authority_fixture(db, temp_path, seed_id=seed_id)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR source-acquisition authority setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
 
     @app.post("/__test/layer3/sec-edgar-downstream-status")
     def sec_edgar_downstream_status_setup() -> dict[str, object]:

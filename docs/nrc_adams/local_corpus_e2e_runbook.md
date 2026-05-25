@@ -7875,3 +7875,80 @@ next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_s
 ```
 
 This selection admits only the next rendered/operator control over the existing SEC EDGAR source-acquisition authority endpoint. The browser may supply expected source-artifact and envelope hashes, but only the server-owned provenance and authority-envelope revalidation can record or reject the source-acquisition receipt.
+
+### SEC EDGAR Text Table Source Acquisition Rendered Status Runtime
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1
+selection_freeze: next_milestone_plans/Layer3_planning_docs/1136-sec-edgar-text-table-source-acquisition-rendered-status-selection.md
+current_main_entry: 31e97a55ea9b3c8dda535139ee41cd762d68bebb
+implementation_status: implemented
+implemented_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control
+implemented_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1
+implemented_operator_decision: record_sec_edgar_text_table_source_acquisition_authority
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+implemented_bootstrap_capability: sec_edgar_text_table_source_acquisition_authority
+implemented_bootstrap_endpoint_field: sec_edgar_text_table_source_acquisition_authority_endpoint
+implemented_panel: sec-edgar-source-acquisition-authority-panel
+implemented_form: sec-edgar-source-acquisition-authority-form
+implemented_submit: sec-edgar-source-acquisition-authority-submit
+implemented_request_input: sec-edgar-source-acquisition-authority-request-json
+implemented_operator_confirmation_input: sec-edgar-source-acquisition-operator-confirmation
+implemented_status_states: not_recorded,available,blocked
+implemented_rendered_status_fields: source_acquisition_authority_state,source_acquisition_receipt_id,source_acquisition_receipt_hash,source_acquisition_receipt_ref,source_acquisition_receipt_status,idempotent_replay,source_artifact_authority,authority_bindings,compatibility,operator_visible_source_acquisition_status,fail_closed_behavior,negative_invariants,next_allowed_actions
+server_authority_source: backend/app/services/layer3_sec_edgar_source_acquisition.py
+test_fixture_route: /__test/layer3/sec-edgar-source-acquisition-authority
+test_fixture_schema: project6.review_browser_sec_edgar_source_acquisition_authority_setup.v1
+browser_held_source_artifact_hashes_are_expected_values_only: true
+append_only_source_acquisition_authority_receipt_required: true
+idempotent_replay_rendered: true
+stale_source_artifact_hash_fails_closed: true
+missing_operator_confirmation_fails_closed: true
+missing_source_artifact_receipt_fails_closed: true
+rendered_control_can_create_authority_envelope: false
+rendered_control_can_create_material_bridge: false
+rendered_control_can_mutate_gate_b_session: false
+rendered_control_can_fetch_sec_content: false
+rendered_control_can_accept_raw_sec_url: false
+rendered_control_can_accept_raw_local_path: false
+rendered_control_can_parse_xml_html_inline_xbrl: false
+rendered_control_can_create_runtime_storage_root: false
+rendered_control_can_start_process: false
+rendered_control_can_dispatch_connector: false
+rendered_control_can_write_provider_object: false
+rendered_control_can_add_rag_or_model_runtime: false
+rendered_control_can_activate_full_mockup: false
+raw_source_artifact_ref_rendered: false
+raw_source_artifact_receipt_path_rendered: false
+raw_authority_envelope_input_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+node_check: node --check ./backend/app/review_ui/static/layer3.js
+pytest_page_contract: python -m pytest ./backend/tests/test_layer3_page.py -q
+pytest_review_browser_fixture: python -m pytest ./backend/tests/test_review_browser_server.py -q
+pytest_api_source_acquisition: python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_api_records_sec_edgar_text_table_source_acquisition_authority ./backend/tests/test_layer3_api.py::test_layer3_api_rejects_sec_edgar_text_table_source_acquisition_stale_or_unconfirmed_authority -q
+headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep "SEC EDGAR source acquisition"
+headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep "SEC EDGAR source acquisition"
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_current_main_sync_v1
+```
+
+The rendered source-acquisition control now records the existing server-owned SEC EDGAR source-acquisition authority receipt through the admitted endpoint. The proof path covers missing operator confirmation, missing source-artifact receipt input, stale source-artifact hash rejection, available receipt projection, idempotent replay, and redacted operator-visible status in headless and headed Chromium.
