@@ -3139,6 +3139,10 @@ SEC_EDGAR_TEXT_TABLE_LAYER3_MATERIAL_AUTHORITY_BRIDGE_RUNTIME = (
     PLANNING_DOCS
     / "1118-sec-edgar-text-table-layer3-material-authority-bridge-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_LAYER3_PROOF_SELECTION = (
+    PLANNING_DOCS
+    / "1119-sec-edgar-text-table-downstream-layer3-proof-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -105902,6 +105906,124 @@ def _check_sec_edgar_text_table_layer3_material_authority_bridge_runtime(
                 )
 
 
+def _check_sec_edgar_text_table_downstream_layer3_proof_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_LAYER3_PROOF_SELECTION: (
+            "SEC EDGAR Text Table Downstream Layer 3 Proof Selection",
+            "milestone: sec_edgar_text_table_downstream_layer3_proof_selection_v1",
+            "source_material_authority_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1118-sec-edgar-text-table-layer3-material-authority-bridge-runtime.md",
+            "current_main_entry: 939272a054ee049d6af8f49f132aa8353f6ca6b5",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_text_table_downstream_layer3_proof_runtime_v1",
+            "selected_proof_mode: sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
+            "selected_operator_decision: record_sec_edgar_text_table_downstream_layer3_e2e_proof",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_parser_family: sec_edgar_filing",
+            "selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "required_authority_envelope_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1",
+            "required_material_bridge_schema_id: layer3.sec_edgar_text_table_material_authority_bridge.v1",
+            "required_material_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "required_material_bridge_state: sec_edgar_text_table_layer3_material_authority_bridge_ready",
+            "required_material_source_class: dataset_version",
+            "required_gate_b_decision_schema_id: layer3.gate_b_decision_request.v1",
+            "required_gate_b_commit_surface: existing_gate_b_decision_api",
+            "required_gate_b_commit_in_bridge: false",
+            "required_downstream_session_authority: L3Session,L3SelectionManifest,L3MaterialSnapshot",
+            "required_material_snapshot_source_shape: dataset_version",
+            "required_hash_bindings: authority_envelope_hash,materialization_receipt_hash,bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,proof_hash",
+            "required_coverage_steps: authority_envelope_validation,material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection",
+            "required_evidence_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only",
+            "required_fail_closed_conditions: missing_ready_envelope,missing_ready_bridge,bridge_hash_mismatch,gate_b_payload_mismatch,gate_b_hash_mismatch,missing_gate_b_session,material_snapshot_mismatch,missing_coverage_step,coverage_not_bound_to_server_receipt,raw_path_or_url_authority,missing_operator_confirmation,forbidden_input_authority",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "xml_html_inline_xbrl_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only",
+            "candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only",
+            "candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only",
+            "next_exact_posture: sec_edgar_text_table_downstream_layer3_proof_runtime_v1",
+            "It must recompute or verify the relevant server-owned hashes and refuse proof if the committed Gate B session, selection manifest, material snapshot, bridge projection, or coverage evidence no longer match.",
+            "Coverage evidence must bind to server-owned ids, hashes, or response receipts from current runtime surfaces.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_downstream_layer3_proof_selection_v1",
+            "source_material_authority_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1118-sec-edgar-text-table-layer3-material-authority-bridge-runtime.md",
+            "current_main_entry: 939272a054ee049d6af8f49f132aa8353f6ca6b5",
+            "selected_next_runtime_target: sec_edgar_text_table_downstream_layer3_proof_runtime_v1",
+            "selected_proof_mode: sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
+            "selected_operator_decision: record_sec_edgar_text_table_downstream_layer3_e2e_proof",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_parser_family: sec_edgar_filing",
+            "selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "required_authority_envelope_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1",
+            "required_material_bridge_schema_id: layer3.sec_edgar_text_table_material_authority_bridge.v1",
+            "required_material_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "required_gate_b_commit_surface: existing_gate_b_decision_api",
+            "required_gate_b_commit_in_bridge: false",
+            "required_evidence_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "next_exact_posture: sec_edgar_text_table_downstream_layer3_proof_runtime_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LAYER3_MATERIAL_AUTHORITY_BRIDGE_RUNTIME: (
+            "next_exact_posture: sec_edgar_text_table_downstream_layer3_proof_selection_v1",
+            "implemented_gate_b_payload: returned_for_existing_gate_b_decision_api",
+            "implemented_gate_b_commit_in_bridge: false",
+        ),
+        SEC_EDGAR_MATERIAL_BRIDGE_SERVICE: (
+            "gate_b_decision_payload",
+            "bridge_receipt_hash",
+            "material_preview_hash",
+            "gate_b_decision_manifest_id",
+            "\"direct_unbridged_sec_edgar_dataset_version_material_authority_admitted\": False",
+            "\"raw_url_exposed\": False",
+        ),
+        LAYER3_API: (
+            "\"/source/sec-edgar/text-table/material-authority/bridge\"",
+            "\"/gate-b/decision\"",
+            "response_model=Layer3GateBDecisionResponse",
+            "layer3_workbench.gate_b_decision(",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR text table downstream Layer 3 proof selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -106949,6 +107071,7 @@ def main() -> int:
     _check_sec_edgar_text_table_authority_envelope_validation_runtime(errors)
     _check_sec_edgar_text_table_layer3_material_authority_bridge_selection(errors)
     _check_sec_edgar_text_table_layer3_material_authority_bridge_runtime(errors)
+    _check_sec_edgar_text_table_downstream_layer3_proof_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
