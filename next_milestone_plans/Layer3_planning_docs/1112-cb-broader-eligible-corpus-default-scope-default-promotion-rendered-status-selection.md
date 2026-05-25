@@ -1,0 +1,71 @@
+# Candidate B Broader Eligible Corpus Default Scope Default Promotion Rendered Status Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_selection_v1
+source_default_promotion_runtime: next_milestone_plans/Layer3_planning_docs/1111-cb-broader-eligible-corpus-default-scope-default-promotion-runtime.md
+current_main_entry: 7942e6a6452be04f4d8f299b7c17b7c4a202a88e
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_v1
+selected_rendered_status_scope: operator_visible_default_promotion_submission_and_status_projection_over_server_revalidated_promotion_readiness_authority
+selected_rendered_status_mode: rendered_candidate_b_broader_scope_default_promotion_control_without_browser_default_policy_source_expansion_or_frontend_authority
+selected_rendered_status_control_target: rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control
+existing_default_promotion_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion
+existing_promotion_readiness_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness
+required_payload_authority: opaque_promotion_readiness_audit_id_hash_trial_receipt_id_hash_selected_classes_production_policy_hash_rendered_status_closeout_rollback_and_operator_confirmation
+required_server_validation: default_promotion_service_revalidates_readiness_audit_trial_receipt_selected_classes_production_policy_rendered_status_closeout_and_rollback_before_recording_receipt
+default_promotion_status_values_rendered: selected,blocked,not_started,error
+accepted_readiness_renders_selected: true
+blocked_readiness_renders_blocked: true
+stale_or_missing_promotion_readiness_receipt_must_fail_closed: true
+missing_rendered_status_confirmation_must_fail_closed: true
+missing_closeout_confirmation_must_fail_closed: true
+missing_rollback_confirmation_must_fail_closed: true
+redacted_default_promotion_receipt_ref_required: true
+raw_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+raw_stdout_rendered: false
+raw_stderr_rendered: false
+artifact_bytes_rendered: false
+browser_supplied_default_policy_admitted: false
+browser_supplied_scope_classes_admitted: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+selector_mutation_admitted_now: false
+selector_mutation_performed: false
+default_scope_expansion_admitted: false
+default_scope_expansion_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+selected_classes_default_scope_only: true
+non_selected_class_default: baseline
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_promotion_rendered_status_v1
+```
+
+This freeze selects the rendered/status pass for the existing Candidate B broader-scope default-promotion runtime. The next implementation should expose a rendered operator control that submits only fixed mode/decision values, opaque promotion-readiness audit ids and hashes, trial receipt ids and hashes, selected classes, production policy hash, rendered-status confirmation, closeout confirmation, rollback confirmation, and operator confirmation to the existing default-promotion endpoint.
+
+The browser remains a control surface only. The server must continue to revalidate promotion-readiness authority, selected classes, production policy, rendered-status evidence, closeout evidence, rollback confirmation, and negative invariants before recording or replaying a default-promotion receipt. The rendered control must not supply default policy, widen selected classes, mutate non-selected classes, expand source/runtime scope, run processes, expose raw paths or URLs, dispatch providers/connectors, enable RAG/model runtime, activate full mockups, use browser storage as authority, or create frontend durable authority.
+
+## Coherence Check
+
+- Does this selection add a new backend endpoint? Recommended answer: no. It selects rendered/operator use of the existing default-promotion endpoint.
+- What can the browser submit? Recommended answer: fixed mode/decision values plus opaque server receipt ids/hashes, selected classes already bound by readiness authority, confirmation booleans, and no raw authority.
+- Does this broaden Candidate B default scope? Recommended answer: no. It keeps default promotion receipt-bound to selected classes and keeps non-selected classes on baseline.
+- What proves the next pass? Recommended answer: focused backend/static proof plus headed and headless Chromium rendered tests showing selected and blocked states without raw authority exposure.
