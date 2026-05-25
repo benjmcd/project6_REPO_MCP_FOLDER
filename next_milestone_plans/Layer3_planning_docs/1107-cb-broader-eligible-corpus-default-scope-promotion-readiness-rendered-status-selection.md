@@ -1,0 +1,67 @@
+# Candidate B Broader Eligible Corpus Default Scope Promotion Readiness Rendered Status Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_selection_v1
+source_promotion_readiness_audit: next_milestone_plans/Layer3_planning_docs/1106-cb-broader-eligible-corpus-default-scope-promotion-readiness-audit.md
+current_main_entry: f8b5216e89b3fcf3a2c3284d116c0366a52a2941
+source_sync_pr: "#1810"
+source_sync_merge_commit: f8b5216e89b3fcf3a2c3284d116c0366a52a2941
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_v1
+selected_rendered_status_scope: operator_visible_promotion_readiness_submission_and_status_projection_over_server_revalidated_repeatability_trial_authority
+selected_rendered_status_mode: rendered_candidate_b_broader_scope_promotion_readiness_control_without_default_mutation_source_expansion_or_frontend_authority
+selected_rendered_status_control_target: rendered_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_control
+existing_promotion_readiness_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness
+existing_operator_repeatability_trial_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial
+required_payload_authority: opaque_trial_receipt_id_hash_trial_authority_hash_authority_pair_hash_selected_classes_operator_status_confirmation_and_redacted_production_policy_binding
+required_server_validation: promotion_readiness_service_revalidates_trial_receipt_selected_classes_operator_visible_status_rollback_and_production_policy
+promotion_readiness_status_values_rendered: ready,blocked,not_started,error
+accepted_trial_renders_ready: true
+blocked_trial_renders_blocked: true
+stale_or_missing_trial_receipt_must_fail_closed: true
+missing_operator_visible_status_must_fail_closed: true
+missing_production_ownership_storage_policy_must_fail_closed: true
+redacted_promotion_readiness_audit_ref_required: true
+raw_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+raw_stdout_rendered: false
+raw_stderr_rendered: false
+artifact_bytes_rendered: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+selector_mutation_admitted_now: false
+default_scope_expansion_admitted_now: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+selected_classes_default_scope_only: true
+non_selected_class_default: baseline
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_v1
+```
+
+This freeze selects the rendered/status pass for the Candidate B broader eligible-corpus default-scope promotion-readiness audit. The next runtime should make the audit operator-visible in `/review/layer3` by submitting only fixed mode/decision fields, opaque repeatability-trial receipt ids and hashes, selected classes, operator-visible-status confirmation, rollback confirmation, and a redacted production ownership/storage policy binding.
+
+The browser remains a control surface only. Server code must continue to revalidate the trial receipt, selected classes, status confirmation, rollback confirmation, and production policy before returning ready or blocked. The rendered control must not mutate defaults, expand source/runtime scope, run processes, expose raw paths or URLs, dispatch providers/connectors, enable RAG/model runtime, activate full mockups, or create frontend durable authority.
+
+## Coherence Check
+
+- Does this selection admit broader default mutation? Recommended answer: no. It admits only the rendered/status control for the existing promotion-readiness audit.
+- What should the browser submit? Recommended answer: opaque receipt ids and hashes, selected classes, fixed mode/decision values, confirmation booleans, and redacted production policy binding only.
+- What proves the next pass? Recommended answer: focused backend/static proof plus headed and headless Chromium rendered tests showing ready and blocked states without raw authority exposure.

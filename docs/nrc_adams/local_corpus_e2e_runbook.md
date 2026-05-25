@@ -6235,3 +6235,43 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_
 ```
 
 The promotion-readiness audit now turns the accepted broader-scope repeatability chain into a ready/blocked server-side decision point. It still does not mutate Candidate B defaults, expand source ingestion, run provider/connector/RAG/model behavior, or create frontend durable authority. Operators need a separately selected rendered/status pass before this readiness audit becomes a first-class workbench control.
+
+### Candidate B Broader Eligible Corpus Default Scope Promotion Readiness Rendered Status Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_selection_v1
+source_promotion_readiness_audit: next_milestone_plans/Layer3_planning_docs/1106-cb-broader-eligible-corpus-default-scope-promotion-readiness-audit.md
+current_main_entry: f8b5216e89b3fcf3a2c3284d116c0366a52a2941
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_v1
+selected_rendered_status_scope: operator_visible_promotion_readiness_submission_and_status_projection_over_server_revalidated_repeatability_trial_authority
+selected_rendered_status_control_target: rendered_candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_control
+existing_promotion_readiness_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness
+existing_operator_repeatability_trial_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial
+promotion_readiness_status_values_rendered: ready,blocked,not_started,error
+accepted_trial_renders_ready: true
+blocked_trial_renders_blocked: true
+stale_or_missing_trial_receipt_must_fail_closed: true
+missing_operator_visible_status_must_fail_closed: true
+missing_production_ownership_storage_policy_must_fail_closed: true
+redacted_promotion_readiness_audit_ref_required: true
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+selector_mutation_admitted_now: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_rendered_status_v1
+```
+
+The next implementation pass should expose the promotion-readiness audit in the rendered operator surface. It should reuse the server endpoint and submit only receipt-bound, redacted authority fields. Default-scope mutation remains a separate future selection after the rendered/status proof is clean.
