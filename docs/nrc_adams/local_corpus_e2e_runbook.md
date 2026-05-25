@@ -4910,3 +4910,46 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_u
 ```
 
 The selector-use stale runtime input remediation is now current-main behavior. The next useful slice is operator status inspection for selected selector-use receipts, so an operator can inspect which receipt/class selection is active before any broader default-promotion closeout.
+
+### Candidate B Broader Eligible Corpus Default Scope Selector-Use Operator Status Inspection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_v1
+source_selector_use_remediation_current_main_sync: next_milestone_plans/Layer3_planning_docs/1078-cb-broader-eligible-corpus-default-scope-selector-use-remediation-current-main-sync.md
+current_main_entry: f6a71acce1f3155e2d7c609cd9f88e8a5d8b67aa
+runtime_status: implemented
+rendered_status: implemented
+status_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use_status.v1
+status_mode: candidate_b_broader_eligible_corpus_default_scope_selector_use_status_v1
+operator_decision: inspect_candidate_b_broader_eligible_corpus_default_scope_selector_use_status
+status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status
+rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_control
+read_only_status_inspection: true
+selector_use_receipt_id_hash_required: true
+runtime_selection_receipt_id_hash_required: true
+server_owned_receipt_revalidation: true
+stale_selector_use_receipt_hash_rejected: true
+stale_runtime_receipt_hash_rejected: true
+redacted_operator_visible_selector_status: true
+selected_scope_classes_visible: true
+runtime_receipt_binding_visible: true
+default_enabled_for_selected_classes_visible: true
+non_selected_class_default_preserved: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+selector_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 7 passed
+headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium PASS 2 passed
+headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium --headed PASS 2 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_current_main_sync_v1
+```
+
+The selector-use status inspection endpoint and rendered control revalidate selector-use receipt authority without mutating selectors or expanding source/runtime/provider/model scope. This gives operators a read-only proof surface for which broader classes are receipt-bound before any later broader default-scope closeout.
