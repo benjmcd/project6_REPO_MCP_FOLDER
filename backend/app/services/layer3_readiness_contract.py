@@ -251,6 +251,10 @@ def build_readiness_contract(
         "candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation"
         ),
+        "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_admitted": True,
+        "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume"
+        ),
         "candidate_b_default_promotion_final_proof_admitted": True,
         "candidate_b_default_promotion_final_proof_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/default-promotion/final-proof"
