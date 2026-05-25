@@ -3266,6 +3266,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_SELECTION = (
     PLANNING_DOCS
     / "1150-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_RUNTIME = (
+    PLANNING_DOCS
+    / "1151-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -109772,6 +109776,117 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_sel
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_RUNTIME: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Layer 3 Proof Runtime",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_v1",
+            "selection: next_milestone_plans/Layer3_planning_docs/1150-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-selection.md",
+            "current_main_entry: 6f94e338f08b410cbcd6d9e804a5b6e9004d992f",
+            "implemented_runtime_status: implemented",
+            "implemented_rendered_status: not_implemented",
+            "implemented_schema_id: layer3.sec_edgar_text_table_live_source_artifact_downstream_proof.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_text_table_live_source_artifact_downstream_proof_request.v1",
+            "implemented_proof_mode: sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1",
+            "implemented_operator_decision: record_sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+            "implemented_service: backend/app/services/layer3_sec_edgar_live_downstream_proof.py",
+            "implemented_live_material_bridge_receipt_reader: read_sec_edgar_text_table_live_source_artifact_material_authority_bridge_receipt",
+            "implemented_existing_downstream_proof_mode_to_compose: sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
+            "implemented_required_live_source_artifact_receipt_authority: live_source_artifact_receipt_id,live_source_artifact_receipt_hash,source_artifact_receipt_id,source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256",
+            "implemented_required_source_acquisition_authority: source_acquisition_receipt_id,source_acquisition_receipt_hash,source_artifact_receipt_hash,materialization_receipt_hash,dataset_version_hash,authority_envelope_hash",
+            "implemented_required_live_bridge_authority: live_source_artifact_material_bridge_receipt_id,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id",
+            "implemented_required_downstream_session_authority: L3Session,L3SelectionManifest,L3MaterialSnapshot",
+            "implemented_coverage_steps: live_source_artifact_acquisition,source_acquisition_authority,live_material_authority_bridge,authority_envelope_validation,material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection",
+            "missing_live_source_artifact_receipt_rejected: true",
+            "stale_live_source_artifact_receipt_hash_rejected: true",
+            "source_acquisition_receipt_hash_mismatch_rejected: true",
+            "live_material_bridge_receipt_mismatch_rejected: true",
+            "coverage_not_bound_to_server_receipt_rejected: true",
+            "direct_live_artifact_to_material_without_source_acquisition_admitted: false",
+            "direct_raw_artifact_parse_or_materialization_admitted: false",
+            "live_sec_network_fetch_admitted_for_proof: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "verification_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_live_downstream_proof.py ./backend/app/services/layer3_sec_edgar_live_material_bridge.py ./backend/app/api/layer3.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_api.py ./backend/tests/test_layer3_bootstrap_contract.py ./tools/l3-progress-check.py PASS",
+            "verification_pytest_focused: python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_api_records_live_sec_edgar_source_artifact_downstream_proof ./backend/tests/test_layer3_api.py::test_layer3_api_rejects_live_sec_edgar_downstream_proof_stale_or_forbidden_authority ./backend/tests/test_layer3_api.py::test_layer3_api_rejects_live_sec_edgar_material_bridge_stale_or_missing_authority ./backend/tests/test_layer3_bootstrap_contract.py -q PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_v1",
+            "selection: next_milestone_plans/Layer3_planning_docs/1150-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-selection.md",
+            "implemented_proof_mode: sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+            "implemented_service: backend/app/services/layer3_sec_edgar_live_downstream_proof.py",
+            "implemented_live_material_bridge_receipt_reader: read_sec_edgar_text_table_live_source_artifact_material_authority_bridge_receipt",
+            "implemented_existing_downstream_proof_mode_to_compose: sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
+            "implemented_coverage_steps: live_source_artifact_acquisition,source_acquisition_authority,live_material_authority_bridge,authority_envelope_validation,material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection",
+            "live_material_bridge_receipt_mismatch_rejected: true",
+            "live_sec_network_fetch_admitted_for_proof: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_LAYER3_PROOF_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_downstream_proof.py": (
+            "SCHEMA_ID = \"layer3.sec_edgar_text_table_live_source_artifact_downstream_proof.v1\"",
+            "REQUEST_SCHEMA_ID = \"layer3.sec_edgar_text_table_live_source_artifact_downstream_proof_request.v1\"",
+            "PROOF_MODE = \"sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1\"",
+            "OPERATOR_DECISION = \"record_sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof\"",
+            "record_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof",
+            "read_sec_edgar_text_table_live_source_artifact_receipt",
+            "read_sec_edgar_text_table_source_acquisition_receipt",
+            "read_sec_edgar_text_table_live_source_artifact_material_authority_bridge_receipt",
+            "record_sec_edgar_text_table_downstream_layer3_proof",
+            "live_source_artifact_acquisition",
+            "live_material_authority_bridge",
+            "direct_live_artifact_to_material_without_source_acquisition_admitted",
+            "raw_url_exposed",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_material_bridge.py": (
+            "def read_sec_edgar_text_table_live_source_artifact_material_authority_bridge_receipt(",
+            "_verify_receipt_hash_payload",
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "Layer3SecEdgarTextTableLiveSourceArtifactDownstreamProofRequest",
+            "Layer3SecEdgarTextTableLiveSourceArtifactDownstreamProofResponse",
+            "/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+            "record_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py": (
+            "sec_edgar_text_table_live_source_artifact_downstream_proof",
+            "sec_edgar_text_table_live_source_artifact_downstream_proof_admitted",
+            "sec_edgar_text_table_live_source_artifact_downstream_proof_endpoint",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_api.py": (
+            "test_layer3_api_records_live_sec_edgar_source_artifact_downstream_proof",
+            "test_layer3_api_rejects_live_sec_edgar_downstream_proof_stale_or_forbidden_authority",
+            "sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1",
+            "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+            "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_hash_mismatch",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py": (
+            "sec_edgar_text_table_live_source_artifact_downstream_proof",
+            "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream Layer 3 proof runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -110896,6 +111011,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime(
         errors
     )
 
