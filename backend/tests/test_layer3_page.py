@@ -176,6 +176,12 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
         in response.text
     )
     assert "SEC EDGAR downstream operator-status bootstrap contract is not available." in response.text
+    assert 'id="sec-edgar-downstream-repeatability-trial-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control"'
+        in response.text
+    )
+    assert "SEC EDGAR downstream repeatability-trial bootstrap contract is not available." in response.text
     assert 'id="mockup-activation-readiness-panel"' in response.text
     assert 'data-rendered-mode="rendered_mockup_activation_readiness_dashboard"' in response.text
     assert 'data-frontend-durable-authority="false"' in response.text
@@ -478,6 +484,13 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "async function inspectSecEdgarDownstreamOperatorStatus" in js.text
     assert "sec-edgar-downstream-operator-status-form" in js.text
     assert "raw proof receipt path rendered" in js.text
+    assert "SEC_EDGAR_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control'" in js.text
+    assert "SEC_EDGAR_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution'" in js.text
+    assert "function secEdgarDownstreamRepeatabilityTrialPayload" in js.text
+    assert "function renderSecEdgarDownstreamRepeatabilityTrialPanel" in js.text
+    assert "async function recordSecEdgarDownstreamRepeatabilityTrial" in js.text
+    assert "sec-edgar-downstream-repeatability-trial-form" in js.text
+    assert "operator status hash comparison" in js.text
     assert "function candidateBFullCorpusOperatorWorkflowStatusRows" in js.text
     assert "async function inspectCandidateBFullCorpusOperatorWorkflowStatus" in js.text
     assert "function candidateBFullCorpusOperatorWorkflowExecutionBoundaryRows" in js.text

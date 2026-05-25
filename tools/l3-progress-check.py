@@ -3182,6 +3182,10 @@ SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_SELECTION
     PLANNING_DOCS
     / "1129-sec-edgar-text-table-downstream-repeatability-rendered-status-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1130-sec-edgar-text-table-downstream-repeatability-rendered-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -107343,6 +107347,133 @@ def _check_sec_edgar_text_table_downstream_operator_repeatability_rendered_statu
                 )
 
 
+def _check_sec_edgar_text_table_downstream_operator_repeatability_rendered_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_RUNTIME: (
+            "SEC EDGAR Text Table Downstream Repeatability Rendered Status Runtime",
+            "milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_rendered_status_runtime_v1",
+            "source_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1129-sec-edgar-text-table-downstream-repeatability-rendered-status-selection.md",
+            "current_main_entry: bf97844653a1d2e039ce2a47202926db81c65e83",
+            "runtime_status: implemented",
+            "rendered_status: implemented",
+            "implemented_bootstrap_capability: sec_edgar_text_table_downstream_operator_repeatability_trial",
+            "implemented_bootstrap_endpoint_field: sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control",
+            "implemented_trial_mode: append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "implemented_operator_decision: record_sec_edgar_text_table_downstream_operator_repeatability_trial",
+            "implemented_panel: sec-edgar-downstream-repeatability-trial-panel",
+            "implemented_form: sec-edgar-downstream-repeatability-trial-form",
+            "implemented_submit: sec-edgar-downstream-repeatability-trial-submit",
+            "accepted_and_stale_status_hash_paths_rendered: true",
+            "test_only_fixture_route: /__test/layer3/sec-edgar-repeatability-trial",
+            "raw_original_status_request_rendered: false",
+            "raw_repeat_status_request_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "focused_node_check: node --check ./backend/app/review_ui/static/layer3.js PASS",
+            "focused_page_pytest: python -m pytest ./backend/tests/test_layer3_page.py -q PASS",
+            "focused_review_browser_pytest: python -m pytest ./backend/tests/test_review_browser_server.py -q -k \"harness_info or sec_edgar\" PASS",
+            "headless_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR downstream repeatability trial\" --project=chromium PASS",
+            "headed_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR downstream repeatability trial\" --project=chromium --headed PASS",
+            "next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_rendered_status_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_rendered_status_runtime_v1",
+            "source_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1129-sec-edgar-text-table-downstream-repeatability-rendered-status-selection.md",
+            "current_main_entry: bf97844653a1d2e039ce2a47202926db81c65e83",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control",
+            "implemented_panel: sec-edgar-downstream-repeatability-trial-panel",
+            "implemented_form: sec-edgar-downstream-repeatability-trial-form",
+            "test_only_fixture_route: /__test/layer3/sec-edgar-repeatability-trial",
+            "accepted_and_stale_status_hash_paths_rendered: true",
+            "raw_original_status_request_rendered: false",
+            "raw_repeat_status_request_rendered: false",
+            "raw_url_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "headless_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR downstream repeatability trial\" --project=chromium PASS",
+            "headed_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR downstream repeatability trial\" --project=chromium --headed PASS",
+            "next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_rendered_status_current_main_sync_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_rendered_status_runtime_v1",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "\"sec_edgar_text_table_downstream_operator_repeatability_trial\": True",
+            "\"sec_edgar_text_table_downstream_operator_repeatability_trial_admitted\": True",
+            "\"sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint\"",
+            "f\"{api_root}/source/sec-edgar/text-table/downstream/operator-repeatability/trial\"",
+        ),
+        LAYER3_HTML: (
+            "sec-edgar-downstream-repeatability-trial-panel",
+            "rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control",
+            "data-frontend-durable-authority=\"false\"",
+        ),
+        LAYER3_JS: (
+            "SEC_EDGAR_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control'",
+            "SEC_EDGAR_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution'",
+            "SEC_EDGAR_REPEATABILITY_TRIAL_OPERATOR_DECISION = 'record_sec_edgar_text_table_downstream_operator_repeatability_trial'",
+            "secEdgarDownstreamRepeatabilityTrialEndpointPath",
+            "secEdgarDownstreamRepeatabilityTrialPayload",
+            "canRecordSecEdgarDownstreamRepeatabilityTrial",
+            "secEdgarDownstreamRepeatabilityTrialRows",
+            "renderSecEdgarDownstreamRepeatabilityTrialPanel",
+            "recordSecEdgarDownstreamRepeatabilityTrial",
+            "sec-edgar-downstream-repeatability-trial-form",
+            "operator status hash comparison",
+            "raw URL exposed",
+        ),
+        REVIEW_BROWSER_SERVER: (
+            "project6.review_browser_sec_edgar_repeatability_trial_setup.v1",
+            "/__test/layer3/sec-edgar-repeatability-trial",
+            "_prepare_sec_edgar_repeatability_trial_fixture",
+            "layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "trial_endpoint\": \"/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial\"",
+        ),
+        ROOT / "backend" / "tests" / "test_review_browser_server.py": (
+            "test_review_browser_server_prepares_sec_edgar_repeatability_trial_authority",
+            "/__test/layer3/sec-edgar-repeatability-trial",
+            "layer3.sec_edgar_text_table_downstream_operator_repeatability_trial.v1",
+            "operator_status_hash_comparison",
+            "actual_sec_processing_execution_admitted",
+        ),
+        LAYER3_PAGE_TEST: (
+            "sec-edgar-downstream-repeatability-trial-panel",
+            "rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control",
+            "SEC_EDGAR_REPEATABILITY_TRIAL_RENDERED_MODE",
+            "function secEdgarDownstreamRepeatabilityTrialPayload",
+            "function renderSecEdgarDownstreamRepeatabilityTrialPanel",
+            "async function recordSecEdgarDownstreamRepeatabilityTrial",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench records SEC EDGAR downstream repeatability trial through server revalidation",
+            "/__test/layer3/sec-edgar-repeatability-trial",
+            "sec-edgar-downstream-repeatability-trial-form",
+            "record_sec_edgar_text_table_downstream_operator_repeatability_trial",
+            "sec_edgar_downstream_repeatability_trial_accepted",
+            "sec_edgar_text_table_downstream_operator_repeatability_trial_stale_original_operator_status_hash",
+            "/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial",
+            "expect(JSON.stringify(accepted)).not.toContain('http://')",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR text table downstream repeatability rendered status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -108411,6 +108542,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_downstream_operator_repeatability_rendered_status_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_downstream_operator_repeatability_rendered_status_runtime(
         errors
     )
 

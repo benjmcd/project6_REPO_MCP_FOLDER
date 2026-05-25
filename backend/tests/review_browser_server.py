@@ -59,6 +59,7 @@ from app.services import (
     layer3_internal_webhook_connector,
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
+    layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_material_bridge,
     layer3_workbench,
 )
@@ -857,6 +858,44 @@ def _prepare_sec_edgar_downstream_status_fixture(db, temp_path: Path, *, seed_id
     }
 
 
+def _prepare_sec_edgar_repeatability_trial_fixture(db, temp_path: Path, *, seed_id: str) -> dict[str, object]:
+    status_fixture = _prepare_sec_edgar_downstream_status_fixture(db, temp_path, seed_id=seed_id)
+    original_status_request = {
+        "client_request_id": f"review-browser-sec-edgar-repeatability-original-{seed_id}",
+        "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+        "downstream_proof_request": status_fixture["downstream_proof_request"],
+        "expected_proof_hash": status_fixture["expected_proof_hash"],
+    }
+    repeat_status_request = {
+        **original_status_request,
+        "client_request_id": f"review-browser-sec-edgar-repeatability-repeat-{seed_id}",
+    }
+    original_status = layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
+        original_status_request,
+        db,
+    )
+    repeat_status = layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
+        repeat_status_request,
+        db,
+    )
+    return {
+        "schema_id": "project6.review_browser_sec_edgar_repeatability_trial_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "dataset_version_id": status_fixture["dataset_version_id"],
+        "original_operator_status_request": original_status_request,
+        "original_operator_status_hash": original_status["operator_status_hash"],
+        "repeat_operator_status_request": repeat_status_request,
+        "repeat_operator_status_hash": repeat_status["operator_status_hash"],
+        "trial_endpoint": "/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial",
+        "status_endpoint": status_fixture["status_endpoint"],
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
 def _write_browser_storage_ref(ref: str, content: str) -> tuple[str, str]:
     path = Path(settings.storage_dir) / ref
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1444,6 +1483,7 @@ def create_app() -> FastAPI:
     raw_mixed_seed_counter = count(1)
     raw_mixed_materialization_counter = count(1)
     sec_edgar_status_counter = count(1)
+    sec_edgar_repeatability_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
     _install_layer3_browser_patches(temp_path)
@@ -1551,6 +1591,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
                 "/__test/layer3/sec-edgar-downstream-status",
+                "/__test/layer3/sec-edgar-repeatability-trial",
                 "/__test/layer3/source-directory-hybrid-authority",
                 "/__test/layer3/source-directory-fixture-reset",
                 "/__test/layer3/candidate-b-readiness-audit",
@@ -1759,6 +1800,20 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"SEC EDGAR downstream status setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/sec-edgar-repeatability-trial")
+    def sec_edgar_repeatability_trial_setup() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = f"browser-repeatability-{next(sec_edgar_repeatability_counter):03d}"
+            return _prepare_sec_edgar_repeatability_trial_fixture(db, temp_path, seed_id=seed_id)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR repeatability trial setup failed: {exc}",
             ) from exc
         finally:
             db.close()
