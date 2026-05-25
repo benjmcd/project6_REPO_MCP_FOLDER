@@ -170,6 +170,12 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="candidate-b-default-promotion-status-panel"' in response.text
     assert 'data-rendered-mode="rendered_candidate_b_default_promotion_read_only_status_surface"' in response.text
     assert 'data-frontend-durable-authority="false"' in response.text
+    assert 'id="sec-edgar-downstream-operator-status-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_sec_edgar_text_table_downstream_layer3_operator_status_control"'
+        in response.text
+    )
+    assert "SEC EDGAR downstream operator-status bootstrap contract is not available." in response.text
     assert 'id="mockup-activation-readiness-panel"' in response.text
     assert 'data-rendered-mode="rendered_mockup_activation_readiness_dashboard"' in response.text
     assert 'data-frontend-durable-authority="false"' in response.text
@@ -465,6 +471,13 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "async function inspectCandidateBDefaultPromotionFinalProofStatus" in js.text
     assert "function candidateBFinalOperatorInspectionRows" in js.text
     assert "function candidateBOperatorStatusDeliveryPreviewRows" in js.text
+    assert "SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_layer3_operator_status_control'" in js.text
+    assert "SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_downstream_layer3_operator_status_v1'" in js.text
+    assert "function secEdgarDownstreamOperatorStatusPayload" in js.text
+    assert "function renderSecEdgarDownstreamOperatorStatusPanel" in js.text
+    assert "async function inspectSecEdgarDownstreamOperatorStatus" in js.text
+    assert "sec-edgar-downstream-operator-status-form" in js.text
+    assert "raw proof receipt path rendered" in js.text
     assert "function candidateBFullCorpusOperatorWorkflowStatusRows" in js.text
     assert "async function inspectCandidateBFullCorpusOperatorWorkflowStatus" in js.text
     assert "function candidateBFullCorpusOperatorWorkflowExecutionBoundaryRows" in js.text
@@ -496,6 +509,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "Server revalidates the final proof receipt; this control records no selector mutation." in js.text
     assert "State.bootstrap?.execution_readiness" in js.text
     assert "candidate_b_default_promotion_operator_status_endpoint" in js.text
+    assert "sec_edgar_text_table_downstream_operator_status_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_status_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_execution_boundary_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_process_execution_endpoint" in js.text

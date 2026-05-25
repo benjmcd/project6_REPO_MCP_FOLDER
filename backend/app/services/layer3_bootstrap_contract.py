@@ -75,6 +75,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "candidate_b_full_corpus_operator_workflow_retry_worker_attempt": True,
     "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint": True,
     "candidate_b_full_corpus_operator_workflow_retry_completion_failure": True,
+    "sec_edgar_text_table_downstream_operator_status": True,
     "source_directory_ingestion_scan": True,
     "source_directory_ingestion_status": True,
     "source_directory_material_preview": True,
@@ -222,6 +223,10 @@ def build_bootstrap_contract(
             "candidate_b_default_promotion_operator_status_admitted": True,
             "candidate_b_default_promotion_operator_status_endpoint": (
                 f"{api_root}/source/ingestion/candidate-b/default-promotion/operator-status"
+            ),
+            "sec_edgar_text_table_downstream_operator_status_admitted": True,
+            "sec_edgar_text_table_downstream_operator_status_endpoint": (
+                f"{api_root}/source/sec-edgar/text-table/downstream-proof/status"
             ),
             "candidate_b_default_promotion_closure_evidence_admitted": True,
             "candidate_b_default_promotion_closure_evidence_endpoint": (

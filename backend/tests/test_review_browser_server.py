@@ -106,6 +106,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     ]
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
+    assert "/__test/layer3/sec-edgar-downstream-status" in payload["seed_routes"]
     assert "/__test/layer3/source-directory-fixture-reset" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-readiness-audit" in payload["seed_routes"]
     assert "/__test/layer3/candidate-b-realistic-readiness-audit" in payload["seed_routes"]
@@ -115,6 +116,43 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     posix_user_prefix = "/" + "Users" + "/"
     assert windows_user_prefix not in str(payload)
     assert posix_user_prefix not in str(payload)
+
+
+def test_review_browser_server_prepares_sec_edgar_downstream_status_authority(client: TestClient) -> None:
+    setup_response = client.post("/__test/layer3/sec-edgar-downstream-status")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_sec_edgar_downstream_status_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["dataset_version_id"].startswith("dv-sec-edgar-status-")
+    assert setup["expected_proof_hash"] == setup["proof_hash"]
+    assert setup["status_endpoint"] == "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status"
+    assert setup["raw_local_path_exposed"] is False
+    assert setup["raw_url_exposed"] is False
+    assert setup["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(setup)
+
+    status_response = client.post(
+        setup["status_endpoint"],
+        json={
+            "client_request_id": "review-browser-sec-edgar-status",
+            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "downstream_proof_request": setup["downstream_proof_request"],
+            "expected_proof_hash": setup["expected_proof_hash"],
+        },
+    )
+    assert status_response.status_code == 200, status_response.text
+    status = status_response.json()
+    assert status["schema_id"] == "layer3.sec_edgar_text_table_downstream_operator_status.v1"
+    assert status["operator_status_state"] == "available"
+    assert status["proof_hash"] == setup["expected_proof_hash"]
+    assert status["status_projection"]["server_revalidated"] is True
+    assert status["raw_local_path_rendered"] is False
+    assert status["raw_url_rendered"] is False
+    assert status["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(status)
 
 
 def test_review_browser_server_prepares_candidate_b_readiness_audit(client: TestClient) -> None:
