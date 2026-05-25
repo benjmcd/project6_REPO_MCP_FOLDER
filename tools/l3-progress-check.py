@@ -3005,6 +3005,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_RENDERED_S
     PLANNING_DOCS
     / "1084-cb-broader-eligible-corpus-default-scope-selector-activation-rendered-status.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1085-cb-broader-eligible-corpus-default-scope-selector-activation-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -102618,6 +102622,104 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_CURRENT_MAIN_SYNC: (
+            "Candidate B Broader Eligible Corpus Default Scope Selector Activation Current-Main Sync",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_activation_current_main_sync_v1",
+            "source_selector_activation_rendered_status: next_milestone_plans/Layer3_planning_docs/1084-cb-broader-eligible-corpus-default-scope-selector-activation-rendered-status.md",
+            "current_main_entry: 24a5e7af0a30bc482155f0f869740921f05128aa",
+            'source_pr: "#1787"',
+            "source_merge_commit: 24a5e7af0a30bc482155f0f869740921f05128aa",
+            "merge_state_before_merge: CLEAN",
+            "review_threads_total_count: 0",
+            "unresolved_review_threads_total_count: 0",
+            "ci_status: passed",
+            "ci_successful_checks: 10",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "synced_runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation",
+            "synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_selector_activation_status_control",
+            "synced_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1",
+            "synced_operator_surface: /review/layer3 Candidate B default-promotion status panel",
+            "synced_response_authority: State.candidateBBroaderScopeSelectorActivation",
+            "synced_source_status_authority: State.candidateBBroaderScopeSelectorUseStatus",
+            "synced_server_authority: selector_use_status_hash_selector_use_receipt_id_hash_runtime_selection_receipt_id_hash_exact_selected_scope_classes",
+            "synced_activation_authority_source: server_revalidated_selector_use_status",
+            "synced_positive_activation_rendered_proof: true",
+            "synced_stale_status_hash_fail_closed_rendered: true",
+            "synced_stale_runtime_or_selector_use_state_clears_activation: true",
+            "synced_redacted_activation_receipt_visible: true",
+            "synced_browser_frontend_authority: false",
+            "synced_selector_mutation_performed: false",
+            "synced_default_scope_mutation_performed: false",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_activation_current_main_sync_v1",
+            "source_selector_activation_rendered_status: next_milestone_plans/Layer3_planning_docs/1084-cb-broader-eligible-corpus-default-scope-selector-activation-rendered-status.md",
+            "current_main_entry: 24a5e7af0a30bc482155f0f869740921f05128aa",
+            'source_pr: "#1787"',
+            "source_merge_commit: 24a5e7af0a30bc482155f0f869740921f05128aa",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "synced_runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation",
+            "synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_selector_activation_status_control",
+            "synced_response_authority: State.candidateBBroaderScopeSelectorActivation",
+            "synced_source_status_authority: State.candidateBBroaderScopeSelectorUseStatus",
+            "synced_server_authority: selector_use_status_hash_selector_use_receipt_id_hash_runtime_selection_receipt_id_hash_exact_selected_scope_classes",
+            "synced_activation_authority_source: server_revalidated_selector_use_status",
+            "synced_stale_status_hash_fail_closed_rendered: true",
+            "synced_stale_runtime_or_selector_use_state_clears_activation: true",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_RENDERED_STATUS: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_activation_current_main_sync_v1",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_BROADER_SCOPE_SELECTOR_ACTIVATION_RENDERED_MODE",
+            "recordCandidateBBroaderScopeSelectorActivation",
+            "State.candidateBBroaderScopeSelectorUseStatus?.status === 'available'",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "selectorActivationPayloads",
+            "candidate_b_broader_scope_selector_activation_stale_status_hash",
+            "candidate_b_broader_scope_selector_activation_not_recorded",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope selector activation current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -103569,6 +103671,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation_rendered_status(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation_current_main_sync(
         errors
     )
 
