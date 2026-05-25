@@ -7572,3 +7572,42 @@ next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial
 ```
 
 Operators now have a rendered repeatability-trial control for SEC EDGAR downstream status evidence. The control posts only two server-revalidated operator-status requests, their status hashes, disposition, and confirmation to the existing repeatability endpoint. It renders redacted accepted/stale status only and keeps SEC fetch, parser expansion, process execution, provider writes, connector dispatch, RAG/model runtime, full mockup activation, raw path/URL display, browser-storage authority, and frontend durable authority blocked.
+
+### SEC EDGAR Text Table Downstream Repeatability Rendered Status Current-Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_rendered_status_current_main_sync_v1
+source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1130-sec-edgar-text-table-downstream-repeatability-rendered-status-runtime.md
+current_main_entry: 36968d1b10b4f1cd1c29f8abe91b65b95f2a7862
+source_pr: "#1834"
+source_branch: codex/sec-edgar-repeatability-rendered-runtime
+source_commit: c7c8589db707a8c06e92f7486b0054f7a2b2e293
+source_merge_commit: 36968d1b10b4f1cd1c29f8abe91b65b95f2a7862
+ci_status: passed
+ci_successful_checks: 10
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+synced_rendered_mode: rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control
+synced_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial
+synced_accepted_and_stale_status_hash_paths_rendered: true
+synced_test_only_fixture_route: /__test/layer3/sec-edgar-repeatability-trial
+synced_headless_rendered_trial_proof: true
+synced_headed_rendered_trial_proof: true
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_trial_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness_v1
+```
+
+The current-main sync records PR `#1834` as a no-runtime checkpoint. It does not mutate proof, Gate B, material snapshots, packages, delivery, source acquisition, parser scope, provider behavior, connector behavior, RAG/model runtime, full mockup behavior, browser storage, or frontend durable authority.
