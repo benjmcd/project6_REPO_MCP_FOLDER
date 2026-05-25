@@ -34,6 +34,7 @@ from app.services import (
     layer3_candidate_b_bundle_bridge,
     layer3_candidate_b_artifact_status,
     layer3_candidate_b_broader_scope_readiness,
+    layer3_candidate_b_broader_scope_repeatability_trial,
     layer3_candidate_b_broader_scope_runtime,
     layer3_candidate_b_broader_scope_selector_use,
     layer3_candidate_b_bundle_downstream_proof,
@@ -3556,6 +3557,51 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseStat
     selected_scope_classes: list[str]
 
 
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeOperatorRepeatabilityTrialRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    trial_mode: Literal[
+        "append_only_trial_receipt_over_original_and_repeat_use_status_authority_without_processing_execution"
+    ]
+    operator_decision: Literal["record_candidate_b_broader_scope_operator_repeatability_trial"]
+    operator_repeatability_disposition: Literal[
+        "no_regression_observed",
+        "delta_reviewed_no_regression",
+        "regression_detected_blocked",
+    ]
+    selected_scope_classes: list[str]
+    original_use_receipt_status_hash: str = Field(min_length=1)
+    original_use_receipt_id: str = Field(min_length=1)
+    original_use_receipt_hash: str = Field(min_length=1)
+    original_consumption_receipt_id: str = Field(min_length=1)
+    original_consumption_receipt_hash: str = Field(min_length=1)
+    original_activation_receipt_id: str = Field(min_length=1)
+    original_activation_receipt_hash: str = Field(min_length=1)
+    original_selector_use_status_hash: str = Field(min_length=1)
+    original_selector_use_receipt_id: str = Field(min_length=1)
+    original_selector_use_receipt_hash: str = Field(min_length=1)
+    original_runtime_selection_receipt_id: str = Field(min_length=1)
+    original_runtime_selection_receipt_hash: str = Field(min_length=1)
+    original_readiness_audit_id: str = Field(min_length=1)
+    original_readiness_audit_hash: str = Field(min_length=1)
+    repeat_use_receipt_status_hash: str = Field(min_length=1)
+    repeat_use_receipt_id: str = Field(min_length=1)
+    repeat_use_receipt_hash: str = Field(min_length=1)
+    repeat_consumption_receipt_id: str = Field(min_length=1)
+    repeat_consumption_receipt_hash: str = Field(min_length=1)
+    repeat_activation_receipt_id: str = Field(min_length=1)
+    repeat_activation_receipt_hash: str = Field(min_length=1)
+    repeat_selector_use_status_hash: str = Field(min_length=1)
+    repeat_selector_use_receipt_id: str = Field(min_length=1)
+    repeat_selector_use_receipt_hash: str = Field(min_length=1)
+    repeat_runtime_selection_receipt_id: str = Field(min_length=1)
+    repeat_runtime_selection_receipt_hash: str = Field(min_length=1)
+    repeat_readiness_audit_id: str = Field(min_length=1)
+    repeat_readiness_audit_hash: str = Field(min_length=1)
+    operator_confirmation: bool
+
+
 class Layer3CandidateBDefaultPromotionFinalProofRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -5919,6 +5965,67 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseStat
     browser_storage_authority_enabled: bool
     raw_local_path_exposed: bool
     raw_url_exposed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeOperatorRepeatabilityTrialResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    operator_repeatability_trial_state: str
+    operator_repeatability_disposition: str
+    trial_receipt_id: str
+    trial_receipt_hash: str
+    trial_receipt_ref: str
+    trial_receipt_status: str
+    trial_authority_hash: str
+    authority_pair_hash: str
+    idempotent_replay: bool
+    append_only_repeatability_trial_receipt: bool
+    exclusive_trial_per_original_repeat_authority_pair: bool
+    original_use_status: dict[str, Any]
+    repeat_use_status: dict[str, Any]
+    readiness_audit_binding: dict[str, Any]
+    runtime_selection_receipt_binding: dict[str, Any]
+    selector_use_status_binding: dict[str, Any]
+    selector_use_receipt_binding: dict[str, Any]
+    activation_receipt_binding: dict[str, Any]
+    consumption_receipt_binding: dict[str, Any]
+    selected_scope_classes: list[str]
+    selected_scope_classes_hash: str
+    original_receipt_chain_hash: str
+    repeat_receipt_chain_hash: str
+    original_negative_invariants_hash: str
+    repeat_negative_invariants_hash: str
+    use_status_hash_comparison: str
+    receipt_chain_hash_comparison: str
+    selected_scope_classes_hash_comparison: str
+    negative_invariants_hash_comparison: str
+    trial_authority: dict[str, Any]
+    baseline_rollback: dict[str, Any]
+    candidate_a_semantics: dict[str, Any]
+    candidate_b_scope_authority: dict[str, Any]
+    operator_visible_repeatability_trial_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
+    default_scope_expansion_admitted: bool
+    actual_corpus_processing_execution_admitted: bool
+    actual_subprocess_spawn_admitted: bool
+    process_control_admitted: bool
+    selector_mutation_performed: bool
+    default_scope_mutation_performed: bool
+    source_expansion_admitted: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    pdf_or_image_text_material_ingestion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    auth_security_expansion_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -12414,6 +12521,28 @@ def post_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_u
     except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseStatusError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
     except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial",
+    response_model=Layer3CandidateBBroaderEligibleCorpusDefaultScopeOperatorRepeatabilityTrialResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial(
+    payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeOperatorRepeatabilityTrialRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return (
+            layer3_candidate_b_broader_scope_repeatability_trial
+            .record_candidate_b_broader_scope_operator_repeatability_trial(
+                payload.model_dump(exclude_unset=True),
+            )
+        )
+    except (
+        layer3_candidate_b_broader_scope_repeatability_trial
+        .CandidateBBroaderScopeOperatorRepeatabilityTrialError
+    ) as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
 
 
