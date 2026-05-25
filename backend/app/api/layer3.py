@@ -27,6 +27,7 @@ from app.services import (
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_set_authority,
     layer3_sec_edgar_authority_envelope,
+    layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_material_bridge,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
@@ -413,6 +414,27 @@ class Layer3SecEdgarTextTableMaterialAuthorityBridgeRequest(BaseModel):
     expected_material_preview_hash: str | None = None
     rollback_confirmed: bool = False
     operator_confirmed: bool = False
+    actor: str | None = None
+
+
+class Layer3SecEdgarTextTableDownstreamProofRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    proof_mode: Literal["sec_edgar_text_table_downstream_layer3_e2e_proof_v1"]
+    operator_decision: Literal["record_sec_edgar_text_table_downstream_layer3_e2e_proof"]
+    dataset_version_id: str = Field(min_length=1)
+    authority_envelope_hash: str = Field(min_length=64, max_length=64)
+    bridge_receipt_hash: str = Field(min_length=64, max_length=64)
+    material_preview_hash: str = Field(min_length=64, max_length=64)
+    gate_b_decision_manifest_id: str = Field(min_length=1)
+    session_id: str = Field(min_length=1)
+    selection_manifest_id: str = Field(min_length=1)
+    material_snapshot_payload_hash: str = Field(min_length=64, max_length=64)
+    coverage_evidence: dict[str, Any]
+    operator_confirmation: bool
     actor: str | None = None
 
 
@@ -7324,6 +7346,44 @@ class Layer3SecEdgarTextTableMaterialAuthorityBridgeResponse(Layer3BaseResponse)
     negative_invariants: dict[str, Any]
 
 
+class Layer3SecEdgarTextTableDownstreamProofResponse(Layer3BaseResponse):
+    mode: str
+    proof_state: str
+    dataset_version_id: str
+    source_family: str
+    parser_family: str
+    typed_content_contract_id: str
+    authority_envelope_hash: str
+    bridge_receipt_hash: str
+    material_preview_hash: str
+    gate_b_decision_manifest_id: str
+    session_id: str
+    selection_manifest_id: str
+    material_snapshot_id: str
+    material_snapshot_payload_hash: str
+    proof_hash: str
+    proof_receipt_id: str
+    proof_receipt_ref: str
+    coverage: list[str]
+    coverage_evidence: dict[str, Any]
+    coverage_evidence_hash: str
+    negative_invariants_hash: str
+    status_projection: dict[str, Any]
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    provider_private_token_exposed: bool
+    provider_public_url_enabled: bool
+    provider_object_writes_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    frontend_durable_authority_enabled: bool
+    full_mockup_activation_enabled: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
 class Layer3ApsContentDocumentCandidatesResponse(Layer3BaseResponse):
     aps_content_document_candidates: list[dict[str, Any]]
     candidate_count: int
@@ -13862,6 +13922,23 @@ def post_sec_edgar_text_table_material_authority_bridge(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_sec_edgar_material_bridge.prepare_sec_edgar_text_table_material_authority_bridge(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/text-table/downstream-proof",
+    response_model=Layer3SecEdgarTextTableDownstreamProofResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_text_table_downstream_proof(
+    payload: Layer3SecEdgarTextTableDownstreamProofRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_downstream_proof.record_sec_edgar_text_table_downstream_layer3_proof(
             payload.model_dump(exclude_none=True),
             db,
         )

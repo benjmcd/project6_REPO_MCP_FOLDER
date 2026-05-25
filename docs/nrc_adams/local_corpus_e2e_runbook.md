@@ -6930,3 +6930,60 @@ next_exact_posture: sec_edgar_text_table_downstream_layer3_proof_runtime_v1
 ```
 
 This freeze selects the next SEC EDGAR downstream proof runtime after the material-authority bridge. The proof must start from the ready SEC EDGAR authority envelope, ready material bridge receipt, the bridge-returned Gate B payload, and a real Gate B commit through the existing Gate B API. It does not implement downstream proof yet, and it must not accept self-declared coverage, raw local paths, raw URLs, provider tokens, browser storage, or frontend state as durable proof authority.
+
+### SEC EDGAR Text Table Downstream Layer 3 Proof Runtime
+
+```yaml
+milestone: sec_edgar_text_table_downstream_layer3_proof_runtime_v1
+source_downstream_proof_selection: next_milestone_plans/Layer3_planning_docs/1119-sec-edgar-text-table-downstream-layer3-proof-selection.md
+current_main_entry: 4ab44d8b045717d3e637c754d33ef525b84fa78d
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_downstream_proof.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof
+implemented_request_model: Layer3SecEdgarTextTableDownstreamProofRequest
+implemented_response_model: Layer3SecEdgarTextTableDownstreamProofResponse
+implemented_schema_id: layer3.sec_edgar_text_table_downstream_proof.v1
+implemented_request_schema_id: layer3.sec_edgar_text_table_downstream_proof_request.v1
+implemented_proof_mode: sec_edgar_text_table_downstream_layer3_e2e_proof_v1
+implemented_operator_decision: record_sec_edgar_text_table_downstream_layer3_e2e_proof
+implemented_proof_state: sec_edgar_text_table_downstream_layer3_e2e_proven
+implemented_source_family: sec_edgar_text_table
+implemented_parser_family: sec_edgar_filing
+implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+implemented_material_source_class: dataset_version
+implemented_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1
+implemented_required_bridge_state: sec_edgar_text_table_layer3_material_authority_bridge_ready
+implemented_receipt_model: deterministic_no_new_storage_proof_projection_over_existing_server_authority
+implemented_hash_bindings: authority_envelope_hash,materialization_receipt_hash,bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,proof_hash
+implemented_coverage_steps: authority_envelope_validation,material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection
+implemented_evidence_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only
+implemented_fail_closed_conditions: missing_ready_bridge,bridge_hash_mismatch,gate_b_payload_mismatch,gate_b_hash_mismatch,missing_gate_b_session,material_snapshot_mismatch,missing_coverage_step,coverage_not_bound_to_server_receipt,raw_path_or_url_authority,missing_operator_confirmation,forbidden_input_authority
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_downstream_proof.py ./backend/app/api/layer3.py PASS
+focused_service_pytest: python -m pytest ./backend/tests/test_layer3_sec_edgar_authority_envelope.py -q PASS
+focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k "sec_edgar_text_table" PASS
+next_exact_posture: sec_edgar_text_table_downstream_layer3_operator_status_selection_v1
+```
+
+The runtime endpoint records a deterministic proof projection only after it revalidates the SEC EDGAR material-authority bridge, the committed Gate B session/selection manifest, and the DatasetVersion material snapshot payload hash. It remains a no-new-storage proof over existing Layer 3 authority and rejects missing coverage, stale hashes, raw path/URL references, provider/connector/model/browser authority, and frontend durable authority.
