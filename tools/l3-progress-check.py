@@ -3198,6 +3198,10 @@ SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_SELECTION = (
     PLANNING_DOCS
     / "1133-sec-edgar-text-table-source-acquisition-authority-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME = (
+    PLANNING_DOCS
+    / "1134-sec-edgar-text-table-source-acquisition-authority-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -107775,6 +107779,129 @@ def _check_sec_edgar_text_table_source_acquisition_authority_selection(
                 )
 
 
+def _check_sec_edgar_text_table_source_acquisition_authority_runtime(
+    errors: list[str],
+) -> None:
+    service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_source_acquisition.py"
+    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
+    bootstrap = ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py"
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME: (
+            "SEC EDGAR Text Table Source Acquisition Authority Runtime",
+            "milestone: sec_edgar_text_table_source_acquisition_authority_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1133-sec-edgar-text-table-source-acquisition-authority-selection.md",
+            "current_main_entry: 51f560cb527acc2e0435333546b242612b3da9d5",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "implemented_action: record_sec_edgar_text_table_source_acquisition_authority",
+            "implemented_service: backend/app/services/layer3_sec_edgar_source_acquisition.py",
+            "implemented_receipt_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority_request.v1",
+            "implemented_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "implemented_source_artifact_receipt_schema_id: layer3.sec_edgar_text_table_source_artifact_receipt.v1",
+            "implemented_receipt_prefix: sec-edgar-text-table-source-acquisition",
+            "implemented_receipt_storage: existing_layer3_storage_root_append_only_receipt",
+            "implemented_status_states: not_recorded,available,blocked",
+            "implemented_source_family: sec_edgar_text_table",
+            "implemented_parser_family: sec_edgar_filing",
+            "implemented_parser_contract_id: aps_sec_edgar_filing_parser_v1",
+            "implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "implemented_source_mode: artifact_sec_edgar_filing_parser",
+            "implemented_input_authority: server_owned_dataset_source_provenance_plus_ready_authority_envelope",
+            "implemented_output_authority: append_only_redacted_source_acquisition_authority_receipt",
+            "implemented_hash_bindings: source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256,content_length,accession_or_submission_id_hash,cik_or_filer_ref_hash,form_type,filing_date,parser_contract_id,typed_content_contract_id,materialization_receipt_hash,dataset_version_hash,authority_envelope_hash",
+            "implemented_material_preview_gate_b_compatibility: true",
+            "implemented_idempotent_replay: true",
+            "implemented_stale_source_artifact_hash_rejection: true",
+            "implemented_operator_confirmation_required: true",
+            "live_sec_network_fetch_admitted: false",
+            "raw_sec_filing_url_as_authority_admitted: false",
+            "xml_html_inline_xbrl_parser_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "new_runtime_storage_root_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_supplied_raw_url_admitted: false",
+            "artifact_bytes_exposed: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_source_acquisition_authority_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1133-sec-edgar-text-table-source-acquisition-authority-selection.md",
+            "entry_decision: runtime_implementation",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "implemented_action: record_sec_edgar_text_table_source_acquisition_authority",
+            "implemented_service: backend/app/services/layer3_sec_edgar_source_acquisition.py",
+            "implemented_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "implemented_receipt_prefix: sec-edgar-text-table-source-acquisition",
+            "implemented_input_authority: server_owned_dataset_source_provenance_plus_ready_authority_envelope",
+            "implemented_output_authority: append_only_redacted_source_acquisition_authority_receipt",
+            "implemented_material_preview_gate_b_compatibility: true",
+            "implemented_stale_source_artifact_hash_rejection: true",
+            "live_sec_network_fetch_admitted: false",
+            "raw_sec_filing_url_as_authority_admitted: false",
+            "xml_html_inline_xbrl_parser_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync_v1",
+        ),
+        service: (
+            'SCHEMA_ID = "layer3.sec_edgar_text_table_source_acquisition_authority.v1"',
+            'REQUEST_SCHEMA_ID = "layer3.sec_edgar_text_table_source_acquisition_authority_request.v1"',
+            'SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID = "layer3.sec_edgar_text_table_source_artifact_receipt.v1"',
+            'ACQUISITION_MODE = "sec_edgar_text_table_source_acquisition_authority_v1"',
+            'OPERATOR_DECISION = "record_sec_edgar_text_table_source_acquisition_authority"',
+            'RECEIPT_PREFIX = "sec-edgar-text-table-source-acquisition"',
+            'PARSER_CONTRACT_ID = "aps_sec_edgar_filing_parser_v1"',
+            'SOURCE_MODE = "artifact_sec_edgar_filing_parser"',
+            "def record_sec_edgar_text_table_source_acquisition_authority(",
+            "def _load_ready_authority_envelope(",
+            "def _load_source_artifact_authority(",
+            "def _write_receipt(",
+            '"sec_edgar_network_fetch_admitted": False',
+            '"raw_sec_filing_url_authority_admitted": False',
+            '"provider_object_write_enabled": False',
+            '"connector_dispatch_enabled": False',
+            '"frontend_durable_authority_enabled": False',
+        ),
+        api: (
+            "layer3_sec_edgar_source_acquisition",
+            "class Layer3SecEdgarTextTableSourceAcquisitionAuthorityRequest(BaseModel):",
+            "class Layer3SecEdgarTextTableSourceAcquisitionAuthorityResponse(Layer3BaseResponse):",
+            '"/source/sec-edgar/text-table/source-acquisition/authority"',
+            "def post_sec_edgar_text_table_source_acquisition_authority(",
+            "record_sec_edgar_text_table_source_acquisition_authority(",
+        ),
+        tests: (
+            "def test_layer3_api_records_sec_edgar_text_table_source_acquisition_authority(",
+            "def test_layer3_api_rejects_sec_edgar_text_table_source_acquisition_stale_or_unconfirmed_authority(",
+            '"/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority"',
+            '"sec_edgar_text_table_source_acquisition_stale_or_mismatched_source_artifact_authority"',
+            '"sec_edgar_text_table_source_acquisition_operator_confirmation_missing"',
+            '"aps-target-artifacts/run-001" not in response.text',
+        ),
+        bootstrap: (
+            '"sec_edgar_text_table_source_acquisition_authority_admitted": True',
+            'f"{api_root}/source/sec-edgar/text-table/source-acquisition/authority"',
+        ),
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR source acquisition authority runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -108855,6 +108982,7 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_source_acquisition_authority_selection(errors)
+    _check_sec_edgar_text_table_source_acquisition_authority_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

@@ -1,0 +1,81 @@
+# SEC EDGAR Text Table Source Acquisition Authority Runtime
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1133-sec-edgar-text-table-source-acquisition-authority-selection.md
+current_main_entry: 51f560cb527acc2e0435333546b242612b3da9d5
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+implemented_action: record_sec_edgar_text_table_source_acquisition_authority
+implemented_service: backend/app/services/layer3_sec_edgar_source_acquisition.py
+implemented_api: backend/app/api/layer3.py
+implemented_test: backend/tests/test_layer3_api.py::test_layer3_api_records_sec_edgar_text_table_source_acquisition_authority
+implemented_rejection_test: backend/tests/test_layer3_api.py::test_layer3_api_rejects_sec_edgar_text_table_source_acquisition_stale_or_unconfirmed_authority
+implemented_receipt_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority.v1
+implemented_request_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority_request.v1
+implemented_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1
+implemented_source_artifact_receipt_schema_id: layer3.sec_edgar_text_table_source_artifact_receipt.v1
+implemented_receipt_prefix: sec-edgar-text-table-source-acquisition
+implemented_receipt_storage: existing_layer3_storage_root_append_only_receipt
+implemented_status_states: not_recorded,available,blocked
+implemented_source_family: sec_edgar_text_table
+implemented_parser_family: sec_edgar_filing
+implemented_parser_contract_id: aps_sec_edgar_filing_parser_v1
+implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+implemented_source_mode: artifact_sec_edgar_filing_parser
+implemented_authority_shape: server_owned_sec_filing_source_artifact_authority_to_materialized_dataset_version_envelope
+implemented_input_authority: server_owned_dataset_source_provenance_plus_ready_authority_envelope
+implemented_output_authority: append_only_redacted_source_acquisition_authority_receipt
+implemented_hash_bindings: source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256,content_length,accession_or_submission_id_hash,cik_or_filer_ref_hash,form_type,filing_date,parser_contract_id,typed_content_contract_id,materialization_receipt_hash,dataset_version_hash,authority_envelope_hash
+implemented_material_preview_gate_b_compatibility: true
+implemented_idempotent_replay: true
+implemented_stale_source_artifact_hash_rejection: true
+implemented_missing_materialization_linkage_rejection: true
+implemented_parser_contract_mismatch_rejection: true
+implemented_typed_content_contract_mismatch_rejection: true
+implemented_dataset_version_hash_mismatch_rejection: true
+implemented_authority_envelope_hash_mismatch_rejection: true
+implemented_operator_confirmation_required: true
+live_sec_network_fetch_admitted: false
+sec_network_cache_or_rate_behavior_admitted: false
+raw_sec_filing_url_as_authority_admitted: false
+xml_html_inline_xbrl_parser_admitted: false
+broad_source_expansion_admitted: false
+source_family_expansion_scope: sec_edgar_text_table_only
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+browser_supplied_local_path_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_sec_url_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+browser_supplied_command_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_token_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync_v1
+```
+
+This runtime implements the selected source-acquisition authority slice without adding live SEC fetch, SEC URL authority, parser expansion, runtime tables, provider writes, connector dispatch, RAG/model runtime, browser storage, or frontend durable authority. It revalidates the existing SEC EDGAR text/table authority envelope, derives the expected source-artifact receipt from server-owned `DatasetSourceProvenance`, rejects stale or contradictory hashes, and records an append-only redacted receipt under the existing Layer 3 storage root.
+
+The receipt is intentionally not the source content. It binds the retained filing source artifact identity, content hash, parser contract, typed content contract, materialization receipt, DatasetVersion hash, and authority-envelope hash so downstream material preview and Gate B can continue to use the already admitted SEC EDGAR material bridge.
+
+## Coherence Check
+
+- Does this runtime fetch from SEC? Recommended answer: no. It only records authority over an already retained server-owned source artifact.
+- Does this runtime create a new parser or ingest XML/HTML/inline XBRL? Recommended answer: no. It reuses the admitted `sec_edgar_filing` parser contract and rejects parser-contract mismatch.
+- Does the browser supply durable authority? Recommended answer: no. Caller-provided hashes are treated as expected values and must match server-owned provenance and authority-envelope state.
+- Are PDFs, provider objects, connector dispatch, RAG/model runtime, or full mockup behavior admitted here? Recommended answer: no. Those remain separate blocked surfaces.
+- What comes next? Recommended answer: sync the runtime to current main, then select a rendered/operator status or inspection slice only if current-main evidence shows a concrete operator gap.
