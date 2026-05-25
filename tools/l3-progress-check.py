@@ -3218,6 +3218,10 @@ SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_RENDERED_STATUS_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "1138-sec-edgar-text-table-source-acquisition-rendered-status-current-main-sync.md"
 )
+SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_CLOSEOUT_READINESS = (
+    PLANNING_DOCS
+    / "1139-sec-edgar-text-table-source-acquisition-closeout-readiness.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -108378,6 +108382,116 @@ def _check_sec_edgar_text_table_source_acquisition_rendered_status_current_main_
                 )
 
 
+def _check_sec_edgar_text_table_source_acquisition_authority_closeout_readiness(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_CLOSEOUT_READINESS: (
+            "SEC EDGAR Text Table Source Acquisition Closeout Readiness",
+            "milestone: sec_edgar_text_table_source_acquisition_authority_closeout_readiness_v1",
+            "source_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1138-sec-edgar-text-table-source-acquisition-rendered-status-current-main-sync.md",
+            "current_main_entry: 78dfceed77aca250bf14ab58aa0169934c437461",
+            "source_sync_pr: 1842",
+            "source_sync_merge_commit: 78dfceed77aca250bf14ab58aa0169934c437461",
+            "entry_decision: closeout_readiness_checkpoint",
+            "authority_envelope_status: already_implemented",
+            "material_bridge_status: already_implemented",
+            "downstream_proof_status: already_implemented",
+            "operator_status_status: already_implemented",
+            "repeatability_trial_status: already_implemented",
+            "source_acquisition_authority_status: already_implemented",
+            "rendered_source_acquisition_status: already_implemented",
+            "closeout_readiness_state: ready_for_sec_edgar_live_source_artifact_acquisition_selection",
+            "selected_next_selection_target: sec_edgar_text_table_live_source_artifact_acquisition_selection_v1",
+            "required_authority_envelope_selection: next_milestone_plans/Layer3_planning_docs/1115-sec-edgar-text-table-authority-envelope-selection.md",
+            "required_source_acquisition_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1135-sec-edgar-text-table-source-acquisition-authority-runtime-current-main-sync.md",
+            "required_rendered_source_acquisition_current_main_sync: next_milestone_plans/Layer3_planning_docs/1138-sec-edgar-text-table-source-acquisition-rendered-status-current-main-sync.md",
+            "required_source_family: sec_edgar_text_table",
+            "required_parser_family: sec_edgar_filing",
+            "required_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "required_authority_envelope_shape: mixed_narrative_table",
+            "required_material_source_class: dataset_version",
+            "required_source_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "required_rendered_source_acquisition_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control",
+            "required_source_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "closed_chain_authority_model: materialized_dataset_version_source_provenance_plus_ready_authority_envelope_plus_append_only_source_acquisition_receipt",
+            "closed_chain_operator_model: rendered_operator_receipt_control_over_server_revalidated_source_acquisition_authority",
+            "closed_chain_downstream_model: material_preview_gate_b_retrieval_context_analysis_package_review_handoff_delivery_status_repeatability",
+            "server_owned_receipts_and_hashes_required: true",
+            "browser_held_hash_alone_is_not_authority: true",
+            "stale_or_mismatched_source_artifact_hash_fails_closed: true",
+            "operator_confirmation_required: true",
+            "idempotent_replay_supported: true",
+            "source_acquisition_chain_closeout_ready: true",
+            "named_defect_remaining: false",
+            "live_sec_network_fetch_admitted_now: false",
+            "sec_live_cache_or_rate_policy_admitted_now: false",
+            "raw_sec_filing_url_authority_admitted_now: false",
+            "xml_html_inline_xbrl_parser_admitted_now: false",
+            "sec_parser_expansion_admitted_now: false",
+            "new_runtime_storage_root_admitted_now: false",
+            "broad_source_expansion_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_source_artifact_ref_rendered: false",
+            "raw_source_artifact_receipt_path_rendered: false",
+            "raw_authority_envelope_input_rendered: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_source_acquisition_authority_closeout_readiness_v1",
+            "source_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1138-sec-edgar-text-table-source-acquisition-rendered-status-current-main-sync.md",
+            "current_main_entry: 78dfceed77aca250bf14ab58aa0169934c437461",
+            "source_sync_pr: 1842",
+            "source_sync_merge_commit: 78dfceed77aca250bf14ab58aa0169934c437461",
+            "entry_decision: closeout_readiness_checkpoint",
+            "source_acquisition_chain_closeout_ready: true",
+            "named_defect_remaining: false",
+            "closeout_readiness_state: ready_for_sec_edgar_live_source_artifact_acquisition_selection",
+            "selected_next_selection_target: sec_edgar_text_table_live_source_artifact_acquisition_selection_v1",
+            "required_source_family: sec_edgar_text_table",
+            "required_parser_family: sec_edgar_filing",
+            "required_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "required_source_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "required_rendered_source_acquisition_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control",
+            "required_source_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "closed_chain_authority_model: materialized_dataset_version_source_provenance_plus_ready_authority_envelope_plus_append_only_source_acquisition_receipt",
+            "closed_chain_operator_model: rendered_operator_receipt_control_over_server_revalidated_source_acquisition_authority",
+            "closed_chain_downstream_model: material_preview_gate_b_retrieval_context_analysis_package_review_handoff_delivery_status_repeatability",
+            "live_sec_network_fetch_admitted_now: false",
+            "sec_live_cache_or_rate_policy_admitted_now: false",
+            "raw_sec_filing_url_authority_admitted_now: false",
+            "xml_html_inline_xbrl_parser_admitted_now: false",
+            "sec_parser_expansion_admitted_now: false",
+            "new_runtime_storage_root_admitted_now: false",
+            "broad_source_expansion_admitted_now: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_closeout_readiness_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR source acquisition closeout readiness term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -109469,6 +109583,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_source_acquisition_rendered_status_current_main_sync(
+        errors
+    )
+    _check_sec_edgar_text_table_source_acquisition_authority_closeout_readiness(
         errors
     )
 
