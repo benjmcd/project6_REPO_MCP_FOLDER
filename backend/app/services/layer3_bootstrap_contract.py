@@ -242,6 +242,10 @@ def build_bootstrap_contract(
                 f"{api_root}/source/sec-edgar/text-table/live-source-artifact/status/"
                 "{live_source_artifact_receipt_id}"
             ),
+            "sec_edgar_text_table_live_source_artifact_material_authority_bridge_admitted": True,
+            "sec_edgar_text_table_live_source_artifact_material_authority_bridge_endpoint": (
+                f"{api_root}/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge"
+            ),
             "sec_edgar_text_table_downstream_operator_repeatability_trial_admitted": True,
             "sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint": (
                 f"{api_root}/source/sec-edgar/text-table/downstream/operator-repeatability/trial"

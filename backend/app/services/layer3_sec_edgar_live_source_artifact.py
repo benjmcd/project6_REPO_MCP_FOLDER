@@ -316,6 +316,24 @@ def inspect_sec_edgar_text_table_live_source_artifact_status(
     )
 
 
+def read_sec_edgar_text_table_live_source_artifact_receipt(
+    live_source_artifact_receipt_id: str,
+    *,
+    expected_live_source_artifact_receipt_hash: str | None = None,
+) -> dict[str, Any]:
+    receipt = _read_verified_receipt(live_source_artifact_receipt_id)
+    expected_hash = str(expected_live_source_artifact_receipt_hash or "").strip()
+    if expected_hash and receipt.get("live_source_artifact_receipt_hash") != expected_hash:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_receipt_hash_mismatch",
+            "SEC EDGAR live source-artifact receipt hash is stale or mismatched.",
+            http_status=409,
+            blocked_fields=["live_source_artifact_receipt_hash"],
+        )
+    _verify_artifact_bytes(receipt)
+    return receipt
+
+
 def _fetch_with_retry(
     *,
     url: str,

@@ -158,6 +158,15 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
         "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/"
         "{live_source_artifact_receipt_id}"
     )
+    assert (
+        direct_body["execution_readiness"][
+            "sec_edgar_text_table_live_source_artifact_material_authority_bridge_admitted"
+        ]
+        is True
+    )
+    assert direct_body["execution_readiness"][
+        "sec_edgar_text_table_live_source_artifact_material_authority_bridge_endpoint"
+    ] == "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge"
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_closure_evidence_admitted"] is True
     assert direct_body["execution_readiness"]["candidate_b_default_promotion_closure_evidence_endpoint"] == (
         "/api/v1/layer3/source/ingestion/candidate-b/default-promotion/closure-evidence"

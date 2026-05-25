@@ -3254,6 +3254,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_MATERIAL_AUTHORITY_BRIDGE_SELECTION = 
     PLANNING_DOCS
     / "1147-sec-edgar-text-table-live-source-artifact-material-authority-bridge-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_MATERIAL_AUTHORITY_BRIDGE_RUNTIME = (
+    PLANNING_DOCS
+    / "1148-sec-edgar-text-table-live-source-artifact-material-authority-bridge-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -109520,6 +109524,155 @@ def _check_sec_edgar_text_table_live_source_artifact_material_authority_bridge_s
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_MATERIAL_AUTHORITY_BRIDGE_RUNTIME: (
+            "SEC EDGAR Text Table Live Source Artifact Material Authority Bridge Runtime",
+            "milestone: sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime_v1",
+            "selection: next_milestone_plans/Layer3_planning_docs/1147-sec-edgar-text-table-live-source-artifact-material-authority-bridge-selection.md",
+            "current_main_entry: 6d55e2c8c8455da52763eeb3ef295c84f72a2785",
+            "implemented_runtime_status: implemented",
+            "implemented_rendered_status: not_implemented",
+            "implemented_schema_id: layer3.sec_edgar_text_table_live_source_artifact_material_authority_bridge.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_text_table_live_source_artifact_material_authority_bridge_request.v1",
+            "implemented_bridge_mode: sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1",
+            "implemented_ready_state: sec_edgar_text_table_live_source_artifact_material_authority_bridge_ready",
+            "implemented_blocked_state: sec_edgar_text_table_live_source_artifact_material_authority_bridge_blocked",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+            "implemented_service: backend/app/services/layer3_sec_edgar_live_material_bridge.py",
+            "implemented_bridge_receipt_prefix: sec-edgar-text-table-live-source-artifact-l3-material-bridge",
+            "implemented_live_receipt_reader: read_sec_edgar_text_table_live_source_artifact_receipt",
+            "implemented_source_acquisition_receipt_reader: read_sec_edgar_text_table_source_acquisition_receipt",
+            "implemented_source_acquisition_live_receipt_compatibility: explicit_source_artifact_receipt_id_hash_ref_hash_from_materialized_provenance",
+            "implemented_source_acquisition_receipt_hash_revalidation: true",
+            "implemented_live_source_artifact_family: complete_submission_text_filing_artifact",
+            "implemented_source_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "implemented_existing_material_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "implemented_material_source_class: dataset_version",
+            "implemented_material_preview_request_schema: layer3.material_preview_request.v1",
+            "implemented_gate_b_decision_request_schema: layer3.gate_b_decision_request.v1",
+            "implemented_required_live_artifact_authority: live_source_artifact_receipt_id,live_source_artifact_receipt_hash,source_artifact_receipt_id,source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256,content_length,accession_or_submission_id_hash,cik_or_filer_ref_hash,form_type,filing_date",
+            "implemented_required_source_acquisition_authority: source_acquisition_receipt_id,source_acquisition_receipt_hash,source_artifact_receipt_hash,materialization_receipt_hash,dataset_version_hash,authority_envelope_hash",
+            "implemented_required_material_authority: dataset_version_id,materialization_receipt_hash,authority_envelope_hash,material_preview_hash,gate_b_decision_manifest_id",
+            "implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_material_authority_bridge",
+            "missing_live_source_artifact_receipt_rejected: true",
+            "stale_live_source_artifact_receipt_hash_rejected: true",
+            "retained_artifact_content_hash_mismatch_rejected: true",
+            "missing_source_acquisition_receipt_rejected: true",
+            "source_acquisition_receipt_hash_mismatch_rejected: true",
+            "source_artifact_receipt_hash_mismatch_rejected: true",
+            "missing_materialization_linkage_rejected: true",
+            "parser_contract_mismatch_rejected: true",
+            "typed_content_contract_mismatch_rejected: true",
+            "dataset_version_hash_mismatch_rejected: true",
+            "authority_envelope_hash_mismatch_rejected: true",
+            "material_preview_hash_mismatch_rejected: true",
+            "gate_b_decision_basis_mismatch_rejected: true",
+            "operator_confirmation_required: true",
+            "direct_live_artifact_to_material_without_source_acquisition_admitted: false",
+            "direct_raw_artifact_parse_or_materialization_admitted: false",
+            "dataset_version_creation_admitted: false",
+            "gate_b_mutation_admitted_in_bridge: false",
+            "live_sec_network_fetch_admitted_for_bridge: false",
+            "raw_sec_filing_url_as_authority_admitted_for_bridge: false",
+            "xml_html_inline_xbrl_parser_admitted_for_bridge: false",
+            "broad_source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "new_runtime_storage_root_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "verification_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_live_material_bridge.py ./backend/app/services/layer3_sec_edgar_source_acquisition.py ./backend/app/services/layer3_sec_edgar_live_source_artifact.py ./backend/app/api/layer3.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_api.py PASS",
+            "verification_pytest_focused: python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_api_records_sec_edgar_text_table_source_acquisition_authority ./backend/tests/test_layer3_api.py::test_layer3_api_acquires_sec_edgar_text_table_live_source_artifact_with_fake_client ./backend/tests/test_layer3_api.py::test_layer3_api_bridges_live_sec_edgar_source_artifact_to_material_authority ./backend/tests/test_layer3_api.py::test_layer3_api_rejects_live_sec_edgar_material_bridge_stale_or_missing_authority ./backend/tests/test_layer3_bootstrap_contract.py -q PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime_v1",
+            "selection: next_milestone_plans/Layer3_planning_docs/1147-sec-edgar-text-table-live-source-artifact-material-authority-bridge-selection.md",
+            "current_main_entry: 6d55e2c8c8455da52763eeb3ef295c84f72a2785",
+            "implemented_runtime_status: implemented",
+            "implemented_schema_id: layer3.sec_edgar_text_table_live_source_artifact_material_authority_bridge.v1",
+            "implemented_bridge_mode: sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+            "implemented_service: backend/app/services/layer3_sec_edgar_live_material_bridge.py",
+            "implemented_source_acquisition_live_receipt_compatibility: explicit_source_artifact_receipt_id_hash_ref_hash_from_materialized_provenance",
+            "implemented_source_acquisition_receipt_hash_revalidation: true",
+            "implemented_existing_material_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "missing_live_source_artifact_receipt_rejected: true",
+            "source_acquisition_receipt_hash_mismatch_rejected: true",
+            "source_artifact_receipt_hash_mismatch_rejected: true",
+            "direct_live_artifact_to_material_without_source_acquisition_admitted: false",
+            "direct_raw_artifact_parse_or_materialization_admitted: false",
+            "dataset_version_creation_admitted: false",
+            "gate_b_mutation_admitted_in_bridge: false",
+            "live_sec_network_fetch_admitted_for_bridge: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime_current_main_sync_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_MATERIAL_AUTHORITY_BRIDGE_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_material_bridge.py": (
+            "SCHEMA_ID = \"layer3.sec_edgar_text_table_live_source_artifact_material_authority_bridge.v1\"",
+            "BRIDGE_MODE = \"sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1\"",
+            "EXISTING_MATERIAL_BRIDGE_MODE = layer3_sec_edgar_material_bridge.BRIDGE_MODE",
+            "def prepare_sec_edgar_text_table_live_source_artifact_material_authority_bridge(",
+            "read_sec_edgar_text_table_live_source_artifact_receipt",
+            "read_sec_edgar_text_table_source_acquisition_receipt",
+            "direct_raw_artifact_parse_or_materialization_admitted",
+            "gate_b_mutation_admitted_in_bridge",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_source_acquisition.py": (
+            "def read_sec_edgar_text_table_source_acquisition_receipt(",
+            "sec_edgar_text_table_source_acquisition_explicit_source_artifact_receipt_incomplete",
+            "\"dataset_version_id\": dataset_version_id",
+            "source_artifact_ref_hash = (",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_source_artifact.py": (
+            "def read_sec_edgar_text_table_live_source_artifact_receipt(",
+            "expected_live_source_artifact_receipt_hash",
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeRequest",
+            "Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse",
+            "/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+            "prepare_sec_edgar_text_table_live_source_artifact_material_authority_bridge",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py": (
+            "sec_edgar_text_table_live_source_artifact_material_authority_bridge_admitted",
+            "sec_edgar_text_table_live_source_artifact_material_authority_bridge_endpoint",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_api.py": (
+            "test_layer3_api_bridges_live_sec_edgar_source_artifact_to_material_authority",
+            "test_layer3_api_rejects_live_sec_edgar_material_bridge_stale_or_missing_authority",
+            "_sec_edgar_source_acquisition_payload_from_live",
+            "_bind_sec_edgar_dataset_to_live_source_artifact",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py": (
+            "sec_edgar_text_table_live_source_artifact_material_authority_bridge_admitted",
+            "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact material authority bridge runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -110638,6 +110791,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_material_authority_bridge_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime(
         errors
     )
 
