@@ -5820,3 +5820,52 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumptio
 ```
 
 The use-status inspection rendered control is current-main behavior after PR `#1800`. The next checkpoint should close or name the remaining gap in the broader eligible-corpus default-scope operator path, using only the already-landed receipt/status chain unless a concrete defect is found.
+
+### Candidate B Broader Eligible Corpus Default Scope Consumption Chain Closeout Readiness
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_chain_closeout_readiness_v1
+source_consumption_receipt_use_status_inspection_current_main_sync: next_milestone_plans/Layer3_planning_docs/1098-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-current-main-sync.md
+current_main_entry: 29f1e2cc0849effc8d043c8bece121074f9d1837
+entry_decision: closeout_readiness_checkpoint
+runtime_status: already_implemented
+rendered_status: already_implemented
+closeout_readiness_state: ready_for_broader_eligible_corpus_default_scope_operator_repeatability_trial
+selected_next_selection_target: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_selection_v1
+required_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1073-cb-broader-eligible-corpus-default-scope-runtime-current-main-sync.md
+required_selector_use_current_main_sync: next_milestone_plans/Layer3_planning_docs/1078-cb-broader-eligible-corpus-default-scope-selector-use-remediation-current-main-sync.md
+required_selector_use_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1080-cb-broader-eligible-corpus-default-scope-selector-use-operator-status-inspection-current-main-sync.md
+required_selector_activation_current_main_sync: next_milestone_plans/Layer3_planning_docs/1085-cb-broader-eligible-corpus-default-scope-selector-activation-current-main-sync.md
+required_activation_consumption_current_main_sync: next_milestone_plans/Layer3_planning_docs/1089-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-current-main-sync.md
+required_consumption_receipt_use_current_main_sync: next_milestone_plans/Layer3_planning_docs/1094-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-remediation-current-main-sync.md
+required_consumption_receipt_use_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1098-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-current-main-sync.md
+required_closeout_authority: use_status_receipt_bound_consumption_activation_selector_use_runtime_and_readiness_chain
+required_receipt_chain: runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status
+required_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+required_scope_class_policy: receipt_bound_selected_classes_only
+required_non_selected_class_default: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+consumption_chain_closeout_ready: true
+named_defect_remaining: false
+operator_repeatability_trial_admitted_now: false
+selector_mutation_performed: false
+default_scope_expansion_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_selection_v1
+```
+
+The broader default-scope consumption chain is closeout-ready after current main contains the full receipt/status sequence from runtime selection through use-status inspection. This checkpoint records readiness for a separately selected operator repeatability trial over receipt-bound selected classes; it does not change default scope, selected classes, source/runtime behavior, provider/connector/model surfaces, or browser/frontend authority.
