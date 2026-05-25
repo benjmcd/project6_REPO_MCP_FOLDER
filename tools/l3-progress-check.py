@@ -3202,6 +3202,10 @@ SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME = (
     PLANNING_DOCS
     / "1134-sec-edgar-text-table-source-acquisition-authority-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1135-sec-edgar-text-table-source-acquisition-authority-runtime-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -107902,6 +107906,91 @@ def _check_sec_edgar_text_table_source_acquisition_authority_runtime(
                 )
 
 
+def _check_sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR Text Table Source Acquisition Authority Runtime Current-Main Sync",
+            "milestone: sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1134-sec-edgar-text-table-source-acquisition-authority-runtime.md",
+            "current_main_entry: af95f4fd10231c9d690a575328e660e70f4a4bf3",
+            "merged_pr: 1838",
+            "entry_decision: current_main_sync",
+            "runtime_status: merged_on_current_main",
+            "rendered_status: not_implemented",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "implemented_action: record_sec_edgar_text_table_source_acquisition_authority",
+            "implemented_service: backend/app/services/layer3_sec_edgar_source_acquisition.py",
+            "implemented_api: backend/app/api/layer3.py",
+            "implemented_receipt_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority.v1",
+            "implemented_source_artifact_receipt_schema_id: layer3.sec_edgar_text_table_source_artifact_receipt.v1",
+            "implemented_receipt_prefix: sec-edgar-text-table-source-acquisition",
+            "implemented_receipt_storage: existing_layer3_storage_root_append_only_receipt",
+            "implemented_status_states: not_recorded,available,blocked",
+            "implemented_material_preview_gate_b_compatibility: true",
+            "implemented_stale_source_artifact_hash_rejection: true",
+            "implemented_operator_confirmation_required: true",
+            "local_validation_py_compile: passed",
+            "local_validation_sec_edgar_api_tests: passed",
+            "local_validation_bootstrap_contract_test: passed",
+            "local_validation_l3_progress_check: passed",
+            "local_validation_l3_target_selection_validate_frozen: passed",
+            "github_checks: passed",
+            "review_threads: none",
+            "open_prs_after_merge: none",
+            "live_sec_network_fetch_admitted: false",
+            "raw_sec_filing_url_as_authority_admitted: false",
+            "xml_html_inline_xbrl_parser_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "new_runtime_storage_root_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1134-sec-edgar-text-table-source-acquisition-authority-runtime.md",
+            "current_main_entry: af95f4fd10231c9d690a575328e660e70f4a4bf3",
+            "merged_pr: 1838",
+            "entry_decision: current_main_sync",
+            "runtime_status: merged_on_current_main",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "implemented_action: record_sec_edgar_text_table_source_acquisition_authority",
+            "implemented_service: backend/app/services/layer3_sec_edgar_source_acquisition.py",
+            "implemented_receipt_schema_id: layer3.sec_edgar_text_table_source_acquisition_authority.v1",
+            "implemented_receipt_prefix: sec-edgar-text-table-source-acquisition",
+            "implemented_stale_source_artifact_hash_rejection: true",
+            "local_validation_sec_edgar_api_tests: passed",
+            "local_validation_bootstrap_contract_test: passed",
+            "local_validation_l3_progress_check: passed",
+            "github_checks: passed",
+            "review_threads: none",
+            "open_prs_after_merge: none",
+            "live_sec_network_fetch_admitted: false",
+            "raw_sec_filing_url_as_authority_admitted: false",
+            "xml_html_inline_xbrl_parser_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME: (
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR source acquisition authority runtime current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -108983,6 +109072,9 @@ def main() -> int:
     )
     _check_sec_edgar_text_table_source_acquisition_authority_selection(errors)
     _check_sec_edgar_text_table_source_acquisition_authority_runtime(errors)
+    _check_sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
