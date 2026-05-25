@@ -1328,25 +1328,38 @@ def _validated_process_execution_projection(
     operator_workflow_receipt_id: str,
     operator_workflow_receipt_hash: str,
 ) -> dict[str, Any]:
+    process_execution_state = str(receipt.get("process_execution_state") or "")
+    if process_execution_state not in {"started", "blocked"}:
+        mismatches = [
+            {
+                "field": "process_execution_state",
+                "expected": "started|blocked",
+                "received": receipt.get("process_execution_state"),
+            }
+        ]
+    else:
+        mismatches = []
+    expected_status = "blocked" if process_execution_state == "blocked" else "available"
+    expected_process_started = process_execution_state == "started"
+    expected_subprocess_spawn = process_execution_state == "started"
     expected = {
         "schema_id": PROCESS_EXECUTION_SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "mode": PROCESS_EXECUTION_MODE,
         "operator_decision": "record_candidate_b_async_background_process_execution",
-        "status": "available",
-        "process_execution_state": "started",
+        "status": expected_status,
         "process_execution_receipt_id": receipt_id,
         "operator_workflow_receipt_id": operator_workflow_receipt_id,
         "operator_workflow_receipt_hash": operator_workflow_receipt_hash,
         "allowlisted_command_family": "tools/run_candidate_b_full_corpus_operator_workflow.py",
         "append_only_process_execution_receipt": True,
-        "process_started": True,
+        "process_started": expected_process_started,
         "source_run_receipt_mutated": False,
         "execution_boundary_receipt_mutated": False,
         "background_process_runtime_selected": True,
         "background_process_runtime_selected_now": True,
         "job_execution_runtime_selected_now": False,
-        "actual_subprocess_spawn_admitted_now": True,
+        "actual_subprocess_spawn_admitted_now": expected_subprocess_spawn,
         "actual_corpus_processing_execution_admitted_now": False,
         "browser_triggered_process_start_admitted": False,
         "operator_supplied_command_admitted": False,
@@ -1359,11 +1372,63 @@ def _validated_process_execution_projection(
         "artifact_bytes_exposed": False,
         "selector_mutation_performed": False,
     }
-    mismatches = [
-        {"field": field, "expected": expected_value, "received": receipt.get(field)}
-        for field, expected_value in expected.items()
-        if receipt.get(field) != expected_value
-    ]
+    mismatches.extend(
+        [
+            {"field": field, "expected": expected_value, "received": receipt.get(field)}
+            for field, expected_value in expected.items()
+            if receipt.get(field) != expected_value
+        ]
+    )
+    failure_code = str(receipt.get("process_failure_code") or "")
+    if process_execution_state == "blocked":
+        expected_timeout = (
+            failure_code
+            == "candidate_b_full_corpus_operator_workflow_process_execution_launch_timeout"
+        )
+        blocked_expected = {
+            "process_failure_recorded": True,
+            "process_timeout_recorded": expected_timeout,
+            "process_failure_phase": "server_owned_process_launch",
+        }
+        mismatches.extend(
+            [
+                {"field": field, "expected": expected_value, "received": receipt.get(field)}
+                for field, expected_value in blocked_expected.items()
+                if receipt.get(field) != expected_value
+            ]
+        )
+        if failure_code not in {
+            "candidate_b_full_corpus_operator_workflow_process_execution_launch_failed",
+            "candidate_b_full_corpus_operator_workflow_process_execution_launch_timeout",
+        }:
+            mismatches.append(
+                {
+                    "field": "process_failure_code",
+                    "expected": "launch_failed|launch_timeout",
+                    "received": receipt.get("process_failure_code"),
+                }
+            )
+        summary_hash = str(receipt.get("redacted_failure_summary_hash") or "")
+        if len(summary_hash) != 64 or any(char not in "0123456789abcdef" for char in summary_hash):
+            mismatches.append(
+                {
+                    "field": "redacted_failure_summary_hash",
+                    "expected": "lowercase_sha256_hex",
+                    "received": receipt.get("redacted_failure_summary_hash"),
+                }
+            )
+    else:
+        started_failure_fields = {
+            "process_failure_recorded": False,
+            "process_timeout_recorded": False,
+            "process_failure_code": "",
+            "process_failure_phase": "",
+            "redacted_failure_summary_hash": "",
+        }
+        for field, expected_value in started_failure_fields.items():
+            received = receipt.get(field, expected_value)
+            if received != expected_value:
+                mismatches.append({"field": field, "expected": expected_value, "received": received})
     receipt_hash = _stable_hash(
         {
             key: value
@@ -1397,7 +1462,7 @@ def _validated_process_execution_projection(
             details={"process_execution_receipt_id": receipt_id, "mismatches": mismatches},
         )
     return {
-        "process_execution_projection_state": "started",
+        "process_execution_projection_state": process_execution_state,
         "process_execution_status_projection_mode": PROCESS_EXECUTION_STATUS_PROJECTION_MODE,
         "process_execution_status_projection_surfaces": ["status", "history"],
         "read_only_process_execution_projection": True,
@@ -1415,7 +1480,7 @@ def _validated_process_execution_projection(
         "background_process_runtime_selected": True,
         "background_process_runtime_selected_now": True,
         "job_execution_runtime_selected_now": False,
-        "actual_subprocess_spawn_admitted_now": True,
+        "actual_subprocess_spawn_admitted_now": expected_subprocess_spawn,
         "actual_corpus_processing_execution_admitted_now": False,
         "browser_triggered_process_start_admitted": False,
         "operator_supplied_command_admitted": False,
@@ -1434,6 +1499,11 @@ def _validated_process_execution_projection(
         "raw_url_exposed": False,
         "artifact_bytes_exposed": False,
         "selector_mutation_performed": False,
+        "process_failure_recorded": bool(receipt.get("process_failure_recorded", False)),
+        "process_timeout_recorded": bool(receipt.get("process_timeout_recorded", False)),
+        "process_failure_code": str(receipt.get("process_failure_code") or ""),
+        "process_failure_phase": str(receipt.get("process_failure_phase") or ""),
+        "redacted_failure_summary_hash": str(receipt.get("redacted_failure_summary_hash") or ""),
     }
 
 

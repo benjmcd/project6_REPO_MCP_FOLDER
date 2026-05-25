@@ -5125,6 +5125,11 @@ class Layer3CandidateBFullCorpusOperatorWorkflowProcessExecutionResponse(Layer3B
     redacted_process_status_projection: dict[str, Any]
     redacted_process_ref: str
     server_process_handle_hash: str
+    process_failure_recorded: bool = False
+    process_timeout_recorded: bool = False
+    process_failure_code: str = ""
+    process_failure_phase: str = ""
+    redacted_failure_summary_hash: str = ""
     append_only_process_execution_receipt: bool
     process_started: bool
     source_run_receipt_mutated: bool

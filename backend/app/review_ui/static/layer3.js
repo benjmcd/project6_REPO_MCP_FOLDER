@@ -10125,6 +10125,9 @@ function candidateBFullCorpusOperatorWorkflowProcessExecutionPanelState() {
     if (State.candidateBFullCorpusOperatorWorkflowProcessExecution?.process_execution_state === 'started') {
         return { label: 'candidate_b_full_corpus_workflow_process_execution_started', pill: 'ok' };
     }
+    if (State.candidateBFullCorpusOperatorWorkflowProcessExecution?.process_execution_state === 'blocked') {
+        return { label: 'candidate_b_full_corpus_workflow_process_execution_blocked', pill: 'blocked' };
+    }
     return { label: 'candidate_b_full_corpus_workflow_process_execution_ready', pill: 'preview' };
 }
 
@@ -11435,6 +11438,11 @@ function candidateBFullCorpusOperatorWorkflowProcessExecutionRows(processExecuti
                     ${fieldItem('server process handle hash', processExecution.server_process_handle_hash, { code: true })}
                     ${fieldItem('projection state', projection.process_execution_projection_state, { code: true })}
                     ${fieldItem('projection process ref', projection.redacted_process_ref, { code: true })}
+                    ${fieldItem('failure recorded', projection.process_failure_recorded)}
+                    ${fieldItem('timeout recorded', projection.process_timeout_recorded)}
+                    ${fieldItem('failure code', projection.process_failure_code, { code: true })}
+                    ${fieldItem('failure phase', projection.process_failure_phase, { code: true })}
+                    ${fieldItem('redacted failure summary hash', projection.redacted_failure_summary_hash, { code: true })}
                 </ul>
             </section>
             <section class="result-review-card">
