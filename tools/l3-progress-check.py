@@ -3151,6 +3151,10 @@ SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_LAYER3_OPERATOR_STATUS_SELECTION = (
     PLANNING_DOCS
     / "1121-sec-edgar-text-table-downstream-operator-status-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_LAYER3_OPERATOR_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1122-sec-edgar-text-table-downstream-operator-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -3659,6 +3663,9 @@ SEC_EDGAR_MATERIAL_BRIDGE_SERVICE = (
 )
 SEC_EDGAR_DOWNSTREAM_PROOF_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_downstream_proof.py"
+)
+SEC_EDGAR_DOWNSTREAM_STATUS_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_downstream_status.py"
 )
 GATE_B_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_gate_b_state.py"
@@ -106275,6 +106282,140 @@ def _check_sec_edgar_text_table_downstream_layer3_operator_status_selection(
                 )
 
 
+def _check_sec_edgar_text_table_downstream_layer3_operator_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_LAYER3_OPERATOR_STATUS_RUNTIME: (
+            "SEC EDGAR Text Table Downstream Layer 3 Operator Status Runtime",
+            "milestone: sec_edgar_text_table_downstream_layer3_operator_status_runtime_v1",
+            "source_operator_status_selection: next_milestone_plans/Layer3_planning_docs/1121-sec-edgar-text-table-downstream-operator-status-selection.md",
+            "current_main_entry: 0ac8f2ab1bddf74949586656ee978a988fecb7a3",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_downstream_status.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
+            "implemented_request_model: Layer3SecEdgarTextTableDownstreamOperatorStatusRequest",
+            "implemented_response_model: Layer3SecEdgarTextTableDownstreamOperatorStatusResponse",
+            "implemented_schema_id: layer3.sec_edgar_text_table_downstream_operator_status.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_text_table_downstream_operator_status_request.v1",
+            "implemented_status_mode: sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "implemented_operator_decision: inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "implemented_status_states: not_recorded,available,blocked",
+            "implemented_not_recorded_behavior: no_downstream_proof_authority_supplied",
+            "implemented_available_behavior: downstream_proof_request_revalidates_and_expected_proof_hash_matches",
+            "implemented_blocked_behavior: stale_contradictory_ambiguous_missing_or_forbidden_proof_authority",
+            "implemented_authority_model: downstream_proof_request_plus_expected_proof_hash_revalidated_server_side",
+            "implemented_receipt_model: deterministic_no_new_storage_status_projection_over_existing_proof_authority",
+            "implemented_hash_bindings: expected_proof_hash,proof_hash,bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash",
+            "implemented_fail_closed_conditions: expected_proof_hash_missing,expected_proof_hash_mismatch,proof_validator_conflict,raw_path_or_url_authority,ambiguous_proof_authority,forbidden_input_authority",
+            "status_reuses_existing_downstream_proof_validator: true",
+            "status_available_requires_server_revalidation: true",
+            "status_available_requires_proof_hash_match: true",
+            "status_available_requires_server_receipts_or_response_hashes: true",
+            "status_available_requires_redacted_projection: true",
+            "status_can_create_downstream_proof: false",
+            "status_can_mutate_gate_b_session: false",
+            "status_can_mutate_material_snapshot: false",
+            "status_can_mutate_package_or_delivery: false",
+            "status_can_repair_missing_coverage: false",
+            "status_can_fetch_sec_content: false",
+            "status_can_parse_xml_html_inline_xbrl: false",
+            "status_can_create_runtime_storage_root: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "xml_html_inline_xbrl_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_proof_receipt_path_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_downstream_status.py ./backend/app/api/layer3.py ./backend/tests/test_layer3_sec_edgar_authority_envelope.py ./backend/tests/test_layer3_api.py PASS",
+            "focused_service_pytest: python -m pytest ./backend/tests/test_layer3_sec_edgar_authority_envelope.py -q PASS",
+            "focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k \"sec_edgar_text_table\" PASS",
+            "next_exact_posture: sec_edgar_text_table_downstream_layer3_rendered_operator_status_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_downstream_layer3_operator_status_runtime_v1",
+            "source_operator_status_selection: next_milestone_plans/Layer3_planning_docs/1121-sec-edgar-text-table-downstream-operator-status-selection.md",
+            "current_main_entry: 0ac8f2ab1bddf74949586656ee978a988fecb7a3",
+            "implemented_service: backend/app/services/layer3_sec_edgar_downstream_status.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
+            "implemented_schema_id: layer3.sec_edgar_text_table_downstream_operator_status.v1",
+            "implemented_status_mode: sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "implemented_status_states: not_recorded,available,blocked",
+            "implemented_authority_model: downstream_proof_request_plus_expected_proof_hash_revalidated_server_side",
+            "implemented_receipt_model: deterministic_no_new_storage_status_projection_over_existing_proof_authority",
+            "status_reuses_existing_downstream_proof_validator: true",
+            "status_available_requires_server_revalidation: true",
+            "status_can_create_downstream_proof: false",
+            "status_can_fetch_sec_content: false",
+            "status_can_create_runtime_storage_root: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "next_exact_posture: sec_edgar_text_table_downstream_layer3_rendered_operator_status_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_LAYER3_OPERATOR_STATUS_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_downstream_layer3_operator_status_runtime_v1",
+        ),
+        SEC_EDGAR_DOWNSTREAM_STATUS_SERVICE: (
+            "SCHEMA_ID = \"layer3.sec_edgar_text_table_downstream_operator_status.v1\"",
+            "REQUEST_SCHEMA_ID = \"layer3.sec_edgar_text_table_downstream_operator_status_request.v1\"",
+            "STATUS_MODE = \"sec_edgar_text_table_downstream_layer3_operator_status_v1\"",
+            "OPERATOR_DECISION = \"inspect_sec_edgar_text_table_downstream_layer3_operator_status\"",
+            "def inspect_sec_edgar_text_table_downstream_layer3_operator_status(",
+            "record_sec_edgar_text_table_downstream_layer3_proof(",
+            "\"not_recorded\"",
+            "\"available\"",
+            "\"blocked\"",
+            "\"runtime_db_or_storage_expansion_admitted\": False",
+            "\"raw_local_path_rendered\": False",
+            "\"raw_url_rendered\": False",
+            "\"frontend_durable_authority_enabled\": False",
+        ),
+        LAYER3_API: (
+            "layer3_sec_edgar_downstream_status",
+            "Layer3SecEdgarTextTableDownstreamOperatorStatusRequest",
+            "Layer3SecEdgarTextTableDownstreamOperatorStatusResponse",
+            "\"/source/sec-edgar/text-table/downstream-proof/status\"",
+            "inspect_sec_edgar_text_table_downstream_layer3_operator_status(",
+        ),
+        SEC_EDGAR_AUTHORITY_ENVELOPE_TEST: (
+            "test_sec_edgar_text_table_downstream_operator_status_renders_not_recorded",
+            "test_sec_edgar_text_table_downstream_operator_status_renders_available",
+            "test_sec_edgar_text_table_downstream_operator_status_blocks_stale_proof_hash",
+            "test_sec_edgar_text_table_downstream_operator_status_blocks_raw_url_proof",
+            "sec_edgar_text_table_downstream_operator_status_proof_hash_mismatch",
+            "https://example.test/raw-proof\" not in str(result)",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_reports_sec_edgar_downstream_status_not_recorded",
+            "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
+            "layer3.sec_edgar_text_table_downstream_operator_status.v1",
+            "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+            "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+            "status_projection",
+            "runtime_db_or_storage_expansion_admitted",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR text table downstream Layer 3 operator status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -107325,6 +107466,7 @@ def main() -> int:
     _check_sec_edgar_text_table_downstream_layer3_proof_selection(errors)
     _check_sec_edgar_text_table_downstream_layer3_proof_runtime(errors)
     _check_sec_edgar_text_table_downstream_layer3_operator_status_selection(errors)
+    _check_sec_edgar_text_table_downstream_layer3_operator_status_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
