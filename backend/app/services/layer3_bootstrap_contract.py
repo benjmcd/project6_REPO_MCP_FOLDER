@@ -229,6 +229,10 @@ def build_bootstrap_contract(
             "sec_edgar_text_table_downstream_operator_status_endpoint": (
                 f"{api_root}/source/sec-edgar/text-table/downstream-proof/status"
             ),
+            "sec_edgar_text_table_source_acquisition_authority_admitted": True,
+            "sec_edgar_text_table_source_acquisition_authority_endpoint": (
+                f"{api_root}/source/sec-edgar/text-table/source-acquisition/authority"
+            ),
             "sec_edgar_text_table_downstream_operator_repeatability_trial_admitted": True,
             "sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint": (
                 f"{api_root}/source/sec-edgar/text-table/downstream/operator-repeatability/trial"

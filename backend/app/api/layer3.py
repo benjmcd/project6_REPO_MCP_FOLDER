@@ -31,6 +31,7 @@ from app.services import (
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_repeatability_trial,
+    layer3_sec_edgar_source_acquisition,
     layer3_provider_private_signed_url,
     layer3_provider_public_url,
     layer3_provider_public_url_delivery_use,
@@ -416,6 +417,34 @@ class Layer3SecEdgarTextTableMaterialAuthorityBridgeRequest(BaseModel):
     expected_material_preview_hash: str | None = None
     rollback_confirmed: bool = False
     operator_confirmed: bool = False
+    actor: str | None = None
+
+
+class Layer3SecEdgarTextTableSourceAcquisitionAuthorityRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    acquisition_mode: Literal["sec_edgar_text_table_source_acquisition_authority_v1"]
+    operator_decision: Literal["record_sec_edgar_text_table_source_acquisition_authority"]
+    dataset_version_id: str = Field(min_length=1)
+    source_artifact_receipt_id: str = Field(min_length=1)
+    source_artifact_receipt_hash: str = Field(min_length=64, max_length=64)
+    source_artifact_ref_hash: str = Field(min_length=64, max_length=64)
+    accession_or_submission_id_hash: str = Field(min_length=64, max_length=64)
+    cik_or_filer_ref_hash: str = Field(min_length=64, max_length=64)
+    form_type: str = Field(min_length=1)
+    filing_date: str = Field(min_length=1)
+    content_sha256: str = Field(min_length=64, max_length=64)
+    content_length: int = Field(gt=0)
+    parser_family: Literal["sec_edgar_filing"]
+    parser_contract_id: Literal["aps_sec_edgar_filing_parser_v1"]
+    typed_content_contract_id: Literal["aps_sec_edgar_filing_units_v1"]
+    materialization_receipt_hash: str = Field(min_length=64, max_length=64)
+    dataset_version_hash: str = Field(min_length=64, max_length=64)
+    authority_envelope_hash: str = Field(min_length=64, max_length=64)
+    operator_confirmation: bool
     actor: str | None = None
 
 
@@ -7384,6 +7413,39 @@ class Layer3SecEdgarTextTableMaterialAuthorityBridgeResponse(Layer3BaseResponse)
     negative_invariants: dict[str, Any]
 
 
+class Layer3SecEdgarTextTableSourceAcquisitionAuthorityResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    source_acquisition_authority_state: str
+    source_acquisition_receipt_id: str
+    source_acquisition_receipt_hash: str
+    source_acquisition_receipt_ref: str
+    source_acquisition_receipt_status: str
+    idempotent_replay: bool
+    append_only_source_acquisition_authority_receipt: bool
+    exclusive_receipt_per_source_artifact_authority: bool
+    dataset_version_id: str
+    source_family: str
+    parser_family: str
+    parser_contract_id: str
+    typed_content_contract_id: str
+    source_mode: str
+    dataset_version_hash: str
+    materialization_receipt_hash: str
+    authority_envelope_hash: str
+    source_artifact_authority: dict[str, Any]
+    authority_bindings: dict[str, Any]
+    compatibility: dict[str, Any]
+    operator_visible_source_acquisition_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
+    baseline_rollback: dict[str, Any]
+    candidate_a_semantics: dict[str, Any]
+    candidate_b_default_scope: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarTextTableDownstreamProofResponse(Layer3BaseResponse):
     mode: str
     proof_state: str
@@ -14030,6 +14092,23 @@ def post_sec_edgar_text_table_material_authority_bridge(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_sec_edgar_material_bridge.prepare_sec_edgar_text_table_material_authority_bridge(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/text-table/source-acquisition/authority",
+    response_model=Layer3SecEdgarTextTableSourceAcquisitionAuthorityResponse,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_sec_edgar_text_table_source_acquisition_authority(
+    payload: Layer3SecEdgarTextTableSourceAcquisitionAuthorityRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_source_acquisition.record_sec_edgar_text_table_source_acquisition_authority(
             payload.model_dump(exclude_none=True),
             db,
         )
