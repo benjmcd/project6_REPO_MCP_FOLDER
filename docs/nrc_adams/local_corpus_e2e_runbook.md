@@ -2746,11 +2746,18 @@ selected_process_execution_action: record_candidate_b_async_background_process_e
 selected_process_execution_allowlisted_command_family: tools/run_candidate_b_full_corpus_operator_workflow.py
 selected_process_execution_arguments_authority: server_resolved_receipt_ids_and_configured_runtime_roots_only
 selected_process_execution_outputs: process_execution_receipt,process_execution_receipt_hash,process_execution_authority_hash,redacted_process_status_projection
+process_state_values_implemented: started,blocked
+process_launch_failure_receipt_state: blocked
+process_launch_timeout_receipt_state: blocked
+process_timeout_must_emit_failed_or_blocked_receipt: true
+redacted_launch_failure_summary_hash_required: true
 status_history_projection_after_process_start: true
 rendered_operator_projection_after_process_start: true
 stale_history_row_must_reject: true
 stale_execution_boundary_must_reject: true
 missing_execution_boundary_must_reject: true
+launch_failure_must_record_blocked_receipt: true
+launch_timeout_must_record_blocked_receipt: true
 background_process_runtime_selected_now: true
 job_execution_runtime_selected_now: false
 actual_subprocess_spawn_admitted_now: true
@@ -2772,7 +2779,7 @@ frontend_durable_authority_enabled: false
 next_exact_posture: candidate_b_async_process_completion_result_adoption_selection_v1
 ```
 
-Operators can now start only the server-owned allowlisted Candidate B full-corpus operator workflow process after an execution-boundary receipt is visible. The receipt and UI expose a redacted process reference, receipt hashes, and status/history projection; they do not expose raw command lines, local paths, URLs, stdout, stderr, traces, logs, job-completion authority, or result-adoption authority.
+Operators can now start only the server-owned allowlisted Candidate B full-corpus operator workflow process after an execution-boundary receipt is visible. The receipt and UI expose a redacted process reference, receipt hashes, and status/history projection; server-owned launch failure or launch timeout records a blocked process-execution receipt with operator-safe failure code, phase, and redacted summary hash. The flow does not expose raw command lines, local paths, URLs, stdout, stderr, traces, logs, job-completion authority, or result-adoption authority.
 
 ### Candidate B Async Process Completion/Result Adoption Selection
 

@@ -3174,6 +3174,114 @@ def test_candidate_b_full_corpus_operator_workflow_process_execution_is_idempote
     assert launch_calls == [first["process_execution_receipt_id"]]
 
 
+def test_candidate_b_full_corpus_operator_workflow_process_execution_records_launch_failure_receipt(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    launch_calls: list[str] = []
+
+    def fake_launch_failure(
+        *,
+        process_execution_receipt_id: str,
+        process_invocation_hash: str,
+    ) -> dict[str, str]:
+        launch_calls.append(process_execution_receipt_id)
+        raise workflow_process_execution.CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
+            workflow_process_execution.PROCESS_LAUNCH_FAILED_ERROR_CODE,
+            "The server-owned allowlisted Candidate B workflow process could not be started.",
+            http_status=409,
+            details={"reason": "OSError"},
+        )
+
+    monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", fake_launch_failure)
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+    request = _process_execution_request(history_body, row, execution_boundary_body)
+
+    first_response = client.post(PROCESS_EXECUTION_ENDPOINT, json=request)
+    second_response = client.post(PROCESS_EXECUTION_ENDPOINT, json=request)
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 200
+    first = first_response.json()
+    second = second_response.json()
+    serialized = json.dumps(first, sort_keys=True)
+    assert first["status"] == "blocked"
+    assert first["process_execution_state"] == "blocked"
+    assert first["append_only_process_execution_receipt"] is True
+    assert first["process_started"] is False
+    assert first["actual_subprocess_spawn_admitted_now"] is False
+    assert first["process_failure_recorded"] is True
+    assert first["process_timeout_recorded"] is False
+    assert first["process_failure_code"] == workflow_process_execution.PROCESS_LAUNCH_FAILED_ERROR_CODE
+    assert first["process_failure_phase"] == workflow_process_execution.PROCESS_LAUNCH_FAILURE_PHASE
+    assert len(first["redacted_failure_summary_hash"]) == 64
+    assert first["raw_stdout_admitted"] is False
+    assert first["raw_stderr_admitted"] is False
+    assert "C:\\" not in serialized
+    assert "file:///" not in serialized
+    assert "https://" not in serialized
+    assert second["process_execution_receipt_id"] == first["process_execution_receipt_id"]
+    assert second["process_execution_receipt_hash"] == first["process_execution_receipt_hash"]
+    assert first["idempotent_replay"] is False
+    assert second["idempotent_replay"] is True
+    assert launch_calls == [first["process_execution_receipt_id"]]
+
+    status_body = client.post(STATUS_ENDPOINT, json=row["status_request"]).json()
+    projection = status_body["process_execution_projection"]
+    assert projection["process_execution_projection_state"] == "blocked"
+    assert projection["process_execution_receipt_id"] == first["process_execution_receipt_id"]
+    assert projection["actual_subprocess_spawn_admitted_now"] is False
+    assert projection["process_failure_recorded"] is True
+    assert projection["process_failure_code"] == workflow_process_execution.PROCESS_LAUNCH_FAILED_ERROR_CODE
+
+    refreshed_history = client.get(HISTORY_ENDPOINT).json()
+    assert refreshed_history["history_hash"] == history_body["history_hash"]
+    history_projection = refreshed_history["history_rows"][0]["process_execution_projection"]
+    assert history_projection["process_execution_projection_state"] == "blocked"
+    assert history_projection["process_failure_recorded"] is True
+
+
+def test_candidate_b_full_corpus_operator_workflow_process_execution_records_timeout_receipt(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_launch_timeout(
+        *,
+        process_execution_receipt_id: str,
+        process_invocation_hash: str,
+    ) -> dict[str, str]:
+        raise workflow_process_execution.CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
+            workflow_process_execution.PROCESS_LAUNCH_TIMEOUT_ERROR_CODE,
+            "The server-owned allowlisted Candidate B workflow process start timed out.",
+            http_status=409,
+            details={"reason": "TimeoutError"},
+        )
+
+    monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", fake_launch_timeout)
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+
+    response = client.post(
+        PROCESS_EXECUTION_ENDPOINT,
+        json=_process_execution_request(history_body, row, execution_boundary_body),
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["process_execution_state"] == "blocked"
+    assert body["process_started"] is False
+    assert body["actual_subprocess_spawn_admitted_now"] is False
+    assert body["process_failure_recorded"] is True
+    assert body["process_timeout_recorded"] is True
+    assert body["process_failure_code"] == workflow_process_execution.PROCESS_LAUNCH_TIMEOUT_ERROR_CODE
+
+    status_body = client.post(STATUS_ENDPOINT, json=row["status_request"]).json()
+    projection = status_body["process_execution_projection"]
+    assert projection["process_execution_projection_state"] == "blocked"
+    assert projection["process_timeout_recorded"] is True
+    assert projection["process_failure_code"] == workflow_process_execution.PROCESS_LAUNCH_TIMEOUT_ERROR_CODE
+
+
 def test_candidate_b_full_corpus_operator_workflow_process_execution_rejects_missing_boundary(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
