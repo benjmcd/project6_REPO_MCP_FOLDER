@@ -1,0 +1,105 @@
+# SEC EDGAR Text Table Source Acquisition Rendered Status Current-Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1137-sec-edgar-text-table-source-acquisition-rendered-status-runtime.md
+current_main_entry: 7e30fde7e45cf2258472d1920ce8befe1716f2d1
+source_pr: 1841
+source_branch: codex/sec-edgar-source-acquisition-rendered-runtime
+source_commits: 5ef0241d8711cf0b8edbb954ed8cff6173074c88,7921440c47d7b76e873652adb362e3c0147c3470
+source_merge_commit: 7e30fde7e45cf2258472d1920ce8befe1716f2d1
+entry_decision: current_main_sync
+runtime_status: merged_on_current_main
+rendered_status: merged_on_current_main
+implemented_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control
+implemented_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1
+implemented_operator_decision: record_sec_edgar_text_table_source_acquisition_authority
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+implemented_bootstrap_capability: sec_edgar_text_table_source_acquisition_authority
+implemented_bootstrap_endpoint_field: sec_edgar_text_table_source_acquisition_authority_endpoint
+implemented_panel: sec-edgar-source-acquisition-authority-panel
+implemented_form: sec-edgar-source-acquisition-authority-form
+implemented_submit: sec-edgar-source-acquisition-authority-submit
+implemented_submit_label: Record Source Acquisition Receipt
+implemented_request_input: sec-edgar-source-acquisition-authority-request-json
+implemented_operator_confirmation_input: sec-edgar-source-acquisition-operator-confirmation
+implemented_status_states: not_recorded,available,blocked
+implemented_status_projection: source_acquisition_authority_state,source_acquisition_receipt_id,source_acquisition_receipt_hash,source_acquisition_receipt_ref,source_acquisition_receipt_status,idempotent_replay,source_artifact_authority,authority_bindings,compatibility,operator_visible_source_acquisition_status,fail_closed_behavior,negative_invariants,next_allowed_actions
+implemented_server_authority_source: backend/app/services/layer3_sec_edgar_source_acquisition.py
+implemented_test_fixture_route: /__test/layer3/sec-edgar-source-acquisition-authority
+implemented_test_fixture_schema: project6.review_browser_sec_edgar_source_acquisition_authority_setup.v1
+browser_held_source_artifact_hashes_are_expected_values_only: true
+append_only_source_acquisition_authority_receipt_required: true
+idempotent_replay_rendered: true
+stale_source_artifact_hash_fails_closed: true
+missing_operator_confirmation_fails_closed: true
+missing_source_artifact_receipt_fails_closed: true
+local_validation_node_check: passed
+local_validation_py_compile_l3_progress_check: passed
+local_validation_page_contract: passed
+local_validation_review_browser_fixture: passed
+local_validation_api_source_acquisition: passed
+local_validation_headless_rendered_status_proof: passed
+local_validation_headed_rendered_status_proof: passed
+local_validation_existing_deferred_control_guard_headless: passed
+local_validation_existing_deferred_control_guard_headed: passed
+local_validation_l3_progress_check: passed
+local_validation_l3_target_selection_validate_frozen: passed
+local_validation_git_diff_check: passed
+local_validation_git_diff_cached_check: passed
+github_checks: passed
+github_successful_checks: 10
+review_threads: none
+open_prs_after_merge: none
+rendered_control_can_create_authority_envelope: false
+rendered_control_can_create_material_bridge: false
+rendered_control_can_mutate_gate_b_session: false
+rendered_control_can_fetch_sec_content: false
+rendered_control_can_accept_raw_sec_url: false
+rendered_control_can_accept_raw_local_path: false
+rendered_control_can_parse_xml_html_inline_xbrl: false
+rendered_control_can_create_runtime_storage_root: false
+rendered_control_can_start_process: false
+rendered_control_can_dispatch_connector: false
+rendered_control_can_write_provider_object: false
+rendered_control_can_add_rag_or_model_runtime: false
+rendered_control_can_activate_full_mockup: false
+raw_source_artifact_ref_rendered: false
+raw_source_artifact_receipt_path_rendered: false
+raw_authority_envelope_input_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_closeout_readiness_v1
+```
+
+PR `#1841` merged the rendered SEC EDGAR text/table source-acquisition authority control into current main. The landed tree is now `7e30fde7e45cf2258472d1920ce8befe1716f2d1`, all ten sharded GitHub checks passed, there were no review threads, and `python ./tools/l3-progress-check.py` passes on the merged tree.
+
+This sync records no new runtime behavior beyond the merged slice. Current main now exposes a rendered operator control that submits only expected source-artifact authority and operator confirmation to the server-owned source-acquisition endpoint. The server remains the durable authority for provenance revalidation, stale hash rejection, append-only receipt writing, idempotent replay, and redacted status projection.
+
+The CI follow-up in this slice changed only the rendered submit label from an auth-like phrase to `Record Source Acquisition Receipt`, preserving the authority model while keeping the existing deferred-control guard strict.
+
+## Coherence Check
+
+- Does this sync add SEC network fetch or parser expansion? Recommended answer: no. It records the merged rendered receipt-control posture only.
+- Does the browser own source-acquisition authority? Recommended answer: no. It can submit expected hashes and confirmation; the server revalidates and records or rejects the receipt.
+- Does this make raw SEC filing URLs, local paths, or artifact bytes operator-visible? Recommended answer: no. Those remain blocked and unrendered.
+- What comes next? Recommended answer: run a source-acquisition closeout-readiness checkpoint before selecting any broader SEC acquisition runtime, parser expansion, or source-family promotion slice.
