@@ -700,6 +700,7 @@ const State = {
     candidateBBroaderScopeSelectorUse: null,
     candidateBBroaderScopeSelectorUseError: null,
     candidateBBroaderScopeSelectorUsePending: false,
+    candidateBBroaderScopeSelectorUseInputEdited: false,
     candidateBBroaderScopeSelectorUseInput: {
         runtimeSelectionReceiptId: '',
         runtimeSelectionReceiptHash: '',
@@ -8318,32 +8319,36 @@ function candidateBBroaderScopeRuntimePayload() {
     };
 }
 
-function candidateBBroaderScopeSelectorUseInputValues() {
-    const receiptInput = document.getElementById('candidate-b-broader-scope-selector-use-receipt-id');
-    const hashInput = document.getElementById('candidate-b-broader-scope-selector-use-receipt-hash');
-    const selectedInput = document.getElementById('candidate-b-broader-scope-selector-use-selected-classes');
-    const runtime = State.candidateBBroaderScopeRuntime;
+function candidateBBroaderScopeSelectorUseRuntimeDefaults(runtime = State.candidateBBroaderScopeRuntime) {
     const runtimeSelectedClasses = Array.isArray(runtime?.selected_scope_classes)
         ? runtime.selected_scope_classes.join(', ')
         : '';
     return {
-        runtimeSelectionReceiptId: (
-            receiptInput?.value
-            || State.candidateBBroaderScopeSelectorUseInput.runtimeSelectionReceiptId
-            || runtime?.selection_receipt_id
-            || ''
+        runtimeSelectionReceiptId: (runtime?.selection_receipt_id || '').trim(),
+        runtimeSelectionReceiptHash: (runtime?.selection_receipt_hash || '').trim(),
+        selectedScopeClasses: (runtimeSelectedClasses || '').trim(),
+    };
+}
+
+function candidateBBroaderScopeSelectorUseInputValues() {
+    const receiptInput = document.getElementById('candidate-b-broader-scope-selector-use-receipt-id');
+    const hashInput = document.getElementById('candidate-b-broader-scope-selector-use-receipt-hash');
+    const selectedInput = document.getElementById('candidate-b-broader-scope-selector-use-selected-classes');
+    const runtimeDefaults = candidateBBroaderScopeSelectorUseRuntimeDefaults();
+    const stored = State.candidateBBroaderScopeSelectorUseInput;
+    const operatorEdited = State.candidateBBroaderScopeSelectorUseInputEdited;
+    return {
+        runtimeSelectionReceiptId: (operatorEdited
+            ? (receiptInput ? receiptInput.value : stored.runtimeSelectionReceiptId || '')
+            : (runtimeDefaults.runtimeSelectionReceiptId || (receiptInput ? receiptInput.value : '') || stored.runtimeSelectionReceiptId || '')
         ).trim(),
-        runtimeSelectionReceiptHash: (
-            hashInput?.value
-            || State.candidateBBroaderScopeSelectorUseInput.runtimeSelectionReceiptHash
-            || runtime?.selection_receipt_hash
-            || ''
+        runtimeSelectionReceiptHash: (operatorEdited
+            ? (hashInput ? hashInput.value : stored.runtimeSelectionReceiptHash || '')
+            : (runtimeDefaults.runtimeSelectionReceiptHash || (hashInput ? hashInput.value : '') || stored.runtimeSelectionReceiptHash || '')
         ).trim(),
-        selectedScopeClasses: (
-            selectedInput?.value
-            || State.candidateBBroaderScopeSelectorUseInput.selectedScopeClasses
-            || runtimeSelectedClasses
-            || ''
+        selectedScopeClasses: (operatorEdited
+            ? (selectedInput ? selectedInput.value : stored.selectedScopeClasses || '')
+            : (runtimeDefaults.selectedScopeClasses || (selectedInput ? selectedInput.value : '') || stored.selectedScopeClasses || '')
         ).trim(),
     };
 }
@@ -13438,6 +13443,12 @@ async function recordCandidateBBroaderScopeRuntime(event) {
     try {
         State.candidateBBroaderScopeRuntime = await postJson(path, payload);
         State.candidateBBroaderScopeRuntimeError = null;
+        State.candidateBBroaderScopeSelectorUse = null;
+        State.candidateBBroaderScopeSelectorUseError = null;
+        State.candidateBBroaderScopeSelectorUseInputEdited = false;
+        State.candidateBBroaderScopeSelectorUseInput = candidateBBroaderScopeSelectorUseRuntimeDefaults(
+            State.candidateBBroaderScopeRuntime,
+        );
         addEvent('Candidate B broader eligible-corpus runtime status recorded through server audit authority.');
     } catch (error) {
         State.candidateBBroaderScopeRuntime = null;
@@ -20020,6 +20031,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         || target.id === 'candidate-b-broader-scope-selector-use-receipt-hash'
         || target.id === 'candidate-b-broader-scope-selector-use-selected-classes'
     ) {
+        State.candidateBBroaderScopeSelectorUseInputEdited = true;
         State.candidateBBroaderScopeSelectorUseInput = candidateBBroaderScopeSelectorUseInputValues();
         State.candidateBBroaderScopeSelectorUseError = null;
         renderCandidateBDefaultPromotionStatusPanel();
