@@ -191,6 +191,8 @@ class Layer3ExecutionReadinessResponse(Layer3BaseResponse):
     candidate_b_default_promotion_final_proof_status_endpoint: str
     candidate_b_broader_eligible_corpus_default_scope_selector_use_status_admitted: bool
     candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint: str
+    candidate_b_broader_eligible_corpus_default_scope_selector_activation_admitted: bool
+    candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint: str
     candidate_b_full_corpus_operator_workflow_status_admitted: bool
     candidate_b_full_corpus_operator_workflow_status_endpoint: str
     candidate_b_full_corpus_operator_workflow_run_admitted: bool
@@ -3475,6 +3477,21 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorUseStatusRequest(
     runtime_selection_receipt_hash: str = Field(min_length=1)
 
 
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorActivationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    activation_mode: Literal["candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1"]
+    selector_use_status_hash: str = Field(min_length=1)
+    selector_use_receipt_id: str = Field(min_length=1)
+    selector_use_receipt_hash: str = Field(min_length=1)
+    runtime_selection_receipt_id: str = Field(min_length=1)
+    runtime_selection_receipt_hash: str = Field(min_length=1)
+    selected_scope_classes: list[str]
+    rollback_to_baseline_confirmation: bool
+    operator_confirmation: bool
+
+
 class Layer3CandidateBDefaultPromotionFinalProofRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -5647,6 +5664,47 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorUseStatusResponse
     selector_mutation_performed: bool
     source_expansion_admitted: bool
     runtime_db_or_storage_expansion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    auth_security_expansion_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorActivationResponse(Layer3BaseResponse):
+    mode: str
+    selector_activation_state: str
+    activation_receipt_id: str | None
+    activation_receipt_hash: str | None
+    activation_receipt_ref: str | None
+    activation_receipt_status: str
+    blocked_reasons: list[dict[str, Any]]
+    activation_authority: dict[str, Any]
+    selector_use_receipt_binding: dict[str, Any]
+    runtime_selection_receipt_binding: dict[str, Any]
+    readiness_audit_binding: dict[str, Any]
+    selected_scope_classes: list[str]
+    selected_scope_classes_source: str
+    current_default_before_activation_runtime: str
+    default_scope_activation_enabled: bool
+    default_scope_expansion_enabled: bool
+    non_selected_class_default: str
+    baseline_rollback: dict[str, Any]
+    candidate_a_semantics: dict[str, Any]
+    candidate_b_scope_authority: dict[str, Any]
+    operator_visible_activation_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
+    selector_activation_authority_recorded: bool
+    selector_mutation_performed: bool
+    source_expansion_admitted: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    pdf_or_image_text_material_ingestion_admitted: bool
     provider_object_write_enabled: bool
     connector_dispatch_enabled: bool
     rag_vector_model_runtime_enabled: bool
@@ -12050,6 +12108,26 @@ def post_candidate_b_broader_eligible_corpus_default_scope_selector_use_status(
         return layer3_candidate_b_broader_scope_selector_use.inspect_candidate_b_broader_scope_selector_use_status(
             payload.model_dump(exclude_unset=True),
         )
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation",
+    response_model=Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorActivationResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_broader_eligible_corpus_default_scope_selector_activation(
+    payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorActivationRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_broader_scope_selector_use.record_candidate_b_broader_scope_selector_activation(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorActivationError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
     except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseStatusError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
     except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseError as exc:

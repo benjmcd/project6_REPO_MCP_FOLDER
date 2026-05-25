@@ -30,6 +30,9 @@ SELECTOR_USE_ENDPOINT = (
 SELECTOR_USE_STATUS_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status"
 )
+SELECTOR_ACTIVATION_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation"
+)
 SCOPE_CLASSES = list(layer3_candidate_b_broader_scope_readiness.SCOPE_CLASSES)
 EXCLUSIONS = list(layer3_candidate_b_broader_scope_readiness.REQUIRED_EXCLUSIONS)
 SELECTED_CLASS = "structured_json_or_csv_or_xlsx"
@@ -125,6 +128,47 @@ def _selector_use(client: TestClient, runtime_selection: dict[str, object] | Non
     body = response.json()
     assert body["status"] == "selected"
     return body
+
+
+def _selector_use_status(
+    client: TestClient,
+    runtime_selection: dict[str, object] | None = None,
+    selector_use: dict[str, object] | None = None,
+) -> dict[str, object]:
+    runtime_selection = runtime_selection or _runtime_selection(client)
+    selector_use = selector_use or _selector_use(client, runtime_selection)
+    response = client.post(
+        SELECTOR_USE_STATUS_ENDPOINT,
+        json={
+            "client_request_id": "cb-broader-scope-selector-use-status-test",
+            "status_mode": layer3_candidate_b_broader_scope_selector_use.STATUS_MODE,
+            "operator_decision": layer3_candidate_b_broader_scope_selector_use.STATUS_OPERATOR_DECISION,
+            "selector_use_receipt_id": selector_use["selector_use_receipt_id"],
+            "selector_use_receipt_hash": selector_use["selector_use_receipt_hash"],
+            "runtime_selection_receipt_id": runtime_selection["selection_receipt_id"],
+            "runtime_selection_receipt_hash": runtime_selection["selection_receipt_hash"],
+        },
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "available"
+    return body
+
+
+def _selector_activation_payload(selector_use_status: dict[str, object]) -> dict[str, object]:
+    runtime_binding = selector_use_status["runtime_selection_receipt_binding"]
+    return {
+        "client_request_id": "cb-broader-scope-selector-activation-test",
+        "activation_mode": layer3_candidate_b_broader_scope_selector_use.ACTIVATION_MODE,
+        "selector_use_status_hash": selector_use_status["selector_use_status_hash"],
+        "selector_use_receipt_id": selector_use_status["selector_use_receipt_id"],
+        "selector_use_receipt_hash": selector_use_status["selector_use_receipt_hash"],
+        "runtime_selection_receipt_id": runtime_binding["runtime_selection_receipt_id"],
+        "runtime_selection_receipt_hash": runtime_binding["runtime_selection_receipt_hash"],
+        "selected_scope_classes": selector_use_status["selected_scope_classes"],
+        "rollback_to_baseline_confirmation": True,
+        "operator_confirmation": True,
+    }
 
 
 def test_candidate_b_broader_scope_selector_use_records_redacted_receipt(client: TestClient) -> None:
@@ -288,6 +332,151 @@ def test_candidate_b_broader_scope_selector_use_rejects_stale_hash_and_unselecte
     assert "candidate_b_broader_scope_selector_use_unselected_scope_class" in codes
 
 
+def test_candidate_b_broader_scope_selector_activation_records_redacted_receipt(client: TestClient) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+
+    response = client.post(SELECTOR_ACTIVATION_ENDPOINT, json=_selector_activation_payload(selector_use_status))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_selector_use.ACTIVATION_SCHEMA_ID
+    assert body["mode"] == layer3_candidate_b_broader_scope_selector_use.ACTIVATION_MODE
+    assert body["status"] == "selected"
+    assert body["selector_activation_state"] == layer3_candidate_b_broader_scope_selector_use.ACTIVATION_SELECTED_STATE
+    assert body["selected_scope_classes"] == [SELECTED_CLASS]
+    assert body["activation_authority"]["status_revalidated"] is True
+    assert body["selector_use_receipt_binding"]["binding_verified"] is True
+    assert body["runtime_selection_receipt_binding"]["binding_verified"] is True
+    assert body["readiness_audit_binding"]["binding_verified"] is True
+    assert body["default_scope_activation_enabled"] is True
+    assert body["default_scope_expansion_enabled"] is True
+    assert body["non_selected_class_default"] == "baseline"
+    assert body["operator_visible_activation_status"]["redacted_activation_receipt_available"] is True
+    assert body["selector_activation_authority_recorded"] is True
+    assert body["selector_mutation_performed"] is False
+    assert body["source_expansion_admitted"] is False
+    assert body["runtime_db_or_storage_expansion_admitted"] is False
+    assert body["provider_object_write_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["rag_vector_model_runtime_enabled"] is False
+    assert body["full_mockup_activation_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["activation_receipt_ref"].startswith("candidate-b-broader-scope-selector-activation://")
+    assert "C:" not in json.dumps(body, sort_keys=True)
+    assert "https://" not in json.dumps(body, sort_keys=True)
+
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-selector-activation"
+        / f"{body['activation_receipt_id']}.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["activation_receipt_hash"] == body["activation_receipt_hash"]
+    assert receipt["selector_use_status_hash"] == selector_use_status["selector_use_status_hash"]
+    assert receipt["selector_use_receipt_id"] == selector_use["selector_use_receipt_id"]
+    assert receipt["runtime_selection_receipt_id"] == runtime_selection["selection_receipt_id"]
+    assert receipt["selected_scope_classes"] == [SELECTED_CLASS]
+    assert receipt["raw_local_path_exposed"] is False
+    assert receipt["raw_url_exposed"] is False
+
+
+def test_candidate_b_broader_scope_selector_activation_fails_closed_on_stale_status_hash(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    payload = _selector_activation_payload(selector_use_status)
+    payload["selector_use_status_hash"] = "d" * 64
+
+    response = client.post(SELECTOR_ACTIVATION_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["selector_activation_state"] == layer3_candidate_b_broader_scope_selector_use.ACTIVATION_BLOCKED_STATE
+    assert body["activation_receipt_status"] == "not_recorded"
+    assert body["activation_receipt_id"] is None
+    assert body["default_scope_activation_enabled"] is False
+    assert body["default_scope_expansion_enabled"] is False
+    assert body["selector_activation_authority_recorded"] is False
+    assert body["selector_mutation_performed"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_selector_activation_stale_status_hash" in codes
+
+
+def test_candidate_b_broader_scope_selector_activation_fails_closed_on_stale_selector_use_hash(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    payload = _selector_activation_payload(selector_use_status)
+    payload["selector_use_receipt_hash"] = "e" * 64
+
+    response = client.post(SELECTOR_ACTIVATION_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["activation_receipt_status"] == "not_recorded"
+    assert body["default_scope_activation_enabled"] is False
+    assert body["selector_mutation_performed"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_selector_activation_status_authority_invalid" in codes
+    authority_errors = {item["details"].get("authority_error_code") for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_selector_use_status_authority_invalid" in authority_errors
+
+
+def test_candidate_b_broader_scope_selector_activation_fails_closed_on_stale_runtime_hash(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    payload = _selector_activation_payload(selector_use_status)
+    payload["runtime_selection_receipt_hash"] = "f" * 64
+
+    response = client.post(SELECTOR_ACTIVATION_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["activation_receipt_status"] == "not_recorded"
+    assert body["default_scope_activation_enabled"] is False
+    assert body["selector_mutation_performed"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_selector_activation_status_authority_invalid" in codes
+    authority_errors = {item["details"].get("authority_error_code") for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_selector_use_status_authority_invalid" in authority_errors
+
+
+def test_candidate_b_broader_scope_selector_activation_fails_closed_on_unselected_class(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    payload = _selector_activation_payload(selector_use_status)
+    payload["selected_scope_classes"] = ["office_documents"]
+
+    response = client.post(SELECTOR_ACTIVATION_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["activation_receipt_status"] == "not_recorded"
+    assert body["default_scope_activation_enabled"] is False
+    assert body["selector_mutation_performed"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_selector_activation_selected_classes_do_not_match_status" in codes
+    assert "candidate_b_broader_scope_selector_activation_unselected_scope_class" in codes
+
+
 def test_candidate_b_broader_scope_selector_use_rejects_forbidden_browser_authority(
     client: TestClient,
 ) -> None:
@@ -316,11 +505,19 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
         readiness_body["candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint"]
         == SELECTOR_USE_STATUS_ENDPOINT
     )
+    assert readiness_body["candidate_b_broader_eligible_corpus_default_scope_selector_activation_admitted"] is True
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint"]
+        == SELECTOR_ACTIVATION_ENDPOINT
+    )
 
     assert bootstrap.status_code == 200, bootstrap.text
     bootstrap_body = bootstrap.json()
     assert bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_selector_use"] is True
     assert bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_selector_use_status"] is True
+    assert (
+        bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_selector_activation"] is True
+    )
     assert (
         bootstrap_body["execution_readiness"]["candidate_b_broader_eligible_corpus_default_scope_selector_use_endpoint"]
         == SELECTOR_USE_ENDPOINT
@@ -330,6 +527,12 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
             "candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint"
         ]
         == SELECTOR_USE_STATUS_ENDPOINT
+    )
+    assert (
+        bootstrap_body["execution_readiness"][
+            "candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint"
+        ]
+        == SELECTOR_ACTIVATION_ENDPOINT
     )
 
     schema = client.app.openapi()
@@ -345,3 +548,9 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
     assert status_request_schema["additionalProperties"] is False
     for field in ("visual_lane_mode", "document_processing_engine", "local_path", "url", "default_selector"):
         assert field not in status_request_schema["properties"]
+    activation_route = schema["paths"][SELECTOR_ACTIVATION_ENDPOINT]["post"]
+    activation_request_ref = activation_route["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    activation_request_schema = schema["components"]["schemas"][activation_request_ref.rsplit("/", 1)[-1]]
+    assert activation_request_schema["additionalProperties"] is False
+    for field in ("visual_lane_mode", "document_processing_engine", "local_path", "url", "default_selector"):
+        assert field not in activation_request_schema["properties"]
