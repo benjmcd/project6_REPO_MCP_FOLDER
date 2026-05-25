@@ -4866,3 +4866,47 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_u
 ```
 
 The selector-use rendered panel now defaults to the latest selected broader-scope runtime receipt after runtime re-recording, unless the operator explicitly edits the selector-use fields. This closes the stale receipt/class reuse path identified after PR `#1779` without changing backend selector behavior, mutating defaults, or introducing frontend durable authority.
+
+### Candidate B Broader Eligible Corpus Default Scope Selector-Use Remediation Current-Main Sync
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_current_main_sync_v1
+source_broader_eligible_corpus_default_scope_selector_use_rendered_stale_input_review_remediation: next_milestone_plans/Layer3_planning_docs/1077-cb-broader-eligible-corpus-default-scope-selector-use-rendered-stale-input-review-remediation.md
+base_authority: project6-origin/main@d400a3ac7965e3e7d3221751bc4ab09665633818
+merged_pr: "#1780"
+source_branch: codex/cb-selector-use-sync
+source_commit: 15109675064df2d156bd1b67936edda941c39c46
+merge_commit: d400a3ac7965e3e7d3221751bc4ab09665633818
+sync_status: current_main_synced_candidate_b_broader_scope_selector_use_stale_input_remediation
+synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_selector_use_status_control
+synced_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1
+synced_runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use
+synced_operator_surface: /review/layer3 Candidate B default-promotion status panel
+synced_runtime_default_helper: candidateBBroaderScopeSelectorUseRuntimeDefaults
+synced_operator_edit_tracking: candidateBBroaderScopeSelectorUseInputEdited
+synced_latest_runtime_receipt_default: true
+synced_stale_selector_use_status_cleared_on_runtime_success: true
+synced_second_runtime_receipt_proof: cb-broader-scope-runtime-rendered-proof-2
+ci_backend_layer3_api: pass
+ci_test: pass
+review_threads_total_count: 0
+unresolved_review_threads_total_count: 0
+source_pr_1779_review_threads_total_count: 1
+source_pr_1779_unresolved_review_threads_after_remediation: 0
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+selector_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_v1
+```
+
+The selector-use stale runtime input remediation is now current-main behavior. The next useful slice is operator status inspection for selected selector-use receipts, so an operator can inspect which receipt/class selection is active before any broader default-promotion closeout.
