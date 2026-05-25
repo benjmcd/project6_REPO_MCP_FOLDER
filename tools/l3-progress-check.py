@@ -3131,6 +3131,10 @@ SEC_EDGAR_TEXT_TABLE_AUTHORITY_ENVELOPE_SELECTION = (
 SEC_EDGAR_TEXT_TABLE_AUTHORITY_ENVELOPE_VALIDATION_RUNTIME = (
     PLANNING_DOCS / "1116-sec-edgar-text-table-authority-envelope-validation-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_LAYER3_MATERIAL_AUTHORITY_BRIDGE_SELECTION = (
+    PLANNING_DOCS
+    / "1117-sec-edgar-text-table-layer3-material-authority-bridge-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -105636,6 +105640,113 @@ def _check_sec_edgar_text_table_authority_envelope_validation_runtime(
                 )
 
 
+def _check_sec_edgar_text_table_layer3_material_authority_bridge_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LAYER3_MATERIAL_AUTHORITY_BRIDGE_SELECTION: (
+            "SEC EDGAR Text Table Layer 3 Material Authority Bridge Selection",
+            "milestone: sec_edgar_text_table_layer3_material_authority_bridge_selection_v1",
+            "source_authority_envelope_runtime: next_milestone_plans/Layer3_planning_docs/1116-sec-edgar-text-table-authority-envelope-validation-runtime.md",
+            "current_main_entry: a593cc9dc6612b232d871957e080901cc90ea691",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_text_table_layer3_material_authority_bridge_runtime_v1",
+            "selected_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_parser_family: sec_edgar_filing",
+            "selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "selected_authority_envelope_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1",
+            "selected_authority_envelope_mode: sec_edgar_text_table_authority_envelope_validation_runtime_v1",
+            "required_ready_envelope_state: sec_edgar_text_table_authority_envelope_ready",
+            "required_blocked_envelope_state: sec_edgar_text_table_authority_envelope_blocked",
+            "selected_material_source_class: dataset_version",
+            "selected_material_preview_source_candidate_prefix: src-dataset_version-",
+            "selected_material_preview_request_schema: layer3.material_preview_request.v1",
+            "selected_gate_b_decision_request_schema: layer3.gate_b_decision_request.v1",
+            "selected_material_payload: text_filing_narrative_units_and_table_units_from_existing_aps_sec_edgar_filing_units_v1_materialization",
+            "selected_bridge_output: material_preview_request_basis_and_gate_b_authority_binding",
+            "selected_receipt_model: deterministic_bridge_projection_with_ready_envelope_hash_binding",
+            "required_hash_bindings: dataset_version_hash,materialization_receipt_hash,authority_envelope_hash,material_preview_hash,gate_b_decision_manifest_id",
+            "required_provenance_binding: redacted_authority_envelope_ref,source_family,parser_family,typed_content_contract_id,dataset_version_id,materialization_receipt_id,form_type,accession_or_submission_id,filer_or_cik,filing_date",
+            "required_fail_closed_conditions: missing_ready_envelope,blocked_envelope,stale_authority_envelope_hash,dataset_version_mismatch,parser_family_mismatch,source_family_mismatch,typed_content_contract_mismatch,material_preview_hash_mismatch,gate_b_decision_basis_mismatch,raw_path_or_url_authority,missing_operator_confirmation,missing_rollback_confirmation",
+            "required_material_preview_compatibility: existing_layer3_dataset_version_material_preview_without_source_class_widening",
+            "required_gate_b_compatibility: existing_gate_b_material_preview_hash_and_decision_basis_validation",
+            "direct_unbridged_sec_edgar_dataset_version_material_authority_admitted: false",
+            "bridge_runtime_admitted_after_current_main_sync: true",
+            "material_preview_runtime_implementation_in_this_freeze: false",
+            "gate_b_runtime_implementation_in_this_freeze: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "xml_html_inline_xbrl_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "next_exact_posture: sec_edgar_text_table_layer3_material_authority_bridge_runtime_v1",
+            "The bridge must not treat a raw `dataset_version_id` alone as sufficient SEC EDGAR material authority.",
+            "If the existing material-preview path would expose raw SEC provenance for this source family, the runtime must block or redact before declaring the bridge ready.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_layer3_material_authority_bridge_selection_v1",
+            "source_authority_envelope_runtime: next_milestone_plans/Layer3_planning_docs/1116-sec-edgar-text-table-authority-envelope-validation-runtime.md",
+            "current_main_entry: a593cc9dc6612b232d871957e080901cc90ea691",
+            "selected_next_runtime_target: sec_edgar_text_table_layer3_material_authority_bridge_runtime_v1",
+            "selected_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_parser_family: sec_edgar_filing",
+            "selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "selected_authority_envelope_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1",
+            "selected_authority_envelope_mode: sec_edgar_text_table_authority_envelope_validation_runtime_v1",
+            "required_ready_envelope_state: sec_edgar_text_table_authority_envelope_ready",
+            "selected_material_source_class: dataset_version",
+            "selected_material_preview_request_schema: layer3.material_preview_request.v1",
+            "selected_gate_b_decision_request_schema: layer3.gate_b_decision_request.v1",
+            "selected_receipt_model: deterministic_bridge_projection_with_ready_envelope_hash_binding",
+            "direct_unbridged_sec_edgar_dataset_version_material_authority_admitted: false",
+            "bridge_runtime_admitted_after_current_main_sync: true",
+            "material_preview_runtime_implementation_in_this_freeze: false",
+            "gate_b_runtime_implementation_in_this_freeze: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "next_exact_posture: sec_edgar_text_table_layer3_material_authority_bridge_runtime_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_AUTHORITY_ENVELOPE_VALIDATION_RUNTIME: (
+            "next_exact_posture: sec_edgar_text_table_layer3_material_authority_bridge_selection_v1",
+            "layer3_material_bridge_admitted_now: false",
+        ),
+        LAYER3_API: (
+            "MATERIAL_PREVIEW_REQUEST_SCHEMA",
+            "GATE_B_DECISION_REQUEST_SCHEMA",
+            "\"/material-preview\"",
+            "\"/gate-b/decision\"",
+            "\"/source/sec-edgar/text-table/authority-envelope/validate\"",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR text table Layer 3 material authority bridge selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -106681,6 +106792,7 @@ def main() -> int:
     )
     _check_sec_edgar_text_table_authority_envelope_selection(errors)
     _check_sec_edgar_text_table_authority_envelope_validation_runtime(errors)
+    _check_sec_edgar_text_table_layer3_material_authority_bridge_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
