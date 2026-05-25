@@ -1,0 +1,79 @@
+# SEC EDGAR Text Table Live Source Artifact Acquisition Runtime Current-Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_acquisition_runtime_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1141-sec-edgar-text-table-live-source-artifact-acquisition-runtime.md
+current_main_entry: 52e20d525762b3ecacc8cd11dc83b60122801734
+source_pr: 1845
+source_branch: codex/sec-edgar-live-source-acquisition-runtime
+source_commits: d93880778bbb8273adf141ef5b2e3bbac6518ecc
+source_merge_commit: 52e20d525762b3ecacc8cd11dc83b60122801734
+entry_decision: current_main_sync
+runtime_status: merged_on_current_main
+rendered_status: not_implemented
+implemented_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1
+implemented_action: acquire_sec_edgar_text_table_live_source_artifact
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}
+implemented_service: backend/app/services/layer3_sec_edgar_live_source_artifact.py
+implemented_api: backend/app/api/layer3.py
+implemented_config: backend/app/core/config.py
+implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_acquisition
+implemented_bootstrap_endpoint_field: sec_edgar_text_table_live_source_artifact_acquisition_endpoint
+implemented_bootstrap_status_endpoint_field: sec_edgar_text_table_live_source_artifact_acquisition_status_endpoint
+implemented_request_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition_request.v1
+implemented_receipt_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1
+implemented_status_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1
+implemented_source_artifact_receipt_schema_id: layer3.sec_edgar_text_table_source_artifact_receipt.v1
+implemented_source_artifact_family: complete_submission_text_filing_artifact
+implemented_output_authority: append_only_redacted_live_source_artifact_receipt_and_retained_source_artifact_manifest
+implemented_compatibility_target: sec_edgar_text_table_source_acquisition_authority_v1
+implemented_sec_user_agent_model: server_configured_contact_identity_required
+implemented_sec_user_agent_missing_behavior: fail_closed_without_network_request
+implemented_sec_rate_limit_ceiling: no_more_than_10_requests_per_second_total_per_user
+implemented_runtime_default_rate_limit: one_request_per_second_until_operator_configured_below_official_ceiling
+implemented_cache_hit_behavior: no_network_request_when_matching_retained_artifact_receipt_exists
+implemented_retry_policy: bounded_retry_after_or_backoff_for_429_403_5xx_timeout_without_duplicate_receipt
+implemented_content_hash_policy: sha256_required_before_receipt_authority
+implemented_parser_boundary: acquisition_only_no_xml_html_inline_xbrl_parse_no_parser_expansion
+implemented_materialization_boundary: no_dataset_version_or_gate_b_mutation_in_acquisition_runtime
+implemented_ci_network_policy: live_sec_network_disabled_in_ci
+implemented_redaction_contract: hashes_status_and_redacted_metadata_only_no_raw_url_no_local_path_no_artifact_bytes_no_user_agent_secret
+local_validation_l3_progress_check: passed
+local_validation_l3_target_selection_validate_frozen: passed
+github_checks: passed
+github_successful_checks: 10
+review_comments: none
+review_threads: none
+open_prs_after_merge: none
+current_main_sync_introduces_runtime_behavior: false
+rendered_runtime_in_this_sync: false
+live_sec_manual_smoke_in_this_sync: false
+parser_expansion_enabled: false
+dataset_version_or_gate_b_mutation_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_selection_v1
+```
+
+PR `#1845` merged the SEC EDGAR complete-submission text live source-artifact acquisition runtime into current main. The landed tree is now `52e20d525762b3ecacc8cd11dc83b60122801734`; all ten GitHub checks passed, there were no review comments or review threads, no open PRs were returned after merge, and the current-main Layer 3 progress and frozen-target validators pass.
+
+This sync records no new runtime behavior. Current main now exposes the API-first acquisition/status runtime that derives SEC Archives URLs server-side, requires server-configured User-Agent identity before any network/fake-client fetch, writes redacted receipt authority plus retained source artifacts under the existing Layer 3 storage root, and keeps parser/materialization/Gate B/rendered-control work separately selected.
+
+## Coherence Check
+
+- Does this sync add rendered controls or run a live SEC smoke? Recommended answer: no. It only records the merged API-first runtime on current main.
+- Does acquisition parse or materialize SEC content? Recommended answer: no. The runtime records retained source-artifact authority only; parser/materialization remains a later selected slice.
+- Can the browser supply raw SEC URLs, local paths, commands, or bytes? Recommended answer: no. Those are rejected or never admitted, and rendered durable authority remains unavailable.
+- What comes next? Recommended answer: select `sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_selection_v1` before implementing operator-visible acquire/status controls.
