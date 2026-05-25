@@ -6722,3 +6722,51 @@ next_exact_posture: sec_edgar_text_table_authority_envelope_validation_runtime_v
 ```
 
 The selected next step is a server-owned SEC EDGAR text-table envelope validation runtime over existing materialized DatasetVersion authority. It must validate the repo-confirmed `sec_edgar_filing` parser metadata and `aps_sec_edgar_filing_units_v1` typed-content contract before any Layer 3 material bridge, and it must keep network fetch, parser expansion, raw URL authority, connector/provider behavior, RAG/model runtime, full mockup activation, and frontend durable authority out of scope.
+
+### SEC EDGAR Text Table Authority Envelope Validation Runtime
+
+```yaml
+milestone: sec_edgar_text_table_authority_envelope_validation_runtime_v1
+source_authority_envelope_selection: next_milestone_plans/Layer3_planning_docs/1115-sec-edgar-text-table-authority-envelope-selection.md
+current_main_entry: aceceded3de9d4e4e8d45bc717750b6a459379ed
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_authority_envelope.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate
+implemented_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1
+implemented_mode: sec_edgar_text_table_authority_envelope_validation_runtime_v1
+implemented_ready_state: sec_edgar_text_table_authority_envelope_ready
+implemented_blocked_state: sec_edgar_text_table_authority_envelope_blocked
+implemented_source_family: sec_edgar_text_table
+implemented_parser_family: sec_edgar_filing
+implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+implemented_authority_envelope_shape: mixed_narrative_table
+implemented_runtime_scope: validate_and_project_existing_materialized_dataset_version_sec_edgar_text_table_envelope_only
+implemented_materialization_receipt_model: deterministic_validation_projection_no_new_write
+implemented_authority_hash_version: sec_edgar_text_table_authority_envelope_hash_v1
+required_input_fields: dataset_version_id,rollback_confirmed,operator_confirmed
+required_fail_closed_conditions: missing_dataset_version,missing_materialization,not_ready_dataset_version,parser_family_mismatch,source_family_mismatch,typed_content_contract_mismatch,stale_authority_envelope_hash,raw_url_or_path_authority,missing_rollback_confirmation,missing_operator_confirmation,forbidden_input_authority
+redacted_source_artifact_key_exposed: false
+redacted_raw_storage_ref_exposed: false
+redacted_diagnostics_ref_exposed: false
+layer3_material_bridge_admitted_now: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+focused_service_pytest: python -m pytest ./backend/tests/test_layer3_sec_edgar_authority_envelope.py -q PASS
+focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k "sec_edgar_text_table_authority_envelope or lists_aps_derived_dataset_version_candidates" PASS
+next_exact_posture: sec_edgar_text_table_layer3_material_authority_bridge_selection_v1
+```
+
+The runtime endpoint validates an existing materialized DatasetVersion as a SEC EDGAR text-table authority envelope and returns a ready or blocked status projection with redacted provenance. It does not write records or files, does not admit a material bridge yet, and keeps source/network/parser/provider/connector/RAG/model/full-mockup/frontend-authority expansion blocked.

@@ -3128,6 +3128,9 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_DEFAULT_PROMOTION_CLOSEOUT_REA
 SEC_EDGAR_TEXT_TABLE_AUTHORITY_ENVELOPE_SELECTION = (
     PLANNING_DOCS / "1115-sec-edgar-text-table-authority-envelope-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_AUTHORITY_ENVELOPE_VALIDATION_RUNTIME = (
+    PLANNING_DOCS / "1116-sec-edgar-text-table-authority-envelope-validation-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -3628,6 +3631,9 @@ PREFLIGHT_REQUEST_CONTRACT_SERVICE = (
 APS_SOURCE_FAMILY_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_aps_source_family.py"
 )
+SEC_EDGAR_AUTHORITY_ENVELOPE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_authority_envelope.py"
+)
 GATE_B_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_gate_b_state.py"
 )
@@ -3695,6 +3701,9 @@ PREFLIGHT_REQUEST_CONTRACT_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_preflight_request_contract.py"
 )
 APS_SOURCE_FAMILY_TEST = ROOT / "backend" / "tests" / "test_layer3_aps_source_family.py"
+SEC_EDGAR_AUTHORITY_ENVELOPE_TEST = (
+    ROOT / "backend" / "tests" / "test_layer3_sec_edgar_authority_envelope.py"
+)
 RAW_MIXED_BRIDGE_TEST = ROOT / "backend" / "tests" / "test_layer3_raw_mixed_bridge.py"
 RAW_MIXED_MATERIALIZATION_TEST = (
     ROOT / "backend" / "tests" / "test_layer3_raw_mixed_materialization.py"
@@ -105494,6 +105503,139 @@ def _check_sec_edgar_text_table_authority_envelope_selection(
                 )
 
 
+def _check_sec_edgar_text_table_authority_envelope_validation_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_AUTHORITY_ENVELOPE_VALIDATION_RUNTIME: (
+            "SEC EDGAR Text Table Authority Envelope Validation Runtime",
+            "milestone: sec_edgar_text_table_authority_envelope_validation_runtime_v1",
+            "source_authority_envelope_selection: next_milestone_plans/Layer3_planning_docs/1115-sec-edgar-text-table-authority-envelope-selection.md",
+            "current_main_entry: aceceded3de9d4e4e8d45bc717750b6a459379ed",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_authority_envelope.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+            "implemented_request_model: Layer3SecEdgarTextTableAuthorityEnvelopeRequest",
+            "implemented_response_model: Layer3SecEdgarTextTableAuthorityEnvelopeResponse",
+            "implemented_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1",
+            "implemented_mode: sec_edgar_text_table_authority_envelope_validation_runtime_v1",
+            "implemented_ready_state: sec_edgar_text_table_authority_envelope_ready",
+            "implemented_blocked_state: sec_edgar_text_table_authority_envelope_blocked",
+            "implemented_source_family: sec_edgar_text_table",
+            "implemented_parser_family: sec_edgar_filing",
+            "implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "implemented_authority_envelope_shape: mixed_narrative_table",
+            "implemented_runtime_scope: validate_and_project_existing_materialized_dataset_version_sec_edgar_text_table_envelope_only",
+            "implemented_materialization_receipt_model: deterministic_validation_projection_no_new_write",
+            "implemented_authority_hash_version: sec_edgar_text_table_authority_envelope_hash_v1",
+            "required_input_fields: dataset_version_id,rollback_confirmed,operator_confirmed",
+            "required_fail_closed_conditions: missing_dataset_version,missing_materialization,not_ready_dataset_version,parser_family_mismatch,source_family_mismatch,typed_content_contract_mismatch,stale_authority_envelope_hash,raw_url_or_path_authority,missing_rollback_confirmation,missing_operator_confirmation,forbidden_input_authority",
+            "redacted_source_artifact_key_exposed: false",
+            "redacted_raw_storage_ref_exposed: false",
+            "redacted_diagnostics_ref_exposed: false",
+            "layer3_material_bridge_admitted_now: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "xml_html_inline_xbrl_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_authority_envelope.py ./backend/app/api/layer3.py ./tools/l3-progress-check.py PASS",
+            "focused_service_pytest: python -m pytest ./backend/tests/test_layer3_sec_edgar_authority_envelope.py -q PASS",
+            "focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k \"sec_edgar_text_table_authority_envelope or lists_aps_derived_dataset_version_candidates\" PASS",
+            "next_exact_posture: sec_edgar_text_table_layer3_material_authority_bridge_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_authority_envelope_validation_runtime_v1",
+            "source_authority_envelope_selection: next_milestone_plans/Layer3_planning_docs/1115-sec-edgar-text-table-authority-envelope-selection.md",
+            "current_main_entry: aceceded3de9d4e4e8d45bc717750b6a459379ed",
+            "implemented_service: backend/app/services/layer3_sec_edgar_authority_envelope.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+            "implemented_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1",
+            "implemented_mode: sec_edgar_text_table_authority_envelope_validation_runtime_v1",
+            "implemented_ready_state: sec_edgar_text_table_authority_envelope_ready",
+            "implemented_blocked_state: sec_edgar_text_table_authority_envelope_blocked",
+            "implemented_source_family: sec_edgar_text_table",
+            "implemented_parser_family: sec_edgar_filing",
+            "implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "implemented_authority_envelope_shape: mixed_narrative_table",
+            "implemented_runtime_scope: validate_and_project_existing_materialized_dataset_version_sec_edgar_text_table_envelope_only",
+            "implemented_materialization_receipt_model: deterministic_validation_projection_no_new_write",
+            "implemented_authority_hash_version: sec_edgar_text_table_authority_envelope_hash_v1",
+            "required_fail_closed_conditions: missing_dataset_version,missing_materialization,not_ready_dataset_version,parser_family_mismatch,source_family_mismatch,typed_content_contract_mismatch,stale_authority_envelope_hash,raw_url_or_path_authority,missing_rollback_confirmation,missing_operator_confirmation,forbidden_input_authority",
+            "layer3_material_bridge_admitted_now: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_layer3_material_authority_bridge_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_AUTHORITY_ENVELOPE_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_authority_envelope_validation_runtime_v1",
+        ),
+        SEC_EDGAR_AUTHORITY_ENVELOPE_SERVICE: (
+            "SCHEMA_ID = \"layer3.sec_edgar_text_table_authority_envelope_validation.v1\"",
+            "MODE = \"sec_edgar_text_table_authority_envelope_validation_runtime_v1\"",
+            "READY_STATE = \"sec_edgar_text_table_authority_envelope_ready\"",
+            "BLOCKED_STATE = \"sec_edgar_text_table_authority_envelope_blocked\"",
+            "SOURCE_FAMILY = \"sec_edgar_text_table\"",
+            "PARSER_FAMILY = \"sec_edgar_filing\"",
+            "TYPED_CONTENT_CONTRACT_ID = \"aps_sec_edgar_filing_units_v1\"",
+            "AUTHORITY_ENVELOPE_REF_PREFIX = \"sec-edgar-text-table-authority-envelope\"",
+            "def validate_sec_edgar_text_table_authority_envelope(",
+            "deterministic_validation_projection_no_new_write",
+            "layer3_material_bridge_admitted_now",
+            "sec_edgar_text_table_authority_stale_envelope_hash",
+            "sec_edgar_text_table_authority_forbidden_input_authority",
+            "\"sec_edgar_network_fetch_admitted\": False",
+            "\"raw_url_exposed\": False",
+        ),
+        LAYER3_API: (
+            "layer3_sec_edgar_authority_envelope",
+            "Layer3SecEdgarTextTableAuthorityEnvelopeRequest",
+            "Layer3SecEdgarTextTableAuthorityEnvelopeResponse",
+            "\"/source/sec-edgar/text-table/authority-envelope/validate\"",
+            "validate_sec_edgar_text_table_authority_envelope(",
+        ),
+        SEC_EDGAR_AUTHORITY_ENVELOPE_TEST: (
+            "test_sec_edgar_text_table_authority_envelope_ready",
+            "test_sec_edgar_text_table_authority_envelope_blocks_wrong_parser",
+            "test_sec_edgar_text_table_authority_envelope_blocks_stale_hash",
+            "sec_edgar_text_table_authority_envelope_ready",
+            "sec_edgar_text_table_authority_parser_family_mismatch",
+            "sec_edgar_text_table_authority_stale_envelope_hash",
+            "aps-target-artifacts/run-001\" not in str(result)",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_validates_sec_edgar_text_table_authority_envelope",
+            "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+            "layer3.sec_edgar_text_table_authority_envelope_validation.v1",
+            "sec_edgar_text_table_authority_envelope_ready",
+            "aps-target-artifacts/run-001\" not in response.text",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR text table authority envelope validation runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -106538,6 +106680,7 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_authority_envelope_selection(errors)
+    _check_sec_edgar_text_table_authority_envelope_validation_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
