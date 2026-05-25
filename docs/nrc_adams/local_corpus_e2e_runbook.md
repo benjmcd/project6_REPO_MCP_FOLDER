@@ -8838,3 +8838,46 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_
 ```
 
 The runtime makes live source-artifact downstream proof explicit by binding the retained live filing artifact receipt and the live material bridge receipt to the existing material bridge, Gate B session, material snapshot, and downstream proof coverage. It is still a runtime/API checkpoint only; rendered status for this live downstream proof remains a later selection unless current main admits it.
+
+### SEC EDGAR Text Table Live Source Artifact Downstream Layer 3 Proof Runtime Current Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1151-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-runtime.md
+current_main_entry: a9aef8fe090e86d7ab3be6eaf7c266c65378b7c1
+source_runtime_pr: "#1854"
+source_runtime_merge_commit: a9aef8fe090e86d7ab3be6eaf7c266c65378b7c1
+entry_decision: current_main_sync
+runtime_status: implemented
+rendered_status: not_implemented
+current_main_contains_live_downstream_proof_runtime: true
+current_main_sync_introduces_runtime_behavior: false
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof
+implemented_service: backend/app/services/layer3_sec_edgar_live_downstream_proof.py
+implemented_live_material_bridge_receipt_reader: read_sec_edgar_text_table_live_source_artifact_material_authority_bridge_receipt
+live_source_artifact_receipt_bound: true
+source_acquisition_receipt_bound: true
+live_material_bridge_receipt_bound: true
+underlying_downstream_proof_bound: true
+material_preview_gate_b_compatibility_preserved: true
+rendered_live_downstream_status_implemented_now: false
+selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1153-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md
+selected_next_selection_reason: make_live_sec_edgar_downstream_proof_operator_visible_as_read_only_status_without_new_authority
+direct_live_artifact_to_material_without_source_acquisition_admitted: false
+direct_raw_artifact_parse_or_materialization_admitted: false
+live_sec_network_fetch_admitted_for_proof: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+verification_current_main_progress_check: python ./tools/l3-progress-check.py PASS
+verification_current_main_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+```
+
+The live downstream proof runtime is now current-main evidence. The next status/rendered selection should be read-only and operator-visible: proof state, receipt hashes, coverage state, and negative invariants may be projected, but raw SEC URLs, local paths, retained artifact bytes, browser-provided authority, live fetch, parser/materialization expansion, Gate B mutation, provider writes, connector dispatch, RAG/model runtime, and full mockup activation remain outside this sync.
