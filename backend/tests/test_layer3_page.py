@@ -170,6 +170,12 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
     assert 'id="candidate-b-default-promotion-status-panel"' in response.text
     assert 'data-rendered-mode="rendered_candidate_b_default_promotion_read_only_status_surface"' in response.text
     assert 'data-frontend-durable-authority="false"' in response.text
+    assert 'id="sec-edgar-source-acquisition-authority-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_sec_edgar_text_table_source_acquisition_authority_control"'
+        in response.text
+    )
+    assert "SEC EDGAR source-acquisition authority bootstrap contract is not available." in response.text
     assert 'id="sec-edgar-downstream-operator-status-panel"' in response.text
     assert (
         'data-rendered-mode="rendered_sec_edgar_text_table_downstream_layer3_operator_status_control"'
@@ -477,6 +483,17 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "async function inspectCandidateBDefaultPromotionFinalProofStatus" in js.text
     assert "function candidateBFinalOperatorInspectionRows" in js.text
     assert "function candidateBOperatorStatusDeliveryPreviewRows" in js.text
+    assert (
+        "SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_RENDERED_MODE = "
+        "'rendered_sec_edgar_text_table_source_acquisition_authority_control'"
+        in js.text
+    )
+    assert "SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_MODE = 'sec_edgar_text_table_source_acquisition_authority_v1'" in js.text
+    assert "function secEdgarSourceAcquisitionAuthorityPayload" in js.text
+    assert "function renderSecEdgarSourceAcquisitionAuthorityPanel" in js.text
+    assert "async function recordSecEdgarSourceAcquisitionAuthority" in js.text
+    assert "sec-edgar-source-acquisition-authority-form" in js.text
+    assert "raw source artifact ref rendered" in js.text
     assert "SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_layer3_operator_status_control'" in js.text
     assert "SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_downstream_layer3_operator_status_v1'" in js.text
     assert "function secEdgarDownstreamOperatorStatusPayload" in js.text

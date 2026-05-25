@@ -3210,6 +3210,10 @@ SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_RENDERED_STATUS_SELECTION = (
     PLANNING_DOCS
     / "1136-sec-edgar-text-table-source-acquisition-rendered-status-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_RENDERED_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1137-sec-edgar-text-table-source-acquisition-rendered-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -108123,6 +108127,136 @@ def _check_sec_edgar_text_table_source_acquisition_rendered_status_selection(
                 )
 
 
+def _check_sec_edgar_text_table_source_acquisition_rendered_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_RENDERED_STATUS_RUNTIME: (
+            "SEC EDGAR Text Table Source Acquisition Rendered Status Runtime",
+            "milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1",
+            "selection_freeze: next_milestone_plans/Layer3_planning_docs/1136-sec-edgar-text-table-source-acquisition-rendered-status-selection.md",
+            "current_main_entry: 31e97a55ea9b3c8dda535139ee41cd762d68bebb",
+            "implementation_status: implemented",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control",
+            "implemented_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "implemented_operator_decision: record_sec_edgar_text_table_source_acquisition_authority",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "implemented_bootstrap_capability: sec_edgar_text_table_source_acquisition_authority",
+            "implemented_bootstrap_endpoint_field: sec_edgar_text_table_source_acquisition_authority_endpoint",
+            "implemented_panel: sec-edgar-source-acquisition-authority-panel",
+            "implemented_form: sec-edgar-source-acquisition-authority-form",
+            "implemented_submit: sec-edgar-source-acquisition-authority-submit",
+            "implemented_request_input: sec-edgar-source-acquisition-authority-request-json",
+            "implemented_operator_confirmation_input: sec-edgar-source-acquisition-operator-confirmation",
+            "implemented_status_states: not_recorded,available,blocked",
+            "test_fixture_route: /__test/layer3/sec-edgar-source-acquisition-authority",
+            "idempotent_replay_rendered: true",
+            "stale_source_artifact_hash_fails_closed: true",
+            "missing_operator_confirmation_fails_closed: true",
+            "missing_source_artifact_receipt_fails_closed: true",
+            "rendered_control_can_fetch_sec_content: false",
+            "rendered_control_can_accept_raw_sec_url: false",
+            "rendered_control_can_accept_raw_local_path: false",
+            "rendered_control_can_dispatch_connector: false",
+            "rendered_control_can_write_provider_object: false",
+            "raw_source_artifact_ref_rendered: false",
+            "raw_source_artifact_receipt_path_rendered: false",
+            "raw_authority_envelope_input_rendered: false",
+            "raw_url_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep \"SEC EDGAR source acquisition\"",
+            "headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"SEC EDGAR source acquisition\"",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1",
+            "selection_freeze: next_milestone_plans/Layer3_planning_docs/1136-sec-edgar-text-table-source-acquisition-rendered-status-selection.md",
+            "implementation_status: implemented",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "implemented_panel: sec-edgar-source-acquisition-authority-panel",
+            "implemented_form: sec-edgar-source-acquisition-authority-form",
+            "implemented_submit: sec-edgar-source-acquisition-authority-submit",
+            "test_fixture_route: /__test/layer3/sec-edgar-source-acquisition-authority",
+            "missing_source_artifact_receipt_fails_closed: true",
+            "idempotent_replay_rendered: true",
+            "headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --grep \"SEC EDGAR source acquisition\"",
+            "headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --project=chromium --headed --grep \"SEC EDGAR source acquisition\"",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_current_main_sync_v1",
+        ),
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.html": (
+            'id="sec-edgar-source-acquisition-authority-panel"',
+            'data-rendered-mode="rendered_sec_edgar_text_table_source_acquisition_authority_control"',
+            'data-frontend-durable-authority="false"',
+            "SEC EDGAR source-acquisition authority bootstrap contract is not available.",
+        ),
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js": (
+            "SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_RENDERED_MODE = 'rendered_sec_edgar_text_table_source_acquisition_authority_control'",
+            "SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_MODE = 'sec_edgar_text_table_source_acquisition_authority_v1'",
+            "SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_OPERATOR_DECISION = 'record_sec_edgar_text_table_source_acquisition_authority'",
+            "function secEdgarSourceAcquisitionAuthorityEndpointPath",
+            "function secEdgarSourceAcquisitionAuthorityPayload",
+            "function canRecordSecEdgarSourceAcquisitionAuthority",
+            "function secEdgarSourceAcquisitionAuthorityRows",
+            "function renderSecEdgarSourceAcquisitionAuthorityPanel",
+            "async function recordSecEdgarSourceAcquisitionAuthority",
+            "sec-edgar-source-acquisition-authority-form",
+            "sec-edgar-source-acquisition-authority-submit",
+            "sec-edgar-source-acquisition-authority-request-json",
+            "sec-edgar-source-acquisition-operator-confirmation",
+            "raw source artifact ref rendered",
+            "raw source artifact receipt path rendered",
+            "raw authority envelope input rendered",
+            "frontend durable authority enabled",
+        ),
+        ROOT / "backend" / "tests" / "review_browser_server.py": (
+            "/__test/layer3/sec-edgar-source-acquisition-authority",
+            "project6.review_browser_sec_edgar_source_acquisition_authority_setup.v1",
+            "_prepare_sec_edgar_source_acquisition_authority_fixture",
+            "source_acquisition_request",
+            "stale_source_acquisition_request",
+            "expected_source_acquisition_receipt_hash",
+            "raw_local_path_exposed\": False",
+            "raw_url_exposed\": False",
+            "frontend_durable_authority_enabled\": False",
+        ),
+        ROOT / "backend" / "tests" / "test_review_browser_server.py": (
+            "test_review_browser_server_prepares_sec_edgar_source_acquisition_authority",
+            "sec_edgar_text_table_source_acquisition_operator_confirmation_missing",
+            "source_artifact_receipt_id",
+            "sec_edgar_text_table_source_acquisition_stale_or_mismatched_source_artifact_authority",
+            "idempotent_replay",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_page.py": (
+            'id="sec-edgar-source-acquisition-authority-panel"',
+            "SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_RENDERED_MODE",
+            "function secEdgarSourceAcquisitionAuthorityPayload",
+            "function renderSecEdgarSourceAcquisitionAuthorityPanel",
+            "async function recordSecEdgarSourceAcquisitionAuthority",
+            "raw source artifact ref rendered",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "Layer 3 workbench records SEC EDGAR source acquisition authority through server revalidation",
+            "/__test/layer3/sec-edgar-source-acquisition-authority",
+            "sec-edgar-source-acquisition-authority-panel",
+            "sec-edgar-source-acquisition-authority-form",
+            "sec-edgar-source-acquisition-authority-submit",
+            "sec_edgar_text_table_source_acquisition_operator_confirmation_missing",
+            "source_artifact_receipt_id",
+            "sec_edgar_text_table_source_acquisition_stale_or_mismatched_source_artifact_authority",
+            "idempotent replay: true",
+            "raw URL rendered: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR source acquisition rendered status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -109208,6 +109342,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_source_acquisition_rendered_status_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_source_acquisition_rendered_status_runtime(
         errors
     )
 
