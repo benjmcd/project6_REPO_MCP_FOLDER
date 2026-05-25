@@ -6041,3 +6041,55 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_r
 ```
 
 The next rendered/status pass should make the repeatability trial operator-visible without turning the browser into durable authority. It should submit only opaque server receipt ids/hashes, fixed mode/decision fields, selected classes, and disposition; all authoritative validation remains server-side.
+
+### Candidate B Broader Eligible Corpus Default Scope Operator Repeatability Trial Rendered Status Runtime
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_v1
+source_operator_repeatability_trial_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1102-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-selection.md
+current_main_entry: 456c5a072d98bf923848c7947a17fddff9544f12
+runtime_status: implemented
+implemented_rendered_trial_control: rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control
+implemented_trial_form: candidate-b-broader-scope-operator-repeatability-trial-form
+implemented_trial_submit: candidate-b-broader-scope-operator-repeatability-trial-submit
+implemented_static_runtime: backend/app/review_ui/static/layer3.js
+implemented_rendered_proof: e2e/layer3-workbench.spec.js
+existing_trial_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial
+existing_original_status_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+existing_repeat_status_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+trial_status_values_rendered: accepted,blocked
+accepted_trial_renders_accepted: true
+blocked_disposition_renders_blocked: true
+trial_payload_excludes_raw_paths_urls_commands_output_and_artifact_bytes: true
+redacted_trial_receipt_ref_required: true
+raw_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+raw_stdout_rendered: false
+raw_stderr_rendered: false
+artifact_bytes_rendered: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+auth_security_expansion_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+selected_classes_default_scope_only: true
+non_selected_class_default: baseline
+headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium PASS
+headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium --headed PASS
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness_v1
+```
+
+The workbench now records and renders Candidate B broader eligible-corpus operator repeatability trial receipts from original and repeat consumption-use status authority. The rendered control remains receipt-bound and server-revalidated; it does not run Candidate B, mutate default scope, expose raw paths or URLs, or create frontend durable authority.

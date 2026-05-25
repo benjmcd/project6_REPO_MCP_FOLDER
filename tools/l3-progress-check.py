@@ -3077,6 +3077,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_R
     PLANNING_DOCS
     / "1102-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-selection.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_RENDERED_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1103-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -104194,6 +104198,81 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatabil
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_RENDERED_STATUS_RUNTIME: (
+            "Candidate B Broader Eligible Corpus Default Scope Operator Repeatability Trial Rendered Status Runtime",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_v1",
+            "source_operator_repeatability_trial_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1102-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-selection.md",
+            "current_main_entry: 456c5a072d98bf923848c7947a17fddff9544f12",
+            "runtime_status: implemented",
+            "implemented_rendered_trial_control: rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control",
+            "implemented_trial_form: candidate-b-broader-scope-operator-repeatability-trial-form",
+            "implemented_trial_submit: candidate-b-broader-scope-operator-repeatability-trial-submit",
+            "existing_trial_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial",
+            "existing_original_status_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status",
+            "existing_repeat_status_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status",
+            "trial_status_values_rendered: accepted,blocked",
+            "accepted_trial_renders_accepted: true",
+            "blocked_disposition_renders_blocked: true",
+            "trial_payload_excludes_raw_paths_urls_commands_output_and_artifact_bytes: true",
+            "frontend_durable_authority_enabled: false",
+            "actual_corpus_processing_execution_admitted_now: false",
+            "actual_subprocess_spawn_admitted_now: false",
+            "default_scope_expansion_admitted: false",
+            "headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control\" --project=chromium PASS",
+            "headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control\" --project=chromium --headed PASS",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_v1",
+            "source_operator_repeatability_trial_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1102-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-rendered-status-selection.md",
+            "implemented_rendered_trial_control: rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control",
+            "implemented_trial_form: candidate-b-broader-scope-operator-repeatability-trial-form",
+            "existing_trial_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial",
+            "existing_repeat_status_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status",
+            "trial_status_values_rendered: accepted,blocked",
+            "default_scope_expansion_admitted: false",
+            "headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control\" --project=chromium PASS",
+            "headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control\" --project=chromium --headed PASS",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_closeout_readiness_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_OPERATOR_REPEATABILITY_TRIAL_RENDERED_STATUS_SELECTION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_v1",
+        ),
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js": (
+            "CANDIDATE_B_BROADER_SCOPE_OPERATOR_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control'",
+            "CANDIDATE_B_BROADER_SCOPE_OPERATOR_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_use_status_authority_without_processing_execution'",
+            "candidateBBroaderScopeOperatorRepeatabilityTrialEndpointPath",
+            "candidateBBroaderScopeOperatorRepeatabilityTrialPayload",
+            "candidateBBroaderScopeOperatorRepeatabilityTrialRows",
+            "candidate-b-broader-scope-operator-repeatability-trial-form",
+            "candidate-b-broader-scope-operator-repeatability-trial-submit",
+            "recordCandidateBBroaderScopeOperatorRepeatabilityTrial",
+            "candidate_b_broader_scope_operator_repeatability_trial_accepted",
+            "candidate_b_broader_scope_operator_repeatability_trial_blocked",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "operatorRepeatabilityTrialPayloads",
+            "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial",
+            "rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control",
+            "candidate_b_broader_scope_operator_repeatability_trial_accepted",
+            "candidate_b_broader_scope_operator_repeatability_trial_blocked",
+            "regression_detected_blocked",
+            "operator_repeatability_disposition: 'no_regression_observed'",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope operator repeatability trial rendered status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -105199,6 +105278,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_selection(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_runtime(
         errors
     )
 
