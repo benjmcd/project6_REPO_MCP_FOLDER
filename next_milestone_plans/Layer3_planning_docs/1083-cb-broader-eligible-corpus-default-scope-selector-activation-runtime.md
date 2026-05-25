@@ -1,0 +1,51 @@
+# Candidate B Broader Eligible Corpus Default Scope Selector Activation Runtime
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1
+source_selector_activation_selection: next_milestone_plans/Layer3_planning_docs/1082-cb-broader-eligible-corpus-default-scope-selector-activation-selection.md
+current_main_entry: b9a8b34b4502356e8b3a6f91c11be3e040ac2ea0
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_selector_activation.v1
+implemented_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1
+implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation
+implemented_selected_state: candidate_b_broader_eligible_corpus_default_scope_selector_activation_selected
+implemented_blocked_state: candidate_b_broader_eligible_corpus_default_scope_selector_activation_blocked
+implemented_activation_authority_source: server_revalidated_selector_use_status
+implemented_status_hash_binding_required: true
+implemented_selector_use_receipt_id_hash_revalidation: true
+implemented_runtime_selection_receipt_id_hash_revalidation: true
+implemented_readiness_audit_id_hash_binding: true
+implemented_exact_selected_scope_classes_required: true
+implemented_redacted_activation_receipt: true
+implemented_receipt_family: broader-scope-selector-activation
+implemented_receipt_ref_scheme: candidate-b-broader-scope-selector-activation
+implemented_contract_exposure: readiness_contract,bootstrap_contract,openapi
+positive_activation_proven: true
+stale_status_hash_fail_closed_proven: true
+stale_selector_use_receipt_hash_fail_closed_proven: true
+stale_runtime_selection_receipt_hash_fail_closed_proven: true
+unselected_scope_class_fail_closed_proven: true
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+current_default_before_activation_runtime: eligible_effective_pdfs_only
+non_selected_class_default: baseline
+selector_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_py_compile: python -m py_compile ./backend/app/services/layer3_candidate_b_broader_scope_selector_use.py ./backend/app/api/layer3.py ./backend/app/services/layer3_readiness_contract.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py PASS
+verification_focused_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 12 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_rendered_status_v1
+```
+
+The activation runtime records a redacted server-owned activation receipt only after revalidating the current selector-use status hash, selector-use receipt id/hash, runtime-selection receipt id/hash, readiness-audit binding, and exact selected scope classes. It reports selected or blocked activation status without mutating the underlying default selector, without changing Candidate A semantics, and without exposing raw paths, raw URLs, provider refs, connector destinations, model controls, browser storage authority, or frontend durable authority.
