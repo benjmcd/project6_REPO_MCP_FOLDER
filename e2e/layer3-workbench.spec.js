@@ -7762,7 +7762,9 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status');
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation');
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume');
+  await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use');
   await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status');
+  await expect(panel).toContainText('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial');
   await expect(panel).toContainText('baseline rollback preserved');
   await expect(panel).toContainText('selector mutation from this panel');
   await expect(panel).toContainText('frontend durable authority');
@@ -7808,6 +7810,12 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   );
   await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-status-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
   await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-status-submit')).toBeDisabled();
+  await expect(page.locator('#candidate-b-broader-scope-operator-repeatability-trial-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control',
+  );
+  await expect(page.locator('#candidate-b-broader-scope-operator-repeatability-trial-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-broader-scope-operator-repeatability-trial-submit')).toBeDisabled();
   await expect(page.locator('#candidate-b-final-proof-status-form')).toHaveAttribute(
     'data-rendered-mode',
     'rendered_candidate_b_default_promotion_final_proof_status_inspection_control',
@@ -7823,7 +7831,9 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
     '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status',
     '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation',
     '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume',
+    '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use',
     '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status',
+    '/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial',
   ]);
 });
 
@@ -7897,6 +7907,7 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   const activationConsumptionPayloads = [];
   const consumptionReceiptUsePayloads = [];
   const consumptionReceiptUseStatusPayloads = [];
+  const operatorRepeatabilityTrialPayloads = [];
   await page.route(
     '**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime',
     async (route) => {
@@ -8678,6 +8689,160 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
       });
     },
   );
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial',
+    async (route) => {
+      const payload = route.request().postDataJSON();
+      operatorRepeatabilityTrialPayloads.push(payload);
+      const accepted = payload.operator_repeatability_disposition !== 'regression_detected_blocked';
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial.v1',
+          schema_version: 1,
+          request_id: payload.client_request_id,
+          server_time: '2026-05-24T00:00:00Z',
+          status: accepted ? 'accepted' : 'blocked',
+          mode: 'append_only_trial_receipt_over_original_and_repeat_use_status_authority_without_processing_execution',
+          operator_decision: 'record_candidate_b_broader_scope_operator_repeatability_trial',
+          operator_repeatability_trial_state: accepted
+            ? 'candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_accepted'
+            : 'candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_blocked',
+          operator_repeatability_disposition: payload.operator_repeatability_disposition,
+          trial_receipt_id: 'cb-broader-scope-operator-repeatability-trial-rendered-proof',
+          trial_receipt_hash: 'e'.repeat(64),
+          trial_receipt_ref: 'candidate-b-broader-scope-repeatability-trial://rendered-proof/eeeeeeeeeeeeeeeeeeeeeeee',
+          trial_receipt_status: 'recorded',
+          trial_authority_hash: 'e'.repeat(64),
+          authority_pair_hash: 'f'.repeat(64),
+          idempotent_replay: false,
+          append_only_repeatability_trial_receipt: true,
+          exclusive_trial_per_original_repeat_authority_pair: true,
+          original_use_status: {
+            status: 'available',
+            use_receipt_status: 'recorded',
+            use_receipt_id: payload.original_use_receipt_id,
+            use_receipt_hash: payload.original_use_receipt_hash,
+            use_receipt_status_hash: payload.original_use_receipt_status_hash,
+            selected_scope_classes: payload.selected_scope_classes,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+          },
+          repeat_use_status: {
+            status: 'available',
+            use_receipt_status: 'recorded',
+            use_receipt_id: payload.repeat_use_receipt_id,
+            use_receipt_hash: payload.repeat_use_receipt_hash,
+            use_receipt_status_hash: payload.repeat_use_receipt_status_hash,
+            selected_scope_classes: payload.selected_scope_classes,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+          },
+          readiness_audit_binding: {
+            readiness_audit_id: payload.original_readiness_audit_id,
+            readiness_audit_hash: payload.original_readiness_audit_hash,
+            binding_verified: true,
+          },
+          runtime_selection_receipt_binding: {
+            runtime_selection_receipt_id: payload.original_runtime_selection_receipt_id,
+            runtime_selection_receipt_hash: payload.original_runtime_selection_receipt_hash,
+            binding_verified: true,
+          },
+          selector_use_status_binding: {
+            selector_use_status_hash: payload.original_selector_use_status_hash,
+            status_revalidated: true,
+            binding_verified: true,
+          },
+          selector_use_receipt_binding: {
+            selector_use_receipt_id: payload.original_selector_use_receipt_id,
+            selector_use_receipt_hash: payload.original_selector_use_receipt_hash,
+            binding_verified: true,
+          },
+          activation_receipt_binding: {
+            activation_receipt_id: payload.original_activation_receipt_id,
+            activation_receipt_hash: payload.original_activation_receipt_hash,
+            binding_verified: true,
+          },
+          consumption_receipt_binding: {
+            consumption_receipt_id: payload.original_consumption_receipt_id,
+            consumption_receipt_hash: payload.original_consumption_receipt_hash,
+            binding_verified: true,
+          },
+          selected_scope_classes: payload.selected_scope_classes,
+          selected_scope_classes_hash: '1'.repeat(64),
+          original_receipt_chain_hash: '2'.repeat(64),
+          repeat_receipt_chain_hash: '2'.repeat(64),
+          original_negative_invariants_hash: '3'.repeat(64),
+          repeat_negative_invariants_hash: '3'.repeat(64),
+          use_status_hash_comparison: 'match',
+          receipt_chain_hash_comparison: 'match',
+          selected_scope_classes_hash_comparison: 'match',
+          negative_invariants_hash_comparison: 'match',
+          trial_authority: {
+            source: 'server_revalidated_consumption_receipt_use_status_projections',
+            original_status_available: true,
+            repeat_status_available: true,
+            browser_supplied_local_authority_rejected: true,
+            browser_supplied_raw_url_rejected: true,
+            process_execution_admitted: false,
+          },
+          baseline_rollback: {
+            selector: 'baseline',
+            available: true,
+            non_selected_classes_remain_baseline: true,
+          },
+          candidate_a_semantics: {
+            visual_lane_mode: 'candidate_a_page_evidence_v1',
+            preserved: true,
+          },
+          candidate_b_scope_authority: {
+            document_processing_engine: 'candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only',
+            visual_lane_mode: 'candidate_b_opendataloader_page_evidence_v1_explicit_only',
+            eligible_effective_pdf_default_preserved: true,
+          },
+          operator_visible_repeatability_trial_status: {
+            trial_receipt_recorded: true,
+            trial_accepted: accepted,
+            selected_scope_class_count: payload.selected_scope_classes.length,
+            redacted_trial_receipt_available: true,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            provider_or_connector_secret_exposed: false,
+          },
+          fail_closed_behavior: {
+            missing_original_use_receipt_blocks_trial: true,
+            missing_repeat_use_receipt_blocks_trial: true,
+            stale_original_use_status_hash_blocks_trial: true,
+            stale_repeat_use_status_hash_blocks_trial: true,
+            mismatched_selected_classes_block_trial: true,
+            mismatched_readiness_audit_blocks_trial: true,
+            mismatched_runtime_or_selector_receipts_block_trial: true,
+            non_available_original_or_repeat_status_blocks_trial: true,
+          },
+          default_scope_expansion_admitted: false,
+          actual_corpus_processing_execution_admitted: false,
+          actual_subprocess_spawn_admitted: false,
+          process_control_admitted: false,
+          selector_mutation_performed: false,
+          default_scope_mutation_performed: false,
+          source_expansion_admitted: false,
+          runtime_db_or_storage_expansion_admitted: false,
+          pdf_or_image_text_material_ingestion_admitted: false,
+          provider_object_write_enabled: false,
+          connector_dispatch_enabled: false,
+          rag_vector_model_runtime_enabled: false,
+          auth_security_expansion_enabled: false,
+          full_mockup_activation_enabled: false,
+          frontend_durable_authority_enabled: false,
+          browser_storage_authority_enabled: false,
+          raw_local_path_exposed: false,
+          raw_url_exposed: false,
+          artifact_bytes_exposed: false,
+        }),
+      });
+    },
+  );
 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   const panel = page.locator('#candidate-b-default-promotion-status-panel');
@@ -8977,6 +9142,120 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   await expect(panel).toContainText('use receipt mutation performed: false');
   await expect(panel).toContainText('default scope mutation performed: false');
   await expect(panel).toContainText('frontend durable authority enabled: false');
+  const operatorRepeatabilityTrialForm = page.locator('#candidate-b-broader-scope-operator-repeatability-trial-form');
+  await expect(operatorRepeatabilityTrialForm).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control',
+  );
+  await expect(operatorRepeatabilityTrialForm).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-broader-scope-operator-repeatability-trial-submit')).toBeEnabled();
+  const operatorRepeatabilityTrialRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial')
+  ));
+  await page.locator('#candidate-b-broader-scope-operator-repeatability-trial-submit').click();
+  const operatorRepeatabilityTrialPayload = (await operatorRepeatabilityTrialRequestPromise).postDataJSON();
+  const operatorRepeatabilityTrialStatusKeys = [
+    'use_receipt_status_hash',
+    'use_receipt_id',
+    'use_receipt_hash',
+    'consumption_receipt_id',
+    'consumption_receipt_hash',
+    'activation_receipt_id',
+    'activation_receipt_hash',
+    'selector_use_status_hash',
+    'selector_use_receipt_id',
+    'selector_use_receipt_hash',
+    'runtime_selection_receipt_id',
+    'runtime_selection_receipt_hash',
+    'readiness_audit_id',
+    'readiness_audit_hash',
+  ];
+  expectOnlyPayloadKeys(operatorRepeatabilityTrialPayload, [
+    'client_request_id',
+    'trial_mode',
+    'operator_decision',
+    'operator_repeatability_disposition',
+    'selected_scope_classes',
+    'operator_confirmation',
+    ...['original', 'repeat'].flatMap((prefix) => (
+      operatorRepeatabilityTrialStatusKeys.map((key) => `${prefix}_${key}`)
+    )),
+  ]);
+  expect(operatorRepeatabilityTrialPayload).toMatchObject({
+    trial_mode: 'append_only_trial_receipt_over_original_and_repeat_use_status_authority_without_processing_execution',
+    operator_decision: 'record_candidate_b_broader_scope_operator_repeatability_trial',
+    operator_repeatability_disposition: 'no_regression_observed',
+    selected_scope_classes: ['structured_json_or_csv_or_xlsx'],
+    operator_confirmation: true,
+    original_use_receipt_status_hash: 'd'.repeat(64),
+    original_use_receipt_id: 'cb-broader-scope-consumption-receipt-use-rendered-proof',
+    original_use_receipt_hash: 'b'.repeat(64),
+    original_consumption_receipt_id: 'cb-broader-scope-activation-consumption-rendered-proof',
+    original_consumption_receipt_hash: 'a'.repeat(64),
+    original_activation_receipt_id: 'cb-broader-scope-selector-activation-rendered-proof',
+    original_activation_receipt_hash: '9'.repeat(64),
+    original_selector_use_status_hash: '8'.repeat(64),
+    original_selector_use_receipt_id: 'cb-broader-scope-selector-use-rendered-proof',
+    original_selector_use_receipt_hash: '6'.repeat(64),
+    original_runtime_selection_receipt_id: 'cb-broader-scope-runtime-rendered-proof',
+    original_runtime_selection_receipt_hash: '5'.repeat(64),
+    original_readiness_audit_id: 'cb-broader-scope-rendered-readiness-test',
+    original_readiness_audit_hash: readiness.audit_hash,
+    repeat_use_receipt_status_hash: 'd'.repeat(64),
+    repeat_use_receipt_id: 'cb-broader-scope-consumption-receipt-use-rendered-proof',
+    repeat_use_receipt_hash: 'b'.repeat(64),
+    repeat_consumption_receipt_id: 'cb-broader-scope-activation-consumption-rendered-proof',
+    repeat_consumption_receipt_hash: 'a'.repeat(64),
+    repeat_activation_receipt_id: 'cb-broader-scope-selector-activation-rendered-proof',
+    repeat_activation_receipt_hash: '9'.repeat(64),
+    repeat_selector_use_status_hash: '8'.repeat(64),
+    repeat_selector_use_receipt_id: 'cb-broader-scope-selector-use-rendered-proof',
+    repeat_selector_use_receipt_hash: '6'.repeat(64),
+    repeat_runtime_selection_receipt_id: 'cb-broader-scope-runtime-rendered-proof',
+    repeat_runtime_selection_receipt_hash: '5'.repeat(64),
+    repeat_readiness_audit_id: 'cb-broader-scope-rendered-readiness-test',
+    repeat_readiness_audit_hash: readiness.audit_hash,
+  });
+  expect(JSON.stringify(operatorRepeatabilityTrialPayload)).not.toContain('file://');
+  expect(JSON.stringify(operatorRepeatabilityTrialPayload)).not.toContain('https://');
+  expect(JSON.stringify(operatorRepeatabilityTrialPayload)).not.toContain('C:\\');
+  await expect(panel).toContainText('candidate_b_broader_scope_operator_repeatability_trial_accepted');
+  await expect(panel).toContainText('trial state: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_accepted');
+  await expect(panel).toContainText('disposition: no_regression_observed');
+  await expect(panel).toContainText('trial receipt id: cb-broader-scope-operator-repeatability-trial-rendered-proof');
+  await expect(panel).toContainText('original use receipt id: cb-broader-scope-consumption-receipt-use-rendered-proof');
+  await expect(panel).toContainText('repeat use receipt id: cb-broader-scope-consumption-receipt-use-rendered-proof');
+  await expect(panel).toContainText('use status hash comparison: match');
+  await expect(panel).toContainText('receipt chain hash comparison: match');
+  await expect(panel).toContainText('negative invariants hash comparison: match');
+  await expect(panel).toContainText('trial accepted: true');
+  await expect(panel).toContainText('redacted trial receipt available: true');
+  await expect(panel).toContainText('default scope expansion admitted: false');
+  await expect(panel).toContainText('actual corpus processing execution admitted: false');
+  await expect(panel).toContainText('selector mutation performed: false');
+  await expect(panel).toContainText('default scope mutation performed: false');
+  await expect(panel).toContainText('raw local path exposed: false');
+  await expect(panel).toContainText('raw URL exposed: false');
+  await page.locator('#candidate-b-broader-scope-operator-repeatability-trial-disposition').selectOption(
+    'regression_detected_blocked',
+  );
+  await expect(page.locator('#candidate-b-broader-scope-operator-repeatability-trial-submit')).toBeEnabled();
+  const blockedOperatorRepeatabilityTrialRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial')
+  ));
+  await page.locator('#candidate-b-broader-scope-operator-repeatability-trial-submit').click();
+  const blockedOperatorRepeatabilityTrialPayload = (
+    await blockedOperatorRepeatabilityTrialRequestPromise
+  ).postDataJSON();
+  expect(blockedOperatorRepeatabilityTrialPayload.operator_repeatability_disposition).toBe(
+    'regression_detected_blocked',
+  );
+  await expect(panel).toContainText('candidate_b_broader_scope_operator_repeatability_trial_blocked');
+  await expect(panel).toContainText('trial state: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_blocked');
+  await expect(panel).toContainText('disposition: regression_detected_blocked');
+  await expect(panel).toContainText('trial accepted: false');
   await page.locator('#candidate-b-broader-scope-consumption-receipt-use-consumption-receipt-hash').fill('stale-consumption-hash');
   await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit')).toBeEnabled();
   await page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit').click();
@@ -9072,6 +9351,7 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   expect(activationConsumptionPayloads).toHaveLength(3);
   expect(consumptionReceiptUsePayloads).toHaveLength(3);
   expect(consumptionReceiptUseStatusPayloads).toHaveLength(1);
+  expect(operatorRepeatabilityTrialPayloads).toHaveLength(2);
 });
 
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
