@@ -1,0 +1,67 @@
+# SEC EDGAR Text Table Live Source Artifact Downstream Layer 3 Proof Runtime Current Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_runtime_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1151-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-runtime.md
+current_main_entry: a9aef8fe090e86d7ab3be6eaf7c266c65378b7c1
+source_runtime_pr: "#1854"
+source_runtime_merge_commit: a9aef8fe090e86d7ab3be6eaf7c266c65378b7c1
+entry_decision: current_main_sync
+runtime_status: implemented
+rendered_status: not_implemented
+current_main_contains_live_downstream_proof_runtime: true
+current_main_sync_introduces_runtime_behavior: false
+implemented_proof_mode: sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof
+implemented_service: backend/app/services/layer3_sec_edgar_live_downstream_proof.py
+implemented_live_material_bridge_receipt_reader: read_sec_edgar_text_table_live_source_artifact_material_authority_bridge_receipt
+implemented_existing_downstream_proof_mode_to_compose: sec_edgar_text_table_downstream_layer3_e2e_proof_v1
+live_source_artifact_receipt_bound: true
+source_acquisition_receipt_bound: true
+live_material_bridge_receipt_bound: true
+underlying_downstream_proof_bound: true
+material_preview_gate_b_compatibility_preserved: true
+gate_b_commit_in_sync: false
+rendered_live_downstream_status_implemented_now: false
+selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1153-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md
+selected_next_selection_reason: make_live_sec_edgar_downstream_proof_operator_visible_as_read_only_status_without_new_authority
+selected_next_selection_surface: existing_layer3_status_or_rendered_operator_projection_only
+selected_next_selection_required_authority: proof_receipt_id,proof_hash,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_material_bridge_receipt_hash,material_bridge_receipt_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash
+selected_next_selection_must_preserve: redacted_status_only_no_raw_sec_url_no_local_path_no_artifact_bytes_no_live_fetch_no_materialization_no_gate_b_mutation
+direct_live_artifact_to_material_without_source_acquisition_admitted: false
+direct_raw_artifact_parse_or_materialization_admitted: false
+dataset_version_creation_admitted: false
+gate_b_mutation_admitted_in_sync: false
+live_sec_network_fetch_admitted_for_proof: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+broad_source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+verification_current_main_progress_check: python ./tools/l3-progress-check.py PASS
+verification_current_main_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+```
+
+PR `#1854` is now live on current main. Current main contains the live source-artifact downstream proof runtime and the API/bootstrap surface that binds live source-artifact receipt authority, source-acquisition authority, live material bridge authority, the underlying material bridge, Gate B session state, material snapshot state, and downstream coverage.
+
+This sync adds no runtime behavior. It records the merged state and selects the next useful operator-facing step: a read-only rendered/status selection for the live downstream proof. That next slice should expose proof state, receipt hashes, coverage, and negative invariants as redacted operator-visible status without creating new material authority, fetching from SEC, parsing retained filing bytes, committing Gate B, expanding runtime storage, or adding provider, connector, RAG/model, browser-storage, frontend durable, or full mockup authority.
+
+## Coherence Check
+
+- Is more backend proof hardening the highest next ROI? Recommended answer: no, unless a concrete defect appears. Current main already contains the live proof runtime and fail-closed tests.
+- Should rendered status become durable authority? Recommended answer: no. It should be a read-only projection of server-owned proof and receipt authority.
+- What comes next? Recommended answer: freeze or implement `sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1` from current main.
