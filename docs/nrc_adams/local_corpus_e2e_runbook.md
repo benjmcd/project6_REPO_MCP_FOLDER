@@ -4818,7 +4818,51 @@ verification_node_check: node --check ./backend/app/review_ui/static/layer3.js P
 headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium PASS 2 passed
 headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium --headed PASS 2 passed
 proof_status: local_passed
-next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_current_main_sync_v1
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_rendered_stale_input_review_remediation_v1
 ```
 
 The rendered selector-use control records status from server receipt authority only. It submits receipt id/hash and exact selected classes, then displays selected or blocked server status, redacted selector-use receipt metadata, runtime receipt binding, and negative authority flags without raw paths, URLs, runtime roots, provider refs, connector destinations, model controls, selector mutation fields, browser storage authority, or frontend durable authority.
+
+### Candidate B Broader Eligible Corpus Default Scope Selector-Use Rendered Stale Input Review Remediation
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_rendered_stale_input_review_remediation_v1
+source_broader_eligible_corpus_default_scope_selector_use_rendered_status: next_milestone_plans/Layer3_planning_docs/1076-cb-broader-eligible-corpus-default-scope-selector-use-rendered-status.md
+current_main_entry: 8147bed5c661a4ac6fd10821879f92c0edf34c7a
+source_review_pr: "#1779"
+source_review_thread_total_count: 1
+source_review_unresolved_before_remediation: 1
+source_review_path: backend/app/review_ui/static/layer3.js
+source_review_line: 8334
+review_disposition: remediated_in_followup_slice
+remediation_status: implemented
+remediated_failure_mode: selector_use_payload_reuses_stale_runtime_receipt_or_classes_after_runtime_re_record
+runtime_defaults_source: latest_selected_candidate_b_broader_scope_runtime_receipt
+operator_edit_tracking: candidateBBroaderScopeSelectorUseInputEdited
+runtime_default_helper: candidateBBroaderScopeSelectorUseRuntimeDefaults
+runtime_success_resets_selector_use_input: true
+runtime_success_clears_stale_selector_use_status: true
+operator_edited_fields_preserved_after_explicit_edit: true
+selector_use_payload_prefers_latest_runtime_unless_operator_edited: true
+second_runtime_receipt_proof: cb-broader-scope-runtime-rendered-proof-2
+second_runtime_receipt_hash_proof: "7777777777777777777777777777777777777777777777777777777777777777"
+rendered_selector_use_latest_runtime_payload_proof: true
+selected_state_preserved: candidate_b_broader_eligible_corpus_default_scope_selector_use_selected
+blocked_state_preserved: candidate_b_broader_eligible_corpus_default_scope_selector_use_blocked
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+selector_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status" --project=chromium PASS 1 passed
+headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status" --project=chromium --headed PASS 1 passed
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_current_main_sync_v1
+```
+
+The selector-use rendered panel now defaults to the latest selected broader-scope runtime receipt after runtime re-recording, unless the operator explicitly edits the selector-use fields. This closes the stale receipt/class reuse path identified after PR `#1779` without changing backend selector behavior, mutating defaults, or introducing frontend durable authority.

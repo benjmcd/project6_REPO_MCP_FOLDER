@@ -7859,6 +7859,13 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
     async (route) => {
       const payload = route.request().postDataJSON();
       runtimePayloads.push(payload);
+      const selectedRuntimeAttempt = runtimePayloads.filter((runtimePayload) => (
+        !runtimePayload.selected_scope_classes.includes('office_documents')
+      )).length;
+      const runtimeReceiptId = selectedRuntimeAttempt === 1
+        ? 'cb-broader-scope-runtime-rendered-proof'
+        : `cb-broader-scope-runtime-rendered-proof-${selectedRuntimeAttempt}`;
+      const runtimeReceiptHash = selectedRuntimeAttempt === 1 ? '5'.repeat(64) : '7'.repeat(64);
       if (payload.selected_scope_classes.includes('office_documents')) {
         await route.fulfill({
           status: 409,
@@ -7891,8 +7898,8 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
           status: 'selected',
           mode: 'candidate_b_broader_eligible_corpus_default_scope_runtime_v1',
           runtime_state: 'candidate_b_broader_eligible_corpus_default_scope_runtime_selected',
-          selection_receipt_id: 'cb-broader-scope-runtime-rendered-proof',
-          selection_receipt_hash: '5'.repeat(64),
+          selection_receipt_id: runtimeReceiptId,
+          selection_receipt_hash: runtimeReceiptHash,
           selection_receipt_ref: 'candidate-b-broader-scope-runtime://rendered-proof/555555555555555555555555',
           selection_receipt_status: 'recorded',
           blocked_reasons: [],
@@ -8102,6 +8109,23 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   await expect(panel).toContainText('selector mutation performed: false');
   await expect(panel).toContainText('raw local path exposed: false');
   await expect(panel).toContainText('raw URL exposed: false');
+  await page.locator('#candidate-b-broader-scope-runtime-submit').click();
+  await expect(panel).toContainText('receipt id: cb-broader-scope-runtime-rendered-proof-2');
+  await expect(page.locator('#candidate-b-broader-scope-selector-use-receipt-id')).toHaveValue(
+    'cb-broader-scope-runtime-rendered-proof-2',
+  );
+  await expect(page.locator('#candidate-b-broader-scope-selector-use-receipt-hash')).toHaveValue('7'.repeat(64));
+  const selectorUseLatestRuntimeRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use')
+  ));
+  await page.locator('#candidate-b-broader-scope-selector-use-submit').click();
+  const selectorUseLatestRuntimePayload = (await selectorUseLatestRuntimeRequestPromise).postDataJSON();
+  expect(selectorUseLatestRuntimePayload).toMatchObject({
+    runtime_selection_receipt_id: 'cb-broader-scope-runtime-rendered-proof-2',
+    runtime_selection_receipt_hash: '7'.repeat(64),
+    selected_scope_classes: ['structured_json_or_csv_or_xlsx'],
+  });
   await expect(panel).not.toContainText('http://');
   await expect(panel).not.toContainText('https://');
   await expect(panel).not.toContainText('file://');
@@ -8117,8 +8141,8 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   await page.locator('#candidate-b-broader-scope-selector-use-submit').click();
   await expect(panel).toContainText('candidate_b_broader_scope_selector_use_unselected_scope_class');
   await expect(panel).toContainText('Only exact classes selected by a server-owned runtime receipt are admitted.');
-  expect(runtimePayloads).toHaveLength(2);
-  expect(selectorUsePayloads).toHaveLength(2);
+  expect(runtimePayloads).toHaveLength(3);
+  expect(selectorUsePayloads).toHaveLength(3);
 });
 
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
