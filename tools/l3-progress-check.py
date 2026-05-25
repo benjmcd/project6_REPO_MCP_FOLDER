@@ -3057,6 +3057,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS
     PLANNING_DOCS
     / "1097-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-rendered-status.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_INSPECTION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1098-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -103780,6 +103784,59 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_INSPECTION_CURRENT_MAIN_SYNC: (
+            "Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Status Inspection Current-Main Sync",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_current_main_sync_v1",
+            "source_consumption_receipt_use_status_inspection_rendered_status: next_milestone_plans/Layer3_planning_docs/1097-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-rendered-status.md",
+            "current_main_entry: 67f7e822fc9d728084f1d708485956ea3a1723b4",
+            'source_pr: "#1800"',
+            "source_merge_commit: 67f7e822fc9d728084f1d708485956ea3a1723b4",
+            "ci_status: passed",
+            "ci_successful_checks: 10",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_control",
+            "synced_status_mode: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_v1",
+            "synced_status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status",
+            "synced_response_authority: State.candidateBBroaderScopeConsumptionReceiptUseStatus",
+            "synced_source_use_authority: State.candidateBBroaderScopeConsumptionReceiptUse",
+            "synced_default_promotion_contract_lists_status_endpoint: true",
+            "synced_no_route_contract_proven: true",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "use_receipt_mutation_performed: false",
+            "selector_mutation_performed: false",
+            "default_scope_mutation_performed: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_closeout_readiness_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_current_main_sync_v1",
+            'source_pr: "#1800"',
+            "source_merge_commit: 67f7e822fc9d728084f1d708485956ea3a1723b4",
+            "ci_successful_checks: 10",
+            "synced_default_promotion_contract_lists_status_endpoint: true",
+            "synced_no_route_contract_proven: true",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_closeout_readiness_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_STATUS_INSPECTION_RENDERED_STATUS: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope consumption receipt use status inspection current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -104770,6 +104827,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_rendered_status(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_current_main_sync(
         errors
     )
 
