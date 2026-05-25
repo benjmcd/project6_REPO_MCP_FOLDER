@@ -3194,6 +3194,10 @@ SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_CLOSEOUT_READINESS 
     PLANNING_DOCS
     / "1132-sec-edgar-text-table-downstream-repeatability-closeout-readiness.md"
 )
+SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_SELECTION = (
+    PLANNING_DOCS
+    / "1133-sec-edgar-text-table-source-acquisition-authority-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -107653,6 +107657,124 @@ def _check_sec_edgar_text_table_downstream_operator_repeatability_trial_closeout
                 )
 
 
+def _check_sec_edgar_text_table_source_acquisition_authority_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_SELECTION: (
+            "SEC EDGAR Text Table Source Acquisition Authority Selection",
+            "milestone: sec_edgar_text_table_source_acquisition_authority_selection_v1",
+            "source_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1132-sec-edgar-text-table-downstream-repeatability-closeout-readiness.md",
+            "current_main_entry: d14b1d8320da48839c693c926ada7929a36cbc39",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_text_table_source_acquisition_authority_runtime_v1",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_parser_family: sec_edgar_filing",
+            "selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "selected_existing_parser_contract_id: aps_sec_edgar_filing_parser_v1",
+            "selected_existing_source_mode: artifact_sec_edgar_filing_parser",
+            "selected_authority_shape: server_owned_sec_filing_source_artifact_authority_to_materialized_dataset_version_envelope",
+            "selected_acquisition_scope: bind_retained_server_owned_sec_filing_source_artifact_manifest_to_existing_sec_edgar_text_table_materialization",
+            "selected_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "selected_source_artifact_family: complete_submission_text_filing_artifact",
+            "selected_source_artifact_evidence: source_artifact_receipt_id,source_artifact_receipt_hash,source_artifact_ref_hash,accession_or_submission_id_hash,cik_or_filer_ref_hash,form_type,filing_date,content_sha256,content_length,parser_family,typed_content_contract_id,materialization_receipt_hash,dataset_version_hash",
+            "selected_retained_artifact_roles: source_evidence_artifact,parser_input_artifact,provenance_audit_artifact,operator_inspection_artifact",
+            "selected_material_payload_roles: parsed_narrative_units,parsed_table_units,time_series_units,normalized_text,redacted_filing_metadata",
+            "selected_first_runtime_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "selected_first_runtime_action: record_sec_edgar_text_table_source_acquisition_authority",
+            "selected_first_runtime_receipt_prefix: sec-edgar-text-table-source-acquisition",
+            "required_input_authority: server_owned_source_artifact_receipt_and_existing_materialized_dataset_version_linkage",
+            "required_output_authority: append_only_redacted_source_acquisition_authority_receipt",
+            "required_compatibility_target: existing_sec_edgar_text_table_authority_envelope_validation_runtime",
+            "server_owned_source_artifact_authority_admitted_for_first_runtime: true",
+            "existing_sec_edgar_parser_reuse_admitted_for_first_runtime: true",
+            "live_sec_network_fetch_admitted_for_first_runtime: false",
+            "sec_network_cache_or_rate_behavior_admitted_for_first_runtime: false",
+            "raw_sec_filing_url_as_authority_admitted_for_first_runtime: false",
+            "xml_html_inline_xbrl_parser_admitted_for_first_runtime: false",
+            "broad_source_expansion_admitted: false",
+            "source_family_expansion_scope: sec_edgar_text_table_only",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "new_runtime_storage_root_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_supplied_local_path_admitted: false",
+            "browser_supplied_raw_url_admitted: false",
+            "browser_supplied_artifact_bytes_admitted: false",
+            "artifact_bytes_exposed: false",
+            "stale_source_artifact_hash_must_reject: true",
+            "missing_source_artifact_receipt_must_reject: true",
+            "missing_materialization_linkage_must_reject: true",
+            "parser_contract_mismatch_must_reject: true",
+            "typed_content_contract_mismatch_must_reject: true",
+            "operator_confirmation_required: true",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_source_acquisition_authority_selection_v1",
+            "source_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1132-sec-edgar-text-table-downstream-repeatability-closeout-readiness.md",
+            "current_main_entry: d14b1d8320da48839c693c926ada7929a36cbc39",
+            "entry_decision: freeze_only",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_text_table_source_acquisition_authority_runtime_v1",
+            "selected_source_family: sec_edgar_text_table",
+            "selected_parser_family: sec_edgar_filing",
+            "selected_typed_content_contract_id: aps_sec_edgar_filing_units_v1",
+            "selected_existing_parser_contract_id: aps_sec_edgar_filing_parser_v1",
+            "selected_existing_source_mode: artifact_sec_edgar_filing_parser",
+            "selected_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "selected_first_runtime_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "selected_first_runtime_action: record_sec_edgar_text_table_source_acquisition_authority",
+            "required_input_authority: server_owned_source_artifact_receipt_and_existing_materialized_dataset_version_linkage",
+            "required_output_authority: append_only_redacted_source_acquisition_authority_receipt",
+            "server_owned_source_artifact_authority_admitted_for_first_runtime: true",
+            "existing_sec_edgar_parser_reuse_admitted_for_first_runtime: true",
+            "live_sec_network_fetch_admitted_for_first_runtime: false",
+            "raw_sec_filing_url_as_authority_admitted_for_first_runtime: false",
+            "xml_html_inline_xbrl_parser_admitted_for_first_runtime: false",
+            "broad_source_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_supplied_local_path_admitted: false",
+            "browser_supplied_raw_url_admitted: false",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_runtime_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_CLOSEOUT_READINESS: (
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_selection_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "nrc_aps_sec_edgar_parser.py": (
+            "APS_SEC_EDGAR_FILING_CONTRACT_ID = \"aps_sec_edgar_filing_units_v1\"",
+            "APS_SEC_EDGAR_PARSER_ID = \"aps_sec_edgar_filing_parser\"",
+            "def parse_sec_edgar_filing(",
+            "sec_edgar_xml_or_inline_xbrl_not_admitted",
+        ),
+        ROOT / "backend" / "app" / "services" / "nrc_aps_dataset_bridge.py": (
+            "\"sec_edgar_filing\": {",
+            "\"typed_content_contract_id\": \"aps_sec_edgar_filing_units_v1\"",
+            "\"source_mode\": \"artifact_sec_edgar_filing_parser\"",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR source acquisition authority selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -108732,6 +108854,7 @@ def main() -> int:
     _check_sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness(
         errors
     )
+    _check_sec_edgar_text_table_source_acquisition_authority_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
