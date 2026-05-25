@@ -3206,6 +3206,10 @@ SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "1135-sec-edgar-text-table-source-acquisition-authority-runtime-current-main-sync.md"
 )
+SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_RENDERED_STATUS_SELECTION = (
+    PLANNING_DOCS
+    / "1136-sec-edgar-text-table-source-acquisition-rendered-status-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -107991,6 +107995,134 @@ def _check_sec_edgar_text_table_source_acquisition_authority_runtime_current_mai
                 )
 
 
+def _check_sec_edgar_text_table_source_acquisition_rendered_status_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_RENDERED_STATUS_SELECTION: (
+            "SEC EDGAR Text Table Source Acquisition Rendered Status Selection",
+            "milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_selection_v1",
+            "source_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1135-sec-edgar-text-table-source-acquisition-authority-runtime-current-main-sync.md",
+            "current_main_entry: bb9858347d4a1d5f8970d8f3aa365f55b1b02bf8",
+            "entry_decision: freeze_only",
+            "runtime_status: already_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1",
+            "selected_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control",
+            "selected_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1",
+            "selected_operator_decision: record_sec_edgar_text_table_source_acquisition_authority",
+            "selected_source_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "selected_existing_authority_envelope_endpoint: /api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+            "selected_existing_material_bridge_endpoint: /api/v1/layer3/source/sec-edgar/text-table/material-authority/bridge",
+            "selected_bootstrap_capability: sec_edgar_text_table_source_acquisition_authority",
+            "selected_bootstrap_endpoint_field: sec_edgar_text_table_source_acquisition_authority_endpoint",
+            "selected_rendered_scope: operator_visible_source_acquisition_authority_recording_over_server_revalidated_dataset_source_provenance_and_authority_envelope",
+            "selected_status_states: not_recorded,available,blocked",
+            "selected_rendered_panel: sec-edgar-source-acquisition-authority-panel",
+            "selected_rendered_form: sec-edgar-source-acquisition-authority-form",
+            "selected_rendered_submit: sec-edgar-source-acquisition-authority-submit",
+            "selected_rendered_payload_fields: client_request_id,acquisition_mode,operator_decision,dataset_version_id,source_artifact_receipt_id,source_artifact_receipt_hash,source_artifact_ref_hash,accession_or_submission_id_hash,cik_or_filer_ref_hash,form_type,filing_date,content_sha256,content_length,parser_family,parser_contract_id,typed_content_contract_id,materialization_receipt_hash,dataset_version_hash,authority_envelope_hash,operator_confirmation",
+            "browser_held_source_artifact_hashes_are_expected_values_only: true",
+            "append_only_source_acquisition_authority_receipt_required: true",
+            "idempotent_replay_must_render: true",
+            "stale_source_artifact_hash_must_fail_closed: true",
+            "missing_source_artifact_receipt_must_fail_closed: true",
+            "operator_confirmation_required: true",
+            "rendered_control_can_create_authority_envelope: false",
+            "rendered_control_can_create_material_bridge: false",
+            "rendered_control_can_mutate_gate_b_session: false",
+            "rendered_control_can_fetch_sec_content: false",
+            "rendered_control_can_accept_raw_sec_url: false",
+            "rendered_control_can_accept_raw_local_path: false",
+            "rendered_control_can_parse_xml_html_inline_xbrl: false",
+            "rendered_control_can_create_runtime_storage_root: false",
+            "rendered_control_can_start_process: false",
+            "rendered_control_can_dispatch_connector: false",
+            "rendered_control_can_write_provider_object: false",
+            "rendered_control_can_add_rag_or_model_runtime: false",
+            "rendered_control_can_activate_full_mockup: false",
+            "raw_source_artifact_ref_rendered: false",
+            "raw_source_artifact_receipt_path_rendered: false",
+            "raw_authority_envelope_input_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "provider_token_rendered: false",
+            "browser_storage_authority_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "new_runtime_storage_root_admitted: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "xml_html_inline_xbrl_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "headless_rendered_status_proof_required: true",
+            "headed_rendered_status_proof_required: true",
+            "rendered_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_selection_v1",
+            "source_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1135-sec-edgar-text-table-source-acquisition-authority-runtime-current-main-sync.md",
+            "current_main_entry: bb9858347d4a1d5f8970d8f3aa365f55b1b02bf8",
+            "entry_decision: freeze_only",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1",
+            "selected_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control",
+            "selected_source_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+            "selected_bootstrap_capability: sec_edgar_text_table_source_acquisition_authority",
+            "selected_bootstrap_endpoint_field: sec_edgar_text_table_source_acquisition_authority_endpoint",
+            "selected_rendered_panel: sec-edgar-source-acquisition-authority-panel",
+            "selected_rendered_form: sec-edgar-source-acquisition-authority-form",
+            "selected_rendered_submit: sec-edgar-source-acquisition-authority-submit",
+            "browser_held_source_artifact_hashes_are_expected_values_only: true",
+            "stale_source_artifact_hash_must_fail_closed: true",
+            "rendered_control_can_fetch_sec_content: false",
+            "rendered_control_can_accept_raw_sec_url: false",
+            "rendered_control_can_accept_raw_local_path: false",
+            "rendered_control_can_dispatch_connector: false",
+            "rendered_control_can_write_provider_object: false",
+            "raw_source_artifact_ref_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "headless_rendered_status_proof_required: true",
+            "headed_rendered_status_proof_required: true",
+            "rendered_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_SOURCE_ACQUISITION_AUTHORITY_RUNTIME_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_selection_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_source_acquisition.py": (
+            'SCHEMA_ID = "layer3.sec_edgar_text_table_source_acquisition_authority.v1"',
+            'ACQUISITION_MODE = "sec_edgar_text_table_source_acquisition_authority_v1"',
+            'OPERATOR_DECISION = "record_sec_edgar_text_table_source_acquisition_authority"',
+            "operator_visible_source_acquisition_status",
+            '"selected_status_states": ["not_recorded", "available", "blocked"]',
+            '"raw_url_exposed": False',
+            '"frontend_durable_authority_enabled": False',
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py": (
+            '"sec_edgar_text_table_source_acquisition_authority_admitted": True',
+            '"sec_edgar_text_table_source_acquisition_authority_endpoint":',
+            'f"{api_root}/source/sec-edgar/text-table/source-acquisition/authority"',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR source acquisition rendered status selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -109073,6 +109205,9 @@ def main() -> int:
     _check_sec_edgar_text_table_source_acquisition_authority_selection(errors)
     _check_sec_edgar_text_table_source_acquisition_authority_runtime(errors)
     _check_sec_edgar_text_table_source_acquisition_authority_runtime_current_main_sync(
+        errors
+    )
+    _check_sec_edgar_text_table_source_acquisition_rendered_status_selection(
         errors
     )
 

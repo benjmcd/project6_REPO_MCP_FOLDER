@@ -1,0 +1,95 @@
+# SEC EDGAR Text Table Source Acquisition Rendered Status Selection
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_selection_v1
+source_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1135-sec-edgar-text-table-source-acquisition-authority-runtime-current-main-sync.md
+current_main_entry: bb9858347d4a1d5f8970d8f3aa365f55b1b02bf8
+entry_decision: freeze_only
+runtime_status: already_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1
+selected_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control
+selected_acquisition_mode: sec_edgar_text_table_source_acquisition_authority_v1
+selected_operator_decision: record_sec_edgar_text_table_source_acquisition_authority
+selected_source_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+selected_existing_authority_envelope_endpoint: /api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate
+selected_existing_material_bridge_endpoint: /api/v1/layer3/source/sec-edgar/text-table/material-authority/bridge
+selected_bootstrap_capability: sec_edgar_text_table_source_acquisition_authority
+selected_bootstrap_endpoint_field: sec_edgar_text_table_source_acquisition_authority_endpoint
+selected_rendered_scope: operator_visible_source_acquisition_authority_recording_over_server_revalidated_dataset_source_provenance_and_authority_envelope
+selected_status_states: not_recorded,available,blocked
+selected_rendered_panel: sec-edgar-source-acquisition-authority-panel
+selected_rendered_form: sec-edgar-source-acquisition-authority-form
+selected_rendered_submit: sec-edgar-source-acquisition-authority-submit
+selected_rendered_payload_fields: client_request_id,acquisition_mode,operator_decision,dataset_version_id,source_artifact_receipt_id,source_artifact_receipt_hash,source_artifact_ref_hash,accession_or_submission_id_hash,cik_or_filer_ref_hash,form_type,filing_date,content_sha256,content_length,parser_family,parser_contract_id,typed_content_contract_id,materialization_receipt_hash,dataset_version_hash,authority_envelope_hash,operator_confirmation
+selected_rendered_status_fields: source_acquisition_authority_state,source_acquisition_receipt_id,source_acquisition_receipt_hash,source_acquisition_receipt_ref,source_acquisition_receipt_status,idempotent_replay,source_artifact_authority,authority_bindings,compatibility,operator_visible_source_acquisition_status,fail_closed_behavior,baseline_rollback,candidate_a_semantics,candidate_b_default_scope,negative_invariants,next_allowed_actions
+server_revalidated_source_artifact_authority_required: true
+server_revalidated_authority_envelope_required: true
+material_preview_gate_b_compatibility_must_render: true
+browser_held_source_artifact_hashes_are_expected_values_only: true
+append_only_source_acquisition_authority_receipt_required: true
+exclusive_receipt_per_source_artifact_authority_required: true
+idempotent_replay_must_render: true
+stale_source_artifact_hash_must_fail_closed: true
+missing_source_artifact_receipt_must_fail_closed: true
+missing_materialization_linkage_must_fail_closed: true
+parser_contract_mismatch_must_fail_closed: true
+typed_content_contract_mismatch_must_fail_closed: true
+dataset_version_hash_mismatch_must_fail_closed: true
+authority_envelope_hash_mismatch_must_fail_closed: true
+operator_confirmation_required: true
+rendered_control_can_create_authority_envelope: false
+rendered_control_can_create_material_bridge: false
+rendered_control_can_mutate_gate_b_session: false
+rendered_control_can_mutate_material_snapshot: false
+rendered_control_can_fetch_sec_content: false
+rendered_control_can_accept_raw_sec_url: false
+rendered_control_can_accept_raw_local_path: false
+rendered_control_can_parse_xml_html_inline_xbrl: false
+rendered_control_can_create_runtime_storage_root: false
+rendered_control_can_start_process: false
+rendered_control_can_dispatch_connector: false
+rendered_control_can_write_provider_object: false
+rendered_control_can_add_rag_or_model_runtime: false
+rendered_control_can_activate_full_mockup: false
+raw_source_artifact_ref_rendered: false
+raw_source_artifact_receipt_path_rendered: false
+raw_authority_envelope_input_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+rendered_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_status_v1
+```
+
+This freeze selects the rendered/operator control for the existing SEC EDGAR source-acquisition authority endpoint. The rendered surface may submit only the bounded source-acquisition request fields that the server already treats as expected authority values. The server remains the authority for revalidating DatasetSourceProvenance, the ready authority envelope, source-artifact receipt identity, content hash, parser contract, materialization receipt, DatasetVersion hash, authority-envelope hash, stale rejection, idempotent replay, and redacted receipt projection.
+
+The browser must not treat source-artifact hashes, receipt ids, authority-envelope hashes, form state, local storage, status JSON, raw source refs, paths, URLs, SEC filing URLs, artifact bytes, or frontend state as durable authority. The rendered panel must display only the redacted server projection and must not create authority envelopes, material bridges, Gate B state, material snapshots, provider objects, connector dispatches, parser executions, SEC fetches, runtime storage roots, RAG/model runtime, or full mockup activation.
+
+## Coherence Check
+
+- Does this freeze admit the rendered control implementation now? Recommended answer: no. It selects the exact next rendered runtime target.
+- Can the browser prove source acquisition from hashes alone? Recommended answer: no. Hashes are expected values and stale-authority guards; the server revalidates materialization provenance and the authority envelope.
+- Does this rendered slice admit SEC network acquisition or raw SEC URL authority? Recommended answer: no. It only submits to the existing source-acquisition authority endpoint.
+- What proof is required next? Recommended answer: implement the rendered source-acquisition authority control/status projection and prove available, stale, missing confirmation, idempotent replay, and redaction behavior in both headless and headed Chrome.
