@@ -6616,3 +6616,60 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_default_pr
 ```
 
 The workbench now exposes the existing broader-scope default-promotion runtime as a rendered operator control. It reuses the server default-promotion endpoint, binds the prior server promotion-readiness response instead of accepting a free-form readiness JSON textarea, and renders selected/blocked receipt status without raw path, URL, artifact byte, provider, connector, command, process, browser-storage, or frontend-durable authority.
+
+### Candidate B Broader Eligible Corpus Default Scope Default Promotion Closeout Readiness
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_default_promotion_closeout_readiness_v1
+source_default_promotion_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1113-cb-broader-eligible-corpus-default-scope-default-promotion-rendered-status-runtime.md
+current_main_entry: 1f188b8340973969254ef5421f992fcd1a7f4f4a
+source_sync_pr: "#1817"
+source_sync_merge_commit: 1f188b8340973969254ef5421f992fcd1a7f4f4a
+entry_decision: closeout_readiness_checkpoint
+runtime_status: already_implemented
+rendered_status: already_implemented
+closeout_readiness_state: ready_for_source_family_authority_envelope_selection
+selected_next_selection_target: sec_edgar_text_table_authority_envelope_selection_v1
+selected_source_family_candidate: sec_edgar_text_table
+selected_authority_envelope_shape: mixed_narrative_table
+selected_closeout_scope: candidate_b_broader_default_scope_after_default_promotion_rendered_status
+required_default_promotion_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion
+required_promotion_readiness_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness
+required_rendered_default_promotion_control: rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control
+required_default_promotion_state: candidate_b_broader_eligible_corpus_default_scope_default_promotion_selected
+required_default_promotion_blocked_state: candidate_b_broader_eligible_corpus_default_scope_default_promotion_blocked
+required_authority_chain: readiness_audit,runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial,promotion_readiness_audit,promotion_readiness_rendered_status,promotion_readiness_closeout,default_promotion_receipt,default_promotion_rendered_status
+required_scope_class_policy: receipt_bound_selected_classes_only
+required_default_before_source_family_selection: eligible_effective_pdfs_only_plus_receipt_bound_selected_classes_only
+required_non_selected_class_default: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+bundle_and_runtime_authority_remain_distinct: true
+default_promotion_closeout_ready: true
+named_defect_remaining: false
+source_family_authority_envelope_selection_admitted_next: true
+sec_edgar_runtime_admitted_now: false
+source_expansion_admitted_now: false
+parser_expansion_admitted_now: false
+default_scope_expansion_mutation_performed: false
+selector_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+next_exact_posture: sec_edgar_text_table_authority_envelope_selection_v1
+```
+
+This checkpoint closes the Candidate B broader-scope default-promotion rendered/status chain and moves the operator workflow toward the next source-family authority-envelope decision. It does not implement SEC EDGAR runtime, broaden source ingestion, change default behavior for non-selected classes, expose raw authority, or admit parser/runtime expansion. The next repeatable operator planning step is to freeze the exact `sec_edgar_text_table` mixed narrative/table authority envelope before any processing or Layer 3 material-authority implementation.
