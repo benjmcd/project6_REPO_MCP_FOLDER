@@ -8443,3 +8443,49 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_render
 ```
 
 The rendered runtime gives operators a bounded acquire/status surface over the existing server-owned live source-artifact acquisition API. It accepts only SEC filing identity fields, optional expected content hash, and operator confirmation; raw SEC URLs, local paths, artifact bytes, User-Agent values, commands, storage roots, parser controls, Gate B/materialization, provider writes, connector dispatch, RAG/model runtime, browser storage authority, frontend durable authority, and full mockup activation remain outside this slice.
+
+### SEC EDGAR Text Table Live Source Artifact Acquisition Rendered Status Review Remediation
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1144-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-runtime.md
+current_main_entry: 5c5df31369f485848f392c247bb7a6e82c16b8bb
+source_pr: 1848
+source_merge_commit: 5c5df31369f485848f392c247bb7a6e82c16b8bb
+entry_decision: review_remediation
+runtime_status: unchanged
+rendered_status: unchanged
+review_threads_found_after_merge: 3
+review_thread_path: backend/tests/review_browser_server.py
+review_thread_lines: 836,838,845
+review_remediation_status: implemented
+review_remediation_scope: review_browser_fixture_and_test_harness_state_isolation_only
+implemented_seeded_sec_client: _ReviewBrowserSeededSecEdgarClient
+implemented_seed_registration: register_complete_submission_text
+implemented_seed_identity_function: _sec_edgar_live_source_artifact_identity
+implemented_fixture_identity_policy: cik_and_accession_are_deterministic_seed_bound_values
+implemented_fixture_cache_policy: each_setup_seed_registers_distinct_identity_and_content_hash
+implemented_fake_client_installation: app_owned_client_installed_once_at_review_browser_app_creation
+implemented_setup_route_mutates_sec_client: false
+implemented_setup_route_mutates_sec_sleep: false
+implemented_setup_route_mutates_sec_settings: false
+implemented_patch_state_restore: sec_client_sec_sleep_sec_user_agent_sec_rate_limit_restored
+production_sec_acquisition_behavior_changed: false
+production_api_behavior_changed: false
+production_rendered_behavior_changed: false
+live_sec_manual_smoke_in_this_slice: false
+parser_expansion_enabled: false
+dataset_version_or_gate_b_mutation_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+server_user_agent_exposed: false
+next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation_current_main_sync_v1
+```
+
+The review remediation is test-harness-only. It addresses post-merge review threads on PR `#1848` by making SEC EDGAR browser fixture setup seed-bound and restore-safe; it does not add parser expansion, materialization, Gate B mutation, provider writes, connector dispatch, RAG/model runtime, or full mockup activation.
