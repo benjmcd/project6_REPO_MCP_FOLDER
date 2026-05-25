@@ -14,15 +14,27 @@ from app.services import layer3_candidate_b_broader_scope_runtime
 SCHEMA_ID = "layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use.v1"
 STATUS_SCHEMA_ID = "layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use_status.v1"
 ACTIVATION_SCHEMA_ID = "layer3.candidate_b_broader_eligible_corpus_default_scope_selector_activation.v1"
+CONSUMPTION_SCHEMA_ID = (
+    "layer3.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption.v1"
+)
 SCHEMA_VERSION = 1
 RUNTIME_MODE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1"
 STATUS_MODE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_status_v1"
 ACTIVATION_MODE = "candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1"
+CONSUMPTION_MODE = (
+    "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1"
+)
 STATUS_OPERATOR_DECISION = "inspect_candidate_b_broader_eligible_corpus_default_scope_selector_use_status"
 SELECTED_STATE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_selected"
 BLOCKED_STATE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_blocked"
 ACTIVATION_SELECTED_STATE = "candidate_b_broader_eligible_corpus_default_scope_selector_activation_selected"
 ACTIVATION_BLOCKED_STATE = "candidate_b_broader_eligible_corpus_default_scope_selector_activation_blocked"
+CONSUMPTION_SELECTED_STATE = (
+    "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_selected"
+)
+CONSUMPTION_BLOCKED_STATE = (
+    "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_blocked"
+)
 SOURCE_RUNTIME_SCHEMA_ID = layer3_candidate_b_broader_scope_runtime.SCHEMA_ID
 SOURCE_RUNTIME_MODE = layer3_candidate_b_broader_scope_runtime.RUNTIME_MODE
 SOURCE_RUNTIME_SELECTED_STATE = layer3_candidate_b_broader_scope_runtime.SELECTED_STATE
@@ -30,10 +42,13 @@ CURRENT_DEFAULT_SCOPE = layer3_candidate_b_broader_scope_readiness.CURRENT_DEFAU
 NON_SELECTED_CLASS_DEFAULT = "baseline"
 RECEIPT_PREFIX = "cb-broader-scope-selector-use"
 ACTIVATION_RECEIPT_PREFIX = "cb-broader-scope-selector-activation"
+CONSUMPTION_RECEIPT_PREFIX = "cb-broader-scope-activation-consumption"
 REDACTION_POLICY_ID = "candidate_b_broader_scope_selector_use_redaction_v1"
 ACTIVATION_REDACTION_POLICY_ID = "candidate_b_broader_scope_selector_activation_redaction_v1"
+CONSUMPTION_REDACTION_POLICY_ID = "candidate_b_broader_scope_activation_consumption_redaction_v1"
 SELECTOR_AUTHORITY_SOURCE = "redacted_candidate_b_broader_scope_runtime_receipt"
 ACTIVATION_AUTHORITY_SOURCE = "server_revalidated_selector_use_status"
+CONSUMPTION_AUTHORITY_SOURCE = "redacted_candidate_b_broader_scope_selector_activation_receipt"
 
 FORBIDDEN_FIELDS = {
     "path",
@@ -120,6 +135,20 @@ class CandidateBBroaderScopeSelectorActivationError(CandidateBBroaderScopeSelect
             "status": "blocked",
             "mode": ACTIVATION_MODE,
             "selector_activation_state": ACTIVATION_BLOCKED_STATE,
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class CandidateBBroaderScopeActivationConsumptionError(CandidateBBroaderScopeSelectorUseError):
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": CONSUMPTION_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "request_id": "candidate-b-broader-scope-activation-consumption-error",
+            "server_time": _server_time(),
+            "status": "blocked",
+            "mode": CONSUMPTION_MODE,
+            "activation_receipt_consumption_state": CONSUMPTION_BLOCKED_STATE,
             "error": {"code": self.code, "message": self.message, "details": self.details},
         }
 
@@ -689,6 +718,375 @@ def record_candidate_b_broader_scope_selector_activation(payload: Mapping[str, A
     }
 
 
+def record_candidate_b_broader_scope_activation_receipt_consumption(
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    fields = _normalise_payload(payload, error_cls=CandidateBBroaderScopeActivationConsumptionError)
+    request_id = _required_str(
+        fields,
+        "client_request_id",
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    consumption_mode = _required_str(
+        fields,
+        "consumption_mode",
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    if consumption_mode != CONSUMPTION_MODE:
+        raise CandidateBBroaderScopeActivationConsumptionError(
+            "candidate_b_broader_scope_activation_consumption_mode_not_admitted",
+            "Only the frozen Candidate B broader eligible-corpus activation receipt consumption mode is admitted.",
+            details={"expected_consumption_mode": CONSUMPTION_MODE, "received_consumption_mode": consumption_mode},
+        )
+
+    activation_receipt_id = _required_storage_id(
+        fields,
+        "activation_receipt_id",
+        prefix=ACTIVATION_RECEIPT_PREFIX,
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    activation_receipt_hash = _required_str(
+        fields,
+        "activation_receipt_hash",
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    selector_use_status_hash = _required_str(
+        fields,
+        "selector_use_status_hash",
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    selector_use_receipt_id = _required_storage_id(
+        fields,
+        "selector_use_receipt_id",
+        prefix=RECEIPT_PREFIX,
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    selector_use_receipt_hash = _required_str(
+        fields,
+        "selector_use_receipt_hash",
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    runtime_selection_receipt_id = _required_str(
+        fields,
+        "runtime_selection_receipt_id",
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    runtime_selection_receipt_hash = _required_str(
+        fields,
+        "runtime_selection_receipt_hash",
+        error_cls=CandidateBBroaderScopeActivationConsumptionError,
+    )
+    selected_scope_classes = _string_list(fields.get("selected_scope_classes"))
+
+    blocked: list[dict[str, Any]] = []
+    if fields.get("operator_confirmation") is not True:
+        blocked.append(_reason("candidate_b_broader_scope_activation_consumption_operator_confirmation_missing"))
+    if fields.get("rollback_to_baseline_confirmation") is not True:
+        blocked.append(_reason("candidate_b_broader_scope_activation_consumption_rollback_to_baseline_missing"))
+    if not selected_scope_classes:
+        blocked.append(_reason("candidate_b_broader_scope_activation_consumption_no_selected_scope_class"))
+
+    activation_receipt = _read_selector_activation_receipt(activation_receipt_id)
+    if activation_receipt is None:
+        blocked.append(
+            _reason(
+                "candidate_b_broader_scope_activation_consumption_missing_activation_receipt",
+                activation_receipt_id=activation_receipt_id,
+            )
+        )
+
+    status_summary: dict[str, Any] | None = None
+    runtime_summary: dict[str, Any] | None = None
+    receipt_classes: list[str] = []
+    readiness_audit_id = ""
+    readiness_audit_hash = ""
+    if activation_receipt is not None:
+        blocked.extend(
+            _validate_selector_activation_receipt(
+                receipt=activation_receipt,
+                activation_receipt_id=activation_receipt_id,
+                activation_receipt_hash=activation_receipt_hash,
+            )
+        )
+        receipt_classes = _string_list(activation_receipt.get("selected_scope_classes"))
+        readiness_audit_id = str(activation_receipt.get("readiness_audit_id") or "")
+        readiness_audit_hash = str(activation_receipt.get("readiness_audit_hash") or "")
+
+        expected_payload_fields = {
+            "selector_use_status_hash": selector_use_status_hash,
+            "selector_use_receipt_id": selector_use_receipt_id,
+            "selector_use_receipt_hash": selector_use_receipt_hash,
+            "runtime_selection_receipt_id": runtime_selection_receipt_id,
+            "runtime_selection_receipt_hash": runtime_selection_receipt_hash,
+        }
+        for field, received in expected_payload_fields.items():
+            expected = activation_receipt.get(field)
+            if expected != received:
+                blocked.append(
+                    _reason(
+                        "candidate_b_broader_scope_activation_consumption_activation_binding_mismatch",
+                        field=field,
+                        expected=expected,
+                        received=received,
+                    )
+                )
+
+        if selected_scope_classes != receipt_classes:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_activation_consumption_selected_classes_do_not_match_activation",
+                    expected=receipt_classes,
+                    received=selected_scope_classes,
+                )
+            )
+        invalid_classes = sorted(
+            set(selected_scope_classes) - set(layer3_candidate_b_broader_scope_readiness.SCOPE_CLASSES)
+        )
+        if invalid_classes:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_activation_consumption_unknown_scope_class",
+                    invalid_scope_classes=invalid_classes,
+                )
+            )
+        unselected_classes = sorted(set(selected_scope_classes) - set(receipt_classes))
+        if unselected_classes:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_activation_consumption_unselected_scope_class",
+                    unselected_scope_classes=unselected_classes,
+                )
+            )
+
+        try:
+            status_summary = inspect_candidate_b_broader_scope_selector_use_status(
+                {
+                    "client_request_id": f"{request_id}:selector-use-status",
+                    "status_mode": STATUS_MODE,
+                    "operator_decision": STATUS_OPERATOR_DECISION,
+                    "selector_use_receipt_id": activation_receipt.get("selector_use_receipt_id"),
+                    "selector_use_receipt_hash": activation_receipt.get("selector_use_receipt_hash"),
+                    "runtime_selection_receipt_id": activation_receipt.get("runtime_selection_receipt_id"),
+                    "runtime_selection_receipt_hash": activation_receipt.get("runtime_selection_receipt_hash"),
+                }
+            )
+        except CandidateBBroaderScopeSelectorUseError as exc:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_activation_consumption_status_authority_invalid",
+                    authority_error_code=exc.code,
+                    authority_error_details=exc.details,
+                )
+            )
+
+        if status_summary is not None:
+            if status_summary.get("selector_use_status_hash") != activation_receipt.get("selector_use_status_hash"):
+                blocked.append(
+                    _reason(
+                        "candidate_b_broader_scope_activation_consumption_stale_selector_use_status_hash",
+                        expected=status_summary.get("selector_use_status_hash"),
+                        received=activation_receipt.get("selector_use_status_hash"),
+                    )
+                )
+            if status_summary.get("selector_use_state") != SELECTED_STATE:
+                blocked.append(
+                    _reason(
+                        "candidate_b_broader_scope_activation_consumption_status_not_selected",
+                        received=status_summary.get("selector_use_state"),
+                    )
+                )
+            status_classes = _string_list(status_summary.get("selected_scope_classes"))
+            if receipt_classes != status_classes:
+                blocked.append(
+                    _reason(
+                        "candidate_b_broader_scope_activation_consumption_selected_classes_do_not_match_status",
+                        expected=status_classes,
+                        received=receipt_classes,
+                    )
+                )
+
+        runtime_summary = _validate_source_runtime_receipt(
+            receipt_id=str(activation_receipt.get("runtime_selection_receipt_id") or ""),
+            receipt_hash=str(activation_receipt.get("runtime_selection_receipt_hash") or ""),
+            selected_scope_classes=receipt_classes,
+            create_root=False,
+            error_cls=CandidateBBroaderScopeActivationConsumptionError,
+        )
+        blocked.extend(
+            [
+                _reason(
+                    "candidate_b_broader_scope_activation_consumption_runtime_authority_invalid",
+                    runtime_blocked_reason=reason,
+                )
+                for reason in runtime_summary["blocked_reasons"]
+            ]
+        )
+
+    consumption_hash = _stable_hash(
+        {
+            "schema_id": CONSUMPTION_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "consumption_mode": CONSUMPTION_MODE,
+            "consumption_authority_source": CONSUMPTION_AUTHORITY_SOURCE,
+            "activation_schema_id": ACTIVATION_SCHEMA_ID,
+            "activation_mode": ACTIVATION_MODE,
+            "activation_receipt_id": activation_receipt_id,
+            "activation_receipt_hash": activation_receipt_hash,
+            "selector_use_status_hash": selector_use_status_hash,
+            "selector_use_receipt_id": selector_use_receipt_id,
+            "selector_use_receipt_hash": selector_use_receipt_hash,
+            "runtime_selection_receipt_id": runtime_selection_receipt_id,
+            "runtime_selection_receipt_hash": runtime_selection_receipt_hash,
+            "readiness_audit_id": readiness_audit_id,
+            "readiness_audit_hash": readiness_audit_hash,
+            "selected_scope_classes": selected_scope_classes,
+            "current_default_before_consumption_runtime": CURRENT_DEFAULT_SCOPE,
+            "non_selected_class_default": NON_SELECTED_CLASS_DEFAULT,
+            "baseline_rollback_preserved": fields.get("rollback_to_baseline_confirmation") is True,
+            "candidate_a_semantics_preserved": True,
+            "redaction_policy_id": CONSUMPTION_REDACTION_POLICY_ID,
+        }
+    )
+    consumption_receipt_id = f"{CONSUMPTION_RECEIPT_PREFIX}-{consumption_hash[:24]}"
+    consumption_state = CONSUMPTION_SELECTED_STATE if not blocked else CONSUMPTION_BLOCKED_STATE
+    consumption_receipt_ref = None
+    consumption_receipt_status = "not_recorded"
+    if consumption_state == CONSUMPTION_SELECTED_STATE:
+        consumption_receipt_ref = _write_activation_consumption_receipt(
+            receipt_id=consumption_receipt_id,
+            receipt_hash=consumption_hash,
+            request_id=request_id,
+            activation_receipt_id=activation_receipt_id,
+            activation_receipt_hash=activation_receipt_hash,
+            selector_use_status_hash=selector_use_status_hash,
+            selector_use_receipt_id=selector_use_receipt_id,
+            selector_use_receipt_hash=selector_use_receipt_hash,
+            runtime_selection_receipt_id=runtime_selection_receipt_id,
+            runtime_selection_receipt_hash=runtime_selection_receipt_hash,
+            readiness_audit_id=readiness_audit_id,
+            readiness_audit_hash=readiness_audit_hash,
+            selected_scope_classes=selected_scope_classes,
+        )
+        consumption_receipt_status = "recorded"
+
+    consumption_enabled = consumption_state == CONSUMPTION_SELECTED_STATE
+    return {
+        "schema_id": CONSUMPTION_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "status": "selected" if consumption_enabled else "blocked",
+        "mode": CONSUMPTION_MODE,
+        "activation_receipt_consumption_state": consumption_state,
+        "consumption_receipt_id": consumption_receipt_id if consumption_enabled else None,
+        "consumption_receipt_hash": consumption_hash if consumption_enabled else None,
+        "consumption_receipt_ref": consumption_receipt_ref,
+        "consumption_receipt_status": consumption_receipt_status,
+        "blocked_reasons": blocked,
+        "consumption_authority": {
+            "source": CONSUMPTION_AUTHORITY_SOURCE,
+            "activation_receipt_id": activation_receipt_id,
+            "activation_receipt_hash": activation_receipt_hash,
+            "activation_receipt_reloaded": activation_receipt is not None,
+            "receipt_bound": consumption_enabled,
+        },
+        "activation_receipt_binding": {
+            "schema_id": ACTIVATION_SCHEMA_ID,
+            "mode": ACTIVATION_MODE,
+            "required_state": ACTIVATION_SELECTED_STATE,
+            "activation_receipt_id": activation_receipt_id,
+            "activation_receipt_hash": activation_receipt_hash,
+            "binding_verified": activation_receipt is not None and not blocked,
+        },
+        "selector_use_status_binding": {
+            "schema_id": STATUS_SCHEMA_ID,
+            "mode": STATUS_MODE,
+            "selector_use_status_hash": selector_use_status_hash,
+            "status_revalidated": status_summary is not None and not blocked,
+            "binding_verified": status_summary is not None and not blocked,
+        },
+        "selector_use_receipt_binding": {
+            "schema_id": SCHEMA_ID,
+            "mode": RUNTIME_MODE,
+            "required_state": SELECTED_STATE,
+            "selector_use_receipt_id": selector_use_receipt_id,
+            "selector_use_receipt_hash": selector_use_receipt_hash,
+            "binding_verified": status_summary is not None and not blocked,
+        },
+        "runtime_selection_receipt_binding": {
+            "schema_id": SOURCE_RUNTIME_SCHEMA_ID,
+            "mode": SOURCE_RUNTIME_MODE,
+            "required_state": SOURCE_RUNTIME_SELECTED_STATE,
+            "runtime_selection_receipt_id": runtime_selection_receipt_id,
+            "runtime_selection_receipt_hash": runtime_selection_receipt_hash,
+            "binding_verified": runtime_summary is not None and not runtime_summary["blocked_reasons"] and not blocked,
+        },
+        "readiness_audit_binding": {
+            "readiness_audit_id": readiness_audit_id or None,
+            "readiness_audit_hash": readiness_audit_hash or None,
+            "binding_verified": bool(readiness_audit_id and readiness_audit_hash and not blocked),
+        },
+        "selected_scope_classes": selected_scope_classes,
+        "selected_scope_classes_source": "selected_scope_classes_from_revalidated_activation_receipt",
+        "current_default_before_consumption_runtime": CURRENT_DEFAULT_SCOPE,
+        "default_scope_consumption_enabled": consumption_enabled,
+        "default_scope_expansion_enabled": consumption_enabled,
+        "non_selected_class_default": NON_SELECTED_CLASS_DEFAULT,
+        "baseline_rollback": {
+            "selector": NON_SELECTED_CLASS_DEFAULT,
+            "available": fields.get("rollback_to_baseline_confirmation") is True,
+            "non_selected_classes_remain_baseline": True,
+        },
+        "candidate_a_semantics": {"visual_lane_mode": "candidate_a_page_evidence_v1", "preserved": True},
+        "candidate_b_scope_authority": {
+            "document_processing_engine": layer3_candidate_b_broader_scope_readiness.CANDIDATE_B_ENGINE_SCOPE,
+            "visual_lane_mode": layer3_candidate_b_broader_scope_readiness.CANDIDATE_B_VISUAL_LANE_SCOPE,
+            "bundle_and_runtime_authority_remain_distinct": True,
+        },
+        "operator_visible_consumption_status": {
+            "consumption_recorded": consumption_enabled,
+            "selected_scope_class_count": len(selected_scope_classes) if consumption_enabled else 0,
+            "redacted_consumption_receipt_available": consumption_receipt_ref is not None,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_or_connector_secret_exposed": False,
+        },
+        "fail_closed_behavior": {
+            "missing_activation_receipt_blocks_consumption": True,
+            "stale_activation_receipt_hash_blocks_consumption": True,
+            "stale_selector_use_status_hash_blocks_consumption": True,
+            "stale_selector_use_receipt_hash_blocks_consumption": True,
+            "stale_runtime_receipt_hash_blocks_consumption": True,
+            "stale_readiness_audit_hash_blocks_consumption": True,
+            "unknown_scope_class_blocks_consumption": True,
+            "unselected_scope_class_blocks_consumption": True,
+            "missing_rollback_confirmation_blocks_consumption": True,
+            "candidate_a_semantic_drift_blocks_consumption": True,
+        },
+        "activation_receipt_consumption_authority_recorded": consumption_enabled,
+        "selector_mutation_performed": False,
+        "default_scope_mutation_performed": False,
+        "source_expansion_admitted": False,
+        "runtime_db_or_storage_expansion_admitted": False,
+        "pdf_or_image_text_material_ingestion_admitted": False,
+        "provider_object_write_enabled": False,
+        "connector_dispatch_enabled": False,
+        "rag_vector_model_runtime_enabled": False,
+        "auth_security_expansion_enabled": False,
+        "full_mockup_activation_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "browser_storage_authority_enabled": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "negative_invariants": _negative_invariants(consumption_enabled),
+        "next_allowed_actions": (
+            ["use consumption receipt for exact broader Candidate B selected classes"]
+            if consumption_enabled
+            else ["reload activation receipt and repair stale or missing authority before consumption"]
+        ),
+    }
+
+
 def _validate_source_runtime_receipt(
     *,
     receipt_id: str,
@@ -929,6 +1327,161 @@ def _write_selector_activation_receipt(
                 details={"reason": exc.__class__.__name__},
             ) from exc
     return f"candidate-b-broader-scope-selector-activation://{receipt_id}/{receipt_hash[:24]}"
+
+
+def _write_activation_consumption_receipt(
+    *,
+    receipt_id: str,
+    receipt_hash: str,
+    request_id: str,
+    activation_receipt_id: str,
+    activation_receipt_hash: str,
+    selector_use_status_hash: str,
+    selector_use_receipt_id: str,
+    selector_use_receipt_hash: str,
+    runtime_selection_receipt_id: str,
+    runtime_selection_receipt_hash: str,
+    readiness_audit_id: str,
+    readiness_audit_hash: str,
+    selected_scope_classes: list[str],
+) -> str:
+    receipt = {
+        "schema_id": CONSUMPTION_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "consumption_mode": CONSUMPTION_MODE,
+        "activation_receipt_consumption_state": CONSUMPTION_SELECTED_STATE,
+        "request_id": request_id,
+        "consumption_receipt_id": receipt_id,
+        "consumption_receipt_hash": receipt_hash,
+        "consumption_authority_source": CONSUMPTION_AUTHORITY_SOURCE,
+        "activation_receipt_id": activation_receipt_id,
+        "activation_receipt_hash": activation_receipt_hash,
+        "selector_use_status_hash": selector_use_status_hash,
+        "selector_use_receipt_id": selector_use_receipt_id,
+        "selector_use_receipt_hash": selector_use_receipt_hash,
+        "runtime_selection_receipt_id": runtime_selection_receipt_id,
+        "runtime_selection_receipt_hash": runtime_selection_receipt_hash,
+        "readiness_audit_id": readiness_audit_id,
+        "readiness_audit_hash": readiness_audit_hash,
+        "selected_scope_classes": selected_scope_classes,
+        "current_default_before_consumption_runtime": CURRENT_DEFAULT_SCOPE,
+        "default_scope_consumption_enabled": True,
+        "non_selected_class_default": NON_SELECTED_CLASS_DEFAULT,
+        "baseline_rollback_preserved": True,
+        "candidate_a_semantics_preserved": True,
+        "redaction_policy_id": CONSUMPTION_REDACTION_POLICY_ID,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "provider_or_connector_secret_exposed": False,
+        "recorded_at": _server_time(),
+    }
+    target = _runtime_receipt_root() / "broader-scope-activation-consumption" / f"{receipt_id}.json"
+    if target.exists():
+        existing = _read_required_receipt(target)
+        if existing.get("consumption_receipt_hash") != receipt_hash:
+            raise CandidateBBroaderScopeActivationConsumptionError(
+                "candidate_b_broader_scope_activation_consumption_receipt_conflict",
+                "The Candidate B broader-scope activation consumption receipt is stale or contradictory.",
+                http_status=409,
+            )
+    else:
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        except OSError as exc:
+            raise CandidateBBroaderScopeActivationConsumptionError(
+                "candidate_b_broader_scope_activation_consumption_receipt_write_failed",
+                "Candidate B broader-scope activation consumption receipt could not be recorded.",
+                http_status=409,
+                details={"reason": exc.__class__.__name__},
+            ) from exc
+    return f"candidate-b-broader-scope-activation-consumption://{receipt_id}/{receipt_hash[:24]}"
+
+
+def _read_selector_activation_receipt(activation_receipt_id: str) -> dict[str, Any] | None:
+    target = (
+        _runtime_receipt_root(create=False, error_cls=CandidateBBroaderScopeActivationConsumptionError)
+        / "broader-scope-selector-activation"
+        / f"{activation_receipt_id}.json"
+    )
+    if not target.is_file():
+        return None
+    return _read_required_receipt(target, error_cls=CandidateBBroaderScopeActivationConsumptionError)
+
+
+def _validate_selector_activation_receipt(
+    *,
+    receipt: Mapping[str, Any],
+    activation_receipt_id: str,
+    activation_receipt_hash: str,
+) -> list[dict[str, Any]]:
+    blocked: list[dict[str, Any]] = []
+    expected_fields = {
+        "schema_id": ACTIVATION_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "activation_mode": ACTIVATION_MODE,
+        "selector_activation_state": ACTIVATION_SELECTED_STATE,
+        "activation_receipt_id": activation_receipt_id,
+        "activation_receipt_hash": activation_receipt_hash,
+        "activation_authority_source": ACTIVATION_AUTHORITY_SOURCE,
+        "current_default_before_activation_runtime": CURRENT_DEFAULT_SCOPE,
+        "default_scope_activation_enabled": True,
+        "non_selected_class_default": NON_SELECTED_CLASS_DEFAULT,
+        "baseline_rollback_preserved": True,
+        "candidate_a_semantics_preserved": True,
+        "redaction_policy_id": ACTIVATION_REDACTION_POLICY_ID,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "provider_or_connector_secret_exposed": False,
+    }
+    for field, expected in expected_fields.items():
+        if receipt.get(field) != expected:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_activation_consumption_activation_receipt_field_mismatch",
+                    field=field,
+                    expected=expected,
+                    received=receipt.get(field),
+                )
+            )
+    if _find_forbidden_fields(receipt):
+        blocked.append(_reason("candidate_b_broader_scope_activation_consumption_activation_receipt_forbidden_authority"))
+    recomputed_hash = _selector_activation_receipt_hash(receipt)
+    if recomputed_hash != activation_receipt_hash:
+        blocked.append(
+            _reason(
+                "candidate_b_broader_scope_activation_consumption_stale_activation_receipt_hash",
+                expected=recomputed_hash,
+                received=activation_receipt_hash,
+            )
+        )
+    if not str(receipt.get("readiness_audit_hash") or "").strip():
+        blocked.append(_reason("candidate_b_broader_scope_activation_consumption_readiness_audit_hash_missing"))
+    return blocked
+
+
+def _selector_activation_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    return _stable_hash(
+        {
+            "schema_id": ACTIVATION_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "activation_mode": ACTIVATION_MODE,
+            "activation_authority_source": ACTIVATION_AUTHORITY_SOURCE,
+            "selector_use_status_hash": receipt.get("selector_use_status_hash"),
+            "selector_use_receipt_id": receipt.get("selector_use_receipt_id"),
+            "selector_use_receipt_hash": receipt.get("selector_use_receipt_hash"),
+            "runtime_selection_receipt_id": receipt.get("runtime_selection_receipt_id"),
+            "runtime_selection_receipt_hash": receipt.get("runtime_selection_receipt_hash"),
+            "readiness_audit_id": receipt.get("readiness_audit_id"),
+            "readiness_audit_hash": receipt.get("readiness_audit_hash"),
+            "selected_scope_classes": _string_list(receipt.get("selected_scope_classes")),
+            "current_default_before_activation_runtime": CURRENT_DEFAULT_SCOPE,
+            "non_selected_class_default": NON_SELECTED_CLASS_DEFAULT,
+            "baseline_rollback_preserved": receipt.get("baseline_rollback_preserved") is True,
+            "candidate_a_semantics_preserved": receipt.get("candidate_a_semantics_preserved") is True,
+            "redaction_policy_id": ACTIVATION_REDACTION_POLICY_ID,
+        }
+    )
 
 
 def _read_selector_use_receipt(selector_use_receipt_id: str) -> dict[str, Any]:
