@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -1579,6 +1580,266 @@ def test_layer3_api_bridges_live_sec_edgar_source_artifact_to_material_authority
     gate_b = gate_b_response.json()
     assert gate_b["material_preview_hash"] == body["material_preview_hash"]
     assert gate_b["gate_b_decision_manifest_id"] == body["gate_b_decision_manifest_id"]
+
+
+def _prepare_live_sec_edgar_downstream_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+    *,
+    label: str,
+) -> dict[str, object]:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    content = f"<SEC-DOCUMENT>live sec downstream proof {label}</SEC-DOCUMENT>\n".encode("utf-8")
+    monkeypatch.setattr(
+        layer3_sec_edgar_live_source_artifact,
+        "SEC_EDGAR_CLIENT",
+        _FakeSecEdgarClient(
+            [
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=content,
+                    final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+                )
+            ]
+        ),
+    )
+    live_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=_sec_edgar_live_source_artifact_payload(client_request_id=f"sec-edgar-live-downstream-acq-{label}"),
+    )
+    assert live_response.status_code == 200, live_response.text
+    live_artifact = live_response.json()
+    dataset_version_id = _bind_sec_edgar_dataset_to_live_source_artifact(
+        client,
+        tmp_path,
+        dataset_version_id=f"dv-aps-sec-edgar-api-live-downstream-{label}",
+        live_artifact=live_artifact,
+    )
+    envelope_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+        json={
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert envelope_response.status_code == 200, envelope_response.text
+    envelope = envelope_response.json()
+    source_acquisition_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+        json=_sec_edgar_source_acquisition_payload_from_live(
+            dataset_version_id=dataset_version_id,
+            envelope=envelope,
+            live_artifact=live_artifact,
+            client_request_id=f"sec-edgar-live-downstream-source-acq-{label}",
+        ),
+    )
+    assert source_acquisition_response.status_code == 200, source_acquisition_response.text
+    source_acquisition = source_acquisition_response.json()
+    bridge_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        json={
+            "client_request_id": f"sec-edgar-live-downstream-bridge-{label}",
+            "bridge_mode": "sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1",
+            "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "expected_materialization_receipt_hash": envelope["materialization_receipt_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert bridge_response.status_code == 200, bridge_response.text
+    bridge = bridge_response.json()
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=bridge["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    gate_b = gate_b_response.json()
+    snapshot = _sec_edgar_api_snapshot(client, session_id=gate_b["session_id"], dataset_version_id=dataset_version_id)
+    material_bridge_receipt_hash = bridge["authority_hashes"]["material_bridge_receipt_hash"]
+    coverage_bridge = {
+        **bridge,
+        "authority_envelope_hash": bridge["authority_hashes"]["authority_envelope_hash"],
+        "bridge_receipt_hash": material_bridge_receipt_hash,
+    }
+    coverage = _sec_edgar_api_coverage(coverage_bridge, gate_b, snapshot)
+    for step, extra in {
+        "live_source_artifact_acquisition": {
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "server_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+        },
+        "source_acquisition_authority": {
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "server_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+        },
+        "live_material_authority_bridge": {
+            "live_source_artifact_material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+            "server_receipt_id": bridge["bridge_receipt_id"],
+            "material_bridge_receipt_hash": material_bridge_receipt_hash,
+            "material_preview_hash": bridge["material_preview_hash"],
+            "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        },
+    }.items():
+        coverage[step] = {
+            "status": "proven",
+            "evidence_ref": f"sec-edgar-live-source-artifact-downstream-proof:{step}",
+            "evidence_hash": _sec_edgar_test_hash({"step": step, "label": label}),
+            "server_response_hash": _sec_edgar_test_hash({"response": step, "label": label}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "full_mockup_activation_enabled": False,
+            **extra,
+        }
+    return {
+        "dataset_version_id": dataset_version_id,
+        "envelope": envelope,
+        "live_artifact": live_artifact,
+        "source_acquisition": source_acquisition,
+        "bridge": bridge,
+        "material_bridge_receipt_hash": material_bridge_receipt_hash,
+        "gate_b": gate_b,
+        "snapshot": snapshot,
+        "coverage": coverage,
+    }
+
+
+def _live_sec_edgar_downstream_proof_payload(
+    prepared: dict[str, object],
+    *,
+    client_request_id: str,
+) -> dict[str, object]:
+    bridge = prepared["bridge"]
+    gate_b = prepared["gate_b"]
+    snapshot = prepared["snapshot"]
+    live_artifact = prepared["live_artifact"]
+    source_acquisition = prepared["source_acquisition"]
+    assert isinstance(bridge, dict)
+    assert isinstance(gate_b, dict)
+    assert isinstance(live_artifact, dict)
+    assert isinstance(source_acquisition, dict)
+    assert isinstance(snapshot, L3MaterialSnapshot)
+    return {
+        "client_request_id": client_request_id,
+        "proof_mode": "sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1",
+        "operator_decision": "record_sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof",
+        "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+        "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+        "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+        "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+        "dataset_version_id": prepared["dataset_version_id"],
+        "authority_envelope_hash": bridge["authority_hashes"]["authority_envelope_hash"],
+        "live_source_artifact_material_bridge_receipt_id": bridge["bridge_receipt_id"],
+        "live_source_artifact_material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "material_bridge_receipt_hash": prepared["material_bridge_receipt_hash"],
+        "material_preview_hash": bridge["material_preview_hash"],
+        "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "session_id": gate_b["session_id"],
+        "selection_manifest_id": gate_b["selection_manifest_id"],
+        "material_snapshot_payload_hash": snapshot.payload_hash,
+        "coverage_evidence": copy.deepcopy(prepared["coverage"]),
+        "operator_confirmation": True,
+    }
+
+
+def test_layer3_api_records_live_sec_edgar_source_artifact_downstream_proof(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_live_sec_edgar_downstream_authority(client, tmp_path, monkeypatch, label="001")
+    bridge = prepared["bridge"]
+    live_artifact = prepared["live_artifact"]
+    source_acquisition = prepared["source_acquisition"]
+    payload = _live_sec_edgar_downstream_proof_payload(prepared, client_request_id="sec-edgar-live-downstream-proof-001")
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json=payload,
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_text_table_live_source_artifact_downstream_proof.v1"
+    assert body["proof_state"] == "sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proven"
+    assert body["live_source_artifact_receipt_hash"] == live_artifact["live_source_artifact_receipt_hash"]
+    assert body["source_acquisition_receipt_hash"] == source_acquisition["source_acquisition_receipt_hash"]
+    assert body["live_source_artifact_material_bridge_receipt_hash"] == bridge["bridge_receipt_hash"]
+    assert body["material_bridge_receipt_hash"] == prepared["material_bridge_receipt_hash"]
+    assert body["material_preview_hash"] == bridge["material_preview_hash"]
+    assert body["downstream_proof_hash"]
+    assert "live_source_artifact_acquisition" in body["coverage"]
+    assert "live_material_authority_bridge" in body["coverage"]
+    assert body["negative_invariants"]["direct_raw_artifact_parse_or_materialization_admitted"] is False
+    assert body["provider_object_writes_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert "https://www.sec.gov" not in response.text
+    assert "0000320193-24-000123" not in response.text
+    assert str(tmp_path) not in response.text
+
+    stale_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json={**payload, "live_source_artifact_material_bridge_receipt_hash": "f" * 64},
+    )
+    assert stale_response.status_code == 409, stale_response.text
+    assert stale_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_material_bridge_receipt_hash_mismatch"
+    )
+
+
+def test_layer3_api_rejects_live_sec_edgar_downstream_proof_stale_or_forbidden_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_live_sec_edgar_downstream_authority(client, tmp_path, monkeypatch, label="002")
+    payload = _live_sec_edgar_downstream_proof_payload(prepared, client_request_id="sec-edgar-live-downstream-proof-002")
+
+    stale_live_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json={**payload, "live_source_artifact_receipt_hash": "f" * 64},
+    )
+    assert stale_live_response.status_code == 409, stale_live_response.text
+    assert stale_live_response.json()["error_code"] == "sec_edgar_text_table_live_source_artifact_receipt_hash_mismatch"
+
+    stale_source_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json={**payload, "source_acquisition_receipt_hash": "e" * 64},
+    )
+    assert stale_source_response.status_code == 409, stale_source_response.text
+    assert stale_source_response.json()["error_code"] == "sec_edgar_text_table_source_acquisition_receipt_hash_mismatch"
+
+    missing_coverage = copy.deepcopy(payload["coverage_evidence"])
+    assert isinstance(missing_coverage, dict)
+    missing_coverage.pop("live_material_authority_bridge")
+    missing_coverage_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json={**payload, "coverage_evidence": missing_coverage},
+    )
+    assert missing_coverage_response.status_code == 409, missing_coverage_response.text
+    assert missing_coverage_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_proof_coverage_incomplete"
+    )
+
+    forbidden_coverage_ref = copy.deepcopy(payload["coverage_evidence"])
+    assert isinstance(forbidden_coverage_ref, dict)
+    forbidden_coverage_ref["live_material_authority_bridge"]["evidence_ref"] = "https://www.sec.gov/raw-proof"
+    forbidden_ref_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json={**payload, "coverage_evidence": forbidden_coverage_ref},
+    )
+    assert forbidden_ref_response.status_code == 409, forbidden_ref_response.text
+    assert forbidden_ref_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_proof_coverage_forbidden_reference"
+    )
 
 
 def test_layer3_api_rejects_live_sec_edgar_material_bridge_stale_or_missing_authority(
