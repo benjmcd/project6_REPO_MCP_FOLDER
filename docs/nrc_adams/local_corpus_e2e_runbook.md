@@ -5740,3 +5740,37 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumptio
 ```
 
 The runtime status endpoint inspects existing server-owned consumption-receipt use authority. A missing use receipt projects as `not_recorded`; stale or mismatched use, consumption, activation, selector-use, runtime-selection, readiness, or selected-class authority fails closed. The endpoint is read-only and does not create or mutate use receipts, selector/default state, source/runtime scope, provider/connector behavior, model runtime, mockup activation, or browser/frontend durable authority.
+
+### Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Status Inspection Rendered Status
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_rendered_status_v1
+source_consumption_receipt_use_status_inspection_runtime: next_milestone_plans/Layer3_planning_docs/1096-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-runtime.md
+rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_control
+status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+response_authority: State.candidateBBroaderScopeConsumptionReceiptUseStatus
+source_use_authority: State.candidateBBroaderScopeConsumptionReceiptUse
+server_owned_use_receipt_reload_displayed: true
+use_receipt_status_hash_displayed: true
+operator_visible_use_status_projection_displayed: true
+use_receipt_mutation_performed: false
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PASS
+verification_headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium PASS 1 passed
+verification_headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium --headed PASS 1 passed
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_inspection_current_main_sync_v1
+```
+
+The rendered status control projects existing use-receipt authority after the use receipt is recorded. Operators can inspect the use status hash, server-owned receipt reload, predecessor bindings, readiness binding, and redacted use-status projection without creating use receipts, mutating selector/default authority, expanding source/runtime scope, or exposing raw paths/URLs.
