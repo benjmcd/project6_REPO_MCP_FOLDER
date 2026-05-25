@@ -76,6 +76,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint": True,
     "candidate_b_full_corpus_operator_workflow_retry_completion_failure": True,
     "sec_edgar_text_table_downstream_operator_status": True,
+    "sec_edgar_text_table_live_source_artifact_downstream_proof": True,
     "sec_edgar_text_table_downstream_operator_repeatability_trial": True,
     "source_directory_ingestion_scan": True,
     "source_directory_ingestion_status": True,
@@ -245,6 +246,10 @@ def build_bootstrap_contract(
             "sec_edgar_text_table_live_source_artifact_material_authority_bridge_admitted": True,
             "sec_edgar_text_table_live_source_artifact_material_authority_bridge_endpoint": (
                 f"{api_root}/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge"
+            ),
+            "sec_edgar_text_table_live_source_artifact_downstream_proof_admitted": True,
+            "sec_edgar_text_table_live_source_artifact_downstream_proof_endpoint": (
+                f"{api_root}/source/sec-edgar/text-table/live-source-artifact/downstream-proof"
             ),
             "sec_edgar_text_table_downstream_operator_repeatability_trial_admitted": True,
             "sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint": (
