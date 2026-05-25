@@ -43,6 +43,7 @@ from app.models.models import (
     L3InternalWebhookDispatchReceipt,
     L3LocalOutboxProviderPrivateHandoffAuditEvent,
     L3LocalOutboxProviderPrivateHandoffReceipt,
+    L3MaterialSnapshot,
     L3OutputPackage,
     L3PackageReplacementActivation,
     L3PackageSupersessionCommit,
@@ -917,6 +918,166 @@ def test_layer3_api_bridges_sec_edgar_text_table_material_authority(client: Test
     assert gate_b["next_state"] == "gate_c_preview_ready"
     assert gate_b["material_preview_hash"] == body["material_preview_hash"]
     assert gate_b["gate_b_decision_manifest_id"] == body["gate_b_decision_manifest_id"]
+
+
+def _sec_edgar_test_hash(value: object) -> str:
+    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode()).hexdigest()
+
+
+def _sec_edgar_api_snapshot(client: TestClient, *, session_id: str, dataset_version_id: str) -> L3MaterialSnapshot:
+    db = client.layer3_session_factory()
+    try:
+        snapshots = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.session_id == session_id)
+            .filter(L3MaterialSnapshot.source_shape == "dataset_version")
+            .all()
+        )
+        matches = [
+            snapshot
+            for snapshot in snapshots
+            if (snapshot.source_identity_json or {}).get("dataset_version_id") == dataset_version_id
+        ]
+        assert len(matches) == 1
+        return matches[0]
+    finally:
+        db.close()
+
+
+def _sec_edgar_api_coverage(bridge: dict, gate_b: dict, snapshot: L3MaterialSnapshot) -> dict[str, dict[str, object]]:
+    required = {
+        "authority_envelope_validation",
+        "material_authority_bridge",
+        "gate_b_commit",
+        "gate_c_typing",
+        "retrieval_context",
+        "analysis_execution_or_status",
+        "package_commit",
+        "package_review_submit",
+        "handoff_export_prepare",
+        "external_export_download_prepare",
+        "same_origin_delivery_status",
+        "same_origin_delivery",
+        "provider_private_prepare",
+        "provider_private_status",
+        "provider_private_use",
+        "provider_private_revoke",
+        "internal_webhook_dispatch",
+        "internal_webhook_status",
+        "session_status_projection",
+        "operator_artifact_inspection",
+    }
+    coverage: dict[str, dict[str, object]] = {}
+    for step in required:
+        item: dict[str, object] = {
+            "status": "proven",
+            "evidence_ref": f"sec-edgar-text-table-downstream-proof:{step}",
+            "evidence_hash": _sec_edgar_test_hash({"step": step, "session_id": gate_b["session_id"]}),
+            "server_response_hash": _sec_edgar_test_hash({"response": step, "session_id": gate_b["session_id"]}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "full_mockup_activation_enabled": False,
+        }
+        if step not in {"authority_envelope_validation", "material_authority_bridge"}:
+            item["session_id"] = gate_b["session_id"]
+        if step == "authority_envelope_validation":
+            item["authority_envelope_hash"] = bridge["authority_envelope_hash"]
+        if step == "material_authority_bridge":
+            item["bridge_receipt_hash"] = bridge["bridge_receipt_hash"]
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+        if step == "gate_b_commit":
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+            item["selection_manifest_id"] = gate_b["selection_manifest_id"]
+            item["material_snapshot_payload_hash"] = snapshot.payload_hash
+        coverage[step] = item
+    return coverage
+
+
+def test_layer3_api_records_sec_edgar_text_table_downstream_proof(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        dataset_version_id = _seed_aps_derived_dataset_version(
+            db,
+            tmp_path,
+            dataset_version_id="dv-aps-sec-edgar-api-downstream-001",
+            parser_family="sec_edgar_filing",
+            typed_content_contract_id="aps_sec_edgar_filing_units_v1",
+            source_mode="artifact_sec_edgar_filing_parser",
+            parser_contract_id="aps_sec_edgar_filing_parser_v1",
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    envelope_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+        json={
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert envelope_response.status_code == 200
+    envelope = envelope_response.json()
+    bridge_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/material-authority/bridge",
+        json={
+            "client_request_id": "sec-edgar-api-downstream-bridge",
+            "bridge_mode": "sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert bridge_response.status_code == 200, bridge_response.text
+    bridge = bridge_response.json()
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=bridge["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    gate_b = gate_b_response.json()
+    snapshot = _sec_edgar_api_snapshot(client, session_id=gate_b["session_id"], dataset_version_id=dataset_version_id)
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof",
+        json={
+            "client_request_id": "sec-edgar-api-downstream-proof",
+            "proof_mode": "sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
+            "operator_decision": "record_sec_edgar_text_table_downstream_layer3_e2e_proof",
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": bridge["authority_envelope_hash"],
+            "bridge_receipt_hash": bridge["bridge_receipt_hash"],
+            "material_preview_hash": bridge["material_preview_hash"],
+            "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+            "session_id": gate_b["session_id"],
+            "selection_manifest_id": gate_b["selection_manifest_id"],
+            "material_snapshot_payload_hash": snapshot.payload_hash,
+            "coverage_evidence": _sec_edgar_api_coverage(bridge, gate_b, snapshot),
+            "operator_confirmation": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_text_table_downstream_proof.v1"
+    assert body["proof_state"] == "sec_edgar_text_table_downstream_layer3_e2e_proven"
+    assert body["source_family"] == "sec_edgar_text_table"
+    assert body["bridge_receipt_hash"] == bridge["bridge_receipt_hash"]
+    assert body["session_id"] == gate_b["session_id"]
+    assert body["material_snapshot_payload_hash"] == snapshot.payload_hash
+    assert body["raw_local_path_exposed"] is False
+    assert body["provider_object_writes_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert "aps-target-artifacts/run-001" not in response.text
+    assert str(tmp_path) not in response.text
 
 
 def test_layer3_api_lists_aps_content_document_candidates(client: TestClient, tmp_path) -> None:
