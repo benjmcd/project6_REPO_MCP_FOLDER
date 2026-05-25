@@ -7123,3 +7123,54 @@ next_exact_posture: sec_edgar_text_table_downstream_layer3_rendered_operator_sta
 ```
 
 The runtime endpoint makes SEC EDGAR downstream proof status inspectable through server revalidation. `available` requires a supplied downstream proof request plus matching expected proof hash; missing proof authority renders `not_recorded`; stale or unsafe proof authority renders `blocked`. The endpoint remains read-only and does not add proof storage, source acquisition, parser expansion, provider/connector/RAG/model behavior, full mockup activation, or frontend/browser durable authority.
+
+### SEC EDGAR Text Table Downstream Layer 3 Rendered Operator Status Selection
+
+```yaml
+milestone: sec_edgar_text_table_downstream_layer3_rendered_operator_status_selection_v1
+source_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1122-sec-edgar-text-table-downstream-operator-status-runtime.md
+current_main_entry: d1e75c72dd9426a02d7c9f815fc8aa3d948684b3
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_downstream_layer3_rendered_operator_status_runtime_v1
+selected_rendered_mode: rendered_sec_edgar_text_table_downstream_layer3_operator_status_control
+selected_status_mode: sec_edgar_text_table_downstream_layer3_operator_status_v1
+selected_operator_decision: inspect_sec_edgar_text_table_downstream_layer3_operator_status
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status
+selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof
+selected_rendered_scope: operator_visible_status_inspection_over_server_revalidated_sec_edgar_downstream_proof_authority
+selected_status_states: not_recorded,available,blocked
+selected_rendered_payload_fields: client_request_id,status_mode,operator_decision,downstream_proof_request,expected_proof_hash
+not_recorded_status_must_render: true
+available_status_must_render: true
+blocked_status_must_render: true
+stale_or_mismatched_proof_hash_must_fail_closed: true
+available_requires_server_revalidated_proof_request: true
+browser_held_hash_alone_is_not_authority: true
+raw_proof_request_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+rendered_status_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_downstream_layer3_rendered_operator_status_runtime_v1
+```
+
+This freeze selects the rendered/operator inspection surface for the existing SEC EDGAR downstream operator-status endpoint. The future rendered control may submit the exact proof request and expected proof hash required for server revalidation, but it must render only the redacted server projection and keep source expansion, parser expansion, proof mutation, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage authority, and frontend durable authority out of scope.
