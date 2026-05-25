@@ -2997,6 +2997,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_SELECTION 
     PLANNING_DOCS
     / "1082-cb-broader-eligible-corpus-default-scope-selector-activation-selection.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_RUNTIME = (
+    PLANNING_DOCS
+    / "1083-cb-broader-eligible-corpus-default-scope-selector-activation-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -102366,6 +102370,131 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_RUNTIME: (
+            "Candidate B Broader Eligible Corpus Default Scope Selector Activation Runtime",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1",
+            "source_selector_activation_selection: next_milestone_plans/Layer3_planning_docs/1082-cb-broader-eligible-corpus-default-scope-selector-activation-selection.md",
+            "current_main_entry: b9a8b34b4502356e8b3a6f91c11be3e040ac2ea0",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_selector_activation.v1",
+            "implemented_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation",
+            "implemented_selected_state: candidate_b_broader_eligible_corpus_default_scope_selector_activation_selected",
+            "implemented_blocked_state: candidate_b_broader_eligible_corpus_default_scope_selector_activation_blocked",
+            "implemented_activation_authority_source: server_revalidated_selector_use_status",
+            "implemented_status_hash_binding_required: true",
+            "implemented_selector_use_receipt_id_hash_revalidation: true",
+            "implemented_runtime_selection_receipt_id_hash_revalidation: true",
+            "implemented_readiness_audit_id_hash_binding: true",
+            "implemented_exact_selected_scope_classes_required: true",
+            "implemented_redacted_activation_receipt: true",
+            "implemented_receipt_family: broader-scope-selector-activation",
+            "implemented_receipt_ref_scheme: candidate-b-broader-scope-selector-activation",
+            "implemented_contract_exposure: readiness_contract,bootstrap_contract,openapi",
+            "positive_activation_proven: true",
+            "stale_status_hash_fail_closed_proven: true",
+            "stale_selector_use_receipt_hash_fail_closed_proven: true",
+            "stale_runtime_selection_receipt_hash_fail_closed_proven: true",
+            "unselected_scope_class_fail_closed_proven: true",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "current_default_before_activation_runtime: eligible_effective_pdfs_only",
+            "non_selected_class_default: baseline",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "pdf_or_image_text_material_ingestion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "auth_security_expansion_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "verification_py_compile: python -m py_compile ./backend/app/services/layer3_candidate_b_broader_scope_selector_use.py ./backend/app/api/layer3.py ./backend/app/services/layer3_readiness_contract.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py PASS",
+            "verification_focused_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 12 passed",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_rendered_status_v1",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_SERVICE: (
+            "ACTIVATION_SCHEMA_ID",
+            "ACTIVATION_MODE",
+            "ACTIVATION_SELECTED_STATE",
+            "ACTIVATION_BLOCKED_STATE",
+            "ACTIVATION_AUTHORITY_SOURCE",
+            "record_candidate_b_broader_scope_selector_activation",
+            "_write_selector_activation_receipt",
+            "broader-scope-selector-activation",
+            "candidate_b_broader_scope_selector_activation_stale_status_hash",
+            "candidate_b_broader_scope_selector_activation_unselected_scope_class",
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorActivationRequest",
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorActivationResponse",
+            "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation",
+            "post_candidate_b_broader_eligible_corpus_default_scope_selector_activation",
+            "record_candidate_b_broader_scope_selector_activation",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate-b-broader-eligible-corpus-default-scope-selector-activation",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_activation_admitted",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "candidate_b_broader_eligible_corpus_default_scope_selector_activation",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_activation_admitted",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_TEST: (
+            "SELECTOR_ACTIVATION_ENDPOINT",
+            "test_candidate_b_broader_scope_selector_activation_records_redacted_receipt",
+            "test_candidate_b_broader_scope_selector_activation_fails_closed_on_stale_status_hash",
+            "test_candidate_b_broader_scope_selector_activation_fails_closed_on_stale_selector_use_hash",
+            "test_candidate_b_broader_scope_selector_activation_fails_closed_on_stale_runtime_hash",
+            "test_candidate_b_broader_scope_selector_activation_fails_closed_on_unselected_class",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_activation_admitted",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1",
+            "source_selector_activation_selection: next_milestone_plans/Layer3_planning_docs/1082-cb-broader-eligible-corpus-default-scope-selector-activation-selection.md",
+            "current_main_entry: b9a8b34b4502356e8b3a6f91c11be3e040ac2ea0",
+            "runtime_status: implemented",
+            "implemented_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_selector_activation.v1",
+            "implemented_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1",
+            "implemented_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-activation",
+            "implemented_status_hash_binding_required: true",
+            "implemented_redacted_activation_receipt: true",
+            "positive_activation_proven: true",
+            "stale_status_hash_fail_closed_proven: true",
+            "stale_selector_use_receipt_hash_fail_closed_proven: true",
+            "stale_runtime_selection_receipt_hash_fail_closed_proven: true",
+            "unselected_scope_class_fail_closed_proven: true",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_rendered_status_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_ACTIVATION_SELECTION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope selector activation runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -103311,6 +103440,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation_selection(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime(
         errors
     )
 
