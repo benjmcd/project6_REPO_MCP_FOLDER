@@ -3190,6 +3190,10 @@ SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_CURRENT_M
     PLANNING_DOCS
     / "1131-sec-edgar-text-table-downstream-repeatability-rendered-status-current-main-sync.md"
 )
+SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_CLOSEOUT_READINESS = (
+    PLANNING_DOCS
+    / "1132-sec-edgar-text-table-downstream-repeatability-closeout-readiness.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -107559,6 +107563,96 @@ def _check_sec_edgar_text_table_downstream_operator_repeatability_rendered_statu
                 )
 
 
+def _check_sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_CLOSEOUT_READINESS: (
+            "SEC EDGAR Text Table Downstream Repeatability Closeout Readiness",
+            "milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness_v1",
+            "source_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1131-sec-edgar-text-table-downstream-repeatability-rendered-status-current-main-sync.md",
+            "current_main_entry: b23f48e6f0b3eb92dde43e65975832131cff61fe",
+            'source_sync_pr: "#1835"',
+            "source_sync_merge_commit: b23f48e6f0b3eb92dde43e65975832131cff61fe",
+            "entry_decision: closeout_readiness_checkpoint",
+            "runtime_status: already_implemented",
+            "rendered_status: already_implemented",
+            "closeout_readiness_state: ready_for_sec_edgar_text_table_source_acquisition_authority_selection",
+            "selected_next_selection_target: sec_edgar_text_table_source_acquisition_authority_selection_v1",
+            "selected_closeout_scope: sec_edgar_text_table_downstream_repeatability_after_rendered_trial_current_main_sync",
+            "required_authority_envelope_runtime: next_milestone_plans/Layer3_planning_docs/1116-sec-edgar-text-table-authority-envelope-validation-runtime.md",
+            "required_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1118-sec-edgar-text-table-layer3-material-authority-bridge-runtime.md",
+            "required_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1120-sec-edgar-text-table-downstream-layer3-proof-runtime.md",
+            "required_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1122-sec-edgar-text-table-downstream-operator-status-runtime.md",
+            "required_rendered_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md",
+            "required_repeatability_trial_runtime: next_milestone_plans/Layer3_planning_docs/1128-sec-edgar-text-table-downstream-operator-repeatability-trial-runtime.md",
+            "required_repeatability_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1130-sec-edgar-text-table-downstream-repeatability-rendered-status-runtime.md",
+            "required_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1131-sec-edgar-text-table-downstream-repeatability-rendered-status-current-main-sync.md",
+            "required_closeout_authority: rendered_repeatability_trial_over_server_revalidated_downstream_status_material_bridge_and_authority_envelope_chain",
+            "required_source_family: sec_edgar_text_table",
+            "required_material_source_class: dataset_version",
+            "required_repeatability_trial_mode: append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "required_rendered_repeatability_mode: rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control",
+            "required_repeatability_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial",
+            "required_repeatability_authority_model: two_server_revalidated_operator_status_requests_plus_expected_status_hashes",
+            "stale_or_mismatched_status_hash_fails_closed: true",
+            "browser_held_hash_alone_is_not_authority: true",
+            "repeatability_chain_closeout_ready: true",
+            "named_defect_remaining: false",
+            "source_acquisition_admitted_now: false",
+            "parser_expansion_admitted_now: false",
+            "source_expansion_admitted: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_trial_receipt_path_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness_v1",
+            "source_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1131-sec-edgar-text-table-downstream-repeatability-rendered-status-current-main-sync.md",
+            "current_main_entry: b23f48e6f0b3eb92dde43e65975832131cff61fe",
+            'source_sync_pr: "#1835"',
+            "source_sync_merge_commit: b23f48e6f0b3eb92dde43e65975832131cff61fe",
+            "entry_decision: closeout_readiness_checkpoint",
+            "closeout_readiness_state: ready_for_sec_edgar_text_table_source_acquisition_authority_selection",
+            "selected_next_selection_target: sec_edgar_text_table_source_acquisition_authority_selection_v1",
+            "required_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1131-sec-edgar-text-table-downstream-repeatability-rendered-status-current-main-sync.md",
+            "required_closeout_authority: rendered_repeatability_trial_over_server_revalidated_downstream_status_material_bridge_and_authority_envelope_chain",
+            "required_source_family: sec_edgar_text_table",
+            "required_material_source_class: dataset_version",
+            "required_repeatability_authority_model: two_server_revalidated_operator_status_requests_plus_expected_status_hashes",
+            "repeatability_chain_closeout_ready: true",
+            "named_defect_remaining: false",
+            "source_acquisition_admitted_now: false",
+            "parser_expansion_admitted_now: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_source_acquisition_authority_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR text table downstream repeatability closeout readiness term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -108633,6 +108727,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_downstream_operator_repeatability_rendered_status_current_main_sync(
+        errors
+    )
+    _check_sec_edgar_text_table_downstream_operator_repeatability_trial_closeout_readiness(
         errors
     )
 
