@@ -501,11 +501,18 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "candidate_b_full_corpus_operator_workflow_process_execution_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_process_completion_result_endpoint" in js.text
     assert "candidate_b_full_corpus_operator_workflow_adopted_result_downstream_proof_endpoint" in js.text
+    assert "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint" in js.text
+    assert "candidate-b-broader-scope-default-promotion-form" in js.text
+    assert "candidate-b-broader-scope-default-promotion-submit" in js.text
+    assert "rendered_candidate_b_broader_eligible_corpus_default_scope_default_promotion_control" in js.text
+    assert "candidateBBroaderScopeDefaultPromotionPayload" in js.text
+    assert "Server records broader-scope default promotion only from a ready promotion-readiness audit" in js.text
     assert "candidate_b_default_promotion_final_proof_endpoint" in js.text
     assert "candidate_b_default_promotion_final_proof_status_endpoint" in js.text
     assert "/source/ingestion/candidate-b/default-promotion/operator-status" not in js.text
     assert "/source/ingestion/candidate-b/full-corpus/operator-workflow/status" not in js.text
     assert "/source/ingestion/candidate-b/full-corpus/operator-workflow/execution/boundary" not in js.text
+    assert "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion" not in js.text
     assert "/source/ingestion/candidate-b/default-promotion/final-proof" not in js.text
     assert "/source/ingestion/candidate-b/default-promotion/final-proof/status" not in js.text
     assert "LAYER3_E2E_GOVERNANCE_LIFECYCLE_DASHBOARD_MODE = 'rendered_layer3_end_to_end_governance_lifecycle_read_only_dashboard'" in js.text
