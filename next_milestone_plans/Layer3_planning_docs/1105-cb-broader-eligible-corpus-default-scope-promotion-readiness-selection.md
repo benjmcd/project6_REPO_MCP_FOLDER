@@ -1,0 +1,68 @@
+# Candidate B Broader Eligible Corpus Default Scope Promotion Readiness Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_selection_v1
+source_operator_repeatability_trial_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1104-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-closeout-readiness.md
+current_main_entry: 4b94041c2f2fc3ec5e22e0523164254fadc4c56e
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1
+selected_promotion_readiness_scope: requirement_by_requirement_audit_before_any_broader_default_scope_mutation
+selected_promotion_readiness_model: no_default_mutation_until_audit_accepts_receipt_bound_selected_classes
+selected_promotion_readiness_action: evaluate_candidate_b_broader_scope_default_promotion_readiness
+selected_promotion_readiness_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness
+required_source_closeout_state: ready_for_broader_eligible_corpus_default_scope_promotion_readiness_selection
+required_readiness_audit_source: next_milestone_plans/Layer3_planning_docs/1069-cb-broader-eligible-corpus-scope-readiness-audit.md
+required_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1073-cb-broader-eligible-corpus-default-scope-runtime-current-main-sync.md
+required_selector_use_current_main_sync: next_milestone_plans/Layer3_planning_docs/1078-cb-broader-eligible-corpus-default-scope-selector-use-remediation-current-main-sync.md
+required_selector_use_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1080-cb-broader-eligible-corpus-default-scope-selector-use-operator-status-inspection-current-main-sync.md
+required_selector_activation_current_main_sync: next_milestone_plans/Layer3_planning_docs/1085-cb-broader-eligible-corpus-default-scope-selector-activation-current-main-sync.md
+required_activation_consumption_current_main_sync: next_milestone_plans/Layer3_planning_docs/1089-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-current-main-sync.md
+required_consumption_receipt_use_current_main_sync: next_milestone_plans/Layer3_planning_docs/1094-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-remediation-current-main-sync.md
+required_consumption_receipt_use_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1098-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-status-inspection-current-main-sync.md
+required_operator_repeatability_trial_closeout: next_milestone_plans/Layer3_planning_docs/1104-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-closeout-readiness.md
+required_promotion_authority_chain: readiness_audit,runtime_selection,selector_use,selector_use_status,selector_activation,activation_consumption,consumption_receipt_use,consumption_receipt_use_status,operator_repeatability_trial
+accepted_repeatability_dispositions_required: no_regression_observed,delta_reviewed_no_regression
+blocked_repeatability_disposition_must_block_promotion: regression_detected_blocked
+missing_or_stale_receipt_must_block_promotion: true
+mismatched_selected_classes_must_block_promotion: true
+missing_operator_visible_status_must_block_promotion: true
+missing_production_ownership_storage_policy_must_block_promotion: true
+required_production_ownership_storage_policy: candidate_b_operator_workflow_proxy_owner_storage_policy_runtime_v1
+required_scope_class_policy: receipt_bound_selected_classes_only
+required_default_before_promotion_readiness_audit: eligible_effective_pdfs_only_plus_receipt_bound_selected_classes_only
+required_non_selected_class_default: baseline
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+bundle_and_runtime_authority_remain_distinct: true
+selector_mutation_admitted_now: false
+default_scope_expansion_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_audit_v1
+```
+
+This freeze selects the next runtime-bearing audit for broader eligible-corpus default-scope promotion readiness. It does not promote Candidate B, mutate default selectors, broaden source/runtime scope, or reinterpret Candidate B as a visual lane. The selected audit must evaluate whether a specific receipt-bound selected-class chain has enough accepted, operator-visible, rollback-safe, production-owned evidence to admit a later default mutation.
+
+The readiness audit must fail closed unless the complete server-owned chain is current and consistent: broader-scope readiness audit, runtime selection, selector use, selector-use status, selector activation, activation consumption, consumption-receipt use, use-status inspection, and an accepted operator repeatability trial. A blocked repeatability disposition, stale/missing receipt, selected-class mismatch, missing operator status, or missing production ownership/storage policy blocks readiness.
+
+## Coherence Check
+
+- Does this freeze promote Candidate B beyond the current default? Recommended answer: no. It selects a future audit and keeps default behavior unchanged.
+- Is a blocked repeatability trial enough for promotion readiness? Recommended answer: no. Blocked repeatability must fail closed.
+- Why require production ownership/storage policy here? Recommended answer: broader default authority should not advance unless the selected receipt chain is also governed by the existing production ownership/storage policy.
+- What comes next? Recommended answer: implement the promotion-readiness audit endpoint/status contract, then prove accepted and fail-closed cases before selecting any default mutation.
