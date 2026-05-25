@@ -1,0 +1,95 @@
+# SEC EDGAR Text Table Live Source Artifact Acquisition Rendered Status Selection
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_selection_v1
+source_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1142-sec-edgar-text-table-live-source-artifact-acquisition-runtime-current-main-sync.md
+current_main_entry: 6ce5f5ba34514b2cdf6c9cd658718d71f9e9a509
+entry_decision: freeze_only
+runtime_status: already_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_v1
+selected_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_acquisition_control
+selected_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1
+selected_operator_decision: acquire_sec_edgar_text_table_live_source_artifact
+selected_live_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire
+selected_live_acquisition_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}
+selected_bootstrap_capability: sec_edgar_text_table_live_source_artifact_acquisition
+selected_bootstrap_endpoint_field: sec_edgar_text_table_live_source_artifact_acquisition_endpoint
+selected_bootstrap_status_endpoint_field: sec_edgar_text_table_live_source_artifact_acquisition_status_endpoint
+selected_rendered_scope: operator_visible_sec_edgar_complete_submission_text_artifact_acquire_and_status_over_server_owned_runtime_receipts
+selected_source_artifact_family: complete_submission_text_filing_artifact
+selected_status_states: not_requested,available,blocked
+selected_rendered_panel: sec-edgar-live-source-artifact-acquisition-panel
+selected_rendered_form: sec-edgar-live-source-artifact-acquisition-form
+selected_rendered_submit: sec-edgar-live-source-artifact-acquisition-submit
+selected_rendered_submit_label: Acquire SEC Filing Text Artifact
+selected_rendered_request_input: sec-edgar-live-source-artifact-acquisition-request-json
+selected_rendered_status_input: sec-edgar-live-source-artifact-acquisition-status-receipt-id
+selected_rendered_operator_confirmation_input: sec-edgar-live-source-artifact-acquisition-operator-confirmation
+selected_rendered_payload_fields: client_request_id,acquisition_mode,operator_decision,cik_or_filer_ref,accession_or_submission_id,form_type,filing_date,expected_content_sha256,operator_confirmation
+selected_rendered_status_fields: live_source_artifact_receipt_id,live_source_artifact_receipt_hash,live_source_artifact_receipt_status,source_artifact_receipt,retained_source_artifact_manifest,source_identity,sec_request_policy,cache,idempotency,compatibility,operator_visible_live_source_artifact_status,fail_closed_behavior,negative_invariants,next_allowed_actions
+server_derived_sec_archives_url_required: true
+server_configured_user_agent_required: true
+missing_user_agent_must_fail_closed_without_network_request: true
+fake_sec_client_contract_double_required_for_ci: true
+cache_hit_must_render_without_network_request: true
+idempotent_replay_must_render: true
+status_endpoint_must_render_redacted_receipt_only: true
+expected_content_hash_mismatch_must_fail_closed: true
+partial_download_must_not_create_authority: true
+rate_limit_defer_or_fail_closed_must_render: true
+rendered_control_can_accept_raw_sec_url: false
+rendered_control_can_accept_raw_local_path: false
+rendered_control_can_accept_artifact_bytes: false
+rendered_control_can_accept_command: false
+rendered_control_can_supply_user_agent: false
+rendered_control_can_override_rate_limit: false
+rendered_control_can_create_runtime_storage_root: false
+rendered_control_can_parse_xml_html_inline_xbrl: false
+rendered_control_can_materialize_dataset_version: false
+rendered_control_can_mutate_gate_b_session: false
+rendered_control_can_create_authority_envelope: false
+rendered_control_can_create_material_bridge: false
+rendered_control_can_start_process: false
+rendered_control_can_dispatch_connector: false
+rendered_control_can_write_provider_object: false
+rendered_control_can_add_rag_or_model_runtime: false
+rendered_control_can_activate_full_mockup: false
+raw_sec_filing_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+server_user_agent_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+rendered_runtime_in_this_freeze: false
+live_sec_manual_smoke_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_v1
+```
+
+This freeze selects the rendered/operator acquire and status controls for the existing SEC EDGAR live source-artifact acquisition runtime. The rendered surface may submit only the bounded identity and expected-hash fields that the server already validates: CIK, accession, form type, filing date, optional expected content hash, and operator confirmation. The server must remain responsible for deriving the SEC Archives URL, enforcing User-Agent configuration, applying rate/cache/retry behavior, acquiring bytes, hashing content, writing retained artifacts, recording append-only redacted receipts, and projecting status.
+
+The rendered panel must not let the browser provide raw SEC URLs, local paths, artifact bytes, commands, User-Agent values, rate policy, storage roots, parser controls, DatasetVersion materialization, Gate B mutation, provider writes, connector dispatch, RAG/model runtime, browser storage authority, frontend durable authority, or full mockup activation. It must display only the redacted receipt/status projection returned by the server.
+
+## Coherence Check
+
+- Does this freeze implement the rendered controls? Recommended answer: no. It selects the exact next rendered runtime target.
+- Can the browser supply a SEC filing URL or User-Agent? Recommended answer: no. SEC Archives URL derivation and User-Agent identity remain server-owned.
+- Does this rendered slice admit parser/materialization work? Recommended answer: no. It remains acquisition/status only over retained complete-submission text artifacts.
+- What proof is required next? Recommended answer: implement the rendered acquire/status controls and prove success, status lookup, missing User-Agent, raw URL rejection, content-hash mismatch, idempotent/cache replay, and redaction in both headless and headed Chrome.
