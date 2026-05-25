@@ -106,6 +106,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     ]
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
+    assert "/__test/layer3/sec-edgar-source-acquisition-authority" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-downstream-status" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-repeatability-trial" in payload["seed_routes"]
     assert "/__test/layer3/source-directory-fixture-reset" in payload["seed_routes"]
@@ -117,6 +118,78 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     posix_user_prefix = "/" + "Users" + "/"
     assert windows_user_prefix not in str(payload)
     assert posix_user_prefix not in str(payload)
+
+
+def test_review_browser_server_prepares_sec_edgar_source_acquisition_authority(client: TestClient) -> None:
+    setup_response = client.post("/__test/layer3/sec-edgar-source-acquisition-authority")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_sec_edgar_source_acquisition_authority_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["dataset_version_id"].startswith("dv-sec-edgar-source-acq-")
+    assert setup["source_acquisition_endpoint"] == (
+        "/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority"
+    )
+    assert setup["raw_local_path_exposed"] is False
+    assert setup["raw_url_exposed"] is False
+    assert setup["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(setup)
+    assert "http://" not in str(setup)
+    assert "https://" not in str(setup)
+
+    missing_confirmation_response = client.post(
+        setup["source_acquisition_endpoint"],
+        json={**setup["source_acquisition_request"], "operator_confirmation": False},
+    )
+    assert missing_confirmation_response.status_code == 409, missing_confirmation_response.text
+    assert missing_confirmation_response.json()["error_code"] == (
+        "sec_edgar_text_table_source_acquisition_operator_confirmation_missing"
+    )
+
+    missing_receipt_request = dict(setup["source_acquisition_request"])
+    missing_receipt_request.pop("source_artifact_receipt_id")
+    missing_receipt_response = client.post(
+        setup["source_acquisition_endpoint"],
+        json=missing_receipt_request,
+    )
+    assert missing_receipt_response.status_code == 422, missing_receipt_response.text
+    assert "source_artifact_receipt_id" in missing_receipt_response.text
+
+    stale_response = client.post(
+        setup["source_acquisition_endpoint"],
+        json=setup["stale_source_acquisition_request"],
+    )
+    assert stale_response.status_code == 409, stale_response.text
+    assert stale_response.json()["error_code"] == (
+        "sec_edgar_text_table_source_acquisition_stale_or_mismatched_source_artifact_authority"
+    )
+
+    record_response = client.post(
+        setup["source_acquisition_endpoint"],
+        json=setup["source_acquisition_request"],
+    )
+    assert record_response.status_code == 200, record_response.text
+    record = record_response.json()
+    assert record["schema_id"] == "layer3.sec_edgar_text_table_source_acquisition_authority.v1"
+    assert record["source_acquisition_authority_state"] == "available"
+    assert record["source_acquisition_receipt_hash"] == setup["expected_source_acquisition_receipt_hash"]
+    assert record["append_only_source_acquisition_authority_receipt"] is True
+    assert record["operator_visible_source_acquisition_status"]["raw_url_exposed"] is False
+    assert record["negative_invariants"]["sec_edgar_network_fetch_admitted"] is False
+    assert record["negative_invariants"]["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(record)
+    assert "http://" not in str(record)
+    assert "https://" not in str(record)
+
+    replay_response = client.post(
+        setup["source_acquisition_endpoint"],
+        json={**setup["source_acquisition_request"], "client_request_id": "review-browser-source-acq-replay"},
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    replay = replay_response.json()
+    assert replay["idempotent_replay"] is True
+    assert replay["source_acquisition_receipt_hash"] == record["source_acquisition_receipt_hash"]
 
 
 def test_review_browser_server_prepares_sec_edgar_downstream_status_authority(client: TestClient) -> None:

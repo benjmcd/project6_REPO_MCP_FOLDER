@@ -4557,6 +4557,196 @@ test('Layer 3 workbench surfaces typed and deferred APS source-family guardrails
   );
 });
 
+test('Layer 3 workbench records SEC EDGAR source acquisition authority through server revalidation', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-source-acquisition-authority'));
+  expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_source_acquisition_authority_setup.v1');
+  expect(setup.raw_local_path_exposed).toBe(false);
+  expect(setup.raw_url_exposed).toBe(false);
+  expect(setup.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(setup)).not.toContain('C:\\');
+  expect(JSON.stringify(setup)).not.toContain('http://');
+  expect(JSON.stringify(setup)).not.toContain('https://');
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-edgar-source-acquisition-authority-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#sec-edgar-source-acquisition-authority-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_sec_edgar_text_table_source_acquisition_authority_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#sec-edgar-source-acquisition-authority-submit')).toBeDisabled();
+
+  await page.locator('#sec-edgar-source-acquisition-authority-request-json').fill(
+    JSON.stringify(setup.source_acquisition_request),
+  );
+  await expect(page.locator('#sec-edgar-source-acquisition-authority-submit')).toBeEnabled();
+
+  const missingConfirmationRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority')
+  ));
+  const missingConfirmationResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority')
+  ));
+  await page.locator('#sec-edgar-source-acquisition-authority-submit').click();
+  const missingConfirmationPayload = (await missingConfirmationRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(missingConfirmationPayload, [
+    'schema_id',
+    'client_request_id',
+    'acquisition_mode',
+    'operator_decision',
+    'dataset_version_id',
+    'source_artifact_receipt_id',
+    'source_artifact_receipt_hash',
+    'source_artifact_ref_hash',
+    'accession_or_submission_id_hash',
+    'cik_or_filer_ref_hash',
+    'form_type',
+    'filing_date',
+    'content_sha256',
+    'content_length',
+    'parser_family',
+    'parser_contract_id',
+    'typed_content_contract_id',
+    'materialization_receipt_hash',
+    'dataset_version_hash',
+    'authority_envelope_hash',
+    'operator_confirmation',
+  ]);
+  expect(missingConfirmationPayload.acquisition_mode).toBe('sec_edgar_text_table_source_acquisition_authority_v1');
+  expect(missingConfirmationPayload.operator_decision).toBe(
+    'record_sec_edgar_text_table_source_acquisition_authority',
+  );
+  expect(missingConfirmationPayload.operator_confirmation).toBe(false);
+  const missingConfirmation = await expectJsonStatus(await missingConfirmationResponsePromise, 409);
+  expect(missingConfirmation.error_code).toBe(
+    'sec_edgar_text_table_source_acquisition_operator_confirmation_missing',
+  );
+  await expect(panel).toContainText('sec_edgar_text_table_source_acquisition_operator_confirmation_missing');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  const missingReceiptRequest = { ...setup.source_acquisition_request };
+  delete missingReceiptRequest.source_artifact_receipt_id;
+  await page.locator('#sec-edgar-source-acquisition-authority-request-json').fill(
+    JSON.stringify(missingReceiptRequest),
+  );
+  await page.locator('#sec-edgar-source-acquisition-operator-confirmation').check();
+  const missingReceiptResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority')
+  ));
+  await page.locator('#sec-edgar-source-acquisition-authority-submit').click();
+  const missingReceipt = await expectJsonStatus(await missingReceiptResponsePromise, 422);
+  expect(JSON.stringify(missingReceipt)).toContain('source_artifact_receipt_id');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  await page.locator('#sec-edgar-source-acquisition-authority-request-json').fill(
+    JSON.stringify(setup.source_acquisition_request),
+  );
+  const availableRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority')
+  ));
+  const availableResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority')
+  ));
+  await page.locator('#sec-edgar-source-acquisition-authority-submit').click();
+  const availablePayload = (await availableRequestPromise).postDataJSON();
+  expect(availablePayload.operator_confirmation).toBe(true);
+  for (const forbidden of [
+    'path',
+    'local_path',
+    'raw_url',
+    'url',
+    'provider_private_url',
+    'provider_public_url',
+    'command',
+    'process',
+    'stdout',
+    'stderr',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+  ]) {
+    expect(availablePayload).not.toHaveProperty(forbidden);
+  }
+  expect(JSON.stringify(availablePayload)).not.toContain('C:\\');
+  expect(JSON.stringify(availablePayload)).not.toContain('http://');
+  expect(JSON.stringify(availablePayload)).not.toContain('https://');
+  const available = await expectJson(await availableResponsePromise);
+  expect(available.schema_id).toBe('layer3.sec_edgar_text_table_source_acquisition_authority.v1');
+  expect(available.source_acquisition_authority_state).toBe('available');
+  expect(available.source_acquisition_receipt_hash).toBe(setup.expected_source_acquisition_receipt_hash);
+  expect(available.idempotent_replay).toBe(false);
+  expect(available.append_only_source_acquisition_authority_receipt).toBe(true);
+  expect(available.source_artifact_authority.server_owned_source_artifact_authority).toBe(true);
+  expect(available.operator_visible_source_acquisition_status.raw_url_exposed).toBe(false);
+  expect(available.operator_visible_source_acquisition_status.raw_local_path_exposed).toBe(false);
+  expect(available.operator_visible_source_acquisition_status.artifact_bytes_exposed).toBe(false);
+  expect(available.negative_invariants.sec_edgar_network_fetch_admitted).toBe(false);
+  expect(available.negative_invariants.sec_edgar_parser_expansion_admitted).toBe(false);
+  expect(available.negative_invariants.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(available)).not.toContain('C:\\');
+  expect(JSON.stringify(available)).not.toContain('http://');
+  expect(JSON.stringify(available)).not.toContain('https://');
+  await expect(panel).toContainText('sec_edgar_source_acquisition_authority_available');
+  await expect(panel).toContainText(setup.expected_source_acquisition_receipt_hash);
+  await expect(panel).toContainText('raw URL rendered: false');
+  await expect(panel).toContainText('idempotent replay: false');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+
+  const replayResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority')
+  ));
+  await page.locator('#sec-edgar-source-acquisition-authority-submit').click();
+  const replay = await expectJson(await replayResponsePromise);
+  expect(replay.idempotent_replay).toBe(true);
+  expect(replay.source_acquisition_receipt_hash).toBe(available.source_acquisition_receipt_hash);
+  await expect(panel).toContainText('idempotent replay: true');
+
+  await page.locator('#sec-edgar-source-acquisition-authority-request-json').fill(
+    JSON.stringify(setup.stale_source_acquisition_request),
+  );
+  const staleResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes('/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority')
+  ));
+  await page.locator('#sec-edgar-source-acquisition-authority-submit').click();
+  const stale = await expectJsonStatus(await staleResponsePromise, 409);
+  expect(stale.error_code).toBe(
+    'sec_edgar_text_table_source_acquisition_stale_or_mismatched_source_artifact_authority',
+  );
+  await expect(panel).toContainText(
+    'sec_edgar_text_table_source_acquisition_stale_or_mismatched_source_artifact_authority',
+  );
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  expect(apiRequests.filter((apiRequest) => (
+    apiRequest.path.includes('/source/sec-edgar/text-table/source-acquisition/authority')
+  ))).toEqual([
+    { method: 'POST', path: '/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority' },
+    { method: 'POST', path: '/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority' },
+    { method: 'POST', path: '/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority' },
+    { method: 'POST', path: '/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority' },
+    { method: 'POST', path: '/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority' },
+  ]);
+});
+
 test('Layer 3 workbench renders SEC EDGAR downstream operator status through server revalidation', async ({ page, request }) => {
   const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-downstream-status'));
   expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_downstream_status_setup.v1');

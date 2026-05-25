@@ -319,6 +319,9 @@ const CANDIDATE_B_DEFAULT_PROMOTION_STATUS_RESPONSE_AUTHORITY = 'State.bootstrap
 const CANDIDATE_B_OPERATOR_STATUS_RENDERED_MODE = 'rendered_candidate_b_default_promotion_operator_status_control';
 const CANDIDATE_B_OPERATOR_STATUS_MODE = 'candidate_b_default_promotion_operator_status_v1';
 const CANDIDATE_B_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_candidate_b_default_promotion_operator_status';
+const SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_RENDERED_MODE = 'rendered_sec_edgar_text_table_source_acquisition_authority_control';
+const SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_MODE = 'sec_edgar_text_table_source_acquisition_authority_v1';
+const SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_OPERATOR_DECISION = 'record_sec_edgar_text_table_source_acquisition_authority';
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_layer3_operator_status_control';
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_downstream_layer3_operator_status_v1';
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_text_table_downstream_layer3_operator_status';
@@ -652,6 +655,13 @@ const State = {
         bundleReceiptId: '',
         runtimeReceiptId: '',
     },
+    secEdgarSourceAcquisitionAuthority: null,
+    secEdgarSourceAcquisitionAuthorityError: null,
+    secEdgarSourceAcquisitionAuthorityPending: false,
+    secEdgarSourceAcquisitionAuthorityInput: {
+        sourceAcquisitionRequestJson: '',
+        operatorConfirmation: false,
+    },
     secEdgarDownstreamOperatorStatus: null,
     secEdgarDownstreamOperatorStatusError: null,
     secEdgarDownstreamOperatorStatusPending: false,
@@ -916,6 +926,7 @@ const elements = {
     authorityRail: document.getElementById('authority-rail'),
     authorityMatrixReviewPanel: document.getElementById('authority-matrix-review-panel'),
     candidateBDefaultPromotionStatusPanel: document.getElementById('candidate-b-default-promotion-status-panel'),
+    secEdgarSourceAcquisitionAuthorityPanel: document.getElementById('sec-edgar-source-acquisition-authority-panel'),
     secEdgarDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-downstream-operator-status-panel'),
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
@@ -7954,6 +7965,12 @@ function candidateBOperatorStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function secEdgarSourceAcquisitionAuthorityEndpointPath(contract) {
+    const endpoint = contract?.sec_edgar_text_table_source_acquisition_authority_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function secEdgarDownstreamOperatorStatusEndpointPath(contract) {
     const endpoint = contract?.sec_edgar_text_table_downstream_operator_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8390,6 +8407,22 @@ function candidateBOperatorStatusInputValues() {
             || State.candidateBOperatorStatusInput.runtimeReceiptId
             || ''
         ).trim(),
+    };
+}
+
+function secEdgarSourceAcquisitionAuthorityInputValues() {
+    const requestInput = document.getElementById('sec-edgar-source-acquisition-authority-request-json');
+    const confirmationInput = document.getElementById('sec-edgar-source-acquisition-operator-confirmation');
+    const stored = State.secEdgarSourceAcquisitionAuthorityInput;
+    return {
+        sourceAcquisitionRequestJson: (
+            requestInput?.value
+            || stored.sourceAcquisitionRequestJson
+            || ''
+        ).trim(),
+        operatorConfirmation: confirmationInput
+            ? Boolean(confirmationInput.checked)
+            : Boolean(stored.operatorConfirmation),
     };
 }
 
@@ -9546,6 +9579,19 @@ function candidateBOperatorStatusPayload() {
     };
 }
 
+function secEdgarSourceAcquisitionAuthorityPayload() {
+    const values = secEdgarSourceAcquisitionAuthorityInputValues();
+    State.secEdgarSourceAcquisitionAuthorityInput = values;
+    const request = JSON.parse(values.sourceAcquisitionRequestJson);
+    return {
+        ...request,
+        client_request_id: requestId(),
+        acquisition_mode: SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_MODE,
+        operator_decision: SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_OPERATOR_DECISION,
+        operator_confirmation: values.operatorConfirmation,
+    };
+}
+
 function secEdgarDownstreamOperatorStatusPayload() {
     const values = secEdgarDownstreamOperatorStatusInputValues();
     State.secEdgarDownstreamOperatorStatusInput = values;
@@ -9997,6 +10043,16 @@ function canInspectCandidateBOperatorStatus(contract = candidateBDefaultPromotio
         && State.candidateBVisualLaneStatus?.status === 'available'
         && State.candidateBRuntimeDownstreamProof?.status === 'proven'
         && !State.candidateBOperatorStatusPending
+    );
+}
+
+function canRecordSecEdgarSourceAcquisitionAuthority(contract = layer3ExecutionReadinessContract()) {
+    const values = secEdgarSourceAcquisitionAuthorityInputValues();
+    return Boolean(
+        contract?.sec_edgar_text_table_source_acquisition_authority_admitted
+        && secEdgarSourceAcquisitionAuthorityEndpointPath(contract)
+        && values.sourceAcquisitionRequestJson
+        && !State.secEdgarSourceAcquisitionAuthorityPending
     );
 }
 
@@ -10659,6 +10715,27 @@ function candidateBOperatorStatusPanelState() {
         return { label: 'candidate_b_operator_status_available', pill: 'ok' };
     }
     return { label: 'candidate_b_operator_status_not_inspected', pill: 'preview' };
+}
+
+function secEdgarSourceAcquisitionAuthorityPanelState() {
+    if (State.secEdgarSourceAcquisitionAuthorityPending) {
+        return { label: 'sec_edgar_source_acquisition_authority_pending', pill: 'preview' };
+    }
+    if (State.secEdgarSourceAcquisitionAuthorityError) {
+        const code = (
+            State.secEdgarSourceAcquisitionAuthorityError?.payload?.error?.code
+            || State.secEdgarSourceAcquisitionAuthorityError?.payload?.error_code
+        );
+        return { label: code || 'sec_edgar_source_acquisition_authority_blocked', pill: 'blocked' };
+    }
+    const state = State.secEdgarSourceAcquisitionAuthority?.source_acquisition_authority_state;
+    if (state === 'available') {
+        return { label: 'sec_edgar_source_acquisition_authority_available', pill: 'ok' };
+    }
+    if (state === 'blocked') {
+        return { label: 'sec_edgar_source_acquisition_authority_blocked', pill: 'blocked' };
+    }
+    return { label: 'sec_edgar_source_acquisition_authority_not_recorded', pill: 'preview' };
 }
 
 function secEdgarDownstreamOperatorStatusPanelState() {
@@ -11627,6 +11704,98 @@ function secEdgarDownstreamOperatorStatusRows(status) {
                     ${fieldItem('artifact bytes rendered', status.artifact_bytes_rendered)}
                     ${fieldItem('frontend durable authority enabled', status.frontend_durable_authority_enabled)}
                     ${fieldItem('browser storage authority enabled', status.browser_storage_authority_enabled)}
+                    ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secEdgarSourceAcquisitionAuthorityRows(authority) {
+    if (!authority) return '';
+    const sourceArtifact = authority.source_artifact_authority || {};
+    const bindings = authority.authority_bindings || {};
+    const compatibility = authority.compatibility || {};
+    const visibleStatus = authority.operator_visible_source_acquisition_status || {};
+    const failClosed = authority.fail_closed_behavior || {};
+    const negativeInvariants = authority.negative_invariants || {};
+    const nextActions = Array.isArray(authority.next_allowed_actions) ? authority.next_allowed_actions : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid" data-rendered-mode="${escapeHtml(SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_RENDERED_MODE)}" data-frontend-durable-authority="false">
+            <section class="result-review-card">
+                <strong>SEC EDGAR Source Acquisition Authority</strong>
+                <ul>
+                    ${fieldItem('schema id', authority.schema_id, { code: true })}
+                    ${fieldItem('state', authority.source_acquisition_authority_state, { code: true })}
+                    ${fieldItem('status', authority.status, { code: true })}
+                    ${fieldItem('mode', authority.mode, { code: true })}
+                    ${fieldItem('operator decision', authority.operator_decision, { code: true })}
+                    ${fieldItem('source acquisition receipt id', authority.source_acquisition_receipt_id, { code: true })}
+                    ${fieldItem('source acquisition receipt hash', authority.source_acquisition_receipt_hash, { code: true })}
+                    ${fieldItem('source acquisition receipt ref', authority.source_acquisition_receipt_ref, { code: true })}
+                    ${fieldItem('source acquisition receipt status', authority.source_acquisition_receipt_status, { code: true })}
+                    ${fieldItem('append-only receipt', authority.append_only_source_acquisition_authority_receipt)}
+                    ${fieldItem('exclusive receipt per source artifact authority', authority.exclusive_receipt_per_source_artifact_authority)}
+                    ${fieldItem('idempotent replay', authority.idempotent_replay)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Source Artifact Binding</strong>
+                <ul>
+                    ${fieldItem('dataset version id', authority.dataset_version_id, { code: true })}
+                    ${fieldItem('source family', authority.source_family, { code: true })}
+                    ${fieldItem('parser family', authority.parser_family, { code: true })}
+                    ${fieldItem('parser contract id', authority.parser_contract_id, { code: true })}
+                    ${fieldItem('typed content contract id', authority.typed_content_contract_id, { code: true })}
+                    ${fieldItem('source mode', authority.source_mode, { code: true })}
+                    ${fieldItem('source artifact receipt id', sourceArtifact.source_artifact_receipt_id, { code: true })}
+                    ${fieldItem('source artifact receipt hash', sourceArtifact.source_artifact_receipt_hash, { code: true })}
+                    ${fieldItem('source artifact ref hash', sourceArtifact.source_artifact_ref_hash, { code: true })}
+                    ${fieldItem('accession or submission id hash', sourceArtifact.accession_or_submission_id_hash, { code: true })}
+                    ${fieldItem('cik or filer ref hash', sourceArtifact.cik_or_filer_ref_hash, { code: true })}
+                    ${fieldItem('form type', sourceArtifact.form_type, { code: true })}
+                    ${fieldItem('filing date', sourceArtifact.filing_date, { code: true })}
+                    ${fieldItem('content sha256', sourceArtifact.content_sha256, { code: true })}
+                    ${fieldItem('content length', sourceArtifact.content_length)}
+                    ${fieldItem('server-owned source artifact authority', sourceArtifact.server_owned_source_artifact_authority)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Bindings And Compatibility</strong>
+                <ul>
+                    ${fieldItem('dataset version hash', authority.dataset_version_hash, { code: true })}
+                    ${fieldItem('materialization receipt hash', authority.materialization_receipt_hash, { code: true })}
+                    ${fieldItem('authority envelope hash', authority.authority_envelope_hash, { code: true })}
+                    ${fieldItem('binding source artifact receipt hash', bindings.source_artifact_receipt_hash, { code: true })}
+                    ${fieldItem('binding source artifact ref hash', bindings.source_artifact_ref_hash, { code: true })}
+                    ${fieldItem('material preview/Gate B compatibility preserved', compatibility.material_preview_gate_b_compatibility_preserved)}
+                    ${fieldItem('source artifact receipt bound to materialized dataset version', compatibility.source_artifact_receipt_bound_to_materialized_dataset_version)}
+                    ${fieldItem('dataset source provenance revalidated', compatibility.dataset_source_provenance_revalidated)}
+                    ${fieldItem('redaction policy id', authority.redaction_policy_id, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Guardrails And Next Actions</strong>
+                <ul>
+                    ${fieldItem('redacted receipt available', visibleStatus.redacted_receipt_available)}
+                    ${fieldItem('raw source artifact ref rendered', false)}
+                    ${fieldItem('raw source artifact receipt path rendered', false)}
+                    ${fieldItem('raw authority envelope input rendered', false)}
+                    ${fieldItem('raw local path rendered', visibleStatus.raw_local_path_exposed)}
+                    ${fieldItem('raw URL rendered', visibleStatus.raw_url_exposed)}
+                    ${fieldItem('artifact bytes rendered', visibleStatus.artifact_bytes_exposed)}
+                    ${fieldItem('frontend durable authority enabled', negativeInvariants.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', negativeInvariants.browser_storage_authority_enabled)}
+                    ${fieldItem('SEC EDGAR network fetch admitted', negativeInvariants.sec_edgar_network_fetch_admitted)}
+                    ${fieldItem('SEC EDGAR parser expansion admitted', negativeInvariants.sec_edgar_parser_expansion_admitted)}
+                    ${fieldItem('source expansion admitted', negativeInvariants.source_expansion_admitted)}
+                    ${fieldItem('runtime DB/storage expansion admitted', negativeInvariants.runtime_db_or_storage_expansion_admitted)}
+                    ${fieldItem('provider object write enabled', negativeInvariants.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', negativeInvariants.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', negativeInvariants.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('full mockup activation enabled', negativeInvariants.full_mockup_activation_enabled)}
+                    ${fieldItem('operator confirmation required', failClosed.operator_confirmation_required)}
+                    ${fieldItem('stale source artifact hash blocks acquisition', failClosed.stale_source_artifact_hash_blocks_acquisition)}
                     ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
                 </ul>
             </section>
@@ -13437,6 +13606,20 @@ function candidateBOperatorStatusError() {
     `;
 }
 
+function secEdgarSourceAcquisitionAuthorityError() {
+    const error = State.secEdgarSourceAcquisitionAuthorityError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || error.payload?.error_code || 'sec_edgar_source_acquisition_authority_error';
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function secEdgarDownstreamOperatorStatusError() {
     const error = State.secEdgarDownstreamOperatorStatusError;
     if (!error) return '';
@@ -14395,6 +14578,55 @@ function candidateBRuntimeDownstreamProofError() {
             <p>${escapeHtml(message)}</p>
         </div>
     `;
+}
+
+function renderSecEdgarSourceAcquisitionAuthorityPanel() {
+    if (!elements.secEdgarSourceAcquisitionAuthorityPanel) return;
+    const contract = layer3ExecutionReadinessContract();
+    const statusState = secEdgarSourceAcquisitionAuthorityPanelState();
+    const inputs = secEdgarSourceAcquisitionAuthorityInputValues();
+    const endpointAvailable = Boolean(
+        contract?.sec_edgar_text_table_source_acquisition_authority_admitted
+        && secEdgarSourceAcquisitionAuthorityEndpointPath(contract)
+    );
+    elements.secEdgarSourceAcquisitionAuthorityPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC EDGAR source-family acquisition</span>
+                <h2>Source Acquisition Authority</h2>
+            </div>
+            <span class="status-pill ${endpointAvailable ? 'ok' : 'blocked'}">${endpointAvailable ? 'admitted' : 'blocked'}</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-edgar-source-acquisition-authority-card">
+                <strong>SEC EDGAR Source Acquisition Authority Recording</strong>
+                <form id="sec-edgar-source-acquisition-authority-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_SOURCE_ACQUISITION_AUTHORITY_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>source acquisition request JSON</span>
+                        <textarea id="sec-edgar-source-acquisition-authority-request-json" rows="8" autocomplete="off" spellcheck="false" placeholder="{&quot;dataset_version_id&quot;:&quot;...&quot;,&quot;source_artifact_receipt_hash&quot;:&quot;...&quot;,...}">${escapeHtml(inputs.sourceAcquisitionRequestJson)}</textarea>
+                    </label>
+                    <label class="checkbox-row">
+                        <input id="sec-edgar-source-acquisition-operator-confirmation" type="checkbox" ${inputs.operatorConfirmation ? 'checked' : ''} />
+                        <span>operator confirmation</span>
+                    </label>
+                    <button id="sec-edgar-source-acquisition-authority-submit" type="submit" ${canRecordSecEdgarSourceAcquisitionAuthority(contract) ? '' : 'disabled'}>Record Source Acquisition Authority</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server revalidates the SEC EDGAR source-artifact authority against existing materialization provenance and returns only a redacted receipt projection; this surface cannot fetch SEC content, parse SEC formats, submit paths or URLs, mutate Gate B, dispatch connectors, or create frontend durable authority.</span>
+                </div>
+                ${secEdgarSourceAcquisitionAuthorityRows(State.secEdgarSourceAcquisitionAuthority)}
+                ${secEdgarSourceAcquisitionAuthorityError()}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecEdgarSourceAcquisitionAuthorityControls() {
+    const submit = document.getElementById('sec-edgar-source-acquisition-authority-submit');
+    if (submit) {
+        submit.disabled = !canRecordSecEdgarSourceAcquisitionAuthority(layer3ExecutionReadinessContract());
+    }
 }
 
 function renderSecEdgarDownstreamOperatorStatusPanel() {
@@ -15678,6 +15910,46 @@ async function inspectCandidateBOperatorStatus(event) {
         addEvent(`Candidate B operator-status inspection blocked: ${error.message}`);
     } finally {
         State.candidateBOperatorStatusPending = false;
+        renderAll();
+    }
+}
+
+async function recordSecEdgarSourceAcquisitionAuthority(event) {
+    event.preventDefault();
+    const contract = layer3ExecutionReadinessContract();
+    if (!canRecordSecEdgarSourceAcquisitionAuthority(contract)) {
+        State.secEdgarSourceAcquisitionAuthority = null;
+        State.secEdgarSourceAcquisitionAuthorityError = new Error(
+            'SEC EDGAR source-acquisition authority requires the admitted server endpoint and a request body.',
+        );
+        renderSecEdgarSourceAcquisitionAuthorityPanel();
+        return;
+    }
+    const path = secEdgarSourceAcquisitionAuthorityEndpointPath(contract);
+    let payload;
+    try {
+        payload = secEdgarSourceAcquisitionAuthorityPayload();
+    } catch (error) {
+        State.secEdgarSourceAcquisitionAuthority = null;
+        State.secEdgarSourceAcquisitionAuthorityError = new Error(
+            `SEC EDGAR source-acquisition authority request JSON is invalid: ${error.message}`,
+        );
+        renderSecEdgarSourceAcquisitionAuthorityPanel();
+        return;
+    }
+    State.secEdgarSourceAcquisitionAuthorityPending = true;
+    State.secEdgarSourceAcquisitionAuthorityError = null;
+    renderSecEdgarSourceAcquisitionAuthorityPanel();
+    try {
+        State.secEdgarSourceAcquisitionAuthority = await postJson(path, payload);
+        State.secEdgarSourceAcquisitionAuthorityError = null;
+        addEvent('SEC EDGAR source-acquisition authority recorded through server revalidation.');
+    } catch (error) {
+        State.secEdgarSourceAcquisitionAuthority = null;
+        State.secEdgarSourceAcquisitionAuthorityError = error;
+        addEvent(`SEC EDGAR source-acquisition authority blocked: ${error.message}`);
+    } finally {
+        State.secEdgarSourceAcquisitionAuthorityPending = false;
         renderAll();
     }
 }
@@ -19702,6 +19974,7 @@ function renderAll() {
     renderMaterialLedger();
     renderAuthorityMatrixReviewPanel();
     renderCandidateBDefaultPromotionStatusPanel();
+    renderSecEdgarSourceAcquisitionAuthorityPanel();
     renderSecEdgarDownstreamOperatorStatusPanel();
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderMockupActivationReadinessPanel();
@@ -23402,6 +23675,35 @@ elements.providerPublicUrlForm.addEventListener('submit', submitProviderPublicUr
 elements.providerPublicUrlStatus.addEventListener('click', inspectProviderPublicUrlStatus);
 elements.providerPublicUrlUse.addEventListener('click', useProviderPublicUrlDecision);
 elements.providerPublicUrlRevoke.addEventListener('click', revokeProviderPublicUrl);
+elements.secEdgarSourceAcquisitionAuthorityPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-edgar-source-acquisition-authority-form') {
+        recordSecEdgarSourceAcquisitionAuthority(event);
+    }
+});
+elements.secEdgarSourceAcquisitionAuthorityPanel.addEventListener('input', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-source-acquisition-')) {
+        const hadError = Boolean(State.secEdgarSourceAcquisitionAuthorityError);
+        State.secEdgarSourceAcquisitionAuthorityInput = secEdgarSourceAcquisitionAuthorityInputValues();
+        State.secEdgarSourceAcquisitionAuthorityError = null;
+        if (hadError) {
+            renderSecEdgarSourceAcquisitionAuthorityPanel();
+        } else {
+            updateSecEdgarSourceAcquisitionAuthorityControls();
+        }
+    }
+});
+elements.secEdgarSourceAcquisitionAuthorityPanel.addEventListener('change', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-source-acquisition-')) {
+        const hadError = Boolean(State.secEdgarSourceAcquisitionAuthorityError);
+        State.secEdgarSourceAcquisitionAuthorityInput = secEdgarSourceAcquisitionAuthorityInputValues();
+        State.secEdgarSourceAcquisitionAuthorityError = null;
+        if (hadError) {
+            renderSecEdgarSourceAcquisitionAuthorityPanel();
+        } else {
+            updateSecEdgarSourceAcquisitionAuthorityControls();
+        }
+    }
+});
 elements.secEdgarDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
     if (event.target?.id === 'sec-edgar-downstream-operator-status-form') {
         inspectSecEdgarDownstreamOperatorStatus(event);
