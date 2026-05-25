@@ -1,0 +1,56 @@
+# Candidate B Broader Eligible Corpus Default Scope Activation Receipt Consumption Rendered Status
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_rendered_status_v1
+source_activation_receipt_consumption_runtime: next_milestone_plans/Layer3_planning_docs/1087-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-runtime.md
+current_main_entry: 8b852aff55f55cd295fe0c09ccc231b85fd8603f
+runtime_status: already_implemented
+rendered_status: implemented
+rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_status_control
+runtime_mode: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1
+runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume
+selected_state_visible: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_selected
+blocked_state_visible: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_blocked
+response_authority: State.candidateBBroaderScopeActivationConsumption
+source_activation_authority: State.candidateBBroaderScopeSelectorActivation
+activation_receipt_id_hash_required: true
+selector_use_status_hash_required: true
+selector_use_receipt_id_hash_required: true
+runtime_selection_receipt_id_hash_required: true
+selected_scope_classes_required: true
+activation_receipt_reload_displayed: true
+activation_receipt_binding_displayed: true
+selector_use_status_revalidation_displayed: true
+selector_use_receipt_binding_displayed: true
+runtime_selection_receipt_binding_displayed: true
+readiness_binding_displayed: true
+consumption_authority_source_displayed: redacted_candidate_b_broader_scope_selector_activation_receipt
+operator_visible_consumption_status_displayed: true
+redacted_consumption_receipt_displayed: true
+stale_activation_receipt_hash_fail_closed_rendered: true
+stale_runtime_or_selector_use_state_clears_consumption: true
+browser_frontend_authority: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PASS
+verification_headless_rendered_status_proof: npx playwright test e2e/layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium PASS 2 passed
+verification_headed_rendered_status_proof: npx playwright test e2e/layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium --headed PASS 2 passed
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_current_main_sync_v1
+```
+
+This slice adds the rendered operator control for the already-admitted activation-receipt consumption runtime. The browser can submit only the selected activation receipt id/hash, selector-use status hash, selector-use receipt id/hash, runtime receipt id/hash, and exact selected classes surfaced from server-owned activation/status authority. The server remains the durable authority: the rendered panel records no selector mutation, no default-scope mutation, no source or runtime expansion, and no provider, connector, RAG/model, full-mockup, browser-storage, or frontend-durable authority.

@@ -467,6 +467,10 @@ const CANDIDATE_B_BROADER_SCOPE_SELECTOR_ACTIVATION_RENDERED_MODE = 'rendered_ca
 const CANDIDATE_B_BROADER_SCOPE_SELECTOR_ACTIVATION_MODE = 'candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1';
 const CANDIDATE_B_BROADER_SCOPE_SELECTOR_ACTIVATION_SELECTED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_selector_activation_selected';
 const CANDIDATE_B_BROADER_SCOPE_SELECTOR_ACTIVATION_BLOCKED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_selector_activation_blocked';
+const CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_RENDERED_MODE = 'rendered_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_status_control';
+const CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_MODE = 'candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1';
+const CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_SELECTED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_selected';
+const CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_BLOCKED_STATE = 'candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_blocked';
 const MOCKUP_ACTIVATION_READINESS_RENDERED_MODE = 'rendered_mockup_activation_readiness_dashboard';
 const MOCKUP_ACTIVATION_READINESS_RESPONSE_AUTHORITY = 'State.bootstrap.mockup_activation_readiness';
 
@@ -726,6 +730,19 @@ const State = {
     candidateBBroaderScopeSelectorActivationError: null,
     candidateBBroaderScopeSelectorActivationPending: false,
     candidateBBroaderScopeSelectorActivationInput: {
+        selectorUseStatusHash: '',
+        selectorUseReceiptId: '',
+        selectorUseReceiptHash: '',
+        runtimeSelectionReceiptId: '',
+        runtimeSelectionReceiptHash: '',
+        selectedScopeClasses: 'structured_json_or_csv_or_xlsx',
+    },
+    candidateBBroaderScopeActivationConsumption: null,
+    candidateBBroaderScopeActivationConsumptionError: null,
+    candidateBBroaderScopeActivationConsumptionPending: false,
+    candidateBBroaderScopeActivationConsumptionInput: {
+        activationReceiptId: '',
+        activationReceiptHash: '',
         selectorUseStatusHash: '',
         selectorUseReceiptId: '',
         selectorUseReceiptHash: '',
@@ -7933,6 +7950,14 @@ function candidateBBroaderScopeSelectorActivationEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function candidateBBroaderScopeActivationConsumptionEndpointPath(contract) {
+    const endpoint = (
+        contract?.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_endpoint || ''
+    );
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function candidateBArtifactFamilyStatusEndpointPath(contract) {
     const endpoint = contract?.candidate_b_artifact_family_status_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8523,6 +8548,120 @@ function candidateBBroaderScopeSelectorActivationPayload() {
     return {
         client_request_id: requestId(),
         activation_mode: CANDIDATE_B_BROADER_SCOPE_SELECTOR_ACTIVATION_MODE,
+        selector_use_status_hash: values.selectorUseStatusHash,
+        selector_use_receipt_id: values.selectorUseReceiptId,
+        selector_use_receipt_hash: values.selectorUseReceiptHash,
+        runtime_selection_receipt_id: values.runtimeSelectionReceiptId,
+        runtime_selection_receipt_hash: values.runtimeSelectionReceiptHash,
+        selected_scope_classes: selectedScopeClasses,
+        rollback_to_baseline_confirmation: true,
+        operator_confirmation: true,
+    };
+}
+
+function candidateBBroaderScopeActivationConsumptionInputValues() {
+    const selectorActivation = State.candidateBBroaderScopeSelectorActivation;
+    const selectorUseStatus = State.candidateBBroaderScopeSelectorUseStatus;
+    const selectorUseBinding = selectorActivation?.selector_use_receipt_binding || {};
+    const runtimeBinding = selectorActivation?.runtime_selection_receipt_binding || {};
+    const statusRuntimeBinding = selectorUseStatus?.runtime_selection_receipt_binding || {};
+    const selectedClasses = Array.isArray(selectorActivation?.selected_scope_classes)
+        ? selectorActivation.selected_scope_classes.join(', ')
+        : '';
+    const activationReceiptInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-activation-receipt-id',
+    );
+    const activationHashInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-activation-receipt-hash',
+    );
+    const statusHashInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-status-hash',
+    );
+    const selectorUseReceiptInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-selector-use-receipt-id',
+    );
+    const selectorUseHashInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-selector-use-receipt-hash',
+    );
+    const runtimeReceiptInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-runtime-receipt-id',
+    );
+    const runtimeHashInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-runtime-receipt-hash',
+    );
+    const selectedInput = document.getElementById(
+        'candidate-b-broader-scope-activation-consumption-selected-classes',
+    );
+    const stored = State.candidateBBroaderScopeActivationConsumptionInput;
+    return {
+        activationReceiptId: (
+            activationReceiptInput?.value
+            || stored.activationReceiptId
+            || selectorActivation?.activation_receipt_id
+            || ''
+        ).trim(),
+        activationReceiptHash: (
+            activationHashInput?.value
+            || stored.activationReceiptHash
+            || selectorActivation?.activation_receipt_hash
+            || ''
+        ).trim(),
+        selectorUseStatusHash: (
+            statusHashInput?.value
+            || stored.selectorUseStatusHash
+            || selectorActivation?.activation_authority?.selector_use_status_hash
+            || selectorUseStatus?.selector_use_status_hash
+            || ''
+        ).trim(),
+        selectorUseReceiptId: (
+            selectorUseReceiptInput?.value
+            || stored.selectorUseReceiptId
+            || selectorUseBinding.selector_use_receipt_id
+            || selectorUseStatus?.selector_use_receipt_id
+            || ''
+        ).trim(),
+        selectorUseReceiptHash: (
+            selectorUseHashInput?.value
+            || stored.selectorUseReceiptHash
+            || selectorUseBinding.selector_use_receipt_hash
+            || selectorUseStatus?.selector_use_receipt_hash
+            || ''
+        ).trim(),
+        runtimeSelectionReceiptId: (
+            runtimeReceiptInput?.value
+            || stored.runtimeSelectionReceiptId
+            || runtimeBinding.runtime_selection_receipt_id
+            || statusRuntimeBinding.runtime_selection_receipt_id
+            || ''
+        ).trim(),
+        runtimeSelectionReceiptHash: (
+            runtimeHashInput?.value
+            || stored.runtimeSelectionReceiptHash
+            || runtimeBinding.runtime_selection_receipt_hash
+            || statusRuntimeBinding.runtime_selection_receipt_hash
+            || ''
+        ).trim(),
+        selectedScopeClasses: (
+            selectedInput?.value
+            || stored.selectedScopeClasses
+            || selectedClasses
+            || ''
+        ).trim(),
+    };
+}
+
+function candidateBBroaderScopeActivationConsumptionPayload() {
+    const values = candidateBBroaderScopeActivationConsumptionInputValues();
+    State.candidateBBroaderScopeActivationConsumptionInput = values;
+    const selectedScopeClasses = values.selectedScopeClasses
+        .split(',')
+        .map((scopeClass) => scopeClass.trim())
+        .filter(Boolean);
+    return {
+        client_request_id: requestId(),
+        consumption_mode: CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_MODE,
+        activation_receipt_id: values.activationReceiptId,
+        activation_receipt_hash: values.activationReceiptHash,
         selector_use_status_hash: values.selectorUseStatusHash,
         selector_use_receipt_id: values.selectorUseReceiptId,
         selector_use_receipt_hash: values.selectorUseReceiptHash,
@@ -9463,6 +9602,24 @@ function canRecordCandidateBBroaderScopeSelectorActivation(contract = candidateB
     );
 }
 
+function canRecordCandidateBBroaderScopeActivationConsumption(contract = candidateBDefaultPromotionReadinessContract()) {
+    const values = candidateBBroaderScopeActivationConsumptionInputValues();
+    return Boolean(
+        contract?.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_admitted
+        && candidateBBroaderScopeActivationConsumptionEndpointPath(contract)
+        && State.candidateBBroaderScopeSelectorActivation?.status === 'selected'
+        && values.activationReceiptId
+        && values.activationReceiptHash
+        && values.selectorUseStatusHash
+        && values.selectorUseReceiptId
+        && values.selectorUseReceiptHash
+        && values.runtimeSelectionReceiptId
+        && values.runtimeSelectionReceiptHash
+        && values.selectedScopeClasses
+        && !State.candidateBBroaderScopeActivationConsumptionPending
+    );
+}
+
 function candidateBDefaultPromotionFinalProofPanelState() {
     if (State.candidateBDefaultPromotionFinalProofPending) {
         return { label: 'candidate_b_final_proof_pending', pill: 'preview' };
@@ -9829,6 +9986,23 @@ function candidateBBroaderScopeSelectorActivationPanelState() {
         return { label: 'candidate_b_broader_scope_selector_activation_blocked', pill: 'blocked' };
     }
     return { label: 'candidate_b_broader_scope_selector_activation_not_recorded', pill: 'preview' };
+}
+
+function candidateBBroaderScopeActivationConsumptionPanelState() {
+    if (State.candidateBBroaderScopeActivationConsumptionPending) {
+        return { label: 'candidate_b_broader_scope_activation_receipt_consumption_pending', pill: 'preview' };
+    }
+    if (State.candidateBBroaderScopeActivationConsumptionError) {
+        const code = State.candidateBBroaderScopeActivationConsumptionError?.payload?.error?.code;
+        return { label: code || 'candidate_b_broader_scope_activation_receipt_consumption_blocked', pill: 'blocked' };
+    }
+    if (State.candidateBBroaderScopeActivationConsumption?.status === 'selected') {
+        return { label: 'candidate_b_broader_scope_activation_receipt_consumption_selected', pill: 'ok' };
+    }
+    if (State.candidateBBroaderScopeActivationConsumption?.status === 'blocked') {
+        return { label: 'candidate_b_broader_scope_activation_receipt_consumption_blocked', pill: 'blocked' };
+    }
+    return { label: 'candidate_b_broader_scope_activation_receipt_consumption_not_recorded', pill: 'preview' };
 }
 
 function candidateBArtifactFamilyStatusPanelState() {
@@ -11418,6 +11592,83 @@ function candidateBBroaderScopeSelectorActivationRows(selectorActivation) {
     `;
 }
 
+function candidateBBroaderScopeActivationConsumptionRows(consumption) {
+    if (!consumption) return '';
+    const selectedClasses = Array.isArray(consumption.selected_scope_classes)
+        ? consumption.selected_scope_classes.join(', ')
+        : '';
+    const blockedReasonCodes = Array.isArray(consumption.blocked_reasons)
+        ? consumption.blocked_reasons.map((reason) => reason.code).filter(Boolean).join(', ')
+        : '';
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>Activation Receipt Consumption</strong>
+                <ul>
+                    ${fieldItem('schema id', consumption.schema_id, { code: true })}
+                    ${fieldItem('status', consumption.status, { code: true })}
+                    ${fieldItem('mode', consumption.mode, { code: true })}
+                    ${fieldItem('consumption state', consumption.activation_receipt_consumption_state, { code: true })}
+                    ${fieldItem('consumption receipt id', consumption.consumption_receipt_id, { code: true })}
+                    ${fieldItem('consumption receipt hash', consumption.consumption_receipt_hash, { code: true })}
+                    ${fieldItem('consumption receipt ref', consumption.consumption_receipt_ref, { code: true })}
+                    ${fieldItem('consumption receipt status', consumption.consumption_receipt_status, { code: true })}
+                    ${fieldItem('selected classes', selectedClasses, { code: true })}
+                    ${fieldItem('blocked reason count', Array.isArray(consumption.blocked_reasons) ? consumption.blocked_reasons.length : 0)}
+                    ${fieldItem('blocked reason codes', blockedReasonCodes, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Reloaded Authority</strong>
+                <ul>
+                    ${fieldItem('consumption authority source', consumption.consumption_authority?.source, { code: true })}
+                    ${fieldItem('activation receipt id', consumption.consumption_authority?.activation_receipt_id, { code: true })}
+                    ${fieldItem('activation receipt hash', consumption.consumption_authority?.activation_receipt_hash, { code: true })}
+                    ${fieldItem('activation receipt reloaded', consumption.consumption_authority?.activation_receipt_reloaded)}
+                    ${fieldItem('receipt bound', consumption.consumption_authority?.receipt_bound)}
+                    ${fieldItem('activation receipt binding verified', consumption.activation_receipt_binding?.binding_verified)}
+                    ${fieldItem('selector-use status revalidated', consumption.selector_use_status_binding?.status_revalidated)}
+                    ${fieldItem('selector-use binding verified', consumption.selector_use_receipt_binding?.binding_verified)}
+                    ${fieldItem('runtime binding verified', consumption.runtime_selection_receipt_binding?.binding_verified)}
+                    ${fieldItem('readiness binding verified', consumption.readiness_audit_binding?.binding_verified)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Operator Consumption Status</strong>
+                <ul>
+                    ${fieldItem('consumption recorded', consumption.operator_visible_consumption_status?.consumption_recorded)}
+                    ${fieldItem('selected scope class count', consumption.operator_visible_consumption_status?.selected_scope_class_count)}
+                    ${fieldItem('redacted consumption receipt available', consumption.operator_visible_consumption_status?.redacted_consumption_receipt_available)}
+                    ${fieldItem('default scope consumption enabled', consumption.default_scope_consumption_enabled)}
+                    ${fieldItem('default scope expansion enabled', consumption.default_scope_expansion_enabled)}
+                    ${fieldItem('non-selected class default', consumption.non_selected_class_default, { code: true })}
+                    ${fieldItem('baseline rollback selector', consumption.baseline_rollback?.selector, { code: true })}
+                    ${fieldItem('Candidate A visual lane', consumption.candidate_a_semantics?.visual_lane_mode, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Authority</strong>
+                <ul>
+                    ${fieldItem('activation receipt consumption authority recorded', consumption.activation_receipt_consumption_authority_recorded)}
+                    ${fieldItem('selector mutation performed', consumption.selector_mutation_performed)}
+                    ${fieldItem('default scope mutation performed', consumption.default_scope_mutation_performed)}
+                    ${fieldItem('source expansion admitted', consumption.source_expansion_admitted)}
+                    ${fieldItem('runtime DB/storage expansion admitted', consumption.runtime_db_or_storage_expansion_admitted)}
+                    ${fieldItem('PDF/image text material ingestion admitted', consumption.pdf_or_image_text_material_ingestion_admitted)}
+                    ${fieldItem('provider object write enabled', consumption.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', consumption.connector_dispatch_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', consumption.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('full mockup activation enabled', consumption.full_mockup_activation_enabled)}
+                    ${fieldItem('frontend durable authority enabled', consumption.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', consumption.browser_storage_authority_enabled)}
+                    ${fieldItem('raw local path exposed', consumption.raw_local_path_exposed)}
+                    ${fieldItem('raw URL exposed', consumption.raw_url_exposed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
 function candidateBDefaultPromotionFinalProofError() {
     const error = State.candidateBDefaultPromotionFinalProofError;
     if (!error) return '';
@@ -12280,6 +12531,20 @@ function candidateBBroaderScopeSelectorActivationError() {
     `;
 }
 
+function candidateBBroaderScopeActivationConsumptionError() {
+    const error = State.candidateBBroaderScopeActivationConsumptionError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'candidate_b_broader_scope_activation_receipt_consumption_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBArtifactFamilyStatusError() {
     const error = State.candidateBArtifactFamilyStatusError;
     if (!error) return '';
@@ -12412,6 +12677,9 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     const broaderScopeSelectorActivation = State.candidateBBroaderScopeSelectorActivation;
     const broaderScopeSelectorActivationInputs = candidateBBroaderScopeSelectorActivationInputValues();
     const broaderScopeSelectorActivationState = candidateBBroaderScopeSelectorActivationPanelState();
+    const broaderScopeActivationConsumption = State.candidateBBroaderScopeActivationConsumption;
+    const broaderScopeActivationConsumptionInputs = candidateBBroaderScopeActivationConsumptionInputValues();
+    const broaderScopeActivationConsumptionState = candidateBBroaderScopeActivationConsumptionPanelState();
     const artifactFamilyStatus = State.candidateBArtifactFamilyStatus;
     const artifactFamilyInputs = State.candidateBArtifactFamilyStatusInput;
     const visualLaneStatus = State.candidateBVisualLaneStatus;
@@ -12468,6 +12736,7 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                     ${fieldItem('broader scope selector use', contract?.candidate_b_broader_eligible_corpus_default_scope_selector_use_endpoint, { code: true })}
                     ${fieldItem('broader scope selector-use status', contract?.candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint, { code: true })}
                     ${fieldItem('broader scope selector activation', contract?.candidate_b_broader_eligible_corpus_default_scope_selector_activation_endpoint, { code: true })}
+                    ${fieldItem('broader scope activation consumption', contract?.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_endpoint, { code: true })}
                     ${fieldItem('final proof', contract?.candidate_b_default_promotion_final_proof_endpoint, { code: true })}
                     ${fieldItem('final proof status', contract?.candidate_b_default_promotion_final_proof_status_endpoint, { code: true })}
                 </ul>
@@ -12978,6 +13247,50 @@ function renderCandidateBDefaultPromotionStatusPanel() {
                 </div>
                 ${candidateBBroaderScopeSelectorActivationRows(broaderScopeSelectorActivation)}
                 ${candidateBBroaderScopeSelectorActivationError()}
+            </section>
+            <section class="result-review-card candidate-b-broader-scope-activation-consumption-card">
+                <strong>Broader Eligible-Corpus Activation Receipt Consumption</strong>
+                <form id="candidate-b-broader-scope-activation-consumption-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>activation receipt id</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-activation-receipt-id" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.activationReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-selector-activation-..." />
+                    </label>
+                    <label>
+                        <span>activation receipt hash</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-activation-receipt-hash" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.activationReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>selector-use status hash</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-status-hash" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.selectorUseStatusHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>selector-use receipt id</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-selector-use-receipt-id" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.selectorUseReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-selector-use-..." />
+                    </label>
+                    <label>
+                        <span>selector-use receipt hash</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-selector-use-receipt-hash" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.selectorUseReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>runtime selection receipt id</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-runtime-receipt-id" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.runtimeSelectionReceiptId)}" autocomplete="off" spellcheck="false" placeholder="cb-broader-scope-runtime-..." />
+                    </label>
+                    <label>
+                        <span>runtime selection receipt hash</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-runtime-receipt-hash" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.runtimeSelectionReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>selected scope classes</span>
+                        <input id="candidate-b-broader-scope-activation-consumption-selected-classes" type="text" value="${escapeHtml(broaderScopeActivationConsumptionInputs.selectedScopeClasses)}" autocomplete="off" spellcheck="false" placeholder="structured_json_or_csv_or_xlsx" />
+                    </label>
+                    <button id="candidate-b-broader-scope-activation-consumption-submit" type="submit" ${canRecordCandidateBBroaderScopeActivationConsumption(contract) ? '' : 'disabled'}>Consume Activation Receipt</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(broaderScopeActivationConsumptionState.pill)}">${escapeHtml(broaderScopeActivationConsumptionState.label)}</span>
+                    <span class="rail-label">Server consumes only a selected activation receipt after reloading and revalidating activation, selector-use status, selector-use receipt, runtime receipt, and exact selected classes; this control performs no selector mutation or default expansion from the browser.</span>
+                </div>
+                ${candidateBBroaderScopeActivationConsumptionRows(broaderScopeActivationConsumption)}
+                ${candidateBBroaderScopeActivationConsumptionError()}
             </section>
             <section class="result-review-card candidate-b-final-proof-status-card">
                 <strong>Final Proof Recording</strong>
@@ -13916,6 +14229,18 @@ async function recordCandidateBBroaderScopeRuntime(event) {
             runtimeSelectionReceiptHash: '',
             selectedScopeClasses: '',
         };
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = null;
+        State.candidateBBroaderScopeActivationConsumptionInput = {
+            activationReceiptId: '',
+            activationReceiptHash: '',
+            selectorUseStatusHash: '',
+            selectorUseReceiptId: '',
+            selectorUseReceiptHash: '',
+            runtimeSelectionReceiptId: '',
+            runtimeSelectionReceiptHash: '',
+            selectedScopeClasses: '',
+        };
         State.candidateBBroaderScopeSelectorUseInputEdited = false;
         State.candidateBBroaderScopeSelectorUseInput = candidateBBroaderScopeSelectorUseRuntimeDefaults(
             State.candidateBBroaderScopeRuntime,
@@ -13954,6 +14279,18 @@ async function recordCandidateBBroaderScopeSelectorUse(event) {
         State.candidateBBroaderScopeSelectorUseStatusError = null;
         State.candidateBBroaderScopeSelectorActivation = null;
         State.candidateBBroaderScopeSelectorActivationError = null;
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = null;
+        State.candidateBBroaderScopeActivationConsumptionInput = {
+            activationReceiptId: '',
+            activationReceiptHash: '',
+            selectorUseStatusHash: '',
+            selectorUseReceiptId: '',
+            selectorUseReceiptHash: '',
+            runtimeSelectionReceiptId: '',
+            runtimeSelectionReceiptHash: '',
+            selectedScopeClasses: '',
+        };
         State.candidateBBroaderScopeSelectorActivationInput = {
             selectorUseStatusHash: '',
             selectorUseReceiptId: '',
@@ -14005,12 +14342,26 @@ async function inspectCandidateBBroaderScopeSelectorUseStatus(event) {
         State.candidateBBroaderScopeSelectorActivation = null;
         State.candidateBBroaderScopeSelectorActivationError = null;
         State.candidateBBroaderScopeSelectorActivationInput = candidateBBroaderScopeSelectorActivationInputValues();
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = null;
+        State.candidateBBroaderScopeActivationConsumptionInput = {
+            activationReceiptId: '',
+            activationReceiptHash: '',
+            selectorUseStatusHash: '',
+            selectorUseReceiptId: '',
+            selectorUseReceiptHash: '',
+            runtimeSelectionReceiptId: '',
+            runtimeSelectionReceiptHash: '',
+            selectedScopeClasses: '',
+        };
         addEvent('Candidate B broader eligible-corpus selector-use status inspected through server receipt revalidation.');
     } catch (error) {
         State.candidateBBroaderScopeSelectorUseStatus = null;
         State.candidateBBroaderScopeSelectorUseStatusError = error;
         State.candidateBBroaderScopeSelectorActivation = null;
         State.candidateBBroaderScopeSelectorActivationError = null;
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = null;
         addEvent(`Candidate B broader-scope selector-use status blocked: ${error.message}`);
     } finally {
         State.candidateBBroaderScopeSelectorUseStatusPending = false;
@@ -14037,13 +14388,48 @@ async function recordCandidateBBroaderScopeSelectorActivation(event) {
     try {
         State.candidateBBroaderScopeSelectorActivation = await postJson(path, payload);
         State.candidateBBroaderScopeSelectorActivationError = null;
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = null;
+        State.candidateBBroaderScopeActivationConsumptionInput = candidateBBroaderScopeActivationConsumptionInputValues();
         addEvent('Candidate B broader eligible-corpus selector activation recorded through server revalidated status authority.');
     } catch (error) {
         State.candidateBBroaderScopeSelectorActivation = null;
         State.candidateBBroaderScopeSelectorActivationError = error;
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = null;
         addEvent(`Candidate B broader-scope selector activation blocked: ${error.message}`);
     } finally {
         State.candidateBBroaderScopeSelectorActivationPending = false;
+        renderAll();
+    }
+}
+
+async function recordCandidateBBroaderScopeActivationConsumption(event) {
+    event.preventDefault();
+    const contract = candidateBDefaultPromotionReadinessContract();
+    if (!canRecordCandidateBBroaderScopeActivationConsumption(contract)) {
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = new Error(
+            'Candidate B broader-scope activation receipt consumption requires selected activation receipt id/hash, selector-use status hash, selector-use receipt id/hash, runtime receipt id/hash, and exact selected classes.',
+        );
+        renderCandidateBDefaultPromotionStatusPanel();
+        return;
+    }
+    const path = candidateBBroaderScopeActivationConsumptionEndpointPath(contract);
+    const payload = candidateBBroaderScopeActivationConsumptionPayload();
+    State.candidateBBroaderScopeActivationConsumptionPending = true;
+    State.candidateBBroaderScopeActivationConsumptionError = null;
+    renderCandidateBDefaultPromotionStatusPanel();
+    try {
+        State.candidateBBroaderScopeActivationConsumption = await postJson(path, payload);
+        State.candidateBBroaderScopeActivationConsumptionError = null;
+        addEvent('Candidate B broader eligible-corpus activation receipt consumed through server revalidated activation authority.');
+    } catch (error) {
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = error;
+        addEvent(`Candidate B broader-scope activation receipt consumption blocked: ${error.message}`);
+    } finally {
+        State.candidateBBroaderScopeActivationConsumptionPending = false;
         renderAll();
     }
 }
@@ -20551,6 +20937,9 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('submit', (event
     if (event.target?.id === 'candidate-b-broader-scope-selector-activation-form') {
         recordCandidateBBroaderScopeSelectorActivation(event);
     }
+    if (event.target?.id === 'candidate-b-broader-scope-activation-consumption-form') {
+        recordCandidateBBroaderScopeActivationConsumption(event);
+    }
     if (event.target?.id === 'candidate-b-final-proof-form') {
         recordCandidateBDefaultPromotionFinalProof(event);
     }
@@ -20620,6 +21009,20 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
     ) {
         State.candidateBBroaderScopeSelectorActivationInput = candidateBBroaderScopeSelectorActivationInputValues();
         State.candidateBBroaderScopeSelectorActivationError = null;
+        renderCandidateBDefaultPromotionStatusPanel();
+    }
+    if (
+        target.id === 'candidate-b-broader-scope-activation-consumption-activation-receipt-id'
+        || target.id === 'candidate-b-broader-scope-activation-consumption-activation-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-activation-consumption-status-hash'
+        || target.id === 'candidate-b-broader-scope-activation-consumption-selector-use-receipt-id'
+        || target.id === 'candidate-b-broader-scope-activation-consumption-selector-use-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-activation-consumption-runtime-receipt-id'
+        || target.id === 'candidate-b-broader-scope-activation-consumption-runtime-receipt-hash'
+        || target.id === 'candidate-b-broader-scope-activation-consumption-selected-classes'
+    ) {
+        State.candidateBBroaderScopeActivationConsumptionInput = candidateBBroaderScopeActivationConsumptionInputValues();
+        State.candidateBBroaderScopeActivationConsumptionError = null;
         renderCandidateBDefaultPromotionStatusPanel();
     }
 });
