@@ -7795,6 +7795,12 @@ test('Layer 3 workbench renders Candidate B default-promotion status contract wi
   );
   await expect(page.locator('#candidate-b-broader-scope-activation-consumption-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
   await expect(page.locator('#candidate-b-broader-scope-activation-consumption-submit')).toBeDisabled();
+  await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-form')).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_control',
+  );
+  await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-form')).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit')).toBeDisabled();
   await expect(page.locator('#candidate-b-final-proof-status-form')).toHaveAttribute(
     'data-rendered-mode',
     'rendered_candidate_b_default_promotion_final_proof_status_inspection_control',
@@ -7881,6 +7887,7 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   const selectorUseStatusPayloads = [];
   const selectorActivationPayloads = [];
   const activationConsumptionPayloads = [];
+  const consumptionReceiptUsePayloads = [];
   await page.route(
     '**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/runtime',
     async (route) => {
@@ -8390,6 +8397,156 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
       });
     },
   );
+  await page.route(
+    '**/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use',
+    async (route) => {
+      const payload = route.request().postDataJSON();
+      consumptionReceiptUsePayloads.push(payload);
+      const staleConsumptionHash = payload.consumption_receipt_hash === 'stale-consumption-hash';
+      const useEnabled = !staleConsumptionHash;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use.v1',
+          schema_version: 1,
+          request_id: payload.client_request_id,
+          server_time: '2026-05-24T00:00:00Z',
+          status: useEnabled ? 'selected' : 'blocked',
+          mode: 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1',
+          consumption_receipt_use_state: useEnabled
+            ? 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_selected'
+            : 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_blocked',
+          use_receipt_id: useEnabled ? 'cb-broader-scope-consumption-receipt-use-rendered-proof' : null,
+          use_receipt_hash: useEnabled ? 'b'.repeat(64) : null,
+          use_receipt_ref: useEnabled
+            ? 'candidate-b-broader-scope-consumption-receipt-use://rendered-proof/bbbbbbbbbbbbbbbbbbbbbbbb'
+            : null,
+          use_receipt_status: useEnabled ? 'recorded' : 'not_recorded',
+          blocked_reasons: staleConsumptionHash
+            ? [{ code: 'candidate_b_broader_scope_consumption_receipt_use_stale_consumption_receipt_hash' }]
+            : [],
+          use_authority: {
+            source: 'redacted_candidate_b_broader_scope_activation_consumption_receipt',
+            consumption_receipt_id: payload.consumption_receipt_id,
+            consumption_receipt_hash: payload.consumption_receipt_hash,
+            consumption_receipt_reloaded: useEnabled,
+            receipt_bound: useEnabled,
+          },
+          consumption_receipt_binding: {
+            schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption.v1',
+            mode: 'candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1',
+            required_state: 'candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_selected',
+            consumption_receipt_id: payload.consumption_receipt_id,
+            consumption_receipt_hash: payload.consumption_receipt_hash,
+            binding_verified: useEnabled,
+          },
+          activation_receipt_binding: {
+            schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_selector_activation.v1',
+            mode: 'candidate_b_broader_eligible_corpus_default_scope_selector_activation_runtime_v1',
+            required_state: 'candidate_b_broader_eligible_corpus_default_scope_selector_activation_selected',
+            activation_receipt_id: payload.activation_receipt_id,
+            activation_receipt_hash: payload.activation_receipt_hash,
+            binding_verified: useEnabled,
+          },
+          selector_use_status_binding: {
+            schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use_status.v1',
+            mode: 'candidate_b_broader_eligible_corpus_default_scope_selector_use_status_v1',
+            selector_use_status_hash: payload.selector_use_status_hash,
+            status_revalidated: useEnabled,
+            binding_verified: useEnabled,
+          },
+          selector_use_receipt_binding: {
+            schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use.v1',
+            mode: 'candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1',
+            required_state: 'candidate_b_broader_eligible_corpus_default_scope_selector_use_selected',
+            selector_use_receipt_id: payload.selector_use_receipt_id,
+            selector_use_receipt_hash: payload.selector_use_receipt_hash,
+            binding_verified: useEnabled,
+          },
+          runtime_selection_receipt_binding: {
+            schema_id: 'layer3.candidate_b_broader_eligible_corpus_default_scope_runtime.v1',
+            mode: 'candidate_b_broader_eligible_corpus_default_scope_runtime_v1',
+            required_state: 'candidate_b_broader_eligible_corpus_default_scope_runtime_selected',
+            runtime_selection_receipt_id: payload.runtime_selection_receipt_id,
+            runtime_selection_receipt_hash: payload.runtime_selection_receipt_hash,
+            binding_verified: useEnabled,
+          },
+          readiness_audit_binding: {
+            readiness_audit_id: 'cb-broader-scope-rendered-readiness-test',
+            readiness_audit_hash: readiness.audit_hash,
+            binding_verified: useEnabled,
+          },
+          selected_scope_classes: payload.selected_scope_classes,
+          selected_scope_classes_source: 'selected_scope_classes_from_revalidated_consumption_receipt',
+          current_default_before_use_runtime: 'eligible_effective_pdfs_only',
+          default_scope_use_enabled: useEnabled,
+          default_scope_expansion_enabled: useEnabled,
+          default_scope_application_scope: 'consumed_receipt_bound_selected_classes_only',
+          non_selected_class_default: 'baseline',
+          baseline_rollback: {
+            selector: 'baseline',
+            available: true,
+            non_selected_classes_remain_baseline: true,
+          },
+          candidate_a_semantics: {
+            visual_lane_mode: 'candidate_a_page_evidence_v1',
+            preserved: true,
+          },
+          candidate_b_scope_authority: {
+            document_processing_engine: 'candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only',
+            visual_lane_mode: 'candidate_b_opendataloader_page_evidence_v1_explicit_only',
+            bundle_and_runtime_authority_remain_distinct: true,
+          },
+          operator_visible_use_status: {
+            use_recorded: useEnabled,
+            selected_scope_class_count: useEnabled ? payload.selected_scope_classes.length : 0,
+            redacted_default_scope_use_receipt_available: useEnabled,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+            provider_or_connector_secret_exposed: false,
+          },
+          fail_closed_behavior: {
+            missing_consumption_receipt_blocks_use: true,
+            stale_consumption_receipt_hash_blocks_use: true,
+            stale_activation_receipt_binding_blocks_use: true,
+            stale_selector_use_status_hash_blocks_use: true,
+            stale_selector_use_receipt_hash_blocks_use: true,
+            stale_runtime_receipt_hash_blocks_use: true,
+            stale_readiness_audit_hash_blocks_use: true,
+            unknown_scope_class_blocks_use: true,
+            unselected_scope_class_blocks_use: true,
+            missing_rollback_confirmation_blocks_use: true,
+            candidate_a_semantic_drift_blocks_use: true,
+          },
+          default_scope_use_authority_recorded: useEnabled,
+          selector_mutation_performed: false,
+          default_scope_mutation_performed: false,
+          source_expansion_admitted: false,
+          runtime_db_or_storage_expansion_admitted: false,
+          pdf_or_image_text_material_ingestion_admitted: false,
+          provider_object_write_enabled: false,
+          connector_dispatch_enabled: false,
+          rag_vector_model_runtime_enabled: false,
+          auth_security_expansion_enabled: false,
+          full_mockup_activation_enabled: false,
+          frontend_durable_authority_enabled: false,
+          browser_storage_authority_enabled: false,
+          raw_local_path_exposed: false,
+          raw_url_exposed: false,
+          negative_invariants: {
+            selector_mutation_performed: false,
+            default_scope_mutation_performed: false,
+            raw_local_path_exposed: false,
+            raw_url_exposed: false,
+          },
+          next_allowed_actions: useEnabled
+            ? ['inspect Candidate B broader default-scope use status for exact consumed selected classes']
+            : ['reload consumption receipt and repair stale or missing authority before default-scope use'],
+        }),
+      });
+    },
+  );
 
   await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
   const panel = page.locator('#candidate-b-default-promotion-status-panel');
@@ -8587,6 +8744,65 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   await expect(panel).toContainText('default scope mutation performed: false');
   await expect(panel).toContainText('raw local path exposed: false');
   await expect(panel).toContainText('raw URL exposed: false');
+  await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit')).toBeEnabled();
+  const consumptionReceiptUseRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes('/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use')
+  ));
+  await page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit').click();
+  const consumptionReceiptUsePayload = (await consumptionReceiptUseRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(consumptionReceiptUsePayload, [
+    'client_request_id',
+    'use_mode',
+    'consumption_receipt_id',
+    'consumption_receipt_hash',
+    'activation_receipt_id',
+    'activation_receipt_hash',
+    'selector_use_status_hash',
+    'selector_use_receipt_id',
+    'selector_use_receipt_hash',
+    'runtime_selection_receipt_id',
+    'runtime_selection_receipt_hash',
+    'selected_scope_classes',
+    'rollback_to_baseline_confirmation',
+    'operator_confirmation',
+  ]);
+  expect(consumptionReceiptUsePayload).toMatchObject({
+    use_mode: 'candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1',
+    consumption_receipt_id: 'cb-broader-scope-activation-consumption-rendered-proof',
+    consumption_receipt_hash: 'a'.repeat(64),
+    activation_receipt_id: 'cb-broader-scope-selector-activation-rendered-proof',
+    activation_receipt_hash: '9'.repeat(64),
+    selector_use_status_hash: '8'.repeat(64),
+    selector_use_receipt_id: 'cb-broader-scope-selector-use-rendered-proof',
+    selector_use_receipt_hash: '6'.repeat(64),
+    runtime_selection_receipt_id: 'cb-broader-scope-runtime-rendered-proof',
+    runtime_selection_receipt_hash: '5'.repeat(64),
+    selected_scope_classes: ['structured_json_or_csv_or_xlsx'],
+    rollback_to_baseline_confirmation: true,
+    operator_confirmation: true,
+  });
+  await expect(panel).toContainText('candidate_b_broader_scope_consumption_receipt_use_selected');
+  await expect(panel).toContainText('use receipt status: recorded');
+  await expect(panel).toContainText('use receipt id: cb-broader-scope-consumption-receipt-use-rendered-proof');
+  await expect(panel).toContainText('use authority source: redacted_candidate_b_broader_scope_activation_consumption_receipt');
+  await expect(panel).toContainText('consumption receipt reloaded: true');
+  await expect(panel).toContainText('consumption receipt binding verified: true');
+  await expect(panel).toContainText('activation receipt binding verified: true');
+  await expect(panel).toContainText('selector-use status revalidated: true');
+  await expect(panel).toContainText('default scope use enabled: true');
+  await expect(panel).toContainText('default scope application scope: consumed_receipt_bound_selected_classes_only');
+  await expect(panel).toContainText('default scope mutation performed: false');
+  await expect(panel).toContainText('raw local path exposed: false');
+  await expect(panel).toContainText('raw URL exposed: false');
+  await page.locator('#candidate-b-broader-scope-consumption-receipt-use-consumption-receipt-hash').fill('stale-consumption-hash');
+  await expect(page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit')).toBeEnabled();
+  await page.locator('#candidate-b-broader-scope-consumption-receipt-use-submit').click();
+  await expect(panel).toContainText('candidate_b_broader_scope_consumption_receipt_use_blocked');
+  await expect(panel).toContainText('use receipt status: not_recorded');
+  await expect(panel).toContainText('candidate_b_broader_scope_consumption_receipt_use_stale_consumption_receipt_hash');
+  await expect(panel).toContainText('default scope use enabled: false');
+  await expect(panel).toContainText('default scope mutation performed: false');
   await page.locator('#candidate-b-broader-scope-activation-consumption-activation-receipt-hash').fill('stale-activation-hash');
   await expect(page.locator('#candidate-b-broader-scope-activation-consumption-submit')).toBeEnabled();
   await page.locator('#candidate-b-broader-scope-activation-consumption-submit').click();
@@ -8641,6 +8857,7 @@ test('Layer 3 workbench records Candidate B broader eligible-corpus runtime stat
   expect(selectorUseStatusPayloads).toHaveLength(1);
   expect(selectorActivationPayloads).toHaveLength(2);
   expect(activationConsumptionPayloads).toHaveLength(2);
+  expect(consumptionReceiptUsePayloads).toHaveLength(2);
 });
 
 test('Layer 3 workbench inspects Candidate B full-corpus workflow status through rendered read-only control', async ({ page }) => {
