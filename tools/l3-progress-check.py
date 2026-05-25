@@ -3025,6 +3025,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_ACTIVATION_RECEIPT_CONSUMPTION
     PLANNING_DOCS
     / "1089-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-current-main-sync.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_SELECTION = (
+    PLANNING_DOCS
+    / "1090-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -103113,6 +103117,103 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_SELECTION: (
+            "Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Selection",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_selection_v1",
+            "source_activation_receipt_consumption_current_main_sync: next_milestone_plans/Layer3_planning_docs/1089-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-current-main-sync.md",
+            "current_main_entry: d141eacc74c779b002b1c300db1c82032eef8bce",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1",
+            "selected_use_scope: use_redacted_activation_consumption_receipt_for_exact_selected_broader_scope_classes_only",
+            "selected_use_policy: bounded_server_side_default_selector_application_for_consumed_receipt_bound_classes",
+            "selected_consumption_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption.v1",
+            "selected_consumption_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
+            "selected_required_consumption_state: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_selected",
+            "selected_required_consumption_authority_source: redacted_candidate_b_broader_scope_selector_activation_receipt",
+            "selected_required_consumption_receipt_bindings: activation_consumption_receipt_id,activation_consumption_receipt_hash,activation_receipt_id_hash,selector_use_status_hash,selector_use_receipt_id_hash,runtime_selection_receipt_id_hash,readiness_audit_id_hash,exact_selected_scope_classes",
+            "selected_use_must_reload_consumption_receipt: true",
+            "selected_use_must_revalidate_activation_receipt_id_hash: true",
+            "selected_use_must_revalidate_selector_use_status_hash: true",
+            "selected_use_must_revalidate_selector_use_receipt_id_hash: true",
+            "selected_use_must_revalidate_runtime_selection_receipt_id_hash: true",
+            "selected_use_must_revalidate_readiness_audit_binding: true",
+            "selected_use_must_reject_missing_consumption_receipt: true",
+            "selected_use_must_reject_stale_consumption_receipt_hash: true",
+            "selected_use_must_reject_stale_activation_receipt_binding: true",
+            "selected_use_must_reject_unselected_or_unknown_scope_class: true",
+            "selected_use_must_preserve_baseline_for_non_selected_classes: true",
+            "selected_use_must_preserve_candidate_a_semantics: true",
+            "selected_use_must_record_redacted_default_scope_use_receipt: true",
+            "selected_use_must_project_operator_visible_use_status: true",
+            "current_default_before_use_runtime: eligible_effective_pdfs_only",
+            "future_default_scope_may_change_only_for_consumed_receipt_bound_classes: true",
+            "non_selected_class_default: baseline",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only",
+            "candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only",
+            "bundle_and_runtime_authority_remain_distinct: true",
+            "consumption_receipt_use_behavior_introduced_by_selection: false",
+            "runtime_behavior_introduced_by_selection: false",
+            "rendered_behavior_introduced_by_selection: false",
+            "backend_behavior_introduced_by_selection: false",
+            "selector_mutation_performed_now: false",
+            "default_scope_mutation_performed_now: false",
+            "source_expansion_admitted_now: false",
+            "runtime_db_or_storage_expansion_admitted_now: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "required_future_runtime_proof: positive_consumption_receipt_use,missing_consumption_receipt_fail_closed,stale_consumption_receipt_hash_fail_closed,stale_activation_receipt_binding_fail_closed,stale_selector_use_status_hash_fail_closed,stale_runtime_selection_receipt_hash_fail_closed,unknown_class_fail_closed,unselected_class_fail_closed,baseline_rollback_preserved,candidate_a_semantics_preserved,non_selected_classes_remain_baseline,no_source_expansion,no_runtime_db_or_storage_expansion,no_raw_path_or_url_projection,redacted_default_scope_use_receipt,operator_visible_use_status",
+            "implementation_admitted_after_current_main_sync: true",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_selection_v1",
+            "source_activation_receipt_consumption_current_main_sync: next_milestone_plans/Layer3_planning_docs/1089-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-current-main-sync.md",
+            "current_main_entry: d141eacc74c779b002b1c300db1c82032eef8bce",
+            "entry_decision: freeze_only",
+            "selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1",
+            "selected_use_scope: use_redacted_activation_consumption_receipt_for_exact_selected_broader_scope_classes_only",
+            "selected_use_policy: bounded_server_side_default_selector_application_for_consumed_receipt_bound_classes",
+            "selected_required_consumption_receipt_bindings: activation_consumption_receipt_id,activation_consumption_receipt_hash,activation_receipt_id_hash,selector_use_status_hash,selector_use_receipt_id_hash,runtime_selection_receipt_id_hash,readiness_audit_id_hash,exact_selected_scope_classes",
+            "selected_use_must_reload_consumption_receipt: true",
+            "selected_use_must_reject_missing_consumption_receipt: true",
+            "selected_use_must_reject_stale_consumption_receipt_hash: true",
+            "selected_use_must_preserve_baseline_for_non_selected_classes: true",
+            "selected_use_must_preserve_candidate_a_semantics: true",
+            "selected_use_must_record_redacted_default_scope_use_receipt: true",
+            "future_default_scope_may_change_only_for_consumed_receipt_bound_classes: true",
+            "consumption_receipt_use_behavior_introduced_by_selection: false",
+            "runtime_behavior_introduced_by_selection: false",
+            "rendered_behavior_introduced_by_selection: false",
+            "backend_behavior_introduced_by_selection: false",
+            "selector_mutation_performed_now: false",
+            "default_scope_mutation_performed_now: false",
+            "source_expansion_admitted_now: false",
+            "runtime_db_or_storage_expansion_admitted_now: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_ACTIVATION_RECEIPT_CONSUMPTION_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope consumption receipt use selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -104079,6 +104180,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_current_main_sync(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_selection(
         errors
     )
 
