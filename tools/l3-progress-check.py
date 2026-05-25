@@ -3226,6 +3226,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_SELECTION = (
     PLANNING_DOCS
     / "1140-sec-edgar-text-table-live-source-artifact-acquisition-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RUNTIME = (
+    PLANNING_DOCS
+    / "1141-sec-edgar-text-table-live-source-artifact-acquisition-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -3740,6 +3744,9 @@ SEC_EDGAR_DOWNSTREAM_STATUS_SERVICE = (
 )
 SEC_EDGAR_REPEATABILITY_TRIAL_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_repeatability_trial.py"
+)
+SEC_EDGAR_LIVE_SOURCE_ARTIFACT_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_source_artifact.py"
 )
 GATE_B_STATE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_gate_b_state.py"
@@ -108613,6 +108620,159 @@ def _check_sec_edgar_text_table_live_source_artifact_acquisition_selection(
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_acquisition_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RUNTIME: (
+            "SEC EDGAR Text Table Live Source Artifact Acquisition Runtime",
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_runtime_v1",
+            "selection: next_milestone_plans/Layer3_planning_docs/1140-sec-edgar-text-table-live-source-artifact-acquisition-selection.md",
+            "implemented_runtime_status: implemented",
+            "implemented_rendered_status: not_implemented",
+            "implemented_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "implemented_action: acquire_sec_edgar_text_table_live_source_artifact",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+            "implemented_request_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition_request.v1",
+            "implemented_receipt_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1",
+            "implemented_status_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1",
+            "implemented_source_artifact_receipt_schema_id: layer3.sec_edgar_text_table_source_artifact_receipt.v1",
+            "implemented_source_artifact_family: complete_submission_text_filing_artifact",
+            "implemented_acquisition_scope: allowlisted_single_complete_submission_text_filing_by_cik_accession_form_type_and_filing_date",
+            "implemented_server_derived_url_shape: sec_archives_complete_submission_text_url_derived_from_cik_and_accession",
+            "implemented_output_authority: append_only_redacted_live_source_artifact_receipt_and_retained_source_artifact_manifest",
+            "implemented_compatibility_target: sec_edgar_text_table_source_acquisition_authority_v1",
+            "implemented_sec_user_agent_missing_behavior: fail_closed_without_network_request",
+            "implemented_runtime_default_rate_limit: one_request_per_second_until_operator_configured_below_official_ceiling",
+            "implemented_cache_hit_behavior: no_network_request_when_matching_retained_artifact_receipt_exists",
+            "implemented_retry_policy: bounded_retry_after_or_backoff_for_429_403_5xx_timeout_without_duplicate_receipt",
+            "implemented_partial_download_policy: discard_partial_bytes_without_source_artifact_receipt",
+            "implemented_content_hash_policy: sha256_required_before_receipt_authority",
+            "implemented_storage_policy: existing_layer3_storage_root_only_no_new_runtime_storage_root",
+            "implemented_network_policy: sec_gov_https_only_no_redirect_outside_sec_gov_no_browser_supplied_url",
+            "implemented_parser_boundary: acquisition_only_no_xml_html_inline_xbrl_parse_no_parser_expansion",
+            "implemented_materialization_boundary: no_dataset_version_or_gate_b_mutation_in_acquisition_runtime",
+            "implemented_operator_surface: api_first_status_endpoint_rendered_controls_separately_selected",
+            "implemented_proof_architecture: fake_sec_client_contract_double_api_tests_first_optional_manual_live_smoke_outside_ci",
+            "implemented_ci_network_policy: live_sec_network_disabled_in_ci",
+            "implemented_redaction_contract: hashes_status_and_redacted_metadata_only_no_raw_url_no_local_path_no_artifact_bytes_no_user_agent_secret",
+            "implemented_api_test: backend/tests/test_layer3_api.py::test_layer3_api_acquires_sec_edgar_text_table_live_source_artifact_with_fake_client",
+            "implemented_rejection_test: backend/tests/test_layer3_api.py::test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_unconfigured_or_unsafe",
+            "implemented_request_conflict_test: backend/tests/test_layer3_api.py::test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_request_conflict",
+            "browser_supplied_raw_url_rejected: true",
+            "missing_user_agent_configuration_failed_closed: true",
+            "partial_download_does_not_create_authority: true",
+            "content_hash_mismatch_rejected: true",
+            "parser_expansion_enabled: false",
+            "dataset_version_or_gate_b_mutation_enabled: false",
+            "rendered_runtime_in_this_slice: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_runtime_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_runtime_v1",
+            "implemented_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+            "implemented_receipt_schema_id: layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1",
+            "implemented_source_artifact_receipt_schema_id: layer3.sec_edgar_text_table_source_artifact_receipt.v1",
+            "implemented_source_artifact_family: complete_submission_text_filing_artifact",
+            "implemented_sec_user_agent_missing_behavior: fail_closed_without_network_request",
+            "implemented_cache_hit_behavior: no_network_request_when_matching_retained_artifact_receipt_exists",
+            "implemented_parser_boundary: acquisition_only_no_xml_html_inline_xbrl_parse_no_parser_expansion",
+            "implemented_materialization_boundary: no_dataset_version_or_gate_b_mutation_in_acquisition_runtime",
+            "implemented_ci_network_policy: live_sec_network_disabled_in_ci",
+            "missing_user_agent_configuration_failed_closed: true",
+            "content_hash_mismatch_rejected: true",
+            "dataset_version_or_gate_b_mutation_enabled: false",
+            "rendered_runtime_in_this_slice: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_runtime_current_main_sync_v1",
+        ),
+        SEC_EDGAR_LIVE_SOURCE_ARTIFACT_SERVICE: (
+            'SCHEMA_ID = "layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1"',
+            'REQUEST_SCHEMA_ID = "layer3.sec_edgar_text_table_live_source_artifact_acquisition_request.v1"',
+            'STATUS_SCHEMA_ID = "layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1"',
+            'SOURCE_ARTIFACT_RECEIPT_SCHEMA_ID = "layer3.sec_edgar_text_table_source_artifact_receipt.v1"',
+            'ACQUISITION_MODE = "sec_edgar_text_table_live_source_artifact_acquisition_v1"',
+            'OPERATOR_DECISION = "acquire_sec_edgar_text_table_live_source_artifact"',
+            'SOURCE_ARTIFACT_FAMILY = "complete_submission_text_filing_artifact"',
+            "def acquire_sec_edgar_text_table_live_source_artifact(",
+            "def inspect_sec_edgar_text_table_live_source_artifact_status(",
+            "class SecEdgarHttpClient:",
+            "SEC_EDGAR_CLIENT",
+            "sec_edgar_text_table_live_source_artifact_user_agent_missing",
+            "sec_edgar_text_table_live_source_artifact_client_request_id_conflict",
+            "sec_edgar_text_table_live_source_artifact_content_hash_mismatch",
+            "sec_edgar_text_table_live_source_artifact_partial_download_blocked",
+            "sec_edgar_text_table_live_source_artifact_receipt_hash_mismatch",
+            "no_dataset_version_or_gate_b_mutation_in_acquisition_runtime",
+            "sec_edgar_parser_expansion_admitted",
+            "provider_object_write_enabled",
+            "connector_dispatch_enabled",
+            "rag_vector_model_runtime_enabled",
+            "full_mockup_activation_enabled",
+            "frontend_durable_authority_enabled",
+        ),
+        LAYER3_API: (
+            "layer3_sec_edgar_live_source_artifact",
+            "class Layer3SecEdgarTextTableLiveSourceArtifactAcquireRequest(",
+            "class Layer3SecEdgarTextTableLiveSourceArtifactResponse(",
+            '"/source/sec-edgar/text-table/live-source-artifact/acquire"',
+            '"/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}"',
+            "acquire_sec_edgar_text_table_live_source_artifact(",
+            "inspect_sec_edgar_text_table_live_source_artifact_status(",
+        ),
+        LAYER3_CORE_CONFIG: (
+            "layer3_sec_edgar_user_agent",
+            "LAYER3_SEC_EDGAR_USER_AGENT",
+            "layer3_sec_edgar_live_network_enabled",
+            "LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED",
+            "layer3_sec_edgar_rate_limit_per_second",
+            "LAYER3_SEC_EDGAR_RATE_LIMIT_PER_SECOND",
+            "layer3_sec_edgar_max_bytes",
+            "LAYER3_SEC_EDGAR_MAX_BYTES",
+            "layer3_sec_edgar_timeout_seconds",
+            "LAYER3_SEC_EDGAR_TIMEOUT_SECONDS",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            '"sec_edgar_text_table_live_source_artifact_acquisition_admitted": True',
+            '"sec_edgar_text_table_live_source_artifact_acquisition_endpoint":',
+            '"sec_edgar_text_table_live_source_artifact_acquisition_status_admitted": True',
+            '"sec_edgar_text_table_live_source_artifact_acquisition_status_endpoint":',
+        ),
+        LAYER3_BOOTSTRAP_CONTRACT_TEST: (
+            '"sec_edgar_text_table_live_source_artifact_acquisition_admitted"',
+            '"/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire"',
+            '"sec_edgar_text_table_live_source_artifact_acquisition_status_admitted"',
+            '"/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/"',
+        ),
+        LAYER3_API_TEST: (
+            "class _FakeSecEdgarClient:",
+            "def _sec_edgar_live_source_artifact_payload(",
+            "def test_layer3_api_acquires_sec_edgar_text_table_live_source_artifact_with_fake_client(",
+            "def test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_unconfigured_or_unsafe(",
+            "def test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_request_conflict(",
+            "sec_edgar_text_table_live_source_artifact_user_agent_missing",
+            "sec_edgar_text_table_live_source_artifact_content_hash_mismatch",
+            "sec_edgar_text_table_live_source_artifact_client_request_id_conflict",
+            "https://www.sec.gov\" not in response.text",
+            "0000320193-24-000123\" not in response.text",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact acquisition runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -109710,6 +109870,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_acquisition_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_acquisition_runtime(
         errors
     )
 

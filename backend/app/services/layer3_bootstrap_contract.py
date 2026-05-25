@@ -233,6 +233,15 @@ def build_bootstrap_contract(
             "sec_edgar_text_table_source_acquisition_authority_endpoint": (
                 f"{api_root}/source/sec-edgar/text-table/source-acquisition/authority"
             ),
+            "sec_edgar_text_table_live_source_artifact_acquisition_admitted": True,
+            "sec_edgar_text_table_live_source_artifact_acquisition_endpoint": (
+                f"{api_root}/source/sec-edgar/text-table/live-source-artifact/acquire"
+            ),
+            "sec_edgar_text_table_live_source_artifact_acquisition_status_admitted": True,
+            "sec_edgar_text_table_live_source_artifact_acquisition_status_endpoint": (
+                f"{api_root}/source/sec-edgar/text-table/live-source-artifact/status/"
+                "{live_source_artifact_receipt_id}"
+            ),
             "sec_edgar_text_table_downstream_operator_repeatability_trial_admitted": True,
             "sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint": (
                 f"{api_root}/source/sec-edgar/text-table/downstream/operator-repeatability/trial"
