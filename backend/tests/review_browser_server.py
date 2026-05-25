@@ -57,8 +57,13 @@ from app.services import (
     layer3_candidate_b_runtime_bridge,
     layer3_candidate_b_visual_lane_status,
     layer3_internal_webhook_connector,
+    layer3_sec_edgar_authority_envelope,
+    layer3_sec_edgar_downstream_proof,
+    layer3_sec_edgar_material_bridge,
+    layer3_workbench,
 )
 from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services.layer3_utils import stable_hash
 from app.services.layer3_raw_mixed_bridge import (
     RAW_MIXED_CORPUS_SEED_MANIFEST_SCHEMA_ID,
     RAW_MIXED_CORPUS_SEED_MODE,
@@ -97,6 +102,7 @@ from test_layer3_candidate_b_default_readiness import (
     _write_bundle_receipt,
     _write_runtime_receipt,
 )
+from test_layer3_workbench import _seed_aps_derived_dataset_version
 
 APS_EVIDENCE_BUNDLE_SCHEMA_ID = "aps.evidence_bundle.v2"
 APS_EVIDENCE_BUNDLE_SCHEMA_VERSION = 2
@@ -736,6 +742,121 @@ def _seed_browser_raw_mixed_authority(db, temp_path: Path, *, seed_id: str) -> d
     }
 
 
+def _sec_edgar_browser_coverage(bridge: dict[str, Any], gate_b: dict[str, Any], snapshot: L3MaterialSnapshot) -> dict[str, dict[str, object]]:
+    coverage: dict[str, dict[str, object]] = {}
+    for step in layer3_sec_edgar_downstream_proof.REQUIRED_COVERAGE:
+        item: dict[str, object] = {
+            "status": "proven",
+            "evidence_ref": f"sec-edgar-text-table-downstream-proof:{step}",
+            "evidence_hash": stable_hash({"step": step, "session_id": gate_b["session_id"]}),
+            "server_response_hash": stable_hash({"response": step, "session_id": gate_b["session_id"]}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "full_mockup_activation_enabled": False,
+        }
+        if step not in {"authority_envelope_validation", "material_authority_bridge"}:
+            item["session_id"] = gate_b["session_id"]
+        if step == "authority_envelope_validation":
+            item["authority_envelope_hash"] = bridge["authority_envelope_hash"]
+        if step == "material_authority_bridge":
+            item["bridge_receipt_hash"] = bridge["bridge_receipt_hash"]
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+        if step == "gate_b_commit":
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+            item["selection_manifest_id"] = gate_b["selection_manifest_id"]
+            item["material_snapshot_payload_hash"] = snapshot.payload_hash
+        coverage[step] = item
+    return coverage
+
+
+def _prepare_sec_edgar_downstream_status_fixture(db, temp_path: Path, *, seed_id: str) -> dict[str, object]:
+    dataset_version_id = _seed_aps_derived_dataset_version(
+        db,
+        temp_path,
+        dataset_version_id=f"dv-sec-edgar-status-{seed_id}",
+        parser_family="sec_edgar_filing",
+        typed_content_contract_id="aps_sec_edgar_filing_units_v1",
+        source_mode="artifact_sec_edgar_filing_parser",
+        parser_contract_id="aps_sec_edgar_filing_parser_v1",
+    )
+    db.commit()
+    envelope = layer3_sec_edgar_authority_envelope.validate_sec_edgar_text_table_authority_envelope(
+        {
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db,
+    )
+    bridge = layer3_sec_edgar_material_bridge.prepare_sec_edgar_text_table_material_authority_bridge(
+        {
+            "client_request_id": f"browser-sec-edgar-status-bridge-{seed_id}",
+            "bridge_mode": "sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db,
+    )
+    gate_b = layer3_workbench.gate_b_decision(db, dict(bridge["gate_b_decision_payload"]))
+    snapshots = (
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == gate_b["session_id"])
+        .filter(L3MaterialSnapshot.source_shape == "dataset_version")
+        .all()
+    )
+    matches = [
+        snapshot
+        for snapshot in snapshots
+        if (snapshot.source_identity_json or {}).get("dataset_version_id") == dataset_version_id
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("SEC EDGAR material snapshot was not created for browser fixture")
+    snapshot = matches[0]
+    proof_request = {
+        "client_request_id": f"browser-sec-edgar-status-proof-{seed_id}",
+        "proof_mode": "sec_edgar_text_table_downstream_layer3_e2e_proof_v1",
+        "operator_decision": "record_sec_edgar_text_table_downstream_layer3_e2e_proof",
+        "dataset_version_id": dataset_version_id,
+        "authority_envelope_hash": bridge["authority_envelope_hash"],
+        "bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "material_preview_hash": bridge["material_preview_hash"],
+        "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "session_id": gate_b["session_id"],
+        "selection_manifest_id": gate_b["selection_manifest_id"],
+        "material_snapshot_payload_hash": snapshot.payload_hash,
+        "coverage_evidence": _sec_edgar_browser_coverage(bridge, gate_b, snapshot),
+        "operator_confirmation": True,
+    }
+    proof = layer3_sec_edgar_downstream_proof.record_sec_edgar_text_table_downstream_layer3_proof(
+        proof_request,
+        db,
+    )
+    return {
+        "schema_id": "project6.review_browser_sec_edgar_downstream_status_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "dataset_version_id": dataset_version_id,
+        "downstream_proof_request": proof_request,
+        "expected_proof_hash": proof["proof_hash"],
+        "proof_hash": proof["proof_hash"],
+        "status_endpoint": "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
 def _write_browser_storage_ref(ref: str, content: str) -> tuple[str, str]:
     path = Path(settings.storage_dir) / ref
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1322,6 +1443,7 @@ def create_app() -> FastAPI:
     temp_path = Path(temp_dir.name)
     raw_mixed_seed_counter = count(1)
     raw_mixed_materialization_counter = count(1)
+    sec_edgar_status_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
     _install_layer3_browser_patches(temp_path)
@@ -1428,6 +1550,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/seed-cohort-aps-handoff",
                 "/__test/layer3/seed-raw-mixed",
                 "/__test/layer3/materialize-raw-mixed",
+                "/__test/layer3/sec-edgar-downstream-status",
                 "/__test/layer3/source-directory-hybrid-authority",
                 "/__test/layer3/source-directory-fixture-reset",
                 "/__test/layer3/candidate-b-readiness-audit",
@@ -1625,5 +1748,19 @@ def create_app() -> FastAPI:
     def materialize_layer3_raw_mixed_setup() -> dict[str, object]:
         seed_id = f"raw-mixed-materialize-browser-{next(raw_mixed_materialization_counter):03d}"
         return _build_browser_raw_mixed_materialization_setup(seed_id=seed_id)
+
+    @app.post("/__test/layer3/sec-edgar-downstream-status")
+    def sec_edgar_downstream_status_setup() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = f"browser-{next(sec_edgar_status_counter):03d}"
+            return _prepare_sec_edgar_downstream_status_fixture(db, temp_path, seed_id=seed_id)
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR downstream status setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
 
     return app
