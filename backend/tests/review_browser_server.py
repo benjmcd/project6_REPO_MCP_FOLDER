@@ -123,6 +123,7 @@ HARNESS_PATCH_GROUPS = (
     "candidate-b-trace",
     "layer3-deterministic-analysis",
     "layer3-aps-handoff",
+    "layer3-sec-edgar-live-source-artifact",
 )
 
 
@@ -785,10 +786,13 @@ def _sec_edgar_text_hash(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
-class _ReviewBrowserFakeSecEdgarClient:
-    def __init__(self, content: bytes) -> None:
-        self.content = content
+class _ReviewBrowserSeededSecEdgarClient:
+    def __init__(self) -> None:
+        self._content_by_url: dict[str, bytes] = {}
         self.calls: list[dict[str, object]] = []
+
+    def register_complete_submission_text(self, *, url: str, content: bytes) -> None:
+        self._content_by_url[url] = content
 
     def fetch_complete_submission_text(
         self,
@@ -800,15 +804,21 @@ class _ReviewBrowserFakeSecEdgarClient:
     ) -> layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult:
         self.calls.append(
             {
-                "url": url,
-                "user_agent": user_agent,
+                "url_hash": _sec_edgar_text_hash(url),
+                "user_agent_hash": _sec_edgar_text_hash(user_agent),
                 "timeout_seconds": timeout_seconds,
                 "max_bytes": max_bytes,
             }
         )
+        content = self._content_by_url.get(url)
+        if content is None:
+            return layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=404,
+                final_url=url,
+            )
         return layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
             status_code=200,
-            content=self.content,
+            content=content,
             final_url=url,
         )
 
@@ -829,21 +839,35 @@ def _reset_sec_edgar_live_source_artifact_rate_marker() -> None:
     )
 
 
-def _prepare_sec_edgar_live_source_artifact_acquisition_fixture(*, seed_id: str) -> dict[str, object]:
-    content = f"<SEC-DOCUMENT>review browser SEC EDGAR filing text {seed_id}</SEC-DOCUMENT>\n".encode("utf-8")
-    fake_client = _ReviewBrowserFakeSecEdgarClient(content)
-    settings.layer3_sec_edgar_user_agent = "Layer3 Review Browser contact@example.com"
-    settings.layer3_sec_edgar_rate_limit_per_second = 10
-    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = fake_client
-    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = lambda _seconds: None
-    _reset_sec_edgar_live_source_artifact_rate_marker()
-    acquisition_request = {
-        "cik_or_filer_ref": "0000320193",
-        "accession_or_submission_id": "0000320193-24-000123",
+def _sec_edgar_live_source_artifact_identity(seed_id: str) -> dict[str, str]:
+    seed_hash = _sec_edgar_text_hash(seed_id)
+    cik = f"{1000000000 + (int(seed_hash[:16], 16) % 9000000000):010d}"
+    accession_year = int(seed_hash[16:20], 16) % 100
+    accession_sequence = int(seed_hash[20:32], 16) % 1_000_000
+    return {
+        "cik_or_filer_ref": cik,
+        "accession_or_submission_id": f"{cik}-{accession_year:02d}-{accession_sequence:06d}",
         "form_type": "10-K",
         "filing_date": "2024-11-01",
+    }
+
+
+def _prepare_sec_edgar_live_source_artifact_acquisition_fixture(
+    *,
+    fake_client: _ReviewBrowserSeededSecEdgarClient,
+    seed_id: str,
+) -> dict[str, object]:
+    content = f"<SEC-DOCUMENT>review browser SEC EDGAR filing text {seed_id}</SEC-DOCUMENT>\n".encode("utf-8")
+    _reset_sec_edgar_live_source_artifact_rate_marker()
+    source_identity = _sec_edgar_live_source_artifact_identity(seed_id)
+    acquisition_request = {
+        **source_identity,
         "expected_content_sha256": hashlib.sha256(content).hexdigest(),
     }
+    fake_client.register_complete_submission_text(
+        url=layer3_sec_edgar_live_source_artifact._server_derived_complete_submission_text_url(acquisition_request),
+        content=content,
+    )
     return {
         "schema_id": "project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1",
         "schema_version": 1,
@@ -1721,6 +1745,11 @@ def create_app() -> FastAPI:
     app.state.review_browser_fixture = fixture
     app.state.layer3_internal_webhook_calls = []
     app.state.layer3_engine = engine
+    app.state.sec_edgar_live_source_artifact_client = _ReviewBrowserSeededSecEdgarClient()
+    settings.layer3_sec_edgar_user_agent = "Layer3 Review Browser contact@example.com"
+    settings.layer3_sec_edgar_rate_limit_per_second = 10
+    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = app.state.sec_edgar_live_source_artifact_client
+    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = lambda _seconds: None
     app.include_router(review_nrc_aps.router, prefix="/api/v1/review/nrc-aps")
     app.include_router(layer3.router, prefix="/api/v1/layer3")
     app.mount("/review/nrc-aps/static", StaticFiles(directory=review_ui_static_dir), name="review_ui_static")
@@ -2004,7 +2033,10 @@ def create_app() -> FastAPI:
     def sec_edgar_live_source_artifact_acquisition_setup() -> dict[str, object]:
         try:
             seed_id = f"browser-live-source-artifact-{next(sec_edgar_live_source_artifact_counter):03d}"
-            return _prepare_sec_edgar_live_source_artifact_acquisition_fixture(seed_id=seed_id)
+            return _prepare_sec_edgar_live_source_artifact_acquisition_fixture(
+                fake_client=app.state.sec_edgar_live_source_artifact_client,
+                seed_id=seed_id,
+            )
         except Exception as exc:
             raise HTTPException(
                 status_code=409,
