@@ -62,6 +62,7 @@ READINESS_REQUIRED_GATES = (
     "candidate-b-broader-eligible-corpus-default-scope-selector-activation",
     "candidate-b-broader-eligible-corpus-default-scope-operator-repeatability-trial",
     "candidate-b-broader-eligible-corpus-default-scope-promotion-readiness",
+    "candidate-b-broader-eligible-corpus-default-scope-default-promotion",
     "candidate-b-default-promotion-final-proof",
     "candidate-b-default-promotion-final-proof-status",
     "candidate-b-full-corpus-operator-workflow-status",
@@ -120,6 +121,7 @@ READINESS_IMPLEMENTED_GATES = (
     "candidate-b-broader-eligible-corpus-default-scope-selector-activation",
     "candidate-b-broader-eligible-corpus-default-scope-operator-repeatability-trial",
     "candidate-b-broader-eligible-corpus-default-scope-promotion-readiness",
+    "candidate-b-broader-eligible-corpus-default-scope-default-promotion",
     "candidate-b-default-promotion-final-proof",
     "candidate-b-default-promotion-final-proof-status",
     "candidate-b-full-corpus-operator-workflow-status",
@@ -274,6 +276,10 @@ def build_readiness_contract(
         "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_admitted": True,
         "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint": (
             f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness"
+        ),
+        "candidate_b_broader_eligible_corpus_default_scope_default_promotion_admitted": True,
+        "candidate_b_broader_eligible_corpus_default_scope_default_promotion_endpoint": (
+            f"{api_root}/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/default-promotion"
         ),
         "candidate_b_default_promotion_final_proof_admitted": True,
         "candidate_b_default_promotion_final_proof_endpoint": (
