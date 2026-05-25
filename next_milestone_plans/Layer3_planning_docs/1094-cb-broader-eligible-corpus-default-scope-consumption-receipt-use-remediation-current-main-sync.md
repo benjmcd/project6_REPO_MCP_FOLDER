@@ -1,0 +1,52 @@
+# Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Remediation Current-Main Sync
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1
+source_consumption_receipt_use_rendered_review_remediation: next_milestone_plans/Layer3_planning_docs/1093-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-review-remediation.md
+current_main_entry: c1d938ed781aba41aa3389139f265ce1ca6edc70
+source_review_remediation_pr: "#1796"
+source_branch: codex/cb-consumption-use-review-fix
+source_commit: d06ed23b
+source_merge_commit: c1d938ed781aba41aa3389139f265ce1ca6edc70
+merge_state_before_merge: CLEAN
+review_threads_total_count: 0
+unresolved_review_threads_total_count: 0
+source_pr_1795_review_threads_total_count: 3
+source_pr_1795_review_threads_resolved_after_remediation: 3
+ci_status: passed
+ci_successful_checks: 10
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+synced_rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_control
+synced_runtime_mode: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1
+synced_runtime_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use
+synced_source_consumption_authority_preferred_after_new_consumption_response: true
+synced_stale_dom_or_stored_use_values_rejected_after_new_consumption_response: true
+synced_server_selected_scope_classes_preferred_after_new_consumption_response: true
+synced_operator_edit_clears_source_authority_preference: true
+synced_empty_parsed_selected_scope_classes_submit_disabled: true
+synced_rehydrated_consumption_receipt_use_payload_proven: true
+synced_positive_consumption_receipt_use_still_proven: true
+synced_stale_consumption_receipt_hash_fail_closed_still_proven: true
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_selection_v1
+```
+
+The rendered consumption-receipt use remediation is now current-main behavior. PR `#1796` merged with all checks passing and no review threads on the remediation PR. The three PR `#1795` review threads that triggered this remediation are resolved after the fix landed.
+
+The next useful slice is not another rehydration proof. It is a separate selection for a read-only operator status inspection endpoint/control over the redacted consumption-receipt use authority, so operators can re-check whether exact selected classes have a valid use receipt without relying on browser state or mutating broader defaults.

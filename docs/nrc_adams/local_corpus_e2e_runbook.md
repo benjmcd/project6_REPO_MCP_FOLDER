@@ -5631,3 +5631,41 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumptio
 ```
 
 This review-remediation slice keeps the existing server-owned consumption-receipt use endpoint as authority. It fixes the rendered use control so a newly consumed receipt rehydrates use bindings and selected classes from the fresh server response instead of stale DOM or stored defaults, while still letting later operator edits pass through normal fail-closed submission. The rendered submit gate now requires a non-empty parsed selected-class list.
+
+### Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Remediation Current-Main Sync
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1
+source_consumption_receipt_use_rendered_review_remediation: next_milestone_plans/Layer3_planning_docs/1093-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-review-remediation.md
+current_main_entry: c1d938ed781aba41aa3389139f265ce1ca6edc70
+source_review_remediation_pr: "#1796"
+source_branch: codex/cb-consumption-use-review-fix
+source_commit: d06ed23b
+source_merge_commit: c1d938ed781aba41aa3389139f265ce1ca6edc70
+merge_state_before_merge: CLEAN
+review_threads_total_count: 0
+unresolved_review_threads_total_count: 0
+source_pr_1795_review_threads_total_count: 3
+source_pr_1795_review_threads_resolved_after_remediation: 3
+ci_status: passed
+ci_successful_checks: 10
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+synced_source_consumption_authority_preferred_after_new_consumption_response: true
+synced_stale_dom_or_stored_use_values_rejected_after_new_consumption_response: true
+synced_server_selected_scope_classes_preferred_after_new_consumption_response: true
+synced_operator_edit_clears_source_authority_preference: true
+synced_empty_parsed_selected_scope_classes_submit_disabled: true
+synced_rehydrated_consumption_receipt_use_payload_proven: true
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_selection_v1
+```
+
+The remediation is synced to current main. The next selected planning step should decide the read-only operator status inspection contract for consumption-receipt use authority before any broader default-scope closeout or mutation behavior is considered.
