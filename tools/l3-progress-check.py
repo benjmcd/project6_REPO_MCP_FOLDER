@@ -3242,6 +3242,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_STATUS_RUNTIME = 
     PLANNING_DOCS
     / "1144-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_STATUS_REVIEW_REMEDIATION = (
+    PLANNING_DOCS
+    / "1145-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-review-remediation.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -109149,7 +109153,9 @@ def _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status
             "frontend durable authority enabled",
         ),
         REVIEW_BROWSER_SERVER: (
-            "_ReviewBrowserFakeSecEdgarClient",
+            "_ReviewBrowserSeededSecEdgarClient",
+            "register_complete_submission_text",
+            "_sec_edgar_live_source_artifact_identity",
             "_prepare_sec_edgar_live_source_artifact_acquisition_fixture",
             "project6.review_browser_sec_edgar_live_source_artifact_acquisition_setup.v1",
             "/__test/layer3/sec-edgar-live-source-artifact-acquisition",
@@ -109159,6 +109165,7 @@ def _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status
             '"raw_url_exposed": False',
             '"artifact_bytes_exposed": False',
             '"server_user_agent_exposed": False',
+            "layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = app.state.sec_edgar_live_source_artifact_client",
         ),
         ROOT / "backend" / "tests" / "test_review_browser_server.py": (
             "test_review_browser_server_prepares_sec_edgar_live_source_artifact_acquisition",
@@ -109169,6 +109176,8 @@ def _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status
             "layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1",
             "Layer3 Review Browser",
             "idempotent_replay",
+            "layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is original_sec_edgar_client",
+            'setup["live_acquisition_request"]["cik_or_filer_ref"] != first_request["cik_or_filer_ref"]',
         ),
         LAYER3_PAGE_TEST: (
             'id="sec-edgar-live-source-artifact-acquisition-panel"',
@@ -109202,6 +109211,95 @@ def _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing SEC EDGAR live source artifact acquisition rendered status runtime term: {term}"
+                )
+
+
+def _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_ACQUISITION_RENDERED_STATUS_REVIEW_REMEDIATION: (
+            "SEC EDGAR Text Table Live Source Artifact Acquisition Rendered Status Review Remediation",
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1144-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-runtime.md",
+            "current_main_entry: 5c5df31369f485848f392c247bb7a6e82c16b8bb",
+            "source_pr: 1848",
+            "source_merge_commit: 5c5df31369f485848f392c247bb7a6e82c16b8bb",
+            "entry_decision: review_remediation",
+            "review_threads_found_after_merge: 3",
+            "review_thread_path: backend/tests/review_browser_server.py",
+            "review_thread_lines: 836,838,845",
+            "review_remediation_scope: review_browser_fixture_and_test_harness_state_isolation_only",
+            "implemented_seeded_sec_client: _ReviewBrowserSeededSecEdgarClient",
+            "implemented_seed_registration: register_complete_submission_text",
+            "implemented_seed_identity_function: _sec_edgar_live_source_artifact_identity",
+            "implemented_fixture_identity_policy: cik_and_accession_are_deterministic_seed_bound_values",
+            "implemented_fake_client_installation: app_owned_client_installed_once_at_review_browser_app_creation",
+            "implemented_setup_route_mutates_sec_client: false",
+            "implemented_setup_route_mutates_sec_sleep: false",
+            "implemented_setup_route_mutates_sec_settings: false",
+            "implemented_patch_state_restore: sec_client_sec_sleep_sec_user_agent_sec_rate_limit_restored",
+            "production_sec_acquisition_behavior_changed: false",
+            "production_api_behavior_changed: false",
+            "production_rendered_behavior_changed: false",
+            "parser_expansion_enabled: false",
+            "dataset_version_or_gate_b_mutation_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_exposed: false",
+            "server_user_agent_exposed: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1144-sec-edgar-text-table-live-source-artifact-acquisition-rendered-status-runtime.md",
+            "current_main_entry: 5c5df31369f485848f392c247bb7a6e82c16b8bb",
+            "entry_decision: review_remediation",
+            "review_threads_found_after_merge: 3",
+            "review_remediation_status: implemented",
+            "implemented_seeded_sec_client: _ReviewBrowserSeededSecEdgarClient",
+            "implemented_seed_identity_function: _sec_edgar_live_source_artifact_identity",
+            "implemented_fixture_cache_policy: each_setup_seed_registers_distinct_identity_and_content_hash",
+            "implemented_patch_state_restore: sec_client_sec_sleep_sec_user_agent_sec_rate_limit_restored",
+            "production_sec_acquisition_behavior_changed: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation_current_main_sync_v1",
+        ),
+        REVIEW_BROWSER_SERVER: (
+            "class _ReviewBrowserSeededSecEdgarClient",
+            "def register_complete_submission_text",
+            "url_hash",
+            "user_agent_hash",
+            "def _sec_edgar_live_source_artifact_identity",
+            "fake_client: _ReviewBrowserSeededSecEdgarClient",
+            "fake_client.register_complete_submission_text",
+            "app.state.sec_edgar_live_source_artifact_client = _ReviewBrowserSeededSecEdgarClient()",
+            "layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = app.state.sec_edgar_live_source_artifact_client",
+        ),
+        ROOT / "backend" / "tests" / "review_browser_fixture.py": (
+            "layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT",
+            "layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP",
+            "settings_layer3_sec_edgar_user_agent",
+            "settings_layer3_sec_edgar_rate_limit_per_second",
+        ),
+        ROOT / "backend" / "tests" / "test_review_browser_server.py": (
+            "original_sec_edgar_client",
+            "original_sec_edgar_sleep",
+            "layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is original_sec_edgar_client",
+            "layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP is original_sec_edgar_sleep",
+            'setup["live_acquisition_request"]["cik_or_filer_ref"] != first_request["cik_or_filer_ref"]',
+            'setup["live_acquisition_request"]["accession_or_submission_id"] != first_request["accession_or_submission_id"]',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact acquisition rendered status review remediation term: {term}"
                 )
 
 
@@ -110314,6 +110412,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_runtime(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_acquisition_rendered_status_review_remediation(
         errors
     )
 

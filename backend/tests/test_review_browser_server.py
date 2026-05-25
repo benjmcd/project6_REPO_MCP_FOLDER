@@ -14,8 +14,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from review_browser_fixture import capture_review_browser_patch_state, restore_review_browser_patches
 from review_browser_server import create_app
+from app.core.config import settings
 from app.services import layer3_internal_webhook_connector
 from app.services import layer3_pass_entry as layer3_pass_entry_module
+from app.services import layer3_sec_edgar_live_source_artifact
 from app.services import layer3_workbench as layer3_workbench_module
 
 
@@ -39,6 +41,10 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
     original_check_aps_handoff_compatibility = layer3_workbench_module.check_aps_handoff_compatibility
     original_materialize_aps_handoff = layer3_workbench_module.materialize_aps_handoff
     original_internal_webhook_transport = layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT
+    original_sec_edgar_client = layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT
+    original_sec_edgar_sleep = layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP
+    original_sec_edgar_user_agent = settings.layer3_sec_edgar_user_agent
+    original_sec_edgar_rate_limit = settings.layer3_sec_edgar_rate_limit_per_second
     patch_state = capture_review_browser_patch_state()
     app = None
 
@@ -50,6 +56,9 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
         assert layer3_workbench_module.check_aps_handoff_compatibility is not original_check_aps_handoff_compatibility
         assert layer3_workbench_module.materialize_aps_handoff is not original_materialize_aps_handoff
         assert layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT is not original_internal_webhook_transport
+        assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is app.state.sec_edgar_live_source_artifact_client
+        assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is not original_sec_edgar_client
+        assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP is not original_sec_edgar_sleep
 
         restore_review_browser_patches(patch_state)
 
@@ -58,6 +67,10 @@ def test_review_browser_server_restores_layer3_patch_state_after_app_creation() 
         assert layer3_workbench_module.check_aps_handoff_compatibility is original_check_aps_handoff_compatibility
         assert layer3_workbench_module.materialize_aps_handoff is original_materialize_aps_handoff
         assert layer3_internal_webhook_connector.INTERNAL_WEBHOOK_TRANSPORT is original_internal_webhook_transport
+        assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is original_sec_edgar_client
+        assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP is original_sec_edgar_sleep
+        assert settings.layer3_sec_edgar_user_agent == original_sec_edgar_user_agent
+        assert settings.layer3_sec_edgar_rate_limit_per_second == original_sec_edgar_rate_limit
         if module_was_present:
             assert sys.modules[module_key] is original_aps_bundle_module
         else:
@@ -103,6 +116,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
         "candidate-b-trace",
         "layer3-deterministic-analysis",
         "layer3-aps-handoff",
+        "layer3-sec-edgar-live-source-artifact",
     ]
     assert "/__test/layer3/seed-quant" in payload["seed_routes"]
     assert "/__test/layer3/seed-cohort-aps-handoff" in payload["seed_routes"]
@@ -142,6 +156,8 @@ def test_review_browser_server_prepares_sec_edgar_live_source_artifact_acquisiti
     assert "C:\\" not in str(setup)
     assert "http://" not in str(setup)
     assert "https://" not in str(setup)
+    patched_sec_client = layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT
+    first_request = setup["live_acquisition_request"]
 
     payload = {
         "client_request_id": "review-browser-sec-edgar-live-source-artifact",
@@ -178,6 +194,10 @@ def test_review_browser_server_prepares_sec_edgar_live_source_artifact_acquisiti
     setup_response = client.post("/__test/layer3/sec-edgar-live-source-artifact-acquisition")
     assert setup_response.status_code == 200, setup_response.text
     setup = setup_response.json()
+    assert layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT is patched_sec_client
+    assert setup["expected_content_sha256"] != first_request["expected_content_sha256"]
+    assert setup["live_acquisition_request"]["cik_or_filer_ref"] != first_request["cik_or_filer_ref"]
+    assert setup["live_acquisition_request"]["accession_or_submission_id"] != first_request["accession_or_submission_id"]
     payload = {
         "client_request_id": "review-browser-sec-edgar-live-source-artifact-available",
         "acquisition_mode": "sec_edgar_text_table_live_source_artifact_acquisition_v1",
