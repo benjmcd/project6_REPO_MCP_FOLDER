@@ -3513,6 +3513,25 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeActivationReceiptConsumpt
     operator_confirmation: bool
 
 
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    client_request_id: str = Field(min_length=1)
+    use_mode: Literal["candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_runtime_v1"]
+    consumption_receipt_id: str = Field(min_length=1)
+    consumption_receipt_hash: str = Field(min_length=1)
+    activation_receipt_id: str = Field(min_length=1)
+    activation_receipt_hash: str = Field(min_length=1)
+    selector_use_status_hash: str = Field(min_length=1)
+    selector_use_receipt_id: str = Field(min_length=1)
+    selector_use_receipt_hash: str = Field(min_length=1)
+    runtime_selection_receipt_id: str = Field(min_length=1)
+    runtime_selection_receipt_hash: str = Field(min_length=1)
+    selected_scope_classes: list[str]
+    rollback_to_baseline_confirmation: bool
+    operator_confirmation: bool
+
+
 class Layer3CandidateBDefaultPromotionFinalProofRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -5765,6 +5784,52 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeActivationReceiptConsumpt
     operator_visible_consumption_status: dict[str, Any]
     fail_closed_behavior: dict[str, bool]
     activation_receipt_consumption_authority_recorded: bool
+    selector_mutation_performed: bool
+    default_scope_mutation_performed: bool
+    source_expansion_admitted: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    pdf_or_image_text_material_ingestion_admitted: bool
+    provider_object_write_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    auth_security_expansion_enabled: bool
+    full_mockup_activation_enabled: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseResponse(Layer3BaseResponse):
+    mode: str
+    consumption_receipt_use_state: str
+    use_receipt_id: str | None
+    use_receipt_hash: str | None
+    use_receipt_ref: str | None
+    use_receipt_status: str
+    blocked_reasons: list[dict[str, Any]]
+    use_authority: dict[str, Any]
+    consumption_receipt_binding: dict[str, Any]
+    activation_receipt_binding: dict[str, Any]
+    selector_use_status_binding: dict[str, Any]
+    selector_use_receipt_binding: dict[str, Any]
+    runtime_selection_receipt_binding: dict[str, Any]
+    readiness_audit_binding: dict[str, Any]
+    selected_scope_classes: list[str]
+    selected_scope_classes_source: str
+    current_default_before_use_runtime: str
+    default_scope_use_enabled: bool
+    default_scope_expansion_enabled: bool
+    default_scope_application_scope: str
+    non_selected_class_default: str
+    baseline_rollback: dict[str, Any]
+    candidate_a_semantics: dict[str, Any]
+    candidate_b_scope_authority: dict[str, Any]
+    operator_visible_use_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
+    default_scope_use_authority_recorded: bool
     selector_mutation_performed: bool
     default_scope_mutation_performed: bool
     source_expansion_admitted: bool
@@ -12214,6 +12279,30 @@ def post_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_co
                 payload.model_dump(exclude_unset=True),
             )
         )
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeActivationConsumptionError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorActivationError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseStatusError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorUseError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
+
+
+@router.post(
+    "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use",
+    response_model=Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use(
+    payload: Layer3CandidateBBroaderEligibleCorpusDefaultScopeConsumptionReceiptUseRequest,
+) -> dict[str, Any] | JSONResponse:
+    try:
+        return layer3_candidate_b_broader_scope_selector_use.record_candidate_b_broader_scope_consumption_receipt_use(
+            payload.model_dump(exclude_unset=True),
+        )
+    except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeConsumptionReceiptUseError as exc:
+        return JSONResponse(status_code=exc.http_status, content=exc.response_body())
     except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeActivationConsumptionError as exc:
         return JSONResponse(status_code=exc.http_status, content=exc.response_body())
     except layer3_candidate_b_broader_scope_selector_use.CandidateBBroaderScopeSelectorActivationError as exc:
