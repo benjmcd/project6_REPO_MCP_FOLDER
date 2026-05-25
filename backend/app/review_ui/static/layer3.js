@@ -14609,7 +14609,7 @@ function renderSecEdgarSourceAcquisitionAuthorityPanel() {
                         <input id="sec-edgar-source-acquisition-operator-confirmation" type="checkbox" ${inputs.operatorConfirmation ? 'checked' : ''} />
                         <span>operator confirmation</span>
                     </label>
-                    <button id="sec-edgar-source-acquisition-authority-submit" type="submit" ${canRecordSecEdgarSourceAcquisitionAuthority(contract) ? '' : 'disabled'}>Record Source Acquisition Authority</button>
+                    <button id="sec-edgar-source-acquisition-authority-submit" type="submit" ${canRecordSecEdgarSourceAcquisitionAuthority(contract) ? '' : 'disabled'}>Record Source Acquisition Receipt</button>
                 </form>
                 <div class="result-review-status">
                     <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
