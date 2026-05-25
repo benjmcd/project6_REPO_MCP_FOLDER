@@ -7952,3 +7952,78 @@ next_exact_posture: sec_edgar_text_table_source_acquisition_authority_rendered_s
 ```
 
 The rendered source-acquisition control now records the existing server-owned SEC EDGAR source-acquisition authority receipt through the admitted endpoint. The proof path covers missing operator confirmation, missing source-artifact receipt input, stale source-artifact hash rejection, available receipt projection, idempotent replay, and redacted operator-visible status in headless and headed Chromium.
+
+### SEC EDGAR Text Table Source Acquisition Rendered Status Current-Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_source_acquisition_authority_rendered_status_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1137-sec-edgar-text-table-source-acquisition-rendered-status-runtime.md
+current_main_entry: 7e30fde7e45cf2258472d1920ce8befe1716f2d1
+source_pr: 1841
+source_merge_commit: 7e30fde7e45cf2258472d1920ce8befe1716f2d1
+entry_decision: current_main_sync
+runtime_status: merged_on_current_main
+rendered_status: merged_on_current_main
+implemented_rendered_mode: rendered_sec_edgar_text_table_source_acquisition_authority_control
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+implemented_panel: sec-edgar-source-acquisition-authority-panel
+implemented_form: sec-edgar-source-acquisition-authority-form
+implemented_submit: sec-edgar-source-acquisition-authority-submit
+implemented_submit_label: Record Source Acquisition Receipt
+implemented_request_input: sec-edgar-source-acquisition-authority-request-json
+implemented_operator_confirmation_input: sec-edgar-source-acquisition-operator-confirmation
+implemented_status_states: not_recorded,available,blocked
+implemented_test_fixture_route: /__test/layer3/sec-edgar-source-acquisition-authority
+browser_held_source_artifact_hashes_are_expected_values_only: true
+append_only_source_acquisition_authority_receipt_required: true
+idempotent_replay_rendered: true
+stale_source_artifact_hash_fails_closed: true
+missing_operator_confirmation_fails_closed: true
+missing_source_artifact_receipt_fails_closed: true
+local_validation_headless_rendered_status_proof: passed
+local_validation_headed_rendered_status_proof: passed
+local_validation_l3_progress_check: passed
+local_validation_l3_target_selection_validate_frozen: passed
+github_checks: passed
+github_successful_checks: 10
+review_threads: none
+open_prs_after_merge: none
+rendered_control_can_create_authority_envelope: false
+rendered_control_can_create_material_bridge: false
+rendered_control_can_mutate_gate_b_session: false
+rendered_control_can_fetch_sec_content: false
+rendered_control_can_accept_raw_sec_url: false
+rendered_control_can_accept_raw_local_path: false
+rendered_control_can_parse_xml_html_inline_xbrl: false
+rendered_control_can_dispatch_connector: false
+rendered_control_can_write_provider_object: false
+rendered_control_can_add_rag_or_model_runtime: false
+rendered_control_can_activate_full_mockup: false
+raw_source_artifact_ref_rendered: false
+raw_source_artifact_receipt_path_rendered: false
+raw_authority_envelope_input_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+new_runtime_storage_root_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+next_exact_posture: sec_edgar_text_table_source_acquisition_authority_closeout_readiness_v1
+```
+
+Current main now contains both the server-owned SEC EDGAR source-acquisition authority endpoint and the rendered operator receipt-control surface over it. Operators still need a separately admitted slice before any live SEC fetch, parser expansion, raw filing URL authority, runtime storage expansion, provider write, connector dispatch, RAG/model runtime, or full mockup activation.
