@@ -29,6 +29,7 @@ from app.services import (
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
+    layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
@@ -444,6 +445,23 @@ class Layer3SecEdgarTextTableSourceAcquisitionAuthorityRequest(BaseModel):
     materialization_receipt_hash: str = Field(min_length=64, max_length=64)
     dataset_version_hash: str = Field(min_length=64, max_length=64)
     authority_envelope_hash: str = Field(min_length=64, max_length=64)
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarTextTableLiveSourceArtifactAcquireRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    acquisition_mode: Literal["sec_edgar_text_table_live_source_artifact_acquisition_v1"]
+    operator_decision: Literal["acquire_sec_edgar_text_table_live_source_artifact"]
+    cik_or_filer_ref: str = Field(min_length=1)
+    accession_or_submission_id: str = Field(min_length=1)
+    form_type: str = Field(min_length=1)
+    filing_date: str = Field(min_length=1)
+    expected_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
     operator_confirmation: bool
     actor: str | None = None
 
@@ -7446,6 +7464,34 @@ class Layer3SecEdgarTextTableSourceAcquisitionAuthorityResponse(Layer3BaseRespon
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarTextTableLiveSourceArtifactResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    source_family: str
+    parser_family: str
+    parser_contract_id: str
+    typed_content_contract_id: str
+    source_artifact_family: str
+    live_source_artifact_receipt_id: str
+    live_source_artifact_receipt_hash: str
+    live_source_artifact_receipt_status: str
+    source_artifact_receipt: dict[str, Any]
+    retained_source_artifact_manifest: dict[str, Any]
+    source_identity: dict[str, Any]
+    sec_request_policy: dict[str, Any]
+    cache: dict[str, Any]
+    idempotency: dict[str, Any]
+    compatibility: dict[str, Any]
+    operator_visible_live_source_artifact_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
+    baseline_rollback: dict[str, Any]
+    candidate_a_semantics: dict[str, Any]
+    candidate_b_default_scope: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarTextTableDownstreamProofResponse(Layer3BaseResponse):
     mode: str
     proof_state: str
@@ -14111,6 +14157,36 @@ def post_sec_edgar_text_table_source_acquisition_authority(
         lambda: layer3_sec_edgar_source_acquisition.record_sec_edgar_text_table_source_acquisition_authority(
             payload.model_dump(exclude_none=True),
             db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/text-table/live-source-artifact/acquire",
+    response_model=Layer3SecEdgarTextTableLiveSourceArtifactResponse,
+    responses=_workbench_error_responses(400, 409),
+)
+def post_sec_edgar_text_table_live_source_artifact_acquire(
+    payload: Layer3SecEdgarTextTableLiveSourceArtifactAcquireRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_live_source_artifact.acquire_sec_edgar_text_table_live_source_artifact(
+            payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}",
+    response_model=Layer3SecEdgarTextTableLiveSourceArtifactResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_text_table_live_source_artifact_status(
+    live_source_artifact_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_live_source_artifact.inspect_sec_edgar_text_table_live_source_artifact_status(
+            live_source_artifact_receipt_id,
         )
     )
 

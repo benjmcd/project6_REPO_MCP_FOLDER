@@ -88,6 +88,7 @@ from app.services import (
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_namespace,
     layer3_replacement_package_set_authority,
+    layer3_sec_edgar_live_source_artifact,
     layer3_workbench,
 )
 from app.services.layer3_aps_handoff import (
@@ -1150,6 +1151,229 @@ def test_layer3_api_rejects_sec_edgar_text_table_source_acquisition_stale_or_unc
     assert unconfirmed_response.json()["error_code"] == (
         "sec_edgar_text_table_source_acquisition_operator_confirmation_missing"
     )
+
+
+class _FakeSecEdgarClient:
+    def __init__(self, results: list[layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult]) -> None:
+        self.results = list(results)
+        self.calls: list[dict[str, object]] = []
+
+    def fetch_complete_submission_text(
+        self,
+        *,
+        url: str,
+        user_agent: str,
+        timeout_seconds: int,
+        max_bytes: int,
+    ) -> layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult:
+        self.calls.append(
+            {
+                "url": url,
+                "user_agent": user_agent,
+                "timeout_seconds": timeout_seconds,
+                "max_bytes": max_bytes,
+            }
+        )
+        assert self.results
+        return self.results.pop(0)
+
+
+def _sec_edgar_live_source_artifact_payload(
+    *,
+    client_request_id: str,
+    cik: str = "0000320193",
+    accession: str = "0000320193-24-000123",
+) -> dict[str, object]:
+    return {
+        "client_request_id": client_request_id,
+        "acquisition_mode": "sec_edgar_text_table_live_source_artifact_acquisition_v1",
+        "operator_decision": "acquire_sec_edgar_text_table_live_source_artifact",
+        "cik_or_filer_ref": cik,
+        "accession_or_submission_id": accession,
+        "form_type": "10-K",
+        "filing_date": "2024-11-01",
+        "operator_confirmation": True,
+    }
+
+
+def test_layer3_api_acquires_sec_edgar_text_table_live_source_artifact_with_fake_client(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    content = b"<SEC-DOCUMENT>candidate sec edgar filing text</SEC-DOCUMENT>\n"
+    fake_client = _FakeSecEdgarClient(
+        [
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=429,
+                headers={"Retry-After": "0"},
+                final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+            ),
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=content,
+                final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+            ),
+        ]
+    )
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+    payload = _sec_edgar_live_source_artifact_payload(client_request_id="sec-edgar-live-acq-001")
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_text_table_live_source_artifact_acquisition.v1"
+    assert body["mode"] == "sec_edgar_text_table_live_source_artifact_acquisition_v1"
+    assert body["live_source_artifact_receipt_status"] == "available"
+    assert body["source_artifact_receipt"]["schema_id"] == "layer3.sec_edgar_text_table_source_artifact_receipt.v1"
+    assert body["source_artifact_receipt"]["content_sha256"] == hashlib.sha256(content).hexdigest()
+    assert body["source_artifact_receipt"]["content_length"] == len(content)
+    assert body["retained_source_artifact_manifest"]["retained_source_artifact_available"] is True
+    assert body["cache"]["cache_status"] == "miss"
+    assert body["cache"]["network_request_made"] is True
+    assert body["idempotency"]["idempotent_replay"] is False
+    assert body["compatibility"]["source_acquisition_authority_compatible"] is True
+    assert body["compatibility"]["no_dataset_version_or_gate_b_mutation_in_acquisition_runtime"] is True
+    assert body["negative_invariants"]["sec_edgar_parser_expansion_admitted"] is False
+    assert body["negative_invariants"]["provider_object_write_enabled"] is False
+    assert body["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert body["fail_closed_behavior"]["browser_supplied_raw_url_rejected"] is True
+    assert len(fake_client.calls) == 2
+    assert fake_client.calls[0]["url"] == (
+        "https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/"
+        "0000320193-24-000123.txt"
+    )
+    assert fake_client.calls[0]["user_agent"] == "Layer3 Test contact@example.com"
+    assert "https://www.sec.gov" not in response.text
+    assert "0000320193-24-000123" not in response.text
+    assert "0000320193" not in response.text
+    assert str(tmp_path) not in response.text
+
+    receipt_root = tmp_path / "storage" / "layer3-sec-edgar-live-source-artifact-acquisition"
+    receipt_files = list((receipt_root / "receipts").glob("*.json"))
+    artifact_files = list((receipt_root / "artifacts").glob("*.txt"))
+    assert len(receipt_files) == 1
+    assert len(artifact_files) == 1
+    assert artifact_files[0].read_bytes() == content
+    receipt_text = receipt_files[0].read_text(encoding="utf-8")
+    assert body["live_source_artifact_receipt_hash"] in receipt_text
+    assert "https://www.sec.gov" not in receipt_text
+    assert "0000320193-24-000123" not in receipt_text
+    assert str(tmp_path) not in receipt_text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    replay_body = replay_response.json()
+    assert replay_body["cache"]["cache_status"] == "hit"
+    assert replay_body["idempotency"]["idempotent_replay"] is True
+    assert replay_body["live_source_artifact_receipt_hash"] == body["live_source_artifact_receipt_hash"]
+    assert len(fake_client.calls) == 2
+
+    new_request_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json={**payload, "client_request_id": "sec-edgar-live-acq-001-new-request"},
+    )
+    assert new_request_response.status_code == 200, new_request_response.text
+    assert new_request_response.json()["cache"]["cache_status"] == "hit"
+    assert len(fake_client.calls) == 2
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/"
+        f"{body['live_source_artifact_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    status_body = status_response.json()
+    assert status_body["schema_id"] == "layer3.sec_edgar_text_table_live_source_artifact_acquisition_status.v1"
+    assert status_body["live_source_artifact_receipt_hash"] == body["live_source_artifact_receipt_hash"]
+    assert status_body["cache"]["cache_status"] == "status"
+    assert "https://www.sec.gov" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_unconfigured_or_unsafe(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    fake_client = _FakeSecEdgarClient(
+        [layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(status_code=200, content=b"filing")]
+    )
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+    payload = _sec_edgar_live_source_artifact_payload(client_request_id="sec-edgar-live-acq-reject-001")
+
+    missing_user_agent_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=payload,
+    )
+    assert missing_user_agent_response.status_code == 409, missing_user_agent_response.text
+    assert missing_user_agent_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_user_agent_missing"
+    )
+    assert fake_client.calls == []
+
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    forbidden_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json={**payload, "raw_url": "https://www.sec.gov/Archives/edgar/data/320193/raw.txt"},
+    )
+    assert forbidden_response.status_code == 400, forbidden_response.text
+    assert forbidden_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_forbidden_request_fields"
+    )
+    assert "https://www.sec.gov" not in forbidden_response.text
+    assert fake_client.calls == []
+
+    mismatch_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json={**payload, "expected_content_sha256": "f" * 64},
+    )
+    assert mismatch_response.status_code == 409, mismatch_response.text
+    assert mismatch_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_content_hash_mismatch"
+    )
+    assert len(fake_client.calls) == 1
+    receipt_root = tmp_path / "storage" / "layer3-sec-edgar-live-source-artifact-acquisition"
+    assert list((receipt_root / "receipts").glob("*.json")) == []
+    assert list((receipt_root / "artifacts").glob("*.txt")) == []
+
+
+def test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_request_conflict(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    fake_client = _FakeSecEdgarClient(
+        [layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(status_code=200, content=b"filing")]
+    )
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+    payload = _sec_edgar_live_source_artifact_payload(client_request_id="sec-edgar-live-acq-conflict-001")
+    first_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json=payload,
+    )
+    assert first_response.status_code == 200, first_response.text
+
+    conflict_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+        json={
+            **payload,
+            "accession_or_submission_id": "0000320193-24-000124",
+        },
+    )
+    assert conflict_response.status_code == 409, conflict_response.text
+    assert conflict_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_client_request_id_conflict"
+    )
+    assert len(fake_client.calls) == 1
 
 
 def _sec_edgar_api_snapshot(client: TestClient, *, session_id: str, dataset_version_id: str) -> L3MaterialSnapshot:
