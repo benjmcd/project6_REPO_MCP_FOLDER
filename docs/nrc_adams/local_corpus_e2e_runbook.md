@@ -7386,3 +7386,66 @@ next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial
 ```
 
 This freeze selects the server-owned SEC EDGAR downstream operator repeatability-trial runtime. The future runtime should compare two already server-revalidated downstream status projections and write an append-only trial receipt only after reloading matching envelope, material bridge, Gate B, selection, material snapshot, proof, and coverage authority. It must not run SEC processing, fetch SEC content, expand parsers, accept browser paths/URLs/artifact bytes, write provider objects, dispatch connectors, add RAG/model runtime, activate full mockup behavior, or rely on frontend durable authority.
+
+### SEC EDGAR Text Table Downstream Operator Repeatability Trial Runtime
+
+```yaml
+milestone: sec_edgar_text_table_downstream_operator_repeatability_trial_runtime_v1
+source_repeatability_trial_selection: next_milestone_plans/Layer3_planning_docs/1127-sec-edgar-text-table-downstream-operator-repeatability-trial-selection.md
+current_main_entry: b3ab25b74fdf7a4994441fa217c4beec2025946e
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_repeatability_trial.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial
+implemented_schema_id: layer3.sec_edgar_text_table_downstream_operator_repeatability_trial.v1
+implemented_request_schema_id: layer3.sec_edgar_text_table_downstream_operator_repeatability_trial_request.v1
+implemented_trial_mode: append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution
+implemented_operator_decision: record_sec_edgar_text_table_downstream_operator_repeatability_trial
+implemented_authority_model: two_server_revalidated_sec_edgar_downstream_operator_status_requests_plus_expected_status_hashes
+implemented_receipt_model: append_only_trial_receipt_under_existing_server_storage_without_sec_fetch_or_processing_execution
+implemented_hash_bindings: dataset_version_id,dataset_version_hash,materialization_receipt_hash,authority_envelope_hash,bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,proof_hash,coverage_step_set
+accepted_dispositions: no_regression_observed,delta_reviewed_no_regression
+blocked_disposition: regression_detected_blocked
+append_only_repeatability_trial_receipt: true
+exclusive_trial_per_original_repeat_authority_pair: true
+original_operator_status_required: available
+repeat_operator_status_required: available
+status_reuses_existing_downstream_status_validator: true
+status_reuses_existing_downstream_proof_validator: true
+status_available_requires_server_revalidation: true
+stale_original_operator_status_must_reject: true
+stale_repeat_operator_status_must_reject: true
+mismatched_dataset_version_hash_must_reject: true
+mismatched_authority_envelope_hash_must_reject: true
+mismatched_bridge_receipt_hash_must_reject: true
+mismatched_gate_b_or_selection_must_reject: true
+mismatched_material_snapshot_payload_hash_must_reject: true
+mismatched_coverage_evidence_must_reject: true
+non_available_original_or_repeat_status_must_reject: true
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_sec_url_admitted: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_supplied_stdout_stderr_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+frontend_durable_authority_enabled: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+actual_sec_processing_execution_admitted_by_trial_endpoint: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+focused_service_pytest: python -m pytest ./backend/tests/test_layer3_sec_edgar_authority_envelope.py -q PASS
+focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k "sec_edgar_downstream" PASS
+progress_checker: python ./tools/l3-progress-check.py PASS
+next_exact_posture: sec_edgar_text_table_downstream_operator_repeatability_trial_rendered_status_selection_v1
+```
+
+The runtime endpoint records only a redacted append-only repeatability receipt over two server-revalidated SEC EDGAR downstream operator-status projections. It preserves the existing SEC proof/status authority chain and keeps SEC fetch, parser expansion, process execution, provider writes, connector dispatch, RAG/model runtime, full mockup activation, and frontend durable authority out of scope. Rendered controls remain a separately selected next pass.

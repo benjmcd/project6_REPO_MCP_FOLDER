@@ -1101,6 +1101,48 @@ def test_layer3_api_records_sec_edgar_text_table_downstream_proof(client: TestCl
     assert status_body["raw_url_rendered"] is False
     assert str(tmp_path) not in status_response.text
 
+    trial_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/downstream/operator-repeatability/trial",
+        json={
+            "client_request_id": "sec-edgar-api-downstream-repeatability-trial",
+            "trial_mode": (
+                "append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_"
+                "without_sec_fetch_or_processing_execution"
+            ),
+            "operator_decision": "record_sec_edgar_text_table_downstream_operator_repeatability_trial",
+            "original_operator_status_request": {
+                "client_request_id": "sec-edgar-api-downstream-repeatability-original",
+                "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+                "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+                "downstream_proof_request": proof_request,
+                "expected_proof_hash": body["proof_hash"],
+            },
+            "original_operator_status_hash": status_body["operator_status_hash"],
+            "repeat_operator_status_request": {
+                "client_request_id": "sec-edgar-api-downstream-repeatability-repeat",
+                "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+                "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+                "downstream_proof_request": proof_request,
+                "expected_proof_hash": body["proof_hash"],
+            },
+            "repeat_operator_status_hash": status_body["operator_status_hash"],
+            "operator_repeatability_disposition": "no_regression_observed",
+            "operator_confirmation": True,
+        },
+    )
+    assert trial_response.status_code == 200, trial_response.text
+    trial_body = trial_response.json()
+    assert trial_body["schema_id"] == "layer3.sec_edgar_text_table_downstream_operator_repeatability_trial.v1"
+    assert trial_body["operator_repeatability_trial_state"] == (
+        "sec_edgar_text_table_downstream_operator_repeatability_trial_accepted"
+    )
+    assert trial_body["operator_status_hash_comparison"] == "match"
+    assert trial_body["proof_hash_comparison"] == "match"
+    assert trial_body["coverage_step_set_comparison"] == "match"
+    assert trial_body["actual_sec_processing_execution_admitted"] is False
+    assert trial_body["connector_dispatch_enabled"] is False
+    assert str(tmp_path) not in trial_response.text
+
 
 def test_layer3_api_reports_sec_edgar_downstream_status_not_recorded(client: TestClient) -> None:
     response = client.post(
