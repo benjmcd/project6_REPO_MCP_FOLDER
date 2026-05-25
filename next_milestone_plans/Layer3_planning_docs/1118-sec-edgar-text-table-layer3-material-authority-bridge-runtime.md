@@ -1,0 +1,67 @@
+# SEC EDGAR Text Table Layer 3 Material Authority Bridge Runtime
+
+```yaml
+milestone: sec_edgar_text_table_layer3_material_authority_bridge_runtime_v1
+source_material_authority_bridge_selection: next_milestone_plans/Layer3_planning_docs/1117-sec-edgar-text-table-layer3-material-authority-bridge-selection.md
+current_main_entry: 3862143efac3ff4957e674ea29f312618f7b9c97
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_material_bridge.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/material-authority/bridge
+implemented_request_model: Layer3SecEdgarTextTableMaterialAuthorityBridgeRequest
+implemented_response_model: Layer3SecEdgarTextTableMaterialAuthorityBridgeResponse
+implemented_schema_id: layer3.sec_edgar_text_table_material_authority_bridge.v1
+implemented_request_schema_id: layer3.sec_edgar_text_table_material_authority_bridge_request.v1
+implemented_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1
+implemented_ready_state: sec_edgar_text_table_layer3_material_authority_bridge_ready
+implemented_blocked_state: sec_edgar_text_table_layer3_material_authority_bridge_blocked
+implemented_source_family: sec_edgar_text_table
+implemented_parser_family: sec_edgar_filing
+implemented_typed_content_contract_id: aps_sec_edgar_filing_units_v1
+implemented_authority_envelope_schema_id: layer3.sec_edgar_text_table_authority_envelope_validation.v1
+implemented_required_ready_envelope_state: sec_edgar_text_table_authority_envelope_ready
+implemented_material_source_class: dataset_version
+implemented_material_preview_request_schema: layer3.material_preview_request.v1
+implemented_gate_b_decision_request_schema: layer3.gate_b_decision_request.v1
+implemented_receipt_model: deterministic_bridge_projection_with_ready_envelope_hash_binding
+implemented_hash_bindings: dataset_version_hash,materialization_receipt_hash,authority_envelope_hash,material_preview_hash,gate_b_decision_manifest_id,bridge_receipt_hash
+implemented_redaction_model: redacted_material_candidate_and_gate_b_decision_basis
+implemented_gate_b_payload: returned_for_existing_gate_b_decision_api
+implemented_gate_b_commit_in_bridge: false
+required_input_fields: client_request_id,bridge_mode,dataset_version_id,authority_envelope_hash,rollback_confirmed,operator_confirmed
+required_fail_closed_conditions: missing_ready_envelope,blocked_envelope,stale_authority_envelope_hash,authority_envelope_ref_mismatch,materialization_receipt_hash_mismatch,material_preview_hash_mismatch,gate_b_decision_basis_mismatch,raw_path_or_url_authority,missing_operator_confirmation,missing_rollback_confirmation,forbidden_input_authority
+direct_unbridged_sec_edgar_dataset_version_material_authority_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+pdf_or_image_text_material_ingestion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_authority_envelope.py ./backend/app/services/layer3_sec_edgar_material_bridge.py ./backend/app/api/layer3.py PASS
+focused_service_pytest: python -m pytest ./backend/tests/test_layer3_sec_edgar_authority_envelope.py -q PASS
+focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k "sec_edgar_text_table_authority_envelope or sec_edgar_text_table_material_authority or lists_aps_derived_dataset_version_candidates" PASS
+next_exact_posture: sec_edgar_text_table_downstream_layer3_proof_selection_v1
+```
+
+The runtime bridges a ready SEC EDGAR text-table authority envelope into a redacted Layer 3 material-preview/Gate B authority binding. It validates the ready envelope through `layer3.sec_edgar_text_table_authority_envelope_validation.v1`, binds the envelope hash and materialization receipt to the selected DatasetVersion, invokes the existing `dataset_version` material-preview path internally, redacts raw source/storage/diagnostic refs, computes a bridge-owned `material_preview_hash`, and returns a Gate B decision payload accepted by the existing Gate B decision API.
+
+The bridge does not itself commit Gate B. It returns the bounded Gate B payload so existing Gate B idempotency, material-preview hash, decision-manifest, session, and material-snapshot authority remain the downstream committing surface.
+
+## Coherence Check
+
+- Does this make raw SEC EDGAR DatasetVersion ids sufficient by themselves? Recommended answer: no. The bridge requires a ready envelope hash and returns `direct_unbridged_sec_edgar_dataset_version_material_authority_admitted: false`.
+- Does this add SEC fetch or parser behavior? Recommended answer: no. It reads existing DatasetVersion/provenance authority only through the authority-envelope runtime and existing material preview.
+- Does this expose raw paths or raw artifact refs? Recommended answer: no. The returned material candidate and Gate B decision basis are redacted and the tests assert the fixture raw root and temporary storage path are absent.
+- What comes next? Recommended answer: select `sec_edgar_text_table_downstream_layer3_proof_selection_v1` before proving SEC EDGAR-derived material through retrieval/context, analysis, package/review, handoff/export, delivery/status, and operator inspection.
