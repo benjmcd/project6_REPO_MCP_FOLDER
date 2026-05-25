@@ -121,6 +121,7 @@ PROOF_HASH_KEYS = (
     "schema_version",
     "mode",
     "dataset_version_id",
+    "dataset_version_hash",
     "authority_envelope_hash",
     "materialization_receipt_hash",
     "bridge_receipt_hash",
@@ -198,11 +199,13 @@ def record_sec_edgar_text_table_downstream_layer3_proof(
     negative_invariants = _negative_invariants()
     coverage_hash = stable_hash(coverage)
     negative_invariants_hash = stable_hash(negative_invariants)
+    dataset_version_hash = str((bridge.get("authority_hashes") or {}).get("dataset_version_hash") or "")
     proof_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "mode": PROOF_MODE,
         "dataset_version_id": dataset_version_id,
+        "dataset_version_hash": dataset_version_hash,
         "authority_envelope_hash": authority_envelope_hash,
         "materialization_receipt_hash": str(bridge.get("materialization_receipt_hash") or ""),
         "bridge_receipt_hash": expected_bridge_hash,
