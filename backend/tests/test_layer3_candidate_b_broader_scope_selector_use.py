@@ -15,6 +15,7 @@ sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
 from app.services import (
+    layer3_candidate_b_broader_scope_promotion_readiness,
     layer3_candidate_b_broader_scope_readiness,
     layer3_candidate_b_broader_scope_repeatability_trial,
     layer3_candidate_b_broader_scope_runtime,
@@ -45,6 +46,9 @@ CONSUMPTION_RECEIPT_USE_STATUS_ENDPOINT = (
 )
 OPERATOR_REPEATABILITY_TRIAL_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial"
+)
+PROMOTION_READINESS_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/promotion-readiness"
 )
 SCOPE_CLASSES = list(layer3_candidate_b_broader_scope_readiness.SCOPE_CLASSES)
 EXCLUSIONS = list(layer3_candidate_b_broader_scope_readiness.REQUIRED_EXCLUSIONS)
@@ -357,6 +361,59 @@ def _operator_repeatability_trial_payload(
     payload.update(_operator_repeatability_status_fields("original", original_status))
     payload.update(_operator_repeatability_status_fields("repeat", repeat_status))
     return payload
+
+
+def _operator_repeatability_trial(
+    client: TestClient,
+    status: dict[str, object] | None = None,
+    *,
+    disposition: str = "no_regression_observed",
+) -> dict[str, object]:
+    status = status or _consumption_receipt_use_status(client)
+    response = client.post(
+        OPERATOR_REPEATABILITY_TRIAL_ENDPOINT,
+        json=_operator_repeatability_trial_payload(status, disposition=disposition),
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
+def _production_ownership_storage_policy() -> dict[str, object]:
+    required_policy = layer3_candidate_b_broader_scope_promotion_readiness.REQUIRED_PRODUCTION_OWNERSHIP_STORAGE_POLICY
+    return {
+        "policy_runtime": required_policy,
+        "storage_access_policy": (
+            layer3_candidate_b_broader_scope_promotion_readiness.REQUIRED_STORAGE_ACCESS_POLICY
+        ),
+        "policy_status": "admitted",
+        "policy_hash": "e" * 64,
+    }
+
+
+def _promotion_readiness_payload(
+    trial: dict[str, object],
+    *,
+    operator_visible_status_confirmed: bool = True,
+    production_ownership_storage_policy: dict[str, object] | None = None,
+) -> dict[str, object]:
+    return {
+        "client_request_id": "cb-broader-scope-promotion-readiness-test",
+        "readiness_mode": layer3_candidate_b_broader_scope_promotion_readiness.READINESS_MODE,
+        "operator_decision": layer3_candidate_b_broader_scope_promotion_readiness.OPERATOR_DECISION,
+        "trial_receipt_id": trial["trial_receipt_id"],
+        "trial_receipt_hash": trial["trial_receipt_hash"],
+        "trial_authority_hash": trial["trial_authority_hash"],
+        "authority_pair_hash": trial["authority_pair_hash"],
+        "selected_scope_classes": trial["selected_scope_classes"],
+        "production_ownership_storage_policy": (
+            production_ownership_storage_policy
+            if production_ownership_storage_policy is not None
+            else _production_ownership_storage_policy()
+        ),
+        "operator_visible_status_confirmed": operator_visible_status_confirmed,
+        "rollback_to_baseline_confirmation": True,
+        "operator_confirmation": True,
+    }
 
 
 def test_candidate_b_broader_scope_selector_use_records_redacted_receipt(client: TestClient) -> None:
@@ -1202,6 +1259,118 @@ def test_candidate_b_broader_scope_operator_repeatability_trial_records_blocked_
     assert body["default_scope_mutation_performed"] is False
 
 
+def test_candidate_b_broader_scope_promotion_readiness_accepts_receipt_bound_trial(
+    client: TestClient,
+) -> None:
+    trial = _operator_repeatability_trial(client)
+
+    response = client.post(PROMOTION_READINESS_ENDPOINT, json=_promotion_readiness_payload(trial))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_promotion_readiness.SCHEMA_ID
+    assert body["status"] == "ready"
+    assert (
+        body["promotion_readiness_state"]
+        == layer3_candidate_b_broader_scope_promotion_readiness.READY_STATE
+    )
+    assert body["promotion_readiness_audit_id"].startswith("cb-broader-scope-promotion-readiness-")
+    assert body["blocked_reasons"] == []
+    assert body["selected_scope_classes"] == [SELECTED_CLASS]
+    assert body["trial_receipt_binding"]["binding_verified"] is True
+    assert body["trial_receipt_binding"]["trial_receipt_id"] == trial["trial_receipt_id"]
+    assert body["trial_receipt_binding"]["operator_repeatability_disposition"] == "no_regression_observed"
+    assert body["production_ownership_storage_policy"]["binding_verified"] is True
+    required_policy = layer3_candidate_b_broader_scope_promotion_readiness.REQUIRED_PRODUCTION_OWNERSHIP_STORAGE_POLICY
+    assert (
+        body["production_ownership_storage_policy"]["policy_runtime"]
+        == required_policy
+    )
+    assert body["operator_visible_status_evidence"]["operator_visible_status_confirmed"] is True
+    assert body["baseline_rollback"]["selector"] == "baseline"
+    assert body["candidate_a_semantics"]["preserved"] is True
+    assert body["default_scope_promotion_ready_for_separate_selection"] is True
+    assert body["selector_mutation_admitted_now"] is False
+    assert body["selector_mutation_performed"] is False
+    assert body["default_scope_expansion_admitted"] is False
+    assert body["default_scope_mutation_performed"] is False
+    assert body["source_expansion_admitted"] is False
+    assert body["provider_object_write_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["rag_vector_model_runtime_enabled"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+
+
+def test_candidate_b_broader_scope_promotion_readiness_blocks_blocked_repeatability_trial(
+    client: TestClient,
+) -> None:
+    trial = _operator_repeatability_trial(
+        client,
+        disposition=layer3_candidate_b_broader_scope_repeatability_trial.BLOCKED_DISPOSITION,
+    )
+
+    response = client.post(PROMOTION_READINESS_ENDPOINT, json=_promotion_readiness_payload(trial))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert (
+        body["promotion_readiness_state"]
+        == layer3_candidate_b_broader_scope_promotion_readiness.BLOCKED_STATE
+    )
+    codes = {reason["code"] for reason in body["blocked_reasons"]}
+    assert (
+        "candidate_b_broader_scope_promotion_readiness_repeatability_trial_not_accepted"
+        in codes
+    )
+    assert (
+        "candidate_b_broader_scope_promotion_readiness_repeatability_disposition_not_ready"
+        in codes
+    )
+    assert body["default_scope_promotion_ready_for_separate_selection"] is False
+    assert body["selector_mutation_performed"] is False
+    assert body["default_scope_mutation_performed"] is False
+
+
+def test_candidate_b_broader_scope_promotion_readiness_blocks_stale_trial_hash(
+    client: TestClient,
+) -> None:
+    trial = _operator_repeatability_trial(client)
+    payload = _promotion_readiness_payload(trial)
+    payload["trial_receipt_hash"] = "a" * 64
+
+    response = client.post(PROMOTION_READINESS_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {reason["code"] for reason in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_promotion_readiness_trial_receipt_field_mismatch" in codes
+    assert body["trial_receipt_binding"]["binding_verified"] is False
+    assert body["default_scope_promotion_ready_for_separate_selection"] is False
+
+
+def test_candidate_b_broader_scope_promotion_readiness_blocks_missing_policy_and_status(
+    client: TestClient,
+) -> None:
+    trial = _operator_repeatability_trial(client)
+    payload = _promotion_readiness_payload(trial, operator_visible_status_confirmed=False)
+    payload["production_ownership_storage_policy"] = None
+
+    response = client.post(PROMOTION_READINESS_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    codes = {reason["code"] for reason in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_promotion_readiness_operator_visible_status_missing" in codes
+    assert "candidate_b_broader_scope_promotion_readiness_production_policy_missing" in codes
+    assert body["production_ownership_storage_policy"]["binding_verified"] is False
+    assert body["default_scope_promotion_ready_for_separate_selection"] is False
+    assert body["selector_mutation_performed"] is False
+
+
 def test_candidate_b_broader_scope_consumption_receipt_use_fails_closed_on_missing_consumption_receipt(
     client: TestClient,
 ) -> None:
@@ -1350,6 +1519,14 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
         readiness_body["candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_endpoint"]
         == OPERATOR_REPEATABILITY_TRIAL_ENDPOINT
     )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_admitted"]
+        is True
+    )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint"]
+        == PROMOTION_READINESS_ENDPOINT
+    )
 
     assert bootstrap.status_code == 200, bootstrap.text
     bootstrap_body = bootstrap.json()
@@ -1373,6 +1550,10 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
     )
     assert (
         bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial"]
+        is True
+    )
+    assert (
+        bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_promotion_readiness"]
         is True
     )
     assert (
@@ -1414,6 +1595,12 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
             "candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_endpoint"
         ]
         == OPERATOR_REPEATABILITY_TRIAL_ENDPOINT
+    )
+    assert (
+        bootstrap_body["execution_readiness"][
+            "candidate_b_broader_eligible_corpus_default_scope_promotion_readiness_endpoint"
+        ]
+        == PROMOTION_READINESS_ENDPOINT
     )
 
     schema = client.app.openapi()
@@ -1466,3 +1653,17 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
         "process_command",
     ):
         assert field not in trial_request_schema["properties"]
+    promotion_route = schema["paths"][PROMOTION_READINESS_ENDPOINT]["post"]
+    promotion_request_ref = promotion_route["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    promotion_request_schema = schema["components"]["schemas"][promotion_request_ref.rsplit("/", 1)[-1]]
+    assert promotion_request_schema["additionalProperties"] is False
+    for field in (
+        "visual_lane_mode",
+        "document_processing_engine",
+        "local_path",
+        "url",
+        "default_selector",
+        "process_command",
+        "provider_private_signed_url_token",
+    ):
+        assert field not in promotion_request_schema["properties"]
