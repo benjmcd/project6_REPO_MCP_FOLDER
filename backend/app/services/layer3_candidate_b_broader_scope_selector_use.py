@@ -12,8 +12,11 @@ from app.services import layer3_candidate_b_broader_scope_runtime
 
 
 SCHEMA_ID = "layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use.v1"
+STATUS_SCHEMA_ID = "layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use_status.v1"
 SCHEMA_VERSION = 1
 RUNTIME_MODE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_runtime_v1"
+STATUS_MODE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_status_v1"
+STATUS_OPERATOR_DECISION = "inspect_candidate_b_broader_eligible_corpus_default_scope_selector_use_status"
 SELECTED_STATE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_selected"
 BLOCKED_STATE = "candidate_b_broader_eligible_corpus_default_scope_selector_use_blocked"
 SOURCE_RUNTIME_SCHEMA_ID = layer3_candidate_b_broader_scope_runtime.SCHEMA_ID
@@ -83,6 +86,19 @@ class CandidateBBroaderScopeSelectorUseError(Exception):
             "status": "blocked",
             "mode": RUNTIME_MODE,
             "selector_use_state": BLOCKED_STATE,
+            "error": {"code": self.code, "message": self.message, "details": self.details},
+        }
+
+
+class CandidateBBroaderScopeSelectorUseStatusError(CandidateBBroaderScopeSelectorUseError):
+    def response_body(self) -> dict[str, Any]:
+        return {
+            "schema_id": STATUS_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "request_id": "candidate-b-broader-scope-selector-use-status-error",
+            "server_time": _server_time(),
+            "status": "blocked",
+            "mode": STATUS_MODE,
             "error": {"code": self.code, "message": self.message, "details": self.details},
         }
 
@@ -235,14 +251,163 @@ def record_candidate_b_broader_scope_selector_use(payload: Mapping[str, Any]) ->
     }
 
 
+def inspect_candidate_b_broader_scope_selector_use_status(payload: Mapping[str, Any]) -> dict[str, Any]:
+    fields = _normalise_payload(payload, error_cls=CandidateBBroaderScopeSelectorUseStatusError)
+    request_id = _required_str(fields, "client_request_id", error_cls=CandidateBBroaderScopeSelectorUseStatusError)
+    status_mode = _required_str(fields, "status_mode", error_cls=CandidateBBroaderScopeSelectorUseStatusError)
+    if status_mode != STATUS_MODE:
+        raise CandidateBBroaderScopeSelectorUseStatusError(
+            "candidate_b_broader_scope_selector_use_status_mode_not_admitted",
+            "Only the frozen Candidate B broader eligible-corpus selector-use status mode is admitted.",
+            details={"expected_status_mode": STATUS_MODE, "received_status_mode": status_mode},
+        )
+    operator_decision = _required_str(
+        fields,
+        "operator_decision",
+        error_cls=CandidateBBroaderScopeSelectorUseStatusError,
+    )
+    if operator_decision != STATUS_OPERATOR_DECISION:
+        raise CandidateBBroaderScopeSelectorUseStatusError(
+            "candidate_b_broader_scope_selector_use_status_decision_not_admitted",
+            "The operator decision does not match the admitted selector-use status inspection.",
+            details={"expected_operator_decision": STATUS_OPERATOR_DECISION},
+        )
+
+    selector_use_receipt_id = _required_storage_id(
+        fields,
+        "selector_use_receipt_id",
+        prefix=RECEIPT_PREFIX,
+        error_cls=CandidateBBroaderScopeSelectorUseStatusError,
+    )
+    selector_use_receipt_hash = _required_str(
+        fields,
+        "selector_use_receipt_hash",
+        error_cls=CandidateBBroaderScopeSelectorUseStatusError,
+    )
+    runtime_selection_receipt_id = _required_str(
+        fields,
+        "runtime_selection_receipt_id",
+        error_cls=CandidateBBroaderScopeSelectorUseStatusError,
+    )
+    runtime_selection_receipt_hash = _required_str(
+        fields,
+        "runtime_selection_receipt_hash",
+        error_cls=CandidateBBroaderScopeSelectorUseStatusError,
+    )
+    receipt = _read_selector_use_receipt(selector_use_receipt_id)
+    blocked = _validate_selector_use_receipt(
+        receipt=receipt,
+        selector_use_receipt_id=selector_use_receipt_id,
+        selector_use_receipt_hash=selector_use_receipt_hash,
+        runtime_selection_receipt_id=runtime_selection_receipt_id,
+        runtime_selection_receipt_hash=runtime_selection_receipt_hash,
+    )
+    selected_scope_classes = _string_list(receipt.get("selected_scope_classes"))
+    runtime_summary = _validate_source_runtime_receipt(
+        receipt_id=runtime_selection_receipt_id,
+        receipt_hash=runtime_selection_receipt_hash,
+        selected_scope_classes=selected_scope_classes,
+        create_root=False,
+        error_cls=CandidateBBroaderScopeSelectorUseStatusError,
+    )
+    blocked.extend(runtime_summary["blocked_reasons"])
+    if blocked:
+        raise CandidateBBroaderScopeSelectorUseStatusError(
+            "candidate_b_broader_scope_selector_use_status_authority_invalid",
+            "The selected Candidate B broader-scope selector-use receipt is missing, stale, or contradictory.",
+            http_status=409,
+            details={"blocked_reasons": blocked},
+        )
+
+    status_hash = _stable_hash(
+        {
+            "schema_id": STATUS_SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "status_mode": STATUS_MODE,
+            "selector_use_receipt_id": selector_use_receipt_id,
+            "selector_use_receipt_hash": selector_use_receipt_hash,
+            "runtime_selection_receipt_id": runtime_selection_receipt_id,
+            "runtime_selection_receipt_hash": runtime_selection_receipt_hash,
+            "selected_scope_classes": selected_scope_classes,
+            "selector_authority_source": SELECTOR_AUTHORITY_SOURCE,
+            "redaction_policy_id": REDACTION_POLICY_ID,
+        }
+    )
+    return {
+        "schema_id": STATUS_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "request_id": request_id,
+        "server_time": _server_time(),
+        "status": "available",
+        "mode": STATUS_MODE,
+        "operator_decision": STATUS_OPERATOR_DECISION,
+        "selector_use_status_hash": status_hash,
+        "selector_use_receipt_id": selector_use_receipt_id,
+        "selector_use_receipt_hash": selector_use_receipt_hash,
+        "selector_use_receipt_status": "recorded",
+        "selector_use_state": SELECTED_STATE,
+        "runtime_selection_receipt_binding": {
+            "schema_id": SOURCE_RUNTIME_SCHEMA_ID,
+            "mode": SOURCE_RUNTIME_MODE,
+            "required_state": SOURCE_RUNTIME_SELECTED_STATE,
+            "runtime_selection_receipt_id": runtime_selection_receipt_id,
+            "runtime_selection_receipt_hash": runtime_selection_receipt_hash,
+            "binding_verified": True,
+        },
+        "selector_authority": {
+            "source": SELECTOR_AUTHORITY_SOURCE,
+            "selected_scope_classes_source": "selected_scope_classes_from_matching_selector_use_receipt",
+            "receipt_bound": True,
+            "stale_authority_rejected": True,
+        },
+        "operator_visible_selector_status": {
+            "selector_use_recorded": True,
+            "selected_scope_class_count": len(selected_scope_classes),
+            "redacted_selector_use_receipt_available": True,
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_or_connector_secret_exposed": False,
+        },
+        "selected_scope_classes": selected_scope_classes,
+        "current_default_scope_before_use": CURRENT_DEFAULT_SCOPE,
+        "default_scope_enabled_for_selected_classes": True,
+        "non_selected_class_default_preserved": NON_SELECTED_CLASS_DEFAULT,
+        "baseline_rollback": {"selector": NON_SELECTED_CLASS_DEFAULT, "available": True},
+        "candidate_a_semantics_preserved": True,
+        "selector_mutation_performed": False,
+        "source_expansion_admitted": False,
+        "runtime_db_or_storage_expansion_admitted": False,
+        "provider_object_write_enabled": False,
+        "connector_dispatch_enabled": False,
+        "rag_vector_model_runtime_enabled": False,
+        "auth_security_expansion_enabled": False,
+        "full_mockup_activation_enabled": False,
+        "frontend_durable_authority_enabled": False,
+        "browser_storage_authority_enabled": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "negative_invariants": _negative_invariants(True),
+        "next_allowed_actions": [
+            "use this read-only selector-use status when evaluating broader Candidate B default-scope closeout",
+            "inspect downstream operator status before any broader default selector promotion",
+        ],
+    }
+
+
 def _validate_source_runtime_receipt(
     *,
     receipt_id: str,
     receipt_hash: str,
     selected_scope_classes: list[str],
+    create_root: bool = True,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
 ) -> dict[str, Any]:
     blocked: list[dict[str, Any]] = []
-    receipt_path = _runtime_receipt_root() / "broader-scope-runtime" / f"{receipt_id}.json"
+    receipt_path = (
+        _runtime_receipt_root(create=create_root, error_cls=error_cls)
+        / "broader-scope-runtime"
+        / f"{receipt_id}.json"
+    )
     receipt = _read_optional_receipt(receipt_path)
     if receipt is None:
         return {
@@ -406,23 +571,118 @@ def _write_selector_use_receipt(
     return f"candidate-b-broader-scope-selector-use://{receipt_id}/{receipt_hash[:24]}"
 
 
-def _runtime_receipt_root() -> Path:
+def _read_selector_use_receipt(selector_use_receipt_id: str) -> dict[str, Any]:
+    target = (
+        _runtime_receipt_root(create=False, error_cls=CandidateBBroaderScopeSelectorUseStatusError)
+        / "broader-scope-selector-use"
+        / f"{selector_use_receipt_id}.json"
+    )
+    if not target.is_file():
+        raise CandidateBBroaderScopeSelectorUseStatusError(
+            "candidate_b_broader_scope_selector_use_status_receipt_missing",
+            "The selected Candidate B broader-scope selector-use receipt is missing.",
+            http_status=404,
+            details={"selector_use_receipt_id": selector_use_receipt_id},
+        )
+    return _read_required_receipt(target, error_cls=CandidateBBroaderScopeSelectorUseStatusError)
+
+
+def _validate_selector_use_receipt(
+    *,
+    receipt: Mapping[str, Any],
+    selector_use_receipt_id: str,
+    selector_use_receipt_hash: str,
+    runtime_selection_receipt_id: str,
+    runtime_selection_receipt_hash: str,
+) -> list[dict[str, Any]]:
+    blocked: list[dict[str, Any]] = []
+    expected_fields = {
+        "schema_id": SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "selector_use_mode": RUNTIME_MODE,
+        "selector_use_state": SELECTED_STATE,
+        "selector_use_receipt_id": selector_use_receipt_id,
+        "selector_use_receipt_hash": selector_use_receipt_hash,
+        "runtime_selection_receipt_id": runtime_selection_receipt_id,
+        "runtime_selection_receipt_hash": runtime_selection_receipt_hash,
+        "selector_authority_source": SELECTOR_AUTHORITY_SOURCE,
+        "current_default_scope_before_use": CURRENT_DEFAULT_SCOPE,
+        "default_scope_enabled_for_selected_classes": True,
+        "non_selected_class_default_preserved": NON_SELECTED_CLASS_DEFAULT,
+        "baseline_rollback_preserved": True,
+        "candidate_a_semantics_preserved": True,
+        "redaction_policy_id": REDACTION_POLICY_ID,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "provider_or_connector_secret_exposed": False,
+    }
+    for field, expected in expected_fields.items():
+        if receipt.get(field) != expected:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_selector_use_status_receipt_field_mismatch",
+                    field=field,
+                    expected=expected,
+                    received=receipt.get(field),
+                )
+            )
+    if _find_forbidden_fields(receipt):
+        blocked.append(_reason("candidate_b_broader_scope_selector_use_status_receipt_forbidden_authority"))
+    recomputed_hash = _selector_use_receipt_hash(receipt)
+    if recomputed_hash != selector_use_receipt_hash:
+        blocked.append(
+            _reason(
+                "candidate_b_broader_scope_selector_use_status_stale_receipt_hash",
+                expected=recomputed_hash,
+                received=selector_use_receipt_hash,
+            )
+        )
+    return blocked
+
+
+def _selector_use_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    return _stable_hash(
+        {
+            "schema_id": SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "selector_use_mode": RUNTIME_MODE,
+            "source_runtime_schema_id": SOURCE_RUNTIME_SCHEMA_ID,
+            "source_runtime_mode": SOURCE_RUNTIME_MODE,
+            "runtime_selection_receipt_id": receipt.get("runtime_selection_receipt_id"),
+            "runtime_selection_receipt_hash": receipt.get("runtime_selection_receipt_hash"),
+            "selected_scope_classes": _string_list(receipt.get("selected_scope_classes")),
+            "selector_authority_source": SELECTOR_AUTHORITY_SOURCE,
+            "current_default_scope_before_use": CURRENT_DEFAULT_SCOPE,
+            "non_selected_class_default_preserved": NON_SELECTED_CLASS_DEFAULT,
+            "baseline_rollback_preserved": receipt.get("baseline_rollback_preserved") is True,
+            "candidate_a_semantics_preserved": receipt.get("candidate_a_semantics_preserved") is True,
+            "redaction_policy_id": REDACTION_POLICY_ID,
+        }
+    )
+
+
+def _runtime_receipt_root(
+    *,
+    create: bool = True,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
+) -> Path:
     configured = str(settings.layer3_candidate_b_runtime_bridge_dir or "").strip()
     if not configured:
-        raise CandidateBBroaderScopeSelectorUseError(
+        raise error_cls(
             "candidate_b_broader_scope_selector_use_receipt_dir_unset",
             "LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR must be set before selector use can record receipts.",
             http_status=409,
         )
     root = Path(configured)
     if not root.is_absolute():
-        raise CandidateBBroaderScopeSelectorUseError(
+        raise error_cls(
             "candidate_b_broader_scope_selector_use_receipt_dir_not_absolute",
             "LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR must be an absolute server-owned directory.",
             http_status=409,
         )
     resolved = root.resolve()
-    resolved.mkdir(parents=True, exist_ok=True)
+    if create:
+        resolved.mkdir(parents=True, exist_ok=True)
     return resolved
 
 
@@ -432,18 +692,22 @@ def _read_optional_receipt(path: Path) -> dict[str, Any] | None:
     return _read_required_receipt(path)
 
 
-def _read_required_receipt(path: Path) -> dict[str, Any]:
+def _read_required_receipt(
+    path: Path,
+    *,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
+) -> dict[str, Any]:
     try:
         receipt = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        raise CandidateBBroaderScopeSelectorUseError(
+        raise error_cls(
             "candidate_b_broader_scope_selector_use_receipt_unreadable",
             "Candidate B broader-scope selector-use receipt authority could not be read.",
             http_status=409,
             details={"reason": exc.__class__.__name__},
         ) from exc
     if not isinstance(receipt, dict):
-        raise CandidateBBroaderScopeSelectorUseError(
+        raise error_cls(
             "candidate_b_broader_scope_selector_use_receipt_invalid",
             "Candidate B broader-scope selector-use receipts must be JSON objects.",
             http_status=409,
@@ -451,11 +715,15 @@ def _read_required_receipt(path: Path) -> dict[str, Any]:
     return receipt
 
 
-def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+def _normalise_payload(
+    payload: Mapping[str, Any],
+    *,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
+) -> dict[str, Any]:
     fields = dict(payload)
     blocked = sorted(_find_forbidden_fields(fields))
     if blocked:
-        raise CandidateBBroaderScopeSelectorUseError(
+        raise error_cls(
             "candidate_b_broader_scope_selector_use_forbidden_request_fields",
             "The selector-use runtime does not admit caller paths, URLs, selectors, connectors, storage roots, or browser authority.",
             details={"blocked_fields": blocked},
@@ -477,13 +745,42 @@ def _find_forbidden_fields(value: Any, *, prefix: str = "") -> list[str]:
     return found
 
 
-def _required_str(fields: Mapping[str, Any], key: str) -> str:
+def _required_str(
+    fields: Mapping[str, Any],
+    key: str,
+    *,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
+) -> str:
     value = str(fields.get(key) or "").strip()
     if not value:
-        raise CandidateBBroaderScopeSelectorUseError(
+        raise error_cls(
             "candidate_b_broader_scope_selector_use_required_field_missing",
             "A required Candidate B broader-scope selector-use field is missing or empty.",
             details={"field": key},
+        )
+    return value
+
+
+def _required_storage_id(
+    fields: Mapping[str, Any],
+    key: str,
+    *,
+    prefix: str,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
+) -> str:
+    value = _required_str(fields, key, error_cls=error_cls)
+    if (
+        not value.startswith(f"{prefix}-")
+        or "/" in value
+        or "\\" in value
+        or ".." in value
+        or value in {".", ".."}
+    ):
+        raise error_cls(
+            "candidate_b_broader_scope_selector_use_storage_id_invalid",
+            "Candidate B broader-scope selector-use receipt identifiers must be server-owned storage identifiers.",
+            http_status=409,
+            details={"expected_prefix": prefix},
         )
     return value
 

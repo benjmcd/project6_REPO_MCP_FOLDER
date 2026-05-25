@@ -2981,6 +2981,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_REMEDIATION_CURRE
     PLANNING_DOCS
     / "1078-cb-broader-eligible-corpus-default-scope-selector-use-remediation-current-main-sync.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_OPERATOR_STATUS_INSPECTION = (
+    PLANNING_DOCS
+    / "1079-cb-broader-eligible-corpus-default-scope-selector-use-operator-status-inspection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -101892,6 +101896,140 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_remedi
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_OPERATOR_STATUS_INSPECTION: (
+            "Candidate B Broader Eligible Corpus Default Scope Selector-Use Operator Status Inspection",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_v1",
+            "source_selector_use_remediation_current_main_sync: next_milestone_plans/Layer3_planning_docs/1078-cb-broader-eligible-corpus-default-scope-selector-use-remediation-current-main-sync.md",
+            "current_main_entry: f6a71acce1f3155e2d7c609cd9f88e8a5d8b67aa",
+            "runtime_status: implemented",
+            "rendered_status: implemented",
+            "status_schema_id: layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use_status.v1",
+            "status_mode: candidate_b_broader_eligible_corpus_default_scope_selector_use_status_v1",
+            "operator_decision: inspect_candidate_b_broader_eligible_corpus_default_scope_selector_use_status",
+            "status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status",
+            "rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_control",
+            "read_only_status_inspection: true",
+            "selector_use_receipt_id_hash_required: true",
+            "runtime_selection_receipt_id_hash_required: true",
+            "server_owned_receipt_revalidation: true",
+            "stale_selector_use_receipt_hash_rejected: true",
+            "stale_runtime_receipt_hash_rejected: true",
+            "redacted_operator_visible_selector_status: true",
+            "selected_scope_classes_visible: true",
+            "runtime_receipt_binding_visible: true",
+            "default_enabled_for_selected_classes_visible: true",
+            "non_selected_class_default_preserved: baseline",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "backend_status_proof: backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py::test_candidate_b_broader_scope_selector_use_status_revalidates_redacted_receipt",
+            "backend_stale_hash_proof: backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py::test_candidate_b_broader_scope_selector_use_status_rejects_stale_receipt_hash",
+            "verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 7 passed",
+            'headless_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium PASS 2 passed',
+            'headed_rendered_status_proof: npx playwright test layer3-workbench.spec.js --grep "Candidate B broader eligible-corpus runtime status|Candidate B default-promotion status contract" --project=chromium --headed PASS 2 passed',
+            "proof_status: local_passed",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_v1",
+            "source_selector_use_remediation_current_main_sync: next_milestone_plans/Layer3_planning_docs/1078-cb-broader-eligible-corpus-default-scope-selector-use-remediation-current-main-sync.md",
+            "current_main_entry: f6a71acce1f3155e2d7c609cd9f88e8a5d8b67aa",
+            "runtime_status: implemented",
+            "rendered_status: implemented",
+            "status_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status",
+            "rendered_mode: rendered_candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_control",
+            "read_only_status_inspection: true",
+            "server_owned_receipt_revalidation: true",
+            "stale_selector_use_receipt_hash_rejected: true",
+            "stale_runtime_receipt_hash_rejected: true",
+            "redacted_operator_visible_selector_status: true",
+            "baseline_rollback_preserved: true",
+            "candidate_a_semantics_preserved: true",
+            "selector_mutation_performed: false",
+            "source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 7 passed",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_current_main_sync_v1",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_SERVICE: (
+            "STATUS_SCHEMA_ID = \"layer3.candidate_b_broader_eligible_corpus_default_scope_selector_use_status.v1\"",
+            "STATUS_MODE = \"candidate_b_broader_eligible_corpus_default_scope_selector_use_status_v1\"",
+            "STATUS_OPERATOR_DECISION = \"inspect_candidate_b_broader_eligible_corpus_default_scope_selector_use_status\"",
+            "inspect_candidate_b_broader_scope_selector_use_status",
+            "_validate_selector_use_receipt",
+            "candidate_b_broader_scope_selector_use_status_stale_receipt_hash",
+        ),
+        LAYER3_API: (
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorUseStatusRequest",
+            "Layer3CandidateBBroaderEligibleCorpusDefaultScopeSelectorUseStatusResponse",
+            "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status",
+            "post_candidate_b_broader_eligible_corpus_default_scope_selector_use_status",
+        ),
+        READINESS_CONTRACT_SERVICE: (
+            "candidate-b-broader-eligible-corpus-default-scope-selector-use-status",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint",
+        ),
+        BOOTSTRAP_CONTRACT_SERVICE: (
+            "\"candidate_b_broader_eligible_corpus_default_scope_selector_use_status\": True",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint",
+        ),
+        CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_TEST: (
+            "SELECTOR_USE_STATUS_ENDPOINT",
+            "test_candidate_b_broader_scope_selector_use_status_revalidates_redacted_receipt",
+            "test_candidate_b_broader_scope_selector_use_status_rejects_stale_receipt_hash",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_use_status_endpoint",
+        ),
+        LAYER3_JS: (
+            "CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_STATUS_RENDERED_MODE",
+            "rendered_candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_control",
+            "CANDIDATE_B_BROADER_SCOPE_SELECTOR_USE_STATUS_MODE",
+            "candidateBBroaderScopeSelectorUseStatusEndpointPath",
+            "candidateBBroaderScopeSelectorUseStatusPayload",
+            "canInspectCandidateBBroaderScopeSelectorUseStatus",
+            "candidateBBroaderScopeSelectorUseStatusRows",
+            "inspectCandidateBBroaderScopeSelectorUseStatus",
+            "candidate-b-broader-scope-selector-use-status-form",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/selector-use/status",
+            "selectorUseStatusPayloads",
+            "selectorUseStatusPayload",
+            "candidate_b_broader_eligible_corpus_default_scope_selector_use_status_v1",
+            "candidate_b_broader_scope_selector_use_status_available",
+            "rendered_candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_control",
+            "frontend durable authority enabled: false",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_SELECTOR_USE_REMEDIATION_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope selector-use operator status inspection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -102825,6 +102963,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_remediation_current_main_sync(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_selector_use_operator_status_inspection(
         errors
     )
 
