@@ -21,7 +21,9 @@ PROCESS_EXECUTION_MODE = (
     "server_owned_allowlisted_process_start_with_redacted_receipt_and_no_browser_command_authority"
 )
 OPERATOR_DECISION = "record_candidate_b_async_background_process_execution"
-PROCESS_EXECUTION_STATE = "started"
+PROCESS_EXECUTION_STARTED_STATE = "started"
+PROCESS_EXECUTION_BLOCKED_STATE = "blocked"
+PROCESS_EXECUTION_STATE = PROCESS_EXECUTION_STARTED_STATE
 PROCESS_EXECUTION_RECEIPT_PREFIX = f"{workflow_status.WORKFLOW_RECEIPT_PREFIX}-process-execution"
 ALLOWLISTED_COMMAND_FAMILY = "tools/run_candidate_b_full_corpus_operator_workflow.py"
 PROCESS_EXECUTION_ENDPOINT = (
@@ -29,6 +31,13 @@ PROCESS_EXECUTION_ENDPOINT = (
 )
 HISTORY_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/history"
 STATUS_ENDPOINT = workflow_run.STATUS_ENDPOINT
+PROCESS_LAUNCH_FAILED_ERROR_CODE = (
+    "candidate_b_full_corpus_operator_workflow_process_execution_launch_failed"
+)
+PROCESS_LAUNCH_TIMEOUT_ERROR_CODE = (
+    "candidate_b_full_corpus_operator_workflow_process_execution_launch_timeout"
+)
+PROCESS_LAUNCH_FAILURE_PHASE = "server_owned_process_launch"
 
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
@@ -365,12 +374,29 @@ def _load_or_write_process_execution_receipt(
         operator_workflow_receipt_id=str(row["operator_workflow_receipt_id"]),
         execution_boundary_authority_hash=str(execution_boundary_projection["execution_boundary_authority_hash"]),
     )
-    launch_result = _launch_server_owned_process(
-        process_execution_receipt_id=process_execution_receipt_id,
-        process_invocation_hash=process_invocation_hash,
+    launch_error: CandidateBFullCorpusOperatorWorkflowProcessExecutionError | None = None
+    try:
+        launch_result = _launch_server_owned_process(
+            process_execution_receipt_id=process_execution_receipt_id,
+            process_invocation_hash=process_invocation_hash,
+        )
+    except CandidateBFullCorpusOperatorWorkflowProcessExecutionError as exc:
+        if exc.code not in {PROCESS_LAUNCH_FAILED_ERROR_CODE, PROCESS_LAUNCH_TIMEOUT_ERROR_CODE}:
+            raise
+        launch_error = exc
+        launch_result = _blocked_launch_result(
+            process_execution_receipt_id=process_execution_receipt_id,
+            process_invocation_hash=process_invocation_hash,
+            launch_error=exc,
+        )
+    process_execution_state = (
+        PROCESS_EXECUTION_BLOCKED_STATE if launch_error else PROCESS_EXECUTION_STARTED_STATE
     )
+    process_status = "blocked" if launch_error else "available"
+    process_started = launch_error is None
+    actual_subprocess_spawn_admitted_now = launch_error is None
     redacted_process_status_projection = {
-        "process_execution_projection_state": PROCESS_EXECUTION_STATE,
+        "process_execution_projection_state": process_execution_state,
         "read_only_process_execution_projection": True,
         "process_execution_receipt_available": True,
         "process_execution_receipt_id": process_execution_receipt_id,
@@ -380,18 +406,28 @@ def _load_or_write_process_execution_receipt(
         "redacted_process_ref": launch_result["redacted_process_ref"],
         "server_process_handle_hash": launch_result["server_process_handle_hash"],
         "background_process_runtime_selected_now": True,
-        "actual_subprocess_spawn_admitted_now": True,
+        "actual_subprocess_spawn_admitted_now": actual_subprocess_spawn_admitted_now,
         "job_execution_runtime_selected_now": False,
         "actual_corpus_processing_execution_admitted_now": False,
     }
+    if launch_error:
+        redacted_process_status_projection.update(
+            {
+                "process_failure_recorded": True,
+                "process_timeout_recorded": launch_error.code == PROCESS_LAUNCH_TIMEOUT_ERROR_CODE,
+                "process_failure_code": launch_error.code,
+                "process_failure_phase": PROCESS_LAUNCH_FAILURE_PHASE,
+                "redacted_failure_summary_hash": launch_result["redacted_failure_summary_hash"],
+            }
+        )
     receipt_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "mode": PROCESS_EXECUTION_MODE,
         "operator_decision": OPERATOR_DECISION,
         "client_request_id": request_id,
-        "status": "available",
-        "process_execution_state": PROCESS_EXECUTION_STATE,
+        "status": process_status,
+        "process_execution_state": process_execution_state,
         "process_execution_receipt_id": process_execution_receipt_id,
         "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
         "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
@@ -413,7 +449,7 @@ def _load_or_write_process_execution_receipt(
         "redacted_process_ref": launch_result["redacted_process_ref"],
         "server_process_handle_hash": launch_result["server_process_handle_hash"],
         "append_only_process_execution_receipt": True,
-        "process_started": True,
+        "process_started": process_started,
         "source_run_receipt_mutated": False,
         "queue_state_receipt_mutated": False,
         "scheduler_lease_receipt_mutated": False,
@@ -425,7 +461,7 @@ def _load_or_write_process_execution_receipt(
         "background_process_runtime_selected": True,
         "background_process_runtime_selected_now": True,
         "job_execution_runtime_selected_now": False,
-        "actual_subprocess_spawn_admitted_now": True,
+        "actual_subprocess_spawn_admitted_now": actual_subprocess_spawn_admitted_now,
         "actual_corpus_processing_execution_admitted_now": False,
         "browser_triggered_process_start_admitted": False,
         "operator_supplied_command_admitted": False,
@@ -454,6 +490,21 @@ def _load_or_write_process_execution_receipt(
             "select process completion or result adoption only through a separate freeze",
         ],
     }
+    if launch_error:
+        receipt_input.update(
+            {
+                "process_failure_recorded": True,
+                "process_timeout_recorded": launch_error.code == PROCESS_LAUNCH_TIMEOUT_ERROR_CODE,
+                "process_failure_code": launch_error.code,
+                "process_failure_phase": PROCESS_LAUNCH_FAILURE_PHASE,
+                "redacted_failure_summary_hash": launch_result["redacted_failure_summary_hash"],
+                "next_allowed_actions": [
+                    "refresh workflow-run history",
+                    "inspect redacted process-execution failure projection through workflow status",
+                    "do not adopt process completion or result until a separate successful process-execution receipt exists",
+                ],
+            }
+        )
     receipt_hash = workflow_status._stable_hash(receipt_input)
     receipt = {
         **receipt_input,
@@ -497,27 +548,40 @@ def _validate_process_execution_receipt(
     process_execution_authority_hash: str,
     idempotency_key_hash: str,
 ) -> str:
+    process_execution_state = str(receipt.get("process_execution_state") or "")
+    if process_execution_state not in {PROCESS_EXECUTION_STARTED_STATE, PROCESS_EXECUTION_BLOCKED_STATE}:
+        mismatches = [
+            {
+                "field": "process_execution_state",
+                "expected": f"{PROCESS_EXECUTION_STARTED_STATE}|{PROCESS_EXECUTION_BLOCKED_STATE}",
+                "received": receipt.get("process_execution_state"),
+            }
+        ]
+    else:
+        mismatches = []
+    expected_status = "blocked" if process_execution_state == PROCESS_EXECUTION_BLOCKED_STATE else "available"
+    expected_process_started = process_execution_state == PROCESS_EXECUTION_STARTED_STATE
+    expected_subprocess_spawn = process_execution_state == PROCESS_EXECUTION_STARTED_STATE
     expected = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "mode": PROCESS_EXECUTION_MODE,
         "operator_decision": OPERATOR_DECISION,
         "client_request_id": request_id,
-        "status": "available",
-        "process_execution_state": PROCESS_EXECUTION_STATE,
+        "status": expected_status,
         "process_execution_receipt_id": process_execution_receipt_id,
         "process_invocation_hash": process_invocation_hash,
         "process_execution_authority_hash": process_execution_authority_hash,
         "idempotency_key_hash": idempotency_key_hash,
         "allowlisted_command_family": ALLOWLISTED_COMMAND_FAMILY,
         "append_only_process_execution_receipt": True,
-        "process_started": True,
+        "process_started": expected_process_started,
         "source_run_receipt_mutated": False,
         "execution_boundary_receipt_mutated": False,
         "background_process_runtime_selected": True,
         "background_process_runtime_selected_now": True,
         "job_execution_runtime_selected_now": False,
-        "actual_subprocess_spawn_admitted_now": True,
+        "actual_subprocess_spawn_admitted_now": expected_subprocess_spawn,
         "actual_corpus_processing_execution_admitted_now": False,
         "browser_triggered_process_start_admitted": False,
         "operator_supplied_command_admitted": False,
@@ -530,11 +594,57 @@ def _validate_process_execution_receipt(
         "artifact_bytes_exposed": False,
         "selector_mutation_performed": False,
     }
-    mismatches = [
+    mismatches.extend(
+        [
         {"field": field, "expected": expected_value, "received": receipt.get(field)}
         for field, expected_value in expected.items()
         if receipt.get(field) != expected_value
-    ]
+        ]
+    )
+    failure_code = str(receipt.get("process_failure_code") or "")
+    if process_execution_state == PROCESS_EXECUTION_BLOCKED_STATE:
+        expected_timeout = failure_code == PROCESS_LAUNCH_TIMEOUT_ERROR_CODE
+        blocked_expected = {
+            "process_failure_recorded": True,
+            "process_timeout_recorded": expected_timeout,
+            "process_failure_phase": PROCESS_LAUNCH_FAILURE_PHASE,
+        }
+        mismatches.extend(
+            [
+                {"field": field, "expected": expected_value, "received": receipt.get(field)}
+                for field, expected_value in blocked_expected.items()
+                if receipt.get(field) != expected_value
+            ]
+        )
+        if failure_code not in {PROCESS_LAUNCH_FAILED_ERROR_CODE, PROCESS_LAUNCH_TIMEOUT_ERROR_CODE}:
+            mismatches.append(
+                {
+                    "field": "process_failure_code",
+                    "expected": f"{PROCESS_LAUNCH_FAILED_ERROR_CODE}|{PROCESS_LAUNCH_TIMEOUT_ERROR_CODE}",
+                    "received": receipt.get("process_failure_code"),
+                }
+            )
+        summary_hash = str(receipt.get("redacted_failure_summary_hash") or "")
+        if len(summary_hash) != 64 or any(char not in "0123456789abcdef" for char in summary_hash):
+            mismatches.append(
+                {
+                    "field": "redacted_failure_summary_hash",
+                    "expected": "lowercase_sha256_hex",
+                    "received": receipt.get("redacted_failure_summary_hash"),
+                }
+            )
+    else:
+        started_failure_fields = {
+            "process_failure_recorded": False,
+            "process_timeout_recorded": False,
+            "process_failure_code": "",
+            "process_failure_phase": "",
+            "redacted_failure_summary_hash": "",
+        }
+        for field, expected_value in started_failure_fields.items():
+            received = receipt.get(field, expected_value)
+            if received != expected_value:
+                mismatches.append({"field": field, "expected": expected_value, "received": received})
     receipt_hash = workflow_status._stable_hash(
         {key: value for key, value in receipt.items() if key not in {"process_execution_receipt_hash", "server_time"}}
     )
@@ -590,9 +700,16 @@ def _launch_server_owned_process(
             close_fds=True,
             creationflags=creationflags,
         )
+    except TimeoutError as exc:
+        raise CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
+            PROCESS_LAUNCH_TIMEOUT_ERROR_CODE,
+            "The server-owned allowlisted Candidate B workflow process start timed out.",
+            http_status=409,
+            details={"reason": exc.__class__.__name__},
+        ) from exc
     except OSError as exc:
         raise CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
-            "candidate_b_full_corpus_operator_workflow_process_execution_launch_failed",
+            PROCESS_LAUNCH_FAILED_ERROR_CODE,
             "The server-owned allowlisted Candidate B workflow process could not be started.",
             http_status=409,
             details={"reason": exc.__class__.__name__},
@@ -610,6 +727,31 @@ def _launch_server_owned_process(
             f"{process_execution_receipt_id}/{server_process_handle_hash[:24]}"
         ),
         "server_process_handle_hash": server_process_handle_hash,
+    }
+
+
+def _blocked_launch_result(
+    *,
+    process_execution_receipt_id: str,
+    process_invocation_hash: str,
+    launch_error: CandidateBFullCorpusOperatorWorkflowProcessExecutionError,
+) -> dict[str, str]:
+    redacted_failure_summary_hash = workflow_status._stable_hash(
+        {
+            "process_execution_receipt_id": process_execution_receipt_id,
+            "process_invocation_hash": process_invocation_hash,
+            "process_failure_code": launch_error.code,
+            "process_failure_phase": PROCESS_LAUNCH_FAILURE_PHASE,
+            "process_failure_reason": str(launch_error.details.get("reason") or "redacted"),
+        }
+    )
+    return {
+        "redacted_process_ref": (
+            "candidate-b-full-corpus-operator-workflow-process://"
+            f"{process_execution_receipt_id}/{redacted_failure_summary_hash[:24]}"
+        ),
+        "server_process_handle_hash": redacted_failure_summary_hash,
+        "redacted_failure_summary_hash": redacted_failure_summary_hash,
     }
 
 
