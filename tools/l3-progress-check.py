@@ -3041,6 +3041,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_RENDER
     PLANNING_DOCS
     / "1093-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-review-remediation.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_REMEDIATION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1094-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-remediation-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -103502,6 +103506,57 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt
                 )
 
 
+def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_remediation_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_REMEDIATION_CURRENT_MAIN_SYNC: (
+            "Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Remediation Current-Main Sync",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1",
+            "source_consumption_receipt_use_rendered_review_remediation: next_milestone_plans/Layer3_planning_docs/1093-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-review-remediation.md",
+            "current_main_entry: c1d938ed781aba41aa3389139f265ce1ca6edc70",
+            'source_review_remediation_pr: "#1796"',
+            "source_merge_commit: c1d938ed781aba41aa3389139f265ce1ca6edc70",
+            "review_threads_total_count: 0",
+            "unresolved_review_threads_total_count: 0",
+            "source_pr_1795_review_threads_resolved_after_remediation: 3",
+            "ci_status: passed",
+            "ci_successful_checks: 10",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "synced_source_consumption_authority_preferred_after_new_consumption_response: true",
+            "synced_stale_dom_or_stored_use_values_rejected_after_new_consumption_response: true",
+            "synced_empty_parsed_selected_scope_classes_submit_disabled: true",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "selector_mutation_performed: false",
+            "default_scope_mutation_performed: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1",
+            "source_review_remediation_pr: \"#1796\"",
+            "source_pr_1795_review_threads_resolved_after_remediation: 3",
+            "ci_successful_checks: 10",
+            "synced_operator_edit_clears_source_authority_preference: true",
+            "synced_rehydrated_consumption_receipt_use_payload_proven: true",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_operator_status_inspection_selection_v1",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_RENDERED_REVIEW_REMEDIATION: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope consumption receipt use remediation current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -104480,6 +104535,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_remediation_current_main_sync(
         errors
     )
 
