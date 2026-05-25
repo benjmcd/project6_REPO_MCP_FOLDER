@@ -5987,3 +5987,57 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_r
 ```
 
 The runtime endpoint records the repeatability trial over server-owned use-status receipt authority. Operators still need a separately selected rendered/status pass before the trial becomes a first-class workbench control.
+
+### Candidate B Broader Eligible Corpus Default Scope Operator Repeatability Trial Rendered Status Selection
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_selection_v1
+source_operator_repeatability_trial_runtime: next_milestone_plans/Layer3_planning_docs/1101-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-runtime.md
+current_main_entry: aee6d2b0f8c47837cf4372232cfa6c7cf82de915
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_v1
+selected_rendered_trial_scope: operator_visible_trial_submission_and_status_projection_over_server_revalidated_use_status_authority
+selected_rendered_trial_mode: rendered_candidate_b_broader_scope_operator_repeatability_trial_control_without_process_execution_default_mutation_or_frontend_authority
+selected_rendered_trial_control_target: rendered_candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_control
+existing_trial_endpoint_reused_for_recording: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial
+existing_original_status_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+existing_repeat_status_endpoint_reused_for_authority: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status
+trial_status_values_rendered: accepted,blocked,not_started,error
+accepted_trial_renders_accepted: true
+blocked_disposition_renders_blocked: true
+stale_use_status_must_fail_closed: true
+missing_use_receipt_must_fail_closed: true
+mismatched_authority_must_fail_closed: true
+redacted_trial_receipt_ref_required: true
+raw_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+actual_corpus_processing_execution_admitted_now: false
+actual_subprocess_spawn_admitted_now: false
+process_control_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+auth_security_expansion_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+selected_classes_default_scope_only: true
+non_selected_class_default: baseline
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_v1
+```
+
+The next rendered/status pass should make the repeatability trial operator-visible without turning the browser into durable authority. It should submit only opaque server receipt ids/hashes, fixed mode/decision fields, selected classes, and disposition; all authoritative validation remains server-side.
