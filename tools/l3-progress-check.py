@@ -3037,6 +3037,10 @@ CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_RENDER
     PLANNING_DOCS
     / "1092-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-status.md"
 )
+CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_RENDERED_REVIEW_REMEDIATION = (
+    PLANNING_DOCS
+    / "1093-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-review-remediation.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -103370,7 +103374,7 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt
             "verification_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PASS",
             'verification_headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium PASS 1 passed',
             'verification_headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium --headed PASS 1 passed',
-            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1",
         ),
         LOCAL_CORPUS_E2E_RUNBOOK: (
             "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_status_v1",
@@ -103386,7 +103390,7 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt
             "default_scope_mutation_performed: false",
             "raw_local_path_exposed: false",
             "raw_url_exposed: false",
-            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1",
         ),
         LAYER3_JS: (
             "CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_RENDERED_MODE",
@@ -103418,7 +103422,7 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt
             "default scope use enabled: false",
             "default scope mutation performed: false",
             "/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use",
-            "expect(consumptionReceiptUsePayloads).toHaveLength(2)",
+            "expect(consumptionReceiptUsePayloads).toHaveLength(3)",
         ),
         CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_RUNTIME: (
             "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_status_v1",
@@ -103430,6 +103434,71 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing Candidate B broader eligible corpus default scope consumption receipt use rendered status term: {term}"
+                )
+
+
+def _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_RENDERED_REVIEW_REMEDIATION: (
+            "Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Rendered Review Remediation",
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1",
+            "source_consumption_receipt_use_rendered_status: next_milestone_plans/Layer3_planning_docs/1092-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-status.md",
+            'source_review_pr: "#1795"',
+            "source_review_threads_total_count: 3",
+            "entry_decision: review_remediation",
+            "source_consumption_authority_preferred_after_new_consumption_response: true",
+            "stale_dom_or_stored_use_values_rejected_after_new_consumption_response: true",
+            "server_selected_scope_classes_preferred_after_new_consumption_response: true",
+            "operator_edit_clears_source_authority_preference: true",
+            "empty_parsed_selected_scope_classes_submit_disabled: true",
+            "selected_scope_classes_parser_shared_by_activation_consumption_and_consumption_use: true",
+            "rehydrated_consumption_receipt_use_payload_proven: true",
+            "selector_mutation_performed: false",
+            "default_scope_mutation_performed: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1",
+            "source_review_threads_unresolved_before_remediation: 3",
+            "source_consumption_authority_preferred_after_new_consumption_response: true",
+            "stale_dom_or_stored_use_values_rejected_after_new_consumption_response: true",
+            "empty_parsed_selected_scope_classes_submit_disabled: true",
+            "rehydrated_consumption_receipt_use_payload_proven: true",
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1",
+        ),
+        LAYER3_JS: (
+            "candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh",
+            "candidateBBroaderScopeParsedSelectedScopeClasses",
+            "preferConsumptionAuthority",
+            "selectedScopeClasses.length > 0",
+            "candidateBBroaderScopeConsumptionReceiptUseInputValues({",
+            "State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = true",
+            "State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = false",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "review_thread_rehydrated_scope",
+            "stale-use-consumption-id",
+            "toBeDisabled()",
+            "rehydratedConsumptionReceiptUsePayload",
+            "cb-broader-scope-activation-consumption-rendered-proof-2",
+            "selected_scope_classes: ['review_thread_rehydrated_scope']",
+            "expect(activationConsumptionPayloads).toHaveLength(3)",
+            "expect(consumptionReceiptUsePayloads).toHaveLength(3)",
+        ),
+        CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_CONSUMPTION_RECEIPT_USE_RENDERED_STATUS: (
+            "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing Candidate B broader eligible corpus default scope consumption receipt use rendered review remediation term: {term}"
                 )
 
 
@@ -104408,6 +104477,9 @@ def main() -> int:
         errors
     )
     _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_status(
+        errors
+    )
+    _check_candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation(
         errors
     )
 

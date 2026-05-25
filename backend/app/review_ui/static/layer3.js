@@ -757,6 +757,7 @@ const State = {
     candidateBBroaderScopeConsumptionReceiptUse: null,
     candidateBBroaderScopeConsumptionReceiptUseError: null,
     candidateBBroaderScopeConsumptionReceiptUsePending: false,
+    candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh: false,
     candidateBBroaderScopeConsumptionReceiptUseInput: {
         consumptionReceiptId: '',
         consumptionReceiptHash: '',
@@ -8680,10 +8681,9 @@ function candidateBBroaderScopeActivationConsumptionInputValues() {
 function candidateBBroaderScopeActivationConsumptionPayload() {
     const values = candidateBBroaderScopeActivationConsumptionInputValues();
     State.candidateBBroaderScopeActivationConsumptionInput = values;
-    const selectedScopeClasses = values.selectedScopeClasses
-        .split(',')
-        .map((scopeClass) => scopeClass.trim())
-        .filter(Boolean);
+    const selectedScopeClasses = candidateBBroaderScopeParsedSelectedScopeClasses(
+        values.selectedScopeClasses,
+    );
     return {
         client_request_id: requestId(),
         consumption_mode: CANDIDATE_B_BROADER_SCOPE_ACTIVATION_CONSUMPTION_MODE,
@@ -8700,12 +8700,23 @@ function candidateBBroaderScopeActivationConsumptionPayload() {
     };
 }
 
-function candidateBBroaderScopeConsumptionReceiptUseInputValues() {
+function candidateBBroaderScopeParsedSelectedScopeClasses(value) {
+    return (value || '')
+        .split(',')
+        .map((scopeClass) => scopeClass.trim())
+        .filter(Boolean);
+}
+
+function candidateBBroaderScopeConsumptionReceiptUseInputValues(options = {}) {
     const activationConsumption = State.candidateBBroaderScopeActivationConsumption;
     const activationBinding = activationConsumption?.activation_receipt_binding || {};
     const selectorUseStatusBinding = activationConsumption?.selector_use_status_binding || {};
     const selectorUseBinding = activationConsumption?.selector_use_receipt_binding || {};
     const runtimeBinding = activationConsumption?.runtime_selection_receipt_binding || {};
+    const preferConsumptionAuthority = (
+        options.preferConsumptionAuthority === true
+        || State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh === true
+    );
     const selectedClasses = Array.isArray(activationConsumption?.selected_scope_classes)
         ? activationConsumption.selected_scope_classes.join(', ')
         : '';
@@ -8740,77 +8751,67 @@ function candidateBBroaderScopeConsumptionReceiptUseInputValues() {
         'candidate-b-broader-scope-consumption-receipt-use-selected-classes',
     );
     const stored = State.candidateBBroaderScopeConsumptionReceiptUseInput;
+    const readValue = (input, storedValue, authorityValue) => (
+        preferConsumptionAuthority
+            ? (authorityValue || input?.value || storedValue || '')
+            : (input?.value || storedValue || authorityValue || '')
+    ).trim();
     return {
-        consumptionReceiptId: (
-            consumptionReceiptInput?.value
-            || stored.consumptionReceiptId
-            || activationConsumption?.consumption_receipt_id
-            || ''
-        ).trim(),
-        consumptionReceiptHash: (
-            consumptionHashInput?.value
-            || stored.consumptionReceiptHash
-            || activationConsumption?.consumption_receipt_hash
-            || ''
-        ).trim(),
-        activationReceiptId: (
-            activationReceiptInput?.value
-            || stored.activationReceiptId
-            || activationBinding.activation_receipt_id
-            || ''
-        ).trim(),
-        activationReceiptHash: (
-            activationHashInput?.value
-            || stored.activationReceiptHash
-            || activationBinding.activation_receipt_hash
-            || ''
-        ).trim(),
-        selectorUseStatusHash: (
-            statusHashInput?.value
-            || stored.selectorUseStatusHash
-            || selectorUseStatusBinding.selector_use_status_hash
-            || ''
-        ).trim(),
-        selectorUseReceiptId: (
-            selectorUseReceiptInput?.value
-            || stored.selectorUseReceiptId
-            || selectorUseBinding.selector_use_receipt_id
-            || ''
-        ).trim(),
-        selectorUseReceiptHash: (
-            selectorUseHashInput?.value
-            || stored.selectorUseReceiptHash
-            || selectorUseBinding.selector_use_receipt_hash
-            || ''
-        ).trim(),
-        runtimeSelectionReceiptId: (
-            runtimeReceiptInput?.value
-            || stored.runtimeSelectionReceiptId
-            || runtimeBinding.runtime_selection_receipt_id
-            || ''
-        ).trim(),
-        runtimeSelectionReceiptHash: (
-            runtimeHashInput?.value
-            || stored.runtimeSelectionReceiptHash
-            || runtimeBinding.runtime_selection_receipt_hash
-            || ''
-        ).trim(),
-        selectedScopeClasses: (
-            selectedInput?.value
-            || stored.selectedScopeClasses
-            || selectedClasses
-            || ''
-        ).trim(),
+        consumptionReceiptId: readValue(
+            consumptionReceiptInput,
+            stored.consumptionReceiptId,
+            activationConsumption?.consumption_receipt_id,
+        ),
+        consumptionReceiptHash: readValue(
+            consumptionHashInput,
+            stored.consumptionReceiptHash,
+            activationConsumption?.consumption_receipt_hash,
+        ),
+        activationReceiptId: readValue(
+            activationReceiptInput,
+            stored.activationReceiptId,
+            activationBinding.activation_receipt_id,
+        ),
+        activationReceiptHash: readValue(
+            activationHashInput,
+            stored.activationReceiptHash,
+            activationBinding.activation_receipt_hash,
+        ),
+        selectorUseStatusHash: readValue(
+            statusHashInput,
+            stored.selectorUseStatusHash,
+            selectorUseStatusBinding.selector_use_status_hash,
+        ),
+        selectorUseReceiptId: readValue(
+            selectorUseReceiptInput,
+            stored.selectorUseReceiptId,
+            selectorUseBinding.selector_use_receipt_id,
+        ),
+        selectorUseReceiptHash: readValue(
+            selectorUseHashInput,
+            stored.selectorUseReceiptHash,
+            selectorUseBinding.selector_use_receipt_hash,
+        ),
+        runtimeSelectionReceiptId: readValue(
+            runtimeReceiptInput,
+            stored.runtimeSelectionReceiptId,
+            runtimeBinding.runtime_selection_receipt_id,
+        ),
+        runtimeSelectionReceiptHash: readValue(
+            runtimeHashInput,
+            stored.runtimeSelectionReceiptHash,
+            runtimeBinding.runtime_selection_receipt_hash,
+        ),
+        selectedScopeClasses: readValue(selectedInput, stored.selectedScopeClasses, selectedClasses),
     };
 }
 
 function candidateBBroaderScopeConsumptionReceiptUsePayload() {
     const values = candidateBBroaderScopeConsumptionReceiptUseInputValues();
     State.candidateBBroaderScopeConsumptionReceiptUseInput = values;
-    const selectedScopeClasses = values.selectedScopeClasses
-        .split(',')
-        .map((scopeClass) => scopeClass.trim())
-        .filter(Boolean);
+    const selectedScopeClasses = candidateBBroaderScopeParsedSelectedScopeClasses(
+        values.selectedScopeClasses,
+    );
     return {
         client_request_id: requestId(),
         use_mode: CANDIDATE_B_BROADER_SCOPE_CONSUMPTION_RECEIPT_USE_MODE,
@@ -9778,6 +9779,9 @@ function canRecordCandidateBBroaderScopeActivationConsumption(contract = candida
 
 function canRecordCandidateBBroaderScopeConsumptionReceiptUse(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBBroaderScopeConsumptionReceiptUseInputValues();
+    const selectedScopeClasses = candidateBBroaderScopeParsedSelectedScopeClasses(
+        values.selectedScopeClasses,
+    );
     return Boolean(
         contract?.candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_admitted
         && candidateBBroaderScopeConsumptionReceiptUseEndpointPath(contract)
@@ -9791,7 +9795,7 @@ function canRecordCandidateBBroaderScopeConsumptionReceiptUse(contract = candida
         && values.selectorUseReceiptHash
         && values.runtimeSelectionReceiptId
         && values.runtimeSelectionReceiptHash
-        && values.selectedScopeClasses
+        && selectedScopeClasses.length > 0
         && !State.candidateBBroaderScopeConsumptionReceiptUsePending
     );
 }
@@ -14574,6 +14578,7 @@ async function recordCandidateBBroaderScopeRuntime(event) {
         State.candidateBBroaderScopeActivationConsumptionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = false;
         State.candidateBBroaderScopeConsumptionReceiptUseInput = {
             consumptionReceiptId: '',
             consumptionReceiptHash: '',
@@ -14638,6 +14643,7 @@ async function recordCandidateBBroaderScopeSelectorUse(event) {
         State.candidateBBroaderScopeActivationConsumptionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = false;
         State.candidateBBroaderScopeConsumptionReceiptUseInput = {
             consumptionReceiptId: '',
             consumptionReceiptHash: '',
@@ -14717,6 +14723,7 @@ async function inspectCandidateBBroaderScopeSelectorUseStatus(event) {
         State.candidateBBroaderScopeActivationConsumptionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = false;
         State.candidateBBroaderScopeConsumptionReceiptUseInput = {
             consumptionReceiptId: '',
             consumptionReceiptHash: '',
@@ -14779,6 +14786,7 @@ async function recordCandidateBBroaderScopeSelectorActivation(event) {
         State.candidateBBroaderScopeActivationConsumptionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = false;
         State.candidateBBroaderScopeConsumptionReceiptUseInput = {
             consumptionReceiptId: '',
             consumptionReceiptHash: '',
@@ -14828,8 +14836,11 @@ async function recordCandidateBBroaderScopeActivationConsumption(event) {
         State.candidateBBroaderScopeActivationConsumptionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = true;
         State.candidateBBroaderScopeConsumptionReceiptUseInput = (
-            candidateBBroaderScopeConsumptionReceiptUseInputValues()
+            candidateBBroaderScopeConsumptionReceiptUseInputValues({
+                preferConsumptionAuthority: true,
+            })
         );
         addEvent('Candidate B broader eligible-corpus activation receipt consumed through server revalidated activation authority.');
     } catch (error) {
@@ -21482,6 +21493,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         || target.id === 'candidate-b-broader-scope-consumption-receipt-use-runtime-receipt-hash'
         || target.id === 'candidate-b-broader-scope-consumption-receipt-use-selected-classes'
     ) {
+        State.candidateBBroaderScopeConsumptionReceiptUseInputAuthorityFresh = false;
         State.candidateBBroaderScopeConsumptionReceiptUseInput = (
             candidateBBroaderScopeConsumptionReceiptUseInputValues()
         );

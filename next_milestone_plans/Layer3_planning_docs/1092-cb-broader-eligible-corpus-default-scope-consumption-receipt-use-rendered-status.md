@@ -45,9 +45,11 @@ verification_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PA
 verification_headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium PASS 1 passed
 verification_headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium --headed PASS 1 passed
 verification_progress_check: python ./tools/l3-progress-check.py PASS
-next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1
 ```
 
 This slice adds the rendered operator control for the already-admitted consumption-receipt use runtime. The browser can submit only the selected activation-consumption receipt id/hash, activation receipt id/hash, selector-use status hash, selector-use receipt id/hash, runtime receipt id/hash, and exact selected classes surfaced from server-owned consumption authority.
 
 The server remains the durable authority. The rendered panel records no selector mutation, no default-scope mutation, no source or runtime expansion, and no provider, connector, RAG/model, full-mockup, browser-storage, or frontend-durable authority. Positive and stale-consumption-hash responses are visible through redacted status rows without exposing raw local paths or URLs.
+
+Post-merge review on PR `#1795` identified stale rendered input rehydration and empty parsed selected-class submission as review debt. The next posture is a narrow review-remediation slice before recording a current-main sync.

@@ -5590,7 +5590,44 @@ raw_url_exposed: false
 verification_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PASS
 verification_headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium PASS 1 passed
 verification_headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium --headed PASS 1 passed
-next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1
 ```
 
 The rendered use control lets operators submit only server-surfaced consumption, activation, selector-use, runtime, and selected-class bindings to the existing use endpoint. It shows selected and stale-consumption-hash blocked status from the server response while clearing stale downstream use state when the predecessor activation-consumption inputs change. The control does not mutate selector/default state, broaden source/runtime scope, enable provider writes or connector dispatch, start model runtime, activate mockups, create browser authority, or expose raw paths/URLs.
+
+### Candidate B Broader Eligible Corpus Default Scope Consumption Receipt Use Rendered Review Remediation
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_rendered_review_remediation_v1
+source_consumption_receipt_use_rendered_status: next_milestone_plans/Layer3_planning_docs/1092-cb-broader-eligible-corpus-default-scope-consumption-receipt-use-rendered-status.md
+current_main_entry: 1c78fde1b42169bf64201842f148c26b4ee73fbf
+source_review_pr: "#1795"
+source_review_threads_total_count: 3
+source_review_threads_unresolved_before_remediation: 3
+entry_decision: review_remediation
+runtime_status: already_implemented
+rendered_status: remediated
+source_consumption_authority_preferred_after_new_consumption_response: true
+stale_dom_or_stored_use_values_rejected_after_new_consumption_response: true
+server_selected_scope_classes_preferred_after_new_consumption_response: true
+operator_edit_still_allowed_after_rehydration: true
+operator_edit_clears_source_authority_preference: true
+empty_parsed_selected_scope_classes_submit_disabled: true
+selected_scope_classes_parser_shared_by_activation_consumption_and_consumption_use: true
+positive_consumption_receipt_use_still_proven: true
+stale_consumption_receipt_hash_fail_closed_still_proven: true
+rehydrated_consumption_receipt_use_payload_proven: true
+selector_mutation_performed: false
+default_scope_mutation_performed: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+verification_js_syntax: node --check ./backend/app/review_ui/static/layer3.js PASS
+verification_headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium PASS 1 passed
+verification_headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "Layer 3 workbench records Candidate B broader eligible-corpus runtime status through rendered control" --project=chromium --headed PASS 1 passed
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_current_main_sync_v1
+```
+
+This review-remediation slice keeps the existing server-owned consumption-receipt use endpoint as authority. It fixes the rendered use control so a newly consumed receipt rehydrates use bindings and selected classes from the fresh server response instead of stale DOM or stored defaults, while still letting later operator edits pass through normal fail-closed submission. The rendered submit gate now requires a non-empty parsed selected-class list.
