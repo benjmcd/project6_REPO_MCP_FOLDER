@@ -5935,3 +5935,55 @@ next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_r
 ```
 
 The selected trial is a future server-owned comparator over two redacted broader-scope use-status projections for the same selected classes. It should write an append-only trial receipt only after reloading server receipt/status authority; it should not execute processing, mutate defaults, broaden selected classes, or trust browser-held authority.
+
+### Candidate B Broader Eligible Corpus Default Scope Operator Repeatability Trial Runtime
+
+```yaml
+milestone: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_runtime_v1
+source_trial_selection: next_milestone_plans/Layer3_planning_docs/1100-cb-broader-eligible-corpus-default-scope-operator-repeatability-trial-selection.md
+base_authority: project6-origin/main@28fe332e9486904ca7648837d4b8abf2ee63a01b
+source_branch: codex/cb-broader-repeatability-trial
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_trial_action: record_candidate_b_broader_scope_operator_repeatability_trial
+implemented_trial_endpoint: /api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial
+implemented_trial_mode: append_only_trial_receipt_over_original_and_repeat_use_status_authority_without_processing_execution
+append_only_repeatability_trial_receipt_recorded: true
+exclusive_trial_per_original_repeat_authority_pair_enforced: true
+idempotent_replay_for_same_authority_pair: true
+server_reloads_original_use_status: true
+server_reloads_repeat_use_status: true
+stale_original_use_status_rejected: true
+stale_repeat_use_status_rejected: true
+mismatched_selected_classes_rejected: true
+non_available_original_or_repeat_status_rejected: true
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_document_processing_engine_preserved: candidate_b_opendataloader_pdf_for_eligible_effective_pdfs_only
+candidate_b_visual_lane_preserved: candidate_b_opendataloader_page_evidence_v1_explicit_only
+selected_classes_default_scope_only: true
+non_selected_class_default: baseline
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_command_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+actual_corpus_processing_execution_admitted_by_trial_endpoint: false
+actual_subprocess_spawn_admitted_by_trial_endpoint: false
+process_control_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+default_scope_expansion_admitted: false
+auth_security_expansion_enabled: false
+verification_backend_pytest: python -m pytest ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py -q PASS 34 passed
+verification_py_compile: python -m py_compile ./backend/app/services/layer3_candidate_b_broader_scope_repeatability_trial.py ./backend/app/api/layer3.py ./backend/app/services/layer3_readiness_contract.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_candidate_b_broader_scope_selector_use.py ./tools/l3-progress-check.py PASS
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_rendered_status_selection_v1
+```
+
+The runtime endpoint records the repeatability trial over server-owned use-status receipt authority. Operators still need a separately selected rendered/status pass before the trial becomes a first-class workbench control.

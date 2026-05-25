@@ -16,6 +16,7 @@ sys.path.insert(0, str(BACKEND))
 from app.core.config import settings
 from app.services import (
     layer3_candidate_b_broader_scope_readiness,
+    layer3_candidate_b_broader_scope_repeatability_trial,
     layer3_candidate_b_broader_scope_runtime,
     layer3_candidate_b_broader_scope_selector_use,
 )
@@ -41,6 +42,9 @@ CONSUMPTION_RECEIPT_USE_ENDPOINT = (
 )
 CONSUMPTION_RECEIPT_USE_STATUS_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/consumption-receipt/use/status"
+)
+OPERATOR_REPEATABILITY_TRIAL_ENDPOINT = (
+    "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/operator-repeatability/trial"
 )
 SCOPE_CLASSES = list(layer3_candidate_b_broader_scope_readiness.SCOPE_CLASSES)
 EXCLUSIONS = list(layer3_candidate_b_broader_scope_readiness.REQUIRED_EXCLUSIONS)
@@ -293,6 +297,66 @@ def _consumption_receipt_use_status_payload(
         "readiness_audit_hash": use_receipt["readiness_audit_binding"]["readiness_audit_hash"],
         "selected_scope_classes": use_receipt["selected_scope_classes"],
     }
+
+
+def _consumption_receipt_use_status(
+    client: TestClient,
+    use_receipt: dict[str, object] | None = None,
+) -> dict[str, object]:
+    use_receipt = use_receipt or _consumption_receipt_use(client)
+    response = client.post(
+        CONSUMPTION_RECEIPT_USE_STATUS_ENDPOINT,
+        json=_consumption_receipt_use_status_payload(use_receipt),
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "available"
+    return body
+
+
+def _operator_repeatability_status_fields(prefix: str, status: dict[str, object]) -> dict[str, object]:
+    consumption_binding = status["consumption_receipt_binding"]
+    activation_binding = status["activation_receipt_binding"]
+    selector_use_status_binding = status["selector_use_status_binding"]
+    selector_use_receipt_binding = status["selector_use_receipt_binding"]
+    runtime_binding = status["runtime_selection_receipt_binding"]
+    readiness_binding = status["readiness_audit_binding"]
+    return {
+        f"{prefix}_use_receipt_status_hash": status["use_receipt_status_hash"],
+        f"{prefix}_use_receipt_id": status["use_receipt_id"],
+        f"{prefix}_use_receipt_hash": status["use_receipt_hash"],
+        f"{prefix}_consumption_receipt_id": consumption_binding["consumption_receipt_id"],
+        f"{prefix}_consumption_receipt_hash": consumption_binding["consumption_receipt_hash"],
+        f"{prefix}_activation_receipt_id": activation_binding["activation_receipt_id"],
+        f"{prefix}_activation_receipt_hash": activation_binding["activation_receipt_hash"],
+        f"{prefix}_selector_use_status_hash": selector_use_status_binding["selector_use_status_hash"],
+        f"{prefix}_selector_use_receipt_id": selector_use_receipt_binding["selector_use_receipt_id"],
+        f"{prefix}_selector_use_receipt_hash": selector_use_receipt_binding["selector_use_receipt_hash"],
+        f"{prefix}_runtime_selection_receipt_id": runtime_binding["runtime_selection_receipt_id"],
+        f"{prefix}_runtime_selection_receipt_hash": runtime_binding["runtime_selection_receipt_hash"],
+        f"{prefix}_readiness_audit_id": readiness_binding["readiness_audit_id"],
+        f"{prefix}_readiness_audit_hash": readiness_binding["readiness_audit_hash"],
+    }
+
+
+def _operator_repeatability_trial_payload(
+    original_status: dict[str, object],
+    repeat_status: dict[str, object] | None = None,
+    *,
+    disposition: str = "no_regression_observed",
+) -> dict[str, object]:
+    repeat_status = repeat_status or original_status
+    payload: dict[str, object] = {
+        "client_request_id": "cb-broader-scope-operator-repeatability-trial-test",
+        "trial_mode": layer3_candidate_b_broader_scope_repeatability_trial.TRIAL_MODE,
+        "operator_decision": layer3_candidate_b_broader_scope_repeatability_trial.TRIAL_OPERATOR_DECISION,
+        "operator_repeatability_disposition": disposition,
+        "selected_scope_classes": original_status["selected_scope_classes"],
+        "operator_confirmation": True,
+    }
+    payload.update(_operator_repeatability_status_fields("original", original_status))
+    payload.update(_operator_repeatability_status_fields("repeat", repeat_status))
+    return payload
 
 
 def test_candidate_b_broader_scope_selector_use_records_redacted_receipt(client: TestClient) -> None:
@@ -970,6 +1034,174 @@ def test_candidate_b_broader_scope_consumption_receipt_use_status_rejects_unsele
     assert "candidate_b_broader_scope_consumption_receipt_use_status_unselected_scope_class" in codes
 
 
+def test_candidate_b_broader_scope_operator_repeatability_trial_records_redacted_receipt(
+    client: TestClient,
+) -> None:
+    use_receipt = _consumption_receipt_use(client)
+    original_status = _consumption_receipt_use_status(client, use_receipt)
+    repeat_status = _consumption_receipt_use_status(client, use_receipt)
+
+    response = client.post(
+        OPERATOR_REPEATABILITY_TRIAL_ENDPOINT,
+        json=_operator_repeatability_trial_payload(original_status, repeat_status),
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_repeatability_trial.SCHEMA_ID
+    assert body["mode"] == layer3_candidate_b_broader_scope_repeatability_trial.TRIAL_MODE
+    assert body["status"] == "accepted"
+    assert (
+        body["operator_repeatability_trial_state"]
+        == layer3_candidate_b_broader_scope_repeatability_trial.TRIAL_ACCEPTED_STATE
+    )
+    assert body["operator_repeatability_disposition"] == "no_regression_observed"
+    assert body["append_only_repeatability_trial_receipt"] is True
+    assert body["exclusive_trial_per_original_repeat_authority_pair"] is True
+    assert body["idempotent_replay"] is False
+    assert body["selected_scope_classes"] == [SELECTED_CLASS]
+    assert body["use_status_hash_comparison"] == "match"
+    assert body["receipt_chain_hash_comparison"] == "match"
+    assert body["selected_scope_classes_hash_comparison"] == "match"
+    assert body["negative_invariants_hash_comparison"] == "match"
+    assert body["readiness_audit_binding"]["binding_verified"] is True
+    assert body["runtime_selection_receipt_binding"]["binding_verified"] is True
+    assert body["selector_use_receipt_binding"]["binding_verified"] is True
+    assert body["activation_receipt_binding"]["binding_verified"] is True
+    assert body["consumption_receipt_binding"]["binding_verified"] is True
+    assert body["trial_authority"]["process_execution_admitted"] is False
+    assert body["default_scope_expansion_admitted"] is False
+    assert body["actual_corpus_processing_execution_admitted"] is False
+    assert body["actual_subprocess_spawn_admitted"] is False
+    assert body["selector_mutation_performed"] is False
+    assert body["default_scope_mutation_performed"] is False
+    assert body["provider_object_write_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["rag_vector_model_runtime_enabled"] is False
+    assert body["full_mockup_activation_enabled"] is False
+    assert body["frontend_durable_authority_enabled"] is False
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["artifact_bytes_exposed"] is False
+    assert "C:" not in json.dumps(body, sort_keys=True)
+    assert "https://" not in json.dumps(body, sort_keys=True)
+
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-operator-repeatability-trial"
+        / f"{body['trial_receipt_id']}.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["trial_receipt_hash"] == body["trial_receipt_hash"]
+    assert receipt["operator_repeatability_disposition"] == "no_regression_observed"
+    assert receipt["default_scope_expansion_admitted"] is False
+    assert receipt["actual_corpus_processing_execution_admitted"] is False
+    assert receipt["raw_local_path_exposed"] is False
+    assert receipt["raw_url_exposed"] is False
+
+    replay = client.post(
+        OPERATOR_REPEATABILITY_TRIAL_ENDPOINT,
+        json=_operator_repeatability_trial_payload(original_status, repeat_status),
+    )
+    assert replay.status_code == 200, replay.text
+    replay_body = replay.json()
+    assert replay_body["trial_receipt_id"] == body["trial_receipt_id"]
+    assert replay_body["idempotent_replay"] is True
+
+
+def test_candidate_b_broader_scope_operator_repeatability_trial_rejects_stale_repeat_status_hash(
+    client: TestClient,
+) -> None:
+    use_receipt = _consumption_receipt_use(client)
+    original_status = _consumption_receipt_use_status(client, use_receipt)
+    payload = _operator_repeatability_trial_payload(original_status)
+    payload["repeat_use_receipt_status_hash"] = "a" * 64
+
+    response = client.post(OPERATOR_REPEATABILITY_TRIAL_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_repeatability_trial.SCHEMA_ID
+    assert body["status"] == "blocked"
+    assert body["mode"] == layer3_candidate_b_broader_scope_repeatability_trial.TRIAL_MODE
+    assert (
+        body["error"]["code"]
+        == "candidate_b_broader_scope_operator_repeatability_trial_stale_repeat_use_status_hash"
+    )
+
+
+def test_candidate_b_broader_scope_operator_repeatability_trial_rejects_missing_repeat_use_receipt(
+    client: TestClient,
+) -> None:
+    use_receipt = _consumption_receipt_use(client)
+    original_status = _consumption_receipt_use_status(client, use_receipt)
+    payload = _operator_repeatability_trial_payload(original_status)
+    payload["repeat_use_receipt_id"] = (
+        f"{layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_RECEIPT_PREFIX}-missing"
+    )
+    payload["repeat_use_receipt_hash"] = "b" * 64
+    payload["repeat_use_receipt_status_hash"] = "c" * 64
+
+    response = client.post(OPERATOR_REPEATABILITY_TRIAL_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert (
+        body["error"]["code"]
+        == "candidate_b_broader_scope_operator_repeatability_trial_repeat_use_status_not_available"
+    )
+
+
+def test_candidate_b_broader_scope_operator_repeatability_trial_rejects_mismatched_readiness_authority(
+    client: TestClient,
+) -> None:
+    use_receipt = _consumption_receipt_use(client)
+    original_status = _consumption_receipt_use_status(client, use_receipt)
+    payload = _operator_repeatability_trial_payload(original_status)
+    payload["repeat_readiness_audit_hash"] = "d" * 64
+
+    response = client.post(OPERATOR_REPEATABILITY_TRIAL_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert (
+        body["error"]["code"]
+        == "candidate_b_broader_scope_operator_repeatability_trial_repeat_use_status_invalid"
+    )
+    assert (
+        body["error"]["details"]["authority_error_code"]
+        == "candidate_b_broader_scope_consumption_receipt_use_status_authority_invalid"
+    )
+
+
+def test_candidate_b_broader_scope_operator_repeatability_trial_records_blocked_disposition(
+    client: TestClient,
+) -> None:
+    use_receipt = _consumption_receipt_use(client)
+    original_status = _consumption_receipt_use_status(client, use_receipt)
+
+    response = client.post(
+        OPERATOR_REPEATABILITY_TRIAL_ENDPOINT,
+        json=_operator_repeatability_trial_payload(
+            original_status,
+            disposition=layer3_candidate_b_broader_scope_repeatability_trial.BLOCKED_DISPOSITION,
+        ),
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert (
+        body["operator_repeatability_trial_state"]
+        == layer3_candidate_b_broader_scope_repeatability_trial.TRIAL_BLOCKED_STATE
+    )
+    assert body["operator_repeatability_disposition"] == "regression_detected_blocked"
+    assert body["trial_receipt_status"] == "recorded"
+    assert body["default_scope_expansion_admitted"] is False
+    assert body["selector_mutation_performed"] is False
+    assert body["default_scope_mutation_performed"] is False
+
+
 def test_candidate_b_broader_scope_consumption_receipt_use_fails_closed_on_missing_consumption_receipt(
     client: TestClient,
 ) -> None:
@@ -1110,6 +1342,14 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
         readiness_body["candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_endpoint"]
         == CONSUMPTION_RECEIPT_USE_STATUS_ENDPOINT
     )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_admitted"]
+        is True
+    )
+    assert (
+        readiness_body["candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_endpoint"]
+        == OPERATOR_REPEATABILITY_TRIAL_ENDPOINT
+    )
 
     assert bootstrap.status_code == 200, bootstrap.text
     bootstrap_body = bootstrap.json()
@@ -1129,6 +1369,10 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
     )
     assert (
         bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status"]
+        is True
+    )
+    assert (
+        bootstrap_body["features"]["candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial"]
         is True
     )
     assert (
@@ -1164,6 +1408,12 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
             "candidate_b_broader_eligible_corpus_default_scope_consumption_receipt_use_status_endpoint"
         ]
         == CONSUMPTION_RECEIPT_USE_STATUS_ENDPOINT
+    )
+    assert (
+        bootstrap_body["execution_readiness"][
+            "candidate_b_broader_eligible_corpus_default_scope_operator_repeatability_trial_endpoint"
+        ]
+        == OPERATOR_REPEATABILITY_TRIAL_ENDPOINT
     )
 
     schema = client.app.openapi()
@@ -1203,3 +1453,16 @@ def test_candidate_b_broader_scope_selector_use_is_exposed_in_contracts(client: 
     assert use_status_request_schema["additionalProperties"] is False
     for field in ("visual_lane_mode", "document_processing_engine", "local_path", "url", "default_selector"):
         assert field not in use_status_request_schema["properties"]
+    trial_route = schema["paths"][OPERATOR_REPEATABILITY_TRIAL_ENDPOINT]["post"]
+    trial_request_ref = trial_route["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    trial_request_schema = schema["components"]["schemas"][trial_request_ref.rsplit("/", 1)[-1]]
+    assert trial_request_schema["additionalProperties"] is False
+    for field in (
+        "visual_lane_mode",
+        "document_processing_engine",
+        "local_path",
+        "url",
+        "default_selector",
+        "process_command",
+    ):
+        assert field not in trial_request_schema["properties"]
