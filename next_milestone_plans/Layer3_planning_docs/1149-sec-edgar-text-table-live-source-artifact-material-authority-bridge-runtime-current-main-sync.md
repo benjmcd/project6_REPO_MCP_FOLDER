@@ -1,0 +1,60 @@
+# SEC EDGAR Text Table Live Source Artifact Material Authority Bridge Runtime Current Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_material_authority_bridge_runtime_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1148-sec-edgar-text-table-live-source-artifact-material-authority-bridge-runtime.md
+current_main_entry: 5147e5815d3df71b4a790706894b9191c01ce918
+source_runtime_pr: "#1852"
+source_runtime_merge_commit: 5147e5815d3df71b4a790706894b9191c01ce918
+entry_decision: current_main_sync
+runtime_status: implemented
+rendered_status: not_implemented
+current_main_contains_live_material_bridge_runtime: true
+current_main_sync_introduces_runtime_behavior: false
+implemented_schema_id: layer3.sec_edgar_text_table_live_source_artifact_material_authority_bridge.v1
+implemented_request_schema_id: layer3.sec_edgar_text_table_live_source_artifact_material_authority_bridge_request.v1
+implemented_bridge_mode: sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1
+implemented_ready_state: sec_edgar_text_table_live_source_artifact_material_authority_bridge_ready
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge
+implemented_service: backend/app/services/layer3_sec_edgar_live_material_bridge.py
+implemented_source_acquisition_live_receipt_compatibility: explicit_source_artifact_receipt_id_hash_ref_hash_from_materialized_provenance
+implemented_existing_material_bridge_mode: sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1
+implemented_material_source_class: dataset_version
+implemented_output_authority: deterministic_live_source_artifact_material_authority_bridge_receipt_and_redacted_status_projection
+live_source_artifact_receipt_bound: true
+source_acquisition_receipt_bound: true
+underlying_material_bridge_receipt_bound: true
+material_preview_gate_b_compatibility_preserved: true
+gate_b_commit_in_bridge: false
+direct_live_artifact_to_material_without_source_acquisition_admitted: false
+direct_raw_artifact_parse_or_materialization_admitted: false
+dataset_version_creation_admitted: false
+live_sec_network_fetch_admitted_for_bridge: false
+raw_sec_filing_url_as_authority_admitted_for_bridge: false
+xml_html_inline_xbrl_parser_admitted_for_bridge: false
+broad_source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+downstream_live_source_artifact_proof_admitted_now: false
+selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_selection_v1
+selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1150-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-selection.md
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_layer3_proof_selection_v1
+```
+
+Current main now contains the SEC EDGAR live source-artifact material-authority bridge runtime from PR `#1852`. This sync records that the runtime is live on `main` and that it remains a bridge over verified live source-artifact, source-acquisition, materialized DatasetVersion, material-preview, and Gate B payload authority. The bridge does not commit Gate B or prove the downstream path by itself.
+
+The next governed step is a freeze/selection for live source-artifact downstream proof. That future proof must bind the live bridge receipt and its underlying material bridge receipt before using the existing SEC EDGAR downstream proof/status pattern. It must not treat a retained SEC filing artifact as direct material text, self-declare coverage, fetch from SEC, expand parsers, write provider objects, dispatch connectors, add RAG/model runtime, activate full mockups, or rely on frontend/browser durable authority.
