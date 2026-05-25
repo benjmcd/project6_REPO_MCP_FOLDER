@@ -859,6 +859,66 @@ def test_layer3_api_validates_sec_edgar_text_table_authority_envelope(client: Te
     assert "aps-target-artifacts/run-001" not in response.text
 
 
+def test_layer3_api_bridges_sec_edgar_text_table_material_authority(client: TestClient, tmp_path) -> None:
+    db = client.layer3_session_factory()
+    try:
+        dataset_version_id = _seed_aps_derived_dataset_version(
+            db,
+            tmp_path,
+            dataset_version_id="dv-aps-sec-edgar-api-bridge-001",
+            parser_family="sec_edgar_filing",
+            typed_content_contract_id="aps_sec_edgar_filing_units_v1",
+            source_mode="artifact_sec_edgar_filing_parser",
+            parser_contract_id="aps_sec_edgar_filing_parser_v1",
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    envelope_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+        json={
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert envelope_response.status_code == 200
+    envelope = envelope_response.json()
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/material-authority/bridge",
+        json={
+            "client_request_id": "sec-edgar-api-material-bridge",
+            "bridge_mode": "sec_edgar_text_table_authority_envelope_to_layer3_material_authority_v1",
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "authority_envelope_ref": envelope["authority_envelope_ref"],
+            "expected_materialization_receipt_hash": envelope["materialization_receipt_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_text_table_material_authority_bridge.v1"
+    assert body["bridge_state"] == "sec_edgar_text_table_layer3_material_authority_bridge_ready"
+    assert body["source_family"] == "sec_edgar_text_table"
+    assert body["material_preview_request_basis"]["dataset_version_ids"] == [dataset_version_id]
+    assert body["gate_b_decision_manifest_id"]
+    assert body["negative_invariants"]["direct_unbridged_sec_edgar_dataset_version_material_authority_admitted"] is False
+    assert "aps-target-artifacts/run-001" not in response.text
+    assert str(tmp_path) not in response.text
+
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=body["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200
+    gate_b = gate_b_response.json()
+    assert gate_b["next_state"] == "gate_c_preview_ready"
+    assert gate_b["material_preview_hash"] == body["material_preview_hash"]
+    assert gate_b["gate_b_decision_manifest_id"] == body["gate_b_decision_manifest_id"]
+
+
 def test_layer3_api_lists_aps_content_document_candidates(client: TestClient, tmp_path) -> None:
     run_id = "api-aps-doc-run-001"
     target_id = "api-aps-doc-target-001"
