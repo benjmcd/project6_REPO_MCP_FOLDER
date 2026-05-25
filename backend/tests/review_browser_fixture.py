@@ -12,9 +12,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 import app.api.review_nrc_aps as review_api
+from app.core.config import settings
 from app.db.session import Base
 from app.models import ApsContentChunk, ApsContentDocument, ApsContentLinkage, ConnectorRun, ConnectorRunTarget
 import app.services.layer3_internal_webhook_connector as layer3_internal_webhook_connector
+import app.services.layer3_sec_edgar_live_source_artifact as layer3_sec_edgar_live_source_artifact
 import app.services.review_nrc_aps_candidate_b_trace as trace_service
 import app.services.layer3_pass_entry as layer3_pass_entry_module
 import app.services.layer3_workbench as layer3_workbench_module
@@ -618,6 +620,12 @@ def capture_review_browser_patch_state() -> dict[str, object]:
         "api_resolve_candidate_b_trace_annotated_pdf_info": review_api.resolve_candidate_b_trace_annotated_pdf_info,
         "api_load_candidate_b_trace_raw_json": review_api.load_candidate_b_trace_raw_json,
         "api_load_candidate_b_trace_raw_markdown": review_api.load_candidate_b_trace_raw_markdown,
+        "layer3_sec_edgar_client": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT,
+        "layer3_sec_edgar_sleep": layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP,
+        "settings_layer3_sec_edgar_user_agent": getattr(settings, "layer3_sec_edgar_user_agent", None),
+        "settings_layer3_sec_edgar_rate_limit_per_second": getattr(
+            settings, "layer3_sec_edgar_rate_limit_per_second", None
+        ),
     }
 
 
@@ -644,6 +652,12 @@ def restore_review_browser_patches(patch_state: dict[str, object]) -> None:
     review_api.resolve_candidate_b_trace_annotated_pdf_info = patch_state["api_resolve_candidate_b_trace_annotated_pdf_info"]
     review_api.load_candidate_b_trace_raw_json = patch_state["api_load_candidate_b_trace_raw_json"]
     review_api.load_candidate_b_trace_raw_markdown = patch_state["api_load_candidate_b_trace_raw_markdown"]
+    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_CLIENT = patch_state["layer3_sec_edgar_client"]
+    layer3_sec_edgar_live_source_artifact.SEC_EDGAR_SLEEP = patch_state["layer3_sec_edgar_sleep"]
+    settings.layer3_sec_edgar_user_agent = patch_state["settings_layer3_sec_edgar_user_agent"]
+    settings.layer3_sec_edgar_rate_limit_per_second = patch_state[
+        "settings_layer3_sec_edgar_rate_limit_per_second"
+    ]
     runtime_service._load_binding_request_config_json.cache_clear()
 
 
