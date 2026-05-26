@@ -5145,6 +5145,12 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface from receipt 
         statement_role_semantics_finalized: false,
         final_financial_statement_semantics_claimed: false,
       }],
+      extension_taxonomy_retention_profile: [{
+        record_index: 1,
+        extension_taxonomy_retention_profile_hash: 'c'.repeat(64),
+        extension_taxonomy_mapping_performed: false,
+        extension_taxonomy_facts_dropped: false,
+      }],
       extension_unclassified_facts: [{ record_index: 1, extension_fact_count: 7, unknown_or_unclassified_count: 2 }],
       quality_gaps: {
         distinct_quality_gaps: [
@@ -5178,6 +5184,7 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface from receipt 
         'fact_inventory',
         'semantic_profile',
         'statement_role_quality_profile',
+        'extension_taxonomy_retention_profile',
         'extension_unclassified_facts',
         'quality_gaps',
         'diagnostics_loss_report',
@@ -5188,6 +5195,7 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface from receipt 
       inspectable_count: 1,
       semantic_profile_record_count: 1,
       statement_role_quality_profile_record_count: 1,
+      extension_taxonomy_retention_profile_record_count: 1,
       extension_or_unclassified_record_count: 1,
       distinct_quality_gaps: [
         'financial_statement_semantics_not_finalized',
@@ -5204,6 +5212,7 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface from receipt 
       quality_evidence_hashes_hash: '9'.repeat(64),
       semantic_profile_inventory_hashes_hash: '0'.repeat(64),
       statement_role_quality_profile_hashes_hash: 'b'.repeat(64),
+      extension_taxonomy_retention_profile_hashes_hash: 'c'.repeat(64),
       product_views_hash: 'a'.repeat(64),
       receipt_chain_bound: true,
     },
