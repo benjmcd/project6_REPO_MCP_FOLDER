@@ -3592,6 +3592,9 @@ SEC_EDGAR_FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS = (
 SEC_EDGAR_CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT = (
     PLANNING_DOCS / "1238-sec-edgar-cross-company-comparability-readiness-audit.md"
 )
+SEC_EDGAR_VALIDATION_BREADTH_EXPANSION_SELECTION = (
+    PLANNING_DOCS / "1239-sec-edgar-validation-breadth-expansion-selection.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117678,6 +117681,53 @@ def _check_sec_edgar_cross_company_comparability_readiness_audit(
                 )
 
 
+def _check_sec_edgar_validation_breadth_expansion_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_VALIDATION_BREADTH_EXPANSION_SELECTION: (
+            "SEC EDGAR Validation Breadth Expansion Selection",
+            "milestone: sec_edgar_validation_breadth_expansion_selection_v1",
+            "source_comparability_readiness_audit: next_milestone_plans/Layer3_planning_docs/1238-sec-edgar-cross-company-comparability-readiness-audit.md",
+            "selected_next_runtime_target: sec_edgar_validation_breadth_expansion_runtime_v1",
+            "selected_expansion_matrix: XOM,PFE,UAL,T",
+            "selected_expansion_profile_tags: energy_major,pharmaceutical_life_sciences,airline_transport,telecom_media,debt_intensive,commodity_exposure",
+            "runtime_admission_in_this_freeze: false",
+            "delivery_status_provenance_broadened: false",
+            "operator_inspection_broadened: false",
+            "next_exact_posture: sec_edgar_validation_breadth_expansion_runtime_v1",
+        ),
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SERVICE: (
+            "VALIDATION_BREADTH_EXPANSION_SELECTION_VERSION",
+            "VALIDATION_BREADTH_EXPANSION_SELECTED_MATRIX",
+            "VALIDATION_BREADTH_EXPANSION_SELECTED_PROFILE_TAGS",
+            "VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED = False",
+        ),
+        SEC_EDGAR_CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT: (
+            "next_exact_posture: sec_edgar_validation_breadth_expansion_selection_v1",
+            "cross_company_comparability_admitted: false",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_selects_sec_edgar_validation_breadth_expansion_without_runtime_admission",
+            "sec_edgar_validation_breadth_expansion_selection_v1",
+            '"XOM"',
+            '"PFE"',
+            '"UAL"',
+            '"T"',
+            "VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED is False",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR validation breadth expansion selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118990,6 +119040,7 @@ def main() -> int:
     _check_sec_edgar_standard_concept_mapping_profile(errors)
     _check_sec_edgar_fact_deduplication_conflict_diagnostics(errors)
     _check_sec_edgar_cross_company_comparability_readiness_audit(errors)
+    _check_sec_edgar_validation_breadth_expansion_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

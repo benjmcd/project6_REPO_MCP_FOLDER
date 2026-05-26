@@ -2100,6 +2100,33 @@ def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
     assert str(tmp_path) not in response.text
 
 
+def test_layer3_api_selects_sec_edgar_validation_breadth_expansion_without_runtime_admission() -> None:
+    assert (
+        layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_SELECTION_VERSION
+        == "sec_edgar_validation_breadth_expansion_selection_v1"
+    )
+    assert layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_SELECTED_MATRIX == (
+        "XOM",
+        "PFE",
+        "UAL",
+        "T",
+    )
+    assert set(
+        layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_SELECTED_PROFILE_TAGS
+    ) >= {
+        "energy_major",
+        "pharmaceutical_life_sciences",
+        "airline_transport",
+        "telecom_media",
+        "debt_intensive",
+        "commodity_exposure",
+    }
+    assert layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED is False
+    assert not set(
+        layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_SELECTED_MATRIX
+    ) & set(layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS)
+
+
 def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_real_company_corpus(
     client: TestClient,
     tmp_path,
