@@ -35,6 +35,14 @@ APS_ADMITTED_TABLE_SOURCE_FAMILIES: tuple[dict[str, Any], ...] = (
         "admission_state": "admitted_materialized_dataset_version",
         "scope": "bounded complete-submission text filing tables materialized through generic APS table bridge authority",
     },
+    {
+        "parser_family": "sec_edgar_html_inline_xbrl_source_family_parser_v1",
+        "source_family": "sec_edgar_html_inline_xbrl",
+        "source_family_label": "SEC/EDGAR HTML inline XBRL",
+        "typed_content_contract_id": "sec_edgar_html_inline_xbrl_material_units_v1",
+        "admission_state": "admitted_materialized_dataset_version",
+        "scope": "bounded primary HTML/iXBRL document narrative and table candidate units materialized through governed parser receipt authority",
+    },
 )
 
 APS_NOT_ADMITTED_SOURCE_FAMILIES: tuple[dict[str, Any], ...] = (

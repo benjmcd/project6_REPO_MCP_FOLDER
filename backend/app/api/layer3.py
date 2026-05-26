@@ -29,6 +29,7 @@ from app.services import (
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
+    layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
     layer3_sec_edgar_live_downstream_status,
@@ -530,6 +531,27 @@ class Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserRequest(BaseModel):
     live_source_artifact_receipt_hash: str = Field(min_length=64, max_length=64)
     expected_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlMaterialBridgeRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    bridge_mode: Literal["sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1"]
+    operator_decision: Literal["bridge_sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority"]
+    parser_receipt_id: str = Field(min_length=1)
+    parser_receipt_hash: str = Field(min_length=64, max_length=64)
+    expected_connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_live_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_materialization_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_material_preview_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_gate_b_decision_manifest_id: str | None = None
+    rollback_confirmed: bool = False
+    operator_confirmed: bool = False
     actor: str | None = None
 
 
@@ -7721,6 +7743,21 @@ class Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse(Layer3BaseResponse)
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarHtmlInlineXbrlMaterialBridgeResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    bridge_state: str
+    parser_receipt_hash: str
+    source_family: str
+    parser_family: str
+    typed_content_contract_id: str
+    material_preview_request_basis: dict[str, Any] | None = None
+    material_preview_hash: str | None = None
+    gate_b_decision_manifest_id: str | None = None
+    status_projection: dict[str, Any]
+    negative_invariants: dict[str, Any]
+
+
 class Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse(Layer3BaseResponse):
     mode: str
     bridge_state: str
@@ -14655,6 +14692,38 @@ def get_sec_edgar_html_inline_xbrl_source_family_parser_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_parser.inspect_sec_edgar_html_inline_xbrl_source_family_parser_status(
             sec_edgar_html_inline_xbrl_parser_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+    response_model=Layer3SecEdgarHtmlInlineXbrlMaterialBridgeResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_material_bridge(
+    payload: Layer3SecEdgarHtmlInlineXbrlMaterialBridgeRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_material_bridge.prepare_sec_edgar_html_inline_xbrl_material_bridge(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/html-inline-xbrl/material-authority/bridge/status/{sec_edgar_html_inline_xbrl_material_bridge_receipt_id}",
+    response_model=Layer3SecEdgarHtmlInlineXbrlMaterialBridgeResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_html_inline_xbrl_material_bridge_status(
+    sec_edgar_html_inline_xbrl_material_bridge_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_material_bridge.inspect_sec_edgar_html_inline_xbrl_material_bridge_status(
+            sec_edgar_html_inline_xbrl_material_bridge_receipt_id,
         )
     )
 

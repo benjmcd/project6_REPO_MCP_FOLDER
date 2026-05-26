@@ -3349,6 +3349,9 @@ SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_RUNTIME = (
 SEC_EDGAR_HTML_INLINE_XBRL_MATERIAL_BRIDGE_SELECTION = (
     PLANNING_DOCS / "1172-sec-edgar-html-inline-xbrl-material-bridge-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_MATERIAL_BRIDGE_RUNTIME = (
+    PLANNING_DOCS / "1173-sec-edgar-html-inline-xbrl-material-bridge-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111814,6 +111817,109 @@ def _check_sec_edgar_html_inline_xbrl_material_bridge_selection(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_material_bridge_runtime(
+    errors: list[str],
+) -> None:
+    service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_material_bridge.py"
+    parser_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_parser.py"
+    source_family = ROOT / "backend" / "app" / "services" / "layer3_aps_source_family.py"
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_MATERIAL_BRIDGE_RUNTIME: (
+            "SEC EDGAR HTML Inline XBRL Material Bridge Runtime",
+            "milestone: sec_edgar_html_inline_xbrl_material_bridge_runtime_v1",
+            "source_bridge_selection: next_milestone_plans/Layer3_planning_docs/1172-sec-edgar-html-inline-xbrl-material-bridge-selection.md",
+            "runtime_status: implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_material_bridge.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge/status/{sec_edgar_html_inline_xbrl_material_bridge_receipt_id}",
+            "implemented_bridge_mode: sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+            "implemented_operator_decision: bridge_sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority",
+            "implemented_source_authority: sec_edgar_html_inline_xbrl_parser_receipt_plus_connector_receipt_plus_live_source_artifact_receipt",
+            "implemented_material_source_class: dataset_version",
+            "implemented_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1",
+            "implemented_material_payload: bounded_primary_document_narrative_segments_and_html_table_candidate_units_from_retained_complete_submission_text",
+            "implemented_material_preview_compatibility: existing_layer3_dataset_version_material_preview_without_source_class_widening",
+            "implemented_gate_b_compatibility: existing_gate_b_material_preview_hash_and_decision_basis_validation",
+            "direct_unbridged_html_inline_xbrl_parser_receipt_material_authority_admitted: false",
+            "live_sec_network_fetch_performed_by_bridge: false",
+            "xml_xbrl_fact_authority_created: false",
+            "financial_statement_semantics_enabled: false",
+            "raw_sec_url_rendered: false",
+            "raw_local_path_rendered: false",
+            "artifact_bytes_rendered: false",
+            "focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k \"html_inline_xbrl_material_bridge or html_inline_xbrl_source_family or sec_edgar_real_filing_connector\" PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_material_bridge_runtime_v1",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_material_bridge.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+            "implemented_material_source_class: dataset_version",
+            "implemented_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1",
+            "implemented_gate_b_compatibility: existing_gate_b_material_preview_hash_and_decision_basis_validation",
+            "direct_unbridged_html_inline_xbrl_parser_receipt_material_authority_admitted: false",
+            "xml_xbrl_fact_authority_created: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection_v1",
+        ),
+        service: (
+            "SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_material_bridge.v1\"",
+            "REQUEST_SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_material_bridge_request.v1\"",
+            "STATUS_SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_material_bridge_status.v1\"",
+            "BRIDGE_MODE = \"sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1\"",
+            "OPERATOR_DECISION = \"bridge_sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority\"",
+            "TYPED_CONTENT_CONTRACT_ID = \"sec_edgar_html_inline_xbrl_material_units_v1\"",
+            "MATERIAL_PREVIEW_SCHEMA_ID = \"layer3.material_preview_request.v1\"",
+            "GATE_B_DECISION_SCHEMA_ID = \"layer3.gate_b_decision_request.v1\"",
+            "SOURCE_CLASS = \"dataset_version\"",
+            "read_sec_edgar_html_inline_xbrl_source_family_parser_receipt",
+            "read_sec_edgar_real_filing_acquisition_connector_receipt",
+            "read_sec_edgar_text_table_live_source_artifact_bytes",
+            "reparse_sec_edgar_html_inline_xbrl_source_family_for_material_bridge",
+            "layer3_workbench.material_preview",
+            "material_preview_hash",
+            "gate_b_decision_manifest_id",
+            "direct_unbridged_html_inline_xbrl_parser_receipt_material_authority_admitted",
+            "xml_xbrl_fact_authority_created",
+            "live_sec_network_fetch_performed_by_bridge",
+        ),
+        parser_service: (
+            "def reparse_sec_edgar_html_inline_xbrl_source_family_for_material_bridge(",
+            "def read_sec_edgar_html_inline_xbrl_source_family_parser_receipt(",
+            "primary_document_text",
+        ),
+        source_family: (
+            "\"parser_family\": \"sec_edgar_html_inline_xbrl_source_family_parser_v1\"",
+            "\"source_family\": \"sec_edgar_html_inline_xbrl\"",
+            "\"typed_content_contract_id\": \"sec_edgar_html_inline_xbrl_material_units_v1\"",
+            "\"admission_state\": \"admitted_materialized_dataset_version\"",
+        ),
+        LAYER3_API: (
+            "layer3_sec_edgar_html_inline_xbrl_material_bridge",
+            "Layer3SecEdgarHtmlInlineXbrlMaterialBridgeRequest",
+            "Layer3SecEdgarHtmlInlineXbrlMaterialBridgeResponse",
+            "/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+            "inspect_sec_edgar_html_inline_xbrl_material_bridge_status",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_bridges_sec_edgar_html_inline_xbrl_material_authority",
+            "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_material_bridge_stale_or_unsafe",
+            "sec_edgar_html_inline_xbrl_material_bridge_ready",
+            "sec_edgar_html_inline_xbrl_material_bridge_forbidden_request_fields",
+            "sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+            "gate_b_decision_payload",
+            "\"https://www.sec.gov\" not in response.text",
+            "\"Company narrative\" not in response.text",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL material bridge runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112996,6 +113102,7 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_source_family_parser_selection(errors)
     _check_sec_edgar_html_inline_xbrl_source_family_parser_runtime(errors)
     _check_sec_edgar_html_inline_xbrl_material_bridge_selection(errors)
+    _check_sec_edgar_html_inline_xbrl_material_bridge_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

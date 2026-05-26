@@ -210,6 +210,46 @@ def inspect_sec_edgar_html_inline_xbrl_source_family_parser_status(
     )
 
 
+def read_sec_edgar_html_inline_xbrl_source_family_parser_receipt(
+    parser_receipt_id: str,
+    *,
+    expected_parser_receipt_hash: str | None = None,
+) -> dict[str, Any]:
+    receipt = _read_verified_receipt(parser_receipt_id)
+    expected_hash = str(expected_parser_receipt_hash or "").strip()
+    if expected_hash and receipt["parser_receipt_hash"] != expected_hash:
+        _blocked(
+            "sec_edgar_html_inline_xbrl_parser_receipt_hash_mismatch",
+            "SEC EDGAR HTML/iXBRL parser receipt hash is stale or mismatched.",
+            http_status=409,
+            blocked_fields=["parser_receipt_hash"],
+        )
+    return receipt
+
+
+def reparse_sec_edgar_html_inline_xbrl_source_family_for_material_bridge(
+    connector_receipt: Mapping[str, Any],
+    *,
+    connector_example_id: str,
+    retained_complete_submission_text: bytes,
+) -> dict[str, Any]:
+    connector_example, _connector_acquisition = _connector_html_example(
+        connector_receipt,
+        connector_example_id=connector_example_id,
+    )
+    text, encoding = _decode_content(retained_complete_submission_text)
+    parsed = _parse_complete_submission_text(text, connector_example=connector_example)
+    return {
+        "connector_example": dict(connector_example),
+        "encoding": encoding,
+        "primary_document_text": _primary_document_text(
+            text,
+            primary_document_hash=str(connector_example.get("primary_document_hash") or ""),
+        ),
+        "parsed": parsed,
+    }
+
+
 def _connector_html_example(
     receipt: Mapping[str, Any],
     *,
@@ -450,6 +490,23 @@ def _identity_binding(*, connector_example: Mapping[str, Any], live_receipt: Map
         "source_artifact_ref_hash": str(artifact.get("source_artifact_ref_hash") or ""),
         "content_sha256": str(artifact.get("content_sha256") or ""),
     }
+
+
+def _primary_document_text(text: str, *, primary_document_hash: str) -> str:
+    matches: list[str] = []
+    for match in _DOCUMENT_RE.finditer(text):
+        metadata, doc_text = _document_metadata(match.group("body"))
+        filename_hash = _sha256_text(metadata["filename"]) if metadata["filename"] else ""
+        if filename_hash == primary_document_hash:
+            matches.append(doc_text)
+    if len(matches) != 1:
+        _blocked(
+            "sec_edgar_html_inline_xbrl_parser_primary_document_ambiguous",
+            "SEC EDGAR HTML/iXBRL parser requires exactly one primary document for material bridge use.",
+            http_status=409,
+            blocked_fields=["primary_document_hash"],
+        )
+    return matches[0]
 
 
 def _diagnostics(
