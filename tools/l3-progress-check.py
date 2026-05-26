@@ -3322,6 +3322,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_REND
     PLANNING_DOCS
     / "1164-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-current-main-sync.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_CLOSEOUT_READINESS = (
+    PLANNING_DOCS
+    / "1165-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-closeout-readiness.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111080,6 +111084,89 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeata
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_CLOSEOUT_READINESS: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Operator Repeatability Closeout Readiness",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness_v1",
+            "source_live_operator_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1164-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-current-main-sync.md",
+            "current_main_entry: c3311781969a9520915ef8a16e80f96a0a1cd74b",
+            'source_sync_pr: "#1867"',
+            "source_sync_merge_commit: c3311781969a9520915ef8a16e80f96a0a1cd74b",
+            "entry_decision: closeout_readiness_checkpoint",
+            "closeout_readiness_state: ready_for_sec_edgar_real_filing_acquisition_connector_selection",
+            "selected_next_selection_target: sec_edgar_real_filing_acquisition_connector_selection_v1",
+            "required_live_acquisition_mode: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "required_live_downstream_proof_mode: sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1",
+            "required_live_operator_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+            "required_live_repeatability_trial_mode: append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "required_rendered_repeatability_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control",
+            "required_live_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire",
+            "required_live_downstream_proof_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+            "required_live_operator_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+            "required_live_repeatability_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "existing_live_sec_network_capability: gated_single_complete_submission_text_artifact_by_server_derived_sec_archives_url",
+            "existing_live_sec_network_gate: server_configured_user_agent_plus_layer3_sec_edgar_live_network_enabled_plus_rate_limit_timeout_max_bytes",
+            "existing_live_sec_network_ci_policy: disabled_in_ci_fake_sec_client_contract_double_required",
+            "existing_live_sec_rate_policy: default_one_request_per_second_ceiling_no_more_than_10_requests_per_second_total_per_user",
+            "closeout_ready: true",
+            "named_defect_remaining: false",
+            "real_filing_corpus_validation_complete: false",
+            "real_filing_acquisition_connector_selection_admitted_next: true",
+            "real_filing_acquisition_connector_runtime_admitted_now: false",
+            "new_sec_network_runtime_in_this_closeout: false",
+            "submissions_lookup_or_ticker_discovery_admitted_now: false",
+            "multi_filing_corpus_acquisition_admitted_now: false",
+            "html_inline_xbrl_parser_admitted_now: false",
+            "xml_xbrl_fact_authority_admitted_now: false",
+            "sec_parser_expansion_admitted_now: false",
+            "candidate_b_general_sec_parser_admitted_now: false",
+            "duplicate_network_stack_admitted_now: false",
+            "generic_connector_dispatch_enabled: false",
+            "raw_sec_url_rendered: false",
+            "raw_local_path_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness_v1",
+            "source_live_operator_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1164-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-current-main-sync.md",
+            "current_main_entry: c3311781969a9520915ef8a16e80f96a0a1cd74b",
+            'source_sync_pr: "#1867"',
+            "closeout_readiness_state: ready_for_sec_edgar_real_filing_acquisition_connector_selection",
+            "selected_next_selection_target: sec_edgar_real_filing_acquisition_connector_selection_v1",
+            "existing_live_sec_network_capability: gated_single_complete_submission_text_artifact_by_server_derived_sec_archives_url",
+            "real_filing_corpus_validation_complete: false",
+            "real_filing_acquisition_connector_runtime_admitted_now: false",
+            "html_inline_xbrl_parser_admitted_now: false",
+            "candidate_b_general_sec_parser_admitted_now: false",
+            "duplicate_network_stack_admitted_now: false",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_source_artifact.py": (
+            "class SecEdgarHttpClient",
+            "layer3_sec_edgar_live_network_enabled",
+            "layer3_sec_edgar_user_agent",
+            "SEC_RATE_LIMIT_CEILING_PER_SECOND = 10",
+            "RATE_POLICY_ID = \"sec_edgar_text_table_live_source_artifact_default_1rps_max_10rps_v1\"",
+            "def _server_derived_complete_submission_text_url",
+            "def _fetch_with_retry",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream operator repeatability closeout-readiness term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112246,6 +112333,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness(
         errors
     )
 
