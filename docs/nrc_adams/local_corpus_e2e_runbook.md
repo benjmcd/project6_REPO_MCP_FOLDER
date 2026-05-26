@@ -9822,3 +9822,43 @@ next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1
 ```
 
 This selection admits the next parser slice for modern SEC filings without broadening source acquisition. The future runtime must read only server-retained artifacts already governed by the SEC connector/live source-artifact receipts and must produce parser evidence, order-preservation diagnostics, and candidate inventories before any separate material bridge, DatasetVersion, XBRL fact authority, package, or delivery path is selected.
+
+## SEC EDGAR HTML Inline XBRL Source Family Parser Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1
+source_parser_selection: next_milestone_plans/Layer3_planning_docs/1170-sec-edgar-html-inline-xbrl-source-family-parser-selection.md
+current_main_entry: 3a2eefe3344ab84a90f019b0933117889794e67c
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser/status/{sec_edgar_html_inline_xbrl_parser_receipt_id}
+implemented_parser_mode: sec_edgar_html_inline_xbrl_source_family_parser_v1
+implemented_operator_decision: parse_sec_edgar_html_inline_xbrl_source_family
+implemented_live_artifact_byte_reader: read_sec_edgar_text_table_live_source_artifact_bytes
+implemented_supported_scope: one_connector_acquired_example_classified_html_inline_xbrl_from_retained_complete_submission_text_artifact
+implemented_identity_binding: connector_example_id,cik_hash,accession_or_submission_id_hash,form_type,filing_date,report_period_present,company_name_hash,primary_document_hash,source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256
+implemented_document_inventory_scope: preserve_document_sequence_type_filename_hash_description_hash_text_hash_document_family_source_offsets_and_primary_document_binding
+implemented_content_order_scope: preserve_redacted_source_order_for_primary_document_text_segments_table_candidates_and_inline_xbrl_marker_inventory
+implemented_materialization_behavior: no_dataset_version_creation_no_gate_b_mutation_no_layer3_material_bridge_until_separately_selected
+implemented_fact_behavior: detect_ix_prefixed_inline_xbrl_marker_inventory_only_no_xbrl_fact_authority_or_financial_semantics
+live_sec_network_fetch_performed_by_parser: false
+submissions_lookup_performed_by_parser: false
+arbitrary_url_or_upload_parse_admitted: false
+dataset_version_creation_admitted: false
+gate_b_mutation_admitted: false
+material_bridge_admitted: false
+xml_xbrl_fact_authority_created: false
+candidate_b_general_sec_parser_admitted: false
+generic_connector_dispatch_enabled: false
+raw_sec_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py ./backend/app/services/layer3_sec_edgar_live_source_artifact.py ./backend/app/api/layer3.py ./backend/tests/test_layer3_api.py PASS
+focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k "html_inline_xbrl_source_family or sec_edgar_real_filing_connector" PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_material_bridge_selection_v1
+```
+
+This runtime produces redacted HTML/iXBRL source-family parse authority from one connector-acquired retained complete-submission text artifact. It preserves filing identity hashes, primary-document binding, document inventory, source-order text segment evidence, table candidate hashes, inline XBRL marker hashes, and diagnostics while leaving material preview, Gate B, DatasetVersion creation, and XBRL fact authority to separate selected slices.
