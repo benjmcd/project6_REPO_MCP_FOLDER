@@ -658,6 +658,15 @@ def _quality_evidence_from_outputs(
     unclassified_count = int(classification_diagnostics.get("unknown_or_unclassified_count") or 0)
     fact_count = int(fact.get("fact_count") or 0)
     semantic_profile_assigned_count = int(classification_diagnostics.get("semantic_profile_assigned_count") or 0)
+    period_unit_context_dimension_profile_assigned_count = int(
+        classification_diagnostics.get("period_unit_context_dimension_profile_assigned_count") or 0
+    )
+    context_ref_hash_present_count = int(classification_diagnostics.get("context_ref_hash_present_count") or 0)
+    unit_ref_hash_present_count = int(classification_diagnostics.get("unit_ref_hash_present_count") or 0)
+    decimals_or_precision_present_count = int(
+        classification_diagnostics.get("decimals_or_precision_present_count") or 0
+    )
+    scale_or_format_present_count = int(classification_diagnostics.get("scale_or_format_present_count") or 0)
     standard_taxonomy_fact_count = int(classification_diagnostics.get("standard_taxonomy_fact_count") or 0)
     company_extension_fact_count = int(classification_diagnostics.get("company_extension_fact_count") or 0)
     comparable_standard_fact_count = int(classification_diagnostics.get("comparable_standard_fact_count") or 0)
@@ -678,6 +687,11 @@ def _quality_evidence_from_outputs(
                 if fact_diagnostics.get("missing_context_ref") == 0
                 and fact_diagnostics.get("missing_unit_ref") == 0
                 else "diagnostic_gap_recorded"
+            ),
+            "period_unit_context_dimension_profile": (
+                "bounded_hash_profile_available_not_resolved"
+                if fact_count and period_unit_context_dimension_profile_assigned_count == fact_count
+                else "not_resolved"
             ),
             "extension_fact_handling": "retained_redacted" if extension_fact_count else "not_observed",
             "statement_candidate_usefulness": (
@@ -708,7 +722,18 @@ def _quality_evidence_from_outputs(
             "statement_role_counts": statement_role_counts,
             "classification_inventory_hash": classification["classification_inventory_hash"],
             "semantic_profile_inventory_hash": classification_diagnostics.get("semantic_profile_inventory_hash"),
+            "period_unit_context_dimension_profile_version": classification_diagnostics.get(
+                "period_unit_context_dimension_profile_version"
+            ),
+            "period_unit_context_dimension_profile_hash": classification_diagnostics.get(
+                "period_unit_context_dimension_profile_hash"
+            ),
             "semantic_profile_assigned_count": semantic_profile_assigned_count,
+            "period_unit_context_dimension_profile_assigned_count": period_unit_context_dimension_profile_assigned_count,
+            "context_ref_hash_present_count": context_ref_hash_present_count,
+            "unit_ref_hash_present_count": unit_ref_hash_present_count,
+            "decimals_or_precision_present_count": decimals_or_precision_present_count,
+            "scale_or_format_present_count": scale_or_format_present_count,
             "standard_taxonomy_fact_count": standard_taxonomy_fact_count,
             "company_extension_fact_count": company_extension_fact_count,
             "comparable_standard_fact_count": comparable_standard_fact_count,
@@ -742,6 +767,7 @@ def _quality_not_evaluated(
             "filing_identity_correctness": "not_evaluated",
             "section_order_preservation": "not_evaluated",
             "fact_context_unit_preservation": "not_evaluated",
+            "period_unit_context_dimension_profile": "not_evaluated",
             "extension_fact_handling": "not_evaluated",
             "statement_candidate_usefulness": "not_evaluated",
             "diagnostics_quality": "not_evaluated",

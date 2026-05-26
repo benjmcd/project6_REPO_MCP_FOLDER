@@ -100,6 +100,7 @@ PRODUCT_VIEW_NAMES = (
     "statement_candidates",
     "fact_inventory",
     "semantic_profile",
+    "period_unit_context_dimension_profile",
     "extension_unclassified_facts",
     "quality_gaps",
     "diagnostics_loss_report",
@@ -318,6 +319,9 @@ def _product_views(
         "statement_candidates": [view["statement_candidates"] for view in record_views],
         "fact_inventory": [view["fact_inventory"] for view in record_views],
         "semantic_profile": [view["semantic_profile"] for view in record_views],
+        "period_unit_context_dimension_profile": [
+            view["period_unit_context_dimension_profile"] for view in record_views
+        ],
         "extension_unclassified_facts": [view["extension_unclassified_facts"] for view in record_views],
         "quality_gaps": {
             "distinct_quality_gaps": quality_gap_values,
@@ -383,6 +387,7 @@ def _record_product_view(
             "fact_inventory_hash": metrics.get("fact_inventory_hash"),
             "fact_diagnostics_hash": metrics.get("fact_diagnostics_hash"),
             "fact_context_unit_preservation": dimensions.get("fact_context_unit_preservation"),
+            "period_unit_context_dimension_profile": dimensions.get("period_unit_context_dimension_profile"),
             "document_inventory_hash": metrics.get("document_inventory_hash"),
             "content_order_hash": metrics.get("content_order_hash"),
             "table_candidate_inventory_hash": metrics.get("table_candidate_inventory_hash"),
@@ -401,6 +406,28 @@ def _record_product_view(
             "cross_company_comparability": dimensions.get("cross_company_comparability"),
             "financial_statement_semantics_finalized": False,
             "cross_company_comparability_admitted": False,
+        },
+        "period_unit_context_dimension_profile": {
+            "record_index": index,
+            "period_unit_context_dimension_profile_version": metrics.get(
+                "period_unit_context_dimension_profile_version"
+            )
+            or "sec_edgar_period_unit_context_dimension_profile_v1",
+            "period_unit_context_dimension_profile_hash": metrics.get(
+                "period_unit_context_dimension_profile_hash"
+            ),
+            "period_unit_context_dimension_profile_assigned_count": metrics.get(
+                "period_unit_context_dimension_profile_assigned_count"
+            ),
+            "context_ref_hash_present_count": metrics.get("context_ref_hash_present_count"),
+            "unit_ref_hash_present_count": metrics.get("unit_ref_hash_present_count"),
+            "decimals_or_precision_present_count": metrics.get("decimals_or_precision_present_count"),
+            "scale_or_format_present_count": metrics.get("scale_or_format_present_count"),
+            "profile_status": dimensions.get("period_unit_context_dimension_profile"),
+            "context_period_resolution_performed": False,
+            "dimension_member_resolution_performed": False,
+            "unit_normalization_performed": False,
+            "final_period_unit_context_dimension_semantics_claimed": False,
         },
         "extension_unclassified_facts": {
             "record_index": index,
@@ -491,6 +518,7 @@ def _diagnostics_loss_report(
 def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
     company_form_matrix = list(product_views.get("company_form_matrix") or [])
     semantic_profiles = list(product_views.get("semantic_profile") or [])
+    period_unit_context_dimension_profiles = list(product_views.get("period_unit_context_dimension_profile") or [])
     extension_profiles = list(product_views.get("extension_unclassified_facts") or [])
     quality_gaps = dict(product_views.get("quality_gaps") or {})
     return {
@@ -499,6 +527,11 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
         "filing_count": len(company_form_matrix),
         "inspectable_count": sum(1 for record in company_form_matrix if record.get("inspection_status") == "inspectable"),
         "semantic_profile_record_count": sum(1 for record in semantic_profiles if record.get("semantic_profile_inventory_hash")),
+        "period_unit_context_dimension_profile_record_count": sum(
+            1
+            for record in period_unit_context_dimension_profiles
+            if record.get("period_unit_context_dimension_profile_hash")
+        ),
         "extension_or_unclassified_record_count": sum(
             1
             for record in extension_profiles
@@ -522,6 +555,11 @@ def _authority_chain(
         for profile in product_views.get("semantic_profile", [])
         if isinstance(profile, Mapping) and profile.get("semantic_profile_inventory_hash")
     ]
+    period_unit_context_dimension_hashes = [
+        profile.get("period_unit_context_dimension_profile_hash")
+        for profile in product_views.get("period_unit_context_dimension_profile", [])
+        if isinstance(profile, Mapping) and profile.get("period_unit_context_dimension_profile_hash")
+    ]
     quality_hashes = [
         record.get("quality_evidence_hash")
         for record in product_views.get("company_form_matrix", [])
@@ -534,6 +572,7 @@ def _authority_chain(
         "connector_receipt_hash": validation["connector_receipt_hash"],
         "quality_evidence_hashes_hash": stable_hash(quality_hashes),
         "semantic_profile_inventory_hashes_hash": stable_hash(semantic_hashes),
+        "period_unit_context_dimension_profile_hashes_hash": stable_hash(period_unit_context_dimension_hashes),
         "product_views_hash": stable_hash(product_views),
         "receipt_chain_bound": True,
     }

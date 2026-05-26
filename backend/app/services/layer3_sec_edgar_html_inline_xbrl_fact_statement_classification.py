@@ -32,6 +32,7 @@ RECEIPT_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-statement-classification"
 REDACTION_POLICY_ID = "sec_edgar_html_inline_xbrl_fact_statement_classification_redaction_v1"
 AUTHORITY_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1"
 SEMANTIC_PROFILE_VERSION = "sec_edgar_statement_semantic_profile_v1"
+PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION = "sec_edgar_period_unit_context_dimension_profile_v1"
 
 STATEMENT_ROLES = (
     "balance_sheet",
@@ -156,6 +157,12 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     classification_inventory_hash = stable_hash(classification_inventory)
     semantic_profiles = [dict(item["semantic_profile"]) for item in classification_inventory]
     semantic_profile_inventory_hash = stable_hash(semantic_profiles)
+    period_unit_context_dimension_profiles = [
+        dict(profile["period_unit_context_dimension_profile"])
+        for profile in semantic_profiles
+        if isinstance(profile.get("period_unit_context_dimension_profile"), Mapping)
+    ]
+    period_unit_context_dimension_profile_hash = stable_hash(period_unit_context_dimension_profiles)
     classification_order_hash = stable_hash(
         [
             {
@@ -186,13 +193,34 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         for profile in semantic_profiles
         if profile.get("comparability_scope") == "standard_taxonomy_profile"
     )
+    context_ref_hash_present_count = sum(
+        1 for profile in period_unit_context_dimension_profiles if profile.get("context_ref_hash_present") is True
+    )
+    unit_ref_hash_present_count = sum(
+        1 for profile in period_unit_context_dimension_profiles if profile.get("unit_ref_hash_present") is True
+    )
+    decimals_or_precision_present_count = sum(
+        1
+        for profile in period_unit_context_dimension_profiles
+        if profile.get("decimals_or_precision_present") is True
+    )
+    scale_or_format_present_count = sum(
+        1 for profile in period_unit_context_dimension_profiles if profile.get("scale_or_format_present") is True
+    )
     diagnostics = {
         "fact_count": len(facts),
         "classified_fact_count": len(classification_inventory),
         "unknown_or_unclassified_count": len(unclassified),
         "semantic_profile_version": SEMANTIC_PROFILE_VERSION,
+        "period_unit_context_dimension_profile_version": PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION,
         "semantic_profile_assigned_count": semantic_profile_assigned_count,
         "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
+        "period_unit_context_dimension_profile_hash": period_unit_context_dimension_profile_hash,
+        "period_unit_context_dimension_profile_assigned_count": len(period_unit_context_dimension_profiles),
+        "context_ref_hash_present_count": context_ref_hash_present_count,
+        "unit_ref_hash_present_count": unit_ref_hash_present_count,
+        "decimals_or_precision_present_count": decimals_or_precision_present_count,
+        "scale_or_format_present_count": scale_or_format_present_count,
         "standard_taxonomy_fact_count": standard_taxonomy_fact_count,
         "company_extension_fact_count": company_extension_fact_count,
         "comparable_standard_fact_count": comparable_standard_fact_count,
@@ -206,6 +234,9 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "cross_company_comparability_profile_available": comparable_standard_fact_count > 0,
         "taxonomy_network_resolution_performed": False,
         "sec_companyfacts_api_called": False,
+        "context_period_resolution_performed": False,
+        "dimension_member_resolution_performed": False,
+        "unit_normalization_performed": False,
         "financial_statement_semantics_claimed": False,
     }
     diagnostics_hash = stable_hash(diagnostics)
@@ -371,7 +402,7 @@ def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inv
     local_name = str(fact.get("local_name") or "")
     namespace_prefix = str(fact.get("namespace_prefix") or "")
     role, basis, confidence = _classify_role(local_name, namespace_prefix)
-    semantic_profile = _semantic_profile(local_name, namespace_prefix, role)
+    semantic_profile = _semantic_profile(local_name, namespace_prefix, role, fact)
     record = {
         "classification_id_or_order_key": stable_hash(
             {
@@ -407,7 +438,12 @@ def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inv
     return record
 
 
-def _semantic_profile(local_name: str, namespace_prefix: str, role: str) -> dict[str, Any]:
+def _semantic_profile(
+    local_name: str,
+    namespace_prefix: str,
+    role: str,
+    fact: Mapping[str, Any],
+) -> dict[str, Any]:
     prefix = namespace_prefix.lower()
     if prefix == "us-gaap":
         taxonomy_class = "standard_us_gaap"
@@ -430,10 +466,35 @@ def _semantic_profile(local_name: str, namespace_prefix: str, role: str) -> dict
         "comparability_key": (
             f"{taxonomy_class}:{role}:{concept_family}" if standard_taxonomy else "company_extension_unmapped"
         ),
+        "period_unit_context_dimension_profile": _period_unit_context_dimension_profile(fact),
         "extension_taxonomy_retained": taxonomy_class == "company_extension",
         "taxonomy_network_resolution_used": False,
         "sec_companyfacts_api_used": False,
         "final_financial_statement_semantics_claimed": False,
+    }
+
+
+def _period_unit_context_dimension_profile(fact: Mapping[str, Any]) -> dict[str, Any]:
+    context_ref_hash_present = bool(fact.get("context_ref_hash"))
+    unit_ref_hash_present = bool(fact.get("unit_ref_hash"))
+    decimals_or_precision_present = bool(str(fact.get("decimals_or_precision") or "").strip())
+    scale_or_format_present = bool(str(fact.get("scale_or_format") or "").strip())
+    return {
+        "period_unit_context_dimension_profile_version": PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION,
+        "context_ref_hash_present": context_ref_hash_present,
+        "unit_ref_hash_present": unit_ref_hash_present,
+        "decimals_or_precision_present": decimals_or_precision_present,
+        "scale_or_format_present": scale_or_format_present,
+        "period_profile_scope": (
+            "context_ref_hash_bound_period_not_resolved" if context_ref_hash_present else "context_ref_missing"
+        ),
+        "context_profile_scope": "context_ref_hash_bound" if context_ref_hash_present else "context_ref_missing",
+        "unit_profile_scope": "unit_ref_hash_bound" if unit_ref_hash_present else "unit_ref_missing_or_not_required",
+        "dimension_profile_scope": "dimension_members_not_resolved",
+        "context_period_resolution_performed": False,
+        "dimension_member_resolution_performed": False,
+        "unit_normalization_performed": False,
+        "final_period_unit_context_dimension_semantics_claimed": False,
     }
 
 
@@ -600,10 +661,28 @@ def _response_from_receipt(
             "statement_group_inventory_hash": receipt["statement_group_inventory_hash"],
             "classification_diagnostics_hash": receipt["classification_diagnostics_hash"],
             "semantic_profile_version": dict(receipt["classification_diagnostics"]).get("semantic_profile_version"),
+            "period_unit_context_dimension_profile_version": dict(receipt["classification_diagnostics"]).get(
+                "period_unit_context_dimension_profile_version"
+            ),
             "semantic_profile_assigned_count": dict(receipt["classification_diagnostics"]).get("semantic_profile_assigned_count", 0),
+            "period_unit_context_dimension_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
+                "period_unit_context_dimension_profile_assigned_count", 0
+            ),
+            "period_unit_context_dimension_profile_hash": dict(receipt["classification_diagnostics"]).get(
+                "period_unit_context_dimension_profile_hash"
+            ),
+            "context_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("context_ref_hash_present_count", 0),
+            "unit_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("unit_ref_hash_present_count", 0),
+            "decimals_or_precision_present_count": dict(receipt["classification_diagnostics"]).get(
+                "decimals_or_precision_present_count", 0
+            ),
+            "scale_or_format_present_count": dict(receipt["classification_diagnostics"]).get("scale_or_format_present_count", 0),
             "standard_taxonomy_fact_count": dict(receipt["classification_diagnostics"]).get("standard_taxonomy_fact_count", 0),
             "company_extension_fact_count": dict(receipt["classification_diagnostics"]).get("company_extension_fact_count", 0),
             "comparable_standard_fact_count": dict(receipt["classification_diagnostics"]).get("comparable_standard_fact_count", 0),
+            "context_period_resolution_performed": False,
+            "dimension_member_resolution_performed": False,
+            "unit_normalization_performed": False,
             "raw_values_returned": False,
             "final_financial_statement_semantics_claimed": False,
             "next_allowed_actions": ["select_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product"],

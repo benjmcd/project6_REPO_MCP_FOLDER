@@ -3574,6 +3574,9 @@ SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RUNTIME = (
 SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_UI = (
     PLANNING_DOCS / "1232-sec-edgar-operator-product-surface-rendered-ui.md"
 )
+SEC_EDGAR_PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE = (
+    PLANNING_DOCS / "1233-sec-edgar-period-unit-context-dimension-profile.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117317,6 +117320,64 @@ def _check_sec_edgar_operator_product_surface_rendered_ui(
                 )
 
 
+def _check_sec_edgar_period_unit_context_dimension_profile(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE: (
+            "SEC EDGAR Period Unit Context Dimension Profile",
+            "milestone: sec_edgar_period_unit_context_dimension_profile_hardening_v1",
+            "source_rendered_ui: next_milestone_plans/Layer3_planning_docs/1232-sec-edgar-operator-product-surface-rendered-ui.md",
+            "profile_version: sec_edgar_period_unit_context_dimension_profile_v1",
+            "profile_scope: redacted_context_unit_precision_scale_hash_profile",
+            "context_period_resolution_performed: false",
+            "dimension_member_resolution_performed: false",
+            "unit_normalization_performed: false",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_statement_role_quality_profile_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            "PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION",
+            "period_unit_context_dimension_profile",
+            "period_unit_context_dimension_profile_hash",
+            "context_ref_hash_present_count",
+            "unit_ref_hash_present_count",
+            "dimension_member_resolution_performed",
+            "unit_normalization_performed",
+            "final_period_unit_context_dimension_semantics_claimed",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "period_unit_context_dimension_profile_assigned_count",
+            "period_unit_context_dimension_profile_hash",
+            "bounded_hash_profile_available_not_resolved",
+            "fact_context_unit_preservation",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "period_unit_context_dimension_profile_record_count",
+            "period_unit_context_dimension_profile_hashes_hash",
+            "period_unit_context_dimension_profile",
+            "context_period_resolution_performed",
+            "dimension_member_resolution_performed",
+            "unit_normalization_performed",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_period_unit_context_dimension_profile_v1",
+            "period_unit_context_dimension_profile_assigned_count",
+            "period_unit_context_dimension_profile_record_count",
+            "bounded_hash_profile_available_not_resolved",
+            "final_period_unit_context_dimension_semantics_claimed",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR period/unit/context/dimension profile term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118623,6 +118684,7 @@ def main() -> int:
     _check_sec_edgar_operator_product_surface_selection(errors)
     _check_sec_edgar_operator_product_surface_runtime(errors)
     _check_sec_edgar_operator_product_surface_rendered_ui(errors)
+    _check_sec_edgar_period_unit_context_dimension_profile(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
