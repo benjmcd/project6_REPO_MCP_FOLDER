@@ -194,6 +194,12 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
         in response.text
     )
     assert "SEC EDGAR live downstream operator-status bootstrap contract is not available." in response.text
+    assert 'id="sec-edgar-html-inline-xbrl-downstream-operator-status-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control"'
+        in response.text
+    )
+    assert "SEC EDGAR HTML/iXBRL downstream operator-status bootstrap contract is not available." in response.text
     assert 'id="sec-edgar-live-downstream-repeatability-trial-panel"' in response.text
     assert (
         'data-rendered-mode="rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control"'
@@ -561,6 +567,21 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "sec-edgar-live-downstream-operator-status-form" in js.text
     assert "live_downstream_proof_request" in js.text
     assert "live source artifact authority bound" in js.text
+    assert (
+        "SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = "
+        "'rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control'"
+    ) in js.text
+    assert (
+        "SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_MODE = "
+        "'sec_edgar_html_inline_xbrl_downstream_operator_status_v1'"
+    ) in js.text
+    assert "function secEdgarHtmlInlineXbrlDownstreamOperatorStatusPayload" in js.text
+    assert "function renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel" in js.text
+    assert "async function inspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus" in js.text
+    assert "sec-edgar-html-inline-xbrl-downstream-operator-status-form" in js.text
+    assert "html_inline_xbrl_downstream_proof_request" in js.text
+    assert "parser authority bound" in js.text
+    assert "material bridge authority bound" in js.text
     assert "SEC_EDGAR_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control'" in js.text
     assert "SEC_EDGAR_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution'" in js.text
     assert "function secEdgarDownstreamRepeatabilityTrialPayload" in js.text
