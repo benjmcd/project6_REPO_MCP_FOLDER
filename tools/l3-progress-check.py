@@ -3520,6 +3520,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACK
     PLANNING_DOCS
     / "1215-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-submit-runtime-current-main-sync.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_HANDOFF_EXPORT_PREPARE_SELECTION = (
+    PLANNING_DOCS
+    / "1216-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-selection.md"
+)
 SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
     ROOT
     / "backend"
@@ -115982,6 +115986,94 @@ def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_p
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_HANDOFF_EXPORT_PREPARE_SELECTION: (
+            "SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Handoff Export Prepare Selection",
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_selection_v1",
+            "source_package_review_submit_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1215-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-submit-runtime-current-main-sync.md",
+            "current_main_entry: 7f66b2ff2fb376a439ad85283e87f2c1b16b3adb",
+            'source_sync_pr: "#1915"',
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_v1",
+            "selected_handoff_export_prepare_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1",
+            "selected_operator_decision: prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare/status/{handoff_export_prepare_receipt_id}",
+            "selected_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.v1",
+            "selected_runtime_scope: prepare_redacted_handoff_export_manifest_from_approved_package_review_submit_receipt_and_server_owned_package_payload_artifacts_without_delivery_provider_write_internal_webhook_or_connector_dispatch",
+            "selected_input_authority: package_review_submit_receipt_id,package_review_submit_receipt_hash,package_review_submit_record_ref,operator_decision,review_decision,decision_notes_hash,package_construction_receipt_hash,package_payload_manifest_hash,package_payload_order_hash,redaction_manifest_hash,package_review_preview_receipt_hash,candidate_package_manifest_hash,review_readiness_hash,downstream_product_receipt_hash,statement_classification_receipt_hash,fact_authority_receipt_hash,fact_material_bridge_receipt_hash,parser_receipt_hash,product_manifest_hash,statement_candidate_product_hash,product_order_hash,inspection_summary_hash,downstream_readiness_hash",
+            "selected_output_authority: handoff_export_prepare_receipt_id,handoff_export_prepare_receipt_hash,handoff_export_manifest_hash,handoff_export_order_hash,package_review_submit_receipt_hash,package_construction_receipt_hash,package_payload_manifest_hash,package_payload_order_hash,redaction_manifest_hash",
+            "selected_review_gate: only_approved_package_review_submit_receipts_can_prepare_handoff_export_nonapproved_decisions_fail_closed",
+            "selected_non_loss_policy: handoff_export_prepare_references_every_review_submit_package_payload_manifest_candidate_package_product_group_unknown_diagnostic_table_anchor_and_order_hash_without_discarding_product_evidence",
+            "selected_order_policy: preserve_package_payload_order_product_group_order_table_anchor_order_unknown_diagnostic_order_and_handoff_manifest_order",
+            "selected_idempotency_contract: same_client_request_id_same_approved_package_review_submit_authority_returns_same_handoff_export_prepare_receipt_same_client_request_id_different_authority_fails_closed_same_approved_package_review_submit_authority_new_client_request_id_returns_existing_status",
+            "package_review_preview_runtime_preserved: true",
+            "package_construction_commit_runtime_preserved: true",
+            "package_review_submit_runtime_preserved: true",
+            "handoff_export_prepare_runtime_in_this_freeze: false",
+            "delivery_runtime_in_this_freeze: false",
+            "internal_webhook_in_this_freeze: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_exposed: false",
+            "raw_fact_values_exposed: false",
+            "decision_notes_exposed: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_selection_v1",
+            "source_package_review_submit_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1215-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-submit-runtime-current-main-sync.md",
+            "current_main_entry: 7f66b2ff2fb376a439ad85283e87f2c1b16b3adb",
+            'source_sync_pr: "#1915"',
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_v1",
+            "selected_handoff_export_prepare_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1",
+            "selected_operator_decision: prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare/status/{handoff_export_prepare_receipt_id}",
+            "selected_runtime_scope: prepare_redacted_handoff_export_manifest_from_approved_package_review_submit_receipt_and_server_owned_package_payload_artifacts_without_delivery_provider_write_internal_webhook_or_connector_dispatch",
+            "selected_review_gate: only_approved_package_review_submit_receipts_can_prepare_handoff_export_nonapproved_decisions_fail_closed",
+            "package_review_preview_runtime_preserved: true",
+            "package_construction_commit_runtime_preserved: true",
+            "package_review_submit_runtime_preserved: true",
+            "handoff_export_prepare_runtime_in_this_freeze: false",
+            "delivery_runtime_in_this_freeze: false",
+            "internal_webhook_in_this_freeze: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_exposed: false",
+            "raw_fact_values_exposed: false",
+            "decision_notes_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACKAGE_REVIEW_SUBMIT_RUNTIME_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact statement-classification downstream product handoff/export prepare selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -117263,6 +117355,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit_runtime_current_main_sync(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_selection(
         errors
     )
 

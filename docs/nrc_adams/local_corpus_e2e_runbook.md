@@ -11879,3 +11879,39 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 Current main now includes the SEC HTML/iXBRL package-review submit runtime. The next slice should select handoff/export prepare over approved package-review submit receipts, while keeping delivery, taxonomy/CompanyFacts, provider, connector, RAG/model, full mockup, and frontend durable authority separate.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Handoff Export Prepare Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_selection_v1
+source_package_review_submit_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1215-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-submit-runtime-current-main-sync.md
+current_main_entry: 7f66b2ff2fb376a439ad85283e87f2c1b16b3adb
+source_sync_pr: "#1915"
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_v1
+selected_handoff_export_prepare_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1
+selected_operator_decision: prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare/status/{handoff_export_prepare_receipt_id}
+selected_runtime_scope: prepare_redacted_handoff_export_manifest_from_approved_package_review_submit_receipt_and_server_owned_package_payload_artifacts_without_delivery_provider_write_internal_webhook_or_connector_dispatch
+selected_review_gate: only_approved_package_review_submit_receipts_can_prepare_handoff_export_nonapproved_decisions_fail_closed
+package_review_preview_runtime_preserved: true
+package_construction_commit_runtime_preserved: true
+package_review_submit_runtime_preserved: true
+handoff_export_prepare_runtime_in_this_freeze: false
+delivery_runtime_in_this_freeze: false
+internal_webhook_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_url_exposed: false
+raw_fact_values_exposed: false
+decision_notes_exposed: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_v1
+```
+
+This selection freezes the next SEC HTML/iXBRL handoff/export prepare runtime over approved package-review submit receipts. The future runtime should prepare redacted handoff/export manifests without delivery, provider writes, internal webhook dispatch, connector dispatch, raw URL/path exposure, RAG/model runtime, full mockup activation, or frontend durable authority.
