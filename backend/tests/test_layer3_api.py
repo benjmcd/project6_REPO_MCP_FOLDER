@@ -89,6 +89,7 @@ from app.services import (
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_namespace,
     layer3_replacement_package_set_authority,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
@@ -4325,6 +4326,228 @@ def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_downstream_o
         "sec_edgar_html_inline_xbrl_fact_material_downstream_proof_forbidden_request_fields"
     ]
     assert "123" not in unsafe_fact_value_response.text
+
+
+def test_layer3_api_records_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    proof_request, parser, fact_authority, bridge, _gate_b = (
+        _prepare_sec_edgar_html_inline_xbrl_fact_material_downstream_proof_request(
+            client,
+            monkeypatch,
+            label="fact-repeatability-001",
+        )
+    )
+    proof_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof",
+        json=proof_request,
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    status_request = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-repeatability-original",
+        "status_mode": "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+        "fact_material_downstream_proof_request": proof_request,
+        "expected_proof_hash": proof["proof_hash"],
+    }
+    status_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status",
+        json=status_request,
+    )
+    assert status_response.status_code == 200, status_response.text
+    status_body = status_response.json()
+
+    trial_payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-repeatability-trial",
+        "trial_mode": (
+            "append_only_trial_receipt_over_original_and_repeat_fact_material_downstream_status_authority_without_sec_fetch_or_processing_execution"
+        ),
+        "operator_decision": (
+            "record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial"
+        ),
+        "original_operator_status_request": status_request,
+        "original_operator_status_hash": status_body["operator_status_hash"],
+        "repeat_operator_status_request": {
+            **status_request,
+            "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-repeatability-repeat",
+        },
+        "repeat_operator_status_hash": status_body["operator_status_hash"],
+        "operator_repeatability_disposition": "no_regression_observed",
+        "operator_confirmation": True,
+    }
+    trial_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+        json=trial_payload,
+    )
+
+    assert trial_response.status_code == 200, trial_response.text
+    trial_body = trial_response.json()
+    assert trial_body["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial.v1"
+    )
+    assert trial_body["operator_repeatability_trial_state"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_accepted"
+    )
+    assert trial_body["operator_status_hash_comparison"] == "match"
+    assert trial_body["proof_hash_comparison"] == "match"
+    assert trial_body["coverage_step_set_comparison"] == "match"
+    assert trial_body["fact_inventory_hash_comparison"] == "match"
+    assert trial_body["fact_material_authority_hash_comparison"] == "match"
+    assert trial_body["authority_bindings"]["parser_receipt_hash"] == parser["parser_receipt_hash"]
+    assert trial_body["authority_bindings"]["fact_authority_receipt_hash"] == (
+        fact_authority["fact_authority_receipt_hash"]
+    )
+    assert trial_body["authority_bindings"]["fact_inventory_hash"] == fact_authority["fact_inventory_hash"]
+    assert trial_body["authority_bindings"]["inline_xbrl_marker_inventory_hash"] == (
+        parser["inline_xbrl_marker_inventory_hash"]
+    )
+    assert trial_body["authority_bindings"]["fact_material_bridge_receipt_hash"] == (
+        bridge["fact_material_bridge_receipt_hash"]
+    )
+    assert trial_body["append_only_repeatability_trial_receipt"] is True
+    assert trial_body["exclusive_trial_per_original_repeat_authority_pair"] is True
+    assert trial_body["actual_sec_processing_execution_admitted"] is False
+    assert trial_body["actual_subprocess_spawn_admitted"] is False
+    assert trial_body["connector_dispatch_enabled"] is False
+    assert trial_body["rag_vector_model_runtime_enabled"] is False
+    assert trial_body["frontend_durable_authority_enabled"] is False
+    assert trial_body["raw_fact_values_exposed"] is False
+    assert trial_body["fact_value_reconstruction_enabled"] is False
+    assert "https://www.sec.gov" not in trial_response.text
+    assert "aapl-20240928.htm" not in trial_response.text
+    assert "value_text" not in trial_response.text
+    assert "Company narrative" not in trial_response.text
+    assert str(tmp_path) not in trial_response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+        json=trial_payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    replay_body = replay_response.json()
+    assert replay_body["trial_receipt_hash"] == trial_body["trial_receipt_hash"]
+    assert replay_body["idempotent_replay"] is True
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_repeatability_invalid_authority(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _fake_status(label: str) -> dict[str, object]:
+        base_hash = _sec_edgar_test_hash({"fact-repeatability": label})
+        return {
+            "status": "available",
+            "operator_status_state": "available",
+            "operator_status_hash": _sec_edgar_test_hash({"status": label}),
+            "proof_available": True,
+            "proof_hash": _sec_edgar_test_hash({"proof": label}),
+            "proof_summary": {"coverage": ["gate_b_commit", "html_inline_xbrl_fact_authority"]},
+            "dataset_version_id": "dv-fact-repeatability",
+            "dataset_version_hash": _sec_edgar_test_hash({"dataset": label}),
+            "source_family": "sec_edgar_html_inline_xbrl",
+            "parser_family": "sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "typed_content_contract_id": "sec_edgar_html_inline_xbrl_fact_material_units_v1",
+            "parser_receipt_hash": base_hash,
+            "connector_receipt_hash": base_hash,
+            "live_source_artifact_receipt_hash": base_hash,
+            "source_artifact_receipt_hash": base_hash,
+            "content_sha256": base_hash,
+            "primary_document_hash": base_hash,
+            "content_order_hash": base_hash,
+            "inline_xbrl_marker_inventory_hash": base_hash,
+            "fact_authority_receipt_hash": base_hash,
+            "fact_inventory_hash": base_hash,
+            "diagnostics_hash": base_hash,
+            "materialization_receipt_hash": base_hash,
+            "fact_material_bridge_receipt_hash": base_hash,
+            "material_bridge_receipt_hash": base_hash,
+            "material_preview_hash": base_hash,
+            "gate_b_decision_manifest_id": "gate-b-fact-repeatability",
+            "session_id": "session-fact-repeatability",
+            "selection_manifest_id": "selection-fact-repeatability",
+            "material_snapshot_payload_hash": base_hash,
+            "coverage_evidence_hash": base_hash,
+            "negative_invariants_hash": base_hash,
+        }
+
+    original_status = _fake_status("original")
+    repeat_status = {**original_status, "operator_status_hash": original_status["operator_status_hash"]}
+    repeat_status["fact_material_bridge_receipt_hash"] = _sec_edgar_test_hash({"bridge": "mismatch"})
+
+    def _fake_inspect_status(fields, db):
+        if str(fields["client_request_id"]).endswith(":repeat-operator-status"):
+            return repeat_status
+        return original_status
+
+    monkeypatch.setattr(
+        (
+            layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial
+            .layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status
+        ),
+        "inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+        _fake_inspect_status,
+    )
+    original_request = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-repeatability-original",
+        "status_mode": "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+        "fact_material_downstream_proof_request": {"proof": "opaque"},
+        "expected_proof_hash": original_status["proof_hash"],
+    }
+    base_payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-repeatability-invalid",
+        "trial_mode": (
+            "append_only_trial_receipt_over_original_and_repeat_fact_material_downstream_status_authority_without_sec_fetch_or_processing_execution"
+        ),
+        "operator_decision": (
+            "record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial"
+        ),
+        "original_operator_status_request": original_request,
+        "original_operator_status_hash": original_status["operator_status_hash"],
+        "repeat_operator_status_request": {**original_request, "client_request_id": "repeat"},
+        "repeat_operator_status_hash": original_status["operator_status_hash"],
+        "operator_repeatability_disposition": "no_regression_observed",
+        "operator_confirmation": True,
+    }
+
+    stale_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+        json={**base_payload, "original_operator_status_hash": "f" * 64},
+    )
+    assert stale_response.status_code == 409, stale_response.text
+    assert stale_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_stale_original_operator_status_hash"
+    )
+
+    mismatched_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+        json=base_payload,
+    )
+    assert mismatched_response.status_code == 409, mismatched_response.text
+    mismatched = mismatched_response.json()
+    assert mismatched["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_authority_mismatch"
+    )
+    assert "fact_material_bridge_receipt_hash" in mismatched["blocked_fields"]
+
+    forbidden_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+        json={
+            **base_payload,
+            "original_operator_status_request": {
+                **original_request,
+                "raw_fact_values": ["123"],
+            },
+        },
+    )
+    assert forbidden_response.status_code == 400, forbidden_response.text
+    assert forbidden_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_forbidden_request_fields"
+    )
+    assert "123" not in forbidden_response.text
 
 
 def test_layer3_api_records_sec_edgar_html_inline_xbrl_downstream_proof(
