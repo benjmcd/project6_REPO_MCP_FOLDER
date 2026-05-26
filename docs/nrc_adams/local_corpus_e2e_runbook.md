@@ -11256,3 +11256,46 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_to_statement_classification_
 ```
 
 The fact-material repeatability chain is ready to close after current-main sync. The next SEC/iXBRL product slice should be fact-to-statement classification selection: classify retained fact inventory into operator-usable statement/fact groupings without adding CompanyFacts, taxonomy network lookup, XML/XBRL authority, broad parser expansion, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or raw fact-value rendering.
+
+## SEC EDGAR HTML Inline XBRL Fact To Statement Classification Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection_v1
+source_fact_material_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1199-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-closeout-readiness.md
+current_main_entry: b80e211dd5ad03fa06a09a93ca7829a67529ab5a
+source_closeout_pr: "#1901"
+depends_on_unmerged_closeout_sync_pr: true
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1
+selected_classification_mode: sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1
+selected_operator_decision: classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification
+selected_source_family: sec_edgar_html_inline_xbrl
+selected_runtime_scope: classify_existing_ordered_inline_xbrl_fact_inventory_into_redacted_statement_candidate_groups_without_taxonomy_network_resolution
+selected_statement_candidate_roles: balance_sheet,income_statement,cash_flow_statement,stockholders_equity_statement,comprehensive_income_statement,cover_page,disclosure_or_note,unknown_or_unclassified
+selected_unknown_policy: every_fact_must_receive_exactly_one_candidate_role_and_unknown_or_unclassified_is_retained_as_explicit_non_loss_diagnostic
+selected_output_authority: statement_classification_receipt_id,statement_classification_receipt_hash,classification_inventory_hash,classification_order_hash,statement_group_inventory_hash,unclassified_fact_inventory_hash,classification_diagnostics_hash
+classification_runtime_in_this_freeze: false
+financial_statement_semantics_runtime_in_this_freeze: false
+taxonomy_network_resolution_in_this_freeze: false
+sec_companyfacts_api_runtime_in_this_freeze: false
+xml_xbrl_fact_authority_in_this_freeze: false
+new_sec_network_runtime_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1
+```
+
+The selected future runtime should classify existing ordered SEC HTML/iXBRL fact authority into redacted statement candidate groups. It must retain unknown facts explicitly, preserve fact/source/marker order, and stay bound to existing fact-authority plus fact-material bridge receipts. It must not claim final financial statement semantics or introduce taxonomy network resolution, SEC CompanyFacts, XML/XBRL authority, new SEC network fetch, provider writes, connector dispatch, RAG/model runtime, full mockup activation, frontend durable authority, or raw fact-value exposure.
