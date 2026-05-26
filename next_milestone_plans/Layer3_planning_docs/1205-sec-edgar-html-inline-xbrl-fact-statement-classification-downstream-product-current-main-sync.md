@@ -1,0 +1,57 @@
+# SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Current-Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1
+source_downstream_product_runtime: next_milestone_plans/Layer3_planning_docs/1204-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-runtime.md
+current_main_entry: a3a77d2433f78505115309bc9c7dcd4d88469df9
+source_pr: "#1904"
+source_runtime_commit: 6069352672906e4ace05b2e2b33dc49932999714
+source_merge_commit: a3a77d2433f78505115309bc9c7dcd4d88469df9
+source_pr_status: merged_current_main
+review_threads_open: 0
+review_comments_open: 0
+ci_status_after_merge: latest_pr_1904_backend_and_playwright_shards_passed
+sync_status: current_main_verified
+runtime_status: implemented_current_main
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/status/{downstream_product_receipt_id}
+implemented_product_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_v1
+implemented_operator_decision: build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.v1
+implemented_runtime_scope: convert_existing_statement_classification_receipt_into_redacted_operator_product_evidence_and_layer3_downstream_product_manifest_without_raw_values_taxonomy_semantics_or_new_sec_fetch
+implemented_product_artifact_roles: statement_candidate_summary,role_group_inventory,table_anchor_crosswalk,unknown_fact_diagnostics,authority_provenance,downstream_readiness_manifest,operator_inspection_summary
+implemented_non_loss_policy: every_retained_fact_from_statement_classification_receipt_must_appear_in_exactly_one_product_group_or_unknown_diagnostic_and_counts_hashes_must_reconcile
+implemented_output_authority: downstream_product_receipt_id,downstream_product_receipt_hash,product_manifest_hash,statement_candidate_product_hash,product_order_hash,inspection_summary_hash,redaction_manifest_hash,downstream_readiness_hash
+downstream_product_runtime_current_main: true
+rendered_runtime_in_this_sync: false
+financial_statement_semantics_runtime_in_this_sync: false
+taxonomy_network_resolution_in_this_sync: false
+sec_companyfacts_api_runtime_in_this_sync: false
+xml_xbrl_fact_authority_in_this_sync: false
+html_inline_xbrl_reparse_or_rematerialization_in_this_sync: false
+new_sec_network_runtime_in_this_sync: false
+source_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS
+verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1
+```
+
+PR #1904 is merged to current main. The SEC HTML/iXBRL statement-classification downstream product runtime is now current-main authority for redacted statement-candidate product evidence over existing statement-classification, fact-authority, and fact-material bridge receipts.
+
+This sync does not add rendered controls, final financial-statement semantics, taxonomy network resolution, SEC CompanyFacts, XML/XBRL authority, parser expansion, new SEC network fetch, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or frontend durable authority.
+
+## Coherence Check
+
+- Does current main now have a downstream product receipt runtime? Recommended answer: yes, bounded to existing statement-classification authority.
+- Does current main now produce final SEC financial statements? Recommended answer: no. It produces redacted statement-candidate product evidence and readiness metadata.
+- What comes next? Recommended answer: select the package/review slice for these statement-candidate product receipts, or select a rendered operator inspection slice first if current-main evidence shows product visibility is the blocker.
