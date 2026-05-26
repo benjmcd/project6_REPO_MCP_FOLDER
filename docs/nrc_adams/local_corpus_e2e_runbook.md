@@ -10954,3 +10954,72 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator
 ```
 
 This closeout checkpoint records that the bounded SEC EDGAR HTML/iXBRL fact-material downstream chain is ready for a separately selected operator repeatability trial. It does not add runtime behavior, fetch SEC content, reparse retained HTML/iXBRL artifacts, reconstruct raw fact values, add XML/XBRL or CompanyFacts authority, add taxonomy or financial-statement semantics, or broaden connector/source/provider/model/full-mockup authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Repeatability Trial Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_selection_v1
+source_fact_material_downstream_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1193-sec-edgar-html-inline-xbrl-fact-material-downstream-closeout-readiness.md
+source_existing_text_table_repeatability_trial_selection: next_milestone_plans/Layer3_planning_docs/1127-sec-edgar-text-table-downstream-operator-repeatability-trial-selection.md
+source_existing_live_source_repeatability_trial_selection: next_milestone_plans/Layer3_planning_docs/1160-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-selection.md
+current_main_entry: e66053717326b47f8fd57cef3c6dd0783408ab20
+source_closeout_readiness_pr: "#1896"
+source_closeout_readiness_merge_commit: e66053717326b47f8fd57cef3c6dd0783408ab20
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_runtime_v1
+selected_trial_scope: compare_two_server_owned_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_projections_for_same_fact_material_authority_and_proof_chain
+selected_trial_model: append_only_trial_receipt_over_original_and_repeat_fact_material_downstream_status_authority_without_sec_fetch_or_processing_execution
+selected_trial_action: record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial
+selected_trial_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial
+selected_existing_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status
+selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof
+selected_service_future: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial.py
+original_operator_status_required: available
+repeat_operator_status_required: available
+same_source_family_required: sec_edgar_html_inline_xbrl
+same_parser_family_required: sec_edgar_html_inline_xbrl_source_family_parser_v1
+same_typed_content_contract_id_required: sec_edgar_html_inline_xbrl_fact_material_units_v1
+same_connector_receipt_hash_required: true
+same_live_source_artifact_receipt_hash_required: true
+same_source_artifact_receipt_hash_required: true
+same_primary_document_hash_required: true
+same_content_order_hash_required: true
+same_inline_xbrl_marker_inventory_hash_required: true
+same_fact_authority_receipt_hash_required: true
+same_fact_inventory_hash_required: true
+same_fact_material_bridge_receipt_hash_required: true
+same_material_snapshot_payload_hash_required: true
+same_coverage_evidence_hash_required: true
+operator_status_hash_comparison_required: true
+proof_hash_comparison_required: true
+fact_inventory_hash_comparison_required: true
+append_only_repeatability_trial_receipt_required: true
+stale_original_operator_status_must_reject: true
+stale_repeat_operator_status_must_reject: true
+mismatched_fact_authority_must_reject: true
+mismatched_fact_material_bridge_must_reject: true
+raw_fact_value_authority_must_reject: true
+raw_url_or_path_authority_must_reject: true
+browser_supplied_raw_fact_values_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+html_inline_xbrl_reparse_or_rematerialization_admitted: false
+xml_xbrl_fact_authority_admitted: false
+sec_companyfacts_api_runtime_enabled: false
+taxonomy_network_resolution_enabled: false
+financial_statement_semantics_admitted: false
+fact_to_statement_classification_enabled: false
+frontend_durable_authority_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+runtime_implementation_in_this_freeze: false
+rendered_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_runtime_v1
+```
+
+This freeze selects the server-owned repeatability-trial contract for the SEC HTML/iXBRL fact-material downstream status chain. The next runtime must compare two already revalidated, redacted, `available` fact-material downstream status projections and write an append-only receipt without fetching SEC content, reparsing retained HTML/iXBRL, reconstructing fact values, mutating downstream artifacts, or relying on browser-held authority.
