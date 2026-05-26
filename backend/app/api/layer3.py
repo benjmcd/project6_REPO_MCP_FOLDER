@@ -35,6 +35,7 @@ from app.services import (
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_live_material_bridge,
     layer3_sec_edgar_material_bridge,
+    layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
     layer3_provider_private_signed_url,
@@ -466,6 +467,21 @@ class Layer3SecEdgarTextTableLiveSourceArtifactAcquireRequest(BaseModel):
     form_type: str = Field(min_length=1)
     filing_date: str = Field(min_length=1)
     expected_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarRealFilingAcquisitionConnectorRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    connector_mode: Literal["sec_edgar_real_filing_acquisition_connector_v1"]
+    operator_decision: Literal["acquire_sec_edgar_real_filing_validation_corpus"]
+    example_set_mode: Literal["bounded_real_sec_validation_corpus_v1"] | None = None
+    cik_refs: list[str] | None = None
+    form_types: list[str] | None = None
     operator_confirmation: bool
     actor: str | None = None
 
@@ -7582,6 +7598,26 @@ class Layer3SecEdgarTextTableLiveSourceArtifactResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarRealFilingAcquisitionConnectorResponse(Layer3BaseResponse):
+    connector_mode: str
+    operator_decision: str
+    connector_state: str
+    connector_receipt_id: str
+    connector_receipt_hash: str
+    example_set: dict[str, Any]
+    corpus_manifest: dict[str, Any]
+    acquisition_receipts: list[dict[str, Any]]
+    diagnostics: dict[str, Any]
+    sec_request_policy: dict[str, Any]
+    cache: dict[str, Any]
+    idempotency: dict[str, Any]
+    downstream_validation: dict[str, Any]
+    operator_visible_status: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse(Layer3BaseResponse):
     mode: str
     bridge_state: str
@@ -14424,6 +14460,36 @@ def get_sec_edgar_text_table_live_source_artifact_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_live_source_artifact.inspect_sec_edgar_text_table_live_source_artifact_status(
             live_source_artifact_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/real-filing/acquisition/connector",
+    response_model=Layer3SecEdgarRealFilingAcquisitionConnectorResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_real_filing_acquisition_connector(
+    payload: Layer3SecEdgarRealFilingAcquisitionConnectorRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_real_filing_acquisition_connector.acquire_sec_edgar_real_filing_validation_corpus(
+            payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/real-filing/acquisition/connector/status/{sec_edgar_real_filing_acquisition_connector_receipt_id}",
+    response_model=Layer3SecEdgarRealFilingAcquisitionConnectorResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_real_filing_acquisition_connector_status(
+    sec_edgar_real_filing_acquisition_connector_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_real_filing_acquisition_connector.inspect_sec_edgar_real_filing_acquisition_connector_status(
+            sec_edgar_real_filing_acquisition_connector_receipt_id,
         )
     )
 
