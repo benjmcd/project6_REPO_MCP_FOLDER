@@ -3290,6 +3290,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_SELECTION =
     PLANNING_DOCS
     / "1156-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1157-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -110274,6 +110278,119 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_RUNTIME: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Rendered Status Runtime",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1",
+            "source_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1156-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md",
+            "current_main_entry: f52b52d9d31db91585a42143ecf8b181d2ad222e",
+            "runtime_status: implemented",
+            "rendered_status: implemented",
+            "implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control",
+            "implemented_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+            "implemented_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+            "implemented_panel: sec-edgar-live-downstream-operator-status-panel",
+            "implemented_form: sec-edgar-live-downstream-operator-status-form",
+            "implemented_submit: sec-edgar-live-downstream-operator-status-submit",
+            "implemented_payload_fields: client_request_id,status_mode,operator_decision,live_downstream_proof_request,expected_proof_hash",
+            "available_requires_server_revalidated_live_proof_request: true",
+            "browser_held_hash_alone_is_not_authority: true",
+            "test_only_fixture_route: /__test/layer3/sec-edgar-live-downstream-status",
+            "sec_edgar_browser_fixture_state_isolation: true",
+            "sec_edgar_browser_fixture_variable_ids_are_dataset_scoped: true",
+            "rendered_status_creates_downstream_proof: false",
+            "rendered_status_fetches_sec_content: false",
+            "raw_proof_receipt_path_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR live downstream operator status\" --project=chromium PASS",
+            "headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR live downstream operator status\" --project=chromium --headed PASS",
+            "playwright_shard_2_state_isolation_proof: CI shard 2/4 grep-equivalent local run PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1",
+            "source_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1156-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md",
+            "implemented_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+            "implemented_panel: sec-edgar-live-downstream-operator-status-panel",
+            "implemented_payload_fields: client_request_id,status_mode,operator_decision,live_downstream_proof_request,expected_proof_hash",
+            "sec_edgar_browser_fixture_state_isolation: true",
+            "sec_edgar_browser_fixture_variable_ids_are_dataset_scoped: true",
+            "headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR live downstream operator status\" --project=chromium PASS",
+            "headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep \"SEC EDGAR live downstream operator status\" --project=chromium --headed PASS",
+            "playwright_shard_2_state_isolation_proof: CI shard 2/4 grep-equivalent local run PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1",
+        ),
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.html": (
+            'id="sec-edgar-live-downstream-operator-status-panel"',
+            'data-rendered-mode="rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control"',
+            "SEC EDGAR live downstream operator-status bootstrap contract is not available.",
+        ),
+        ROOT / "backend" / "app" / "review_ui" / "static" / "layer3.js": (
+            "SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control'",
+            "SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1'",
+            "SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status'",
+            "secEdgarLiveDownstreamOperatorStatusEndpointPath",
+            "secEdgarLiveDownstreamOperatorStatusPayload",
+            "live_downstream_proof_request",
+            "canInspectSecEdgarLiveDownstreamOperatorStatus",
+            "secEdgarLiveDownstreamOperatorStatusRows",
+            "renderSecEdgarLiveDownstreamOperatorStatusPanel",
+            "inspectSecEdgarLiveDownstreamOperatorStatus",
+            "sec-edgar-live-downstream-operator-status-form",
+            "sec-edgar-live-downstream-operator-status-submit",
+            "raw proof receipt path rendered",
+            "live source artifact authority bound",
+        ),
+        ROOT / "backend" / "tests" / "review_browser_server.py": (
+            "/__test/layer3/sec-edgar-live-downstream-status",
+            "_seed_sec_edgar_browser_dataset_version",
+            'variable_id=f"var-time-{variable_suffix}"',
+            "_prepare_sec_edgar_live_downstream_status_fixture",
+            "record_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof",
+            "prepare_sec_edgar_text_table_live_source_artifact_material_authority_bridge",
+            "live_downstream_proof_request",
+        ),
+        ROOT / "backend" / "tests" / "test_review_browser_server.py": (
+            "test_review_browser_server_prepares_sec_edgar_live_downstream_status_authority",
+            "/__test/layer3/sec-edgar-live-downstream-status",
+            "sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+            "live_downstream_proof_request",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_page.py": (
+            'id="sec-edgar-live-downstream-operator-status-panel"',
+            "SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE",
+            "function secEdgarLiveDownstreamOperatorStatusPayload",
+            "async function inspectSecEdgarLiveDownstreamOperatorStatus",
+        ),
+        ROOT / "e2e" / "layer3-workbench.spec.js": (
+            "Layer 3 workbench renders SEC EDGAR live downstream operator status through server revalidation",
+            "/__test/layer3/sec-edgar-live-downstream-status",
+            "sec-edgar-live-downstream-operator-status-panel",
+            "live_downstream_proof_request",
+            "sec_edgar_text_table_live_source_artifact_downstream_operator_status_proof_hash_mismatch",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream rendered status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -111416,6 +111533,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime(
         errors
     )
 
