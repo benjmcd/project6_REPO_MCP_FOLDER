@@ -1822,6 +1822,11 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
         == "bounded_standard_concept_profile_available_not_normalized"
         for record in body["product_quality_matrix"]
     )
+    assert all(
+        record["quality_dimensions"]["fact_deduplication_conflict_diagnostics"]
+        == "bounded_diagnostics_available_not_deduplicated_or_resolved"
+        for record in body["product_quality_matrix"]
+    )
     assert {
         record["quality_dimensions"]["cross_company_comparability"]
         for record in body["product_quality_matrix"]
@@ -1879,6 +1884,16 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     )
     assert all(
         record["quality_evidence"]["quality_metrics"]["standard_concept_mapping_profile_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["fact_deduplication_conflict_diagnostics_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["fact_deduplication_performed"] is False
+        and record["quality_evidence"]["quality_metrics"]["fact_conflict_resolution_performed"] is False
+        and record["quality_evidence"]["quality_metrics"]["fact_values_dropped"] is False
         for record in body["filing_validation_records"]
     )
     assert any(
@@ -2005,6 +2020,11 @@ def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
         == "bounded_standard_concept_profile_available_not_normalized"
         for record in body["product_quality_matrix"]
     )
+    assert all(
+        record["quality_dimensions"]["fact_deduplication_conflict_diagnostics"]
+        == "bounded_diagnostics_available_not_deduplicated_or_resolved"
+        for record in body["product_quality_matrix"]
+    )
     assert {
         record["quality_dimensions"]["cross_company_comparability"]
         for record in body["product_quality_matrix"]
@@ -2037,6 +2057,10 @@ def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
     )
     assert all(
         record["quality_evidence"]["quality_metrics"]["standard_concept_mapping_profile_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["fact_deduplication_conflict_diagnostics_hash"]
         for record in body["filing_validation_records"]
     )
     assert any(
@@ -2415,6 +2439,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
     assert body["surface_rollup"]["filing_count"] == 8
     assert body["surface_rollup"]["inspectable_count"] == 8
     assert body["surface_rollup"]["semantic_profile_record_count"] == 8
+    assert body["surface_rollup"]["fact_deduplication_conflict_diagnostics_record_count"] == 8
     assert body["surface_rollup"]["statement_role_quality_profile_record_count"] == 8
     assert body["surface_rollup"]["period_unit_context_dimension_profile_record_count"] == 8
     assert body["surface_rollup"]["extension_taxonomy_retention_profile_record_count"] == 8
@@ -2427,6 +2452,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
         "source_family",
         "statement_candidates",
         "fact_inventory",
+        "fact_deduplication_conflict_diagnostics",
         "semantic_profile",
         "statement_role_quality_profile",
         "period_unit_context_dimension_profile",
@@ -2441,6 +2467,21 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
     assert len(body["product_views"]["company_form_matrix"]) == 8
     assert all(record["quality_evidence_hash"] for record in body["product_views"]["company_form_matrix"])
     assert all(record["semantic_profile_inventory_hash"] for record in body["product_views"]["semantic_profile"])
+    assert all(
+        record["fact_deduplication_conflict_diagnostics_hash"]
+        for record in body["product_views"]["fact_deduplication_conflict_diagnostics"]
+    )
+    assert all(
+        record["profile_status"] == "bounded_diagnostics_available_not_deduplicated_or_resolved"
+        for record in body["product_views"]["fact_deduplication_conflict_diagnostics"]
+    )
+    assert all(
+        record["fact_deduplication_performed"] is False
+        and record["fact_conflict_resolution_performed"] is False
+        and record["fact_values_dropped"] is False
+        and record["raw_values_returned"] is False
+        for record in body["product_views"]["fact_deduplication_conflict_diagnostics"]
+    )
     assert all(
         record["statement_role_quality_profile_hash"]
         for record in body["product_views"]["statement_role_quality_profile"]
@@ -3252,6 +3293,9 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["standard_concept_mapping_profile_version"] == (
         "sec_edgar_standard_concept_mapping_profile_v1"
     )
+    assert body["classification_diagnostics"]["fact_deduplication_conflict_diagnostics_version"] == (
+        "sec_edgar_fact_deduplication_conflict_diagnostics_v1"
+    )
     assert body["classification_diagnostics"]["semantic_profile_assigned_count"] == fact_authority["fact_count"]
     assert body["classification_diagnostics"]["period_unit_context_dimension_profile_assigned_count"] == (
         fact_authority["fact_count"]
@@ -3269,6 +3313,11 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["statement_role_quality_profile_hash"]
     assert body["classification_diagnostics"]["extension_taxonomy_retention_profile_hash"]
     assert body["classification_diagnostics"]["standard_concept_mapping_profile_hash"]
+    assert body["classification_diagnostics"]["fact_deduplication_conflict_diagnostics_hash"]
+    assert body["classification_diagnostics"]["fact_identity_group_count"] > 0
+    assert body["classification_diagnostics"]["fact_conflict_basis_group_count"] > 0
+    assert body["classification_diagnostics"]["exact_duplicate_fact_group_count"] >= 0
+    assert body["classification_diagnostics"]["conflicting_fact_group_count"] >= 0
     assert (
         body["classification_diagnostics"]["medium_statement_role_confidence_count"]
         + body["classification_diagnostics"]["low_statement_role_confidence_count"]
@@ -3284,6 +3333,9 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["extension_taxonomy_facts_dropped"] is False
     assert body["classification_diagnostics"]["standard_concept_mapping_performed"] is False
     assert body["classification_diagnostics"]["standard_concept_normalization_performed"] is False
+    assert body["classification_diagnostics"]["fact_deduplication_performed"] is False
+    assert body["classification_diagnostics"]["fact_conflict_resolution_performed"] is False
+    assert body["classification_diagnostics"]["fact_values_dropped"] is False
     assert body["classification_diagnostics"]["context_period_resolution_performed"] is False
     assert body["classification_diagnostics"]["dimension_member_resolution_performed"] is False
     assert body["classification_diagnostics"]["unit_normalization_performed"] is False
@@ -3375,6 +3427,7 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["status_projection"]["statement_role_quality_profile_hash"]
     assert body["status_projection"]["extension_taxonomy_retention_profile_hash"]
     assert body["status_projection"]["standard_concept_mapping_profile_hash"]
+    assert body["status_projection"]["fact_deduplication_conflict_diagnostics_hash"]
     assert body["status_projection"]["comparable_standard_fact_count"] > 0
     assert body["status_projection"]["context_period_resolution_performed"] is False
     assert body["status_projection"]["dimension_member_resolution_performed"] is False
@@ -3385,6 +3438,9 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["status_projection"]["extension_taxonomy_facts_dropped"] is False
     assert body["status_projection"]["standard_concept_mapping_performed"] is False
     assert body["status_projection"]["standard_concept_normalization_performed"] is False
+    assert body["status_projection"]["fact_deduplication_performed"] is False
+    assert body["status_projection"]["fact_conflict_resolution_performed"] is False
+    assert body["status_projection"]["fact_values_dropped"] is False
     assert body["status_projection"]["final_financial_statement_semantics_claimed"] is False
     assert body["negative_invariants"]["taxonomy_network_resolution_enabled"] is False
     assert body["negative_invariants"]["sec_companyfacts_api_runtime_enabled"] is False

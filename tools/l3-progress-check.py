@@ -3586,6 +3586,9 @@ SEC_EDGAR_EXTENSION_TAXONOMY_RETENTION_PROFILE = (
 SEC_EDGAR_STANDARD_CONCEPT_MAPPING_PROFILE = (
     PLANNING_DOCS / "1236-sec-edgar-standard-concept-mapping-profile.md"
 )
+SEC_EDGAR_FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS = (
+    PLANNING_DOCS / "1237-sec-edgar-fact-deduplication-conflict-diagnostics.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117560,6 +117563,63 @@ def _check_sec_edgar_standard_concept_mapping_profile(
                 )
 
 
+def _check_sec_edgar_fact_deduplication_conflict_diagnostics(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS: (
+            "SEC EDGAR Fact Deduplication Conflict Diagnostics",
+            "milestone: sec_edgar_fact_deduplication_conflict_diagnostics_v1",
+            "source_standard_concept_mapping_profile: next_milestone_plans/Layer3_planning_docs/1236-sec-edgar-standard-concept-mapping-profile.md",
+            "diagnostics_version: sec_edgar_fact_deduplication_conflict_diagnostics_v1",
+            "diagnostics_scope: redacted_fact_identity_and_conflict_basis_hash_profile",
+            "fact_deduplication_performed: false",
+            "fact_conflict_resolution_performed: false",
+            "fact_values_dropped: false",
+            "next_exact_posture: sec_edgar_cross_company_comparability_readiness_audit_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            "FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS_VERSION",
+            "fact_deduplication_conflict_diagnostics_hash",
+            "fact_deduplication_conflict_diagnostics_status",
+            "exact_duplicate_fact_group_count",
+            "conflicting_fact_group_count",
+            "fact_deduplication_performed",
+            "fact_conflict_resolution_performed",
+            "fact_values_dropped",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "fact_deduplication_conflict_diagnostics_hash",
+            "bounded_diagnostics_available_not_deduplicated_or_resolved",
+            "duplicate_fact_candidates_present_not_deduplicated",
+            "conflicting_fact_candidates_present_not_resolved",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "fact_deduplication_conflict_diagnostics_record_count",
+            "fact_deduplication_conflict_diagnostics_hashes_hash",
+            "fact_deduplication_conflict_diagnostics",
+            "fact_deduplication_performed",
+            "fact_values_dropped",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_fact_deduplication_conflict_diagnostics_v1",
+            "fact_deduplication_conflict_diagnostics_hash",
+            "fact_deduplication_conflict_diagnostics_record_count",
+            "bounded_diagnostics_available_not_deduplicated_or_resolved",
+            "fact_values_dropped",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR fact deduplication conflict diagnostics term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118870,6 +118930,7 @@ def main() -> int:
     _check_sec_edgar_statement_role_quality_profile(errors)
     _check_sec_edgar_extension_taxonomy_retention_profile(errors)
     _check_sec_edgar_standard_concept_mapping_profile(errors)
+    _check_sec_edgar_fact_deduplication_conflict_diagnostics(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
