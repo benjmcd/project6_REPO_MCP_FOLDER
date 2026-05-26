@@ -1985,6 +1985,186 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_authority_stale_or_u
     assert "https://www.sec.gov/raw" not in unsafe_response.text
 
 
+def _prepare_sec_edgar_html_inline_xbrl_fact_authority(
+    client: TestClient,
+    monkeypatch,
+    *,
+    label: str,
+) -> dict[str, object]:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_parser_authority(client, monkeypatch, label=label)
+    parser = prepared["parser"]
+    payload = {
+        "client_request_id": f"sec-edgar-html-inline-xbrl-fact-authority-{label}",
+        "fact_authority_mode": "sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1",
+        "operator_decision": "derive_sec_edgar_html_inline_xbrl_fact_authority",
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+        "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+        "expected_document_inventory_hash": parser["document_inventory_hash"],
+        "expected_content_order_hash": parser["content_order_hash"],
+        "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+        "operator_confirmation": True,
+    }
+    response = client.post("/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority", json=payload)
+    assert response.status_code == 200, response.text
+    return {**prepared, "fact_authority": response.json(), "fact_authority_payload": payload}
+
+
+def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-001")
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-001",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+        "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+        "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+        "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+        "expected_document_inventory_hash": parser["document_inventory_hash"],
+        "expected_content_order_hash": parser["content_order_hash"],
+        "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+        "expected_fact_inventory_hash": fact_authority["fact_inventory_hash"],
+        "expected_diagnostics_hash": fact_authority["diagnostics_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_fact_material_bridge.v1"
+    assert body["bridge_state"] == "sec_edgar_html_inline_xbrl_fact_material_bridge_ready"
+    assert body["source_family"] == "sec_edgar_html_inline_xbrl"
+    assert body["parser_family"] == "sec_edgar_html_inline_xbrl_source_family_parser_v1"
+    assert body["typed_content_contract_id"] == "sec_edgar_html_inline_xbrl_fact_material_units_v1"
+    assert body["dataset_version_id"].startswith("dv-sec-ixbrl-facts-")
+    assert body["materialization_summary"]["fact_count"] == fact_authority["fact_count"]
+    assert body["materialization_summary"]["server_owned_value_payload_stored"] is True
+    assert body["materialization_summary"]["raw_fact_values_returned"] is False
+    assert body["material_preview_request_basis"]["dataset_version_ids"] == [body["dataset_version_id"]]
+    assert body["material_candidate"]["load_summary"]["raw_fact_values_redacted"] is True
+    assert body["negative_invariants"]["taxonomy_network_resolution_enabled"] is False
+    assert body["negative_invariants"]["material_text_table_bridge_mutated"] is False
+    assert body["authority_hashes"]["fact_authority_receipt_hash"] == fact_authority["fact_authority_receipt_hash"]
+    assert "https://www.sec.gov" not in response.text
+    assert "aapl-20240928.htm" not in response.text
+    assert "Company narrative" not in response.text
+    assert "value_text" not in response.text
+    assert str(tmp_path) not in response.text
+
+    csv_path = (
+        Path(settings.storage_dir)
+        / "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge"
+        / "datasets"
+        / f"{body['dataset_version_id']}.csv"
+    )
+    csv_text = csv_path.read_text(encoding="utf-8")
+    assert "value_text" in csv_text
+    assert "123" in csv_text
+
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=body["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    assert gate_b_response.json()["material_preview_hash"] == body["material_preview_hash"]
+    assert gate_b_response.json()["gate_b_decision_manifest_id"] == body["gate_b_decision_manifest_id"]
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["idempotent_replay"] is True
+    assert replay_response.json()["fact_material_bridge_receipt_hash"] == body["fact_material_bridge_receipt_hash"]
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/status/"
+        f"{body['fact_material_bridge_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_fact_material_bridge_status.v1"
+    assert status_response.json()["fact_material_bridge_receipt_hash"] == body["fact_material_bridge_receipt_hash"]
+    assert "https://www.sec.gov" not in status_response.text
+    assert "Company narrative" not in status_response.text
+    assert "value_text" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_bridge_stale_or_unsafe(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-reject")
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-reject",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+        "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+        "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    stale_fact_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json={**payload, "fact_authority_receipt_hash": "f" * 64},
+    )
+    assert stale_fact_response.status_code == 409, stale_fact_response.text
+    assert stale_fact_response.json()["error_code"] == "sec_edgar_html_inline_xbrl_fact_authority_receipt_hash_mismatch"
+
+    stale_parser_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json={**payload, "parser_receipt_hash": "e" * 64},
+    )
+    assert stale_parser_response.status_code == 409, stale_parser_response.text
+    assert stale_parser_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_parser_receipt_hash_mismatch"
+    )
+
+    unconfirmed_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json={**payload, "operator_confirmed": False},
+    )
+    assert unconfirmed_response.status_code == 200, unconfirmed_response.text
+    assert unconfirmed_response.json()["bridge_state"] == "sec_edgar_html_inline_xbrl_fact_material_bridge_blocked"
+    assert unconfirmed_response.json()["status_projection"]["blocked_reasons"][0]["reason"] == (
+        "missing_operator_confirmation"
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json={**payload, "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_bridge_forbidden_request_fields"
+    )
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
+
+
 def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_material_authority(
     client: TestClient,
     tmp_path,
