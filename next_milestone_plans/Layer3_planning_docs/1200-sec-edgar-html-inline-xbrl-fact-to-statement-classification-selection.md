@@ -10,6 +10,8 @@ entry_decision: freeze_only
 runtime_status: not_implemented
 rendered_status: not_implemented
 implementation_admitted_after_current_main_sync: true
+stacked_runtime_implementation_before_current_main_sync: true
+stacked_runtime_pr: "#1901"
 selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1
 selected_classification_mode: sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1
 selected_operator_decision: classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates
@@ -93,6 +95,7 @@ The selected runtime is intentionally taxonomy-free and network-free. It may use
 ## Coherence Check
 
 - Does this selection implement classification? Recommended answer: no. It freezes the runtime contract only.
+- Why does this document mention a stacked runtime? Recommended answer: the runtime was implemented on the same branch before PR #1901 could merge because GitHub Actions is blocked at checkout by an external account-access failure; current-main admission still depends on syncing after that blocker clears.
 - Does this selection claim final financial-statement semantics? Recommended answer: no. It selects redacted statement candidate classification; final semantics and taxonomy-backed validation remain separate future slices.
 - What prevents content loss? Recommended answer: every fact must receive exactly one role, including explicit `unknown_or_unclassified`, while preserving source and marker order.
-- What comes next? Recommended answer: implement `sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1` after the current closeout/sync branch is accepted.
+- What comes next? Recommended answer: sync the stacked runtime to current main after PR #1901 can merge, then select the downstream product/inspection slice.
