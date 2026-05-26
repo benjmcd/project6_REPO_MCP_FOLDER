@@ -9649,3 +9649,53 @@ next_exact_posture: sec_edgar_real_filing_acquisition_connector_runtime_v1
 ```
 
 This freeze selects, but does not implement, the governed real SEC filing acquisition connector. The next runtime should fetch public SEC examples through server-owned SEC access policy, reuse the existing gated live source-artifact acquisition client, produce deterministic connector/corpus receipts, classify source families, validate supported complete-submission text filings through the SEC text/table to Layer 3 path, and block or degrade HTML/iXBRL/XML with diagnostics until an exact parser/source-family slice is selected.
+
+## SEC EDGAR Real Filing Acquisition Connector Runtime
+
+```yaml
+milestone: sec_edgar_real_filing_acquisition_connector_runtime_v1
+source_connector_selection: next_milestone_plans/Layer3_planning_docs/1166-sec-edgar-real-filing-acquisition-connector-selection.md
+current_main_entry: d023f4c9e1432af5a71efed37733202636d24f7e
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_real_filing_acquisition_connector.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/status/{sec_edgar_real_filing_acquisition_connector_receipt_id}
+implemented_request_model: Layer3SecEdgarRealFilingAcquisitionConnectorRequest
+implemented_response_model: Layer3SecEdgarRealFilingAcquisitionConnectorResponse
+implemented_schema_id: layer3.sec_edgar_real_filing_acquisition_connector.v1
+implemented_status_schema_id: layer3.sec_edgar_real_filing_acquisition_connector_status.v1
+implemented_corpus_manifest_schema_id: layer3.sec_edgar_real_filing_validation_corpus_manifest.v1
+implemented_connector_mode: sec_edgar_real_filing_acquisition_connector_v1
+implemented_operator_decision: acquire_sec_edgar_real_filing_validation_corpus
+implemented_discovery_api: data_sec_gov_submissions_cik_json
+implemented_default_cik_refs: 0000320193
+implemented_default_form_types: 10-K,10-Q,8-K
+implemented_sec_client_reuse: backend/app/services/layer3_sec_edgar_live_source_artifact.py
+implemented_live_source_artifact_acquisition_reuse: sec_edgar_text_table_live_source_artifact_acquisition_v1
+implemented_sec_user_agent_gate: layer3_sec_edgar_user_agent_required
+implemented_sec_rate_policy: reuse_existing_default_one_request_per_second_ceiling_no_more_than_10_requests_per_second_total_per_user
+implemented_receipt_model: append_only_redacted_connector_receipt_with_corpus_manifest_and_source_artifact_receipt_refs
+implemented_html_inline_xbrl_behavior: classify_not_parse_no_generic_text_downgrade
+implemented_candidate_b_scope: pdf_page_visual_evidence_only_not_general_sec_parser
+implemented_downstream_behavior: connector_records_source_artifact_receipts_only_no_layer3_downstream_execution
+missing_user_agent_must_reject: true
+missing_required_form_must_reject: true
+unsafe_raw_url_or_path_must_reject: true
+html_inline_xbrl_parser_runtime_admitted: false
+xml_xbrl_fact_authority_runtime_admitted: false
+sec_parser_expansion_admitted: false
+dataset_version_or_gate_b_mutation_admitted: false
+layer3_downstream_execution_performed_by_connector: false
+candidate_b_general_sec_parser_admitted: false
+duplicate_sec_network_stack_created: false
+raw_sec_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_real_filing_acquisition_connector.py ./backend/app/api/layer3.py PASS
+focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k "sec_edgar_real_filing_connector or sec_edgar_text_table_live_source_artifact" PASS
+next_exact_posture: sec_edgar_real_filing_acquisition_connector_downstream_validation_selection_v1
+```
+
+This runtime adds the API-first SEC EDGAR real-filing acquisition connector. It reuses the existing SEC live source-artifact acquisition client and policy, fetches submissions metadata for validated CIK/form requests, acquires complete-submission text artifacts through the existing live artifact path, records a redacted connector receipt/corpus manifest, and classifies HTML/iXBRL/XML candidates without parsing or downgrading them to generic text. The connector does not execute downstream Layer 3 proof; the next exact posture is a separate downstream-validation selection.
