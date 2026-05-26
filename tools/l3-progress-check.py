@@ -3472,12 +3472,23 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_SELE
     PLANNING_DOCS
     / "1203-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_RUNTIME = (
+    PLANNING_DOCS
+    / "1204-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-runtime.md"
+)
 SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
     ROOT
     / "backend"
     / "app"
     / "services"
     / "layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py"
+)
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.py"
 )
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
@@ -114920,6 +114931,95 @@ def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_p
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_RUNTIME: (
+            "SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Runtime",
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime_v1",
+            "source_downstream_product_selection: next_milestone_plans/Layer3_planning_docs/1203-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-selection.md",
+            "current_main_entry: 0c74ec581efb000970b0cbbd49398a551b40076f",
+            "source_selection_pr: \"#1903\"",
+            "entry_decision: implement_selected_runtime",
+            "runtime_status: implemented_local",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/status/{downstream_product_receipt_id}",
+            "implemented_product_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_v1",
+            "implemented_operator_decision: build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence",
+            "implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.v1",
+            "implemented_product_artifact_roles: statement_candidate_summary,role_group_inventory,table_anchor_crosswalk,unknown_fact_diagnostics,authority_provenance,downstream_readiness_manifest,operator_inspection_summary",
+            "implemented_non_loss_policy: every_retained_fact_from_statement_classification_receipt_must_appear_in_exactly_one_product_group_or_unknown_diagnostic_and_counts_hashes_must_reconcile",
+            "implemented_output_authority: downstream_product_receipt_id,downstream_product_receipt_hash,product_manifest_hash,statement_candidate_product_hash,product_order_hash,inspection_summary_hash,redaction_manifest_hash,downstream_readiness_hash",
+            "downstream_product_runtime_implemented: true",
+            "rendered_runtime_in_this_slice: false",
+            "financial_statement_semantics_runtime_in_this_slice: false",
+            "taxonomy_network_resolution_in_this_slice: false",
+            "sec_companyfacts_api_runtime_in_this_slice: false",
+            "new_sec_network_runtime_in_this_slice: false",
+            "raw_fact_values_exposed: false",
+            "verification_focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k \"statement_candidate_product or fact_statement_classification\" PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime_v1",
+            "source_downstream_product_selection: next_milestone_plans/Layer3_planning_docs/1203-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-selection.md",
+            "current_main_entry: 0c74ec581efb000970b0cbbd49398a551b40076f",
+            "runtime_status: implemented_local",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+            "implemented_product_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_v1",
+            "implemented_product_artifact_roles: statement_candidate_summary,role_group_inventory,table_anchor_crosswalk,unknown_fact_diagnostics,authority_provenance,downstream_readiness_manifest,operator_inspection_summary",
+            "downstream_product_runtime_implemented: true",
+            "taxonomy_network_resolution_in_this_slice: false",
+            "sec_companyfacts_api_runtime_in_this_slice: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_SERVICE: (
+            'SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.v1"',
+            'PRODUCT_MODE = "sec_edgar_html_inline_xbrl_statement_candidate_product_v1"',
+            'OPERATOR_DECISION = "build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence"',
+            "def build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence",
+            "statement_classification.inspect_sec_edgar_html_inline_xbrl_fact_statement_classification_status",
+            "role_group_inventory",
+            "unknown_fact_diagnostics",
+            "count_reconciles_with_classification",
+            "taxonomy_network_resolution_enabled",
+            "sec_companyfacts_api_runtime_enabled",
+            "raw_fact_values_exposed",
+        ),
+        LAYER3_API: (
+            "Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductRequest",
+            "Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductResponse",
+            "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+            "build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence",
+            "inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_status",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_builds_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence",
+            "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_statement_candidate_product_stale_or_unsafe",
+            "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.v1",
+            "sec_edgar_html_inline_xbrl_statement_candidate_product_v1",
+            "sec_edgar_html_inline_xbrl_statement_candidate_product_classification_hash_mismatch",
+            "sec_edgar_html_inline_xbrl_statement_candidate_product_classification_inventory_hash_mismatch",
+            '"value_text" not in response.text',
+            '"123" not in response.text',
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_SELECTION: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact statement-classification downstream product runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -116165,6 +116265,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime(
         errors
     )
 
