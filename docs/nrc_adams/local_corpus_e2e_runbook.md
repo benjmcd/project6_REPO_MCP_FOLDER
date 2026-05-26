@@ -9195,3 +9195,56 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_closeou
 ```
 
 Current main now contains the SEC EDGAR live source-artifact downstream rendered status surface from PR `#1860`. This sync adds no new behavior; it records the landed state and selects a closeout-readiness checkpoint before any repeatability, broader source acquisition, parser expansion, or source-family expansion slice.
+
+## SEC EDGAR Text Table Live Source Artifact Downstream Closeout Readiness
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_closeout_readiness_v1
+source_live_downstream_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1158-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-current-main-sync.md
+current_main_entry: 705d88d1ac2a5705c4be21fbfdc41c6b4fbb8487
+entry_decision: closeout_readiness_checkpoint
+closeout_readiness_state: ready_for_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_selection
+selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_selection_v1
+required_live_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/acquire
+required_live_acquisition_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/{live_source_artifact_receipt_id}
+required_source_acquisition_endpoint: /api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority
+required_live_material_bridge_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge
+required_live_downstream_proof_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof
+required_live_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+required_rendered_status_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control
+required_rendered_status_panel: sec-edgar-live-downstream-operator-status-panel
+required_status_authority_model: live_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+required_rendered_authority_model: redacted_server_status_projection_only_no_browser_durable_authority
+required_downstream_coverage_steps: live_source_artifact_acquisition,source_acquisition_authority,live_material_authority_bridge,authority_envelope_validation,material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection
+available_requires_server_revalidated_live_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+test_only_fixture_user_facing_authority: false
+sec_edgar_browser_fixture_state_isolation: true
+live_source_artifact_downstream_chain_closeout_ready: true
+named_defect_remaining: false
+live_repeatability_trial_admitted_now: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted_for_closeout: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+direct_raw_artifact_parse_or_materialization_admitted: false
+dataset_version_creation_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_proof_request_rendered_in_status_projection: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_selection_v1
+```
+
+The SEC EDGAR live source-artifact downstream chain is ready for a governed repeatability-trial selection. This readiness claim is bounded to the landed complete-submission text source-artifact path and does not admit broader SEC source acquisition, parser expansion, direct retained-filing materialization, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage, frontend durable authority, raw URLs, raw paths, or artifact bytes.
