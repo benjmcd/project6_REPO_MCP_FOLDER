@@ -61,6 +61,7 @@ from app.services import (
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_live_downstream_proof,
+    layer3_sec_edgar_live_downstream_status,
     layer3_sec_edgar_live_material_bridge,
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_material_bridge,
@@ -1415,6 +1416,72 @@ def _prepare_sec_edgar_live_downstream_status_fixture(
     }
 
 
+def _prepare_sec_edgar_live_repeatability_trial_fixture(
+    db,
+    temp_path: Path,
+    *,
+    fake_client: _ReviewBrowserSeededSecEdgarClient,
+    seed_id: str,
+) -> dict[str, object]:
+    status_fixture = _prepare_sec_edgar_live_downstream_status_fixture(
+        db,
+        temp_path,
+        fake_client=fake_client,
+        seed_id=seed_id,
+    )
+    original_status_request = {
+        "client_request_id": f"review-browser-sec-edgar-live-repeatability-original-{seed_id}",
+        "status_mode": layer3_sec_edgar_live_downstream_status.STATUS_MODE,
+        "operator_decision": layer3_sec_edgar_live_downstream_status.OPERATOR_DECISION,
+        "live_downstream_proof_request": status_fixture["live_downstream_proof_request"],
+        "expected_proof_hash": status_fixture["expected_proof_hash"],
+    }
+    repeat_status_request = {
+        **original_status_request,
+        "client_request_id": f"review-browser-sec-edgar-live-repeatability-repeat-{seed_id}",
+    }
+    original_status = (
+        layer3_sec_edgar_live_downstream_status
+        .inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status(
+            original_status_request,
+            db,
+        )
+    )
+    repeat_status = (
+        layer3_sec_edgar_live_downstream_status
+        .inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status(
+            repeat_status_request,
+            db,
+        )
+    )
+    return {
+        "schema_id": "project6.review_browser_sec_edgar_live_repeatability_trial_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "dataset_version_id": status_fixture["dataset_version_id"],
+        "live_source_artifact_receipt_hash": status_fixture["live_source_artifact_receipt_hash"],
+        "source_acquisition_receipt_hash": status_fixture["source_acquisition_receipt_hash"],
+        "live_source_artifact_material_bridge_receipt_hash": (
+            status_fixture["live_source_artifact_material_bridge_receipt_hash"]
+        ),
+        "material_bridge_receipt_hash": status_fixture["material_bridge_receipt_hash"],
+        "proof_hash": status_fixture["proof_hash"],
+        "original_operator_status_request": original_status_request,
+        "original_operator_status_hash": original_status["operator_status_hash"],
+        "repeat_operator_status_request": repeat_status_request,
+        "repeat_operator_status_hash": repeat_status["operator_status_hash"],
+        "trial_endpoint": (
+            "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/"
+            "operator-repeatability/trial"
+        ),
+        "status_endpoint": status_fixture["status_endpoint"],
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
 def _prepare_sec_edgar_repeatability_trial_fixture(db, temp_path: Path, *, seed_id: str) -> dict[str, object]:
     status_fixture = _prepare_sec_edgar_downstream_status_fixture(db, temp_path, seed_id=seed_id)
     original_status_request = {
@@ -2043,6 +2110,7 @@ def create_app() -> FastAPI:
     sec_edgar_source_acquisition_counter = count(1)
     sec_edgar_status_counter = count(1)
     sec_edgar_live_status_counter = count(1)
+    sec_edgar_live_repeatability_counter = count(1)
     sec_edgar_repeatability_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
@@ -2159,6 +2227,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/sec-edgar-source-acquisition-authority",
                 "/__test/layer3/sec-edgar-downstream-status",
                 "/__test/layer3/sec-edgar-live-downstream-status",
+                "/__test/layer3/sec-edgar-live-repeatability-trial",
                 "/__test/layer3/sec-edgar-repeatability-trial",
                 "/__test/layer3/source-directory-hybrid-authority",
                 "/__test/layer3/source-directory-fixture-reset",
@@ -2415,6 +2484,25 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"SEC EDGAR live downstream status setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/sec-edgar-live-repeatability-trial")
+    def sec_edgar_live_repeatability_trial_setup() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = f"browser-live-repeatability-{next(sec_edgar_live_repeatability_counter):03d}"
+            return _prepare_sec_edgar_live_repeatability_trial_fixture(
+                db,
+                temp_path,
+                fake_client=app.state.sec_edgar_live_source_artifact_client,
+                seed_id=seed_id,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR live repeatability trial setup failed: {exc}",
             ) from exc
         finally:
             db.close()
