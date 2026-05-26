@@ -26,6 +26,7 @@ BLOCKED_STATE = "sec_edgar_operator_inspection_blocked"
 RECEIPT_PREFIX = "sec-edgar-operator-inspection"
 RECEIPT_DIR = "layer3-sec-edgar-operator-inspection"
 REDACTION_POLICY_ID = "sec_edgar_operator_inspection_redaction_v1"
+EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")
 OPERATOR_INSPECTION_BREADTH_SELECTION_VERSION = "sec_edgar_operator_inspection_breadth_selection_v1"
 OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX = ("XOM", "PFE", "UAL", "T")
 OPERATOR_INSPECTION_BREADTH_SELECTED_PROFILE_TAGS = (
@@ -36,7 +37,8 @@ OPERATOR_INSPECTION_BREADTH_SELECTED_PROFILE_TAGS = (
     "debt_intensive",
     "commodity_exposure",
 )
-OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED = False
+OPERATOR_INSPECTION_BREADTH_RUNTIME_VERSION = "sec_edgar_operator_inspection_breadth_runtime_v1"
+OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED = True
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -232,11 +234,20 @@ def _provenance_readiness_reasons(provenance: Mapping[str, Any]) -> list[dict[st
     reasons: list[dict[str, Any]] = []
     if provenance.get("delivery_status_provenance_state") != layer3_sec_edgar_delivery_status_provenance.READY_STATE:
         reasons.append(_reason("sec_edgar_operator_inspection_delivery_status_provenance_not_ready"))
+    if tuple(provenance.get("company_matrix") or ()) not in _admitted_company_matrices():
+        reasons.append(_reason("sec_edgar_operator_inspection_company_matrix_mismatch"))
     if provenance.get("delivery_readiness_status") != "ready":
         reasons.append(_reason("sec_edgar_operator_inspection_delivery_readiness_not_ready"))
     if provenance.get("handoff_export_prepare_status") != "ready":
         reasons.append(_reason("sec_edgar_operator_inspection_handoff_export_prepare_not_ready"))
     return reasons
+
+
+def _admitted_company_matrices() -> tuple[tuple[str, ...], ...]:
+    matrices = [EXPECTED_COMPANY_MATRIX]
+    if OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED:
+        matrices.append(OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX)
+    return tuple(matrices)
 
 
 def _company_filing_inspection_matrix(provenance: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -288,6 +299,10 @@ def _readiness_rollup(provenance: Mapping[str, Any], matrix: list[Mapping[str, A
         "validation_ready": provenance.get("validation_receipt_status") == "ready",
         "delivery_ready": provenance.get("delivery_readiness_status") == "ready",
         "handoff_ready": provenance.get("handoff_export_prepare_status") == "ready",
+        "operator_inspection_breadth_runtime_version": OPERATOR_INSPECTION_BREADTH_RUNTIME_VERSION,
+        "operator_inspection_breadth_runtime_enabled": OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED,
+        "expanded_company_matrix_admitted": tuple(provenance.get("company_matrix") or ())
+        == OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX,
         "read_only_status_inspection": True,
         "delivery_status_provenance_bound": True,
         "provenance_hash_matrix_bound": True,
@@ -302,6 +317,7 @@ def _provenance_status(provenance: Mapping[str, Any], matrix: list[Mapping[str, 
         "provenance_hash_matrix_hash": stable_hash(provenance.get("provenance_hash_matrix") or []),
         "inspection_matrix_hash": stable_hash(matrix),
         "company_filing_inspection_matrix_hash": stable_hash(matrix),
+        "company_matrix_hash": stable_hash({"company_matrix": list(provenance.get("company_matrix") or [])}),
         "redacted_projection": True,
         "server_revalidated": True,
     }
