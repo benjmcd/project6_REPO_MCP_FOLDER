@@ -3583,6 +3583,9 @@ SEC_EDGAR_STATEMENT_ROLE_QUALITY_PROFILE = (
 SEC_EDGAR_EXTENSION_TAXONOMY_RETENTION_PROFILE = (
     PLANNING_DOCS / "1235-sec-edgar-extension-taxonomy-retention-profile.md"
 )
+SEC_EDGAR_STANDARD_CONCEPT_MAPPING_PROFILE = (
+    PLANNING_DOCS / "1236-sec-edgar-standard-concept-mapping-profile.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117499,6 +117502,64 @@ def _check_sec_edgar_extension_taxonomy_retention_profile(
                 )
 
 
+def _check_sec_edgar_standard_concept_mapping_profile(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_STANDARD_CONCEPT_MAPPING_PROFILE: (
+            "SEC EDGAR Standard Concept Mapping Profile",
+            "milestone: sec_edgar_standard_concept_mapping_profile_v1",
+            "source_extension_taxonomy_retention_profile: next_milestone_plans/Layer3_planning_docs/1235-sec-edgar-extension-taxonomy-retention-profile.md",
+            "profile_version: sec_edgar_standard_concept_mapping_profile_v1",
+            "profile_scope: redacted_standard_taxonomy_role_family_hash_profile",
+            "standard_concept_mapping_performed: false",
+            "standard_concept_normalization_performed: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_fact_deduplication_conflict_diagnostics_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            "STANDARD_CONCEPT_MAPPING_PROFILE_VERSION",
+            "standard_concept_mapping_profile",
+            "standard_concept_mapping_profile_hash",
+            "standard_concept_mapping_profile_assigned_count",
+            "standard_concept_profiled_count",
+            "issuer_extension_standard_concept_unmapped_count",
+            "unknown_taxonomy_standard_concept_unmapped_count",
+            "standard_concept_mapping_performed",
+            "standard_concept_normalization_performed",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "standard_concept_mapping_profile_assigned_count",
+            "standard_concept_mapping_profile_hash",
+            "bounded_standard_concept_profile_available_not_normalized",
+            "standard_concept_profiled_count",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "standard_concept_mapping_profile_record_count",
+            "standard_concept_mapping_profile_hashes_hash",
+            "standard_concept_mapping_profile",
+            "standard_concept_mapping_performed",
+            "standard_concept_normalization_performed",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_standard_concept_mapping_profile_v1",
+            "standard_concept_mapping_profile_assigned_count",
+            "standard_concept_mapping_profile_record_count",
+            "bounded_standard_concept_profile_available_not_normalized",
+            "standard_concept_normalization_performed",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR standard concept mapping profile term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118808,6 +118869,7 @@ def main() -> int:
     _check_sec_edgar_period_unit_context_dimension_profile(errors)
     _check_sec_edgar_statement_role_quality_profile(errors)
     _check_sec_edgar_extension_taxonomy_retention_profile(errors)
+    _check_sec_edgar_standard_concept_mapping_profile(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
