@@ -10299,3 +10299,45 @@ next_exact_posture: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1
 ```
 
 PR `#1882` merged the SEC EDGAR HTML/iXBRL downstream rendered operator-status inspection surface into current main. This sync records the merged current-main state only; it adds no runtime, parser, connector, source, storage, delivery, provider, model, full-mockup, or frontend durable authority. The next checkpoint should close out the bounded HTML/iXBRL downstream chain and select the next exact SEC/EDGAR slice only if it advances fact/table authority, real corpus execution, or downstream operator usability without widening parser/source/provider/runtime scope.
+
+## SEC EDGAR HTML Inline XBRL Downstream Closeout Readiness
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1
+source_html_inline_xbrl_downstream_rendered_status_sync: next_milestone_plans/Layer3_planning_docs/1180-sec-edgar-html-inline-xbrl-downstream-rendered-status-current-main-sync.md
+current_main_entry: 7df4bbfd48468a2a6df7628ef7531f93bc7f40a0
+source_rendered_status_sync_pr: "#1883"
+entry_decision: closeout_readiness_checkpoint
+closeout_readiness_state: ready_for_sec_edgar_html_inline_xbrl_fact_authority_selection
+selected_next_selection_target: sec_edgar_html_inline_xbrl_fact_authority_selection_v1
+required_source_family: sec_edgar_html_inline_xbrl
+required_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1
+required_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1
+required_material_bridge_mode: sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1
+required_downstream_proof_mode: sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1
+required_rendered_status_mode: rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control
+required_parser_authority: connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash,diagnostics_hash
+required_status_authority_model: html_inline_xbrl_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+html_inline_xbrl_downstream_chain_closeout_ready: true
+fact_authority_selection_admitted_next: true
+fact_authority_runtime_admitted_now: false
+xml_xbrl_fact_authority_admitted_now: false
+financial_statement_semantics_admitted_now: false
+html_inline_xbrl_reparse_or_rematerialization_admitted_now: false
+sec_edgar_network_fetch_admitted_for_closeout: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_selection_v1
+```
+
+This checkpoint closes the bounded HTML/iXBRL downstream path after the merged parser, material bridge, downstream proof, redacted status, rendered inspection, and current-main sync. It does not admit fact extraction runtime, XML/XBRL fact authority, financial-statement semantics, broad HTML/iXBRL reparsing, direct retained-filing rematerialization, live SEC fetch during closeout, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage, frontend durable authority, raw filing URL authority, raw local paths, raw URLs, or artifact bytes. The next governed step is to select the exact server-owned fact-authority contract over existing parser receipts and marker inventory.
