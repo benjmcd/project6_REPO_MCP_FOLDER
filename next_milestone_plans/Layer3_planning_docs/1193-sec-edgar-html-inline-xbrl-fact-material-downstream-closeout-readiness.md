@@ -1,0 +1,91 @@
+# SEC EDGAR HTML Inline XBRL Fact Material Downstream Closeout Readiness
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_closeout_readiness_v1
+source_fact_authority_runtime: next_milestone_plans/Layer3_planning_docs/1183-sec-edgar-html-inline-xbrl-fact-authority-runtime.md
+source_fact_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1185-sec-edgar-html-inline-xbrl-fact-material-bridge-runtime.md
+source_fact_material_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1187-sec-edgar-html-inline-xbrl-fact-material-downstream-proof-runtime.md
+source_fact_material_downstream_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1189-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-runtime.md
+source_fact_material_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1192-sec-edgar-html-inline-xbrl-fact-material-downstream-rendered-status-current-main-sync.md
+current_main_entry: fb24b848137638dfa40718de94570723d8a3c9fb
+source_rendered_status_sync_pr: "#1895"
+source_rendered_status_sync_merge_commit: fb24b848137638dfa40718de94570723d8a3c9fb
+entry_decision: closeout_readiness_checkpoint
+runtime_status: already_implemented
+rendered_status: already_implemented
+closeout_readiness_state: ready_for_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_selection
+selected_next_selection_target: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_selection_v1
+selected_closeout_scope: sec_edgar_html_inline_xbrl_fact_material_downstream_after_rendered_status_current_main_sync
+required_source_family: sec_edgar_html_inline_xbrl
+required_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1
+required_typed_content_contract_id: sec_edgar_html_inline_xbrl_fact_material_units_v1
+required_connector_mode: sec_edgar_real_filing_acquisition_connector_v1
+required_parser_mode: sec_edgar_html_inline_xbrl_source_family_parser_v1
+required_fact_authority_mode: sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1
+required_fact_material_bridge_mode: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1
+required_downstream_proof_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof_v1
+required_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1
+required_rendered_status_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_control
+required_connector_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector
+required_parser_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parse
+required_fact_authority_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority
+required_fact_material_bridge_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge
+required_downstream_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof
+required_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status
+required_rendered_status_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-panel
+required_parser_authority: connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash,diagnostics_hash
+required_fact_authority: parser_receipt_hash,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash,content_order_hash,primary_document_hash,inline_xbrl_marker_inventory_hash
+required_fact_material_bridge_authority: fact_authority_receipt_hash,fact_material_bridge_receipt_hash,materialization_receipt_hash,material_preview_hash,gate_b_decision_manifest_id
+required_downstream_authority: session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,proof_hash,operator_status_hash
+required_status_authority_model: fact_material_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+required_rendered_authority_model: redacted_server_status_projection_only_no_browser_durable_authority
+required_closeout_coverage_steps: real_filing_connector_acquisition,live_source_artifact_acquisition,html_inline_xbrl_source_family_parser,html_inline_xbrl_fact_authority,html_inline_xbrl_fact_material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection,rendered_status_inspection
+required_fail_closed_conditions: missing_parser_receipt,stale_parser_receipt_hash,missing_fact_authority_receipt,stale_fact_authority_receipt_hash,missing_fact_inventory_hash,missing_fact_material_bridge_receipt,stale_fact_material_bridge_receipt_hash,missing_gate_b_session,material_snapshot_mismatch,coverage_not_bound_to_server_receipt,stale_or_mismatched_proof_hash,raw_fact_value_authority,raw_path_or_url_authority,forbidden_input_authority
+html_inline_xbrl_fact_material_downstream_chain_closeout_ready: true
+named_defect_remaining: false
+operator_repeatability_trial_selection_admitted_next: true
+operator_repeatability_trial_runtime_admitted_now: false
+xml_xbrl_fact_authority_admitted_now: false
+sec_companyfacts_api_runtime_admitted_now: false
+taxonomy_network_resolution_admitted_now: false
+financial_statement_semantics_admitted_now: false
+fact_to_statement_classification_admitted_now: false
+html_inline_xbrl_reparse_or_rematerialization_admitted_now: false
+direct_raw_artifact_parse_or_materialization_admitted_now: false
+sec_edgar_network_fetch_admitted_for_closeout: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_proof_request_rendered_in_status_projection: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+raw_fact_values_rendered: false
+fact_value_reconstruction_enabled: false
+provider_token_rendered: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_selection_v1
+```
+
+This checkpoint closes the bounded SEC EDGAR HTML/iXBRL fact-material downstream chain after fact authority, fact-material bridge, Gate B, downstream proof, redacted operator status, rendered status, and current-main sync reached main. The chain proves that server-owned inline XBRL fact authority can become Layer 3 fact-material authority and flow through downstream proof/status/operator inspection without exposing raw fact values, `value_text`, raw SEC URLs, local paths, artifact bytes, provider tokens, or frontend durable authority.
+
+This is not a final SEC EDGAR or XBRL platform-completion claim. It does not admit XML/XBRL fact authority, SEC CompanyFacts runtime, taxonomy network resolution, financial-statement semantics, fact-to-statement classification, broad retained-artifact reparsing, live SEC network fetch during closeout, provider writes, connector dispatch, RAG/model runtime, auth/security expansion, full mockup activation, browser storage, frontend durable authority, raw filing URL authority, raw local paths, raw URLs, artifact bytes, or raw fact value rendering.
+
+The next governed step is an explicit fact-material downstream operator repeatability-trial selection. That future selection should prove that an operator can repeat the server-revalidated fact-material downstream status inspection over current-main authority, compare original/repeat status hashes, and fail closed on stale proof or raw fact-value-bearing authority before any taxonomy, statement, CompanyFacts, or broader runtime/source expansion is selected.
+
+## Coherence Check
+
+- Does this checkpoint claim full SEC EDGAR or XBRL processing is complete? Recommended answer: no. It closes only the bounded HTML/iXBRL fact-material downstream proof/status/rendered chain.
+- Does it admit financial-statement semantics, fact-to-statement classification, or CompanyFacts now? Recommended answer: no. Those remain separate future slices.
+- What must remain true for the future repeatability selection? Recommended answer: repeatability must bind to server-owned proof/status receipts, compare redacted status hashes, fail closed on stale or raw fact-value authority, and avoid browser-held durable authority.
+- What comes next? Recommended answer: freeze/select `sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_selection_v1` before implementing any trial runtime.
