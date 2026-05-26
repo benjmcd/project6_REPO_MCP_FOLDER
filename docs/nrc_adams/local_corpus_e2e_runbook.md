@@ -11509,3 +11509,41 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 Current main now includes the SEC HTML/iXBRL statement-classification downstream product runtime. The next selected slice should move these redacted product receipts into package/review, unless operator-visible rendered inspection is found to be the immediate blocker.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Package Review Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1
+source_downstream_product_current_main_sync: next_milestone_plans/Layer3_planning_docs/1205-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-current-main-sync.md
+current_main_entry: 99fea9c7f402e7734e94bc19079847084fb22967
+source_sync_pr: "#1905"
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1
+selected_package_review_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1
+selected_operator_decision: preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview
+selected_package_artifact_roles: canonical_internal,review_facing,user_facing,authority_provenance,review_readiness_manifest,redaction_manifest
+selected_non_loss_policy: package_preview_must_reference_every_statement_candidate_product_group_unknown_diagnostic_and_table_anchor_by_hash_without_discarding_product_evidence
+package_review_preview_runtime_in_this_freeze: false
+package_construction_commit_in_this_freeze: false
+package_review_submit_in_this_freeze: false
+handoff_export_in_this_freeze: false
+delivery_runtime_in_this_freeze: false
+financial_statement_semantics_runtime_in_this_freeze: false
+taxonomy_network_resolution_in_this_freeze: false
+sec_companyfacts_api_runtime_in_this_freeze: false
+new_sec_network_runtime_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1
+```
+
+The selected next SEC product package/review step is a read-only package-review preview over existing statement-candidate product receipts. It must preserve product evidence by hash across canonical internal, review-facing, and user-facing package candidates, without writing package rows, submitting review decisions, preparing handoff/export, delivering artifacts, adding taxonomy or CompanyFacts semantics, exposing raw fact values, or broadening SEC source/runtime authority.
