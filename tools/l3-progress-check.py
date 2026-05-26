@@ -3352,6 +3352,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_MATERIAL_BRIDGE_SELECTION = (
 SEC_EDGAR_HTML_INLINE_XBRL_MATERIAL_BRIDGE_RUNTIME = (
     PLANNING_DOCS / "1173-sec-edgar-html-inline-xbrl-material-bridge-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_LAYER3_PROOF_SELECTION = (
+    PLANNING_DOCS
+    / "1174-sec-edgar-html-inline-xbrl-downstream-layer3-proof-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111920,6 +111924,132 @@ def _check_sec_edgar_html_inline_xbrl_material_bridge_runtime(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_LAYER3_PROOF_SELECTION: (
+            "SEC EDGAR HTML Inline XBRL Downstream Layer 3 Proof Selection",
+            "milestone: sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection_v1",
+            "source_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1173-sec-edgar-html-inline-xbrl-material-bridge-runtime.md",
+            "current_main_entry: e608ccd5f2729a83ec23cf43015f60fba77684bd",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime_v1",
+            "selected_proof_mode: sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1",
+            "selected_operator_decision: record_sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_proof.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+            "selected_source_family: sec_edgar_html_inline_xbrl",
+            "selected_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "selected_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1",
+            "selected_material_bridge_mode: sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+            "selected_material_bridge_ready_state: sec_edgar_html_inline_xbrl_material_bridge_ready",
+            "selected_material_source_class: dataset_version",
+            "required_material_bridge_schema_id: layer3.sec_edgar_html_inline_xbrl_material_bridge.v1",
+            "required_material_bridge_request_schema_id: layer3.sec_edgar_html_inline_xbrl_material_bridge_request.v1",
+            "required_gate_b_decision_schema_id: layer3.gate_b_decision_request.v1",
+            "required_gate_b_commit_surface: existing_gate_b_decision_api",
+            "required_gate_b_commit_in_bridge: false",
+            "required_parser_receipt_authority: parser_receipt_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash",
+            "required_material_bridge_authority: bridge_receipt_id,bridge_receipt_hash,dataset_version_id,dataset_version_hash,materialization_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,admitted_subset_hash",
+            "required_downstream_session_authority: L3Session,L3SelectionManifest,L3MaterialSnapshot",
+            "required_material_snapshot_source_shape: dataset_version",
+            "required_hash_bindings: parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,materialization_receipt_hash,dataset_version_hash,bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,proof_hash",
+            "required_coverage_steps: real_filing_connector_acquisition,live_source_artifact_acquisition,html_inline_xbrl_source_family_parser,html_inline_xbrl_material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection",
+            "required_evidence_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only",
+            "required_fail_closed_conditions: missing_parser_receipt,stale_parser_receipt_hash,missing_material_bridge_receipt,stale_material_bridge_receipt_hash,material_bridge_not_ready,gate_b_payload_mismatch,gate_b_hash_mismatch,missing_gate_b_session,material_snapshot_mismatch,source_family_mismatch,parser_family_mismatch,typed_content_contract_mismatch,missing_coverage_step,coverage_not_bound_to_server_receipt,raw_path_or_url_authority,missing_operator_confirmation,forbidden_input_authority",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "gate_b_mutation_admitted_in_proof: false",
+            "live_sec_network_fetch_admitted_for_proof: false",
+            "submissions_lookup_runtime_admitted_for_proof: false",
+            "html_inline_xbrl_reparse_or_materialization_admitted_in_proof: false",
+            "xml_xbrl_fact_authority_admitted: false",
+            "financial_statement_semantics_admitted: false",
+            "raw_sec_filing_url_authority_admitted: false",
+            "broad_source_expansion_admitted: false",
+            "runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime_v1",
+            "It must re-read and verify the material bridge server-side, then verify the committed Gate B session, selection manifest, material snapshot, source-family contract, parser-family contract, typed-content contract, and coverage evidence.",
+            "Coverage evidence must bind to server-owned ids, hashes, receipts, or response projections from current runtime surfaces.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection_v1",
+            "source_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1173-sec-edgar-html-inline-xbrl-material-bridge-runtime.md",
+            "current_main_entry: e608ccd5f2729a83ec23cf43015f60fba77684bd",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime_v1",
+            "selected_proof_mode: sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1",
+            "selected_operator_decision: record_sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_proof.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+            "selected_source_family: sec_edgar_html_inline_xbrl",
+            "selected_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "selected_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1",
+            "selected_material_bridge_mode: sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+            "selected_material_source_class: dataset_version",
+            "required_material_bridge_schema_id: layer3.sec_edgar_html_inline_xbrl_material_bridge.v1",
+            "required_gate_b_commit_surface: existing_gate_b_decision_api",
+            "required_gate_b_commit_in_bridge: false",
+            "required_evidence_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "live_sec_network_fetch_admitted_for_proof: false",
+            "html_inline_xbrl_reparse_or_materialization_admitted_in_proof: false",
+            "xml_xbrl_fact_authority_admitted: false",
+            "financial_statement_semantics_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_MATERIAL_BRIDGE_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_material_bridge.py": (
+            "SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_material_bridge.v1\"",
+            "READY_STATE = \"sec_edgar_html_inline_xbrl_material_bridge_ready\"",
+            "BRIDGE_MODE = \"sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1\"",
+            "TYPED_CONTENT_CONTRACT_ID = \"sec_edgar_html_inline_xbrl_material_units_v1\"",
+            "gate_b_decision_payload",
+            "bridge_receipt_hash",
+            "material_preview_hash",
+            "gate_b_decision_manifest_id",
+            "select_sec_edgar_html_inline_xbrl_downstream_layer3_proof",
+            "\"xml_xbrl_fact_authority_created\": False",
+            "\"raw_url_exposed\": False",
+        ),
+        LAYER3_API: (
+            "\"/source/sec-edgar/html-inline-xbrl/material-authority/bridge\"",
+            "\"/gate-b/decision\"",
+            "response_model=Layer3GateBDecisionResponse",
+            "layer3_workbench.gate_b_decision(",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL downstream Layer 3 proof selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -113103,6 +113233,7 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_source_family_parser_runtime(errors)
     _check_sec_edgar_html_inline_xbrl_material_bridge_selection(errors)
     _check_sec_edgar_html_inline_xbrl_material_bridge_runtime(errors)
+    _check_sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
