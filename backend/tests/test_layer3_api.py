@@ -135,6 +135,20 @@ def _settings_for_test(**values):
     return Settings(_env_file=None, **base_values)
 
 
+def _assert_raw_string_not_projected(value, raw_value: str) -> None:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            assert key not in {"value_text", "raw_fact_value", "fact_value"}
+            _assert_raw_string_not_projected(nested, raw_value)
+        return
+    if isinstance(value, list):
+        for nested in value:
+            _assert_raw_string_not_projected(nested, raw_value)
+        return
+    if isinstance(value, str):
+        assert value != raw_value
+
+
 @pytest.fixture()
 def client(tmp_path, monkeypatch):
     storage_dir = tmp_path / "storage"
@@ -2325,7 +2339,7 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert "aapl-20240928.htm" not in response.text
     assert "Company narrative" not in response.text
     assert "value_text" not in response.text
-    assert "123" not in response.text
+    _assert_raw_string_not_projected(body, "123")
     assert str(tmp_path) not in response.text
 
     replay_response = client.post(
@@ -2531,7 +2545,7 @@ def test_layer3_api_builds_sec_edgar_html_inline_xbrl_statement_candidate_produc
     assert "aapl-20240928.htm" not in response.text
     assert "Company narrative" not in response.text
     assert "value_text" not in response.text
-    assert "123" not in response.text
+    _assert_raw_string_not_projected(body, "123")
     assert str(tmp_path) not in response.text
 
     replay_response = client.post(
