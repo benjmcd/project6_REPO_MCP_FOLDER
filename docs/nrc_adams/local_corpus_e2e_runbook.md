@@ -11847,3 +11847,35 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 The SEC HTML/iXBRL package-review submit runtime now records bounded review decisions over server-owned package-construction authority. Handoff/export, delivery, taxonomy/CompanyFacts, provider, connector, RAG/model, full mockup, and frontend durable authority remain separate future slices.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Package Review Submit Runtime Current-Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit_current_main_sync_v1
+source_package_review_submit_runtime: next_milestone_plans/Layer3_planning_docs/1214-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-submit-runtime.md
+current_main_entry: 705ab5574e4b7e00a01cba62e23414d847cbeada
+source_pr: "#1914"
+source_runtime_commit: 012d8b510768538695ce1cfb460587054c5dce81
+source_merge_commit: 705ab5574e4b7e00a01cba62e23414d847cbeada
+source_pr_status: merged_current_main
+ci_status_after_merge: latest_pr_1914_backend_and_playwright_shards_passed
+sync_status: current_main_verified
+runtime_status: implemented_current_main
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/submit
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/submit/status/{package_review_submit_receipt_id}
+implemented_package_review_submit_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_submit_v1
+implemented_operator_decision: submit_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review
+package_review_preview_runtime_current_main: true
+package_construction_commit_current_main: true
+package_review_submit_current_main: true
+package_payloads_mutated: false
+handoff_export_current_main: false
+delivery_runtime_current_main: false
+raw_url_exposed: false
+raw_fact_values_exposed: false
+decision_notes_exposed: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_selection_v1
+```
+
+Current main now includes the SEC HTML/iXBRL package-review submit runtime. The next slice should select handoff/export prepare over approved package-review submit receipts, while keeping delivery, taxonomy/CompanyFacts, provider, connector, RAG/model, full mockup, and frontend durable authority separate.
