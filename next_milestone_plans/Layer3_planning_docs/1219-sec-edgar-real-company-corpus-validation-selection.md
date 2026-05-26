@@ -1,0 +1,63 @@
+# SEC EDGAR Real Company Corpus Validation Selection
+
+```yaml
+milestone: sec_edgar_real_company_corpus_validation_selection_v1
+source_handoff_export_prepare_current_main_sync: next_milestone_plans/Layer3_planning_docs/1218-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-runtime-current-main-sync.md
+current_main_entry: cdcb12373d756f71b8528f929c33de389efe2296
+source_sync_pr: "#1918"
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_real_company_corpus_validation_runtime_v1
+selected_validation_mode: sec_edgar_real_company_corpus_validation_v1
+selected_operator_decision: validate_sec_edgar_real_company_corpus_product_path
+selected_future_service: backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation/status/{sec_edgar_real_company_corpus_validation_receipt_id}
+selected_schema_id: layer3.sec_edgar_real_company_corpus_validation.v1
+selected_status_schema_id: layer3.sec_edgar_real_company_corpus_validation_status.v1
+selected_company_matrix: MSFT,STLD,SONY,CCJ
+selected_filing_policy: one_recent_annual_filing_if_available_and_one_recent_interim_or_current_filing_if_applicable_per_company
+selected_form_discovery_policy: use_sec_connector_submissions_authority_do_not_hardcode_10k_10q_or_domestic_form_families
+selected_official_sec_access_reference: https://www.sec.gov/os/accessing-edgar-data
+selected_official_sec_developer_reference: https://www.sec.gov/about/developer-resources
+selected_official_sec_api_reference: https://www.sec.gov/edgar/sec-api-documentation
+selected_sec_access_policy: declared_user_agent_contact_required_and_no_more_than_10_requests_per_second
+selected_required_identity_fields: cik,ticker,company_name,issuer_class_or_domestic_foreign_classification,form_type,accession,filing_date,report_period,primary_document_ref,source_artifact_hash
+selected_source_family_outcomes: html_inline_xbrl_supported,complete_submission_supported,foreign_form_supported_or_degraded,unsupported_blocked_with_diagnostics
+selected_path_under_validation: sec_connector_acquisition,source_family_classification,html_inline_xbrl_or_complete_submission_parser_status,fact_material_bridge,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare
+selected_content_order_evidence: document_order_hash,section_order_inventory,fact_source_order_inventory,statement_candidate_order,package_artifact_order_hash
+selected_fact_authority_evidence: concept,taxonomy_namespace,period,unit,scale_decimals,context_id,dimensions,segment_entity_context,source_ref_span,fact_hash,redacted_operator_projection
+selected_extension_policy: retain_company_specific_extension_concepts_with_namespace_label_context_source_ref_and_diagnostic_classification
+selected_product_utility_matrix: company,filing,form_family,source_family,supported_degraded_blocked,outputs_produced,gaps_found,operator_usefulness
+selected_failure_classification: acquisition,source_routing,parser_family,fact_authority,statement_classification,package_review,handoff_export,delivery,operator_inspection
+selected_blocked_behavior: unsupported_or_missing_artifacts_fail_closed_with_explicit_diagnostics_no_generic_text_downgrade
+selected_leakage_policy: no_raw_url_path_local_root_artifact_bytes_or_raw_fact_value_exposure_outside_admitted_fields
+selected_non_loss_policy: validation_records_unknown_unclassified_extension_loss_degradation_and_order_diagnostics_without_discarding_product_evidence
+delivery_prepare_selection_deferred_until_validation_complete: true
+delivery_runtime_in_this_freeze: false
+internal_webhook_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+parser_source_expansion_in_this_freeze: false
+runtime_implementation_in_this_freeze: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_real_company_corpus_validation_runtime_v1
+```
+
+This selection freezes the real-company SEC/EDGAR corpus validation slice. The future runtime should use server-owned SEC connector authority to discover actual filings for MSFT, STLD, SONY, and CCJ, then run each supported filing as far as current main admits through acquisition, source-family classification, parser status, fact/material bridge, statement-candidate product, package-review preview, package construction, package-review submit, and handoff/export prepare.
+
+The validation must not assume all issuers file domestic 10-K or 10-Q forms. Unsupported, foreign, missing, or degraded source families should fail closed with diagnostics instead of silently downgrading to generic text or routing SEC filing semantics through Candidate B.
+
+## Coherence Check
+
+- Is this another delivery plumbing slice? Recommended answer: no, delivery prepare/status is deferred until real-company validation proves the product path across heterogeneous filings.
+- Can the future validation hardcode form families for SONY or CCJ? Recommended answer: no, it must discover actual form families from SEC connector/submissions authority.
+- What proves adequacy? Recommended answer: a company-by-filing matrix that records identity, source family, product/package/handoff outputs, degradation/loss diagnostics, and operator usefulness.
