@@ -232,6 +232,23 @@ def inspect_sec_edgar_html_inline_xbrl_fact_authority_status(receipt_id: str) ->
     )
 
 
+def read_sec_edgar_html_inline_xbrl_fact_authority_receipt(
+    receipt_id: str,
+    *,
+    expected_fact_authority_receipt_hash: str | None = None,
+) -> dict[str, Any]:
+    receipt = _read_verified_receipt(receipt_id)
+    expected_hash = str(expected_fact_authority_receipt_hash or "").strip()
+    if expected_hash and receipt["fact_authority_receipt_hash"] != expected_hash:
+        _blocked(
+            "sec_edgar_html_inline_xbrl_fact_authority_receipt_hash_mismatch",
+            "SEC EDGAR HTML/iXBRL fact authority receipt hash is stale or mismatched.",
+            http_status=409,
+            blocked_fields=["fact_authority_receipt_hash"],
+        )
+    return receipt
+
+
 def _fact_inventory(
     primary_document: str,
     *,
