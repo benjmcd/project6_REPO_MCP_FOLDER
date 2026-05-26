@@ -11400,3 +11400,46 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 PR #1901 is merged to current main. The statement-classification runtime is current-main authority for redacted candidate grouping over existing SEC HTML/iXBRL fact authority and fact-material bridge receipts, with fail-closed bridge authority parity and no taxonomy, CompanyFacts, XML/XBRL, parser expansion, raw value projection, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or frontend durable authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection_v1
+source_statement_classification_current_main_sync: next_milestone_plans/Layer3_planning_docs/1202-sec-edgar-html-inline-xbrl-fact-to-statement-classification-current-main-sync.md
+current_main_entry: 26de58f2f80b575da64958e06bccf7bb3acc106d
+source_sync_pr: "#1902"
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime_v1
+selected_product_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_v1
+selected_operator_decision: build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product
+selected_runtime_scope: convert_existing_statement_classification_receipt_into_redacted_operator_product_evidence_and_layer3_downstream_product_manifest_without_raw_values_taxonomy_semantics_or_new_sec_fetch
+selected_product_artifact_roles: statement_candidate_summary,role_group_inventory,table_anchor_crosswalk,unknown_fact_diagnostics,authority_provenance,downstream_readiness_manifest,operator_inspection_summary
+selected_non_loss_policy: every_retained_fact_from_statement_classification_receipt_must_appear_in_exactly_one_product_group_or_unknown_diagnostic_and_counts_hashes_must_reconcile
+selected_order_policy: preserve_classification_order_statement_group_order_source_order_marker_order_and_table_anchor_order_in_product_manifest
+selected_output_authority: downstream_product_receipt_id,downstream_product_receipt_hash,product_manifest_hash,statement_candidate_product_hash,product_order_hash,inspection_summary_hash,redaction_manifest_hash,downstream_readiness_hash
+downstream_product_runtime_in_this_freeze: false
+financial_statement_semantics_runtime_in_this_freeze: false
+taxonomy_network_resolution_in_this_freeze: false
+sec_companyfacts_api_runtime_in_this_freeze: false
+xml_xbrl_fact_authority_in_this_freeze: false
+html_inline_xbrl_reparse_or_rematerialization_in_this_freeze: false
+new_sec_network_runtime_in_this_freeze: false
+source_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime_v1
+```
+
+The next selected SEC/iXBRL slice is a no-runtime freeze for a downstream product/inspection manifest over existing statement-classification receipts. The future runtime must create redacted operator product evidence with statement candidate summaries, table-anchor crosswalks, unknown diagnostics, authority provenance, and downstream readiness metadata without final financial-statement semantics, taxonomy resolution, SEC CompanyFacts, XML/XBRL authority, parser expansion, raw value projection, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or frontend durable authority.
