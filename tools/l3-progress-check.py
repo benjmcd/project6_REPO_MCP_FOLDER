@@ -3343,6 +3343,9 @@ SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_DOWNSTREAM_VALIDATION_RUNTIME = (
 SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_SELECTION = (
     PLANNING_DOCS / "1170-sec-edgar-html-inline-xbrl-source-family-parser-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_RUNTIME = (
+    PLANNING_DOCS / "1171-sec-edgar-html-inline-xbrl-source-family-parser-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111622,6 +111625,111 @@ def _check_sec_edgar_html_inline_xbrl_source_family_parser_selection(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_source_family_parser_runtime(
+    errors: list[str],
+) -> None:
+    runtime_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_parser.py"
+    live_source_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_source_artifact.py"
+    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_RUNTIME: (
+            "SEC EDGAR HTML Inline XBRL Source Family Parser Runtime",
+            "milestone: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1",
+            "source_parser_selection: next_milestone_plans/Layer3_planning_docs/1170-sec-edgar-html-inline-xbrl-source-family-parser-selection.md",
+            "current_main_entry: 3a2eefe3344ab84a90f019b0933117889794e67c",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser/status/{sec_edgar_html_inline_xbrl_parser_receipt_id}",
+            "implemented_request_model: Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserRequest",
+            "implemented_response_model: Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse",
+            "implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_source_family_parse_receipt.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_source_family_parser_request.v1",
+            "implemented_status_schema_id: layer3.sec_edgar_html_inline_xbrl_source_family_parser_status.v1",
+            "implemented_parser_mode: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "implemented_operator_decision: parse_sec_edgar_html_inline_xbrl_source_family",
+            "implemented_live_artifact_byte_reader: read_sec_edgar_text_table_live_source_artifact_bytes",
+            "implemented_supported_scope: one_connector_acquired_example_classified_html_inline_xbrl_from_retained_complete_submission_text_artifact",
+            "implemented_identity_binding: connector_example_id,cik_hash,accession_or_submission_id_hash,form_type,filing_date,report_period_present,company_name_hash,primary_document_hash,source_artifact_receipt_hash,source_artifact_ref_hash,content_sha256",
+            "implemented_materialization_behavior: no_dataset_version_creation_no_gate_b_mutation_no_layer3_material_bridge_until_separately_selected",
+            "implemented_fact_behavior: detect_ix_prefixed_inline_xbrl_marker_inventory_only_no_xbrl_fact_authority_or_financial_semantics",
+            "live_sec_network_fetch_performed_by_parser: false",
+            "submissions_lookup_performed_by_parser: false",
+            "arbitrary_url_or_upload_parse_admitted: false",
+            "dataset_version_creation_admitted: false",
+            "gate_b_mutation_admitted: false",
+            "material_bridge_admitted: false",
+            "xml_xbrl_fact_authority_created: false",
+            "candidate_b_general_sec_parser_admitted: false",
+            "generic_connector_dispatch_enabled: false",
+            "raw_sec_url_rendered: false",
+            "raw_local_path_rendered: false",
+            "artifact_bytes_rendered: false",
+            "focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k \"html_inline_xbrl_source_family or sec_edgar_real_filing_connector\" PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_material_bridge_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser/status/{sec_edgar_html_inline_xbrl_parser_receipt_id}",
+            "implemented_parser_mode: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "implemented_live_artifact_byte_reader: read_sec_edgar_text_table_live_source_artifact_bytes",
+            "implemented_content_order_scope: preserve_redacted_source_order_for_primary_document_text_segments_table_candidates_and_inline_xbrl_marker_inventory",
+            "implemented_materialization_behavior: no_dataset_version_creation_no_gate_b_mutation_no_layer3_material_bridge_until_separately_selected",
+            "live_sec_network_fetch_performed_by_parser: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_material_bridge_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_SELECTION: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1",
+        ),
+        runtime_service: (
+            "SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_source_family_parse_receipt.v1\"",
+            "REQUEST_SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_source_family_parser_request.v1\"",
+            "STATUS_SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_source_family_parser_status.v1\"",
+            "PARSER_MODE = \"sec_edgar_html_inline_xbrl_source_family_parser_v1\"",
+            "OPERATOR_DECISION = \"parse_sec_edgar_html_inline_xbrl_source_family\"",
+            "read_sec_edgar_real_filing_acquisition_connector_receipt",
+            "read_sec_edgar_text_table_live_source_artifact_bytes",
+            "html_inline_xbrl_classified_not_parsed",
+            "\"sec_edgar_live_network_fetch_performed_by_parser\": False",
+            "\"dataset_version_creation_admitted\": False",
+            "\"material_bridge_admitted\": False",
+            "\"xml_xbrl_fact_authority_created\": False",
+            "\"raw_url_exposed\": False",
+        ),
+        live_source_service: (
+            "def read_sec_edgar_text_table_live_source_artifact_bytes(",
+            "sec_edgar_text_table_live_source_artifact_retained_artifact_hash_mismatch",
+        ),
+        api: (
+            "Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserRequest",
+            "Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse",
+            "/source/sec-edgar/html-inline-xbrl/source-family/parser",
+            "/source/sec-edgar/html-inline-xbrl/source-family/parser/status/{sec_edgar_html_inline_xbrl_parser_receipt_id}",
+            "layer3_sec_edgar_html_inline_xbrl_parser.parse_sec_edgar_html_inline_xbrl_source_family",
+            "layer3_sec_edgar_html_inline_xbrl_parser.inspect_sec_edgar_html_inline_xbrl_source_family_parser_status",
+        ),
+        api_tests: (
+            "test_layer3_api_parses_sec_edgar_html_inline_xbrl_source_family",
+            "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_parser_stale_or_unsafe",
+            "sec_edgar_html_inline_xbrl_parser_forbidden_request_fields",
+            "sec_edgar_html_inline_xbrl_parser_source_artifact_hash_mismatch",
+            "html_inline_xbrl_source_family_parser_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL source-family parser runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112802,6 +112910,7 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_source_family_parser_selection(errors)
+    _check_sec_edgar_html_inline_xbrl_source_family_parser_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
