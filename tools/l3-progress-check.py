@@ -114766,7 +114766,7 @@ def _check_sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime(
             "sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_hash_mismatch",
             "sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_authority_hash_missing",
             '"value_text" not in response.text',
-            '"123" not in response.text',
+            '_assert_raw_string_not_projected(body, "123")',
         ),
         SEC_EDGAR_HTML_INLINE_XBRL_FACT_TO_STATEMENT_CLASSIFICATION_SELECTION: (
             "stacked_runtime_implementation_before_current_main_sync: true",
@@ -115013,7 +115013,7 @@ def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_p
             "sec_edgar_html_inline_xbrl_statement_candidate_product_classification_hash_mismatch",
             "sec_edgar_html_inline_xbrl_statement_candidate_product_classification_inventory_hash_mismatch",
             '"value_text" not in response.text',
-            '"123" not in response.text',
+            '_assert_raw_string_not_projected(body, "123")',
         ),
         SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_SELECTION: (
             "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime_v1",
