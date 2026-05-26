@@ -1842,6 +1842,102 @@ def test_layer3_api_rejects_live_sec_edgar_downstream_proof_stale_or_forbidden_a
     )
 
 
+def test_layer3_api_reports_live_sec_edgar_downstream_operator_status(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_live_sec_edgar_downstream_authority(client, tmp_path, monkeypatch, label="003")
+    proof_payload = _live_sec_edgar_downstream_proof_payload(
+        prepared,
+        client_request_id="sec-edgar-live-downstream-proof-003",
+    )
+    status_base = {
+        "client_request_id": "sec-edgar-live-downstream-status-003",
+        "status_mode": "sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+    }
+    not_recorded_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+        json=status_base,
+    )
+    assert not_recorded_response.status_code == 200, not_recorded_response.text
+    not_recorded = not_recorded_response.json()
+    assert not_recorded["schema_id"] == "layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_status.v1"
+    assert not_recorded["operator_status_state"] == "not_recorded"
+    assert not_recorded["proof_available"] is False
+
+    proof_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json=proof_payload,
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+
+    available_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+        json={
+            **status_base,
+            "live_downstream_proof_request": proof_payload,
+            "expected_proof_hash": proof["proof_hash"],
+        },
+    )
+    assert available_response.status_code == 200, available_response.text
+    available = available_response.json()
+    assert available["operator_status_state"] == "available"
+    assert available["proof_available"] is True
+    assert available["proof_hash"] == proof["proof_hash"]
+    assert available["live_source_artifact_receipt_hash"] == proof["live_source_artifact_receipt_hash"]
+    assert available["source_acquisition_receipt_hash"] == proof["source_acquisition_receipt_hash"]
+    assert available["live_source_artifact_material_bridge_receipt_hash"] == (
+        proof["live_source_artifact_material_bridge_receipt_hash"]
+    )
+    assert available["material_bridge_receipt_hash"] == proof["material_bridge_receipt_hash"]
+    assert available["downstream_proof_hash"] == proof["downstream_proof_hash"]
+    assert available["status_projection"]["server_revalidated"] is True
+    assert available["raw_url_rendered"] is False
+    assert available["artifact_bytes_rendered"] is False
+    assert "https://www.sec.gov" not in available_response.text
+    assert "0000320193-24-000123" not in available_response.text
+    assert str(tmp_path) not in available_response.text
+
+    stale_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+        json={
+            **status_base,
+            "client_request_id": "sec-edgar-live-downstream-status-stale-003",
+            "live_downstream_proof_request": proof_payload,
+            "expected_proof_hash": "f" * 64,
+        },
+    )
+    assert stale_response.status_code == 200, stale_response.text
+    stale = stale_response.json()
+    assert stale["operator_status_state"] == "blocked"
+    assert stale["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_operator_status_proof_hash_mismatch"
+    )
+
+    forbidden_proof_payload = copy.deepcopy(proof_payload)
+    forbidden_proof_payload["coverage_evidence"]["live_material_authority_bridge"][
+        "evidence_ref"
+    ] = "https://www.sec.gov/raw-proof"
+    forbidden_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+        json={
+            **status_base,
+            "client_request_id": "sec-edgar-live-downstream-status-forbidden-003",
+            "live_downstream_proof_request": forbidden_proof_payload,
+            "expected_proof_hash": proof["proof_hash"],
+        },
+    )
+    assert forbidden_response.status_code == 200, forbidden_response.text
+    forbidden = forbidden_response.json()
+    assert forbidden["operator_status_state"] == "blocked"
+    assert forbidden["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_proof_coverage_forbidden_reference"
+    )
+
+
 def test_layer3_api_rejects_live_sec_edgar_material_bridge_stale_or_missing_authority(
     client: TestClient,
     tmp_path,
