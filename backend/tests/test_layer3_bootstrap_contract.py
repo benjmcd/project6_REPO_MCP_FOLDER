@@ -69,6 +69,7 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["features"]["candidate_b_full_corpus_operator_workflow_retry_completion_failure"] is True
     assert direct_body["features"]["sec_edgar_text_table_live_source_artifact_downstream_proof"] is True
     assert direct_body["features"]["sec_edgar_text_table_live_source_artifact_downstream_operator_status"] is True
+    assert direct_body["features"]["sec_edgar_html_inline_xbrl_downstream_operator_status"] is True
     assert direct_body["features"]["source_directory_ingestion_scan"] is True
     assert direct_body["features"]["source_directory_ingestion_status"] is True
     assert direct_body["features"]["source_directory_material_preview"] is True
@@ -185,6 +186,10 @@ def test_layer3_bootstrap_contract_is_shared() -> None:
     assert direct_body["execution_readiness"][
         "sec_edgar_text_table_live_source_artifact_downstream_operator_status_endpoint"
     ] == "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status"
+    assert direct_body["execution_readiness"]["sec_edgar_html_inline_xbrl_downstream_operator_status_admitted"] is True
+    assert direct_body["execution_readiness"]["sec_edgar_html_inline_xbrl_downstream_operator_status_endpoint"] == (
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status"
+    )
     assert (
         direct_body["execution_readiness"][
             "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_admitted"

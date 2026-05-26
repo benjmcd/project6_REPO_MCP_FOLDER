@@ -30,6 +30,7 @@ from app.services import (
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_downstream_proof,
+    layer3_sec_edgar_html_inline_xbrl_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -576,6 +577,19 @@ class Layer3SecEdgarHtmlInlineXbrlDownstreamProofRequest(BaseModel):
     material_snapshot_payload_hash: str = Field(min_length=64, max_length=64)
     coverage_evidence: dict[str, Any]
     operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    status_mode: Literal["sec_edgar_html_inline_xbrl_downstream_operator_status_v1"]
+    operator_decision: Literal["inspect_sec_edgar_html_inline_xbrl_downstream_operator_status"]
+    html_inline_xbrl_downstream_proof_request: dict[str, Any] | None = None
+    expected_proof_hash: str | None = Field(default=None, min_length=64, max_length=64)
     actor: str | None = None
 
 
@@ -7826,6 +7840,57 @@ class Layer3SecEdgarHtmlInlineXbrlDownstreamProofResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusResponse(Layer3BaseResponse):
+    mode: str
+    operator_status_state: str
+    expected_proof_hash: str
+    proof_hash: str
+    proof_state: str
+    dataset_version_id: str
+    dataset_version_hash: str
+    source_family: str
+    parser_family: str
+    typed_content_contract_id: str
+    parser_receipt_hash: str
+    connector_receipt_hash: str
+    live_source_artifact_receipt_hash: str
+    source_artifact_receipt_hash: str
+    content_sha256: str
+    primary_document_hash: str
+    content_order_hash: str
+    materialization_receipt_hash: str
+    material_bridge_receipt_hash: str
+    material_preview_hash: str
+    gate_b_decision_manifest_id: str
+    session_id: str
+    selection_manifest_id: str
+    material_snapshot_payload_hash: str
+    coverage_evidence_hash: str
+    negative_invariants_hash: str
+    blocked_reason_codes: list[str]
+    operator_status_hash: str
+    operator_status_projection_ref: str
+    selected_status_states: list[str]
+    proof_available: bool
+    proof_summary: dict[str, Any]
+    status_projection: dict[str, Any]
+    blocked_reasons: list[dict[str, Any]]
+    raw_proof_request_rendered: bool
+    raw_proof_receipt_path_rendered: bool
+    raw_local_path_rendered: bool
+    raw_url_rendered: bool
+    artifact_bytes_rendered: bool
+    provider_private_token_rendered: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    full_mockup_activation_enabled: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse(Layer3BaseResponse):
     mode: str
     bridge_state: str
@@ -14841,6 +14906,23 @@ def post_sec_edgar_text_table_live_source_artifact_downstream_proof(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_sec_edgar_live_downstream_proof.record_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+    response_model=Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusResponse,
+    responses=_workbench_error_responses(400),
+)
+def post_sec_edgar_html_inline_xbrl_downstream_operator_status(
+    payload: Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_downstream_status.inspect_sec_edgar_html_inline_xbrl_downstream_operator_status(
             payload.model_dump(exclude_none=True),
             db,
         )

@@ -1,0 +1,59 @@
+# SEC EDGAR HTML Inline XBRL Downstream Operator Status Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_downstream_operator_status_runtime_v1
+source_operator_status_selection: next_milestone_plans/Layer3_planning_docs/1176-sec-edgar-html-inline-xbrl-downstream-operator-status-selection.md
+current_main_entry: 9ce71e312119b319021f8ceeb1334f61d1d71959
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_status.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status
+implemented_request_model: Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusRequest
+implemented_response_model: Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusResponse
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_downstream_operator_status.v1
+implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_downstream_operator_status_request.v1
+implemented_status_mode: sec_edgar_html_inline_xbrl_downstream_operator_status_v1
+implemented_operator_decision: inspect_sec_edgar_html_inline_xbrl_downstream_operator_status
+implemented_bootstrap_capability: sec_edgar_html_inline_xbrl_downstream_operator_status
+implemented_bootstrap_endpoint_field: sec_edgar_html_inline_xbrl_downstream_operator_status_endpoint
+implemented_status_states: not_recorded,available,blocked
+implemented_authority_model: html_inline_xbrl_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+implemented_proof_validator: record_sec_edgar_html_inline_xbrl_downstream_layer3_proof
+implemented_no_new_storage: true
+implemented_no_proof_creation_by_status: true
+implemented_hash_bindings: expected_proof_hash,proof_hash,dataset_version_id,dataset_version_hash,source_family,parser_family,typed_content_contract_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,materialization_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash
+not_recorded_without_proof_request: true
+expected_hash_without_proof_request_blocks: true
+available_requires_server_revalidated_html_inline_xbrl_proof_request: true
+available_requires_expected_proof_hash_match: true
+stale_or_mismatched_proof_hash_blocks: true
+unsafe_proof_request_blocks: true
+raw_proof_request_rendered: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_private_token_rendered: false
+status_can_create_downstream_proof: false
+status_can_fetch_sec_content: false
+status_can_run_submissions_lookup: false
+status_can_reparse_or_materialize_html_inline_xbrl: false
+status_can_create_xml_xbrl_fact_authority: false
+status_can_add_financial_statement_semantics: false
+status_can_mutate_gate_b_session: false
+status_can_mutate_material_snapshot: false
+status_can_mutate_package_or_delivery: false
+status_can_dispatch_connector: false
+status_can_write_provider_object: false
+status_can_add_rag_or_model_runtime: false
+status_can_activate_full_mockup: false
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_status.py ./backend/app/api/layer3.py ./backend/tests/test_layer3_api.py ./backend/tests/test_layer3_bootstrap_contract.py ./backend/app/services/layer3_bootstrap_contract.py PASS
+focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k "html_inline_xbrl_downstream_operator_status" PASS
+focused_bootstrap_pytest: python -m pytest ./backend/tests/test_layer3_bootstrap_contract.py -q PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_downstream_rendered_status_selection_v1
+```
+
+This runtime exposes a read-only operator-status endpoint for the SEC EDGAR HTML/iXBRL downstream proof. It does not discover historical proof state, persist status, create proof, fetch SEC content, reparse/materialize HTML/iXBRL, mutate Gate B/session/material/package/delivery state, dispatch connectors, write provider objects, add RAG/model runtime, activate full mockup behavior, or rely on browser storage.
+
+`available` means the server revalidated the supplied HTML/iXBRL downstream proof request through the existing proof service and recomputed the same expected proof hash. `not_recorded` means no proof authority was supplied for inspection. `blocked` means the proof authority was missing, ambiguous, stale, mismatched, unsafe, or rejected by the downstream proof validator.
