@@ -3607,6 +3607,9 @@ SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME = (
 SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_SELECTION = (
     PLANNING_DOCS / "1243-sec-edgar-operator-inspection-breadth-selection.md"
 )
+SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_RUNTIME = (
+    PLANNING_DOCS / "1244-sec-edgar-operator-inspection-breadth-runtime.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117909,16 +117912,14 @@ def _check_sec_edgar_operator_inspection_breadth_selection(errors: list[str]) ->
             "OPERATOR_INSPECTION_BREADTH_SELECTION_VERSION",
             "OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX",
             "OPERATOR_INSPECTION_BREADTH_SELECTED_PROFILE_TAGS",
-            "OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED = False",
             '"XOM"',
             '"PFE"',
             '"UAL"',
             '"T"',
         ),
         LAYER3_API_TEST: (
-            "test_layer3_api_selects_sec_edgar_operator_inspection_breadth_without_runtime_admission",
+            "test_layer3_api_admits_sec_edgar_operator_inspection_breadth_runtime",
             "sec_edgar_operator_inspection_breadth_selection_v1",
-            "OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED is False",
         ),
         SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME: (
             "next_exact_posture: sec_edgar_operator_inspection_breadth_selection_v1",
@@ -117933,6 +117934,53 @@ def _check_sec_edgar_operator_inspection_breadth_selection(errors: list[str]) ->
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing SEC EDGAR operator inspection breadth selection term: {term}"
+                )
+
+
+def _check_sec_edgar_operator_inspection_breadth_runtime(errors: list[str]) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_RUNTIME: (
+            "SEC EDGAR Operator Inspection Breadth Runtime",
+            "milestone: sec_edgar_operator_inspection_breadth_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1243-sec-edgar-operator-inspection-breadth-selection.md",
+            "runtime_version: sec_edgar_operator_inspection_breadth_runtime_v1",
+            "runtime_status: implemented",
+            "expanded_delivery_status_provenance_matrix_admitted: XOM,PFE,UAL,T",
+            "default_operator_inspection_matrix_preserved: MSFT,STLD,SONY,CCJ",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "operator_product_surface_broadened: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_operator_product_surface_breadth_selection_v1",
+        ),
+        SEC_EDGAR_OPERATOR_INSPECTION_SERVICE: (
+            "OPERATOR_INSPECTION_BREADTH_RUNTIME_VERSION",
+            "OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED = True",
+            "def _admitted_company_matrices()",
+            "sec_edgar_operator_inspection_company_matrix_mismatch",
+            "OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX",
+            'EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")',
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_admits_sec_edgar_operator_inspection_breadth_runtime",
+            "test_layer3_api_reports_sec_edgar_operator_inspection_for_expanded_breadth_matrix",
+            "sec_edgar_operator_inspection_breadth_runtime_v1",
+            '"company_matrix": ["XOM", "PFE", "UAL", "T"]',
+            "expanded_company_matrix_admitted",
+        ),
+        SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_SELECTION: (
+            "next_exact_posture: sec_edgar_operator_inspection_breadth_runtime_v1",
+            "operator_inspection_breadth_runtime_in_this_freeze: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator inspection breadth runtime term: {term}"
                 )
 
 
@@ -119253,6 +119301,7 @@ def main() -> int:
     _check_sec_edgar_delivery_status_provenance_breadth_selection(errors)
     _check_sec_edgar_delivery_status_provenance_breadth_runtime(errors)
     _check_sec_edgar_operator_inspection_breadth_selection(errors)
+    _check_sec_edgar_operator_inspection_breadth_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
