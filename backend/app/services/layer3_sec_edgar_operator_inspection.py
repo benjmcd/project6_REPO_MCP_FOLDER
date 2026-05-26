@@ -26,6 +26,17 @@ BLOCKED_STATE = "sec_edgar_operator_inspection_blocked"
 RECEIPT_PREFIX = "sec-edgar-operator-inspection"
 RECEIPT_DIR = "layer3-sec-edgar-operator-inspection"
 REDACTION_POLICY_ID = "sec_edgar_operator_inspection_redaction_v1"
+OPERATOR_INSPECTION_BREADTH_SELECTION_VERSION = "sec_edgar_operator_inspection_breadth_selection_v1"
+OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX = ("XOM", "PFE", "UAL", "T")
+OPERATOR_INSPECTION_BREADTH_SELECTED_PROFILE_TAGS = (
+    "energy_major",
+    "pharmaceutical_life_sciences",
+    "airline_transport",
+    "telecom_media",
+    "debt_intensive",
+    "commodity_exposure",
+)
+OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED = False
 
 ALLOWED_FIELDS = {
     "schema_id",

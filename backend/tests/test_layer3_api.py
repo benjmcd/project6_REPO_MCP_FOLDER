@@ -92,6 +92,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
     layer3_sec_edgar_delivery_status_provenance,
+    layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
@@ -2539,6 +2540,29 @@ def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_expanded_br
         == body["delivery_status_provenance_receipt_hash"]
     )
     assert len(fake_client.calls) == 12
+
+
+def test_layer3_api_selects_sec_edgar_operator_inspection_breadth_without_runtime_admission() -> None:
+    assert (
+        layer3_sec_edgar_operator_inspection.OPERATOR_INSPECTION_BREADTH_SELECTION_VERSION
+        == "sec_edgar_operator_inspection_breadth_selection_v1"
+    )
+    assert layer3_sec_edgar_operator_inspection.OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX == (
+        "XOM",
+        "PFE",
+        "UAL",
+        "T",
+    )
+    assert set(layer3_sec_edgar_operator_inspection.OPERATOR_INSPECTION_BREADTH_SELECTED_PROFILE_TAGS) >= {
+        "energy_major",
+        "pharmaceutical_life_sciences",
+        "airline_transport",
+        "telecom_media",
+        "debt_intensive",
+        "commodity_exposure",
+    }
+    assert layer3_sec_edgar_delivery_status_provenance.DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED is True
+    assert layer3_sec_edgar_operator_inspection.OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED is False
 
 
 def test_layer3_api_reports_sec_edgar_operator_inspection_for_real_company_corpus(
