@@ -9482,3 +9482,42 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operato
 ```
 
 The implemented rendered control submits original and repeat live downstream operator-status requests to the existing server repeatability-trial endpoint. The browser still holds no durable authority: the server revalidates both live status projections, accepts or blocks the append-only trial receipt, and returns only the redacted projection. The test-only fixture route prepares repeatable browser inputs, not user-facing authority.
+
+## SEC EDGAR Text Table Live Source Artifact Downstream Operator Repeatability Rendered Status Current Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync_v1
+source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1163-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-runtime.md
+current_main_entry: 3140ff3ab29cd325c463c6551e3787a70a7e31c8
+source_pr: "#1866"
+source_merge_commit: 3140ff3ab29cd325c463c6551e3787a70a7e31c8
+ci_status: passed
+ci_successful_checks: 10
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+current_main_target_selection_check: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+synced_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial
+synced_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial
+synced_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control
+synced_trial_mode: append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution
+synced_operator_decision: record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial
+synced_panel: sec-edgar-live-downstream-repeatability-trial-panel
+synced_payload_fields: client_request_id,trial_mode,operator_decision,original_operator_status_request,original_operator_status_hash,repeat_operator_status_request,repeat_operator_status_hash,operator_repeatability_disposition,operator_confirmation
+synced_server_revalidated_live_status_pair: true
+synced_browser_held_status_hash_alone_is_not_authority: true
+synced_test_only_fixture_route: /__test/layer3/sec-edgar-live-repeatability-trial
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness_v1
+```
+
+The merged rendered repeatability control is now current-main state. This sync adds no new behavior; it records that the PR landed cleanly, CI passed, and the next posture should be a closeout-readiness checkpoint over the SEC EDGAR live source-artifact downstream operator-repeatability chain.
