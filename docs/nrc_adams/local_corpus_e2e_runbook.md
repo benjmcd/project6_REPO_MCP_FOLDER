@@ -11191,3 +11191,68 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator
 ```
 
 Operator repeatability proof is now rendered for the fact-material chain. To repeat it, prepare the test-only fixture route, submit the returned original/repeat fact-material status requests and hashes through the rendered panel, verify the production trial endpoint records an accepted receipt, submit the same request again for `idempotent_replay: true`, then submit a stale status hash and confirm fail-closed rejection. The rendered status must stay redacted and must not expose raw SEC URLs, local paths, artifact bytes, raw fact values, proof receipt paths, process output, connector/provider secrets, or frontend durable authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Repeatability Rendered Status Current-Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_current_main_sync_v1
+source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1197-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-rendered-status-runtime.md
+current_main_entry: b80e211dd5ad03fa06a09a93ca7829a67529ab5a
+source_pr: "#1900"
+source_runtime_commit: 75512db2a8d4c4ac59d5110296a7e8de83265838
+source_merge_commit: b80e211dd5ad03fa06a09a93ca7829a67529ab5a
+sync_status: current_main_verified
+implemented_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_control
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial
+server_revalidated_status_pair_required: true
+browser_held_status_hash_alone_is_not_authority: true
+idempotent_replay_rendered: true
+rendered_trial_fetches_sec_content: false
+rendered_trial_reparses_html_inline_xbrl: false
+rendered_trial_reconstructs_raw_fact_values: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+raw_fact_values_rendered: false
+frontend_durable_authority_enabled: false
+verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS
+verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_closeout_readiness_v1
+```
+
+The merged rendered repeatability control is current-main authority after PR #1900. Repeat the proof through the rendered panel only after preparing the server fixture/status pair; the browser is not allowed to create downstream proof, fetch SEC content, reparse HTML/iXBRL, reconstruct raw facts, or hold durable authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Repeatability Closeout Readiness
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_closeout_readiness_v1
+source_repeatability_rendered_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1198-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-rendered-status-current-main-sync.md
+current_main_entry: b80e211dd5ad03fa06a09a93ca7829a67529ab5a
+source_sync_pr: "#1900"
+entry_decision: closeout_readiness_checkpoint
+closeout_readiness_state: ready_for_sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection
+selected_next_selection_target: sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection_v1
+closed_chain_authority_model: sec_real_filing_connector_receipt_to_html_inline_xbrl_parser_receipt_to_fact_authority_to_fact_material_bridge_to_gate_b_downstream_proof_status_repeatability_trial
+html_inline_xbrl_fact_material_repeatability_closeout_ready: true
+named_defect_remaining: false
+fact_to_statement_classification_selection_admitted_next: true
+fact_to_statement_classification_runtime_admitted_now: false
+sec_companyfacts_api_runtime_admitted_now: false
+taxonomy_network_resolution_admitted_now: false
+xml_xbrl_fact_authority_admitted_now: false
+source_expansion_admitted_now: false
+provider_object_write_enabled: false
+generic_connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_sec_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+raw_fact_values_rendered: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection_v1
+```
+
+The fact-material repeatability chain is ready to close after current-main sync. The next SEC/iXBRL product slice should be fact-to-statement classification selection: classify retained fact inventory into operator-usable statement/fact groupings without adding CompanyFacts, taxonomy network lookup, XML/XBRL authority, broad parser expansion, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or raw fact-value rendering.
