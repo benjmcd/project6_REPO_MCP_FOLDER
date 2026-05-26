@@ -3577,6 +3577,9 @@ SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_UI = (
 SEC_EDGAR_PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE = (
     PLANNING_DOCS / "1233-sec-edgar-period-unit-context-dimension-profile.md"
 )
+SEC_EDGAR_STATEMENT_ROLE_QUALITY_PROFILE = (
+    PLANNING_DOCS / "1234-sec-edgar-statement-role-quality-profile.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117378,6 +117381,62 @@ def _check_sec_edgar_period_unit_context_dimension_profile(
                 )
 
 
+def _check_sec_edgar_statement_role_quality_profile(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_STATEMENT_ROLE_QUALITY_PROFILE: (
+            "SEC EDGAR Statement Role Quality Profile",
+            "milestone: sec_edgar_statement_role_quality_profile_v1",
+            "source_period_unit_context_dimension_profile: next_milestone_plans/Layer3_planning_docs/1233-sec-edgar-period-unit-context-dimension-profile.md",
+            "profile_version: sec_edgar_statement_role_quality_profile_v1",
+            "profile_scope: redacted_statement_role_rule_confidence_profile",
+            "statement_role_quality_surface: statement_role_quality_profile",
+            "presentation_linkbase_role_resolution_performed: false",
+            "statement_role_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_extension_taxonomy_retention_profile_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            "STATEMENT_ROLE_QUALITY_PROFILE_VERSION",
+            "statement_role_quality_profile",
+            "statement_role_quality_profile_hash",
+            "statement_role_quality_profile_assigned_count",
+            "medium_statement_role_confidence_count",
+            "low_statement_role_confidence_count",
+            "presentation_linkbase_role_resolution_performed",
+            "statement_role_semantics_claimed",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "statement_role_quality_profile_assigned_count",
+            "statement_role_quality_profile_hash",
+            "bounded_role_rule_profile_available_not_semantics_finalized",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "statement_role_quality_profile_record_count",
+            "statement_role_quality_profile_hashes_hash",
+            "statement_role_quality_profile",
+            "statement_role_semantics_finalized",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_statement_role_quality_profile_v1",
+            "statement_role_quality_profile_assigned_count",
+            "statement_role_quality_profile_record_count",
+            "bounded_role_rule_profile_available_not_semantics_finalized",
+            "statement_role_semantics_finalized",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR statement-role quality profile term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118685,6 +118744,7 @@ def main() -> int:
     _check_sec_edgar_operator_product_surface_runtime(errors)
     _check_sec_edgar_operator_product_surface_rendered_ui(errors)
     _check_sec_edgar_period_unit_context_dimension_profile(errors)
+    _check_sec_edgar_statement_role_quality_profile(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
