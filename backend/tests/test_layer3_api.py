@@ -2241,6 +2241,178 @@ def test_layer3_api_reports_sec_edgar_operator_inspection_for_real_company_corpu
     assert len(fake_client.calls) == 12
 
 
+def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_corpus(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_real_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    validation_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-real-company-product-surface-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+            "operator_confirmation": True,
+        },
+    )
+    assert validation_response.status_code == 200, validation_response.text
+    validation = validation_response.json()
+    assert len(fake_client.calls) == 12
+
+    delivery_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance",
+        json={
+            "client_request_id": "sec-edgar-real-company-product-surface-delivery-001",
+            "status_mode": "sec_edgar_delivery_status_provenance_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_delivery_status_provenance",
+            "sec_edgar_real_company_corpus_validation_receipt_id": validation["validation_receipt_id"],
+            "sec_edgar_real_company_corpus_validation_receipt_hash": validation["validation_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    assert delivery_response.status_code == 200, delivery_response.text
+    delivery = delivery_response.json()
+
+    operator_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+        json={
+            "client_request_id": "sec-edgar-real-company-product-surface-operator-001",
+            "inspection_mode": "sec_edgar_operator_inspection_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_operator_surface",
+            "sec_edgar_delivery_status_provenance_receipt_id": (
+                delivery["delivery_status_provenance_receipt_id"]
+            ),
+            "sec_edgar_delivery_status_provenance_receipt_hash": (
+                delivery["delivery_status_provenance_receipt_hash"]
+            ),
+            "operator_confirmation": True,
+        },
+    )
+    assert operator_response.status_code == 200, operator_response.text
+    operator = operator_response.json()
+
+    surface_payload = {
+        "client_request_id": "sec-edgar-real-company-product-surface-001",
+        "surface_mode": "sec_edgar_operator_product_surface_runtime_v1",
+        "operator_decision": "render_sec_edgar_operator_product_surface",
+        "sec_edgar_operator_inspection_receipt_id": operator["operator_inspection_receipt_id"],
+        "sec_edgar_operator_inspection_receipt_hash": operator["operator_inspection_receipt_hash"],
+        "operator_confirmation": True,
+    }
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+        json=surface_payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_operator_product_surface.v1"
+    assert body["surface_mode"] == "sec_edgar_operator_product_surface_runtime_v1"
+    assert body["rendered_mode"] == "rendered_sec_edgar_operator_product_surface_control"
+    assert body["operator_product_surface_state"] == "sec_edgar_operator_product_surface_ready"
+    assert body["operator_inspection_receipt_hash"] == operator["operator_inspection_receipt_hash"]
+    assert body["delivery_status_provenance_receipt_hash"] == delivery["delivery_status_provenance_receipt_hash"]
+    assert body["validation_receipt_hash"] == validation["validation_receipt_hash"]
+    assert body["surface_rollup"]["filing_count"] == 8
+    assert body["surface_rollup"]["inspectable_count"] == 8
+    assert body["surface_rollup"]["semantic_profile_record_count"] == 8
+    assert body["surface_rollup"]["server_receipt_projection_only"] is True
+    assert body["surface_rollup"]["frontend_durable_authority_enabled"] is False
+    assert set(body["product_views"]) == {
+        "company_form_matrix",
+        "filing_identity",
+        "source_family",
+        "statement_candidates",
+        "fact_inventory",
+        "semantic_profile",
+        "extension_unclassified_facts",
+        "quality_gaps",
+        "diagnostics_loss_report",
+        "package_review_handoff_state",
+        "operator_inspection_status_links",
+    }
+    assert len(body["product_views"]["company_form_matrix"]) == 8
+    assert all(record["quality_evidence_hash"] for record in body["product_views"]["company_form_matrix"])
+    assert all(record["semantic_profile_inventory_hash"] for record in body["product_views"]["semantic_profile"])
+    assert all(
+        record["financial_statement_semantics_finalized"] is False
+        for record in body["product_views"]["semantic_profile"]
+    )
+    assert all(
+        record["cross_company_comparability_admitted"] is False
+        for record in body["product_views"]["semantic_profile"]
+    )
+    assert any(
+        int(record["company_extension_unmapped_count"] or 0) > 0
+        for record in body["product_views"]["extension_unclassified_facts"]
+    )
+    assert "financial_statement_semantics_not_finalized" in (
+        body["product_views"]["quality_gaps"]["distinct_quality_gaps"]
+    )
+    assert body["product_views"]["diagnostics_loss_report"]["sec_companyfacts_api_called"] is False
+    assert body["cache"]["network_request_made_by_product_surface"] is False
+    assert body["cache"]["parser_rerun_performed_by_product_surface"] is False
+    assert body["cache"]["package_mutation_performed_by_product_surface"] is False
+    assert body["negative_invariants"]["ticker_exposed"] is False
+    assert body["negative_invariants"]["company_name_exposed"] is False
+    assert len(fake_client.calls) == 12
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000789019-25-000100" not in response.text
+    assert "Microsoft Corporation" not in response.text
+    assert "MSFT" not in response.text
+    assert "value_text" not in response.text
+    _assert_raw_string_not_projected(body, "123")
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+        json=surface_payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["cache"]["idempotent_replay"] is True
+    assert (
+        replay_response.json()["operator_product_surface_receipt_hash"]
+        == body["operator_product_surface_receipt_hash"]
+    )
+    assert len(fake_client.calls) == 12
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface/status/"
+        f"{body['operator_product_surface_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == "layer3.sec_edgar_operator_product_surface_status.v1"
+    assert status_response.json()["operator_product_surface_receipt_hash"] == (
+        body["operator_product_surface_receipt_hash"]
+    )
+    assert "https://www.sec.gov" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+    mismatch_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+        json={
+            **surface_payload,
+            "client_request_id": "sec-edgar-real-company-product-surface-mismatch",
+            "sec_edgar_operator_inspection_receipt_hash": "f" * 64,
+        },
+    )
+    assert mismatch_response.status_code == 200, mismatch_response.text
+    mismatch = mismatch_response.json()
+    assert mismatch["operator_product_surface_state"] == "sec_edgar_operator_product_surface_blocked"
+    assert mismatch["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_operator_product_surface_operator_inspection_hash_mismatch"
+    )
+    assert len(fake_client.calls) == 12
+
+
 def test_layer3_api_rejects_sec_edgar_real_filing_connector_unconfigured_or_unsafe(
     client: TestClient,
     monkeypatch,
