@@ -10832,3 +10832,59 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered
 ```
 
 This runtime implements the browser/operator status control for the SEC HTML/iXBRL fact-material downstream status endpoint. The panel renders `not_recorded`, `available`, and `blocked` server projections over the submitted fact-material downstream proof request and expected proof hash, while keeping raw fact values, `value_text`, raw SEC URLs, local paths, receipt paths, retained HTML bytes, provider tokens, and frontend durable authority out of the rendered surface.
+
+## SEC EDGAR HTML Inline XBRL Fact Material Downstream Rendered Status Current Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_current_main_sync_v1
+source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1191-sec-edgar-html-inline-xbrl-fact-material-downstream-rendered-status-runtime.md
+current_main_entry: e33116c78c4567075f5aee0ec1c66ce99113414d
+source_pr: "#1894"
+source_branch: codex/sec-ixbrl-fact-rendered-status-runtime
+source_commit: 015c37da46d0e683068a1208985f3670b8486930
+source_merge_commit: e33116c78c4567075f5aee0ec1c66ce99113414d
+merge_state_before_merge: CLEAN
+review_comments_count: 0
+reviews_count: 0
+ci_status: no_checks_reported
+ci_successful_checks: 0
+local_proof_status: passed
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+current_main_target_selection_check: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+synced_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+synced_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status
+synced_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_control
+synced_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1
+synced_operator_decision: inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+synced_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-panel
+synced_form: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-form
+synced_payload_fields: client_request_id,status_mode,operator_decision,fact_material_downstream_proof_request,expected_proof_hash
+synced_status_states_rendered: not_recorded,available,blocked
+synced_available_requires_server_revalidated_fact_material_proof_request: true
+synced_browser_held_hash_alone_is_not_authority: true
+synced_fact_authority_bound: true
+synced_fact_material_bridge_authority_bound: true
+synced_headless_rendered_status_proof: true
+synced_headed_rendered_status_proof: true
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+proof_mutation_performed: false
+gate_b_mutation_performed: false
+sec_edgar_network_fetch_admitted_by_sync: false
+html_inline_xbrl_reparse_or_materialization_admitted: false
+sec_companyfacts_api_runtime_enabled: false
+taxonomy_network_resolution_enabled: false
+financial_statement_semantics_admitted: false
+fact_to_statement_classification_enabled: false
+raw_fact_values_rendered: false
+fact_value_reconstruction_enabled: false
+frontend_durable_authority_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_closeout_readiness_v1
+```
+
+This sync records the merged current-main state for PR `#1894`. GitHub reported no status checks for this PR; the runtime proof is the local backend/page/headless/headed/progress suite recorded above. The sync adds no behavior beyond the merged rendered inspection surface.
