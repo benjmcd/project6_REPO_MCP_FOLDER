@@ -60,6 +60,8 @@ from app.services import (
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
+    layer3_sec_edgar_live_downstream_proof,
+    layer3_sec_edgar_live_material_bridge,
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_source_acquisition,
@@ -105,7 +107,6 @@ from test_layer3_candidate_b_default_readiness import (
     _write_bundle_receipt,
     _write_runtime_receipt,
 )
-from test_layer3_workbench import _seed_aps_derived_dataset_version
 
 APS_EVIDENCE_BUNDLE_SCHEMA_ID = "aps.evidence_bundle.v2"
 APS_EVIDENCE_BUNDLE_SCHEMA_VERSION = 2
@@ -884,13 +885,175 @@ def _prepare_sec_edgar_live_source_artifact_acquisition_fixture(
     }
 
 
+def _seed_sec_edgar_browser_dataset_version(
+    db,
+    temp_path: Path,
+    *,
+    dataset_version_id: str,
+    parser_family: str,
+    typed_content_contract_id: str,
+    source_mode: str,
+    parser_contract_id: str,
+) -> str:
+    dataset_id = f"ds-{dataset_version_id}"
+    variable_suffix = stable_hash(
+        {
+            "dataset_version_id": dataset_version_id,
+            "fixture": "sec_edgar_browser_dataset",
+        }
+    )[:16]
+    dataset = Dataset(
+        dataset_id=dataset_id,
+        name="SEC EDGAR browser fixture dataset",
+        description="SEC EDGAR dataset for Layer 3 browser proof",
+        frequency_hint="MS",
+        time_column="observed_at",
+    )
+    version = DatasetVersion(
+        dataset_version_id=dataset_version_id,
+        dataset_id=dataset_id,
+        version_label="table-0",
+        version_type="sec_edgar_browser_fixture",
+        status="ready",
+        notes="sec_edgar_browser_fixture=true",
+        row_count=3,
+    )
+    observed_at = VariableDefinition(
+        variable_id=f"var-time-{variable_suffix}",
+        dataset_version_id=dataset_version_id,
+        variable_name="observed_at",
+        dtype="datetime64[ns]",
+        role="time_index",
+        is_numeric=False,
+        is_time_index=True,
+        ordinal_position=0,
+    )
+    value = VariableDefinition(
+        variable_id=f"var-value-{variable_suffix}",
+        dataset_version_id=dataset_version_id,
+        variable_name="value",
+        dtype="float64",
+        role="measure",
+        is_numeric=True,
+        is_time_index=False,
+        ordinal_position=1,
+    )
+    dataset_dir = temp_path / "datasets"
+    dataset_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = dataset_dir / f"{dataset_version_id}.csv"
+    csv_path.write_text(
+        "observed_at,value\n2025-01-01,1.0\n2025-02-01,2.5\n2025-03-01,3.0\n",
+        encoding="utf-8",
+    )
+    version.storage_ref = str(csv_path)
+    provenance = DatasetSourceProvenance(
+        dataset_version_id=dataset_version_id,
+        connector_run_id=None,
+        source_system="nrc_adams_aps",
+        source_mode=source_mode,
+        source_artifact_key="sec-edgar-browser-fixture/extraction.json",
+        sciencebase_file_name="sec-edgar-fixture.csv",
+        downloaded_sha256="0" * 64,
+        raw_storage_ref="sec-edgar-browser-fixture/blob.csv",
+        source_reference_json={
+            "target_id": "sec-edgar-browser-fixture",
+            "accession_number": "ML000000001",
+            "table_index": 0,
+            "table_hash": "hash-sec-edgar-browser-fixture",
+            "parser_family": parser_family,
+            "parser_contract_id": parser_contract_id,
+            "typed_content_contract_id": typed_content_contract_id,
+            "diagnostics_ref": "sec-edgar-browser-fixture/diagnostics.json",
+        },
+    )
+    db.add_all([dataset, version, observed_at, value, provenance])
+    db.flush()
+    return dataset_version_id
+
+
+def _bind_sec_edgar_browser_dataset_to_live_source_artifact(
+    db,
+    temp_path: Path,
+    *,
+    dataset_version_id: str,
+    live_artifact: dict[str, Any],
+    live_acquisition_request: dict[str, Any],
+) -> str:
+    _seed_sec_edgar_browser_dataset_version(
+        db,
+        temp_path,
+        dataset_version_id=dataset_version_id,
+        parser_family=layer3_sec_edgar_source_acquisition.PARSER_FAMILY,
+        typed_content_contract_id=layer3_sec_edgar_source_acquisition.TYPED_CONTENT_CONTRACT_ID,
+        source_mode=layer3_sec_edgar_source_acquisition.SOURCE_MODE,
+        parser_contract_id=layer3_sec_edgar_source_acquisition.PARSER_CONTRACT_ID,
+    )
+    provenance = (
+        db.query(DatasetSourceProvenance)
+        .filter(DatasetSourceProvenance.dataset_version_id == dataset_version_id)
+        .one()
+    )
+    source_artifact = live_artifact["source_artifact_receipt"]
+    provenance.downloaded_sha256 = source_artifact["content_sha256"]
+    source_reference = dict(provenance.source_reference_json or {})
+    source_reference.update(
+        {
+            "accession_or_submission_id": live_acquisition_request["accession_or_submission_id"],
+            "cik": str(live_acquisition_request["cik_or_filer_ref"]).lstrip("0") or "0",
+            "form_type": live_acquisition_request["form_type"],
+            "filing_date": live_acquisition_request["filing_date"],
+            "content_length": source_artifact["content_length"],
+            "source_artifact_receipt_id": source_artifact["source_artifact_receipt_id"],
+            "source_artifact_receipt_hash": source_artifact["source_artifact_receipt_hash"],
+            "source_artifact_ref_hash": source_artifact["source_artifact_ref_hash"],
+        }
+    )
+    provenance.source_reference_json = source_reference
+    db.commit()
+    return dataset_version_id
+
+
+def _sec_edgar_source_acquisition_payload_from_live(
+    *,
+    dataset_version_id: str,
+    envelope: dict[str, Any],
+    live_artifact: dict[str, Any],
+    client_request_id: str,
+) -> dict[str, object]:
+    source_artifact = live_artifact["source_artifact_receipt"]
+    source_identity = live_artifact["source_identity"]
+    return {
+        "schema_id": layer3_sec_edgar_source_acquisition.REQUEST_SCHEMA_ID,
+        "client_request_id": client_request_id,
+        "acquisition_mode": layer3_sec_edgar_source_acquisition.ACQUISITION_MODE,
+        "operator_decision": layer3_sec_edgar_source_acquisition.OPERATOR_DECISION,
+        "dataset_version_id": dataset_version_id,
+        "source_artifact_receipt_id": source_artifact["source_artifact_receipt_id"],
+        "source_artifact_receipt_hash": source_artifact["source_artifact_receipt_hash"],
+        "source_artifact_ref_hash": source_artifact["source_artifact_ref_hash"],
+        "accession_or_submission_id_hash": source_identity["accession_or_submission_id_hash"],
+        "cik_or_filer_ref_hash": source_identity["cik_or_filer_ref_hash"],
+        "form_type": source_identity["form_type"],
+        "filing_date": source_identity["filing_date"],
+        "content_sha256": source_artifact["content_sha256"],
+        "content_length": source_artifact["content_length"],
+        "parser_family": layer3_sec_edgar_source_acquisition.PARSER_FAMILY,
+        "parser_contract_id": layer3_sec_edgar_source_acquisition.PARSER_CONTRACT_ID,
+        "typed_content_contract_id": layer3_sec_edgar_source_acquisition.TYPED_CONTENT_CONTRACT_ID,
+        "materialization_receipt_hash": envelope["materialization_receipt_hash"],
+        "dataset_version_hash": envelope["dataset_version_hash"],
+        "authority_envelope_hash": envelope["authority_envelope_hash"],
+        "operator_confirmation": True,
+    }
+
+
 def _prepare_sec_edgar_source_acquisition_authority_fixture(
     db,
     temp_path: Path,
     *,
     seed_id: str,
 ) -> dict[str, object]:
-    dataset_version_id = _seed_aps_derived_dataset_version(
+    dataset_version_id = _seed_sec_edgar_browser_dataset_version(
         db,
         temp_path,
         dataset_version_id=f"dv-sec-edgar-source-acq-{seed_id}",
@@ -1010,7 +1173,7 @@ def _prepare_sec_edgar_source_acquisition_authority_fixture(
 
 
 def _prepare_sec_edgar_downstream_status_fixture(db, temp_path: Path, *, seed_id: str) -> dict[str, object]:
-    dataset_version_id = _seed_aps_derived_dataset_version(
+    dataset_version_id = _seed_sec_edgar_browser_dataset_version(
         db,
         temp_path,
         dataset_version_id=f"dv-sec-edgar-status-{seed_id}",
@@ -1084,6 +1247,170 @@ def _prepare_sec_edgar_downstream_status_fixture(db, temp_path: Path, *, seed_id
         "status_endpoint": "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
         "raw_local_path_exposed": False,
         "raw_url_exposed": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
+def _prepare_sec_edgar_live_downstream_status_fixture(
+    db,
+    temp_path: Path,
+    *,
+    fake_client: _ReviewBrowserSeededSecEdgarClient,
+    seed_id: str,
+) -> dict[str, object]:
+    setup = _prepare_sec_edgar_live_source_artifact_acquisition_fixture(
+        fake_client=fake_client,
+        seed_id=seed_id,
+    )
+    live_acquisition_request = dict(setup["live_acquisition_request"])
+    live_artifact = layer3_sec_edgar_live_source_artifact.acquire_sec_edgar_text_table_live_source_artifact(
+        {
+            "client_request_id": f"browser-sec-edgar-live-status-acq-{seed_id}",
+            "acquisition_mode": layer3_sec_edgar_live_source_artifact.ACQUISITION_MODE,
+            "operator_decision": layer3_sec_edgar_live_source_artifact.OPERATOR_DECISION,
+            **live_acquisition_request,
+            "operator_confirmation": True,
+        }
+    )
+    dataset_version_id = _bind_sec_edgar_browser_dataset_to_live_source_artifact(
+        db,
+        temp_path,
+        dataset_version_id=f"dv-sec-edgar-live-status-{seed_id}",
+        live_artifact=live_artifact,
+        live_acquisition_request=live_acquisition_request,
+    )
+    envelope = layer3_sec_edgar_authority_envelope.validate_sec_edgar_text_table_authority_envelope(
+        {
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db,
+    )
+    source_acquisition = layer3_sec_edgar_source_acquisition.record_sec_edgar_text_table_source_acquisition_authority(
+        _sec_edgar_source_acquisition_payload_from_live(
+            dataset_version_id=dataset_version_id,
+            envelope=envelope,
+            live_artifact=live_artifact,
+            client_request_id=f"browser-sec-edgar-live-status-source-acq-{seed_id}",
+        ),
+        db,
+    )
+    bridge = layer3_sec_edgar_live_material_bridge.prepare_sec_edgar_text_table_live_source_artifact_material_authority_bridge(
+        {
+            "client_request_id": f"browser-sec-edgar-live-status-bridge-{seed_id}",
+            "bridge_mode": layer3_sec_edgar_live_material_bridge.BRIDGE_MODE,
+            "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "expected_materialization_receipt_hash": envelope["materialization_receipt_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db,
+    )
+    gate_b = layer3_workbench.gate_b_decision(db, dict(bridge["gate_b_decision_payload"]))
+    snapshots = (
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == gate_b["session_id"])
+        .filter(L3MaterialSnapshot.source_shape == "dataset_version")
+        .all()
+    )
+    matches = [
+        snapshot
+        for snapshot in snapshots
+        if (snapshot.source_identity_json or {}).get("dataset_version_id") == dataset_version_id
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("SEC EDGAR live material snapshot was not created for browser fixture")
+    snapshot = matches[0]
+    material_bridge_receipt_hash = bridge["authority_hashes"]["material_bridge_receipt_hash"]
+    coverage_bridge = {
+        **bridge,
+        "authority_envelope_hash": bridge["authority_hashes"]["authority_envelope_hash"],
+        "bridge_receipt_hash": material_bridge_receipt_hash,
+    }
+    coverage = _sec_edgar_browser_coverage(coverage_bridge, gate_b, snapshot)
+    for step, extra in {
+        "live_source_artifact_acquisition": {
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "server_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+        },
+        "source_acquisition_authority": {
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "server_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+        },
+        "live_material_authority_bridge": {
+            "live_source_artifact_material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+            "server_receipt_id": bridge["bridge_receipt_id"],
+            "material_bridge_receipt_hash": material_bridge_receipt_hash,
+            "material_preview_hash": bridge["material_preview_hash"],
+            "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        },
+    }.items():
+        coverage[step] = {
+            "status": "proven",
+            "evidence_ref": f"sec-edgar-live-source-artifact-downstream-proof:{step}",
+            "evidence_hash": stable_hash({"step": step, "seed_id": seed_id}),
+            "server_response_hash": stable_hash({"response": step, "seed_id": seed_id}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "full_mockup_activation_enabled": False,
+            **extra,
+        }
+    proof_request = {
+        "client_request_id": f"browser-sec-edgar-live-status-proof-{seed_id}",
+        "proof_mode": layer3_sec_edgar_live_downstream_proof.PROOF_MODE,
+        "operator_decision": layer3_sec_edgar_live_downstream_proof.OPERATOR_DECISION,
+        "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+        "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+        "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+        "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+        "dataset_version_id": dataset_version_id,
+        "authority_envelope_hash": bridge["authority_hashes"]["authority_envelope_hash"],
+        "live_source_artifact_material_bridge_receipt_id": bridge["bridge_receipt_id"],
+        "live_source_artifact_material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "material_bridge_receipt_hash": material_bridge_receipt_hash,
+        "material_preview_hash": bridge["material_preview_hash"],
+        "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "session_id": gate_b["session_id"],
+        "selection_manifest_id": gate_b["selection_manifest_id"],
+        "material_snapshot_payload_hash": snapshot.payload_hash,
+        "coverage_evidence": coverage,
+        "operator_confirmation": True,
+    }
+    proof = layer3_sec_edgar_live_downstream_proof.record_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof(
+        proof_request,
+        db,
+    )
+    return {
+        "schema_id": "project6.review_browser_sec_edgar_live_downstream_status_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "dataset_version_id": dataset_version_id,
+        "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+        "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+        "live_source_artifact_material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "material_bridge_receipt_hash": material_bridge_receipt_hash,
+        "live_downstream_proof_request": proof_request,
+        "expected_proof_hash": proof["proof_hash"],
+        "proof_hash": proof["proof_hash"],
+        "status_endpoint": (
+            "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status"
+        ),
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
         "frontend_durable_authority_enabled": False,
     }
 
@@ -1715,6 +2042,7 @@ def create_app() -> FastAPI:
     sec_edgar_live_source_artifact_counter = count(1)
     sec_edgar_source_acquisition_counter = count(1)
     sec_edgar_status_counter = count(1)
+    sec_edgar_live_status_counter = count(1)
     sec_edgar_repeatability_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
     install_review_browser_patches(fixture)
@@ -1830,6 +2158,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/sec-edgar-live-source-artifact-acquisition",
                 "/__test/layer3/sec-edgar-source-acquisition-authority",
                 "/__test/layer3/sec-edgar-downstream-status",
+                "/__test/layer3/sec-edgar-live-downstream-status",
                 "/__test/layer3/sec-edgar-repeatability-trial",
                 "/__test/layer3/source-directory-hybrid-authority",
                 "/__test/layer3/source-directory-fixture-reset",
@@ -2067,6 +2396,25 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"SEC EDGAR downstream status setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/sec-edgar-live-downstream-status")
+    def sec_edgar_live_downstream_status_setup() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = f"browser-live-{next(sec_edgar_live_status_counter):03d}"
+            return _prepare_sec_edgar_live_downstream_status_fixture(
+                db,
+                temp_path,
+                fake_client=app.state.sec_edgar_live_source_artifact_client,
+                seed_id=seed_id,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR live downstream status setup failed: {exc}",
             ) from exc
         finally:
             db.close()
