@@ -3326,6 +3326,9 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_CLOS
     PLANNING_DOCS
     / "1165-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-closeout-readiness.md"
 )
+SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SELECTION = (
+    PLANNING_DOCS / "1166-sec-edgar-real-filing-acquisition-connector-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111167,6 +111170,97 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeata
                 )
 
 
+def _check_sec_edgar_real_filing_acquisition_connector_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SELECTION: (
+            "SEC EDGAR Real Filing Acquisition Connector Selection",
+            "milestone: sec_edgar_real_filing_acquisition_connector_selection_v1",
+            "source_operator_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1165-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-closeout-readiness.md",
+            "current_main_entry: 7fc093e70e099953298b2c9043c2dc3e1c3581cf",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_real_filing_acquisition_connector_runtime_v1",
+            "selected_connector_identity: server_owned_sec_edgar_real_filing_acquisition_connector",
+            "selected_connector_mode: sec_edgar_real_filing_acquisition_connector_v1",
+            "selected_operator_decision: acquire_sec_edgar_real_filing_validation_corpus",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_real_filing_acquisition_connector.py",
+            "selected_existing_sec_acquisition_service: backend/app/services/layer3_sec_edgar_live_source_artifact.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/status/{sec_edgar_real_filing_acquisition_connector_receipt_id}",
+            "selected_product_priority: mixed_sec_filing_identity_sections_tables_first",
+            "selected_long_term_product_intent: comprehensive_sec_filing_processing_without_silent_content_order_provenance_or_artifact_loss",
+            "selected_modern_sec_priority: html_inline_xbrl_urgent_and_explicitly_classified_before_parser_runtime",
+            "selected_discovery_scope: server_owned_sec_submissions_metadata_for_allowlisted_or_validated_cik_refs",
+            "selected_discovery_api: data_sec_gov_submissions_cik_json",
+            "selected_acquisition_scope: bounded_real_sec_validation_corpus_then_existing_complete_submission_text_source_artifact_acquisition",
+            "selected_validation_examples: real_10k,real_10q,real_8k,modern_html_inline_xbrl_classified_or_degraded,table_heavy_filing,multi_document_or_exhibit_like_filing_if_feasible",
+            "selected_supported_first_parser_path: complete_submission_text_to_sec_text_table_authority_to_dataset_version_layer3_downstream",
+            "selected_html_inline_xbrl_first_behavior: classify_block_or_degrade_with_diagnostics_no_generic_text_downgrade",
+            "selected_source_family_router_roles: submissions_metadata,complete_submission_text,filing_html,inline_xbrl,xml_xbrl,pdf_candidate_b_page_evidence,csv_xlsx_json_attachment,exhibit,unsupported_or_degraded",
+            "selected_authority_envelope_target: sec_filing_authority_v1",
+            "selected_sec_network_policy: reuse_existing_gated_sec_http_client_and_rate_policy_no_duplicate_network_stack",
+            "selected_sec_user_agent_model: server_configured_contact_identity_required",
+            "selected_sec_network_enablement: server_controlled_layer3_sec_edgar_live_network_enabled_required_for_real_http",
+            "selected_sec_rate_policy: default_one_request_per_second_ceiling_no_more_than_10_requests_per_second_total_per_user",
+            "selected_ci_policy: no_live_sec_network_in_ci_fake_sec_client_contract_double_required",
+            "selected_operator_surface: api_first_redacted_status_rendered_controls_separately_selected",
+            "selected_proof_architecture: fake_sec_client_contract_double_api_tests_first_optional_manual_live_smoke_outside_ci_after_user_agent_configuration",
+            "tech_debt_guard_reuse_existing_acquisition_client: true",
+            "tech_debt_guard_no_duplicate_rate_limiter_or_cache_root: true",
+            "tech_debt_guard_no_parser_mixing_inside_connector: true",
+            "tech_debt_guard_no_historical_report_as_live_evidence: true",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "live_sec_network_fetch_in_this_freeze: false",
+            "submissions_lookup_runtime_in_this_freeze: false",
+            "multi_filing_corpus_acquisition_runtime_in_this_freeze: false",
+            "html_inline_xbrl_parser_in_this_freeze: false",
+            "xml_xbrl_fact_authority_in_this_freeze: false",
+            "sec_parser_expansion_in_this_freeze: false",
+            "candidate_b_general_sec_parser_in_this_freeze: false",
+            "raw_sec_url_authority_in_this_freeze: false",
+            "generic_connector_dispatch_enabled: false",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_real_filing_acquisition_connector_selection_v1",
+            "source_operator_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1165-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-closeout-readiness.md",
+            "current_main_entry: 7fc093e70e099953298b2c9043c2dc3e1c3581cf",
+            "selected_next_runtime_target: sec_edgar_real_filing_acquisition_connector_runtime_v1",
+            "selected_connector_identity: server_owned_sec_edgar_real_filing_acquisition_connector",
+            "selected_existing_sec_acquisition_service: backend/app/services/layer3_sec_edgar_live_source_artifact.py",
+            "selected_product_priority: mixed_sec_filing_identity_sections_tables_first",
+            "selected_modern_sec_priority: html_inline_xbrl_urgent_and_explicitly_classified_before_parser_runtime",
+            "selected_sec_network_policy: reuse_existing_gated_sec_http_client_and_rate_policy_no_duplicate_network_stack",
+            "tech_debt_guard_no_duplicate_rate_limiter_or_cache_root: true",
+            "runtime_implementation_in_this_freeze: false",
+            "live_sec_network_fetch_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_runtime_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_CLOSEOUT_READINESS: (
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_selection_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_source_artifact.py": (
+            "SEC_EDGAR_CLIENT: SecEdgarClient = SecEdgarHttpClient()",
+            "layer3_sec_edgar_live_network_enabled",
+            "layer3_sec_edgar_user_agent",
+            "SEC_RATE_LIMIT_CEILING_PER_SECOND = 10",
+            "def _server_derived_complete_submission_text_url",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR real filing acquisition connector selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112338,6 +112432,7 @@ def main() -> int:
     _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness(
         errors
     )
+    _check_sec_edgar_real_filing_acquisition_connector_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
