@@ -3388,6 +3388,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_AUTHORITY_SELECTION = (
     PLANNING_DOCS
     / "1182-sec-edgar-html-inline-xbrl-fact-authority-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_AUTHORITY_RUNTIME = (
+    PLANNING_DOCS
+    / "1183-sec-edgar-html-inline-xbrl-fact-authority-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -112756,6 +112760,90 @@ def _check_sec_edgar_html_inline_xbrl_fact_authority_selection(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_authority_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_AUTHORITY_RUNTIME: (
+            "SEC EDGAR HTML Inline XBRL Fact Authority Runtime",
+            "milestone: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1",
+            "source_fact_authority_selection: next_milestone_plans/Layer3_planning_docs/1182-sec-edgar-html-inline-xbrl-fact-authority-selection.md",
+            "current_main_entry: 88d518ac31bfa675e6cbb2e2e8e78b357b3507ea",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_authority.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/status/{fact_authority_receipt_id}",
+            "implemented_fact_authority_mode: sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1",
+            "implemented_operator_decision: derive_sec_edgar_html_inline_xbrl_fact_authority",
+            "implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_authority.v1",
+            "implemented_runtime_scope: derive_ordered_inline_xbrl_fact_authority_from_existing_server_owned_parser_receipt_and_retained_primary_document",
+            "implemented_fact_payload_scope: inline_xbrl_fact_elements_in_primary_html_inline_xbrl_document_only",
+            "implemented_fact_value_policy: preserve_internal_value_authority_with_redacted_operator_projection_and_value_hashes",
+            "implemented_status_projection: redacted_counts_hashes_diagnostics_only_no_raw_values_no_raw_html_no_raw_urls",
+            "fact_authority_runtime_implemented: true",
+            "material_text_table_bridge_preserved: true",
+            "existing_material_bridge_not_weakened: true",
+            "existing_downstream_proof_not_mutated: true",
+            "live_sec_network_fetch_performed_by_fact_authority: false",
+            "browser_supplied_html_admitted: false",
+            "standalone_xml_xbrl_fact_authority_enabled: false",
+            "sec_companyfacts_api_runtime_enabled: false",
+            "taxonomy_network_resolution_enabled: false",
+            "financial_statement_semantics_enabled: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_material_or_evidence_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_authority.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority",
+            "implemented_fact_authority_mode: sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1",
+            "implemented_fact_value_policy: preserve_internal_value_authority_with_redacted_operator_projection_and_value_hashes",
+            "fact_authority_runtime_implemented: true",
+            "existing_material_bridge_not_weakened: true",
+            "browser_supplied_html_admitted: false",
+            "financial_statement_semantics_enabled: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_material_or_evidence_authority_selection_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_fact_authority.py": (
+            "SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_fact_authority.v1\"",
+            "REQUEST_SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_fact_authority_request.v1\"",
+            "FACT_AUTHORITY_MODE = \"sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1\"",
+            "OPERATOR_DECISION = \"derive_sec_edgar_html_inline_xbrl_fact_authority\"",
+            "read_sec_edgar_html_inline_xbrl_source_family_parser_receipt",
+            "read_sec_edgar_text_table_live_source_artifact_bytes",
+            "raw_values_returned\": False",
+            "financial_statement_semantics_enabled\": False",
+            "live_sec_network_fetch_performed_by_fact_authority\": False",
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "Layer3SecEdgarHtmlInlineXbrlFactAuthorityRequest",
+            "Layer3SecEdgarHtmlInlineXbrlFactAuthorityResponse",
+            "/source/sec-edgar/html-inline-xbrl/fact-authority",
+            "derive_sec_edgar_html_inline_xbrl_fact_authority",
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_api.py": (
+            "test_layer3_api_derives_sec_edgar_html_inline_xbrl_fact_authority",
+            "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_authority_stale_or_unsafe",
+            "sec_edgar_html_inline_xbrl_fact_authority_inline_xbrl_marker_inventory_hash_mismatch",
+            "raw_value",
+            "Company narrative",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_AUTHORITY_SELECTION: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact authority runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -113950,6 +114038,7 @@ def main() -> int:
     )
     _check_sec_edgar_html_inline_xbrl_downstream_closeout_readiness(errors)
     _check_sec_edgar_html_inline_xbrl_fact_authority_selection(errors)
+    _check_sec_edgar_html_inline_xbrl_fact_authority_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
