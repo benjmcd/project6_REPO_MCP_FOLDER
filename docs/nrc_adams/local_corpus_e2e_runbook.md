@@ -11782,3 +11782,35 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 Current main now includes the SEC HTML/iXBRL package-construction commit runtime. The next slice should select package-review submit over package-construction receipts, while keeping handoff/export, delivery, taxonomy/CompanyFacts, provider, connector, RAG/model, full mockup, and frontend durable authority separate.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Package Review Submit Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit_selection_v1
+source_package_construction_commit_runtime_current_main_sync: next_milestone_plans/Layer3_planning_docs/1212-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-construction-commit-runtime-current-main-sync.md
+current_main_entry: 45e112164b273cb7389038bd4d469a4b8b0d7d8e
+source_sync_pr: "#1912"
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit_runtime_v1
+selected_package_review_submit_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_submit_v1
+selected_operator_decision: submit_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review
+selected_review_decisions: approved,changes_requested,rejected,blocked
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/submit
+selected_runtime_scope: submit_explicit_operator_package_review_decision_over_existing_package_construction_receipt_without_mutating_package_payloads_handoff_export_or_delivery
+package_construction_commit_runtime_preserved: true
+package_review_submit_runtime_in_this_freeze: false
+handoff_export_in_this_freeze: false
+delivery_runtime_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_url_exposed: false
+raw_fact_values_exposed: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit_runtime_v1
+```
+
+This selection freezes package-review submit over current-main SEC HTML/iXBRL package-construction receipts. The future runtime should record a bounded operator decision and review-submit receipt while keeping handoff/export, delivery, taxonomy/CompanyFacts, provider, connector, RAG/model, full mockup, and frontend durable authority separate.
