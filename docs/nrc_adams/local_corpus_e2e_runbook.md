@@ -9050,3 +9050,49 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendere
 ```
 
 PR `#1857` is now current main. The next admitted step is a freeze for rendered live downstream status over the server status endpoint, not direct browser-held proof authority or any broader SEC/source/runtime expansion.
+
+## SEC EDGAR Text Table Live Source Artifact Downstream Rendered Status Selection
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+source_live_downstream_operator_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1155-sec-edgar-text-table-live-source-artifact-downstream-operator-status-runtime-current-main-sync.md
+source_existing_non_live_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md
+current_main_entry: 7c4b873897021ed473b5f76d5932aa8c6e6b144e
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1
+selected_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control
+selected_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1
+selected_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+selected_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_status
+selected_rendered_scope: operator_visible_status_inspection_over_server_revalidated_live_source_artifact_downstream_proof_authority
+selected_status_states: not_recorded,available,blocked
+selected_rendered_form: sec-edgar-live-downstream-operator-status-form
+selected_rendered_submit: sec-edgar-live-downstream-operator-status-submit
+selected_rendered_panel: sec-edgar-live-downstream-operator-status-panel
+selected_rendered_payload_fields: client_request_id,status_mode,operator_decision,live_downstream_proof_request,expected_proof_hash
+available_requires_server_revalidated_live_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+rendered_status_can_create_downstream_proof: false
+rendered_status_can_mutate_gate_b_session: false
+rendered_status_can_fetch_sec_content: false
+rendered_status_can_parse_xml_html_inline_xbrl: false
+rendered_status_can_dispatch_connector: false
+rendered_status_can_write_provider_object: false
+rendered_status_can_add_rag_or_model_runtime: false
+rendered_status_can_activate_full_mockup: false
+raw_proof_request_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+rendered_status_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1
+```
+
+The selected rendered slice is only an operator inspection/control surface over the live downstream status endpoint. It must preserve server-side proof revalidation and must be proven in both headed and headless Chrome before it can be treated as live rendered evidence.
