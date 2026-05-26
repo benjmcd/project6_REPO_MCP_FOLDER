@@ -194,6 +194,12 @@ def test_layer3_page_route_serves_workbench_shell() -> None:
         in response.text
     )
     assert "SEC EDGAR live downstream operator-status bootstrap contract is not available." in response.text
+    assert 'id="sec-edgar-live-downstream-repeatability-trial-panel"' in response.text
+    assert (
+        'data-rendered-mode="rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control"'
+        in response.text
+    )
+    assert "SEC EDGAR live downstream repeatability-trial bootstrap contract is not available." in response.text
     assert 'id="sec-edgar-downstream-repeatability-trial-panel"' in response.text
     assert (
         'data-rendered-mode="rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control"'
