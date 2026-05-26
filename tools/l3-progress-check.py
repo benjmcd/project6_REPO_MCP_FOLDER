@@ -3310,6 +3310,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIA
     PLANNING_DOCS
     / "1161-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_SELECTION = (
+    PLANNING_DOCS
+    / "1162-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -110797,6 +110801,97 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeata
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_SELECTION: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Operator Repeatability Rendered Status Selection",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_selection_v1",
+            "source_repeatability_trial_runtime: next_milestone_plans/Layer3_planning_docs/1161-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-runtime.md",
+            "source_existing_non_live_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1129-sec-edgar-text-table-downstream-repeatability-rendered-status-selection.md",
+            "source_existing_live_downstream_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1157-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-runtime.md",
+            "current_main_entry: da1944dba43efe6cbbfade2843ee323174c9114a",
+            "entry_decision: freeze_only",
+            "runtime_status: already_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_runtime_v1",
+            "selected_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control",
+            "selected_trial_mode: append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "selected_operator_decision: record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial",
+            "selected_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "selected_existing_live_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+            "selected_existing_live_proof_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+            "selected_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial",
+            "selected_bootstrap_endpoint_field: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_endpoint",
+            "selected_rendered_scope: operator_visible_repeatability_trial_recording_over_two_server_revalidated_sec_edgar_live_source_artifact_downstream_status_projections",
+            "selected_rendered_form: sec-edgar-live-downstream-repeatability-trial-form",
+            "selected_rendered_submit: sec-edgar-live-downstream-repeatability-trial-submit",
+            "selected_rendered_panel: sec-edgar-live-downstream-repeatability-trial-panel",
+            "selected_rendered_payload_fields: client_request_id,trial_mode,operator_decision,original_operator_status_request,original_operator_status_hash,repeat_operator_status_request,repeat_operator_status_hash,operator_repeatability_disposition,operator_confirmation",
+            "selected_redacted_authority_fields: dataset_version_id,authority_envelope_hash,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash",
+            "browser_held_status_hash_alone_is_not_authority: true",
+            "append_only_repeatability_trial_receipt_required: true",
+            "exclusive_trial_per_original_repeat_authority_pair_required: true",
+            "stale_original_operator_status_must_fail_closed: true",
+            "mismatched_live_source_artifact_receipt_must_fail_closed: true",
+            "mismatched_authority_envelope_hash_must_fail_closed: true",
+            "rendered_trial_can_create_live_downstream_proof: false",
+            "rendered_trial_can_fetch_sec_content: false",
+            "rendered_trial_can_parse_xml_html_inline_xbrl: false",
+            "rendered_trial_can_start_process: false",
+            "rendered_trial_can_dispatch_connector: false",
+            "rendered_trial_can_write_provider_object: false",
+            "rendered_trial_can_add_rag_or_model_runtime: false",
+            "rendered_trial_can_activate_full_mockup: false",
+            "raw_original_status_request_rendered: false",
+            "raw_repeat_status_request_rendered: false",
+            "raw_trial_receipt_path_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "headless_rendered_trial_proof_required: true",
+            "headed_rendered_trial_proof_required: true",
+            "rendered_trial_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_selection_v1",
+            "source_repeatability_trial_runtime: next_milestone_plans/Layer3_planning_docs/1161-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-runtime.md",
+            "current_main_entry: da1944dba43efe6cbbfade2843ee323174c9114a",
+            "entry_decision: freeze_only",
+            "selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_runtime_v1",
+            "selected_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control",
+            "selected_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "selected_existing_live_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+            "selected_rendered_panel: sec-edgar-live-downstream-repeatability-trial-panel",
+            "browser_held_status_hash_alone_is_not_authority: true",
+            "append_only_repeatability_trial_receipt_required: true",
+            "rendered_trial_can_create_live_downstream_proof: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_runtime_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_RUNTIME: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream repeatability rendered-status selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -111954,6 +112049,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_runtime(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_selection(
         errors
     )
 
