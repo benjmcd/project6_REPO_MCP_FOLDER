@@ -3476,6 +3476,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_RUNT
     PLANNING_DOCS
     / "1204-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1205-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-current-main-sync.md"
+)
 SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
     ROOT
     / "backend"
@@ -115020,6 +115024,63 @@ def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_p
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Current-Main Sync",
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1",
+            "source_downstream_product_runtime: next_milestone_plans/Layer3_planning_docs/1204-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-runtime.md",
+            "current_main_entry: a3a77d2433f78505115309bc9c7dcd4d88469df9",
+            "source_pr: \"#1904\"",
+            "source_merge_commit: a3a77d2433f78505115309bc9c7dcd4d88469df9",
+            "source_pr_status: merged_current_main",
+            "ci_status_after_merge: latest_pr_1904_backend_and_playwright_shards_passed",
+            "sync_status: current_main_verified",
+            "runtime_status: implemented_current_main",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/status/{downstream_product_receipt_id}",
+            "implemented_product_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_v1",
+            "downstream_product_runtime_current_main: true",
+            "rendered_runtime_in_this_sync: false",
+            "financial_statement_semantics_runtime_in_this_sync: false",
+            "taxonomy_network_resolution_in_this_sync: false",
+            "sec_companyfacts_api_runtime_in_this_sync: false",
+            "new_sec_network_runtime_in_this_sync: false",
+            "raw_fact_values_exposed: false",
+            "verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1",
+            "source_downstream_product_runtime: next_milestone_plans/Layer3_planning_docs/1204-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-runtime.md",
+            "current_main_entry: a3a77d2433f78505115309bc9c7dcd4d88469df9",
+            "source_pr: \"#1904\"",
+            "source_pr_status: merged_current_main",
+            "runtime_status: implemented_current_main",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+            "downstream_product_runtime_current_main: true",
+            "taxonomy_network_resolution_in_this_sync: false",
+            "sec_companyfacts_api_runtime_in_this_sync: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact statement-classification downstream product current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -116268,6 +116329,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync(
         errors
     )
 
