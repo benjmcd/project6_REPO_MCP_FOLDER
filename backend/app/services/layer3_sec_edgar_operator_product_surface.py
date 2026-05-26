@@ -99,6 +99,7 @@ PRODUCT_VIEW_NAMES = (
     "source_family",
     "statement_candidates",
     "fact_inventory",
+    "fact_deduplication_conflict_diagnostics",
     "semantic_profile",
     "statement_role_quality_profile",
     "period_unit_context_dimension_profile",
@@ -321,6 +322,9 @@ def _product_views(
         "source_family": _source_family_rollup(record_views),
         "statement_candidates": [view["statement_candidates"] for view in record_views],
         "fact_inventory": [view["fact_inventory"] for view in record_views],
+        "fact_deduplication_conflict_diagnostics": [
+            view["fact_deduplication_conflict_diagnostics"] for view in record_views
+        ],
         "semantic_profile": [view["semantic_profile"] for view in record_views],
         "statement_role_quality_profile": [view["statement_role_quality_profile"] for view in record_views],
         "period_unit_context_dimension_profile": [
@@ -402,6 +406,33 @@ def _record_product_view(
             "content_order_hash": metrics.get("content_order_hash"),
             "table_candidate_inventory_hash": metrics.get("table_candidate_inventory_hash"),
             "inline_xbrl_marker_inventory_hash": metrics.get("inline_xbrl_marker_inventory_hash"),
+        },
+        "fact_deduplication_conflict_diagnostics": {
+            "record_index": index,
+            "fact_deduplication_conflict_diagnostics_version": metrics.get(
+                "fact_deduplication_conflict_diagnostics_version"
+            )
+            or "sec_edgar_fact_deduplication_conflict_diagnostics_v1",
+            "fact_deduplication_conflict_diagnostics_hash": metrics.get(
+                "fact_deduplication_conflict_diagnostics_hash"
+            ),
+            "fact_deduplication_conflict_diagnostics_status": metrics.get(
+                "fact_deduplication_conflict_diagnostics_status"
+            ),
+            "profile_status": dimensions.get("fact_deduplication_conflict_diagnostics"),
+            "fact_identity_group_count": metrics.get("fact_identity_group_count"),
+            "fact_conflict_basis_group_count": metrics.get("fact_conflict_basis_group_count"),
+            "exact_duplicate_fact_group_count": metrics.get("exact_duplicate_fact_group_count"),
+            "exact_duplicate_fact_candidate_count": metrics.get("exact_duplicate_fact_candidate_count"),
+            "conflicting_fact_group_count": metrics.get("conflicting_fact_group_count"),
+            "conflicting_fact_candidate_count": metrics.get("conflicting_fact_candidate_count"),
+            "exact_duplicate_fact_group_hashes_hash": metrics.get("exact_duplicate_fact_group_hashes_hash"),
+            "conflicting_fact_group_hashes_hash": metrics.get("conflicting_fact_group_hashes_hash"),
+            "fact_deduplication_performed": False,
+            "fact_conflict_resolution_performed": False,
+            "fact_values_dropped": False,
+            "raw_values_returned": False,
+            "final_financial_statement_semantics_claimed": False,
         },
         "semantic_profile": {
             "record_index": index,
@@ -598,6 +629,9 @@ def _diagnostics_loss_report(
 def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
     company_form_matrix = list(product_views.get("company_form_matrix") or [])
     semantic_profiles = list(product_views.get("semantic_profile") or [])
+    fact_deduplication_conflict_diagnostics = list(
+        product_views.get("fact_deduplication_conflict_diagnostics") or []
+    )
     statement_role_quality_profiles = list(product_views.get("statement_role_quality_profile") or [])
     period_unit_context_dimension_profiles = list(product_views.get("period_unit_context_dimension_profile") or [])
     extension_taxonomy_retention_profiles = list(product_views.get("extension_taxonomy_retention_profile") or [])
@@ -610,6 +644,11 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
         "filing_count": len(company_form_matrix),
         "inspectable_count": sum(1 for record in company_form_matrix if record.get("inspection_status") == "inspectable"),
         "semantic_profile_record_count": sum(1 for record in semantic_profiles if record.get("semantic_profile_inventory_hash")),
+        "fact_deduplication_conflict_diagnostics_record_count": sum(
+            1
+            for record in fact_deduplication_conflict_diagnostics
+            if record.get("fact_deduplication_conflict_diagnostics_hash")
+        ),
         "statement_role_quality_profile_record_count": sum(
             1
             for record in statement_role_quality_profiles
@@ -663,6 +702,11 @@ def _authority_chain(
         for profile in product_views.get("statement_role_quality_profile", [])
         if isinstance(profile, Mapping) and profile.get("statement_role_quality_profile_hash")
     ]
+    fact_deduplication_conflict_hashes = [
+        profile.get("fact_deduplication_conflict_diagnostics_hash")
+        for profile in product_views.get("fact_deduplication_conflict_diagnostics", [])
+        if isinstance(profile, Mapping) and profile.get("fact_deduplication_conflict_diagnostics_hash")
+    ]
     extension_taxonomy_retention_hashes = [
         profile.get("extension_taxonomy_retention_profile_hash")
         for profile in product_views.get("extension_taxonomy_retention_profile", [])
@@ -685,6 +729,9 @@ def _authority_chain(
         "connector_receipt_hash": validation["connector_receipt_hash"],
         "quality_evidence_hashes_hash": stable_hash(quality_hashes),
         "semantic_profile_inventory_hashes_hash": stable_hash(semantic_hashes),
+        "fact_deduplication_conflict_diagnostics_hashes_hash": stable_hash(
+            fact_deduplication_conflict_hashes
+        ),
         "statement_role_quality_profile_hashes_hash": stable_hash(statement_role_quality_hashes),
         "extension_taxonomy_retention_profile_hashes_hash": stable_hash(extension_taxonomy_retention_hashes),
         "standard_concept_mapping_profile_hashes_hash": stable_hash(standard_concept_mapping_hashes),
