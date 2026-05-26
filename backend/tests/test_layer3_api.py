@@ -1652,6 +1652,329 @@ def test_layer3_api_rejects_sec_edgar_real_filing_connector_unconfigured_or_unsa
     assert len(fake_client.calls) == 1
 
 
+def _prepare_real_filing_connector_downstream_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+    *,
+    label: str,
+) -> dict[str, object]:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    monkeypatch.setattr(
+        layer3_sec_edgar_live_source_artifact,
+        "SEC_EDGAR_CLIENT",
+        _FakeSecEdgarClient(
+            [
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=_sec_edgar_real_filing_submissions_payload(),
+                    final_url="https://data.sec.gov/submissions/CIK0000320193.json",
+                ),
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=f"<SEC-DOCUMENT>real connector downstream {label}</SEC-DOCUMENT>\n".encode("utf-8"),
+                    final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+                ),
+            ]
+        ),
+    )
+    connector_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=_sec_edgar_real_filing_connector_payload(
+            client_request_id=f"sec-edgar-real-connector-downstream-{label}",
+            form_types=["10-K"],
+        ),
+    )
+    assert connector_response.status_code == 200, connector_response.text
+    connector = connector_response.json()
+    connector_acquisition = connector["acquisition_receipts"][0]
+    live_status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/status/"
+        f"{connector_acquisition['live_source_artifact_receipt_id']}"
+    )
+    assert live_status_response.status_code == 200, live_status_response.text
+    live_artifact = live_status_response.json()
+    dataset_version_id = _bind_sec_edgar_dataset_to_live_source_artifact(
+        client,
+        tmp_path,
+        dataset_version_id=f"dv-aps-sec-edgar-real-downstream-{label}",
+        live_artifact=live_artifact,
+    )
+    envelope_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/authority-envelope/validate",
+        json={
+            "dataset_version_id": dataset_version_id,
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert envelope_response.status_code == 200, envelope_response.text
+    envelope = envelope_response.json()
+    source_acquisition_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/source-acquisition/authority",
+        json=_sec_edgar_source_acquisition_payload_from_live(
+            dataset_version_id=dataset_version_id,
+            envelope=envelope,
+            live_artifact=live_artifact,
+            client_request_id=f"sec-edgar-real-downstream-source-acq-{label}",
+        ),
+    )
+    assert source_acquisition_response.status_code == 200, source_acquisition_response.text
+    source_acquisition = source_acquisition_response.json()
+    bridge_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/material-authority/bridge",
+        json={
+            "client_request_id": f"sec-edgar-real-downstream-bridge-{label}",
+            "bridge_mode": "sec_edgar_text_table_live_source_artifact_to_layer3_material_authority_v1",
+            "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "dataset_version_id": dataset_version_id,
+            "authority_envelope_hash": envelope["authority_envelope_hash"],
+            "expected_materialization_receipt_hash": envelope["materialization_receipt_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert bridge_response.status_code == 200, bridge_response.text
+    bridge = bridge_response.json()
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=bridge["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    gate_b = gate_b_response.json()
+    snapshot = _sec_edgar_api_snapshot(client, session_id=gate_b["session_id"], dataset_version_id=dataset_version_id)
+    material_bridge_receipt_hash = bridge["authority_hashes"]["material_bridge_receipt_hash"]
+    coverage_bridge = {
+        **bridge,
+        "authority_envelope_hash": bridge["authority_hashes"]["authority_envelope_hash"],
+        "bridge_receipt_hash": material_bridge_receipt_hash,
+    }
+    coverage = _sec_edgar_api_coverage(coverage_bridge, gate_b, snapshot)
+    for step, extra in {
+        "live_source_artifact_acquisition": {
+            "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+            "server_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+        },
+        "source_acquisition_authority": {
+            "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+            "server_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+        },
+        "live_material_authority_bridge": {
+            "live_source_artifact_material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+            "server_receipt_id": bridge["bridge_receipt_id"],
+            "material_bridge_receipt_hash": material_bridge_receipt_hash,
+            "material_preview_hash": bridge["material_preview_hash"],
+            "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        },
+        "real_filing_connector_receipt": {
+            "connector_receipt_hash": connector["connector_receipt_hash"],
+            "server_receipt_id": connector["connector_receipt_id"],
+        },
+        "artifact_inspection_projection": {
+            "server_receipt_id": connector_acquisition["live_source_artifact_receipt_id"],
+        },
+    }.items():
+        coverage[step] = {
+            "status": "proven",
+            "evidence_ref": f"sec-edgar-real-filing-downstream-validation:{step}",
+            "evidence_hash": _sec_edgar_test_hash({"step": step, "label": label}),
+            "server_response_hash": _sec_edgar_test_hash({"response": step, "label": label}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "full_mockup_activation_enabled": False,
+            **extra,
+        }
+    prepared = {
+        "dataset_version_id": dataset_version_id,
+        "live_artifact": live_artifact,
+        "source_acquisition": source_acquisition,
+        "bridge": bridge,
+        "material_bridge_receipt_hash": material_bridge_receipt_hash,
+        "gate_b": gate_b,
+        "snapshot": snapshot,
+        "coverage": coverage,
+    }
+    proof_payload = _live_sec_edgar_downstream_proof_payload(
+        prepared,
+        client_request_id=f"sec-edgar-real-downstream-proof-{label}",
+    )
+    proof_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json=proof_payload,
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    status_request = {
+        "client_request_id": f"sec-edgar-real-downstream-status-{label}",
+        "status_mode": "sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+        "live_downstream_proof_request": proof_payload,
+        "expected_proof_hash": proof["proof_hash"],
+    }
+    status_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+        json=status_request,
+    )
+    assert status_response.status_code == 200, status_response.text
+    operator_status = status_response.json()
+    assert operator_status["operator_status_state"] == "available"
+    return {
+        "connector": connector,
+        "connector_acquisition": connector_acquisition,
+        "live_artifact": live_artifact,
+        "source_acquisition": source_acquisition,
+        "bridge": bridge,
+        "proof": proof,
+        "operator_status_request": status_request,
+        "operator_status": operator_status,
+        "material_bridge_receipt_hash": material_bridge_receipt_hash,
+    }
+
+
+def _sec_edgar_real_filing_downstream_validation_payload(
+    prepared: dict[str, object],
+    *,
+    client_request_id: str,
+) -> dict[str, object]:
+    connector = prepared["connector"]
+    connector_acquisition = prepared["connector_acquisition"]
+    live_artifact = prepared["live_artifact"]
+    source_acquisition = prepared["source_acquisition"]
+    bridge = prepared["bridge"]
+    proof = prepared["proof"]
+    operator_status = prepared["operator_status"]
+    assert isinstance(connector, dict)
+    assert isinstance(connector_acquisition, dict)
+    assert isinstance(live_artifact, dict)
+    assert isinstance(source_acquisition, dict)
+    assert isinstance(bridge, dict)
+    assert isinstance(proof, dict)
+    assert isinstance(operator_status, dict)
+    return {
+        "client_request_id": client_request_id,
+        "validation_mode": "sec_edgar_real_filing_acquisition_connector_downstream_validation_v1",
+        "operator_decision": "record_sec_edgar_real_filing_connector_downstream_validation",
+        "connector_receipt_id": connector["connector_receipt_id"],
+        "connector_receipt_hash": connector["connector_receipt_hash"],
+        "connector_example_id": connector_acquisition["example_id"],
+        "live_source_artifact_receipt_id": live_artifact["live_source_artifact_receipt_id"],
+        "live_source_artifact_receipt_hash": live_artifact["live_source_artifact_receipt_hash"],
+        "source_acquisition_receipt_id": source_acquisition["source_acquisition_receipt_id"],
+        "source_acquisition_receipt_hash": source_acquisition["source_acquisition_receipt_hash"],
+        "live_source_artifact_material_bridge_receipt_id": bridge["bridge_receipt_id"],
+        "live_source_artifact_material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "material_bridge_receipt_hash": prepared["material_bridge_receipt_hash"],
+        "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "live_downstream_proof_hash": proof["proof_hash"],
+        "downstream_proof_hash": proof["downstream_proof_hash"],
+        "operator_status_request": prepared["operator_status_request"],
+        "operator_status_hash": operator_status["operator_status_hash"],
+        "operator_confirmation": True,
+    }
+
+
+def test_layer3_api_validates_sec_edgar_real_filing_connector_downstream_chain(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_real_filing_connector_downstream_authority(client, tmp_path, monkeypatch, label="001")
+    payload = _sec_edgar_real_filing_downstream_validation_payload(
+        prepared,
+        client_request_id="sec-edgar-real-downstream-validation-001",
+    )
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_real_filing_downstream_validation.v1"
+    assert body["validation_state"] == "sec_edgar_real_filing_acquisition_connector_downstream_validation_ready"
+    assert body["connector_receipt_hash"] == payload["connector_receipt_hash"]
+    assert body["authority_bindings"]["live_source_artifact_receipt_hash"] == payload["live_source_artifact_receipt_hash"]
+    assert body["authority_bindings"]["source_acquisition_receipt_hash"] == payload["source_acquisition_receipt_hash"]
+    assert body["authority_bindings"]["live_downstream_proof_hash"] == payload["live_downstream_proof_hash"]
+    assert body["authority_bindings"]["operator_status_hash"] == payload["operator_status_hash"]
+    assert body["diagnostics"]["complete_submission_text_supported_path_validated"] is True
+    assert body["diagnostics"]["full_sec_support_claimed"] is False
+    assert body["negative_invariants"]["sec_edgar_live_network_fetch_performed_by_validation"] is False
+    assert body["negative_invariants"]["dataset_version_creation_admitted"] is False
+    assert body["negative_invariants"]["candidate_b_general_sec_parser_admitted"] is False
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000320193-24-000123" not in response.text
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["idempotent_replay"] is True
+    assert replay_response.json()["validation_receipt_hash"] == body["validation_receipt_hash"]
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation/status/"
+        f"{body['validation_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    status_body = status_response.json()
+    assert status_body["schema_id"] == "layer3.sec_edgar_real_filing_downstream_validation_status.v1"
+    assert status_body["validation_receipt_hash"] == body["validation_receipt_hash"]
+    assert "https://www.sec.gov" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_real_filing_connector_downstream_validation_stale_or_unsafe(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_real_filing_connector_downstream_authority(client, tmp_path, monkeypatch, label="002")
+    payload = _sec_edgar_real_filing_downstream_validation_payload(
+        prepared,
+        client_request_id="sec-edgar-real-downstream-validation-002",
+    )
+
+    stale_connector_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation",
+        json={**payload, "connector_receipt_hash": "f" * 64},
+    )
+    assert stale_connector_response.status_code == 409, stale_connector_response.text
+    assert stale_connector_response.json()["error_code"] == (
+        "sec_edgar_real_filing_acquisition_connector_receipt_hash_mismatch"
+    )
+
+    stale_status_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation",
+        json={**payload, "operator_status_hash": "e" * 64},
+    )
+    assert stale_status_response.status_code == 409, stale_status_response.text
+    assert stale_status_response.json()["error_code"] == (
+        "sec_edgar_real_filing_downstream_validation_operator_status_authority_mismatch"
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation",
+        json={**payload, "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == "sec_edgar_real_filing_downstream_validation_forbidden_request_fields"
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
+
+
 def test_layer3_api_bridges_live_sec_edgar_source_artifact_to_material_authority(
     client: TestClient,
     tmp_path,

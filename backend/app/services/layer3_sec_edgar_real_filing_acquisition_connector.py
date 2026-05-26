@@ -162,6 +162,23 @@ def inspect_sec_edgar_real_filing_acquisition_connector_status(
     )
 
 
+def read_sec_edgar_real_filing_acquisition_connector_receipt(
+    connector_receipt_id: str,
+    *,
+    expected_connector_receipt_hash: str | None = None,
+) -> dict[str, Any]:
+    receipt = _read_verified_receipt(connector_receipt_id)
+    expected_hash = str(expected_connector_receipt_hash or "").strip()
+    if expected_hash and receipt.get("connector_receipt_hash") != expected_hash:
+        _blocked(
+            "sec_edgar_real_filing_acquisition_connector_receipt_hash_mismatch",
+            "SEC EDGAR real-filing acquisition connector receipt hash is stale or mismatched.",
+            http_status=409,
+            blocked_fields=["connector_receipt_hash"],
+        )
+    return receipt
+
+
 def _fetch_submissions_records(cik_refs: tuple[str, ...], *, user_agent: str) -> dict[str, dict[str, Any]]:
     records: dict[str, dict[str, Any]] = {}
     for index, cik in enumerate(cik_refs):
