@@ -2774,6 +2774,59 @@ def _prepare_sec_edgar_html_inline_xbrl_statement_candidate_package_construction
     return {**prepared, "package_construction": response.json()}
 
 
+def _prepare_sec_edgar_html_inline_xbrl_statement_candidate_package_review_submit(
+    client: TestClient,
+    monkeypatch,
+    *,
+    label: str,
+    review_decision: str = "approved",
+    decision_notes: str | None = None,
+) -> dict[str, object]:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_statement_candidate_package_construction(
+        client,
+        monkeypatch,
+        label=label,
+    )
+    construction = prepared["package_construction"]
+    payload = {
+        "client_request_id": f"sec-edgar-html-inline-xbrl-statement-candidate-package-review-submit-{label}",
+        "package_review_submit_mode": (
+            "sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_submit_v1"
+        ),
+        "operator_decision": "submit_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review",
+        "review_decision": review_decision,
+        "package_construction_receipt_id": construction["package_construction_receipt_id"],
+        "package_construction_receipt_hash": construction["package_construction_receipt_hash"],
+        "expected_package_payload_manifest_hash": construction["package_payload_manifest_hash"],
+        "expected_package_payload_order_hash": construction["package_payload_order_hash"],
+        "expected_package_review_preview_receipt_hash": construction["package_review_preview_receipt_hash"],
+        "expected_candidate_package_manifest_hash": construction["candidate_package_manifest_hash"],
+        "expected_review_readiness_hash": construction["review_readiness_hash"],
+        "expected_package_order_hash": construction["package_order_hash"],
+        "expected_redaction_manifest_hash": construction["redaction_manifest_hash"],
+        "expected_downstream_product_receipt_hash": construction["downstream_product_receipt_hash"],
+        "expected_statement_classification_receipt_hash": construction["statement_classification_receipt_hash"],
+        "expected_fact_authority_receipt_hash": construction["fact_authority_receipt_hash"],
+        "expected_fact_material_bridge_receipt_hash": construction["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": construction["parser_receipt_hash"],
+        "expected_product_manifest_hash": construction["product_manifest_hash"],
+        "expected_statement_candidate_product_hash": construction["statement_candidate_product_hash"],
+        "expected_product_order_hash": construction["product_order_hash"],
+        "expected_inspection_summary_hash": construction["inspection_summary_hash"],
+        "expected_downstream_readiness_hash": construction["downstream_readiness_hash"],
+        "operator_confirmation": True,
+    }
+    if decision_notes is not None:
+        payload["decision_notes"] = decision_notes
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/submit",
+        json=payload,
+    )
+    assert response.status_code == 200, response.text
+    return {**prepared, "package_review_submit": response.json()}
+
+
 def test_layer3_api_previews_sec_edgar_html_inline_xbrl_statement_candidate_package_review(
     client: TestClient,
     tmp_path,
@@ -3357,6 +3410,219 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_statement_candidate_packa
         "sec_edgar_html_inline_xbrl_statement_candidate_package_review_submit_already_recorded"
     )
     assert "needs revised support" not in conflicting.text
+
+
+def test_layer3_api_prepares_sec_edgar_html_inline_xbrl_statement_candidate_handoff_export(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_statement_candidate_package_review_submit(
+        client,
+        monkeypatch,
+        label="handoff-export-prepare-001",
+    )
+    submit = prepared["package_review_submit"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-statement-candidate-handoff-export-prepare-001",
+        "handoff_export_prepare_mode": (
+            "sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1"
+        ),
+        "operator_decision": "prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export",
+        "package_review_submit_receipt_id": submit["package_review_submit_receipt_id"],
+        "package_review_submit_receipt_hash": submit["package_review_submit_receipt_hash"],
+        "expected_package_review_submit_record_ref": submit["package_review_submit_record_ref"],
+        "expected_package_construction_receipt_hash": submit["package_construction_receipt_hash"],
+        "expected_package_payload_manifest_hash": submit["package_payload_manifest_hash"],
+        "expected_package_payload_order_hash": submit["package_payload_order_hash"],
+        "expected_package_review_preview_receipt_hash": submit["package_review_preview_receipt_hash"],
+        "expected_candidate_package_manifest_hash": submit["candidate_package_manifest_hash"],
+        "expected_review_readiness_hash": submit["review_readiness_hash"],
+        "expected_package_order_hash": submit["package_order_hash"],
+        "expected_redaction_manifest_hash": submit["redaction_manifest_hash"],
+        "expected_downstream_product_receipt_hash": submit["downstream_product_receipt_hash"],
+        "expected_statement_classification_receipt_hash": submit["statement_classification_receipt_hash"],
+        "expected_fact_authority_receipt_hash": submit["fact_authority_receipt_hash"],
+        "expected_fact_material_bridge_receipt_hash": submit["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": submit["parser_receipt_hash"],
+        "expected_product_manifest_hash": submit["product_manifest_hash"],
+        "expected_statement_candidate_product_hash": submit["statement_candidate_product_hash"],
+        "expected_product_order_hash": submit["product_order_hash"],
+        "expected_inspection_summary_hash": submit["inspection_summary_hash"],
+        "expected_downstream_readiness_hash": submit["downstream_readiness_hash"],
+        "operator_confirmation": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.v1"
+    )
+    assert body["status"] == "prepared"
+    assert body["handoff_export_state"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepared"
+    )
+    assert body["package_review_submit_receipt_hash"] == submit["package_review_submit_receipt_hash"]
+    assert body["package_payload_manifest_hash"] == submit["package_payload_manifest_hash"]
+    assert body["payload_hashes"] == submit["payload_hashes"]
+    assert body["handoff_export_manifest"]["payload_refs_redacted"] is True
+    assert body["handoff_export_manifest"]["payload_count"] == len(submit["payload_hashes"])
+    assert body["handoff_export_manifest"]["delivery_prepared"] is False
+    assert body["handoff_export_manifest"]["raw_values_included"] is False
+    assert body["status_projection"]["handoff_export_prepared"] is True
+    assert body["status_projection"]["delivery_enabled"] is False
+    assert body["negative_invariants"]["package_payloads_mutated"] is False
+    assert body["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert body["negative_invariants"]["raw_fact_values_exposed"] is False
+    _assert_raw_string_not_projected(body, "123")
+    assert "https://www.sec.gov" not in response.text
+    assert "Company narrative" not in response.text
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["cache"]["idempotent_replay"] is True
+    assert replay_response.json()["handoff_export_prepare_receipt_hash"] == (
+        body["handoff_export_prepare_receipt_hash"]
+    )
+
+    second_request_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json={
+            **payload,
+            "client_request_id": "sec-edgar-html-inline-xbrl-handoff-export-prepare-same-authority",
+        },
+    )
+    assert second_request_response.status_code == 200, second_request_response.text
+    assert second_request_response.json()["handoff_export_prepare_receipt_hash"] == (
+        body["handoff_export_prepare_receipt_hash"]
+    )
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/"
+        "downstream-product/handoff-export/prepare/status/"
+        f"{body['handoff_export_prepare_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_status.v1"
+    )
+    assert status_response.json()["handoff_export_prepare_receipt_hash"] == (
+        body["handoff_export_prepare_receipt_hash"]
+    )
+    assert "https://www.sec.gov" not in status_response.text
+    assert "Company narrative" not in status_response.text
+    assert "value_text" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_statement_candidate_handoff_export_stale_or_unsafe(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_statement_candidate_package_review_submit(
+        client,
+        monkeypatch,
+        label="handoff-export-prepare-reject",
+    )
+    submit = prepared["package_review_submit"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-statement-candidate-handoff-export-prepare-reject",
+        "handoff_export_prepare_mode": (
+            "sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1"
+        ),
+        "operator_decision": "prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export",
+        "package_review_submit_receipt_id": submit["package_review_submit_receipt_id"],
+        "package_review_submit_receipt_hash": submit["package_review_submit_receipt_hash"],
+        "expected_package_review_submit_record_ref": submit["package_review_submit_record_ref"],
+        "expected_package_payload_manifest_hash": submit["package_payload_manifest_hash"],
+        "expected_redaction_manifest_hash": submit["redaction_manifest_hash"],
+        "operator_confirmation": True,
+    }
+
+    stale_submit_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json={**payload, "package_review_submit_receipt_hash": "d" * 64},
+    )
+    assert stale_submit_response.status_code == 409, stale_submit_response.text
+    assert stale_submit_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_handoff_export_prepare_submit_hash_mismatch"
+    )
+
+    stale_manifest_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json={**payload, "expected_package_payload_manifest_hash": "e" * 64},
+    )
+    assert stale_manifest_response.status_code == 409, stale_manifest_response.text
+    assert stale_manifest_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_handoff_export_prepare_package_payload_manifest_hash_mismatch"
+    )
+
+    unconfirmed_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json={**payload, "operator_confirmation": False},
+    )
+    assert unconfirmed_response.status_code == 200, unconfirmed_response.text
+    assert unconfirmed_response.json()["handoff_export_state"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_blocked"
+    )
+    assert unconfirmed_response.json()["status_projection"]["blocked_reasons"][0]["reason"] == (
+        "missing_operator_confirmation"
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json={**payload, "value_text": "123", "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_handoff_export_prepare_forbidden_request_fields"
+    )
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
+
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path / "sec-nonapproved-handoff-storage"))
+    nonapproved = _prepare_sec_edgar_html_inline_xbrl_statement_candidate_package_review_submit(
+        client,
+        monkeypatch,
+        label="handoff-export-prepare-nonapproved",
+        review_decision="changes_requested",
+        decision_notes="Needs revision before handoff/export prepare.",
+    )
+    nonapproved_submit = nonapproved["package_review_submit"]
+    nonapproved_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/handoff-export/prepare",
+        json={
+            **payload,
+            "client_request_id": "sec-edgar-html-inline-xbrl-handoff-export-prepare-nonapproved",
+            "package_review_submit_receipt_id": nonapproved_submit["package_review_submit_receipt_id"],
+            "package_review_submit_receipt_hash": nonapproved_submit["package_review_submit_receipt_hash"],
+            "expected_package_review_submit_record_ref": nonapproved_submit["package_review_submit_record_ref"],
+            "expected_package_payload_manifest_hash": nonapproved_submit["package_payload_manifest_hash"],
+            "expected_redaction_manifest_hash": nonapproved_submit["redaction_manifest_hash"],
+        },
+    )
+    assert nonapproved_response.status_code == 409, nonapproved_response.text
+    assert nonapproved_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_handoff_export_prepare_submit_not_approved"
+    )
+    assert "Needs revision" not in nonapproved_response.text
 
 
 def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_material_authority(
