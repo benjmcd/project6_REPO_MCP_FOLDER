@@ -11141,3 +11141,53 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator
 ```
 
 This freeze selects a future rendered workbench control for the SEC HTML/iXBRL fact-material repeatability trial. The browser may only submit status requests and expected hashes to the existing server endpoint; the rendered panel must show redacted server projection fields and must not expose raw proof/status requests, raw SEC URLs, local paths, raw fact values, receipt paths, artifact bytes, process output, connector/provider secrets, or frontend-held authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Repeatability Rendered Status Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_runtime_v1
+source_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1196-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-rendered-status-selection.md
+current_main_entry: 76cf2a85eb429835888aa46495bce0b69f8861cf
+runtime_status: implemented
+rendered_status: implemented
+implemented_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial
+implemented_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_control
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial
+implemented_existing_fact_material_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status
+implemented_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-panel
+implemented_form: sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-form
+implemented_submit: sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-submit
+implemented_payload_fields: client_request_id,trial_mode,operator_decision,original_operator_status_request,original_operator_status_hash,repeat_operator_status_request,repeat_operator_status_hash,operator_repeatability_disposition,operator_confirmation
+implemented_response_projection_fields: operator_repeatability_trial_state,operator_repeatability_disposition,trial_receipt_id,trial_receipt_hash,trial_receipt_ref,authority_pair_hash,idempotent_replay,original_operator_status,repeat_operator_status,authority_bindings,operator_status_hash_comparison,proof_hash_comparison,coverage_step_set_comparison,fact_inventory_hash_comparison,fact_material_authority_hash_comparison,trial_authority,operator_visible_repeatability_trial_status,fail_closed_behavior,negative_invariants,next_allowed_actions
+test_only_fixture_route: /__test/layer3/sec-edgar-html-inline-xbrl-fact-material-repeatability-trial
+available_statuses_must_be_server_revalidated: true
+browser_held_status_hash_alone_is_not_authority: true
+idempotent_replay_rendered: true
+mismatched_fact_authority_must_fail_closed: true
+mismatched_fact_inventory_must_fail_closed: true
+mismatched_fact_material_bridge_must_fail_closed: true
+mismatched_inline_xbrl_marker_inventory_must_fail_closed: true
+rendered_trial_creates_fact_material_downstream_proof: false
+rendered_trial_fetches_sec_content: false
+rendered_trial_reparses_html_inline_xbrl: false
+rendered_trial_reconstructs_raw_fact_values: false
+raw_original_status_request_rendered: false
+raw_repeat_status_request_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+raw_fact_values_rendered: false
+frontend_durable_authority_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+focused_py_compile: python -m py_compile ./backend/tests/review_browser_server.py ./backend/tests/test_review_browser_server.py ./backend/tests/test_layer3_page.py ./backend/app/services/layer3_bootstrap_contract.py PASS
+focused_node_check: node --check ./backend/app/review_ui/static/layer3.js PASS
+focused_backend_page_pytest: python -m pytest ./backend/tests/test_layer3_bootstrap_contract.py ./backend/tests/test_layer3_page.py ./backend/tests/test_review_browser_server.py -q -k "bootstrap_contract or layer3_page or fact_material_repeatability" PASS
+headless_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "fact-material downstream repeatability trial" --project=chromium PASS
+headed_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "fact-material downstream repeatability trial" --project=chromium --headed PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_current_main_sync_v1
+```
+
+Operator repeatability proof is now rendered for the fact-material chain. To repeat it, prepare the test-only fixture route, submit the returned original/repeat fact-material status requests and hashes through the rendered panel, verify the production trial endpoint records an accepted receipt, submit the same request again for `idempotent_replay: true`, then submit a stale status hash and confirm fail-closed rejection. The rendered status must stay redacted and must not expose raw SEC URLs, local paths, artifact bytes, raw fact values, proof receipt paths, process output, connector/provider secrets, or frontend durable authority.
