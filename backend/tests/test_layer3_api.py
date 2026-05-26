@@ -1619,6 +1619,22 @@ def _broader_company_validation_fake_results() -> list[layer3_sec_edgar_live_sou
     return _company_validation_fake_results(companies, concepts=concepts)
 
 
+def _expanded_company_validation_fake_results() -> list[layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult]:
+    companies = [
+        ("Exxon Mobil Corporation", [("10-K", "0000034088-26-000100", "xom-20251231.htm"), ("10-Q", "0000034088-25-000101", "xom-20250930.htm")]),
+        ("Pfizer Inc.", [("10-K", "0000078003-26-000100", "pfe-20251231.htm"), ("8-K", "0000078003-25-000101", "pfe-20251015.htm")]),
+        ("United Airlines Holdings Inc.", [("10-K", "0000100517-26-000100", "ual-20251231.htm"), ("10-Q", "0000100517-25-000101", "ual-20250930.htm")]),
+        ("AT&T Inc.", [("10-K", "0000732717-26-000100", "t-20251231.htm"), ("8-K", "0000732717-25-000101", "t-20251015.htm")]),
+    ]
+    concepts = {
+        "Exxon Mobil Corporation": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+        "Pfizer Inc.": "us-gaap:ResearchAndDevelopmentExpense",
+        "United Airlines Holdings Inc.": "company:AircraftFuelExpense",
+        "AT&T Inc.": "us-gaap:LongTermDebt",
+    }
+    return _company_validation_fake_results(companies, concepts=concepts)
+
+
 def _company_validation_fake_results(
     companies: list[tuple[str, list[tuple[str, str, str]]]],
     *,
@@ -2100,10 +2116,140 @@ def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
     assert str(tmp_path) not in response.text
 
 
-def test_layer3_api_selects_sec_edgar_validation_breadth_expansion_without_runtime_admission() -> None:
+def test_layer3_api_validates_sec_edgar_selected_breadth_expansion_quality_matrix(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_expanded_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-validation-breadth-expansion-runtime-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["XOM", "PFE", "UAL", "T"],
+            "operator_confirmation": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["validation_state"] == "sec_edgar_real_company_corpus_validation_ready"
+    assert body["company_matrix"] == ["XOM", "PFE", "UAL", "T"]
+    assert body["diagnostics"]["real_company_count"] == 4
+    assert body["diagnostics"]["filing_count"] == 8
+    assert body["diagnostics"]["supported_count"] == 8
+    assert body["diagnostics"]["financial_statement_semantics_finalized"] is False
+    assert body["diagnostics"]["cross_company_comparability_admitted"] is False
+    assert set(body["diagnostics"]["issuer_profile_tags_observed"]) >= {
+        "energy_major",
+        "pharmaceutical_life_sciences",
+        "airline_transport",
+        "telecom_media",
+        "debt_intensive",
+        "commodity_exposure",
+        "interim_or_current_form_family",
+    }
+    assert {record["form_type"] for record in body["filing_validation_records"]} >= {
+        "10-K",
+        "10-Q",
+        "8-K",
+    }
+    assert len(body["product_quality_matrix"]) == 8
+    assert all(record["quality_evidence_hash"] for record in body["product_quality_matrix"])
+    assert all(
+        record["quality_dimensions"]["financial_statement_semantics"] == "bounded_profile_available_not_finalized"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["period_unit_context_dimension_profile"]
+        == "bounded_hash_profile_available_not_resolved"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["statement_role_quality_profile"]
+        == "bounded_role_rule_profile_available_not_semantics_finalized"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["extension_taxonomy_retention_profile"]
+        == "bounded_hash_profile_available_unmapped"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["standard_concept_mapping_profile"]
+        == "bounded_standard_concept_profile_available_not_normalized"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["fact_deduplication_conflict_diagnostics"]
+        == "bounded_diagnostics_available_not_deduplicated_or_resolved"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["cross_company_comparability_readiness_audit"]
+        == "bounded_readiness_audit_available_not_comparable"
+        for record in body["product_quality_matrix"]
+    )
+    assert {
+        record["quality_dimensions"]["cross_company_comparability"]
+        for record in body["product_quality_matrix"]
+    } <= {"standard_taxonomy_profile_available_not_admitted", "not_admitted"}
+    assert any(
+        "energy_major" in record["issuer_profile_tags"]
+        for record in body["product_quality_matrix"]
+    )
+    assert any("pharmaceutical_life_sciences" in record["issuer_profile_tags"] for record in body["product_quality_matrix"])
+    assert any("airline_transport" in record["issuer_profile_tags"] for record in body["product_quality_matrix"])
+    assert any("telecom_media" in record["issuer_profile_tags"] for record in body["product_quality_matrix"])
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["fact_deduplication_conflict_diagnostics_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["cross_company_comparability_readiness_audit_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["cross_company_comparability_ready"] is False
+        for record in body["filing_validation_records"]
+    )
+    assert any(
+        record["quality_evidence"]["quality_metrics"]["standard_taxonomy_fact_count"] > 0
+        for record in body["filing_validation_records"]
+    )
+    assert any(
+        record["quality_evidence"]["quality_metrics"]["company_extension_fact_count"] > 0
+        for record in body["filing_validation_records"]
+    )
+    assert len(fake_client.calls) == 12
+    assert fake_client.calls[0]["url"] == "https://data.sec.gov/submissions/CIK0000034088.json"
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000034088-26-000100" not in response.text
+    assert "Exxon Mobil" not in response.text
+    assert "Pfizer Inc." not in response.text
+    assert "United Airlines" not in response.text
+    assert "AT&T Inc." not in response.text
+    assert "value_text" not in response.text
+    _assert_raw_string_not_projected(body, "123")
+    assert str(tmp_path) not in response.text
+
+
+def test_layer3_api_admits_selected_sec_edgar_validation_breadth_expansion_runtime() -> None:
     assert (
         layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_SELECTION_VERSION
         == "sec_edgar_validation_breadth_expansion_selection_v1"
+    )
+    assert (
+        layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_RUNTIME_VERSION
+        == "sec_edgar_validation_breadth_expansion_runtime_v1"
     )
     assert layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_SELECTED_MATRIX == (
         "XOM",
@@ -2121,10 +2267,10 @@ def test_layer3_api_selects_sec_edgar_validation_breadth_expansion_without_runti
         "debt_intensive",
         "commodity_exposure",
     }
-    assert layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED is False
-    assert not set(
+    assert layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED is True
+    assert set(
         layer3_sec_edgar_real_filing_acquisition_connector.VALIDATION_BREADTH_EXPANSION_SELECTED_MATRIX
-    ) & set(layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS)
+    ) <= set(layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS)
 
 
 def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_real_company_corpus(
