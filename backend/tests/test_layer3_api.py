@@ -1827,6 +1827,11 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
         == "bounded_diagnostics_available_not_deduplicated_or_resolved"
         for record in body["product_quality_matrix"]
     )
+    assert all(
+        record["quality_dimensions"]["cross_company_comparability_readiness_audit"]
+        == "bounded_readiness_audit_available_not_comparable"
+        for record in body["product_quality_matrix"]
+    )
     assert {
         record["quality_dimensions"]["cross_company_comparability"]
         for record in body["product_quality_matrix"]
@@ -1888,6 +1893,19 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     )
     assert all(
         record["quality_evidence"]["quality_metrics"]["fact_deduplication_conflict_diagnostics_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["cross_company_comparability_readiness_audit_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["cross_company_comparability_readiness_status"]
+        == "bounded_readiness_audit_available_not_comparable"
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["cross_company_comparability_ready"] is False
         for record in body["filing_validation_records"]
     )
     assert all(
@@ -2440,6 +2458,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
     assert body["surface_rollup"]["inspectable_count"] == 8
     assert body["surface_rollup"]["semantic_profile_record_count"] == 8
     assert body["surface_rollup"]["fact_deduplication_conflict_diagnostics_record_count"] == 8
+    assert body["surface_rollup"]["cross_company_comparability_readiness_audit_record_count"] == 8
     assert body["surface_rollup"]["statement_role_quality_profile_record_count"] == 8
     assert body["surface_rollup"]["period_unit_context_dimension_profile_record_count"] == 8
     assert body["surface_rollup"]["extension_taxonomy_retention_profile_record_count"] == 8
@@ -2453,6 +2472,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
         "statement_candidates",
         "fact_inventory",
         "fact_deduplication_conflict_diagnostics",
+        "cross_company_comparability_readiness_audit",
         "semantic_profile",
         "statement_role_quality_profile",
         "period_unit_context_dimension_profile",
@@ -2474,6 +2494,21 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
     assert all(
         record["profile_status"] == "bounded_diagnostics_available_not_deduplicated_or_resolved"
         for record in body["product_views"]["fact_deduplication_conflict_diagnostics"]
+    )
+    assert all(
+        record["cross_company_comparability_readiness_audit_hash"]
+        for record in body["product_views"]["cross_company_comparability_readiness_audit"]
+    )
+    assert all(
+        record["profile_status"] == "bounded_readiness_audit_available_not_comparable"
+        for record in body["product_views"]["cross_company_comparability_readiness_audit"]
+    )
+    assert all(
+        record["cross_company_comparability_ready"] is False
+        and record["cross_company_comparability_admitted"] is False
+        and record["comparability_normalization_performed"] is False
+        and record["filing_specific_product_only"] is True
+        for record in body["product_views"]["cross_company_comparability_readiness_audit"]
     )
     assert all(
         record["fact_deduplication_performed"] is False
@@ -2556,6 +2591,8 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
         body["product_views"]["quality_gaps"]["distinct_quality_gaps"]
     )
     assert body["product_views"]["diagnostics_loss_report"]["sec_companyfacts_api_called"] is False
+    assert body["product_views"]["diagnostics_loss_report"]["cross_company_comparability_ready"] is False
+    assert body["product_views"]["diagnostics_loss_report"]["comparability_normalization_performed"] is False
     assert body["cache"]["network_request_made_by_product_surface"] is False
     assert body["cache"]["parser_rerun_performed_by_product_surface"] is False
     assert body["cache"]["package_mutation_performed_by_product_surface"] is False
@@ -3296,6 +3333,9 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["fact_deduplication_conflict_diagnostics_version"] == (
         "sec_edgar_fact_deduplication_conflict_diagnostics_v1"
     )
+    assert body["classification_diagnostics"]["cross_company_comparability_readiness_audit_version"] == (
+        "sec_edgar_cross_company_comparability_readiness_audit_v1"
+    )
     assert body["classification_diagnostics"]["semantic_profile_assigned_count"] == fact_authority["fact_count"]
     assert body["classification_diagnostics"]["period_unit_context_dimension_profile_assigned_count"] == (
         fact_authority["fact_count"]
@@ -3314,6 +3354,13 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["extension_taxonomy_retention_profile_hash"]
     assert body["classification_diagnostics"]["standard_concept_mapping_profile_hash"]
     assert body["classification_diagnostics"]["fact_deduplication_conflict_diagnostics_hash"]
+    assert body["classification_diagnostics"]["cross_company_comparability_readiness_audit_hash"]
+    assert (
+        body["classification_diagnostics"]["cross_company_comparability_readiness_status"]
+        == "bounded_readiness_audit_available_not_comparable"
+    )
+    assert body["classification_diagnostics"]["cross_company_comparability_readiness_blocker_count"] > 0
+    assert body["classification_diagnostics"]["cross_company_comparability_readiness_blockers_hash"]
     assert body["classification_diagnostics"]["fact_identity_group_count"] > 0
     assert body["classification_diagnostics"]["fact_conflict_basis_group_count"] > 0
     assert body["classification_diagnostics"]["exact_duplicate_fact_group_count"] >= 0
@@ -3336,6 +3383,9 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["fact_deduplication_performed"] is False
     assert body["classification_diagnostics"]["fact_conflict_resolution_performed"] is False
     assert body["classification_diagnostics"]["fact_values_dropped"] is False
+    assert body["classification_diagnostics"]["cross_company_comparability_ready"] is False
+    assert body["classification_diagnostics"]["cross_company_comparability_admitted"] is False
+    assert body["classification_diagnostics"]["comparability_normalization_performed"] is False
     assert body["classification_diagnostics"]["context_period_resolution_performed"] is False
     assert body["classification_diagnostics"]["dimension_member_resolution_performed"] is False
     assert body["classification_diagnostics"]["unit_normalization_performed"] is False
@@ -3428,7 +3478,16 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["status_projection"]["extension_taxonomy_retention_profile_hash"]
     assert body["status_projection"]["standard_concept_mapping_profile_hash"]
     assert body["status_projection"]["fact_deduplication_conflict_diagnostics_hash"]
+    assert body["status_projection"]["cross_company_comparability_readiness_audit_hash"]
+    assert (
+        body["status_projection"]["cross_company_comparability_readiness_status"]
+        == "bounded_readiness_audit_available_not_comparable"
+    )
     assert body["status_projection"]["comparable_standard_fact_count"] > 0
+    assert body["status_projection"]["cross_company_comparability_readiness_audit_available"] is True
+    assert body["status_projection"]["cross_company_comparability_ready"] is False
+    assert body["status_projection"]["cross_company_comparability_admitted"] is False
+    assert body["status_projection"]["comparability_normalization_performed"] is False
     assert body["status_projection"]["context_period_resolution_performed"] is False
     assert body["status_projection"]["dimension_member_resolution_performed"] is False
     assert body["status_projection"]["unit_normalization_performed"] is False

@@ -100,6 +100,7 @@ PRODUCT_VIEW_NAMES = (
     "statement_candidates",
     "fact_inventory",
     "fact_deduplication_conflict_diagnostics",
+    "cross_company_comparability_readiness_audit",
     "semantic_profile",
     "statement_role_quality_profile",
     "period_unit_context_dimension_profile",
@@ -325,6 +326,9 @@ def _product_views(
         "fact_deduplication_conflict_diagnostics": [
             view["fact_deduplication_conflict_diagnostics"] for view in record_views
         ],
+        "cross_company_comparability_readiness_audit": [
+            view["cross_company_comparability_readiness_audit"] for view in record_views
+        ],
         "semantic_profile": [view["semantic_profile"] for view in record_views],
         "statement_role_quality_profile": [view["statement_role_quality_profile"] for view in record_views],
         "period_unit_context_dimension_profile": [
@@ -447,6 +451,38 @@ def _record_product_view(
             "cross_company_comparability": dimensions.get("cross_company_comparability"),
             "financial_statement_semantics_finalized": False,
             "cross_company_comparability_admitted": False,
+        },
+        "cross_company_comparability_readiness_audit": {
+            "record_index": index,
+            "cross_company_comparability_readiness_audit_version": metrics.get(
+                "cross_company_comparability_readiness_audit_version"
+            )
+            or "sec_edgar_cross_company_comparability_readiness_audit_v1",
+            "cross_company_comparability_readiness_audit_hash": metrics.get(
+                "cross_company_comparability_readiness_audit_hash"
+            ),
+            "cross_company_comparability_readiness_status": metrics.get(
+                "cross_company_comparability_readiness_status"
+            ),
+            "profile_status": dimensions.get("cross_company_comparability_readiness_audit"),
+            "cross_company_comparability_readiness_blocker_count": metrics.get(
+                "cross_company_comparability_readiness_blocker_count"
+            ),
+            "cross_company_comparability_readiness_blockers_hash": metrics.get(
+                "cross_company_comparability_readiness_blockers_hash"
+            ),
+            "cross_company_comparability_ready": False,
+            "cross_company_comparability_admitted": False,
+            "comparability_normalization_performed": False,
+            "period_unit_context_dimension_resolution_performed": False,
+            "statement_role_semantics_finalized": False,
+            "extension_taxonomy_mapping_performed": False,
+            "standard_concept_normalization_performed": False,
+            "fact_deduplication_performed": False,
+            "fact_conflict_resolution_performed": False,
+            "taxonomy_network_resolution_performed": False,
+            "sec_companyfacts_api_called": False,
+            "filing_specific_product_only": True,
         },
         "statement_role_quality_profile": {
             "record_index": index,
@@ -620,7 +656,9 @@ def _diagnostics_loss_report(
             if int((view.get("extension_unclassified_facts") or {}).get("unknown_or_unclassified_count") or 0) > 0
         ),
         "financial_statement_semantics_finalized": False,
+        "cross_company_comparability_ready": False,
         "cross_company_comparability_admitted": False,
+        "comparability_normalization_performed": False,
         "taxonomy_network_resolution_performed": False,
         "sec_companyfacts_api_called": False,
     }
@@ -631,6 +669,9 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
     semantic_profiles = list(product_views.get("semantic_profile") or [])
     fact_deduplication_conflict_diagnostics = list(
         product_views.get("fact_deduplication_conflict_diagnostics") or []
+    )
+    cross_company_comparability_readiness_audits = list(
+        product_views.get("cross_company_comparability_readiness_audit") or []
     )
     statement_role_quality_profiles = list(product_views.get("statement_role_quality_profile") or [])
     period_unit_context_dimension_profiles = list(product_views.get("period_unit_context_dimension_profile") or [])
@@ -648,6 +689,11 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
             1
             for record in fact_deduplication_conflict_diagnostics
             if record.get("fact_deduplication_conflict_diagnostics_hash")
+        ),
+        "cross_company_comparability_readiness_audit_record_count": sum(
+            1
+            for record in cross_company_comparability_readiness_audits
+            if record.get("cross_company_comparability_readiness_audit_hash")
         ),
         "statement_role_quality_profile_record_count": sum(
             1
@@ -707,6 +753,11 @@ def _authority_chain(
         for profile in product_views.get("fact_deduplication_conflict_diagnostics", [])
         if isinstance(profile, Mapping) and profile.get("fact_deduplication_conflict_diagnostics_hash")
     ]
+    cross_company_comparability_readiness_hashes = [
+        profile.get("cross_company_comparability_readiness_audit_hash")
+        for profile in product_views.get("cross_company_comparability_readiness_audit", [])
+        if isinstance(profile, Mapping) and profile.get("cross_company_comparability_readiness_audit_hash")
+    ]
     extension_taxonomy_retention_hashes = [
         profile.get("extension_taxonomy_retention_profile_hash")
         for profile in product_views.get("extension_taxonomy_retention_profile", [])
@@ -731,6 +782,9 @@ def _authority_chain(
         "semantic_profile_inventory_hashes_hash": stable_hash(semantic_hashes),
         "fact_deduplication_conflict_diagnostics_hashes_hash": stable_hash(
             fact_deduplication_conflict_hashes
+        ),
+        "cross_company_comparability_readiness_audit_hashes_hash": stable_hash(
+            cross_company_comparability_readiness_hashes
         ),
         "statement_role_quality_profile_hashes_hash": stable_hash(statement_role_quality_hashes),
         "extension_taxonomy_retention_profile_hashes_hash": stable_hash(extension_taxonomy_retention_hashes),

@@ -3589,6 +3589,9 @@ SEC_EDGAR_STANDARD_CONCEPT_MAPPING_PROFILE = (
 SEC_EDGAR_FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS = (
     PLANNING_DOCS / "1237-sec-edgar-fact-deduplication-conflict-diagnostics.md"
 )
+SEC_EDGAR_CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT = (
+    PLANNING_DOCS / "1238-sec-edgar-cross-company-comparability-readiness-audit.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117620,6 +117623,61 @@ def _check_sec_edgar_fact_deduplication_conflict_diagnostics(
                 )
 
 
+def _check_sec_edgar_cross_company_comparability_readiness_audit(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT: (
+            "SEC EDGAR Cross Company Comparability Readiness Audit",
+            "milestone: sec_edgar_cross_company_comparability_readiness_audit_v1",
+            "source_fact_deduplication_conflict_diagnostics: next_milestone_plans/Layer3_planning_docs/1237-sec-edgar-fact-deduplication-conflict-diagnostics.md",
+            "audit_version: sec_edgar_cross_company_comparability_readiness_audit_v1",
+            "readiness_status: bounded_readiness_audit_available_not_comparable",
+            "cross_company_comparability_ready: false",
+            "cross_company_comparability_admitted: false",
+            "comparability_normalization_performed: false",
+            "next_exact_posture: sec_edgar_validation_breadth_expansion_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            "CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT_VERSION",
+            "cross_company_comparability_readiness_audit_hash",
+            "cross_company_comparability_readiness_status",
+            "cross_company_comparability_readiness_blocker_count",
+            "cross_company_comparability_ready",
+            "comparability_normalization_performed",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "cross_company_comparability_readiness_audit_hash",
+            "bounded_readiness_audit_available_not_comparable",
+            "cross_company_comparability_readiness_blocker_count",
+            "cross_company_comparability_ready",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "cross_company_comparability_readiness_audit_record_count",
+            "cross_company_comparability_readiness_audit_hashes_hash",
+            "cross_company_comparability_readiness_audit",
+            "cross_company_comparability_ready",
+            "comparability_normalization_performed",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_cross_company_comparability_readiness_audit_v1",
+            "cross_company_comparability_readiness_audit_hash",
+            "cross_company_comparability_readiness_audit_record_count",
+            "bounded_readiness_audit_available_not_comparable",
+            "comparability_normalization_performed",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR cross-company comparability readiness audit term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118931,6 +118989,7 @@ def main() -> int:
     _check_sec_edgar_extension_taxonomy_retention_profile(errors)
     _check_sec_edgar_standard_concept_mapping_profile(errors)
     _check_sec_edgar_fact_deduplication_conflict_diagnostics(errors)
+    _check_sec_edgar_cross_company_comparability_readiness_audit(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
