@@ -31,6 +31,7 @@ from app.services import (
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_downstream_proof,
     layer3_sec_edgar_html_inline_xbrl_downstream_status,
+    layer3_sec_edgar_html_inline_xbrl_fact_authority,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -554,6 +555,29 @@ class Layer3SecEdgarHtmlInlineXbrlMaterialBridgeRequest(BaseModel):
     expected_gate_b_decision_manifest_id: str | None = None
     rollback_confirmed: bool = False
     operator_confirmed: bool = False
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlFactAuthorityRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    fact_authority_mode: Literal["sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1"]
+    operator_decision: Literal["derive_sec_edgar_html_inline_xbrl_fact_authority"]
+    parser_receipt_id: str = Field(min_length=1)
+    parser_receipt_hash: str = Field(min_length=64, max_length=64)
+    expected_connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_live_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_primary_document_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_document_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_content_order_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_table_candidate_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_inline_xbrl_marker_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    operator_confirmation: bool = False
     actor: str | None = None
 
 
@@ -7796,6 +7820,25 @@ class Layer3SecEdgarHtmlInlineXbrlMaterialBridgeResponse(Layer3BaseResponse):
     negative_invariants: dict[str, Any]
 
 
+class Layer3SecEdgarHtmlInlineXbrlFactAuthorityResponse(Layer3BaseResponse):
+    mode: str
+    fact_authority_mode: str
+    operator_decision: str
+    fact_authority_state: str
+    fact_authority_receipt_id: str | None = None
+    fact_authority_receipt_ref: str | None = None
+    fact_authority_receipt_hash: str | None = None
+    idempotent_replay: bool
+    source_family: str
+    parser_family: str
+    parser_receipt_hash: str
+    fact_count: int
+    fact_inventory_hash: str | None = None
+    diagnostics_hash: str | None = None
+    status_projection: dict[str, Any]
+    negative_invariants: dict[str, Any]
+
+
 class Layer3SecEdgarHtmlInlineXbrlDownstreamProofResponse(Layer3BaseResponse):
     mode: str
     proof_state: str
@@ -14825,6 +14868,36 @@ def get_sec_edgar_html_inline_xbrl_source_family_parser_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_parser.inspect_sec_edgar_html_inline_xbrl_source_family_parser_status(
             sec_edgar_html_inline_xbrl_parser_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactAuthorityResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_fact_authority(
+    payload: Layer3SecEdgarHtmlInlineXbrlFactAuthorityRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_authority.derive_sec_edgar_html_inline_xbrl_fact_authority(
+            payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/status/{sec_edgar_html_inline_xbrl_fact_authority_receipt_id}",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactAuthorityResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_html_inline_xbrl_fact_authority_status(
+    sec_edgar_html_inline_xbrl_fact_authority_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_authority.inspect_sec_edgar_html_inline_xbrl_fact_authority_status(
+            sec_edgar_html_inline_xbrl_fact_authority_receipt_id,
         )
     )
 
