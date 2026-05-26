@@ -3604,6 +3604,9 @@ SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTION = (
 SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME = (
     PLANNING_DOCS / "1242-sec-edgar-delivery-status-provenance-breadth-runtime.md"
 )
+SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_SELECTION = (
+    PLANNING_DOCS / "1243-sec-edgar-operator-inspection-breadth-selection.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117885,6 +117888,54 @@ def _check_sec_edgar_delivery_status_provenance_breadth_runtime(
                 )
 
 
+def _check_sec_edgar_operator_inspection_breadth_selection(errors: list[str]) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_SELECTION: (
+            "SEC EDGAR Operator Inspection Breadth Selection",
+            "milestone: sec_edgar_operator_inspection_breadth_selection_v1",
+            "source_delivery_status_provenance_breadth_runtime: next_milestone_plans/Layer3_planning_docs/1242-sec-edgar-delivery-status-provenance-breadth-runtime.md",
+            "entry_main_commit: 3cc3ee4196f6220d300f3718dd270da52a90ba81",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_operator_inspection_breadth_runtime_v1",
+            "selected_runtime_service: backend/app/services/layer3_sec_edgar_operator_inspection.py",
+            "selected_expanded_validation_matrix: XOM,PFE,UAL,T",
+            "selected_expanded_profile_tags: energy_major,pharmaceutical_life_sciences,airline_transport,telecom_media,debt_intensive,commodity_exposure",
+            "operator_inspection_breadth_runtime_in_this_freeze: false",
+            "operator_product_surface_broadened: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_operator_inspection_breadth_runtime_v1",
+        ),
+        SEC_EDGAR_OPERATOR_INSPECTION_SERVICE: (
+            "OPERATOR_INSPECTION_BREADTH_SELECTION_VERSION",
+            "OPERATOR_INSPECTION_BREADTH_SELECTED_MATRIX",
+            "OPERATOR_INSPECTION_BREADTH_SELECTED_PROFILE_TAGS",
+            "OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED = False",
+            '"XOM"',
+            '"PFE"',
+            '"UAL"',
+            '"T"',
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_selects_sec_edgar_operator_inspection_breadth_without_runtime_admission",
+            "sec_edgar_operator_inspection_breadth_selection_v1",
+            "OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED is False",
+        ),
+        SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME: (
+            "next_exact_posture: sec_edgar_operator_inspection_breadth_selection_v1",
+            "operator_inspection_broadened: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator inspection breadth selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119201,6 +119252,7 @@ def main() -> int:
     _check_sec_edgar_validation_breadth_expansion_runtime(errors)
     _check_sec_edgar_delivery_status_provenance_breadth_selection(errors)
     _check_sec_edgar_delivery_status_provenance_breadth_runtime(errors)
+    _check_sec_edgar_operator_inspection_breadth_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
