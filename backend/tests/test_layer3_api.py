@@ -89,6 +89,7 @@ from app.services import (
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_namespace,
     layer3_replacement_package_set_authority,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_live_repeatability_trial,
@@ -2349,6 +2350,39 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_statement_classifica
     assert stale_bridge_response.status_code == 409, stale_bridge_response.text
     assert stale_bridge_response.json()["error_code"] == (
         "sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_hash_mismatch"
+    )
+
+    original_bridge_status = (
+        layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status
+    )
+
+    def missing_bridge_authority_hash_status(receipt_id: str) -> dict:
+        status = copy.deepcopy(original_bridge_status(receipt_id))
+        status["authority_hashes"].pop("connector_receipt_hash")
+        return status
+
+    monkeypatch.setattr(
+        layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
+        "inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status",
+        missing_bridge_authority_hash_status,
+    )
+    missing_bridge_authority_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification",
+        json={
+            **payload,
+            "client_request_id": (
+                "sec-edgar-html-inline-xbrl-fact-statement-classification-missing-bridge-authority"
+            ),
+        },
+    )
+    assert missing_bridge_authority_response.status_code == 409, missing_bridge_authority_response.text
+    assert missing_bridge_authority_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_authority_hash_missing"
+    )
+    monkeypatch.setattr(
+        layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
+        "inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status",
+        original_bridge_status,
     )
 
     unconfirmed_response = client.post(
