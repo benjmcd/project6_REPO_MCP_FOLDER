@@ -9002,3 +9002,51 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operato
 ```
 
 The runtime creates a server-owned live downstream operator-status endpoint, not a rendered UI. It reports `available` only after the server revalidates the supplied live downstream proof request and confirms the recomputed proof hash matches the expected proof hash; browser-held proof JSON or a hash alone is not durable authority.
+
+## SEC EDGAR Text Table Live Source Artifact Downstream Operator Status Runtime Current Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_status_runtime_current_main_sync_v1
+source_runtime: next_milestone_plans/Layer3_planning_docs/1154-sec-edgar-text-table-live-source-artifact-downstream-operator-status-runtime.md
+current_main_entry: aa58fb657f83312eb6690eb9900c2a9a73911541
+source_runtime_pr: "#1857"
+source_runtime_merge_commit: aa58fb657f83312eb6690eb9900c2a9a73911541
+entry_decision: current_main_sync
+runtime_status: implemented
+rendered_status: not_implemented
+current_main_contains_live_downstream_operator_status_runtime: true
+current_main_sync_introduces_runtime_behavior: false
+implemented_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+implemented_service: backend/app/services/layer3_sec_edgar_live_downstream_status.py
+implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_status
+implemented_authority_model: live_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+available_requires_server_revalidated_live_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1156-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md
+selected_next_selection_reason: render_server_revalidated_live_downstream_operator_status_projection
+selected_existing_non_live_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+selected_rendered_mode_future: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control
+selected_rendered_surface_future: live_source_artifact_downstream_status_panel_over_server_status_endpoint
+selected_rendered_must_preserve: redacted_status_only_no_raw_proof_request_no_raw_sec_url_no_local_path_no_artifact_bytes_no_live_fetch_no_materialization_no_gate_b_mutation
+rendered_status_can_create_downstream_proof: false
+rendered_status_can_mutate_gate_b_session: false
+rendered_status_can_fetch_sec_content: false
+rendered_status_can_parse_xml_html_inline_xbrl: false
+rendered_status_can_dispatch_connector: false
+rendered_status_can_write_provider_object: false
+rendered_status_can_add_rag_or_model_runtime: false
+rendered_status_can_activate_full_mockup: false
+raw_proof_request_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+verification_current_main_progress_check: python ./tools/l3-progress-check.py PASS
+verification_current_main_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+```
+
+PR `#1857` is now current main. The next admitted step is a freeze for rendered live downstream status over the server status endpoint, not direct browser-held proof authority or any broader SEC/source/runtime expansion.
