@@ -89,6 +89,7 @@ from app.services import (
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_namespace,
     layer3_replacement_package_set_authority,
+    layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
     layer3_workbench,
 )
@@ -1935,6 +1936,223 @@ def test_layer3_api_reports_live_sec_edgar_downstream_operator_status(
     assert forbidden["operator_status_state"] == "blocked"
     assert forbidden["blocked_reasons"][0]["reason"] == (
         "sec_edgar_text_table_live_source_artifact_downstream_proof_coverage_forbidden_reference"
+    )
+
+
+def test_layer3_api_records_live_sec_edgar_downstream_operator_repeatability_trial(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_live_sec_edgar_downstream_authority(client, tmp_path, monkeypatch, label="004")
+    proof_payload = _live_sec_edgar_downstream_proof_payload(
+        prepared,
+        client_request_id="sec-edgar-live-downstream-proof-004",
+    )
+    proof_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
+        json=proof_payload,
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+    status_request = {
+        "client_request_id": "sec-edgar-live-downstream-repeatability-status-004",
+        "status_mode": "sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+        "live_downstream_proof_request": proof_payload,
+        "expected_proof_hash": proof["proof_hash"],
+    }
+    status_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+        json=status_request,
+    )
+    assert status_response.status_code == 200, status_response.text
+    status_body = status_response.json()
+    assert status_body["operator_status_state"] == "available"
+
+    trial_payload = {
+        "client_request_id": "sec-edgar-live-downstream-repeatability-trial-004",
+        "trial_mode": (
+            "append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_"
+            "without_sec_fetch_or_processing_execution"
+        ),
+        "operator_decision": (
+            "record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial"
+        ),
+        "original_operator_status_request": status_request,
+        "original_operator_status_hash": status_body["operator_status_hash"],
+        "repeat_operator_status_request": {
+            **status_request,
+            "client_request_id": "sec-edgar-live-downstream-repeatability-repeat-004",
+        },
+        "repeat_operator_status_hash": status_body["operator_status_hash"],
+        "operator_repeatability_disposition": "no_regression_observed",
+        "operator_confirmation": True,
+    }
+    trial_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+        json=trial_payload,
+    )
+    assert trial_response.status_code == 200, trial_response.text
+    trial_body = trial_response.json()
+    assert trial_body["schema_id"] == (
+        "layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial.v1"
+    )
+    assert trial_body["operator_repeatability_trial_state"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_accepted"
+    )
+    assert trial_body["operator_status_hash_comparison"] == "match"
+    assert trial_body["proof_hash_comparison"] == "match"
+    assert trial_body["coverage_step_set_comparison"] == "match"
+    assert trial_body["authority_bindings"]["live_source_artifact_receipt_hash"] == (
+        proof["live_source_artifact_receipt_hash"]
+    )
+    assert trial_body["authority_bindings"]["source_acquisition_receipt_hash"] == (
+        proof["source_acquisition_receipt_hash"]
+    )
+    assert trial_body["append_only_repeatability_trial_receipt"] is True
+    assert trial_body["exclusive_trial_per_original_repeat_authority_pair"] is True
+    assert trial_body["actual_sec_processing_execution_admitted"] is False
+    assert trial_body["actual_subprocess_spawn_admitted"] is False
+    assert trial_body["connector_dispatch_enabled"] is False
+    assert trial_body["rag_vector_model_runtime_enabled"] is False
+    assert trial_body["frontend_durable_authority_enabled"] is False
+    assert trial_body["raw_local_path_exposed"] is False
+    assert trial_body["raw_url_exposed"] is False
+    assert "https://www.sec.gov" not in trial_response.text
+    assert "0000320193-24-000123" not in trial_response.text
+    assert str(tmp_path) not in trial_response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+        json=trial_payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["idempotent_replay"] is True
+
+
+def test_layer3_api_rejects_live_sec_edgar_repeatability_trial_invalid_authority(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    def _fake_status(label: str) -> dict[str, object]:
+        return {
+            "status": "available",
+            "operator_status_state": "available",
+            "operator_status_hash": _sec_edgar_test_hash({"status": label}),
+            "operator_status_projection_ref": f"sec-edgar-live-status:{label}",
+            "proof_available": True,
+            "proof_hash": _sec_edgar_test_hash({"proof": label}),
+            "proof_summary": {
+                "coverage": [
+                    "live_source_artifact_acquisition",
+                    "source_acquisition_authority",
+                    "live_material_authority_bridge",
+                    "material_authority_bridge",
+                    "gate_b_commit",
+                ]
+            },
+            "dataset_version_id": f"dv-live-repeatability-{label}",
+            "authority_envelope_hash": _sec_edgar_test_hash({"authority": label}),
+            "live_source_artifact_receipt_hash": _sec_edgar_test_hash({"live": label}),
+            "source_acquisition_receipt_hash": _sec_edgar_test_hash({"source": label}),
+            "live_source_artifact_material_bridge_receipt_hash": _sec_edgar_test_hash({"live-bridge": label}),
+            "material_bridge_receipt_hash": _sec_edgar_test_hash({"bridge": label}),
+            "material_preview_hash": _sec_edgar_test_hash({"preview": label}),
+            "gate_b_decision_manifest_id": f"gate-b-{label}",
+            "session_id": f"session-{label}",
+            "selection_manifest_id": f"selection-{label}",
+            "material_snapshot_payload_hash": _sec_edgar_test_hash({"snapshot": label}),
+            "downstream_proof_hash": _sec_edgar_test_hash({"downstream": label}),
+            "coverage_evidence_hash": _sec_edgar_test_hash({"coverage": label}),
+            "negative_invariants_hash": _sec_edgar_test_hash({"negative": label}),
+            "raw_local_path_rendered": False,
+            "raw_url_rendered": False,
+            "artifact_bytes_rendered": False,
+        }
+
+    original_status = _fake_status("original")
+    repeat_status = _fake_status("repeat")
+
+    def _fake_inspect_status(fields: dict[str, object], _db) -> dict[str, object]:
+        proof_request = fields.get("live_downstream_proof_request")
+        assert isinstance(proof_request, dict)
+        return repeat_status if proof_request.get("status_fixture") == "repeat" else original_status
+
+    monkeypatch.setattr(
+        layer3_sec_edgar_live_repeatability_trial.layer3_sec_edgar_live_downstream_status,
+        "inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+        _fake_inspect_status,
+    )
+    original_request = {
+        "client_request_id": "sec-edgar-live-downstream-repeatability-original",
+        "status_mode": "sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+        "live_downstream_proof_request": {"status_fixture": "original"},
+        "expected_proof_hash": original_status["proof_hash"],
+    }
+    repeat_request = {
+        "client_request_id": "sec-edgar-live-downstream-repeatability-repeat",
+        "status_mode": "sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+        "operator_decision": "inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+        "live_downstream_proof_request": {"status_fixture": "repeat"},
+        "expected_proof_hash": repeat_status["proof_hash"],
+    }
+    base_payload = {
+        "client_request_id": "sec-edgar-live-downstream-repeatability-reject",
+        "trial_mode": (
+            "append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_"
+            "without_sec_fetch_or_processing_execution"
+        ),
+        "operator_decision": (
+            "record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial"
+        ),
+        "original_operator_status_request": original_request,
+        "original_operator_status_hash": original_status["operator_status_hash"],
+        "repeat_operator_status_request": original_request,
+        "repeat_operator_status_hash": original_status["operator_status_hash"],
+        "operator_repeatability_disposition": "no_regression_observed",
+        "operator_confirmation": True,
+    }
+
+    stale_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+        json={**base_payload, "original_operator_status_hash": "a" * 64},
+    )
+    assert stale_response.status_code == 409, stale_response.text
+    assert stale_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_stale_original_operator_status_hash"
+    )
+
+    mismatched_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+        json={
+            **base_payload,
+            "repeat_operator_status_request": repeat_request,
+            "repeat_operator_status_hash": repeat_status["operator_status_hash"],
+            "operator_repeatability_disposition": "delta_reviewed_no_regression",
+        },
+    )
+    assert mismatched_response.status_code == 409, mismatched_response.text
+    mismatched = mismatched_response.json()
+    assert mismatched["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_authority_mismatch"
+    )
+    assert "live_source_artifact_receipt_hash" in mismatched["blocked_fields"]
+
+    forbidden_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+        json={
+            **base_payload,
+            "original_operator_status_request": {
+                **original_request,
+                "command": "python fetch-sec-edgar.py",
+            },
+        },
+    )
+    assert forbidden_response.status_code == 400, forbidden_response.text
+    assert forbidden_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_forbidden_request_fields"
     )
 
 

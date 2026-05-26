@@ -31,6 +31,7 @@ from app.services import (
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_live_downstream_proof,
     layer3_sec_edgar_live_downstream_status,
+    layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_live_material_bridge,
     layer3_sec_edgar_material_bridge,
@@ -548,6 +549,31 @@ class Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorStatusRequest(B
     operator_decision: Literal["inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status"]
     live_downstream_proof_request: dict[str, Any] | None = None
     expected_proof_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    actor: str | None = None
+
+
+class Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    trial_mode: Literal[
+        "append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution"
+    ]
+    operator_decision: Literal[
+        "record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial"
+    ]
+    original_operator_status_request: dict[str, Any]
+    original_operator_status_hash: str = Field(min_length=64, max_length=64)
+    repeat_operator_status_request: dict[str, Any]
+    repeat_operator_status_hash: str = Field(min_length=64, max_length=64)
+    operator_repeatability_disposition: Literal[
+        "no_regression_observed",
+        "delta_reviewed_no_regression",
+        "regression_detected_blocked",
+    ]
+    operator_confirmation: bool
     actor: str | None = None
 
 
@@ -7617,6 +7643,7 @@ class Layer3SecEdgarTextTableLiveSourceArtifactDownstreamProofResponse(Layer3Bas
     mode: str
     proof_state: str
     dataset_version_id: str
+    authority_envelope_hash: str
     source_family: str
     parser_family: str
     typed_content_contract_id: str
@@ -7660,6 +7687,7 @@ class Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorStatusResponse(
     proof_hash: str
     proof_state: str
     dataset_version_id: str
+    authority_envelope_hash: str
     source_family: str
     parser_family: str
     typed_content_contract_id: str
@@ -7693,6 +7721,33 @@ class Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorStatusResponse(
     frontend_durable_authority_enabled: bool
     browser_storage_authority_enabled: bool
     full_mockup_activation_enabled: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    operator_repeatability_trial_state: str
+    operator_repeatability_disposition: str
+    trial_receipt_id: str
+    trial_receipt_hash: str
+    trial_receipt_ref: str
+    trial_receipt_status: str
+    trial_authority_hash: str
+    authority_pair_hash: str
+    idempotent_replay: bool
+    append_only_repeatability_trial_receipt: bool
+    exclusive_trial_per_original_repeat_authority_pair: bool
+    original_operator_status: dict[str, Any]
+    repeat_operator_status: dict[str, Any]
+    authority_bindings: dict[str, Any]
+    operator_status_hash_comparison: str
+    proof_hash_comparison: str
+    coverage_step_set_comparison: str
+    trial_authority: dict[str, Any]
+    operator_visible_repeatability_trial_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -14418,6 +14473,23 @@ def post_sec_edgar_text_table_live_source_artifact_downstream_operator_status(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_sec_edgar_live_downstream_status.inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+    response_model=Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial(
+    payload: Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_live_repeatability_trial.record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial(
             payload.model_dump(exclude_none=True),
             db,
         )
