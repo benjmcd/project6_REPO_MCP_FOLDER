@@ -3396,6 +3396,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_BRIDGE_SELECTION = (
     PLANNING_DOCS
     / "1184-sec-edgar-html-inline-xbrl-fact-material-bridge-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_BRIDGE_RUNTIME = (
+    PLANNING_DOCS
+    / "1185-sec-edgar-html-inline-xbrl-fact-material-bridge-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -112924,6 +112928,93 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_bridge_selection(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_material_bridge_runtime(
+    errors: list[str],
+) -> None:
+    service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py"
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_BRIDGE_RUNTIME: (
+            "SEC EDGAR HTML Inline XBRL Fact Material Bridge Runtime",
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_bridge_runtime_v1",
+            "source_fact_material_bridge_selection: next_milestone_plans/Layer3_planning_docs/1184-sec-edgar-html-inline-xbrl-fact-material-bridge-selection.md",
+            "current_main_entry: befaad68c0a19a0d79c6f6bf26ce00012155e6c0",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/status/{sec_edgar_html_inline_xbrl_fact_material_bridge_receipt_id}",
+            "implemented_bridge_mode: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+            "implemented_operator_decision: bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+            "implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_bridge.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_bridge_request.v1",
+            "implemented_material_source_class: dataset_version",
+            "implemented_material_preview_admission_source_system: nrc_adams_aps",
+            "implemented_typed_content_contract_id: sec_edgar_html_inline_xbrl_fact_material_units_v1",
+            "implemented_runtime_scope: materialize_ordered_inline_xbrl_fact_units_from_existing_fact_authority_and_server_owned_retained_primary_document",
+            "implemented_material_columns: fact_order,element_name,qualified_name,namespace_prefix,local_name,context_ref_hash,unit_ref_hash,decimals_or_precision,scale_or_format,continued_fact_hash_if_present,source_order_hash,source_artifact_receipt_hash,primary_document_hash,value_text,value_hash,value_length,table_candidate_anchor_hash,parser_receipt_hash,fact_authority_receipt_hash",
+            "implemented_value_policy: preserve_value_text_only_inside_server_owned_dataset_materialization_and_return_redacted_hash_count_projection_to_operator_surfaces",
+            "implemented_material_preview_compatibility: existing_layer3_dataset_version_material_preview_without_source_class_widening",
+            "implemented_gate_b_compatibility: existing_gate_b_material_preview_hash_and_decision_basis_validation",
+            "fact_authority_runtime_preserved: true",
+            "material_text_table_bridge_preserved: true",
+            "existing_material_bridge_not_weakened: true",
+            "raw_fact_values_exposed_in_operator_projection: false",
+            "focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k \"fact_material_bridge or fact_authority\" PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_bridge_runtime_v1",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+            "implemented_bridge_mode: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+            "implemented_typed_content_contract_id: sec_edgar_html_inline_xbrl_fact_material_units_v1",
+            "implemented_material_preview_admission_source_system: nrc_adams_aps",
+            "implemented_value_policy: preserve_value_text_only_inside_server_owned_dataset_materialization_and_return_redacted_hash_count_projection_to_operator_surfaces",
+            "material_text_table_bridge_preserved: true",
+            "raw_fact_values_exposed_in_operator_projection: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_selection_v1",
+        ),
+        service: (
+            "SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_fact_material_bridge.v1\"",
+            "REQUEST_SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_fact_material_bridge_request.v1\"",
+            "STATUS_SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_fact_material_bridge_status.v1\"",
+            "BRIDGE_MODE = \"sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1\"",
+            "OPERATOR_DECISION = \"bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority\"",
+            "TYPED_CONTENT_CONTRACT_ID = \"sec_edgar_html_inline_xbrl_fact_material_units_v1\"",
+            "value_text",
+            "server_owned_value_payload_stored",
+            "raw_fact_values_returned",
+            "read_sec_edgar_html_inline_xbrl_fact_authority_receipt",
+            "source_system=\"nrc_adams_aps\"",
+            "material_preview_hash",
+            "gate_b_decision_payload",
+            "raw_fact_values_exposed_in_operator_projection",
+        ),
+        LAYER3_API: (
+            "layer3_sec_edgar_html_inline_xbrl_fact_material_bridge",
+            "Layer3SecEdgarHtmlInlineXbrlFactMaterialBridgeRequest",
+            "Layer3SecEdgarHtmlInlineXbrlFactMaterialBridgeResponse",
+            "/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+            "inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority",
+            "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_bridge_stale_or_unsafe",
+            "sec_edgar_html_inline_xbrl_fact_material_bridge_ready",
+            "sec_edgar_html_inline_xbrl_fact_material_bridge_forbidden_request_fields",
+            "value_text\" not in response.text",
+            "value_text\" in csv_text",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact material bridge runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -114120,6 +114211,7 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_fact_authority_selection(errors)
     _check_sec_edgar_html_inline_xbrl_fact_authority_runtime(errors)
     _check_sec_edgar_html_inline_xbrl_fact_material_bridge_selection(errors)
+    _check_sec_edgar_html_inline_xbrl_fact_material_bridge_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
