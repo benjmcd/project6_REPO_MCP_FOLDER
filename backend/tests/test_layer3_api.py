@@ -1782,6 +1782,200 @@ def test_layer3_api_parses_sec_edgar_html_inline_xbrl_source_family(
     assert str(tmp_path) not in status_response.text
 
 
+def _prepare_sec_edgar_html_inline_xbrl_parser_authority(
+    client: TestClient,
+    monkeypatch,
+    *,
+    label: str,
+) -> dict[str, dict]:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    monkeypatch.setattr(
+        layer3_sec_edgar_live_source_artifact,
+        "SEC_EDGAR_CLIENT",
+        _FakeSecEdgarClient(
+            [
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=_sec_edgar_real_filing_submissions_payload(),
+                    final_url="https://data.sec.gov/submissions/CIK0000320193.json",
+                ),
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=_sec_edgar_html_inline_xbrl_submission_text(),
+                    final_url=(
+                        "https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/"
+                        "0000320193-24-000123.txt"
+                    ),
+                ),
+            ]
+        ),
+    )
+    connector_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=_sec_edgar_real_filing_connector_payload(
+            client_request_id=f"sec-edgar-html-inline-xbrl-connector-{label}",
+            form_types=["10-K"],
+        ),
+    )
+    assert connector_response.status_code == 200, connector_response.text
+    connector = connector_response.json()
+    acquisition = connector["acquisition_receipts"][0]
+    parser_payload = {
+        "client_request_id": f"sec-edgar-html-inline-xbrl-parser-{label}",
+        "parser_mode": "sec_edgar_html_inline_xbrl_source_family_parser_v1",
+        "operator_decision": "parse_sec_edgar_html_inline_xbrl_source_family",
+        "connector_receipt_id": connector["connector_receipt_id"],
+        "connector_receipt_hash": connector["connector_receipt_hash"],
+        "connector_example_id": acquisition["example_id"],
+        "live_source_artifact_receipt_id": acquisition["live_source_artifact_receipt_id"],
+        "live_source_artifact_receipt_hash": acquisition["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": acquisition["source_artifact_receipt"][
+            "source_artifact_receipt_hash"
+        ],
+        "operator_confirmation": True,
+    }
+    parser_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+        json=parser_payload,
+    )
+    assert parser_response.status_code == 200, parser_response.text
+    return {
+        "connector": connector,
+        "acquisition": acquisition,
+        "parser": parser_response.json(),
+        "parser_payload": parser_payload,
+    }
+
+
+def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_material_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_parser_authority(client, monkeypatch, label="bridge-001")
+    parser = prepared["parser"]
+    acquisition = prepared["acquisition"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-material-bridge-001",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+        "operator_decision": "bridge_sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority",
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_material_bridge.v1"
+    assert body["bridge_state"] == "sec_edgar_html_inline_xbrl_material_bridge_ready"
+    assert body["source_family"] == "sec_edgar_html_inline_xbrl"
+    assert body["parser_family"] == "sec_edgar_html_inline_xbrl_source_family_parser_v1"
+    assert body["typed_content_contract_id"] == "sec_edgar_html_inline_xbrl_material_units_v1"
+    assert body["dataset_version_id"].startswith("dv-sec-html-")
+    assert body["material_preview_request_basis"]["dataset_version_ids"] == [body["dataset_version_id"]]
+    assert body["materialization_summary"]["text_unit_count"] >= 1
+    assert body["materialization_summary"]["table_unit_count"] == 1
+    assert body["materialization_summary"]["raw_content_returned"] is False
+    assert body["material_preview_hash"]
+    assert body["gate_b_decision_manifest_id"]
+    assert body["negative_invariants"]["live_sec_network_fetch_performed_by_bridge"] is False
+    assert body["negative_invariants"]["xml_xbrl_fact_authority_created"] is False
+    assert body["negative_invariants"]["direct_unbridged_html_inline_xbrl_parser_receipt_material_authority_admitted"] is False
+    assert body["authority_hashes"]["source_artifact_receipt_hash"] == acquisition["source_artifact_receipt"][
+        "source_artifact_receipt_hash"
+    ]
+    assert "https://www.sec.gov" not in response.text
+    assert "aapl-20240928.htm" not in response.text
+    assert "Company narrative" not in response.text
+    assert str(tmp_path) not in response.text
+
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=body["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    assert gate_b_response.json()["material_preview_hash"] == body["material_preview_hash"]
+    assert gate_b_response.json()["gate_b_decision_manifest_id"] == body["gate_b_decision_manifest_id"]
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["idempotent_replay"] is True
+    assert replay_response.json()["bridge_receipt_hash"] == body["bridge_receipt_hash"]
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge/status/"
+        f"{body['bridge_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_material_bridge_status.v1"
+    assert status_response.json()["bridge_receipt_hash"] == body["bridge_receipt_hash"]
+    assert "https://www.sec.gov" not in status_response.text
+    assert "Company narrative" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_material_bridge_stale_or_unsafe(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_parser_authority(client, monkeypatch, label="bridge-reject")
+    parser = prepared["parser"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-material-bridge-reject",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+        "operator_decision": "bridge_sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority",
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    stale_parser_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+        json={**payload, "parser_receipt_hash": "f" * 64},
+    )
+    assert stale_parser_response.status_code == 409, stale_parser_response.text
+    assert stale_parser_response.json()["error_code"] == "sec_edgar_html_inline_xbrl_parser_receipt_hash_mismatch"
+
+    stale_connector_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+        json={**payload, "expected_connector_receipt_hash": "e" * 64},
+    )
+    assert stale_connector_response.status_code == 409, stale_connector_response.text
+    assert stale_connector_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_material_bridge_connector_receipt_hash_mismatch"
+    )
+
+    unconfirmed_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+        json={**payload, "operator_confirmed": False},
+    )
+    assert unconfirmed_response.status_code == 200, unconfirmed_response.text
+    assert unconfirmed_response.json()["bridge_state"] == "sec_edgar_html_inline_xbrl_material_bridge_blocked"
+    assert unconfirmed_response.json()["status_projection"]["blocked_reasons"][0]["reason"] == (
+        "missing_operator_confirmation"
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+        json={**payload, "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == "sec_edgar_html_inline_xbrl_material_bridge_forbidden_request_fields"
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
+
+
 def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_parser_stale_or_unsafe(
     client: TestClient,
     monkeypatch,
