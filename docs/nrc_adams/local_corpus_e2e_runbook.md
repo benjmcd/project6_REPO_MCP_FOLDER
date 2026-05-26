@@ -9901,3 +9901,42 @@ next_exact_posture: sec_edgar_html_inline_xbrl_material_bridge_runtime_v1
 ```
 
 This freeze admits only the next bridge contract for HTML/iXBRL parser receipts. The future runtime must bind a verified parser receipt to the connector and retained source-artifact authority, materialize only bounded narrative/table units as `dataset_version` material authority, and return a material-preview/Gate B binding without creating XBRL fact authority or claiming full SEC financial semantics.
+
+## SEC EDGAR HTML Inline XBRL Material Bridge Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_material_bridge_runtime_v1
+source_bridge_selection: next_milestone_plans/Layer3_planning_docs/1172-sec-edgar-html-inline-xbrl-material-bridge-selection.md
+current_main_entry: c8b42bb9c67052cfabc54e6381be898d5532fb93
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_material_bridge.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge/status/{sec_edgar_html_inline_xbrl_material_bridge_receipt_id}
+implemented_bridge_mode: sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1
+implemented_operator_decision: bridge_sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority
+implemented_source_authority: sec_edgar_html_inline_xbrl_parser_receipt_plus_connector_receipt_plus_live_source_artifact_receipt
+implemented_material_source_class: dataset_version
+implemented_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1
+implemented_material_payload: bounded_primary_document_narrative_segments_and_html_table_candidate_units_from_retained_complete_submission_text
+implemented_bridge_output: materialized_dataset_version_material_preview_request_basis_gate_b_authority_binding_and_redacted_status_projection
+implemented_material_preview_compatibility: existing_layer3_dataset_version_material_preview_without_source_class_widening
+implemented_gate_b_compatibility: existing_gate_b_material_preview_hash_and_decision_basis_validation
+direct_unbridged_html_inline_xbrl_parser_receipt_material_authority_admitted: false
+live_sec_network_fetch_performed_by_bridge: false
+submissions_lookup_runtime_performed_by_bridge: false
+arbitrary_url_or_upload_parse_admitted: false
+xml_xbrl_fact_authority_created: false
+financial_statement_semantics_enabled: false
+candidate_b_general_sec_parser_admitted: false
+generic_connector_dispatch_enabled: false
+raw_sec_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_material_bridge.py ./backend/app/services/layer3_aps_source_family.py ./backend/app/api/layer3.py ./backend/tests/test_layer3_api.py PASS
+focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k "html_inline_xbrl_material_bridge or html_inline_xbrl_source_family or sec_edgar_real_filing_connector" PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection_v1
+```
+
+The runtime materializes bounded primary-document narrative and HTML table candidate units from a verified SEC EDGAR HTML/iXBRL parser receipt into existing `dataset_version` Layer 3 material authority. It revalidates parser, connector, retained live artifact, source artifact, reparsed inventory, materialization, material-preview, and Gate B decision-basis hashes before returning a redacted operator projection.
