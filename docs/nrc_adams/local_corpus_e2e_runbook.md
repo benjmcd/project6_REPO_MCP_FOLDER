@@ -9428,3 +9428,57 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operato
 ```
 
 The selected rendered control is a downstream operator surface over the existing live repeatability-trial endpoint. It may submit structured original/repeat live status requests and status hashes to the server, but only the server may revalidate live authority, accept or block the trial, record the append-only receipt, and return redacted operator-visible status.
+
+## SEC EDGAR Text Table Live Source Artifact Downstream Operator Repeatability Rendered Status Runtime
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_runtime_v1
+source_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1162-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-selection.md
+source_repeatability_trial_runtime: next_milestone_plans/Layer3_planning_docs/1161-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-runtime.md
+current_main_entry: f557ac40036a82ad696197aae917e25deec2adc3
+runtime_status: implemented
+rendered_status: implemented
+implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial
+implemented_bootstrap_endpoint_field: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_endpoint
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial
+implemented_existing_live_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+implemented_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control
+implemented_trial_mode: append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution
+implemented_operator_decision: record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial
+implemented_panel: sec-edgar-live-downstream-repeatability-trial-panel
+implemented_form: sec-edgar-live-downstream-repeatability-trial-form
+implemented_submit: sec-edgar-live-downstream-repeatability-trial-submit
+implemented_payload_fields: client_request_id,trial_mode,operator_decision,original_operator_status_request,original_operator_status_hash,repeat_operator_status_request,repeat_operator_status_hash,operator_repeatability_disposition,operator_confirmation
+implemented_response_projection_fields: operator_repeatability_trial_state,operator_repeatability_disposition,trial_receipt_id,trial_receipt_hash,trial_receipt_ref,authority_pair_hash,idempotent_replay,original_operator_status,repeat_operator_status,authority_bindings,operator_status_hash_comparison,proof_hash_comparison,coverage_step_set_comparison,trial_authority,operator_visible_repeatability_trial_status,fail_closed_behavior,negative_invariants,next_allowed_actions
+test_only_fixture_route: /__test/layer3/sec-edgar-live-repeatability-trial
+test_only_fixture_route_user_facing_authority: false
+browser_held_status_hash_alone_is_not_authority: true
+append_only_repeatability_trial_receipt_required: true
+stale_original_operator_status_must_fail_closed: true
+mismatched_live_source_artifact_receipt_must_fail_closed: true
+rendered_trial_creates_live_downstream_proof: false
+rendered_trial_fetches_sec_content: false
+rendered_trial_parses_xml_html_inline_xbrl: false
+rendered_trial_starts_process: false
+rendered_trial_dispatches_connector: false
+rendered_trial_writes_provider_object: false
+rendered_trial_adds_rag_or_model_runtime: false
+rendered_trial_activates_full_mockup: false
+raw_original_status_request_rendered: false
+raw_repeat_status_request_rendered: false
+raw_trial_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+frontend_durable_authority_enabled: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+headless_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "SEC EDGAR live downstream repeatability trial" --project=chromium PASS
+headed_rendered_trial_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "SEC EDGAR live downstream repeatability trial" --project=chromium --headed PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync_v1
+```
+
+The implemented rendered control submits original and repeat live downstream operator-status requests to the existing server repeatability-trial endpoint. The browser still holds no durable authority: the server revalidates both live status projections, accepts or blocks the append-only trial receipt, and returns only the redacted projection. The test-only fixture route prepares repeatable browser inputs, not user-facing authority.
