@@ -3294,6 +3294,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_RUNTIME = (
     PLANNING_DOCS
     / "1157-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1158-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -110391,6 +110395,71 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Rendered Status Current Main Sync",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1157-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-runtime.md",
+            "current_main_entry: 1eb4a00e96cd39d5d70f9f7336edb892712cb6cd",
+            'source_pr: "#1860"',
+            "source_merge_commit: 1eb4a00e96cd39d5d70f9f7336edb892712cb6cd",
+            "ci_status: passed",
+            "ci_successful_checks: 10",
+            "synced_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+            "synced_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+            "synced_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control",
+            "synced_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1",
+            "synced_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status",
+            "synced_panel: sec-edgar-live-downstream-operator-status-panel",
+            "synced_payload_fields: client_request_id,status_mode,operator_decision,live_downstream_proof_request,expected_proof_hash",
+            "synced_available_requires_server_revalidated_live_proof_request: true",
+            "synced_available_requires_expected_proof_hash_match: true",
+            "synced_browser_held_hash_alone_is_not_authority: true",
+            "synced_sec_edgar_browser_fixture_state_isolation: true",
+            "synced_sec_edgar_browser_fixture_variable_ids_are_dataset_scoped: true",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "source_expansion_admitted: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_closeout_readiness_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1157-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-runtime.md",
+            "current_main_entry: 1eb4a00e96cd39d5d70f9f7336edb892712cb6cd",
+            'source_pr: "#1860"',
+            "current_main_contains_live_source_artifact_downstream_rendered_status: true",
+            "synced_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status",
+            "synced_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control",
+            "synced_available_requires_server_revalidated_live_proof_request: true",
+            "synced_sec_edgar_browser_fixture_state_isolation: true",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_closeout_readiness_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_RENDERED_STATUS_RUNTIME: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream rendered status current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -111536,6 +111605,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync(
         errors
     )
 
