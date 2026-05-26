@@ -9751,3 +9751,36 @@ next_exact_posture: sec_edgar_real_filing_acquisition_connector_downstream_valid
 ```
 
 This freeze selects the first downstream-validation receipt for connector-acquired SEC examples. The selected runtime should prove one supported complete-submission text example from the connector receipt reaches the existing SEC source-acquisition, live material bridge, Gate B, downstream proof, and operator-status chain without adding parser expansion, DatasetVersion creation, HTML/iXBRL parsing, package/delivery mutation, provider writes, generic connector dispatch, RAG/model runtime, or raw URL/path/artifact-byte exposure.
+
+## SEC EDGAR Real Filing Acquisition Connector Downstream Validation Runtime
+
+```yaml
+milestone: sec_edgar_real_filing_acquisition_connector_downstream_validation_runtime_v1
+source_downstream_validation_selection: next_milestone_plans/Layer3_planning_docs/1168-sec-edgar-real-filing-acquisition-connector-downstream-validation-selection.md
+current_main_entry: afd66809f60483974365f2418365634943210b9d
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_real_filing_downstream_validation.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation/status/{sec_edgar_real_filing_downstream_validation_receipt_id}
+implemented_validation_mode: sec_edgar_real_filing_acquisition_connector_downstream_validation_v1
+implemented_operator_decision: record_sec_edgar_real_filing_connector_downstream_validation
+implemented_receipt_model: append_only_redacted_validation_receipt_bound_to_connector_example_live_artifact_source_acquisition_live_bridge_downstream_proof_and_operator_status
+implemented_downstream_authority_chain: connector_receipt,live_source_artifact_acquisition,source_acquisition_authority,live_material_authority_bridge,gate_b_commit,downstream_proof,operator_status
+implemented_html_inline_xbrl_behavior: classify_not_parse_no_generic_text_downgrade
+live_sec_network_fetch_performed_by_validation: false
+dataset_version_creation_admitted: false
+gate_b_mutation_admitted_in_validation: false
+package_or_delivery_mutation_admitted: false
+candidate_b_general_sec_parser_admitted: false
+generic_connector_dispatch_enabled: false
+raw_sec_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_real_filing_downstream_validation.py ./backend/app/services/layer3_sec_edgar_real_filing_acquisition_connector.py ./backend/app/api/layer3.py PASS
+focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k "sec_edgar_real_filing_connector_downstream or sec_edgar_real_filing_connector or live_sec_edgar_source_artifact_downstream" PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_selection_v1
+```
+
+This runtime turns a connector-acquired supported complete-submission text example into redacted downstream-validation evidence. Operators can verify that the same source artifact/content authority moved through live acquisition, source acquisition, live material bridge, Gate B, downstream proof, and operator status. The runtime deliberately leaves HTML/iXBRL parsing as the next selected source-family gap rather than silently downgrading it into generic text.

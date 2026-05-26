@@ -36,6 +36,7 @@ from app.services import (
     layer3_sec_edgar_live_material_bridge,
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_real_filing_acquisition_connector,
+    layer3_sec_edgar_real_filing_downstream_validation,
     layer3_sec_edgar_repeatability_trial,
     layer3_sec_edgar_source_acquisition,
     layer3_provider_private_signed_url,
@@ -482,6 +483,33 @@ class Layer3SecEdgarRealFilingAcquisitionConnectorRequest(BaseModel):
     example_set_mode: Literal["bounded_real_sec_validation_corpus_v1"] | None = None
     cik_refs: list[str] | None = None
     form_types: list[str] | None = None
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarRealFilingDownstreamValidationRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    validation_mode: Literal["sec_edgar_real_filing_acquisition_connector_downstream_validation_v1"]
+    operator_decision: Literal["record_sec_edgar_real_filing_connector_downstream_validation"]
+    connector_receipt_id: str = Field(min_length=1)
+    connector_receipt_hash: str = Field(min_length=64, max_length=64)
+    connector_example_id: str = Field(min_length=1)
+    live_source_artifact_receipt_id: str = Field(min_length=1)
+    live_source_artifact_receipt_hash: str = Field(min_length=64, max_length=64)
+    source_acquisition_receipt_id: str = Field(min_length=1)
+    source_acquisition_receipt_hash: str = Field(min_length=64, max_length=64)
+    live_source_artifact_material_bridge_receipt_id: str = Field(min_length=1)
+    live_source_artifact_material_bridge_receipt_hash: str = Field(min_length=64, max_length=64)
+    material_bridge_receipt_hash: str = Field(min_length=64, max_length=64)
+    gate_b_decision_manifest_id: str = Field(min_length=1)
+    live_downstream_proof_hash: str = Field(min_length=64, max_length=64)
+    downstream_proof_hash: str = Field(min_length=64, max_length=64)
+    operator_status_request: dict[str, Any]
+    operator_status_hash: str = Field(min_length=64, max_length=64)
     operator_confirmation: bool
     actor: str | None = None
 
@@ -7618,6 +7646,30 @@ class Layer3SecEdgarRealFilingAcquisitionConnectorResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarRealFilingDownstreamValidationResponse(Layer3BaseResponse):
+    validation_mode: str
+    operator_decision: str
+    validation_state: str
+    validation_receipt_id: str
+    validation_receipt_hash: str
+    validation_receipt_ref: str
+    idempotent_replay: bool
+    connector_receipt_id: str
+    connector_receipt_hash: str
+    connector_example_id: str
+    authority_bindings: dict[str, Any]
+    identity_binding: dict[str, Any]
+    identity_binding_hash: str
+    diagnostics: dict[str, Any]
+    diagnostics_hash: str
+    operator_status_summary: dict[str, Any]
+    status_projection: dict[str, Any]
+    cache: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse(Layer3BaseResponse):
     mode: str
     bridge_state: str
@@ -14490,6 +14542,38 @@ def get_sec_edgar_real_filing_acquisition_connector_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_real_filing_acquisition_connector.inspect_sec_edgar_real_filing_acquisition_connector_status(
             sec_edgar_real_filing_acquisition_connector_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/real-filing/acquisition/connector/downstream-validation",
+    response_model=Layer3SecEdgarRealFilingDownstreamValidationResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_real_filing_downstream_validation(
+    payload: Layer3SecEdgarRealFilingDownstreamValidationRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_real_filing_downstream_validation.record_sec_edgar_real_filing_connector_downstream_validation(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/real-filing/acquisition/connector/downstream-validation/status/{sec_edgar_real_filing_downstream_validation_receipt_id}",
+    response_model=Layer3SecEdgarRealFilingDownstreamValidationResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_real_filing_downstream_validation_status(
+    sec_edgar_real_filing_downstream_validation_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_real_filing_downstream_validation.inspect_sec_edgar_real_filing_downstream_validation_status(
+            sec_edgar_real_filing_downstream_validation_receipt_id,
         )
     )
 
