@@ -52,6 +52,7 @@ from app.services import (
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_delivery_status_provenance,
     layer3_sec_edgar_operator_inspection,
+    layer3_sec_edgar_operator_product_surface,
     layer3_sec_edgar_real_company_corpus_validation,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_real_filing_downstream_validation,
@@ -574,6 +575,20 @@ class Layer3SecEdgarOperatorInspectionRequest(BaseModel):
     operator_decision: Literal["inspect_sec_edgar_real_company_operator_surface"]
     sec_edgar_delivery_status_provenance_receipt_id: str = Field(min_length=1)
     sec_edgar_delivery_status_provenance_receipt_hash: str = Field(min_length=64, max_length=64)
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarOperatorProductSurfaceRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    surface_mode: Literal["sec_edgar_operator_product_surface_runtime_v1"]
+    operator_decision: Literal["render_sec_edgar_operator_product_surface"]
+    sec_edgar_operator_inspection_receipt_id: str = Field(min_length=1)
+    sec_edgar_operator_inspection_receipt_hash: str = Field(min_length=64, max_length=64)
     operator_confirmation: bool
     actor: str | None = None
 
@@ -8194,6 +8209,30 @@ class Layer3SecEdgarOperatorInspectionResponse(Layer3BaseResponse):
     next_allowed_actions: list[str] | None = None
 
 
+class Layer3SecEdgarOperatorProductSurfaceResponse(Layer3BaseResponse):
+    surface_mode: str
+    rendered_mode: str
+    operator_decision: str
+    operator_product_surface_state: str
+    operator_product_surface_receipt_id: str | None = None
+    operator_product_surface_receipt_hash: str | None = None
+    operator_product_surface_receipt_ref: str | None = None
+    operator_inspection_receipt_id: str | None = None
+    operator_inspection_receipt_hash: str | None = None
+    delivery_status_provenance_receipt_id: str | None = None
+    delivery_status_provenance_receipt_hash: str | None = None
+    validation_receipt_hash: str | None = None
+    connector_receipt_hash: str | None = None
+    product_views: dict[str, Any] | None = None
+    surface_rollup: dict[str, Any] | None = None
+    authority_chain: dict[str, Any] | None = None
+    cache: dict[str, Any] | None = None
+    blocked_reasons: list[dict[str, Any]] | None = None
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str] | None = None
+
+
 class Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse(Layer3BaseResponse):
     parser_mode: str
     operator_decision: str
@@ -15760,6 +15799,38 @@ def get_sec_edgar_operator_inspection_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_operator_inspection.inspect_sec_edgar_operator_inspection_status(
             sec_edgar_operator_inspection_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/real-company-corpus/operator-product-surface",
+    response_model=Layer3SecEdgarOperatorProductSurfaceResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_operator_product_surface(
+    payload: Layer3SecEdgarOperatorProductSurfaceRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_operator_product_surface.render_sec_edgar_operator_product_surface(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/real-company-corpus/operator-product-surface/status/{sec_edgar_operator_product_surface_receipt_id}",
+    response_model=Layer3SecEdgarOperatorProductSurfaceResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_operator_product_surface_status(
+    sec_edgar_operator_product_surface_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_operator_product_surface.inspect_sec_edgar_operator_product_surface_status(
+            sec_edgar_operator_product_surface_receipt_id,
         )
     )
 
