@@ -29,6 +29,17 @@ REDACTION_POLICY_ID = "sec_edgar_delivery_status_provenance_redaction_v1"
 EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")
 EXPECTED_FILING_COUNT = 8
 REQUIRED_OUTPUT = "handoff_export_prepare"
+DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTION_VERSION = "sec_edgar_delivery_status_provenance_breadth_selection_v1"
+DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_MATRIX = ("XOM", "PFE", "UAL", "T")
+DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_PROFILE_TAGS = (
+    "energy_major",
+    "pharmaceutical_life_sciences",
+    "airline_transport",
+    "telecom_media",
+    "debt_intensive",
+    "commodity_exposure",
+)
+DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED = False
 
 ALLOWED_FIELDS = {
     "schema_id",
