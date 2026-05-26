@@ -1,0 +1,82 @@
+# SEC EDGAR Text Table Live Source Artifact Downstream Operator Status Runtime
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_status_runtime_v1
+selection: next_milestone_plans/Layer3_planning_docs/1153-sec-edgar-text-table-live-source-artifact-downstream-operator-status-selection.md
+current_main_entry: 425d46b50e0095e312562037eef7d6c544275057
+entry_decision: runtime_implementation
+implemented_runtime_status: implemented
+implemented_rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_live_downstream_status.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+implemented_request_model: Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorStatusRequest
+implemented_response_model: Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorStatusResponse
+implemented_schema_id: layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_status.v1
+implemented_request_schema_id: layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_status_request.v1
+implemented_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1
+implemented_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status
+implemented_status_states: not_recorded,available,blocked
+implemented_authority_model: live_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+implemented_receipt_model: deterministic_no_new_storage_status_projection_over_existing_live_proof_authority
+implemented_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_status
+implemented_hash_bindings: expected_proof_hash,proof_hash,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash
+not_recorded_status_projected: true
+available_status_projected: true
+blocked_status_projected: true
+available_requires_server_revalidated_live_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_fails_closed: true
+raw_or_forbidden_live_proof_authority_fails_closed: true
+ambiguous_hash_without_proof_authority_fails_closed: true
+status_reuses_existing_live_downstream_proof_validator: true
+status_creates_downstream_proof: false
+status_mutates_gate_b_session: false
+status_mutates_material_snapshot: false
+status_mutates_package_or_delivery: false
+status_fetches_sec_content: false
+status_parses_xml_html_inline_xbrl: false
+status_creates_runtime_storage_root: false
+status_starts_process: false
+status_dispatches_connector: false
+status_writes_provider_object: false
+status_adds_rag_or_model_runtime: false
+status_activates_full_mockup: false
+raw_proof_request_rendered: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+verification_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_live_downstream_status.py ./backend/app/services/layer3_sec_edgar_live_downstream_proof.py ./backend/app/api/layer3.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_api.py ./backend/tests/test_layer3_bootstrap_contract.py ./tools/l3-progress-check.py PASS
+verification_pytest_focused: python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_api_reports_live_sec_edgar_downstream_operator_status ./backend/tests/test_layer3_bootstrap_contract.py -q PASS
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_status_runtime_current_main_sync_v1
+```
+
+The runtime adds a server-owned live downstream operator-status endpoint. It reports `not_recorded` when no live proof authority is supplied, `available` only when the supplied live downstream proof request revalidates server-side and matches the expected proof hash, and `blocked` for stale, contradictory, ambiguous, missing, incomplete, or forbidden proof authority.
+
+The status runtime is deterministic and no-new-storage. It does not create downstream proof, mutate Gate B/session/material/package/delivery state, create storage roots, fetch SEC content, parse XML/HTML/inline XBRL, dispatch connectors, write provider objects, add RAG/vector/model runtime, activate full mockup behavior, or rely on frontend/browser storage as durable authority.
+
+## Coherence Check
+
+- Does this make browser-held proof JSON durable authority? Recommended answer: no. The server revalidates the submitted proof request and compares the recomputed proof hash.
+- Does this implement rendered UI? Recommended answer: no. It creates the server status endpoint that rendered UI can safely project later.
+- What comes next? Recommended answer: sync this runtime to current main, then select rendered status over this server-owned status endpoint.
