@@ -328,6 +328,9 @@ const SEC_EDGAR_LIVE_SOURCE_ARTIFACT_ACQUISITION_OPERATOR_DECISION = 'acquire_se
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_layer3_operator_status_control';
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_downstream_layer3_operator_status_v1';
 const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_text_table_downstream_layer3_operator_status';
+const SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control';
+const SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1';
+const SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status';
 const SEC_EDGAR_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_sec_edgar_text_table_downstream_operator_repeatability_trial_control';
 const SEC_EDGAR_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_downstream_status_authority_without_sec_fetch_or_processing_execution';
 const SEC_EDGAR_REPEATABILITY_TRIAL_OPERATOR_DECISION = 'record_sec_edgar_text_table_downstream_operator_repeatability_trial';
@@ -680,6 +683,13 @@ const State = {
         downstreamProofRequestJson: '',
         expectedProofHash: '',
     },
+    secEdgarLiveDownstreamOperatorStatus: null,
+    secEdgarLiveDownstreamOperatorStatusError: null,
+    secEdgarLiveDownstreamOperatorStatusPending: false,
+    secEdgarLiveDownstreamOperatorStatusInput: {
+        liveDownstreamProofRequestJson: '',
+        expectedProofHash: '',
+    },
     secEdgarDownstreamRepeatabilityTrial: null,
     secEdgarDownstreamRepeatabilityTrialError: null,
     secEdgarDownstreamRepeatabilityTrialPending: false,
@@ -940,6 +950,7 @@ const elements = {
     secEdgarSourceAcquisitionAuthorityPanel: document.getElementById('sec-edgar-source-acquisition-authority-panel'),
     secEdgarLiveSourceArtifactAcquisitionPanel: document.getElementById('sec-edgar-live-source-artifact-acquisition-panel'),
     secEdgarDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-downstream-operator-status-panel'),
+    secEdgarLiveDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-live-downstream-operator-status-panel'),
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
@@ -8004,6 +8015,12 @@ function secEdgarDownstreamOperatorStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function secEdgarLiveDownstreamOperatorStatusEndpointPath(contract) {
+    const endpoint = contract?.sec_edgar_text_table_live_source_artifact_downstream_operator_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function secEdgarDownstreamRepeatabilityTrialEndpointPath(contract) {
     const endpoint = contract?.sec_edgar_text_table_downstream_operator_repeatability_trial_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8489,6 +8506,23 @@ function secEdgarDownstreamOperatorStatusInputValues() {
         expectedProofHash: (
             expectedHashInput?.value
             || State.secEdgarDownstreamOperatorStatusInput.expectedProofHash
+            || ''
+        ).trim(),
+    };
+}
+
+function secEdgarLiveDownstreamOperatorStatusInputValues() {
+    const proofRequestInput = document.getElementById('sec-edgar-live-downstream-operator-status-proof-request-json');
+    const expectedHashInput = document.getElementById('sec-edgar-live-downstream-operator-status-expected-proof-hash');
+    return {
+        liveDownstreamProofRequestJson: (
+            proofRequestInput?.value
+            || State.secEdgarLiveDownstreamOperatorStatusInput.liveDownstreamProofRequestJson
+            || ''
+        ).trim(),
+        expectedProofHash: (
+            expectedHashInput?.value
+            || State.secEdgarLiveDownstreamOperatorStatusInput.expectedProofHash
             || ''
         ).trim(),
     };
@@ -9700,6 +9734,23 @@ function secEdgarDownstreamOperatorStatusPayload() {
     return payload;
 }
 
+function secEdgarLiveDownstreamOperatorStatusPayload() {
+    const values = secEdgarLiveDownstreamOperatorStatusInputValues();
+    State.secEdgarLiveDownstreamOperatorStatusInput = values;
+    const payload = {
+        client_request_id: requestId(),
+        status_mode: SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_MODE,
+        operator_decision: SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION,
+    };
+    if (values.liveDownstreamProofRequestJson) {
+        payload.live_downstream_proof_request = JSON.parse(values.liveDownstreamProofRequestJson);
+    }
+    if (values.expectedProofHash) {
+        payload.expected_proof_hash = values.expectedProofHash;
+    }
+    return payload;
+}
+
 function secEdgarDownstreamRepeatabilityTrialPayload() {
     const values = secEdgarDownstreamRepeatabilityTrialInputValues();
     State.secEdgarDownstreamRepeatabilityTrialInput = values;
@@ -10172,6 +10223,14 @@ function canInspectSecEdgarDownstreamOperatorStatus(contract = layer3ExecutionRe
         contract?.sec_edgar_text_table_downstream_operator_status_admitted
         && secEdgarDownstreamOperatorStatusEndpointPath(contract)
         && !State.secEdgarDownstreamOperatorStatusPending
+    );
+}
+
+function canInspectSecEdgarLiveDownstreamOperatorStatus(contract = layer3ExecutionReadinessContract()) {
+    return Boolean(
+        contract?.sec_edgar_text_table_live_source_artifact_downstream_operator_status_admitted
+        && secEdgarLiveDownstreamOperatorStatusEndpointPath(contract)
+        && !State.secEdgarLiveDownstreamOperatorStatusPending
     );
 }
 
@@ -10889,6 +10948,27 @@ function secEdgarDownstreamOperatorStatusPanelState() {
         return { label: 'sec_edgar_downstream_operator_status_not_recorded', pill: 'preview' };
     }
     return { label: 'sec_edgar_downstream_operator_status_not_inspected', pill: 'preview' };
+}
+
+function secEdgarLiveDownstreamOperatorStatusPanelState() {
+    if (State.secEdgarLiveDownstreamOperatorStatusPending) {
+        return { label: 'sec_edgar_live_downstream_operator_status_pending', pill: 'preview' };
+    }
+    if (State.secEdgarLiveDownstreamOperatorStatusError) {
+        const code = State.secEdgarLiveDownstreamOperatorStatusError?.payload?.error?.code;
+        return { label: code || 'sec_edgar_live_downstream_operator_status_blocked', pill: 'blocked' };
+    }
+    const state = State.secEdgarLiveDownstreamOperatorStatus?.operator_status_state;
+    if (state === 'available') {
+        return { label: 'sec_edgar_live_downstream_operator_status_available', pill: 'ok' };
+    }
+    if (state === 'blocked') {
+        return { label: 'sec_edgar_live_downstream_operator_status_blocked', pill: 'blocked' };
+    }
+    if (state === 'not_recorded') {
+        return { label: 'sec_edgar_live_downstream_operator_status_not_recorded', pill: 'preview' };
+    }
+    return { label: 'sec_edgar_live_downstream_operator_status_not_inspected', pill: 'preview' };
 }
 
 function secEdgarDownstreamRepeatabilityTrialPanelState() {
@@ -11830,6 +11910,78 @@ function secEdgarDownstreamOperatorStatusRows(status) {
                 <strong>Blocked Reasons And Guardrails</strong>
                 <ul>
                     ${blockedReasons.map((reason) => fieldItem('blocked reason', reason.reason || reason.message, { code: true })).join('')}
+                    ${fieldItem('raw proof receipt path rendered', status.raw_proof_receipt_path_rendered)}
+                    ${fieldItem('raw local path rendered', status.raw_local_path_rendered)}
+                    ${fieldItem('raw URL rendered', status.raw_url_rendered)}
+                    ${fieldItem('artifact bytes rendered', status.artifact_bytes_rendered)}
+                    ${fieldItem('frontend durable authority enabled', status.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', status.browser_storage_authority_enabled)}
+                    ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secEdgarLiveDownstreamOperatorStatusRows(status) {
+    if (!status) return '';
+    const proofSummary = status.proof_summary || {};
+    const projection = status.status_projection || {};
+    const blockedReasons = Array.isArray(status.blocked_reasons) ? status.blocked_reasons : [];
+    const nextActions = Array.isArray(status.next_allowed_actions) ? status.next_allowed_actions : [];
+    const coverage = Array.isArray(proofSummary.coverage) ? proofSummary.coverage : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>SEC EDGAR Live Operator Status</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('state', status.operator_status_state, { code: true })}
+                    ${fieldItem('status', status.status, { code: true })}
+                    ${fieldItem('proof available', status.proof_available)}
+                    ${fieldItem('operator status hash', status.operator_status_hash, { code: true })}
+                    ${fieldItem('projection ref', status.operator_status_projection_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Live Proof Binding</strong>
+                <ul>
+                    ${fieldItem('expected proof hash', status.expected_proof_hash, { code: true })}
+                    ${fieldItem('proof hash', status.proof_hash, { code: true })}
+                    ${fieldItem('proof state', status.proof_state, { code: true })}
+                    ${fieldItem('dataset version id', status.dataset_version_id, { code: true })}
+                    ${fieldItem('live source artifact receipt hash', status.live_source_artifact_receipt_hash, { code: true })}
+                    ${fieldItem('source acquisition receipt hash', status.source_acquisition_receipt_hash, { code: true })}
+                    ${fieldItem('live material bridge receipt hash', status.live_source_artifact_material_bridge_receipt_hash, { code: true })}
+                    ${fieldItem('material bridge receipt hash', status.material_bridge_receipt_hash, { code: true })}
+                    ${fieldItem('material preview hash', status.material_preview_hash, { code: true })}
+                    ${fieldItem('Gate B decision manifest id', status.gate_b_decision_manifest_id, { code: true })}
+                    ${fieldItem('session id', status.session_id, { code: true })}
+                    ${fieldItem('selection manifest id', status.selection_manifest_id, { code: true })}
+                    ${fieldItem('material snapshot payload hash', status.material_snapshot_payload_hash, { code: true })}
+                    ${fieldItem('downstream proof hash', status.downstream_proof_hash, { code: true })}
+                    ${fieldItem('coverage evidence hash', status.coverage_evidence_hash, { code: true })}
+                    ${fieldItem('negative invariants hash', status.negative_invariants_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Redacted Live Proof Summary</strong>
+                <ul>
+                    ${fieldItem('source family', proofSummary.source_family, { code: true })}
+                    ${fieldItem('parser family', proofSummary.parser_family, { code: true })}
+                    ${fieldItem('typed content contract id', proofSummary.typed_content_contract_id, { code: true })}
+                    ${fieldItem('coverage steps', coverage.join(', '), { code: true })}
+                    ${fieldItem('server revalidated', projection.server_revalidated)}
+                    ${fieldItem('redacted projection', projection.redacted_projection)}
+                    ${fieldItem('live source artifact authority bound', projection.live_source_artifact_authority_bound)}
+                    ${fieldItem('live material bridge authority bound', projection.live_material_bridge_authority_bound)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Reasons And Guardrails</strong>
+                <ul>
+                    ${blockedReasons.map((reason) => fieldItem('blocked reason', reason.reason || reason.message, { code: true })).join('')}
+                    ${fieldItem('raw proof request rendered', false)}
                     ${fieldItem('raw proof receipt path rendered', status.raw_proof_receipt_path_rendered)}
                     ${fieldItem('raw local path rendered', status.raw_local_path_rendered)}
                     ${fieldItem('raw URL rendered', status.raw_url_rendered)}
@@ -13878,6 +14030,20 @@ function secEdgarDownstreamOperatorStatusError() {
     `;
 }
 
+function secEdgarLiveDownstreamOperatorStatusError() {
+    const error = State.secEdgarLiveDownstreamOperatorStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'sec_edgar_live_downstream_operator_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message || 'SEC EDGAR live downstream operator status inspection failed closed.')}</p>
+        </div>
+    `;
+}
+
 function secEdgarDownstreamRepeatabilityTrialError() {
     const error = State.secEdgarDownstreamRepeatabilityTrialError;
     if (!error) return '';
@@ -14973,6 +15139,50 @@ function renderSecEdgarDownstreamOperatorStatusPanel() {
                 </div>
                 ${secEdgarDownstreamOperatorStatusRows(State.secEdgarDownstreamOperatorStatus)}
                 ${secEdgarDownstreamOperatorStatusError()}
+            </section>
+        </div>
+    `;
+}
+
+function renderSecEdgarLiveDownstreamOperatorStatusPanel() {
+    if (!elements.secEdgarLiveDownstreamOperatorStatusPanel) return;
+    const contract = layer3ExecutionReadinessContract();
+    const statusState = secEdgarLiveDownstreamOperatorStatusPanelState();
+    const inputs = secEdgarLiveDownstreamOperatorStatusInputValues();
+    const endpointAvailable = Boolean(
+        contract?.sec_edgar_text_table_live_source_artifact_downstream_operator_status_admitted
+        && secEdgarLiveDownstreamOperatorStatusEndpointPath(contract)
+    );
+    elements.secEdgarLiveDownstreamOperatorStatusPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC EDGAR live source-family status</span>
+                <h2>Live Downstream Operator Status</h2>
+            </div>
+            <span class="status-pill ${endpointAvailable ? 'ok' : 'blocked'}">
+                ${endpointAvailable ? 'endpoint_admitted' : 'endpoint_missing'}
+            </span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-edgar-live-downstream-operator-status-card">
+                <strong>SEC EDGAR Live Downstream Status Inspection</strong>
+                <form id="sec-edgar-live-downstream-operator-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>live downstream proof request JSON</span>
+                        <textarea id="sec-edgar-live-downstream-operator-status-proof-request-json" rows="7" autocomplete="off" spellcheck="false" placeholder="{&quot;proof_mode&quot;:&quot;sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1&quot;,...}">${escapeHtml(inputs.liveDownstreamProofRequestJson)}</textarea>
+                    </label>
+                    <label>
+                        <span>expected proof hash</span>
+                        <input id="sec-edgar-live-downstream-operator-status-expected-proof-hash" type="text" value="${escapeHtml(inputs.expectedProofHash)}" autocomplete="off" spellcheck="false" placeholder="sha256, optional for not_recorded" />
+                    </label>
+                    <button id="sec-edgar-live-downstream-operator-status-submit" type="submit" ${canInspectSecEdgarLiveDownstreamOperatorStatus(contract) ? '' : 'disabled'}>Inspect Live SEC EDGAR Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server revalidates live source-artifact downstream proof authority and returns only a redacted operator projection; this surface cannot create proof, mutate Gate B, fetch SEC content, parse new SEC formats, expose raw authority, or create frontend durable authority.</span>
+                </div>
+                ${secEdgarLiveDownstreamOperatorStatusRows(State.secEdgarLiveDownstreamOperatorStatus)}
+                ${secEdgarLiveDownstreamOperatorStatusError()}
             </section>
         </div>
     `;
@@ -16371,6 +16581,44 @@ async function inspectSecEdgarDownstreamOperatorStatus(event) {
         addEvent(`SEC EDGAR downstream operator status blocked: ${error.message}`);
     } finally {
         State.secEdgarDownstreamOperatorStatusPending = false;
+        renderAll();
+    }
+}
+
+async function inspectSecEdgarLiveDownstreamOperatorStatus(event) {
+    event.preventDefault();
+    const contract = layer3ExecutionReadinessContract();
+    if (!canInspectSecEdgarLiveDownstreamOperatorStatus(contract)) {
+        State.secEdgarLiveDownstreamOperatorStatus = null;
+        State.secEdgarLiveDownstreamOperatorStatusError = new Error(
+            'SEC EDGAR live downstream status requires the admitted server status endpoint.',
+        );
+        renderSecEdgarLiveDownstreamOperatorStatusPanel();
+        return;
+    }
+    const path = secEdgarLiveDownstreamOperatorStatusEndpointPath(contract);
+    let payload;
+    try {
+        payload = secEdgarLiveDownstreamOperatorStatusPayload();
+    } catch (error) {
+        State.secEdgarLiveDownstreamOperatorStatus = null;
+        State.secEdgarLiveDownstreamOperatorStatusError = error;
+        renderSecEdgarLiveDownstreamOperatorStatusPanel();
+        return;
+    }
+    State.secEdgarLiveDownstreamOperatorStatusPending = true;
+    State.secEdgarLiveDownstreamOperatorStatusError = null;
+    renderSecEdgarLiveDownstreamOperatorStatusPanel();
+    try {
+        State.secEdgarLiveDownstreamOperatorStatus = await postJson(path, payload);
+        State.secEdgarLiveDownstreamOperatorStatusError = null;
+        addEvent('SEC EDGAR live downstream operator status inspected through server revalidation.');
+    } catch (error) {
+        State.secEdgarLiveDownstreamOperatorStatus = null;
+        State.secEdgarLiveDownstreamOperatorStatusError = error;
+        addEvent(`SEC EDGAR live downstream operator status blocked: ${error.message}`);
+    } finally {
+        State.secEdgarLiveDownstreamOperatorStatusPending = false;
         renderAll();
     }
 }
@@ -20360,6 +20608,7 @@ function renderAll() {
     renderSecEdgarSourceAcquisitionAuthorityPanel();
     renderSecEdgarLiveSourceArtifactAcquisitionPanel();
     renderSecEdgarDownstreamOperatorStatusPanel();
+    renderSecEdgarLiveDownstreamOperatorStatusPanel();
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
@@ -24125,6 +24374,11 @@ elements.secEdgarLiveSourceArtifactAcquisitionPanel.addEventListener('change', (
 elements.secEdgarDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
     if (event.target?.id === 'sec-edgar-downstream-operator-status-form') {
         inspectSecEdgarDownstreamOperatorStatus(event);
+    }
+});
+elements.secEdgarLiveDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-edgar-live-downstream-operator-status-form') {
+        inspectSecEdgarLiveDownstreamOperatorStatus(event);
     }
 });
 elements.secEdgarDownstreamRepeatabilityTrialPanel.addEventListener('submit', (event) => {

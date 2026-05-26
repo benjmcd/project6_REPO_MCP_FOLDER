@@ -5090,6 +5090,149 @@ test('Layer 3 workbench renders SEC EDGAR downstream operator status through ser
   ]);
 });
 
+test('Layer 3 workbench renders SEC EDGAR live downstream operator status through server revalidation', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-live-downstream-status'));
+  expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_live_downstream_status_setup.v1');
+  expect(setup.raw_local_path_exposed).toBe(false);
+  expect(setup.raw_url_exposed).toBe(false);
+  expect(setup.artifact_bytes_exposed).toBe(false);
+
+  const endpoint = '/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status';
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-edgar-live-downstream-operator-status-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#sec-edgar-live-downstream-operator-status-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#sec-edgar-live-downstream-operator-status-submit')).toBeEnabled();
+
+  const notRecordedRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes(endpoint)
+  ));
+  const notRecordedResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes(endpoint)
+  ));
+  await page.locator('#sec-edgar-live-downstream-operator-status-submit').click();
+  const notRecordedPayload = (await notRecordedRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(notRecordedPayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+  ]);
+  expect(notRecordedPayload.status_mode).toBe('sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1');
+  expect(notRecordedPayload.operator_decision).toBe(
+    'inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status',
+  );
+  const notRecorded = await expectJson(await notRecordedResponsePromise);
+  expect(notRecorded.operator_status_state).toBe('not_recorded');
+  await expect(panel).toContainText('sec_edgar_live_downstream_operator_status_not_recorded');
+
+  await page.locator('#sec-edgar-live-downstream-operator-status-proof-request-json').fill(
+    JSON.stringify(setup.live_downstream_proof_request),
+  );
+  await page.locator('#sec-edgar-live-downstream-operator-status-expected-proof-hash').fill(
+    setup.expected_proof_hash,
+  );
+  const availableRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes(endpoint)
+  ));
+  const availableResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes(endpoint)
+  ));
+  await page.locator('#sec-edgar-live-downstream-operator-status-submit').click();
+  const availablePayload = (await availableRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(availablePayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'live_downstream_proof_request',
+    'expected_proof_hash',
+  ]);
+  expect(availablePayload.expected_proof_hash).toBe(setup.expected_proof_hash);
+  expect(availablePayload.live_downstream_proof_request).toMatchObject({
+    proof_mode: 'sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof_v1',
+    operator_decision: 'record_sec_edgar_text_table_live_source_artifact_downstream_layer3_e2e_proof',
+    dataset_version_id: setup.dataset_version_id,
+  });
+  for (const forbidden of [
+    'path',
+    'local_path',
+    'raw_url',
+    'url',
+    'provider_private_url',
+    'provider_public_url',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+  ]) {
+    expect(availablePayload).not.toHaveProperty(forbidden);
+  }
+  const available = await expectJson(await availableResponsePromise);
+  expect(available.schema_id).toBe('layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_status.v1');
+  expect(available.operator_status_state).toBe('available');
+  expect(available.proof_available).toBe(true);
+  expect(available.proof_hash).toBe(setup.expected_proof_hash);
+  expect(available.live_source_artifact_receipt_hash).toBe(setup.live_source_artifact_receipt_hash);
+  expect(available.source_acquisition_receipt_hash).toBe(setup.source_acquisition_receipt_hash);
+  expect(available.live_source_artifact_material_bridge_receipt_hash).toBe(
+    setup.live_source_artifact_material_bridge_receipt_hash,
+  );
+  expect(available.material_bridge_receipt_hash).toBe(setup.material_bridge_receipt_hash);
+  expect(available.status_projection.server_revalidated).toBe(true);
+  expect(available.status_projection.live_source_artifact_authority_bound).toBe(true);
+  expect(available.status_projection.live_material_bridge_authority_bound).toBe(true);
+  expect(available.raw_proof_receipt_path_rendered).toBe(false);
+  expect(available.raw_local_path_rendered).toBe(false);
+  expect(available.raw_url_rendered).toBe(false);
+  expect(available.artifact_bytes_rendered).toBe(false);
+  expect(available.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(available)).not.toContain('C:\\');
+  expect(JSON.stringify(available)).not.toContain('http://');
+  expect(JSON.stringify(available)).not.toContain('https://');
+  await expect(panel).toContainText('sec_edgar_live_downstream_operator_status_available');
+  await expect(panel).toContainText('sec-edgar-text-table-live-source-artifact-downstream-operator-status:');
+  await expect(panel).toContainText('server revalidated: true');
+  await expect(panel).toContainText('live source artifact authority bound: true');
+  await expect(panel).toContainText('raw URL rendered: false');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+
+  await page.locator('#sec-edgar-live-downstream-operator-status-expected-proof-hash').fill('0'.repeat(64));
+  const blockedResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes(endpoint)
+  ));
+  await page.locator('#sec-edgar-live-downstream-operator-status-submit').click();
+  const blocked = await expectJson(await blockedResponsePromise);
+  expect(blocked.operator_status_state).toBe('blocked');
+  expect(blocked.blocked_reasons[0].reason).toBe(
+    'sec_edgar_text_table_live_source_artifact_downstream_operator_status_proof_hash_mismatch',
+  );
+  await expect(panel).toContainText('sec_edgar_live_downstream_operator_status_blocked');
+  await expect(panel).toContainText(
+    'sec_edgar_text_table_live_source_artifact_downstream_operator_status_proof_hash_mismatch',
+  );
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  expect(apiRequests.filter((apiRequest) => apiRequest.path.includes(endpoint))).toEqual([
+    { method: 'POST', path: endpoint },
+    { method: 'POST', path: endpoint },
+    { method: 'POST', path: endpoint },
+  ]);
+});
+
 test('Layer 3 workbench records SEC EDGAR downstream repeatability trial through server revalidation', async ({ page, request }) => {
   const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-repeatability-trial'));
   expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_repeatability_trial_setup.v1');

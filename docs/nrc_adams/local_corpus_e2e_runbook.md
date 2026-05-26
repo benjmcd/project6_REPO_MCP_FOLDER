@@ -9096,3 +9096,56 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendere
 ```
 
 The selected rendered slice is only an operator inspection/control surface over the live downstream status endpoint. It must preserve server-side proof revalidation and must be proven in both headed and headless Chrome before it can be treated as live rendered evidence.
+
+## SEC EDGAR Text Table Live Source Artifact Downstream Rendered Status Runtime
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1
+source_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1156-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md
+source_live_downstream_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1154-sec-edgar-text-table-live-source-artifact-downstream-operator-status-runtime.md
+current_main_entry: f52b52d9d31db91585a42143ecf8b181d2ad222e
+runtime_status: implemented
+rendered_status: implemented
+implemented_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control
+implemented_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1
+implemented_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+implemented_panel: sec-edgar-live-downstream-operator-status-panel
+implemented_form: sec-edgar-live-downstream-operator-status-form
+implemented_submit: sec-edgar-live-downstream-operator-status-submit
+implemented_payload_fields: client_request_id,status_mode,operator_decision,live_downstream_proof_request,expected_proof_hash
+implemented_response_projection_fields: operator_status_state,expected_proof_hash,proof_hash,proof_state,dataset_version_id,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,operator_status_projection_ref,proof_summary,blocked_reasons,next_allowed_actions
+available_requires_server_revalidated_live_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_fails_closed: true
+test_only_fixture_route: /__test/layer3/sec-edgar-live-downstream-status
+sec_edgar_browser_fixture_state_isolation: true
+sec_edgar_browser_fixture_variable_ids_are_dataset_scoped: true
+rendered_status_creates_downstream_proof: false
+rendered_status_mutates_gate_b_session: false
+rendered_status_fetches_sec_content: false
+rendered_status_parses_xml_html_inline_xbrl: false
+raw_proof_request_rendered_in_status_projection: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+headless_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "SEC EDGAR live downstream operator status" --project=chromium PASS
+headed_rendered_status_proof: npx playwright test ./e2e/layer3-workbench.spec.js --grep "SEC EDGAR live downstream operator status" --project=chromium --headed PASS
+playwright_shard_2_state_isolation_proof: CI shard 2/4 grep-equivalent local run PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync_v1
+```
+
+The rendered workbench now makes the live source-artifact downstream operator status inspectable from the existing server endpoint. Operators submit the live proof request and expected proof hash for server revalidation, but the panel renders only the redacted status projection. The fixture route is test-only preparation authority for browser proof and is not user-facing durable authority.
+
+The SEC EDGAR browser fixtures use dataset-scoped variable IDs so source-acquisition, live-status, downstream-status, and repeatability fixture preparation can run in one browser server process without fixed `VariableDefinition.variable_id` collisions.
