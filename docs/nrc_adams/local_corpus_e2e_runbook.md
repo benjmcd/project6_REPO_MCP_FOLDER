@@ -9992,3 +9992,56 @@ next_exact_posture: sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime_v
 ```
 
 This freeze selects the next runtime only. The future proof must bind the ready HTML/iXBRL material bridge receipt, real Gate B commit, material snapshot, and downstream coverage evidence before treating SEC HTML/iXBRL-derived material as Layer 3 E2E evidence. It must not reparse or rematerialize retained SEC content, create XBRL fact authority, claim financial-statement semantics, or accept raw URL/path/artifact-byte/front-end authority as proof.
+
+## SEC EDGAR HTML Inline XBRL Downstream Layer 3 Proof Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime_v1
+source_downstream_proof_selection: next_milestone_plans/Layer3_planning_docs/1174-sec-edgar-html-inline-xbrl-downstream-layer3-proof-selection.md
+current_main_entry: e2d660c183adf1225cea525403f745e0d30e83c0
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_proof.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof
+implemented_request_model: Layer3SecEdgarHtmlInlineXbrlDownstreamProofRequest
+implemented_response_model: Layer3SecEdgarHtmlInlineXbrlDownstreamProofResponse
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_downstream_proof.v1
+implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_downstream_proof_request.v1
+implemented_proof_mode: sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1
+implemented_operator_decision: record_sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof
+implemented_source_family: sec_edgar_html_inline_xbrl
+implemented_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1
+implemented_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1
+implemented_material_bridge_reader: inspect_sec_edgar_html_inline_xbrl_material_bridge_status
+implemented_parser_receipt_reader: read_sec_edgar_html_inline_xbrl_source_family_parser_receipt
+implemented_gate_b_authority: existing_gate_b_decision_api_session_manifest_snapshot
+implemented_material_snapshot_source_shape: dataset_version
+implemented_receipt_model: deterministic_proof_receipt_id_without_new_storage_or_runtime_mutation
+implemented_coverage_steps: real_filing_connector_acquisition,live_source_artifact_acquisition,html_inline_xbrl_source_family_parser,html_inline_xbrl_material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection
+stale_parser_receipt_must_reject: true
+stale_material_bridge_receipt_must_reject: true
+material_snapshot_mismatch_must_reject: true
+missing_coverage_step_must_reject: true
+forbidden_input_authority_must_reject: true
+live_sec_network_fetch_admitted_for_proof: false
+submissions_lookup_runtime_admitted_for_proof: false
+html_inline_xbrl_reparse_or_materialization_admitted_in_proof: false
+gate_b_mutation_admitted_in_proof: false
+xml_xbrl_fact_authority_admitted: false
+financial_statement_semantics_admitted: false
+broad_source_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_proof.py ./backend/app/api/layer3.py ./backend/tests/test_layer3_api.py PASS
+focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k "html_inline_xbrl_downstream_proof" PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_downstream_operator_status_selection_v1
+```
+
+The runtime is a downstream proof over existing SEC HTML/iXBRL authority, not a new fetch, parser, materialization, status, or rendered-control path. Repeat it by first preparing the real-filing connector receipt, HTML/iXBRL parser receipt, HTML/iXBRL material bridge receipt, and Gate B decision session, then submit the proof request with server-bound coverage evidence and the committed material snapshot hash.

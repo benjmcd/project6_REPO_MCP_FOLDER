@@ -3379,6 +3379,245 @@ def test_layer3_api_records_sec_edgar_text_table_downstream_proof(client: TestCl
     assert str(tmp_path) not in trial_response.text
 
 
+def _sec_edgar_html_inline_xbrl_coverage(
+    parser: dict,
+    bridge: dict,
+    gate_b: dict,
+    snapshot: L3MaterialSnapshot,
+) -> dict[str, dict[str, object]]:
+    authority_hashes = bridge["authority_hashes"]
+    primary_document_hash = next(
+        str(item["filename_hash"])
+        for item in parser["document_inventory"]
+        if item.get("primary_document_match") is True
+    )
+    required = {
+        "real_filing_connector_acquisition",
+        "live_source_artifact_acquisition",
+        "html_inline_xbrl_source_family_parser",
+        "html_inline_xbrl_material_authority_bridge",
+        "gate_b_commit",
+        "gate_c_typing",
+        "retrieval_context",
+        "analysis_execution_or_status",
+        "package_commit",
+        "package_review_submit",
+        "handoff_export_prepare",
+        "external_export_download_prepare",
+        "same_origin_delivery_status",
+        "same_origin_delivery",
+        "provider_private_prepare",
+        "provider_private_status",
+        "provider_private_use",
+        "provider_private_revoke",
+        "internal_webhook_dispatch",
+        "internal_webhook_status",
+        "session_status_projection",
+        "operator_artifact_inspection",
+    }
+    coverage: dict[str, dict[str, object]] = {}
+    for step in required:
+        item: dict[str, object] = {
+            "status": "proven",
+            "evidence_ref": f"sec-edgar-html-inline-xbrl-downstream-proof:{step}",
+            "evidence_hash": _sec_edgar_test_hash({"step": step, "session_id": gate_b["session_id"]}),
+            "server_response_hash": _sec_edgar_test_hash({"response": step, "session_id": gate_b["session_id"]}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "artifact_bytes_exposed": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "full_mockup_activation_enabled": False,
+        }
+        if step not in {
+            "real_filing_connector_acquisition",
+            "live_source_artifact_acquisition",
+            "html_inline_xbrl_source_family_parser",
+            "html_inline_xbrl_material_authority_bridge",
+        }:
+            item["session_id"] = gate_b["session_id"]
+        if step == "real_filing_connector_acquisition":
+            item["connector_receipt_hash"] = parser["connector_receipt_hash"]
+        if step == "live_source_artifact_acquisition":
+            item["live_source_artifact_receipt_hash"] = parser["live_source_artifact_receipt_hash"]
+            item["source_artifact_receipt_hash"] = parser["source_artifact_receipt_hash"]
+        if step == "html_inline_xbrl_source_family_parser":
+            item["parser_receipt_hash"] = parser["parser_receipt_hash"]
+            item["content_sha256"] = authority_hashes["content_sha256"]
+            item["primary_document_hash"] = primary_document_hash
+            item["content_order_hash"] = parser["content_order_hash"]
+        if step == "html_inline_xbrl_material_authority_bridge":
+            item["material_bridge_receipt_hash"] = bridge["bridge_receipt_hash"]
+            item["bridge_receipt_hash"] = bridge["bridge_receipt_hash"]
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+        if step == "gate_b_commit":
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+            item["selection_manifest_id"] = gate_b["selection_manifest_id"]
+            item["material_snapshot_payload_hash"] = snapshot.payload_hash
+        coverage[step] = item
+    return coverage
+
+
+def _prepare_sec_edgar_html_inline_xbrl_downstream_proof_request(
+    client: TestClient,
+    monkeypatch,
+    *,
+    label: str,
+) -> tuple[dict[str, object], dict, dict, dict]:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_parser_authority(client, monkeypatch, label=label)
+    parser = prepared["parser"]
+    bridge_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/material-authority/bridge",
+        json={
+            "client_request_id": f"sec-edgar-html-inline-xbrl-downstream-bridge-{label}",
+            "bridge_mode": "sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+            "operator_decision": "bridge_sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority",
+            "parser_receipt_id": parser["parser_receipt_id"],
+            "parser_receipt_hash": parser["parser_receipt_hash"],
+            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert bridge_response.status_code == 200, bridge_response.text
+    bridge = bridge_response.json()
+    gate_b_response = client.post("/api/v1/layer3/gate-b/decision", json=bridge["gate_b_decision_payload"])
+    assert gate_b_response.status_code == 200, gate_b_response.text
+    gate_b = gate_b_response.json()
+    snapshot = _sec_edgar_api_snapshot(
+        client,
+        session_id=gate_b["session_id"],
+        dataset_version_id=bridge["dataset_version_id"],
+    )
+    proof_request = {
+        "client_request_id": f"sec-edgar-html-inline-xbrl-downstream-proof-{label}",
+        "proof_mode": "sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1",
+        "operator_decision": "record_sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof",
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "material_bridge_receipt_id": bridge["bridge_receipt_id"],
+        "material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "dataset_version_id": bridge["dataset_version_id"],
+        "material_preview_hash": bridge["material_preview_hash"],
+        "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "session_id": gate_b["session_id"],
+        "selection_manifest_id": gate_b["selection_manifest_id"],
+        "material_snapshot_payload_hash": snapshot.payload_hash,
+        "coverage_evidence": _sec_edgar_html_inline_xbrl_coverage(parser, bridge, gate_b, snapshot),
+        "operator_confirmation": True,
+    }
+    return proof_request, parser, bridge, gate_b
+
+
+def test_layer3_api_records_sec_edgar_html_inline_xbrl_downstream_proof(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    proof_request, parser, bridge, gate_b = _prepare_sec_edgar_html_inline_xbrl_downstream_proof_request(
+        client,
+        monkeypatch,
+        label="proof-001",
+    )
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+        json=proof_request,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_downstream_proof.v1"
+    assert body["proof_state"] == "sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proven"
+    assert body["source_family"] == "sec_edgar_html_inline_xbrl"
+    assert body["parser_family"] == "sec_edgar_html_inline_xbrl_source_family_parser_v1"
+    assert body["typed_content_contract_id"] == "sec_edgar_html_inline_xbrl_material_units_v1"
+    assert body["parser_receipt_hash"] == parser["parser_receipt_hash"]
+    assert body["material_bridge_receipt_hash"] == bridge["bridge_receipt_hash"]
+    assert body["bridge_receipt_hash"] == bridge["bridge_receipt_hash"]
+    assert body["session_id"] == gate_b["session_id"]
+    assert set(body["coverage"]) == set(proof_request["coverage_evidence"])
+    assert body["raw_local_path_exposed"] is False
+    assert body["raw_url_exposed"] is False
+    assert body["negative_invariants"]["live_sec_network_fetch_admitted_for_proof"] is False
+    assert body["negative_invariants"]["html_inline_xbrl_reparse_or_materialization_admitted_in_proof"] is False
+    assert body["negative_invariants"]["xml_xbrl_fact_authority_admitted"] is False
+    assert body["provider_object_writes_enabled"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert "https://www.sec.gov" not in response.text
+    assert "aapl-20240928.htm" not in response.text
+    assert "Company narrative" not in response.text
+    assert str(tmp_path) not in response.text
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_downstream_proof_stale_or_unsafe(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    proof_request, _parser, _bridge, _gate_b = _prepare_sec_edgar_html_inline_xbrl_downstream_proof_request(
+        client,
+        monkeypatch,
+        label="proof-reject",
+    )
+
+    stale_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+        json={**proof_request, "material_bridge_receipt_hash": "e" * 64},
+    )
+    assert stale_response.status_code == 409, stale_response.text
+    assert stale_response.json()["error_code"] == "sec_edgar_html_inline_xbrl_downstream_proof_bridge_hash_mismatch"
+
+    missing_coverage = dict(proof_request["coverage_evidence"])
+    missing_coverage.pop("provider_private_revoke")
+    missing_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+        json={**proof_request, "coverage_evidence": missing_coverage},
+    )
+    assert missing_response.status_code == 409, missing_response.text
+    assert missing_response.json()["error_code"] == "sec_edgar_html_inline_xbrl_downstream_proof_coverage_incomplete"
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+        json={**proof_request, "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == "sec_edgar_html_inline_xbrl_downstream_proof_forbidden_request_fields"
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
+
+    db = client.layer3_session_factory()
+    try:
+        snapshot = (
+            db.query(L3MaterialSnapshot)
+            .filter(L3MaterialSnapshot.payload_hash == proof_request["material_snapshot_payload_hash"])
+            .one()
+        )
+        snapshot.payload_ref = str(tmp_path / "raw-local-material.json")
+        db.commit()
+    finally:
+        db.close()
+    missing_payload_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+        json=proof_request,
+    )
+    assert missing_payload_response.status_code == 409, missing_payload_response.text
+    assert (
+        missing_payload_response.json()["error_code"]
+        == "sec_edgar_html_inline_xbrl_downstream_proof_material_snapshot_payload_missing"
+    )
+    assert str(tmp_path) not in missing_payload_response.text
+    assert "raw-local-material.json" not in missing_payload_response.text
+
+
 def test_layer3_api_reports_sec_edgar_downstream_status_not_recorded(client: TestClient) -> None:
     response = client.post(
         "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
