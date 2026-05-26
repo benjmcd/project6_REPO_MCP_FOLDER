@@ -89,6 +89,7 @@ from app.services import (
     layer3_replacement_package_artifact_manifest,
     layer3_replacement_package_namespace,
     layer3_replacement_package_set_authority,
+    layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
     layer3_workbench,
@@ -1453,6 +1454,200 @@ def test_layer3_api_rejects_sec_edgar_text_table_live_source_artifact_request_co
     assert conflict_response.status_code == 409, conflict_response.text
     assert conflict_response.json()["error_code"] == (
         "sec_edgar_text_table_live_source_artifact_client_request_id_conflict"
+    )
+    assert len(fake_client.calls) == 1
+
+
+def _sec_edgar_real_filing_submissions_payload() -> bytes:
+    return json.dumps(
+        {
+            "name": "Apple Inc.",
+            "filings": {
+                "recent": {
+                    "form": ["10-K", "10-Q", "8-K"],
+                    "accessionNumber": [
+                        "0000320193-24-000123",
+                        "0000320193-24-000124",
+                        "0000320193-24-000125",
+                    ],
+                    "filingDate": ["2024-11-01", "2024-08-02", "2024-05-02"],
+                    "reportDate": ["2024-09-28", "2024-06-29", "2024-05-01"],
+                    "primaryDocument": [
+                        "aapl-20240928.htm",
+                        "aapl-20240629.htm",
+                        "aapl-20240502.htm",
+                    ],
+                    "primaryDocDescription": ["10-K", "10-Q", "8-K"],
+                }
+            },
+        },
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _sec_edgar_real_filing_connector_payload(
+    *,
+    client_request_id: str,
+    form_types: list[str] | None = None,
+) -> dict[str, object]:
+    return {
+        "client_request_id": client_request_id,
+        "connector_mode": "sec_edgar_real_filing_acquisition_connector_v1",
+        "operator_decision": "acquire_sec_edgar_real_filing_validation_corpus",
+        "example_set_mode": "bounded_real_sec_validation_corpus_v1",
+        "cik_refs": ["0000320193"],
+        "form_types": form_types or ["10-K", "10-Q", "8-K"],
+        "operator_confirmation": True,
+    }
+
+
+def test_layer3_api_acquires_sec_edgar_real_filing_connector_corpus_with_fake_client(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(
+        [
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=_sec_edgar_real_filing_submissions_payload(),
+                final_url="https://data.sec.gov/submissions/CIK0000320193.json",
+            ),
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=b"<SEC-DOCUMENT>real 10-k filing</SEC-DOCUMENT>\n",
+                final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+            ),
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=b"<SEC-DOCUMENT>real 10-q filing</SEC-DOCUMENT>\n",
+                final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000124/0000320193-24-000124.txt",
+            ),
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=b"<SEC-DOCUMENT>real 8-k filing</SEC-DOCUMENT>\n",
+                final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000125/0000320193-24-000125.txt",
+            ),
+        ]
+    )
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+    payload = _sec_edgar_real_filing_connector_payload(client_request_id="sec-edgar-real-connector-001")
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_real_filing_acquisition_connector.v1"
+    assert body["connector_mode"] == "sec_edgar_real_filing_acquisition_connector_v1"
+    assert body["connector_state"] == "available"
+    assert body["corpus_manifest"]["schema_id"] == "layer3.sec_edgar_real_filing_validation_corpus_manifest.v1"
+    assert body["corpus_manifest"]["example_count"] == 3
+    assert len(body["acquisition_receipts"]) == 3
+    assert body["diagnostics"]["html_inline_xbrl_explicitly_classified"] is True
+    assert body["diagnostics"]["generic_text_downgrade_performed"] is False
+    assert body["diagnostics"]["full_sec_support_claimed"] is False
+    assert body["sec_request_policy"]["existing_live_source_artifact_client_reused"] is True
+    assert body["sec_request_policy"]["duplicate_network_stack_created"] is False
+    assert body["negative_invariants"]["duplicate_sec_network_stack_created"] is False
+    assert body["negative_invariants"]["html_inline_xbrl_parser_runtime_admitted"] is False
+    assert body["negative_invariants"]["candidate_b_general_sec_parser_admitted"] is False
+    assert body["downstream_validation"]["layer3_downstream_execution_performed_by_connector"] is False
+    assert len(fake_client.calls) == 4
+    assert fake_client.calls[0]["url"] == "https://data.sec.gov/submissions/CIK0000320193.json"
+    assert fake_client.calls[1]["url"].endswith("/0000320193-24-000123.txt")
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000320193-24-000123" not in response.text
+    assert "0000320193" not in response.text
+    assert "Apple Inc." not in response.text
+    assert str(tmp_path) not in response.text
+
+    receipt_root = tmp_path / "storage" / "layer3-sec-edgar-real-filing-acquisition-connector"
+    receipt_files = list((receipt_root / "receipts").glob("*.json"))
+    assert len(receipt_files) == 1
+    receipt_text = receipt_files[0].read_text(encoding="utf-8")
+    assert body["connector_receipt_hash"] in receipt_text
+    assert "https://www.sec.gov" not in receipt_text
+    assert "0000320193-24-000123" not in receipt_text
+    assert str(tmp_path) not in receipt_text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    replay_body = replay_response.json()
+    assert replay_body["cache"]["cache_status"] == "hit"
+    assert replay_body["idempotency"]["idempotent_replay"] is True
+    assert replay_body["connector_receipt_hash"] == body["connector_receipt_hash"]
+    assert len(fake_client.calls) == 4
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/status/"
+        f"{body['connector_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    status_body = status_response.json()
+    assert status_body["schema_id"] == "layer3.sec_edgar_real_filing_acquisition_connector_status.v1"
+    assert status_body["connector_receipt_hash"] == body["connector_receipt_hash"]
+    assert status_body["cache"]["cache_status"] == "status"
+    assert "https://www.sec.gov" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_real_filing_connector_unconfigured_or_unsafe(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    fake_client = _FakeSecEdgarClient(
+        [
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=_sec_edgar_real_filing_submissions_payload(),
+            )
+        ]
+    )
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+    payload = _sec_edgar_real_filing_connector_payload(client_request_id="sec-edgar-real-connector-reject-001")
+
+    missing_user_agent_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=payload,
+    )
+    assert missing_user_agent_response.status_code == 409, missing_user_agent_response.text
+    assert missing_user_agent_response.json()["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_user_agent_missing"
+    )
+    assert fake_client.calls == []
+
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    forbidden_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json={**payload, "raw_url": "https://data.sec.gov/submissions/CIK0000320193.json"},
+    )
+    assert forbidden_response.status_code == 400, forbidden_response.text
+    assert forbidden_response.json()["error_code"] == (
+        "sec_edgar_real_filing_acquisition_connector_forbidden_request_fields"
+    )
+    assert "https://data.sec.gov" not in forbidden_response.text
+    assert fake_client.calls == []
+
+    missing_form_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=_sec_edgar_real_filing_connector_payload(
+            client_request_id="sec-edgar-real-connector-reject-002",
+            form_types=["S-1"],
+        ),
+    )
+    assert missing_form_response.status_code == 409, missing_form_response.text
+    assert missing_form_response.json()["error_code"] == (
+        "sec_edgar_real_filing_acquisition_connector_required_form_missing"
     )
     assert len(fake_client.calls) == 1
 
