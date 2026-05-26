@@ -3332,6 +3332,10 @@ SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SELECTION = (
 SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_RUNTIME = (
     PLANNING_DOCS / "1167-sec-edgar-real-filing-acquisition-connector-runtime.md"
 )
+SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_DOWNSTREAM_VALIDATION_SELECTION = (
+    PLANNING_DOCS
+    / "1168-sec-edgar-real-filing-acquisition-connector-downstream-validation-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111367,6 +111371,78 @@ def _check_sec_edgar_real_filing_acquisition_connector_runtime(
                 )
 
 
+def _check_sec_edgar_real_filing_acquisition_connector_downstream_validation_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_DOWNSTREAM_VALIDATION_SELECTION: (
+            "SEC EDGAR Real Filing Acquisition Connector Downstream Validation Selection",
+            "milestone: sec_edgar_real_filing_acquisition_connector_downstream_validation_selection_v1",
+            "source_connector_runtime: next_milestone_plans/Layer3_planning_docs/1167-sec-edgar-real-filing-acquisition-connector-runtime.md",
+            "current_main_entry: f1e0adc32c2bbbcf882db73c1230c94a6f182831",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_real_filing_acquisition_connector_downstream_validation_runtime_v1",
+            "selected_validation_mode: sec_edgar_real_filing_acquisition_connector_downstream_validation_v1",
+            "selected_operator_decision: record_sec_edgar_real_filing_connector_downstream_validation",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_real_filing_downstream_validation.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/downstream-validation/status/{sec_edgar_real_filing_downstream_validation_receipt_id}",
+            "selected_source_authority: sec_edgar_real_filing_acquisition_connector_receipt_plus_supported_complete_submission_text_live_source_artifact_receipt",
+            "selected_validation_scope: one_supported_connector_acquired_complete_submission_text_example_bound_to_existing_sec_text_table_downstream_chain",
+            "selected_validation_artifact_family: complete_submission_text_source_artifact_receipt_plus_materialized_sec_text_table_dataset_version_authority",
+            "selected_identity_processing_scope: validate_connector_filing_identity_hashes_form_date_source_family_and_section_table_candidate_roles",
+            "selected_table_processing_scope: validate_existing_sec_text_table_dataset_version_and_material_bridge_table_payload_compatibility_when_present",
+            "selected_section_processing_scope: validate_existing_sec_text_table_dataset_version_and_authority_envelope_section_inventory_compatibility_when_present",
+            "selected_html_inline_xbrl_behavior: require_classified_not_parsed_or_separately_blocked_no_generic_text_downgrade",
+            "selected_candidate_b_behavior: pdf_page_visual_evidence_only_not_general_sec_parser",
+            "selected_receipt_schema_id: layer3.sec_edgar_real_filing_downstream_validation.v1",
+            "selected_status_schema_id: layer3.sec_edgar_real_filing_downstream_validation_status.v1",
+            "selected_downstream_coverage_steps: real_filing_connector_receipt,live_source_artifact_acquisition,source_acquisition_authority,live_material_authority_bridge,gate_b_commit,downstream_proof,operator_status,artifact_inspection_projection",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "live_sec_network_fetch_in_this_freeze: false",
+            "html_inline_xbrl_parser_in_this_freeze: false",
+            "xml_xbrl_fact_authority_in_this_freeze: false",
+            "retained_filing_bytes_parser_runtime_in_this_freeze: false",
+            "dataset_version_creation_in_this_freeze: false",
+            "gate_b_mutation_in_this_freeze: false",
+            "package_or_delivery_mutation_in_this_freeze: false",
+            "candidate_b_general_sec_parser_in_this_freeze: false",
+            "generic_connector_dispatch_enabled: false",
+            "raw_sec_url_rendered: false",
+            "raw_local_path_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_downstream_validation_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_real_filing_acquisition_connector_downstream_validation_selection_v1",
+            "source_connector_runtime: next_milestone_plans/Layer3_planning_docs/1167-sec-edgar-real-filing-acquisition-connector-runtime.md",
+            "current_main_entry: f1e0adc32c2bbbcf882db73c1230c94a6f182831",
+            "selected_next_runtime_target: sec_edgar_real_filing_acquisition_connector_downstream_validation_runtime_v1",
+            "selected_validation_mode: sec_edgar_real_filing_acquisition_connector_downstream_validation_v1",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_real_filing_downstream_validation.py",
+            "selected_validation_scope: one_supported_connector_acquired_complete_submission_text_example_bound_to_existing_sec_text_table_downstream_chain",
+            "selected_downstream_coverage_steps: real_filing_connector_receipt,live_source_artifact_acquisition,source_acquisition_authority,live_material_authority_bridge,gate_b_commit,downstream_proof,operator_status,artifact_inspection_projection",
+            "runtime_implementation_in_this_freeze: false",
+            "dataset_version_creation_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_downstream_validation_runtime_v1",
+        ),
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_RUNTIME: (
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_downstream_validation_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR real filing acquisition connector downstream validation selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112540,6 +112616,9 @@ def main() -> int:
     )
     _check_sec_edgar_real_filing_acquisition_connector_selection(errors)
     _check_sec_edgar_real_filing_acquisition_connector_runtime(errors)
+    _check_sec_edgar_real_filing_acquisition_connector_downstream_validation_selection(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
