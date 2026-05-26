@@ -22,11 +22,13 @@ live_material_bridge_receipt_bound: true
 underlying_downstream_proof_bound: true
 material_preview_gate_b_compatibility_preserved: true
 gate_b_commit_in_sync: false
+live_downstream_operator_status_implemented_now: false
 rendered_live_downstream_status_implemented_now: false
-selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
-selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1153-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-selection.md
-selected_next_selection_reason: make_live_sec_edgar_downstream_proof_operator_visible_as_read_only_status_without_new_authority
-selected_next_selection_surface: existing_layer3_status_or_rendered_operator_projection_only
+selected_next_selection_target: sec_edgar_text_table_live_source_artifact_downstream_operator_status_selection_v1
+selected_next_selection_doc: next_milestone_plans/Layer3_planning_docs/1153-sec-edgar-text-table-live-source-artifact-downstream-operator-status-selection.md
+selected_next_selection_reason: create_server_revalidated_live_downstream_operator_status_before_rendered_projection
+selected_deferred_rendered_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+selected_next_selection_surface: live_downstream_operator_status_endpoint_then_rendered_projection
 selected_next_selection_required_authority: proof_receipt_id,proof_hash,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_material_bridge_receipt_hash,material_bridge_receipt_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash
 selected_next_selection_must_preserve: redacted_status_only_no_raw_sec_url_no_local_path_no_artifact_bytes_no_live_fetch_no_materialization_no_gate_b_mutation
 direct_live_artifact_to_material_without_source_acquisition_admitted: false
@@ -53,15 +55,16 @@ candidate_a_semantics_preserved: true
 candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
 verification_current_main_progress_check: python ./tools/l3-progress-check.py PASS
 verification_current_main_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
-next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_status_selection_v1
 ```
 
 PR `#1854` is now live on current main. Current main contains the live source-artifact downstream proof runtime and the API/bootstrap surface that binds live source-artifact receipt authority, source-acquisition authority, live material bridge authority, the underlying material bridge, Gate B session state, material snapshot state, and downstream coverage.
 
-This sync adds no runtime behavior. It records the merged state and selects the next useful operator-facing step: a read-only rendered/status selection for the live downstream proof. That next slice should expose proof state, receipt hashes, coverage, and negative invariants as redacted operator-visible status without creating new material authority, fetching from SEC, parsing retained filing bytes, committing Gate B, expanding runtime storage, or adding provider, connector, RAG/model, browser-storage, frontend durable, or full mockup authority.
+This sync adds no runtime behavior. It records the merged state and selects the next useful operator-facing step: a server-revalidated live downstream operator-status endpoint, followed by rendered status once that server status authority exists. Current main already has a non-live downstream status pattern, but no live source-artifact downstream status endpoint. The next slice should expose proof state, receipt hashes, coverage, and negative invariants as redacted operator-visible status without creating new material authority, fetching from SEC, parsing retained filing bytes, committing Gate B, expanding runtime storage, or adding provider, connector, RAG/model, browser-storage, frontend durable, or full mockup authority.
 
 ## Coherence Check
 
 - Is more backend proof hardening the highest next ROI? Recommended answer: no, unless a concrete defect appears. Current main already contains the live proof runtime and fail-closed tests.
 - Should rendered status become durable authority? Recommended answer: no. It should be a read-only projection of server-owned proof and receipt authority.
-- What comes next? Recommended answer: freeze or implement `sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1` from current main.
+- Can rendered status be implemented before a live downstream status endpoint exists? Recommended answer: no. The server-owned live status endpoint should be selected first.
+- What comes next? Recommended answer: freeze or implement `sec_edgar_text_table_live_source_artifact_downstream_operator_status_selection_v1` from current main.
