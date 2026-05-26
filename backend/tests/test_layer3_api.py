@@ -1550,6 +1550,72 @@ def _sec_edgar_html_inline_xbrl_submission_text() -> bytes:
 """
 
 
+def _real_company_submissions_payload(company_name: str, filings: list[tuple[str, str, str]]) -> bytes:
+    return json.dumps(
+        {
+            "name": company_name,
+            "filings": {
+                "recent": {
+                    "form": [item[0] for item in filings],
+                    "accessionNumber": [item[1] for item in filings],
+                    "filingDate": ["2025-03-01", "2024-11-01"][: len(filings)],
+                    "reportDate": ["2024-12-31", "2024-09-30"][: len(filings)],
+                    "primaryDocument": [item[2] for item in filings],
+                    "primaryDocDescription": [item[0] for item in filings],
+                }
+            },
+        },
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _real_company_submission_text(*, form_type: str, filename: str, concept: str) -> bytes:
+    return f"""<SEC-DOCUMENT>
+<SEC-HEADER>
+<CONFORMED-SUBMISSION-TYPE>{form_type}
+</SEC-HEADER>
+<DOCUMENT>
+<TYPE>{form_type}
+<SEQUENCE>1
+<FILENAME>{filename}
+<DESCRIPTION>{form_type}
+<TEXT>
+<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">
+<body>
+<h1>Business overview</h1>
+<ix:nonFraction name="{concept}" contextRef="c1" unitRef="u1">123</ix:nonFraction>
+<table><tr><td>Metric</td><td>123</td></tr></table>
+</body>
+</html>
+</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+""".encode("utf-8")
+
+
+def _real_company_validation_fake_results() -> list[layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult]:
+    companies = [
+        ("Microsoft Corporation", [("10-K", "0000789019-25-000100", "msft-20250630.htm"), ("10-Q", "0000789019-25-000101", "msft-20250331.htm")]),
+        ("Steel Dynamics Inc.", [("10-K", "0001022671-25-000100", "stld-20241231.htm"), ("8-K", "0001022671-25-000101", "stld-20250115.htm")]),
+        ("Sony Group Corporation", [("20-F", "0000313838-25-000100", "sony-20250331.htm"), ("6-K", "0000313838-25-000101", "sony-20250215.htm")]),
+        ("Cameco Corporation", [("40-F", "0001009001-25-000100", "ccj-20241231.htm"), ("6-K", "0001009001-25-000101", "ccj-20250215.htm")]),
+    ]
+    results: list[layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult] = []
+    for name, filings in companies:
+        results.append(layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(status_code=200, content=_real_company_submissions_payload(name, filings)))
+    for _name, filings in companies:
+        for form_type, accession, filename in filings:
+            concept = "company:ExtensionMetric" if form_type in {"20-F", "40-F", "6-K"} else "us-gaap:Assets"
+            results.append(
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=_real_company_submission_text(form_type=form_type, filename=filename, concept=concept),
+                    final_url=f"https://www.sec.gov/Archives/edgar/data/1/{accession.replace('-', '')}/{accession}.txt",
+                )
+            )
+    return results
+
+
 def test_layer3_api_acquires_sec_edgar_real_filing_connector_corpus_with_fake_client(
     client: TestClient,
     tmp_path,
@@ -1646,6 +1712,89 @@ def test_layer3_api_acquires_sec_edgar_real_filing_connector_corpus_with_fake_cl
     assert status_body["schema_id"] == "layer3.sec_edgar_real_filing_acquisition_connector_status.v1"
     assert status_body["connector_receipt_hash"] == body["connector_receipt_hash"]
     assert status_body["cache"]["cache_status"] == "status"
+    assert "https://www.sec.gov" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_real_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-real-company-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+            "operator_confirmation": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_real_company_corpus_validation.v1"
+    assert body["validation_state"] == "sec_edgar_real_company_corpus_validation_ready"
+    assert body["company_matrix"] == ["MSFT", "STLD", "SONY", "CCJ"]
+    assert body["filing_selection_policy"] == "real_company_recent_annual_and_interim_or_current_v1"
+    assert body["diagnostics"]["real_company_count"] == 4
+    assert body["diagnostics"]["filing_count"] == 8
+    assert body["diagnostics"]["supported_count"] == 8
+    assert body["diagnostics"]["generic_text_downgrade_performed"] is False
+    assert body["diagnostics"]["candidate_b_pdf_only_routing_performed"] is False
+    assert {record["form_type"] for record in body["filing_validation_records"]} >= {
+        "10-K",
+        "10-Q",
+        "8-K",
+        "20-F",
+        "40-F",
+        "6-K",
+    }
+    assert all(
+        "handoff_export_prepare" in record["outputs_produced"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(record["authority_hashes"]["handoff_export_prepare_receipt_hash"] for record in body["filing_validation_records"])
+    assert len(fake_client.calls) == 12
+    assert fake_client.calls[0]["url"] == "https://data.sec.gov/submissions/CIK0000789019.json"
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000789019-25-000100" not in response.text
+    assert "Microsoft Corporation" not in response.text
+    assert "Business overview" not in response.text
+    assert "value_text" not in response.text
+    _assert_raw_string_not_projected(body, "123")
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-real-company-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+            "operator_confirmation": True,
+        },
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["cache"]["idempotent_replay"] is True
+    assert replay_response.json()["validation_receipt_hash"] == body["validation_receipt_hash"]
+    assert len(fake_client.calls) == 12
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation/status/"
+        f"{body['validation_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == "layer3.sec_edgar_real_company_corpus_validation_status.v1"
+    assert status_response.json()["validation_receipt_hash"] == body["validation_receipt_hash"]
     assert "https://www.sec.gov" not in status_response.text
     assert str(tmp_path) not in status_response.text
 

@@ -3535,6 +3535,15 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_HAND
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SELECTION = (
     PLANNING_DOCS / "1219-sec-edgar-real-company-corpus-validation-selection.md"
 )
+SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_RUNTIME = (
+    PLANNING_DOCS / "1220-sec-edgar-real-company-corpus-validation-runtime.md"
+)
+SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
+)
+SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_filing_acquisition_connector.py"
+)
 SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
     ROOT
     / "backend"
@@ -116379,6 +116388,109 @@ def _check_sec_edgar_real_company_corpus_validation_selection(
                 )
 
 
+def _check_sec_edgar_real_company_corpus_validation_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_RUNTIME: (
+            "SEC EDGAR Real Company Corpus Validation Runtime",
+            "milestone: sec_edgar_real_company_corpus_validation_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1219-sec-edgar-real-company-corpus-validation-selection.md",
+            "entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387",
+            'entry_pr: "#1919"',
+            "runtime_status: implemented",
+            "service: backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py",
+            "endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+            "status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation/status/{sec_edgar_real_company_corpus_validation_receipt_id}",
+            "schema_id: layer3.sec_edgar_real_company_corpus_validation.v1",
+            "status_schema_id: layer3.sec_edgar_real_company_corpus_validation_status.v1",
+            "validation_mode: sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision: validate_sec_edgar_real_company_corpus_product_path",
+            "connector_selection_policy: real_company_recent_annual_and_interim_or_current_v1",
+            "company_matrix: MSFT,STLD,SONY,CCJ",
+            "discovered_form_families_under_test: 10-K,10-Q,8-K,20-F,40-F,6-K",
+            "path_validated: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare,status",
+            "product_utility_matrix_recorded: true",
+            "order_evidence_recorded: document_order_hash,fact_source_order_inventory,statement_candidate_order,package_artifact_order_hash",
+            "extension_policy_runtime_covered: company_specific_extension_concepts_are_retained_as_redacted_fact_authority_and_classification_evidence",
+            "unsupported_or_degraded_behavior: per_filing_blocked_or_degraded_records_preserve_diagnostics_without_generic_text_downgrade",
+            "raw_url_path_value_leakage_blocked: true",
+            "candidate_b_pdf_only_routing_for_sec_filings_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            'verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "real_company_corpus_product_path" -q PASS',
+            "next_exact_posture: sec_edgar_delivery_status_provenance_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_real_company_corpus_validation_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1219-sec-edgar-real-company-corpus-validation-selection.md",
+            "runtime_status: implemented",
+            "service: backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py",
+            "endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+            "status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation/status/{sec_edgar_real_company_corpus_validation_receipt_id}",
+            "schema_id: layer3.sec_edgar_real_company_corpus_validation.v1",
+            "status_schema_id: layer3.sec_edgar_real_company_corpus_validation_status.v1",
+            "validation_mode: sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision: validate_sec_edgar_real_company_corpus_product_path",
+            "connector_selection_policy: real_company_recent_annual_and_interim_or_current_v1",
+            "company_matrix: MSFT,STLD,SONY,CCJ",
+            "discovered_form_families_under_test: 10-K,10-Q,8-K,20-F,40-F,6-K",
+            "path_validated: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare,status",
+            "product_utility_matrix_recorded: true",
+            "raw_url_path_value_leakage_blocked: true",
+            "candidate_b_pdf_only_routing_for_sec_filings_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            'verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "real_company_corpus_product_path" -q PASS',
+            "next_exact_posture: sec_edgar_delivery_status_provenance_selection_v1",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            'SCHEMA_ID = "layer3.sec_edgar_real_company_corpus_validation.v1"',
+            'STATUS_SCHEMA_ID = "layer3.sec_edgar_real_company_corpus_validation_status.v1"',
+            'VALIDATION_MODE = "sec_edgar_real_company_corpus_validation_v1"',
+            'OPERATOR_DECISION = "validate_sec_edgar_real_company_corpus_product_path"',
+            "def validate_sec_edgar_real_company_corpus_product_path(",
+            "def inspect_sec_edgar_real_company_corpus_validation_status(",
+            "candidate_b_pdf_only_routing_performed",
+            "generic_text_downgrade_performed",
+        ),
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SERVICE: (
+            'REAL_COMPANY_DISCOVERY_POLICY = "real_company_recent_annual_and_interim_or_current_v1"',
+            'DEFAULT_REAL_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")',
+            "ANNUAL_FORM_TYPES",
+            "INTERIM_OR_CURRENT_FORM_TYPES",
+            "def _discovered_recent_filing_indexes(",
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "class Layer3SecEdgarRealCompanyCorpusValidationRequest(BaseModel):",
+            "class Layer3SecEdgarRealCompanyCorpusValidationResponse(Layer3BaseResponse):",
+            '"/source/sec-edgar/real-company-corpus/validation"',
+            '"/source/sec-edgar/real-company-corpus/validation/status/{sec_edgar_real_company_corpus_validation_receipt_id}"',
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_api.py": (
+            "def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(",
+            '"company_matrix": ["MSFT", "STLD", "SONY", "CCJ"]',
+            '"20-F"',
+            '"40-F"',
+            '"6-K"',
+            '"handoff_export_prepare" in record["outputs_produced"]',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR real-company corpus validation runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -117672,6 +117784,7 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_real_company_corpus_validation_selection(errors)
+    _check_sec_edgar_real_company_corpus_validation_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
