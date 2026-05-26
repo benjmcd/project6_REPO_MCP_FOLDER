@@ -35,6 +35,20 @@ REAL_COMPANY_CIK_REFS = {
     "STLD": "1022671",
     "SONY": "313838",
     "CCJ": "1009001",
+    "JPM": "19617",
+    "MET": "1099219",
+    "PLD": "1045609",
+    "FIZZ": "69891",
+}
+REAL_COMPANY_PROFILE_TAGS = {
+    "MSFT": ("domestic_large_cap", "technology"),
+    "STLD": ("domestic_industrial", "materials"),
+    "SONY": ("foreign_private_issuer", "foreign_form_family"),
+    "CCJ": ("foreign_private_issuer", "resource_sector", "foreign_form_family"),
+    "JPM": ("financial_institution", "domestic_large_cap"),
+    "MET": ("insurance", "domestic_large_cap"),
+    "PLD": ("reit", "domestic_large_cap"),
+    "FIZZ": ("small_cap", "consumer_products"),
 }
 ANNUAL_FORM_TYPES = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A"}
 INTERIM_OR_CURRENT_FORM_TYPES = {"10-Q", "10-Q/A", "8-K", "8-K/A", "6-K", "6-K/A"}
@@ -285,6 +299,7 @@ def _select_examples(
                 "filing_date": filing_date,
                 "report_period": _list_value(report_dates, match_index) or None,
                 "company_name_hash": _sha256_text(company_name) if company_name else None,
+                "issuer_profile_tags": _issuer_profile_tags(company_by_cik.get(str(cik), ""), form_type),
                 "primary_document_hash": _sha256_text(primary_document) if primary_document else None,
                 "primary_document_family": _classify_primary_document(primary_document),
                 "primary_document_description_hash": (
@@ -576,6 +591,20 @@ def _normalise_company_matrix(value: Any) -> tuple[str, ...]:
     return values
 
 
+def _issuer_profile_tags(ticker: str, form_type: str) -> list[str]:
+    tags = list(REAL_COMPANY_PROFILE_TAGS.get(str(ticker or "").upper(), ()))
+    form = str(form_type or "").upper()
+    if form in ANNUAL_FORM_TYPES:
+        tags.append("annual_form_family")
+    if form in INTERIM_OR_CURRENT_FORM_TYPES:
+        tags.append("interim_or_current_form_family")
+    if form.endswith("/A"):
+        tags.append("amended_filing")
+    if form in {"20-F", "20-F/A", "40-F", "40-F/A", "6-K", "6-K/A"}:
+        tags.append("foreign_form_family")
+    return list(dict.fromkeys(tags))
+
+
 def _normalise_cik_refs(value: Any) -> tuple[str, ...]:
     values = [str(item or "").strip().lstrip("0") or "0" for item in _as_list(value)]
     values = tuple(dict.fromkeys(values))
@@ -642,6 +671,7 @@ def _redact_example(example: Mapping[str, Any]) -> dict[str, Any]:
         "filing_date": example["filing_date"],
         "report_period_present": bool(example.get("report_period")),
         "company_name_hash": example.get("company_name_hash"),
+        "issuer_profile_tags": list(example.get("issuer_profile_tags") or []),
         "primary_document_hash": example.get("primary_document_hash"),
         "primary_document_family": example["primary_document_family"],
         "source_family": example["source_family"],

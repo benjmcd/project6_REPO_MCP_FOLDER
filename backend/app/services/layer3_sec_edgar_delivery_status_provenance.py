@@ -266,6 +266,7 @@ def _delivery_status_records(validation: Mapping[str, Any]) -> list[dict[str, An
         if not isinstance(source, Mapping):
             continue
         authority_hashes = dict(source.get("authority_hashes") or {})
+        quality_evidence = dict(source.get("quality_evidence") or {})
         delivery_record = {
             "record_index": source.get("record_index"),
             "example_id": str(source.get("example_id") or ""),
@@ -290,6 +291,10 @@ def _delivery_status_records(validation: Mapping[str, Any]) -> list[dict[str, An
             "order_evidence": dict(source.get("order_evidence") or {}),
             "gaps_found": list(source.get("gaps_found") or []),
             "operator_usefulness": source.get("operator_usefulness"),
+            "quality_assessment_status": quality_evidence.get("quality_assessment_status"),
+            "quality_dimensions": dict(quality_evidence.get("quality_dimensions") or {}),
+            "quality_gaps": list(quality_evidence.get("quality_gaps") or []),
+            "quality_evidence_hash": quality_evidence.get("quality_evidence_hash"),
         }
         delivery_record["delivery_status_record_hash"] = stable_hash(delivery_record)
         records.append(delivery_record)

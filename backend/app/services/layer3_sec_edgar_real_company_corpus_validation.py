@@ -121,6 +121,7 @@ def validate_sec_edgar_real_company_corpus_product_path(
     )
     records = _filing_validation_records(connector, request_id=request_id, db=db)
     matrix = _product_utility_matrix(records)
+    quality_matrix = _product_quality_matrix(records)
     diagnostics = _diagnostics(connector, records)
     receipt_hash = stable_hash(
         {
@@ -131,6 +132,7 @@ def validate_sec_edgar_real_company_corpus_product_path(
             "company_matrix": list(company_matrix),
             "record_hashes": [record["record_hash"] for record in records],
             "matrix_hash": stable_hash(matrix),
+            "quality_matrix_hash": stable_hash(quality_matrix),
             "diagnostics_hash": stable_hash(diagnostics),
         }
     )
@@ -162,6 +164,7 @@ def validate_sec_edgar_real_company_corpus_product_path(
         "filing_selection_policy": layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_DISCOVERY_POLICY,
         "filing_validation_records": records,
         "product_utility_matrix": matrix,
+        "product_quality_matrix": quality_matrix,
         "diagnostics": diagnostics,
         "negative_invariants": _negative_invariants(),
         "redaction_policy_id": REDACTION_POLICY_ID,
@@ -203,6 +206,10 @@ def _filing_validation_records(connector: Mapping[str, Any], *, request_id: str,
             record["supported_degraded_blocked"] = "degraded_or_blocked"
             record["failure_classification"] = "parser_family"
             record["gaps_found"].append("html_inline_xbrl_source_family_not_classified")
+            record["quality_evidence"] = _quality_not_evaluated(
+                "source_family_not_admitted_for_quality_assessment",
+                quality_gaps=["html_inline_xbrl_source_family_not_classified"],
+            )
         record["record_hash"] = stable_hash(record)
         records.append(record)
     return records
@@ -284,6 +291,10 @@ def _run_html_inline_xbrl_path(
             "failure_classification": _failure_classification(exc.error_code),
             "gaps_found": [exc.error_code],
             "operator_usefulness": "diagnostic_block_recorded",
+            "quality_evidence": _quality_not_evaluated(
+                "blocked_before_product_quality_assessment",
+                quality_gaps=[exc.error_code],
+            ),
         }
     outputs["outputs_produced"] = [
         "parser",
@@ -318,6 +329,15 @@ def _run_html_inline_xbrl_path(
     outputs["failure_classification"] = None
     outputs["gaps_found"] = []
     outputs["operator_usefulness"] = "product_path_validated"
+    outputs["quality_evidence"] = _quality_evidence_from_outputs(
+        parser=parser,
+        fact=fact,
+        classification=classification,
+        product=product,
+        construction=construction,
+        submit=submit,
+        handoff=handoff,
+    )
     return outputs
 
 
@@ -328,6 +348,7 @@ def _base_record(index: int, example: Mapping[str, Any], acquisition: Mapping[st
         "ticker_hash": example.get("ticker_hash"),
         "cik_hash": str(example.get("cik_hash") or ""),
         "company_name_hash": example.get("company_name_hash"),
+        "issuer_profile_tags": list(example.get("issuer_profile_tags") or []),
         "form_type": str(example.get("form_type") or ""),
         "filing_date": str(example.get("filing_date") or ""),
         "report_period_present": bool(example.get("report_period_present")),
@@ -342,6 +363,7 @@ def _base_record(index: int, example: Mapping[str, Any], acquisition: Mapping[st
         "order_evidence": {},
         "gaps_found": [],
         "operator_usefulness": "not_evaluated",
+        "quality_evidence": _quality_not_evaluated("not_evaluated"),
     }
 
 
@@ -597,6 +619,148 @@ def _product_utility_matrix(records: list[Mapping[str, Any]]) -> list[dict[str, 
     ]
 
 
+def _product_quality_matrix(records: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    matrix: list[dict[str, Any]] = []
+    for record in records:
+        evidence = dict(record.get("quality_evidence") or _quality_not_evaluated("missing_quality_evidence"))
+        matrix.append(
+            {
+                "example_id": record["example_id"],
+                "form_family": record["form_type"],
+                "issuer_profile_tags": list(record.get("issuer_profile_tags") or []),
+                "source_family": record["source_family"],
+                "supported_degraded_blocked": record["supported_degraded_blocked"],
+                "quality_assessment_status": evidence["quality_assessment_status"],
+                "quality_dimensions": dict(evidence["quality_dimensions"]),
+                "quality_gaps": list(evidence["quality_gaps"]),
+                "quality_evidence_hash": evidence["quality_evidence_hash"],
+            }
+        )
+    return matrix
+
+
+def _quality_evidence_from_outputs(
+    *,
+    parser: Mapping[str, Any],
+    fact: Mapping[str, Any],
+    classification: Mapping[str, Any],
+    product: Mapping[str, Any],
+    construction: Mapping[str, Any],
+    submit: Mapping[str, Any],
+    handoff: Mapping[str, Any],
+) -> dict[str, Any]:
+    fact_inventory = [item for item in fact.get("fact_inventory") or [] if isinstance(item, Mapping)]
+    fact_diagnostics = dict(fact.get("diagnostics") or {})
+    classification_diagnostics = dict(classification.get("classification_diagnostics") or {})
+    status_projection = dict(classification.get("status_projection") or {})
+    statement_role_counts = dict(status_projection.get("statement_role_counts") or {})
+    extension_fact_count = _extension_fact_count(fact_inventory)
+    unclassified_count = int(classification_diagnostics.get("unknown_or_unclassified_count") or 0)
+    fact_count = int(fact.get("fact_count") or 0)
+    semantic_profile_assigned_count = int(classification_diagnostics.get("semantic_profile_assigned_count") or 0)
+    standard_taxonomy_fact_count = int(classification_diagnostics.get("standard_taxonomy_fact_count") or 0)
+    company_extension_fact_count = int(classification_diagnostics.get("company_extension_fact_count") or 0)
+    comparable_standard_fact_count = int(classification_diagnostics.get("comparable_standard_fact_count") or 0)
+    company_extension_unmapped_count = int(classification_diagnostics.get("company_extension_unmapped_count") or 0)
+    quality_gaps = [
+        "financial_statement_semantics_not_finalized",
+        "cross_company_comparability_not_admitted",
+    ]
+    if unclassified_count:
+        quality_gaps.append("unclassified_fact_candidates_present")
+    evidence = {
+        "quality_assessment_status": "redacted_quality_evidence_ready_with_known_semantic_gaps",
+        "quality_dimensions": {
+            "filing_identity_correctness": "hash_bound",
+            "section_order_preservation": "hash_bound",
+            "fact_context_unit_preservation": (
+                "redacted_hash_bound"
+                if fact_diagnostics.get("missing_context_ref") == 0
+                and fact_diagnostics.get("missing_unit_ref") == 0
+                else "diagnostic_gap_recorded"
+            ),
+            "extension_fact_handling": "retained_redacted" if extension_fact_count else "not_observed",
+            "statement_candidate_usefulness": (
+                "candidate_groups_available" if any(int(value or 0) for value in statement_role_counts.values()) else "not_observed"
+            ),
+            "diagnostics_quality": "diagnostics_hash_bound",
+            "package_review_handoff_coherence": "receipt_chain_bound",
+            "financial_statement_semantics": (
+                "bounded_profile_available_not_finalized"
+                if fact_count and semantic_profile_assigned_count == fact_count
+                else "not_finalized"
+            ),
+            "cross_company_comparability": (
+                "standard_taxonomy_profile_available_not_admitted"
+                if comparable_standard_fact_count
+                else "not_admitted"
+            ),
+        },
+        "quality_metrics": {
+            "document_inventory_hash": parser["document_inventory_hash"],
+            "content_order_hash": parser["content_order_hash"],
+            "table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+            "inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+            "fact_count": fact_count,
+            "fact_inventory_hash": fact["fact_inventory_hash"],
+            "fact_diagnostics_hash": fact["diagnostics_hash"],
+            "extension_fact_count": extension_fact_count,
+            "statement_role_counts": statement_role_counts,
+            "classification_inventory_hash": classification["classification_inventory_hash"],
+            "semantic_profile_inventory_hash": classification_diagnostics.get("semantic_profile_inventory_hash"),
+            "semantic_profile_assigned_count": semantic_profile_assigned_count,
+            "standard_taxonomy_fact_count": standard_taxonomy_fact_count,
+            "company_extension_fact_count": company_extension_fact_count,
+            "comparable_standard_fact_count": comparable_standard_fact_count,
+            "company_extension_unmapped_count": company_extension_unmapped_count,
+            "classification_order_hash": classification["classification_order_hash"],
+            "statement_group_inventory_hash": classification["statement_group_inventory_hash"],
+            "classification_diagnostics_hash": classification["classification_diagnostics_hash"],
+            "unknown_or_unclassified_count": unclassified_count,
+            "product_manifest_hash": product["product_manifest_hash"],
+            "statement_candidate_product_hash": product["statement_candidate_product_hash"],
+            "product_order_hash": product["product_order_hash"],
+            "package_payload_manifest_hash": construction["package_payload_manifest_hash"],
+            "package_payload_order_hash": construction["package_payload_order_hash"],
+            "package_review_submit_receipt_hash": submit["package_review_submit_receipt_hash"],
+            "handoff_export_prepare_receipt_hash": handoff["handoff_export_prepare_receipt_hash"],
+        },
+        "quality_gaps": quality_gaps,
+    }
+    evidence["quality_evidence_hash"] = stable_hash(evidence)
+    return evidence
+
+
+def _quality_not_evaluated(
+    status: str,
+    *,
+    quality_gaps: list[str] | None = None,
+) -> dict[str, Any]:
+    evidence = {
+        "quality_assessment_status": status,
+        "quality_dimensions": {
+            "filing_identity_correctness": "not_evaluated",
+            "section_order_preservation": "not_evaluated",
+            "fact_context_unit_preservation": "not_evaluated",
+            "extension_fact_handling": "not_evaluated",
+            "statement_candidate_usefulness": "not_evaluated",
+            "diagnostics_quality": "not_evaluated",
+            "package_review_handoff_coherence": "not_evaluated",
+            "financial_statement_semantics": "not_evaluated",
+            "cross_company_comparability": "not_evaluated",
+        },
+        "quality_metrics": {},
+        "quality_gaps": list(quality_gaps or []),
+    }
+    evidence["quality_evidence_hash"] = stable_hash(evidence)
+    return evidence
+
+
+def _extension_fact_count(facts: list[Mapping[str, Any]]) -> int:
+    standard_prefixes = {"dei", "ifrs-full", "us-gaap"}
+    return sum(1 for fact in facts if str(fact.get("namespace_prefix") or "").lower() not in standard_prefixes)
+
+
 def _diagnostics(connector: Mapping[str, Any], records: list[Mapping[str, Any]]) -> dict[str, Any]:
     states = [str(record.get("supported_degraded_blocked") or "") for record in records]
     return {
@@ -610,6 +774,16 @@ def _diagnostics(connector: Mapping[str, Any], records: list[Mapping[str, Any]])
         "generic_text_downgrade_performed": False,
         "candidate_b_pdf_only_routing_performed": False,
         "full_sec_support_claimed": False,
+        "product_quality_matrix_recorded": True,
+        "issuer_profile_tags_observed": sorted(
+            {
+                str(tag)
+                for record in records
+                for tag in list(record.get("issuer_profile_tags") or [])
+            }
+        ),
+        "financial_statement_semantics_finalized": False,
+        "cross_company_comparability_admitted": False,
         "provider_object_write_enabled": False,
         "connector_dispatch_enabled": False,
     }
@@ -640,6 +814,9 @@ def _response_from_receipt(
         "filing_selection_policy": receipt["filing_selection_policy"],
         "filing_validation_records": list(receipt["filing_validation_records"]),
         "product_utility_matrix": list(receipt["product_utility_matrix"]),
+        "product_quality_matrix": list(
+            receipt.get("product_quality_matrix") or _product_quality_matrix(list(receipt["filing_validation_records"]))
+        ),
         "diagnostics": dict(receipt["diagnostics"]),
         "cache": {
             "idempotent_replay": idempotent_replay,
