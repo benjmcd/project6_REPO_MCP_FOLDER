@@ -34,6 +34,7 @@ AUTHORITY_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_statement_classificati
 SEMANTIC_PROFILE_VERSION = "sec_edgar_statement_semantic_profile_v1"
 PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION = "sec_edgar_period_unit_context_dimension_profile_v1"
 STATEMENT_ROLE_QUALITY_PROFILE_VERSION = "sec_edgar_statement_role_quality_profile_v1"
+EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION = "sec_edgar_extension_taxonomy_retention_profile_v1"
 
 STATEMENT_ROLES = (
     "balance_sheet",
@@ -170,6 +171,12 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         if isinstance(profile.get("statement_role_quality_profile"), Mapping)
     ]
     statement_role_quality_profile_hash = stable_hash(statement_role_quality_profiles)
+    extension_taxonomy_retention_profiles = [
+        dict(profile["extension_taxonomy_retention_profile"])
+        for profile in semantic_profiles
+        if isinstance(profile.get("extension_taxonomy_retention_profile"), Mapping)
+    ]
+    extension_taxonomy_retention_profile_hash = stable_hash(extension_taxonomy_retention_profiles)
     classification_order_hash = stable_hash(
         [
             {
@@ -220,6 +227,21 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     low_statement_role_confidence_count = sum(
         1 for profile in statement_role_quality_profiles if profile.get("classification_confidence") == "low"
     )
+    retained_company_extension_profile_count = sum(
+        1
+        for profile in extension_taxonomy_retention_profiles
+        if profile.get("extension_taxonomy_retention_status") == "issuer_extension_retained_redacted_unmapped"
+    )
+    standard_taxonomy_retention_profile_count = sum(
+        1
+        for profile in extension_taxonomy_retention_profiles
+        if profile.get("extension_taxonomy_retention_status") == "standard_taxonomy_retained"
+    )
+    unknown_taxonomy_retention_profile_count = sum(
+        1
+        for profile in extension_taxonomy_retention_profiles
+        if profile.get("extension_taxonomy_retention_status") == "unknown_taxonomy_retained_unmapped"
+    )
     diagnostics = {
         "fact_count": len(facts),
         "classified_fact_count": len(classification_inventory),
@@ -227,14 +249,20 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "semantic_profile_version": SEMANTIC_PROFILE_VERSION,
         "period_unit_context_dimension_profile_version": PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION,
         "statement_role_quality_profile_version": STATEMENT_ROLE_QUALITY_PROFILE_VERSION,
+        "extension_taxonomy_retention_profile_version": EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION,
         "semantic_profile_assigned_count": semantic_profile_assigned_count,
         "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
         "period_unit_context_dimension_profile_hash": period_unit_context_dimension_profile_hash,
         "period_unit_context_dimension_profile_assigned_count": len(period_unit_context_dimension_profiles),
         "statement_role_quality_profile_hash": statement_role_quality_profile_hash,
         "statement_role_quality_profile_assigned_count": len(statement_role_quality_profiles),
+        "extension_taxonomy_retention_profile_hash": extension_taxonomy_retention_profile_hash,
+        "extension_taxonomy_retention_profile_assigned_count": len(extension_taxonomy_retention_profiles),
         "medium_statement_role_confidence_count": medium_statement_role_confidence_count,
         "low_statement_role_confidence_count": low_statement_role_confidence_count,
+        "retained_company_extension_profile_count": retained_company_extension_profile_count,
+        "standard_taxonomy_retention_profile_count": standard_taxonomy_retention_profile_count,
+        "unknown_taxonomy_retention_profile_count": unknown_taxonomy_retention_profile_count,
         "context_ref_hash_present_count": context_ref_hash_present_count,
         "unit_ref_hash_present_count": unit_ref_hash_present_count,
         "decimals_or_precision_present_count": decimals_or_precision_present_count,
@@ -243,6 +271,8 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "company_extension_fact_count": company_extension_fact_count,
         "comparable_standard_fact_count": comparable_standard_fact_count,
         "company_extension_unmapped_count": company_extension_fact_count,
+        "extension_taxonomy_mapping_performed": False,
+        "extension_taxonomy_facts_dropped": False,
         "every_fact_classified_exactly_once": True,
         "source_order_preserved": True,
         "marker_order_preserved": True,
@@ -491,9 +521,51 @@ def _semantic_profile(
         ),
         "period_unit_context_dimension_profile": _period_unit_context_dimension_profile(fact),
         "statement_role_quality_profile": _statement_role_quality_profile(role, basis=basis, confidence=confidence),
+        "extension_taxonomy_retention_profile": _extension_taxonomy_retention_profile(
+            local_name,
+            namespace_prefix,
+            taxonomy_class,
+            fact,
+        ),
         "extension_taxonomy_retained": taxonomy_class == "company_extension",
         "taxonomy_network_resolution_used": False,
         "sec_companyfacts_api_used": False,
+        "final_financial_statement_semantics_claimed": False,
+    }
+
+
+def _extension_taxonomy_retention_profile(
+    local_name: str,
+    namespace_prefix: str,
+    taxonomy_class: str,
+    fact: Mapping[str, Any],
+) -> dict[str, Any]:
+    prefix = namespace_prefix.lower()
+    qualified_name = str(fact.get("qualified_name") or "")
+    if taxonomy_class == "company_extension":
+        status = "issuer_extension_retained_redacted_unmapped"
+    elif taxonomy_class.startswith("standard_"):
+        status = "standard_taxonomy_retained"
+    else:
+        status = "unknown_taxonomy_retained_unmapped"
+    return {
+        "extension_taxonomy_retention_profile_version": EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION,
+        "taxonomy_class": taxonomy_class,
+        "extension_taxonomy_retention_status": status,
+        "namespace_prefix_hash": stable_hash({"namespace_prefix": prefix}),
+        "qualified_name_hash": stable_hash({"qualified_name": qualified_name}),
+        "local_name_hash": stable_hash({"local_name": local_name}),
+        "issuer_extension_namespace_present": taxonomy_class == "company_extension",
+        "extension_taxonomy_retained": taxonomy_class == "company_extension",
+        "extension_mapping_scope": (
+            "issuer_extension_retained_without_mapping"
+            if taxonomy_class == "company_extension"
+            else "standard_or_unknown_taxonomy_retained"
+        ),
+        "extension_taxonomy_mapping_performed": False,
+        "taxonomy_network_resolution_used": False,
+        "sec_companyfacts_api_used": False,
+        "extension_fact_dropped": False,
         "final_financial_statement_semantics_claimed": False,
     }
 
@@ -718,6 +790,9 @@ def _response_from_receipt(
             "statement_role_quality_profile_version": dict(receipt["classification_diagnostics"]).get(
                 "statement_role_quality_profile_version"
             ),
+            "extension_taxonomy_retention_profile_version": dict(receipt["classification_diagnostics"]).get(
+                "extension_taxonomy_retention_profile_version"
+            ),
             "semantic_profile_assigned_count": dict(receipt["classification_diagnostics"]).get("semantic_profile_assigned_count", 0),
             "period_unit_context_dimension_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
                 "period_unit_context_dimension_profile_assigned_count", 0
@@ -725,17 +800,32 @@ def _response_from_receipt(
             "statement_role_quality_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
                 "statement_role_quality_profile_assigned_count", 0
             ),
+            "extension_taxonomy_retention_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
+                "extension_taxonomy_retention_profile_assigned_count", 0
+            ),
             "period_unit_context_dimension_profile_hash": dict(receipt["classification_diagnostics"]).get(
                 "period_unit_context_dimension_profile_hash"
             ),
             "statement_role_quality_profile_hash": dict(receipt["classification_diagnostics"]).get(
                 "statement_role_quality_profile_hash"
             ),
+            "extension_taxonomy_retention_profile_hash": dict(receipt["classification_diagnostics"]).get(
+                "extension_taxonomy_retention_profile_hash"
+            ),
             "medium_statement_role_confidence_count": dict(receipt["classification_diagnostics"]).get(
                 "medium_statement_role_confidence_count", 0
             ),
             "low_statement_role_confidence_count": dict(receipt["classification_diagnostics"]).get(
                 "low_statement_role_confidence_count", 0
+            ),
+            "retained_company_extension_profile_count": dict(receipt["classification_diagnostics"]).get(
+                "retained_company_extension_profile_count", 0
+            ),
+            "standard_taxonomy_retention_profile_count": dict(receipt["classification_diagnostics"]).get(
+                "standard_taxonomy_retention_profile_count", 0
+            ),
+            "unknown_taxonomy_retention_profile_count": dict(receipt["classification_diagnostics"]).get(
+                "unknown_taxonomy_retention_profile_count", 0
             ),
             "context_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("context_ref_hash_present_count", 0),
             "unit_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("unit_ref_hash_present_count", 0),
@@ -751,6 +841,8 @@ def _response_from_receipt(
             "unit_normalization_performed": False,
             "presentation_linkbase_role_resolution_performed": False,
             "statement_role_semantics_claimed": False,
+            "extension_taxonomy_mapping_performed": False,
+            "extension_taxonomy_facts_dropped": False,
             "raw_values_returned": False,
             "final_financial_statement_semantics_claimed": False,
             "next_allowed_actions": ["select_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product"],

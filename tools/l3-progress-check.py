@@ -3580,6 +3580,9 @@ SEC_EDGAR_PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE = (
 SEC_EDGAR_STATEMENT_ROLE_QUALITY_PROFILE = (
     PLANNING_DOCS / "1234-sec-edgar-statement-role-quality-profile.md"
 )
+SEC_EDGAR_EXTENSION_TAXONOMY_RETENTION_PROFILE = (
+    PLANNING_DOCS / "1235-sec-edgar-extension-taxonomy-retention-profile.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117437,6 +117440,65 @@ def _check_sec_edgar_statement_role_quality_profile(
                 )
 
 
+def _check_sec_edgar_extension_taxonomy_retention_profile(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_EXTENSION_TAXONOMY_RETENTION_PROFILE: (
+            "SEC EDGAR Extension Taxonomy Retention Profile",
+            "milestone: sec_edgar_extension_taxonomy_retention_profile_v1",
+            "source_statement_role_quality_profile: next_milestone_plans/Layer3_planning_docs/1234-sec-edgar-statement-role-quality-profile.md",
+            "profile_version: sec_edgar_extension_taxonomy_retention_profile_v1",
+            "profile_scope: redacted_extension_namespace_qualified_name_hash_profile",
+            "extension_taxonomy_retention_surface: extension_taxonomy_retention_profile",
+            "extension_taxonomy_mapping_performed: false",
+            "extension_taxonomy_facts_dropped: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_standard_concept_mapping_profile_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            "EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION",
+            "extension_taxonomy_retention_profile",
+            "extension_taxonomy_retention_profile_hash",
+            "extension_taxonomy_retention_profile_assigned_count",
+            "retained_company_extension_profile_count",
+            "standard_taxonomy_retention_profile_count",
+            "unknown_taxonomy_retention_profile_count",
+            "extension_taxonomy_mapping_performed",
+            "extension_taxonomy_facts_dropped",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "extension_taxonomy_retention_profile_assigned_count",
+            "extension_taxonomy_retention_profile_hash",
+            "bounded_hash_profile_available_unmapped",
+            "retained_company_extension_profile_count",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "extension_taxonomy_retention_profile_record_count",
+            "extension_taxonomy_retention_profile_hashes_hash",
+            "extension_taxonomy_retention_profile",
+            "extension_taxonomy_mapping_performed",
+            "extension_taxonomy_facts_dropped",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_extension_taxonomy_retention_profile_v1",
+            "extension_taxonomy_retention_profile_assigned_count",
+            "extension_taxonomy_retention_profile_record_count",
+            "bounded_hash_profile_available_unmapped",
+            "extension_taxonomy_facts_dropped",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR extension taxonomy retention profile term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118745,6 +118807,7 @@ def main() -> int:
     _check_sec_edgar_operator_product_surface_rendered_ui(errors)
     _check_sec_edgar_period_unit_context_dimension_profile(errors)
     _check_sec_edgar_statement_role_quality_profile(errors)
+    _check_sec_edgar_extension_taxonomy_retention_profile(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
