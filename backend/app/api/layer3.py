@@ -36,6 +36,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status,
+    layer3_sec_edgar_html_inline_xbrl_fact_statement_classification,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -613,6 +614,37 @@ class Layer3SecEdgarHtmlInlineXbrlFactMaterialBridgeRequest(BaseModel):
     expected_gate_b_decision_manifest_id: str | None = None
     rollback_confirmed: bool = False
     operator_confirmed: bool = False
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    classification_mode: Literal["sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1"]
+    operator_decision: Literal["classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates"]
+    fact_authority_receipt_id: str = Field(min_length=1)
+    fact_authority_receipt_hash: str = Field(min_length=64, max_length=64)
+    fact_material_bridge_receipt_id: str = Field(min_length=1)
+    fact_material_bridge_receipt_hash: str = Field(min_length=64, max_length=64)
+    expected_parser_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_live_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_primary_document_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_document_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_content_order_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_table_candidate_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_inline_xbrl_marker_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_fact_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_diagnostics_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_materialization_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_dataset_version_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_gate_b_decision_manifest_id: str | None = None
+    operator_confirmation: bool = False
     actor: str | None = None
 
 
@@ -7957,6 +7989,33 @@ class Layer3SecEdgarHtmlInlineXbrlFactMaterialBridgeResponse(Layer3BaseResponse)
     negative_invariants: dict[str, Any]
 
 
+class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationResponse(Layer3BaseResponse):
+    mode: str
+    classification_mode: str
+    operator_decision: str
+    classification_state: str
+    statement_classification_receipt_id: str | None = None
+    statement_classification_receipt_ref: str | None = None
+    statement_classification_receipt_hash: str | None = None
+    fact_authority_receipt_hash: str
+    fact_material_bridge_receipt_hash: str
+    parser_receipt_hash: str | None = None
+    source_family: str
+    parser_family: str
+    typed_content_contract_id: str
+    classification_inventory: list[dict[str, Any]] = Field(default_factory=list)
+    classification_inventory_hash: str | None = None
+    classification_order_hash: str | None = None
+    statement_group_inventory: list[dict[str, Any]] = Field(default_factory=list)
+    statement_group_inventory_hash: str | None = None
+    unclassified_fact_inventory_hash: str | None = None
+    classification_diagnostics: dict[str, Any] | None = None
+    classification_diagnostics_hash: str | None = None
+    authority_hashes: dict[str, Any] | None = None
+    status_projection: dict[str, Any]
+    negative_invariants: dict[str, Any]
+
+
 class Layer3SecEdgarHtmlInlineXbrlDownstreamProofResponse(Layer3BaseResponse):
     mode: str
     proof_state: str
@@ -15183,6 +15242,36 @@ def get_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
             sec_edgar_html_inline_xbrl_fact_material_bridge_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_fact_statement_classification(
+    payload: Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
+            payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/status/{statement_classification_receipt_id}",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_html_inline_xbrl_fact_statement_classification_status(
+    statement_classification_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.inspect_sec_edgar_html_inline_xbrl_fact_statement_classification_status(
+            statement_classification_receipt_id,
         )
     )
 

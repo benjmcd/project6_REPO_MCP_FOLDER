@@ -3460,6 +3460,17 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_TO_STATEMENT_CLASSIFICATION_SELECTION = (
     PLANNING_DOCS
     / "1200-sec-edgar-html-inline-xbrl-fact-to-statement-classification-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_TO_STATEMENT_CLASSIFICATION_RUNTIME = (
+    PLANNING_DOCS
+    / "1201-sec-edgar-html-inline-xbrl-fact-to-statement-classification-runtime.md"
+)
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -114565,6 +114576,8 @@ def _check_sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection
             "entry_decision: freeze_only",
             "runtime_status: not_implemented",
             "implementation_admitted_after_current_main_sync: true",
+            "stacked_runtime_implementation_before_current_main_sync: true",
+            'stacked_runtime_pr: "#1901"',
             "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1",
             "selected_classification_mode: sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
             "selected_operator_decision: classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates",
@@ -114621,6 +114634,105 @@ def _check_sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact-to-statement classification selection term: {term}"
+                )
+
+
+def _check_sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_TO_STATEMENT_CLASSIFICATION_RUNTIME: (
+            "SEC EDGAR HTML Inline XBRL Fact To Statement Classification Runtime",
+            "milestone: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1",
+            "source_fact_to_statement_classification_selection: next_milestone_plans/Layer3_planning_docs/1200-sec-edgar-html-inline-xbrl-fact-to-statement-classification-selection.md",
+            "current_main_entry: b80e211dd5ad03fa06a09a93ca7829a67529ab5a",
+            'stacked_on_pr: "#1901"',
+            "depends_on_unmerged_selection_sync_pr: true",
+            "entry_decision: stacked_runtime_implementation_after_freeze_pending_current_main_sync",
+            "runtime_status: implemented_stacked_pending_current_main_sync",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/status/{statement_classification_receipt_id}",
+            "implemented_classification_mode: sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
+            "implemented_operator_decision: classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates",
+            "implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_request.v1",
+            "implemented_status_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_status.v1",
+            "implemented_runtime_scope: classify_existing_ordered_inline_xbrl_fact_inventory_into_redacted_statement_candidate_groups_without_taxonomy_network_resolution",
+            "implemented_statement_candidate_roles: balance_sheet,income_statement,cash_flow_statement,stockholders_equity_statement,comprehensive_income_statement,cover_page,disclosure_or_note,unknown_or_unclassified",
+            "implemented_unknown_policy: every_fact_must_receive_exactly_one_candidate_role_and_unknown_or_unclassified_is_retained_as_explicit_non_loss_diagnostic",
+            "implemented_output_authority: statement_classification_receipt_id,statement_classification_receipt_hash,classification_inventory_hash,classification_order_hash,statement_group_inventory_hash,unclassified_fact_inventory_hash,classification_diagnostics_hash",
+            "classification_runtime_implemented: true",
+            "financial_statement_semantics_runtime_in_this_slice: false",
+            "taxonomy_network_resolution_in_this_slice: false",
+            "sec_companyfacts_api_runtime_in_this_slice: false",
+            "xml_xbrl_fact_authority_in_this_slice: false",
+            "new_sec_network_runtime_in_this_slice: false",
+            "append_only_statement_classification_receipt_storage_admitted: true",
+            "broad_runtime_db_or_storage_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1",
+            "source_fact_to_statement_classification_selection: next_milestone_plans/Layer3_planning_docs/1200-sec-edgar-html-inline-xbrl-fact-to-statement-classification-selection.md",
+            'stacked_on_pr: "#1901"',
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification",
+            "implemented_classification_mode: sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
+            "implemented_unknown_policy: every_fact_must_receive_exactly_one_candidate_role_and_unknown_or_unclassified_is_retained_as_explicit_non_loss_diagnostic",
+            "classification_runtime_implemented: true",
+            "taxonomy_network_resolution_in_this_slice: false",
+            "sec_companyfacts_api_runtime_in_this_slice: false",
+            "append_only_statement_classification_receipt_storage_admitted: true",
+            "broad_runtime_db_or_storage_expansion_admitted: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            'SCHEMA_ID = "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1"',
+            'CLASSIFICATION_MODE = "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1"',
+            'OPERATOR_DECISION = "classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates"',
+            "def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates",
+            "fact_material_bridge.inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status",
+            "unknown_or_unclassified",
+            "taxonomy_network_resolution_enabled",
+            "sec_companyfacts_api_runtime_enabled",
+            "financial_statement_semantics_finalized",
+            "raw_fact_values_exposed",
+        ),
+        LAYER3_API: (
+            "Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationRequest",
+            "Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationResponse",
+            "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification",
+            "classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates",
+            "inspect_sec_edgar_html_inline_xbrl_fact_statement_classification_status",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_candidates",
+            "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_statement_classification_stale_or_unsafe",
+            "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1",
+            "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
+            "sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_hash_mismatch",
+            '"value_text" not in response.text',
+            '"123" not in response.text',
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_TO_STATEMENT_CLASSIFICATION_SELECTION: (
+            "stacked_runtime_implementation_before_current_main_sync: true",
+            "sync the stacked runtime to current main after PR #1901 can merge",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact-to-statement classification runtime term: {term}"
                 )
 
 
@@ -115860,6 +115972,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime(
         errors
     )
 
