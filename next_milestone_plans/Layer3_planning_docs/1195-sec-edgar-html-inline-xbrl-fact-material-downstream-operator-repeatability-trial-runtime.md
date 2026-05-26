@@ -1,0 +1,108 @@
+# SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Repeatability Trial Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_runtime_v1
+source_repeatability_trial_selection: next_milestone_plans/Layer3_planning_docs/1194-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-trial-selection.md
+current_main_entry: a59a51a05873da93f72bcf58e9326e9175e95ecd
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial
+implemented_request_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorRepeatabilityTrialRequest
+implemented_response_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorRepeatabilityTrialResponse
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial.v1
+implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_request.v1
+implemented_trial_mode: append_only_trial_receipt_over_original_and_repeat_fact_material_downstream_status_authority_without_sec_fetch_or_processing_execution
+implemented_operator_decision: record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial
+implemented_trial_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial
+implemented_authority_model: two_server_revalidated_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_requests_plus_expected_status_hashes
+implemented_receipt_model: append_only_trial_receipt_under_existing_server_storage_without_sec_fetch_or_processing_execution
+implemented_status_projection_extension: inline_xbrl_marker_inventory_hash
+implemented_hash_bindings: dataset_version_id,dataset_version_hash,source_family,parser_family,typed_content_contract_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,inline_xbrl_marker_inventory_hash,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash,materialization_receipt_hash,fact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,proof_hash,coverage_step_set
+implemented_dispositions: no_regression_observed,delta_reviewed_no_regression,regression_detected_blocked
+accepted_dispositions: no_regression_observed,delta_reviewed_no_regression
+blocked_disposition: regression_detected_blocked
+append_only_repeatability_trial_receipt: true
+exclusive_trial_per_original_repeat_authority_pair: true
+idempotent_replay_same_authority_receipt_hash: true
+original_operator_status_required: available
+repeat_operator_status_required: available
+status_reuses_existing_fact_material_downstream_status_validator: true
+status_reuses_existing_fact_material_downstream_proof_validator: true
+status_available_requires_server_revalidation: true
+stale_original_operator_status_must_reject: true
+stale_repeat_operator_status_must_reject: true
+missing_fact_material_downstream_proof_must_reject: true
+mismatched_source_or_parser_family_must_reject: true
+mismatched_fact_authority_must_reject: true
+mismatched_fact_inventory_must_reject: true
+mismatched_fact_material_bridge_must_reject: true
+mismatched_material_authority_must_reject: true
+mismatched_inline_xbrl_marker_inventory_must_reject: true
+mismatched_gate_b_or_selection_must_reject: true
+mismatched_material_snapshot_payload_hash_must_reject: true
+mismatched_downstream_proof_hash_must_reject: true
+mismatched_coverage_evidence_must_reject: true
+non_available_original_or_repeat_status_must_reject: true
+raw_fact_value_authority_must_reject: true
+raw_url_or_path_authority_must_reject: true
+browser_supplied_local_authority_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_sec_url_admitted: false
+browser_supplied_raw_fact_values_admitted: false
+browser_supplied_command_admitted: false
+browser_supplied_process_control_admitted: false
+browser_supplied_stdout_stderr_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+html_inline_xbrl_reparse_or_rematerialization_admitted: false
+xml_xbrl_fact_authority_admitted: false
+sec_companyfacts_api_runtime_enabled: false
+taxonomy_network_resolution_enabled: false
+financial_statement_semantics_admitted: false
+fact_to_statement_classification_enabled: false
+raw_sec_filing_url_authority_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+actual_sec_processing_execution_admitted_by_trial_endpoint: false
+actual_subprocess_spawn_admitted_by_trial_endpoint: false
+process_control_admitted: false
+process_kill_cancel_retry_resume_admitted: false
+raw_pid_admitted: false
+raw_stdout_admitted: false
+raw_stderr_admitted: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+fact_value_reconstruction_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial.py ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py ./backend/app/api/layer3.py ./backend/tests/test_layer3_api.py ./backend/tests/test_layer3_bootstrap_contract.py PASS
+focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k "fact_material_downstream_repeatability or fact_material_repeatability_invalid_authority or fact_material_downstream_operator_status" PASS
+focused_bootstrap_pytest: python -m pytest ./backend/tests/test_layer3_bootstrap_contract.py -q PASS
+progress_checker: python ./tools/l3-progress-check.py PASS
+target_selection_validate: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_selection_v1
+```
+
+This runtime implements the selected SEC EDGAR HTML/iXBRL fact-material downstream repeatability comparator. It does not fetch SEC filings, reparse retained HTML/iXBRL, rematerialize fact values, execute a process, dispatch a connector, mutate Layer 3 material/Gate B/package/delivery state, or let browser state become durable authority.
+
+The endpoint accepts two fact-material downstream operator-status requests plus their expected status hashes. The server revalidates both requests through the existing fact-material downstream status and proof validators, requires both projections to be `available`, compares the same SEC HTML/iXBRL parser, fact authority, fact inventory, inline XBRL marker inventory, fact-material bridge, Gate B, material snapshot, downstream proof, and coverage authority fields, and records one append-only redacted trial receipt for the original/repeat authority pair. Replays of the same authority pair are idempotent when the receipt hash matches; contradictory receipts fail closed.
+
+## Coherence Check
+
+- Is this a SEC filing processor or fact parser? Recommended answer: no. It only compares already admitted fact-material downstream status/proof authority.
+- Does this reconstruct raw fact values or reparse retained HTML/iXBRL? Recommended answer: no. Raw fact-value, URL, path, command, process, stdout/stderr, artifact-byte, connector, model, browser, and frontend authority fields are rejected.
+- Why was `inline_xbrl_marker_inventory_hash` added to the status projection? Recommended answer: the selected runtime requires same-marker-inventory comparison, so the server-owned fact-material status projection must carry that hash explicitly.
+- Does this create rendered controls? Recommended answer: no. Rendered/operator UI remains a separate selected pass so browser UI stays downstream of server-owned trial receipts.
