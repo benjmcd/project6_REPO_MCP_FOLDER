@@ -1,0 +1,73 @@
+# SEC EDGAR HTML Inline XBRL Fact Material Bridge Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_bridge_runtime_v1
+source_fact_material_bridge_selection: next_milestone_plans/Layer3_planning_docs/1184-sec-edgar-html-inline-xbrl-fact-material-bridge-selection.md
+current_main_entry: befaad68c0a19a0d79c6f6bf26ce00012155e6c0
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implementation_branch: codex/sec-ixbrl-fact-material-runtime
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/status/{sec_edgar_html_inline_xbrl_fact_material_bridge_receipt_id}
+implemented_bridge_mode: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1
+implemented_operator_decision: bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_bridge.v1
+implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_bridge_request.v1
+implemented_status_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_bridge_status.v1
+implemented_source_family: sec_edgar_html_inline_xbrl
+implemented_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1
+implemented_material_source_class: dataset_version
+implemented_material_preview_admission_source_system: nrc_adams_aps
+implemented_typed_content_contract_id: sec_edgar_html_inline_xbrl_fact_material_units_v1
+implemented_runtime_scope: materialize_ordered_inline_xbrl_fact_units_from_existing_fact_authority_and_server_owned_retained_primary_document
+implemented_input_authority: fact_authority_receipt_id,fact_authority_receipt_hash,parser_receipt_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash,fact_inventory_hash,diagnostics_hash
+implemented_server_read_model: reload_fact_authority_receipt_then_reload_parser_receipt_then_server_read_retained_live_source_artifact_bytes_bound_to_parser_receipt
+implemented_material_payload_scope: ordered_inline_xbrl_fact_units_from_primary_html_inline_xbrl_document_only
+implemented_material_columns: fact_order,element_name,qualified_name,namespace_prefix,local_name,context_ref_hash,unit_ref_hash,decimals_or_precision,scale_or_format,continued_fact_hash_if_present,source_order_hash,source_artifact_receipt_hash,primary_document_hash,value_text,value_hash,value_length,table_candidate_anchor_hash,parser_receipt_hash,fact_authority_receipt_hash
+implemented_value_policy: preserve_value_text_only_inside_server_owned_dataset_materialization_and_return_redacted_hash_count_projection_to_operator_surfaces
+implemented_material_preview_compatibility: existing_layer3_dataset_version_material_preview_without_source_class_widening
+implemented_gate_b_compatibility: existing_gate_b_material_preview_hash_and_decision_basis_validation
+implemented_order_policy: preserve_fact_authority_order_primary_document_order_and_marker_inventory_order_without_taxonomy_or_statement_reordering
+implemented_receipt_model: deterministic_fact_material_bridge_receipt_with_fact_authority_hash_materialization_hash_material_preview_hash_and_gate_b_manifest_binding
+implemented_idempotency_contract: same_client_request_id_same_fact_authority_receipt_returns_same_bridge_receipt_same_client_request_id_different_fact_authority_receipt_fails_closed_same_fact_authority_receipt_new_client_request_id_returns_existing_status
+fact_authority_runtime_preserved: true
+material_text_table_bridge_preserved: true
+existing_material_bridge_not_weakened: true
+existing_downstream_proof_not_mutated: true
+existing_gate_b_session_not_mutated: true
+live_sec_network_fetch_performed_by_bridge: false
+submissions_lookup_runtime_performed_by_bridge: false
+browser_supplied_html_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_local_path_admitted: false
+standalone_xml_xbrl_fact_authority_enabled: false
+sec_companyfacts_api_runtime_enabled: false
+taxonomy_network_resolution_enabled: false
+financial_statement_semantics_enabled: false
+fact_to_statement_classification_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed_in_operator_projection: false
+focused_py_compile: python -m compileall ./backend/app/api/layer3.py ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_authority.py ./backend/tests/test_layer3_api.py PASS
+focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k "fact_material_bridge or fact_authority" PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_selection_v1
+```
+
+This runtime bridges an existing SEC HTML/iXBRL fact-authority receipt into Layer 3 `dataset_version` material authority. The server revalidates the fact authority, parser receipt, connector receipt, retained live source artifact, source artifact hash, reparsed document inventory, content order, table-candidate inventory, inline-XBRL marker inventory, fact inventory, and diagnostics before materializing ordered fact units.
+
+The bridge stores `value_text` only inside the server-owned DatasetVersion CSV. Operator responses, status projections, material candidates, and Gate B payloads expose dataset ids, hashes, counts, and redacted provenance only. The runtime does not fetch SEC content, accept browser-submitted HTML, accept raw URLs or local paths, process standalone XML XBRL, call SEC Company Facts, resolve taxonomy networks, assign financial-statement semantics, mutate the existing narrative/table material bridge, mutate downstream proof, dispatch connectors, write provider objects, add RAG/model runtime, or activate full mockup behavior.
+
+## Grill Check
+
+- Does this replace the existing HTML/iXBRL narrative/table material bridge? Recommended answer: no. This is a separate fact-material bridge over a fact-authority receipt; the existing text/table bridge remains unchanged.
+- Can callers submit fact values, HTML, URLs, local paths, or SEC connector authority? Recommended answer: no. The bridge reconstructs values from server-retained source-artifact bytes already bound to the parser/fact receipts.
+- Does this assign financial statement semantics? Recommended answer: no. It preserves fact order, qualified names, value hashes, context/unit hashes, and optional table anchors only.
+- What comes next? Recommended answer: select `sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_selection_v1` before proving fact-derived material through downstream analysis/package/delivery/operator inspection.
