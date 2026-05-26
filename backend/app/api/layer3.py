@@ -29,6 +29,7 @@ from app.services import (
     layer3_sec_edgar_authority_envelope,
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
+    layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
     layer3_sec_edgar_live_downstream_status,
     layer3_sec_edgar_live_repeatability_trial,
@@ -510,6 +511,24 @@ class Layer3SecEdgarRealFilingDownstreamValidationRequest(BaseModel):
     downstream_proof_hash: str = Field(min_length=64, max_length=64)
     operator_status_request: dict[str, Any]
     operator_status_hash: str = Field(min_length=64, max_length=64)
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    parser_mode: Literal["sec_edgar_html_inline_xbrl_source_family_parser_v1"]
+    operator_decision: Literal["parse_sec_edgar_html_inline_xbrl_source_family"]
+    connector_receipt_id: str = Field(min_length=1)
+    connector_receipt_hash: str = Field(min_length=64, max_length=64)
+    connector_example_id: str = Field(min_length=1)
+    live_source_artifact_receipt_id: str = Field(min_length=1)
+    live_source_artifact_receipt_hash: str = Field(min_length=64, max_length=64)
+    expected_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     operator_confirmation: bool
     actor: str | None = None
 
@@ -7670,6 +7689,38 @@ class Layer3SecEdgarRealFilingDownstreamValidationResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse(Layer3BaseResponse):
+    parser_mode: str
+    operator_decision: str
+    parser_state: str
+    parser_receipt_id: str
+    parser_receipt_hash: str
+    parser_receipt_ref: str
+    idempotent_replay: bool
+    connector_receipt_id: str
+    connector_receipt_hash: str
+    connector_example_id: str
+    live_source_artifact_receipt_id: str
+    live_source_artifact_receipt_hash: str
+    source_artifact_receipt_hash: str
+    identity_binding: dict[str, Any]
+    document_inventory: list[dict[str, Any]]
+    document_inventory_hash: str
+    content_order: list[dict[str, Any]]
+    content_order_hash: str
+    table_candidate_inventory: list[dict[str, Any]]
+    table_candidate_inventory_hash: str
+    inline_xbrl_marker_inventory: list[dict[str, Any]]
+    inline_xbrl_marker_inventory_hash: str
+    diagnostics: dict[str, Any]
+    diagnostics_hash: str
+    status_projection: dict[str, Any]
+    cache: dict[str, Any]
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarTextTableLiveSourceArtifactMaterialAuthorityBridgeResponse(Layer3BaseResponse):
     mode: str
     bridge_state: str
@@ -14574,6 +14625,36 @@ def get_sec_edgar_real_filing_downstream_validation_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_real_filing_downstream_validation.inspect_sec_edgar_real_filing_downstream_validation_status(
             sec_edgar_real_filing_downstream_validation_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/source-family/parser",
+    response_model=Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_source_family_parser(
+    payload: Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_parser.parse_sec_edgar_html_inline_xbrl_source_family(
+            payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/html-inline-xbrl/source-family/parser/status/{sec_edgar_html_inline_xbrl_parser_receipt_id}",
+    response_model=Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_html_inline_xbrl_source_family_parser_status(
+    sec_edgar_html_inline_xbrl_parser_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_parser.inspect_sec_edgar_html_inline_xbrl_source_family_parser_status(
+            sec_edgar_html_inline_xbrl_parser_receipt_id,
         )
     )
 
