@@ -1,0 +1,61 @@
+# SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Package Review Runtime Current-Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_current_main_sync_v1
+source_package_review_runtime: next_milestone_plans/Layer3_planning_docs/1208-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-runtime.md
+current_main_entry: 654eb0840c9404f5e9527fc41f352bc90c7bc06a
+source_pr: "#1908"
+source_runtime_commit: 9ba452ca8a3bd7db194fa87d5751c66e55d545fc
+source_merge_commit: 654eb0840c9404f5e9527fc41f352bc90c7bc06a
+source_pr_status: merged_current_main
+ci_status_after_merge: latest_pr_1908_backend_and_playwright_shards_passed
+sync_status: current_main_verified
+runtime_status: implemented_current_main
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview/status/{package_review_preview_receipt_id}
+implemented_package_review_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1
+implemented_operator_decision: preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review
+implemented_runtime_scope: build_redacted_package_review_preview_over_existing_statement_candidate_product_receipt_without_committing_package_rows_or_review_submit
+implemented_package_artifact_roles: canonical_internal,review_facing,user_facing,authority_provenance,review_readiness_manifest,redaction_manifest
+implemented_non_loss_policy: package_preview_references_every_statement_candidate_product_group_unknown_diagnostic_and_table_anchor_by_hash_without_discarding_product_evidence
+implemented_output_authority: package_review_preview_receipt_id,package_review_preview_receipt_hash,candidate_package_manifest_hash,review_readiness_hash,package_order_hash,redaction_manifest_hash
+package_review_preview_runtime_current_main: true
+package_construction_commit_current_main: false
+package_review_submit_current_main: false
+handoff_export_current_main: false
+delivery_runtime_current_main: false
+rendered_runtime_current_main: false
+financial_statement_semantics_runtime_current_main: false
+taxonomy_network_resolution_current_main: false
+sec_companyfacts_api_runtime_current_main: false
+xml_xbrl_fact_authority_current_main: false
+html_inline_xbrl_reparse_or_rematerialization_current_main: false
+new_sec_network_runtime_current_main: false
+source_expansion_admitted: false
+broad_runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS
+verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_construction_commit_selection_v1
+```
+
+PR #1908 is merged to current main. The SEC HTML/iXBRL statement-candidate product package-review preview runtime is now current-main authority for redacted preview receipts over existing downstream product receipts.
+
+This sync does not add package construction commit, package-review submit, handoff/export, delivery, rendered controls, final financial-statement semantics, taxonomy network resolution, SEC CompanyFacts, XML/XBRL authority, HTML/iXBRL reparse, new SEC network fetch, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage authority, or frontend durable authority.
+
+## Coherence Check
+
+- Does current main now have package-review preview authority? Recommended answer: yes, over existing SEC statement-candidate product receipts.
+- Does current main now create package rows or submit review decisions? Recommended answer: no.
+- What comes next? Recommended answer: select the bounded SEC package construction commit slice over package-review preview receipts.
