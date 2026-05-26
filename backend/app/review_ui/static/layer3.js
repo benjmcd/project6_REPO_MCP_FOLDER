@@ -352,6 +352,10 @@ const SEC_EDGAR_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_origi
 const SEC_EDGAR_REPEATABILITY_TRIAL_OPERATOR_DECISION = 'record_sec_edgar_text_table_downstream_operator_repeatability_trial';
 const SEC_EDGAR_REPEATABILITY_TRIAL_ACCEPTED_STATE = 'sec_edgar_text_table_downstream_operator_repeatability_trial_accepted';
 const SEC_EDGAR_REPEATABILITY_TRIAL_BLOCKED_STATE = 'sec_edgar_text_table_downstream_operator_repeatability_trial_blocked';
+const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE = 'rendered_sec_edgar_operator_product_surface_control';
+const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_MODE = 'sec_edgar_operator_product_surface_runtime_v1';
+const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_OPERATOR_DECISION = 'render_sec_edgar_operator_product_surface';
+const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_ENDPOINT = '/source/sec-edgar/real-company-corpus/operator-product-surface';
 const CANDIDATE_B_CLOSURE_EVIDENCE_RENDERED_MODE = 'rendered_candidate_b_default_promotion_closure_evidence_control';
 const CANDIDATE_B_CLOSURE_EVIDENCE_MODE = 'candidate_b_default_promotion_closure_evidence_v1';
 const CANDIDATE_B_CLOSURE_EVIDENCE_OPERATOR_DECISION = 'record_candidate_b_default_promotion_closure_evidence';
@@ -753,6 +757,14 @@ const State = {
         disposition: 'no_regression_observed',
         operatorConfirmation: true,
     },
+    secEdgarOperatorProductSurface: null,
+    secEdgarOperatorProductSurfaceError: null,
+    secEdgarOperatorProductSurfacePending: false,
+    secEdgarOperatorProductSurfaceInput: {
+        operatorInspectionReceiptId: '',
+        operatorInspectionReceiptHash: '',
+        operatorConfirmation: false,
+    },
     candidateBFullCorpusOperatorWorkflowStatus: null,
     candidateBFullCorpusOperatorWorkflowStatusError: null,
     candidateBFullCorpusOperatorWorkflowStatusPending: false,
@@ -1008,6 +1020,7 @@ const elements = {
     secEdgarHtmlInlineXbrlFactMaterialDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-panel'),
     secEdgarLiveDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-live-downstream-repeatability-trial-panel'),
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
+    secEdgarOperatorProductSurfacePanel: document.getElementById('sec-edgar-operator-product-surface-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
@@ -8815,6 +8828,28 @@ function secEdgarDownstreamRepeatabilityTrialInputValues() {
     };
 }
 
+function secEdgarOperatorProductSurfaceInputValues() {
+    const receiptInput = document.getElementById('sec-edgar-operator-product-surface-inspection-receipt-id');
+    const hashInput = document.getElementById('sec-edgar-operator-product-surface-inspection-receipt-hash');
+    const confirmationInput = document.getElementById('sec-edgar-operator-product-surface-operator-confirmation');
+    const stored = State.secEdgarOperatorProductSurfaceInput;
+    return {
+        operatorInspectionReceiptId: (
+            receiptInput?.value
+            || stored.operatorInspectionReceiptId
+            || ''
+        ).trim(),
+        operatorInspectionReceiptHash: (
+            hashInput?.value
+            || stored.operatorInspectionReceiptHash
+            || ''
+        ).trim(),
+        operatorConfirmation: confirmationInput
+            ? Boolean(confirmationInput.checked)
+            : Boolean(stored.operatorConfirmation),
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowRunInputValues() {
     const lifecycleInput = document.getElementById('candidate-b-full-corpus-workflow-run-lifecycle-receipt-id');
     const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-run-baseline-run-id');
@@ -10069,6 +10104,28 @@ function secEdgarDownstreamRepeatabilityTrialPayload() {
     };
 }
 
+function secEdgarOperatorProductSurfacePayload() {
+    const values = secEdgarOperatorProductSurfaceInputValues();
+    State.secEdgarOperatorProductSurfaceInput = values;
+    if (!values.operatorInspectionReceiptId) {
+        throw new Error('sec_edgar_operator_product_surface_receipt_id_required');
+    }
+    if (!/^[0-9a-fA-F]{64}$/.test(values.operatorInspectionReceiptHash)) {
+        throw new Error('sec_edgar_operator_product_surface_receipt_hash_must_be_sha256');
+    }
+    if (!values.operatorConfirmation) {
+        throw new Error('sec_edgar_operator_product_surface_operator_confirmation_required');
+    }
+    return {
+        client_request_id: requestId(),
+        surface_mode: SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_MODE,
+        operator_decision: SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_OPERATOR_DECISION,
+        sec_edgar_operator_inspection_receipt_id: values.operatorInspectionReceiptId,
+        sec_edgar_operator_inspection_receipt_hash: values.operatorInspectionReceiptHash,
+        operator_confirmation: values.operatorConfirmation,
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowRunPayload() {
     const values = candidateBFullCorpusOperatorWorkflowRunInputValues();
     State.candidateBFullCorpusOperatorWorkflowRunInput = values;
@@ -10591,6 +10648,16 @@ function canRecordSecEdgarDownstreamRepeatabilityTrial(contract = layer3Executio
         && values.repeatOperatorStatusHash
         && values.operatorConfirmation
         && !State.secEdgarDownstreamRepeatabilityTrialPending
+    );
+}
+
+function canRenderSecEdgarOperatorProductSurface() {
+    const values = secEdgarOperatorProductSurfaceInputValues();
+    return Boolean(
+        values.operatorInspectionReceiptId
+        && /^[0-9a-fA-F]{64}$/.test(values.operatorInspectionReceiptHash)
+        && values.operatorConfirmation
+        && !State.secEdgarOperatorProductSurfacePending
     );
 }
 
@@ -11420,6 +11487,27 @@ function secEdgarDownstreamRepeatabilityTrialPanelState() {
         return { label: 'sec_edgar_downstream_repeatability_trial_blocked', pill: 'blocked' };
     }
     return { label: 'sec_edgar_downstream_repeatability_trial_not_recorded', pill: 'preview' };
+}
+
+function secEdgarOperatorProductSurfacePanelState() {
+    if (State.secEdgarOperatorProductSurfacePending) {
+        return { label: 'sec_edgar_operator_product_surface_pending', pill: 'preview' };
+    }
+    if (State.secEdgarOperatorProductSurfaceError) {
+        const code = (
+            State.secEdgarOperatorProductSurfaceError?.payload?.error?.code
+            || State.secEdgarOperatorProductSurfaceError?.payload?.error_code
+        );
+        return { label: code || 'sec_edgar_operator_product_surface_blocked', pill: 'blocked' };
+    }
+    const state = State.secEdgarOperatorProductSurface?.operator_product_surface_state;
+    if (state === 'sec_edgar_operator_product_surface_ready') {
+        return { label: 'sec_edgar_operator_product_surface_ready', pill: 'ok' };
+    }
+    if (state === 'sec_edgar_operator_product_surface_blocked') {
+        return { label: 'sec_edgar_operator_product_surface_blocked', pill: 'blocked' };
+    }
+    return { label: 'sec_edgar_operator_product_surface_not_rendered', pill: 'preview' };
 }
 
 function candidateBFullCorpusOperatorWorkflowRunPanelState() {
@@ -12857,6 +12945,111 @@ function secEdgarDownstreamRepeatabilityTrialRows(trial) {
                     ${fieldItem('raw local path exposed', trial.raw_local_path_exposed)}
                     ${fieldItem('raw URL exposed', trial.raw_url_exposed)}
                     ${fieldItem('artifact bytes exposed', trial.artifact_bytes_exposed)}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secEdgarOperatorProductSurfaceRows(surface) {
+    if (!surface) return '';
+    const views = surface.product_views || {};
+    const rollup = surface.surface_rollup || {};
+    const authority = surface.authority_chain || {};
+    const quality = views.quality_gaps || {};
+    const diagnostics = views.diagnostics_loss_report || {};
+    const cache = surface.cache || {};
+    const negative = surface.negative_invariants || {};
+    const companyFormMatrix = Array.isArray(views.company_form_matrix) ? views.company_form_matrix : [];
+    const statementCandidates = Array.isArray(views.statement_candidates) ? views.statement_candidates : [];
+    const factInventory = Array.isArray(views.fact_inventory) ? views.fact_inventory : [];
+    const semanticProfiles = Array.isArray(views.semantic_profile) ? views.semantic_profile : [];
+    const extensionFacts = Array.isArray(views.extension_unclassified_facts) ? views.extension_unclassified_facts : [];
+    const packageState = Array.isArray(views.package_review_handoff_state) ? views.package_review_handoff_state : [];
+    const operatorLinks = Array.isArray(views.operator_inspection_status_links) ? views.operator_inspection_status_links : [];
+    const blockedReasons = Array.isArray(surface.blocked_reasons) ? surface.blocked_reasons : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>SEC EDGAR Operator Product Surface</strong>
+                <ul>
+                    ${fieldItem('schema id', surface.schema_id, { code: true })}
+                    ${fieldItem('status', surface.status, { code: true })}
+                    ${fieldItem('surface mode', surface.surface_mode, { code: true })}
+                    ${fieldItem('rendered mode', surface.rendered_mode, { code: true })}
+                    ${fieldItem('surface state', surface.operator_product_surface_state, { code: true })}
+                    ${fieldItem('surface receipt id', surface.operator_product_surface_receipt_id, { code: true })}
+                    ${fieldItem('surface receipt hash', surface.operator_product_surface_receipt_hash, { code: true })}
+                    ${fieldItem('surface receipt ref', surface.operator_product_surface_receipt_ref, { code: true })}
+                    ${fieldItem('redaction policy id', surface.redaction_policy_id, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Product View Rollup</strong>
+                <ul>
+                    ${fieldItem('filing count', rollup.filing_count)}
+                    ${fieldItem('inspectable count', rollup.inspectable_count)}
+                    ${fieldItem('semantic profile record count', rollup.semantic_profile_record_count)}
+                    ${fieldItem('extension or unclassified record count', rollup.extension_or_unclassified_record_count)}
+                    ${fieldItem('distinct quality gaps', Array.isArray(rollup.distinct_quality_gaps) ? rollup.distinct_quality_gaps.join(', ') : '')}
+                    ${fieldItem('product view names', Array.isArray(rollup.product_view_names) ? rollup.product_view_names.join(', ') : '', { code: true })}
+                    ${fieldItem('server receipt projection only', rollup.server_receipt_projection_only)}
+                    ${fieldItem('frontend durable authority enabled', rollup.frontend_durable_authority_enabled)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Product View Inventory</strong>
+                <ul>
+                    ${fieldItem('company form matrix records', companyFormMatrix.length)}
+                    ${fieldItem('statement candidate records', statementCandidates.length)}
+                    ${fieldItem('fact inventory records', factInventory.length)}
+                    ${fieldItem('semantic profile records', semanticProfiles.length)}
+                    ${fieldItem('extension/unclassified records', extensionFacts.length)}
+                    ${fieldItem('package review handoff records', packageState.length)}
+                    ${fieldItem('operator inspection links', operatorLinks.length)}
+                    ${fieldItem('financial statement semantics finalized', quality.financial_statement_semantics_finalized)}
+                    ${fieldItem('cross company comparability admitted', quality.cross_company_comparability_admitted)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Chain</strong>
+                <ul>
+                    ${fieldItem('validation receipt hash', authority.validation_receipt_hash || surface.validation_receipt_hash, { code: true })}
+                    ${fieldItem('delivery status provenance receipt hash', authority.delivery_status_provenance_receipt_hash || surface.delivery_status_provenance_receipt_hash, { code: true })}
+                    ${fieldItem('operator inspection receipt hash', authority.operator_inspection_receipt_hash || surface.operator_inspection_receipt_hash, { code: true })}
+                    ${fieldItem('connector receipt hash', authority.connector_receipt_hash || surface.connector_receipt_hash, { code: true })}
+                    ${fieldItem('quality evidence hashes hash', authority.quality_evidence_hashes_hash, { code: true })}
+                    ${fieldItem('semantic profile inventory hashes hash', authority.semantic_profile_inventory_hashes_hash, { code: true })}
+                    ${fieldItem('product views hash', authority.product_views_hash, { code: true })}
+                    ${fieldItem('receipt chain bound', authority.receipt_chain_bound)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Diagnostics And Non-Admissions</strong>
+                <ul>
+                    ${fieldItem('quality gap record count', quality.quality_gap_record_count)}
+                    ${fieldItem('validation diagnostics hash', diagnostics.validation_diagnostics_hash, { code: true })}
+                    ${fieldItem('delivery diagnostics hash', diagnostics.delivery_diagnostics_hash, { code: true })}
+                    ${fieldItem('operator inspection summary hash', diagnostics.operator_inspection_summary_hash, { code: true })}
+                    ${fieldItem('unclassified record count', diagnostics.unclassified_record_count)}
+                    ${fieldItem('financial statement semantics finalized', diagnostics.financial_statement_semantics_finalized)}
+                    ${fieldItem('cross company comparability admitted', diagnostics.cross_company_comparability_admitted)}
+                    ${fieldItem('taxonomy network resolution performed', diagnostics.taxonomy_network_resolution_performed)}
+                    ${fieldItem('SEC CompanyFacts API called', diagnostics.sec_companyfacts_api_called)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Guardrails And Cache</strong>
+                <ul>
+                    ${fieldItem('idempotent replay', cache.idempotent_replay)}
+                    ${fieldItem('network request made by product surface', cache.network_request_made_by_product_surface)}
+                    ${fieldItem('parser rerun performed by product surface', cache.parser_rerun_performed_by_product_surface)}
+                    ${fieldItem('package mutation performed by product surface', cache.package_mutation_performed_by_product_surface)}
+                    ${fieldItem('provider object created by product surface', cache.provider_object_created_by_product_surface)}
+                    ${fieldItem('raw URL exposed', negative.raw_url_exposed)}
+                    ${fieldItem('raw local path exposed', negative.raw_local_path_exposed)}
+                    ${fieldItem('frontend durable authority enabled', negative.frontend_durable_authority_enabled)}
+                    ${fieldItem('blocked reasons', blockedReasons.map((reason) => reason.reason || reason.message).join(', '), { code: true })}
                 </ul>
             </section>
         </div>
@@ -14900,6 +15093,24 @@ function secEdgarDownstreamRepeatabilityTrialError() {
     `;
 }
 
+function secEdgarOperatorProductSurfaceError() {
+    const error = State.secEdgarOperatorProductSurfaceError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_edgar_operator_product_surface_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunError() {
     const error = State.candidateBFullCorpusOperatorWorkflowRunError;
     if (!error) return '';
@@ -16327,6 +16538,54 @@ function updateSecEdgarDownstreamRepeatabilityTrialControls() {
     const submit = document.getElementById('sec-edgar-downstream-repeatability-trial-submit');
     if (submit) {
         submit.disabled = !canRecordSecEdgarDownstreamRepeatabilityTrial(layer3ExecutionReadinessContract());
+    }
+}
+
+function renderSecEdgarOperatorProductSurfacePanel() {
+    if (!elements.secEdgarOperatorProductSurfacePanel) return;
+    const statusState = secEdgarOperatorProductSurfacePanelState();
+    const inputs = secEdgarOperatorProductSurfaceInputValues();
+    elements.secEdgarOperatorProductSurfacePanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC EDGAR operator product</span>
+                <h2>Operator Product Surface</h2>
+            </div>
+            <span class="status-pill ok">server route admitted</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-edgar-operator-product-surface-card">
+                <strong>SEC EDGAR Product Surface Rendering</strong>
+                <form id="sec-edgar-operator-product-surface-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>operator inspection receipt id</span>
+                        <input id="sec-edgar-operator-product-surface-inspection-receipt-id" type="text" value="${escapeHtml(inputs.operatorInspectionReceiptId)}" autocomplete="off" spellcheck="false" placeholder="sec-edgar-operator-inspection-..." />
+                    </label>
+                    <label>
+                        <span>operator inspection receipt hash</span>
+                        <input id="sec-edgar-operator-product-surface-inspection-receipt-hash" type="text" value="${escapeHtml(inputs.operatorInspectionReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label class="checkbox-row">
+                        <input id="sec-edgar-operator-product-surface-operator-confirmation" type="checkbox" ${inputs.operatorConfirmation ? 'checked' : ''} />
+                        <span>operator confirmation</span>
+                    </label>
+                    <button id="sec-edgar-operator-product-surface-submit" type="submit" ${canRenderSecEdgarOperatorProductSurface() ? '' : 'disabled'}>Render Product Surface</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server projects validation, delivery/provenance, and operator-inspection receipt evidence into product views. This surface cannot fetch SEC content, rerun parsers, mutate packages, write provider objects, dispatch connectors, create frontend durable authority, finalize financial-statement semantics, or admit cross-company comparability.</span>
+                </div>
+                ${secEdgarOperatorProductSurfaceRows(State.secEdgarOperatorProductSurface)}
+                ${secEdgarOperatorProductSurfaceError()}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecEdgarOperatorProductSurfaceControls() {
+    const submit = document.getElementById('sec-edgar-operator-product-surface-submit');
+    if (submit) {
+        submit.disabled = !canRenderSecEdgarOperatorProductSurface();
     }
 }
 
@@ -17887,6 +18146,45 @@ async function recordSecEdgarDownstreamRepeatabilityTrial(event) {
         addEvent(`SEC EDGAR downstream repeatability trial blocked: ${error.message}`);
     } finally {
         State.secEdgarDownstreamRepeatabilityTrialPending = false;
+        renderAll();
+    }
+}
+
+async function renderSecEdgarOperatorProductSurface(event) {
+    event.preventDefault();
+    if (!canRenderSecEdgarOperatorProductSurface()) {
+        State.secEdgarOperatorProductSurface = null;
+        State.secEdgarOperatorProductSurfaceError = new Error(
+            'SEC EDGAR operator product surface requires a server-issued inspection receipt id, sha256 receipt hash, and operator confirmation.',
+        );
+        renderSecEdgarOperatorProductSurfacePanel();
+        return;
+    }
+    let payload;
+    try {
+        payload = secEdgarOperatorProductSurfacePayload();
+    } catch (error) {
+        State.secEdgarOperatorProductSurface = null;
+        State.secEdgarOperatorProductSurfaceError = error;
+        renderSecEdgarOperatorProductSurfacePanel();
+        return;
+    }
+    State.secEdgarOperatorProductSurfacePending = true;
+    State.secEdgarOperatorProductSurfaceError = null;
+    renderSecEdgarOperatorProductSurfacePanel();
+    try {
+        State.secEdgarOperatorProductSurface = await postJson(
+            SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_ENDPOINT,
+            payload,
+        );
+        State.secEdgarOperatorProductSurfaceError = null;
+        addEvent('SEC EDGAR operator product surface rendered from server receipt authority.');
+    } catch (error) {
+        State.secEdgarOperatorProductSurface = null;
+        State.secEdgarOperatorProductSurfaceError = error;
+        addEvent(`SEC EDGAR operator product surface blocked: ${error.message}`);
+    } finally {
+        State.secEdgarOperatorProductSurfacePending = false;
         renderAll();
     }
 }
@@ -21842,6 +22140,7 @@ function renderAll() {
     renderSecEdgarHtmlInlineXbrlFactMaterialDownstreamRepeatabilityTrialPanel();
     renderSecEdgarLiveDownstreamRepeatabilityTrialPanel();
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
+    renderSecEdgarOperatorProductSurfacePanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
@@ -25711,6 +26010,35 @@ elements.secEdgarDownstreamRepeatabilityTrialPanel.addEventListener('change', (e
             renderSecEdgarDownstreamRepeatabilityTrialPanel();
         } else {
             updateSecEdgarDownstreamRepeatabilityTrialControls();
+        }
+    }
+});
+elements.secEdgarOperatorProductSurfacePanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-edgar-operator-product-surface-form') {
+        renderSecEdgarOperatorProductSurface(event);
+    }
+});
+elements.secEdgarOperatorProductSurfacePanel.addEventListener('input', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-operator-product-surface-')) {
+        const hadError = Boolean(State.secEdgarOperatorProductSurfaceError);
+        State.secEdgarOperatorProductSurfaceInput = secEdgarOperatorProductSurfaceInputValues();
+        State.secEdgarOperatorProductSurfaceError = null;
+        if (hadError) {
+            renderSecEdgarOperatorProductSurfacePanel();
+        } else {
+            updateSecEdgarOperatorProductSurfaceControls();
+        }
+    }
+});
+elements.secEdgarOperatorProductSurfacePanel.addEventListener('change', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-operator-product-surface-')) {
+        const hadError = Boolean(State.secEdgarOperatorProductSurfaceError);
+        State.secEdgarOperatorProductSurfaceInput = secEdgarOperatorProductSurfaceInputValues();
+        State.secEdgarOperatorProductSurfaceError = null;
+        if (hadError) {
+            renderSecEdgarOperatorProductSurfacePanel();
+        } else {
+            updateSecEdgarOperatorProductSurfaceControls();
         }
     }
 });

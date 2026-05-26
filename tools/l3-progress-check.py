@@ -3571,6 +3571,9 @@ SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SELECTION = (
 SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RUNTIME = (
     PLANNING_DOCS / "1231-sec-edgar-operator-product-surface-runtime.md"
 )
+SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_UI = (
+    PLANNING_DOCS / "1232-sec-edgar-operator-product-surface-rendered-ui.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117256,6 +117259,64 @@ def _check_sec_edgar_operator_product_surface_runtime(
                 )
 
 
+def _check_sec_edgar_operator_product_surface_rendered_ui(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_UI: (
+            "SEC EDGAR Operator Product Surface Rendered UI",
+            "milestone: sec_edgar_operator_product_surface_rendered_ui_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1231-sec-edgar-operator-product-surface-runtime.md",
+            "rendered_mode: rendered_sec_edgar_operator_product_surface_control",
+            "route_consumed: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+            "request_fields: client_request_id,surface_mode,operator_decision,sec_edgar_operator_inspection_receipt_id,sec_edgar_operator_inspection_receipt_hash,operator_confirmation",
+            "server_receipt_projection_only: true",
+            "frontend_durable_authority_enabled: false",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_period_unit_context_dimension_profile_hardening_v1",
+        ),
+        LAYER3_HTML: (
+            'id="sec-edgar-operator-product-surface-panel"',
+            'data-rendered-mode="rendered_sec_edgar_operator_product_surface_control"',
+            'data-frontend-durable-authority="false"',
+            "SEC EDGAR operator product-surface receipt authority is not available.",
+        ),
+        LAYER3_JS: (
+            "SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE = 'rendered_sec_edgar_operator_product_surface_control'",
+            "SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_MODE = 'sec_edgar_operator_product_surface_runtime_v1'",
+            "SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_OPERATOR_DECISION = 'render_sec_edgar_operator_product_surface'",
+            "SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_ENDPOINT = '/source/sec-edgar/real-company-corpus/operator-product-surface'",
+            "secEdgarOperatorProductSurfacePayload",
+            "renderSecEdgarOperatorProductSurfacePanel",
+            "secEdgarOperatorProductSurfaceRows",
+            "server receipt projection only",
+            "financial statement semantics finalized",
+            "cross company comparability admitted",
+            "frontend durable authority enabled",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench renders SEC EDGAR operator product surface from receipt authority",
+            "rendered_sec_edgar_operator_product_surface_control",
+            "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+            "expectOnlyPayloadKeys(payload",
+            "sec_edgar_operator_product_surface_runtime_v1",
+            "financial_statement_semantics_not_finalized",
+            "cross_company_comparability_not_admitted",
+            "network_request_made_by_product_surface: false",
+            "parser_rerun_performed_by_product_surface: false",
+            "package_mutation_performed_by_product_surface: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator product-surface rendered UI term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118561,6 +118622,7 @@ def main() -> int:
     _check_sec_edgar_semantic_profile_runtime(errors)
     _check_sec_edgar_operator_product_surface_selection(errors)
     _check_sec_edgar_operator_product_surface_runtime(errors)
+    _check_sec_edgar_operator_product_surface_rendered_ui(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
