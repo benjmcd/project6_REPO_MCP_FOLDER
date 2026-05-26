@@ -103,6 +103,7 @@ PRODUCT_VIEW_NAMES = (
     "statement_role_quality_profile",
     "period_unit_context_dimension_profile",
     "extension_taxonomy_retention_profile",
+    "standard_concept_mapping_profile",
     "extension_unclassified_facts",
     "quality_gaps",
     "diagnostics_loss_report",
@@ -328,6 +329,9 @@ def _product_views(
         "extension_taxonomy_retention_profile": [
             view["extension_taxonomy_retention_profile"] for view in record_views
         ],
+        "standard_concept_mapping_profile": [
+            view["standard_concept_mapping_profile"] for view in record_views
+        ],
         "extension_unclassified_facts": [view["extension_unclassified_facts"] for view in record_views],
         "quality_gaps": {
             "distinct_quality_gaps": quality_gap_values,
@@ -478,6 +482,33 @@ def _record_product_view(
             "extension_taxonomy_facts_dropped": False,
             "final_financial_statement_semantics_claimed": False,
         },
+        "standard_concept_mapping_profile": {
+            "record_index": index,
+            "standard_concept_mapping_profile_version": metrics.get(
+                "standard_concept_mapping_profile_version"
+            )
+            or "sec_edgar_standard_concept_mapping_profile_v1",
+            "standard_concept_mapping_profile_hash": metrics.get(
+                "standard_concept_mapping_profile_hash"
+            ),
+            "standard_concept_mapping_profile_assigned_count": metrics.get(
+                "standard_concept_mapping_profile_assigned_count"
+            ),
+            "standard_concept_profiled_count": metrics.get("standard_concept_profiled_count"),
+            "issuer_extension_standard_concept_unmapped_count": metrics.get(
+                "issuer_extension_standard_concept_unmapped_count"
+            ),
+            "unknown_taxonomy_standard_concept_unmapped_count": metrics.get(
+                "unknown_taxonomy_standard_concept_unmapped_count"
+            ),
+            "profile_status": dimensions.get("standard_concept_mapping_profile"),
+            "standard_concept_mapping_performed": False,
+            "standard_concept_normalization_performed": False,
+            "taxonomy_network_resolution_performed": False,
+            "sec_companyfacts_api_called": False,
+            "cross_company_comparability_admitted": False,
+            "final_financial_statement_semantics_claimed": False,
+        },
         "extension_unclassified_facts": {
             "record_index": index,
             "extension_fact_count": metrics.get("extension_fact_count"),
@@ -570,6 +601,7 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
     statement_role_quality_profiles = list(product_views.get("statement_role_quality_profile") or [])
     period_unit_context_dimension_profiles = list(product_views.get("period_unit_context_dimension_profile") or [])
     extension_taxonomy_retention_profiles = list(product_views.get("extension_taxonomy_retention_profile") or [])
+    standard_concept_mapping_profiles = list(product_views.get("standard_concept_mapping_profile") or [])
     extension_profiles = list(product_views.get("extension_unclassified_facts") or [])
     quality_gaps = dict(product_views.get("quality_gaps") or {})
     return {
@@ -592,6 +624,11 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
             1
             for record in extension_taxonomy_retention_profiles
             if record.get("extension_taxonomy_retention_profile_hash")
+        ),
+        "standard_concept_mapping_profile_record_count": sum(
+            1
+            for record in standard_concept_mapping_profiles
+            if record.get("standard_concept_mapping_profile_hash")
         ),
         "extension_or_unclassified_record_count": sum(
             1
@@ -631,6 +668,11 @@ def _authority_chain(
         for profile in product_views.get("extension_taxonomy_retention_profile", [])
         if isinstance(profile, Mapping) and profile.get("extension_taxonomy_retention_profile_hash")
     ]
+    standard_concept_mapping_hashes = [
+        profile.get("standard_concept_mapping_profile_hash")
+        for profile in product_views.get("standard_concept_mapping_profile", [])
+        if isinstance(profile, Mapping) and profile.get("standard_concept_mapping_profile_hash")
+    ]
     quality_hashes = [
         record.get("quality_evidence_hash")
         for record in product_views.get("company_form_matrix", [])
@@ -645,6 +687,7 @@ def _authority_chain(
         "semantic_profile_inventory_hashes_hash": stable_hash(semantic_hashes),
         "statement_role_quality_profile_hashes_hash": stable_hash(statement_role_quality_hashes),
         "extension_taxonomy_retention_profile_hashes_hash": stable_hash(extension_taxonomy_retention_hashes),
+        "standard_concept_mapping_profile_hashes_hash": stable_hash(standard_concept_mapping_hashes),
         "period_unit_context_dimension_profile_hashes_hash": stable_hash(period_unit_context_dimension_hashes),
         "product_views_hash": stable_hash(product_views),
         "receipt_chain_bound": True,

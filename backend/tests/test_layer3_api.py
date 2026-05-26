@@ -1817,6 +1817,11 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
         == "bounded_hash_profile_available_unmapped"
         for record in body["product_quality_matrix"]
     )
+    assert all(
+        record["quality_dimensions"]["standard_concept_mapping_profile"]
+        == "bounded_standard_concept_profile_available_not_normalized"
+        for record in body["product_quality_matrix"]
+    )
     assert {
         record["quality_dimensions"]["cross_company_comparability"]
         for record in body["product_quality_matrix"]
@@ -1856,6 +1861,11 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
         for record in body["filing_validation_records"]
     )
     assert all(
+        record["quality_evidence"]["quality_metrics"]["standard_concept_mapping_profile_assigned_count"]
+        == record["quality_evidence"]["quality_metrics"]["fact_count"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
         record["quality_evidence"]["quality_metrics"]["period_unit_context_dimension_profile_hash"]
         for record in body["filing_validation_records"]
     )
@@ -1865,6 +1875,10 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     )
     assert all(
         record["quality_evidence"]["quality_metrics"]["extension_taxonomy_retention_profile_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["standard_concept_mapping_profile_hash"]
         for record in body["filing_validation_records"]
     )
     assert any(
@@ -1986,6 +2000,11 @@ def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
         == "bounded_hash_profile_available_unmapped"
         for record in body["product_quality_matrix"]
     )
+    assert all(
+        record["quality_dimensions"]["standard_concept_mapping_profile"]
+        == "bounded_standard_concept_profile_available_not_normalized"
+        for record in body["product_quality_matrix"]
+    )
     assert {
         record["quality_dimensions"]["cross_company_comparability"]
         for record in body["product_quality_matrix"]
@@ -2014,6 +2033,10 @@ def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
     )
     assert all(
         record["quality_evidence"]["quality_metrics"]["extension_taxonomy_retention_profile_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["standard_concept_mapping_profile_hash"]
         for record in body["filing_validation_records"]
     )
     assert any(
@@ -2395,6 +2418,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
     assert body["surface_rollup"]["statement_role_quality_profile_record_count"] == 8
     assert body["surface_rollup"]["period_unit_context_dimension_profile_record_count"] == 8
     assert body["surface_rollup"]["extension_taxonomy_retention_profile_record_count"] == 8
+    assert body["surface_rollup"]["standard_concept_mapping_profile_record_count"] == 8
     assert body["surface_rollup"]["server_receipt_projection_only"] is True
     assert body["surface_rollup"]["frontend_durable_authority_enabled"] is False
     assert set(body["product_views"]) == {
@@ -2407,6 +2431,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
         "statement_role_quality_profile",
         "period_unit_context_dimension_profile",
         "extension_taxonomy_retention_profile",
+        "standard_concept_mapping_profile",
         "extension_unclassified_facts",
         "quality_gaps",
         "diagnostics_loss_report",
@@ -2439,6 +2464,10 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
         for record in body["product_views"]["extension_taxonomy_retention_profile"]
     )
     assert all(
+        record["standard_concept_mapping_profile_hash"]
+        for record in body["product_views"]["standard_concept_mapping_profile"]
+    )
+    assert all(
         record["profile_status"] == "bounded_hash_profile_available_unmapped"
         for record in body["product_views"]["extension_taxonomy_retention_profile"]
     )
@@ -2447,6 +2476,17 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
         and record["extension_taxonomy_facts_dropped"] is False
         and record["final_financial_statement_semantics_claimed"] is False
         for record in body["product_views"]["extension_taxonomy_retention_profile"]
+    )
+    assert all(
+        record["profile_status"] == "bounded_standard_concept_profile_available_not_normalized"
+        for record in body["product_views"]["standard_concept_mapping_profile"]
+    )
+    assert all(
+        record["standard_concept_mapping_performed"] is False
+        and record["standard_concept_normalization_performed"] is False
+        and record["cross_company_comparability_admitted"] is False
+        and record["final_financial_statement_semantics_claimed"] is False
+        for record in body["product_views"]["standard_concept_mapping_profile"]
     )
     assert all(
         record["profile_status"] == "bounded_hash_profile_available_not_resolved"
@@ -3209,6 +3249,9 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["extension_taxonomy_retention_profile_version"] == (
         "sec_edgar_extension_taxonomy_retention_profile_v1"
     )
+    assert body["classification_diagnostics"]["standard_concept_mapping_profile_version"] == (
+        "sec_edgar_standard_concept_mapping_profile_v1"
+    )
     assert body["classification_diagnostics"]["semantic_profile_assigned_count"] == fact_authority["fact_count"]
     assert body["classification_diagnostics"]["period_unit_context_dimension_profile_assigned_count"] == (
         fact_authority["fact_count"]
@@ -3219,9 +3262,13 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["extension_taxonomy_retention_profile_assigned_count"] == (
         fact_authority["fact_count"]
     )
+    assert body["classification_diagnostics"]["standard_concept_mapping_profile_assigned_count"] == (
+        fact_authority["fact_count"]
+    )
     assert body["classification_diagnostics"]["period_unit_context_dimension_profile_hash"]
     assert body["classification_diagnostics"]["statement_role_quality_profile_hash"]
     assert body["classification_diagnostics"]["extension_taxonomy_retention_profile_hash"]
+    assert body["classification_diagnostics"]["standard_concept_mapping_profile_hash"]
     assert (
         body["classification_diagnostics"]["medium_statement_role_confidence_count"]
         + body["classification_diagnostics"]["low_statement_role_confidence_count"]
@@ -3232,8 +3279,11 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["classification_diagnostics"]["standard_taxonomy_fact_count"] > 0
     assert body["classification_diagnostics"]["comparable_standard_fact_count"] > 0
     assert body["classification_diagnostics"]["standard_taxonomy_retention_profile_count"] > 0
+    assert body["classification_diagnostics"]["standard_concept_profiled_count"] > 0
     assert body["classification_diagnostics"]["extension_taxonomy_mapping_performed"] is False
     assert body["classification_diagnostics"]["extension_taxonomy_facts_dropped"] is False
+    assert body["classification_diagnostics"]["standard_concept_mapping_performed"] is False
+    assert body["classification_diagnostics"]["standard_concept_normalization_performed"] is False
     assert body["classification_diagnostics"]["context_period_resolution_performed"] is False
     assert body["classification_diagnostics"]["dimension_member_resolution_performed"] is False
     assert body["classification_diagnostics"]["unit_normalization_performed"] is False
@@ -3294,6 +3344,16 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
         item["semantic_profile"]["extension_taxonomy_retention_profile"]["extension_fact_dropped"] is False
         for item in body["classification_inventory"]
     )
+    assert all(
+        item["semantic_profile"]["standard_concept_mapping_profile"]["standard_concept_mapping_profile_version"]
+        == "sec_edgar_standard_concept_mapping_profile_v1"
+        for item in body["classification_inventory"]
+    )
+    assert all(
+        item["semantic_profile"]["standard_concept_mapping_profile"]["standard_concept_normalization_performed"]
+        is False
+        for item in body["classification_inventory"]
+    )
     assert any(
         item["semantic_profile"]["comparability_scope"] == "standard_taxonomy_profile"
         for item in body["classification_inventory"]
@@ -3308,9 +3368,13 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["status_projection"]["extension_taxonomy_retention_profile_assigned_count"] == (
         fact_authority["fact_count"]
     )
+    assert body["status_projection"]["standard_concept_mapping_profile_assigned_count"] == (
+        fact_authority["fact_count"]
+    )
     assert body["status_projection"]["period_unit_context_dimension_profile_hash"]
     assert body["status_projection"]["statement_role_quality_profile_hash"]
     assert body["status_projection"]["extension_taxonomy_retention_profile_hash"]
+    assert body["status_projection"]["standard_concept_mapping_profile_hash"]
     assert body["status_projection"]["comparable_standard_fact_count"] > 0
     assert body["status_projection"]["context_period_resolution_performed"] is False
     assert body["status_projection"]["dimension_member_resolution_performed"] is False
@@ -3319,6 +3383,8 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["status_projection"]["statement_role_semantics_claimed"] is False
     assert body["status_projection"]["extension_taxonomy_mapping_performed"] is False
     assert body["status_projection"]["extension_taxonomy_facts_dropped"] is False
+    assert body["status_projection"]["standard_concept_mapping_performed"] is False
+    assert body["status_projection"]["standard_concept_normalization_performed"] is False
     assert body["status_projection"]["final_financial_statement_semantics_claimed"] is False
     assert body["negative_invariants"]["taxonomy_network_resolution_enabled"] is False
     assert body["negative_invariants"]["sec_companyfacts_api_runtime_enabled"] is False

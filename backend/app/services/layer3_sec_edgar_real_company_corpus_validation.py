@@ -667,6 +667,9 @@ def _quality_evidence_from_outputs(
     extension_taxonomy_retention_profile_assigned_count = int(
         classification_diagnostics.get("extension_taxonomy_retention_profile_assigned_count") or 0
     )
+    standard_concept_mapping_profile_assigned_count = int(
+        classification_diagnostics.get("standard_concept_mapping_profile_assigned_count") or 0
+    )
     context_ref_hash_present_count = int(classification_diagnostics.get("context_ref_hash_present_count") or 0)
     unit_ref_hash_present_count = int(classification_diagnostics.get("unit_ref_hash_present_count") or 0)
     decimals_or_precision_present_count = int(
@@ -708,6 +711,11 @@ def _quality_evidence_from_outputs(
             "extension_taxonomy_retention_profile": (
                 "bounded_hash_profile_available_unmapped"
                 if fact_count and extension_taxonomy_retention_profile_assigned_count == fact_count
+                else "not_evaluated"
+            ),
+            "standard_concept_mapping_profile": (
+                "bounded_standard_concept_profile_available_not_normalized"
+                if fact_count and standard_concept_mapping_profile_assigned_count == fact_count
                 else "not_evaluated"
             ),
             "statement_candidate_usefulness": (
@@ -756,11 +764,20 @@ def _quality_evidence_from_outputs(
             "extension_taxonomy_retention_profile_hash": classification_diagnostics.get(
                 "extension_taxonomy_retention_profile_hash"
             ),
+            "standard_concept_mapping_profile_version": classification_diagnostics.get(
+                "standard_concept_mapping_profile_version"
+            ),
+            "standard_concept_mapping_profile_hash": classification_diagnostics.get(
+                "standard_concept_mapping_profile_hash"
+            ),
             "semantic_profile_assigned_count": semantic_profile_assigned_count,
             "period_unit_context_dimension_profile_assigned_count": period_unit_context_dimension_profile_assigned_count,
             "statement_role_quality_profile_assigned_count": statement_role_quality_profile_assigned_count,
             "extension_taxonomy_retention_profile_assigned_count": (
                 extension_taxonomy_retention_profile_assigned_count
+            ),
+            "standard_concept_mapping_profile_assigned_count": (
+                standard_concept_mapping_profile_assigned_count
             ),
             "medium_statement_role_confidence_count": int(
                 classification_diagnostics.get("medium_statement_role_confidence_count") or 0
@@ -776,6 +793,15 @@ def _quality_evidence_from_outputs(
             ),
             "unknown_taxonomy_retention_profile_count": int(
                 classification_diagnostics.get("unknown_taxonomy_retention_profile_count") or 0
+            ),
+            "standard_concept_profiled_count": int(
+                classification_diagnostics.get("standard_concept_profiled_count") or 0
+            ),
+            "issuer_extension_standard_concept_unmapped_count": int(
+                classification_diagnostics.get("issuer_extension_standard_concept_unmapped_count") or 0
+            ),
+            "unknown_taxonomy_standard_concept_unmapped_count": int(
+                classification_diagnostics.get("unknown_taxonomy_standard_concept_unmapped_count") or 0
             ),
             "context_ref_hash_present_count": context_ref_hash_present_count,
             "unit_ref_hash_present_count": unit_ref_hash_present_count,
@@ -818,6 +844,7 @@ def _quality_not_evaluated(
             "statement_role_quality_profile": "not_evaluated",
             "extension_fact_handling": "not_evaluated",
             "extension_taxonomy_retention_profile": "not_evaluated",
+            "standard_concept_mapping_profile": "not_evaluated",
             "statement_candidate_usefulness": "not_evaluated",
             "diagnostics_quality": "not_evaluated",
             "package_review_handoff_coherence": "not_evaluated",
