@@ -3528,6 +3528,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_HAND
     PLANNING_DOCS
     / "1217-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1218-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-runtime-current-main-sync.md"
+)
 SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
     ROOT
     / "backend"
@@ -116187,6 +116191,95 @@ def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_p
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_HANDOFF_EXPORT_PREPARE_RUNTIME_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Handoff Export Prepare Runtime Current-Main Sync",
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_current_main_sync_v1",
+            "source_handoff_export_prepare_runtime: next_milestone_plans/Layer3_planning_docs/1217-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-runtime.md",
+            "current_main_entry: 9bac8f3d4a4cea7638e9086cbaf33aac6642fec4",
+            'source_pr: "#1917"',
+            "source_runtime_commit: f35cc481ebea2a30e640963f2c3817c578689a3f",
+            "source_merge_commit: 9bac8f3d4a4cea7638e9086cbaf33aac6642fec4",
+            "source_pr_status: merged_current_main",
+            "ci_status_after_merge: latest_pr_1917_backend_and_playwright_shards_passed",
+            "sync_status: current_main_verified",
+            "runtime_status: implemented_current_main",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare/status/{handoff_export_prepare_receipt_id}",
+            "implemented_handoff_export_prepare_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1",
+            "implemented_operator_decision: prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export",
+            "implemented_review_gate: only_approved_package_review_submit_receipts_can_prepare_handoff_export_nonapproved_decisions_fail_closed",
+            "package_review_preview_runtime_current_main: true",
+            "package_construction_commit_current_main: true",
+            "package_review_submit_current_main: true",
+            "handoff_export_prepare_current_main: true",
+            "delivery_runtime_current_main: false",
+            "internal_webhook_current_main: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_exposed: false",
+            "raw_fact_values_exposed: false",
+            "decision_notes_exposed: false",
+            "verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "delivery_prepare_selection_deferred_until_real_company_validation: true",
+            "real_company_validation_required_before_delivery_runtime: true",
+            "next_exact_posture: sec_edgar_real_company_corpus_validation_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_current_main_sync_v1",
+            "source_handoff_export_prepare_runtime: next_milestone_plans/Layer3_planning_docs/1217-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-runtime.md",
+            "current_main_entry: 9bac8f3d4a4cea7638e9086cbaf33aac6642fec4",
+            'source_pr: "#1917"',
+            "source_runtime_commit: f35cc481ebea2a30e640963f2c3817c578689a3f",
+            "source_merge_commit: 9bac8f3d4a4cea7638e9086cbaf33aac6642fec4",
+            "source_pr_status: merged_current_main",
+            "sync_status: current_main_verified",
+            "runtime_status: implemented_current_main",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare/status/{handoff_export_prepare_receipt_id}",
+            "implemented_handoff_export_prepare_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1",
+            "implemented_operator_decision: prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export",
+            "implemented_review_gate: only_approved_package_review_submit_receipts_can_prepare_handoff_export_nonapproved_decisions_fail_closed",
+            "package_review_preview_runtime_current_main: true",
+            "package_construction_commit_current_main: true",
+            "package_review_submit_current_main: true",
+            "handoff_export_prepare_current_main: true",
+            "delivery_runtime_current_main: false",
+            "internal_webhook_current_main: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_exposed: false",
+            "raw_fact_values_exposed: false",
+            "decision_notes_exposed: false",
+            "delivery_prepare_selection_deferred_until_real_company_validation: true",
+            "real_company_validation_required_before_delivery_runtime: true",
+            "next_exact_posture: sec_edgar_real_company_corpus_validation_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_HANDOFF_EXPORT_PREPARE_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact statement-classification downstream product handoff/export prepare runtime current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -117474,6 +117567,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_runtime_current_main_sync(
         errors
     )
 

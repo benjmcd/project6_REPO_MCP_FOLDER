@@ -11948,3 +11948,43 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 The SEC HTML/iXBRL handoff/export prepare runtime now records redacted prepare receipts over approved package-review submit authority. Delivery, internal webhook dispatch, provider writes, connector dispatch, taxonomy/CompanyFacts, provider, RAG/model, full mockup, and frontend durable authority remain separate future slices.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Handoff Export Prepare Runtime Current-Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare_current_main_sync_v1
+source_handoff_export_prepare_runtime: next_milestone_plans/Layer3_planning_docs/1217-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-runtime.md
+current_main_entry: 9bac8f3d4a4cea7638e9086cbaf33aac6642fec4
+source_pr: "#1917"
+source_runtime_commit: f35cc481ebea2a30e640963f2c3817c578689a3f
+source_merge_commit: 9bac8f3d4a4cea7638e9086cbaf33aac6642fec4
+source_pr_status: merged_current_main
+ci_status_after_merge: latest_pr_1917_backend_and_playwright_shards_passed
+sync_status: current_main_verified
+runtime_status: implemented_current_main
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_handoff_export_prepare.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/handoff-export/prepare/status/{handoff_export_prepare_receipt_id}
+implemented_handoff_export_prepare_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export_prepare_v1
+implemented_operator_decision: prepare_sec_edgar_html_inline_xbrl_statement_candidate_product_handoff_export
+implemented_review_gate: only_approved_package_review_submit_receipts_can_prepare_handoff_export_nonapproved_decisions_fail_closed
+package_review_preview_runtime_current_main: true
+package_construction_commit_current_main: true
+package_review_submit_current_main: true
+handoff_export_prepare_current_main: true
+delivery_runtime_current_main: false
+internal_webhook_current_main: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_url_exposed: false
+raw_fact_values_exposed: false
+decision_notes_exposed: false
+delivery_prepare_selection_deferred_until_real_company_validation: true
+real_company_validation_required_before_delivery_runtime: true
+next_exact_posture: sec_edgar_real_company_corpus_validation_selection_v1
+```
+
+Current main now includes the SEC HTML/iXBRL handoff/export prepare runtime. The next slice should validate real-company SEC filing diversity through the current admitted acquisition, parser/source-family, fact/material bridge, statement product, package-review, package construction, package-review submit, and handoff/export prepare path before selecting further delivery runtime plumbing. Delivery prepare/status remains a separate future slice after that validation, while internal webhook dispatch, provider writes, connector dispatch, taxonomy/CompanyFacts, RAG/model, full mockup, and frontend durable authority stay separate.
