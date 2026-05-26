@@ -1,0 +1,73 @@
+# SEC EDGAR HTML Inline XBRL Fact To Statement Classification Current-Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_to_statement_classification_current_main_sync_v1
+source_fact_to_statement_classification_runtime: next_milestone_plans/Layer3_planning_docs/1201-sec-edgar-html-inline-xbrl-fact-to-statement-classification-runtime.md
+current_main_entry: 5574825cfc16d33c5a75fc908feb1d323688dc26
+source_pr: "#1901"
+source_selection_commit: 895f7c0e7f7de5312a151cf19d48a2ff4583750a
+source_runtime_commit: bf91a46f6783dc0f418678260012c862952338cd
+source_hardening_commit: 12f24c8c1b6ab793e601b04c8aad1f0a3c7cc635
+source_merge_commit: 5574825cfc16d33c5a75fc908feb1d323688dc26
+source_pr_status: merged_current_main
+review_threads_open: 0
+review_comments_open: 0
+ci_status_after_merge: latest_pr_1901_run_all_backend_and_playwright_shards_passed
+sync_status: current_main_verified
+runtime_status: implemented_current_main
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/status/{statement_classification_receipt_id}
+implemented_classification_mode: sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1
+implemented_operator_decision: classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates
+implemented_runtime_scope: classify_existing_ordered_inline_xbrl_fact_inventory_into_redacted_statement_candidate_groups_without_taxonomy_network_resolution
+implemented_input_authority: fact_authority_receipt_id,fact_authority_receipt_hash,fact_material_bridge_receipt_id,fact_material_bridge_receipt_hash,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash,fact_inventory_hash,diagnostics_hash,materialization_receipt_hash,dataset_version_hash,gate_b_decision_manifest_id
+implemented_statement_candidate_roles: balance_sheet,income_statement,cash_flow_statement,stockholders_equity_statement,comprehensive_income_statement,cover_page,disclosure_or_note,unknown_or_unclassified
+implemented_unknown_policy: every_fact_must_receive_exactly_one_candidate_role_and_unknown_or_unclassified_is_retained_as_explicit_non_loss_diagnostic
+implemented_bridge_authority_parity: complete_bridge_authority_hashes_required_with_parser_receipt_hash_allowed_from_top_level_bridge_authority
+missing_bridge_authority_hash_fails_closed: sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_authority_hash_missing
+bridge_authority_hashes_missing_fails_closed: sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_authority_hashes_missing
+implemented_output_authority: statement_classification_receipt_id,statement_classification_receipt_hash,classification_inventory_hash,classification_order_hash,statement_group_inventory_hash,unclassified_fact_inventory_hash,classification_diagnostics_hash
+classification_runtime_current_main: true
+rendered_runtime_in_this_sync: false
+financial_statement_semantics_runtime_in_this_sync: false
+taxonomy_network_resolution_in_this_sync: false
+sec_companyfacts_api_runtime_in_this_sync: false
+xml_xbrl_fact_authority_in_this_sync: false
+html_inline_xbrl_reparse_or_rematerialization_in_this_sync: false
+new_sec_network_runtime_in_this_sync: false
+source_expansion_admitted: false
+broad_runtime_db_or_storage_expansion_admitted: false
+browser_supplied_html_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_local_path_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS
+verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection_v1
+```
+
+PR #1901 is now merged into current main and makes the SEC HTML/iXBRL fact-to-statement candidate classification runtime current-main authority. The runtime remains bounded to existing fact-authority and fact-material bridge receipts; it does not fetch SEC content, reparse HTML/iXBRL, reconstruct raw fact values for operator projection, resolve taxonomies, call SEC CompanyFacts, process standalone XML/XBRL, mutate existing Gate B/downstream proof state, start processes, write provider objects, dispatch connectors, run RAG/model logic, activate full mockup behavior, or create frontend durable authority.
+
+The hardening commit `12f24c8c1b6ab793e601b04c8aad1f0a3c7cc635` adds fail-closed bridge authority parity over the material bridge authority hashes. The statement-classification runtime now rejects missing bridge authority hashes before classifying facts, while preserving the existing top-level bridge parser receipt hash authority used by the material bridge.
+
+## Coherence Check
+
+- Does this sync add a new SEC network or parser runtime? Recommended answer: no. It records the merged statement-classification runtime only.
+- Does this classify final audited financial statements? Recommended answer: no. It creates redacted statement candidate groups and retains unknown facts as explicit diagnostics.
+- Does every fact remain accounted for? Recommended answer: yes. The runtime preserves every retained fact in exactly one candidate role, including `unknown_or_unclassified`.
+- What comes next? Recommended answer: select the downstream product/inspection slice that turns current-main statement-classification receipts into operator-usable Layer 3 product evidence without adding taxonomy, CompanyFacts, parser expansion, raw value projection, or unauthorized runtime expansion.

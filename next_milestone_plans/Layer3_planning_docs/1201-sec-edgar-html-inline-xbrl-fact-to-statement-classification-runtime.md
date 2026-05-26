@@ -3,11 +3,16 @@
 ```yaml
 milestone: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1
 source_fact_to_statement_classification_selection: next_milestone_plans/Layer3_planning_docs/1200-sec-edgar-html-inline-xbrl-fact-to-statement-classification-selection.md
-current_main_entry: b80e211dd5ad03fa06a09a93ca7829a67529ab5a
+current_main_entry: 5574825cfc16d33c5a75fc908feb1d323688dc26
 stacked_on_pr: "#1901"
-depends_on_unmerged_selection_sync_pr: true
-entry_decision: stacked_runtime_implementation_after_freeze_pending_current_main_sync
-runtime_status: implemented_stacked_pending_current_main_sync
+source_pr_status: merged_current_main
+source_runtime_commit: bf91a46f6783dc0f418678260012c862952338cd
+source_hardening_commit: 12f24c8c1b6ab793e601b04c8aad1f0a3c7cc635
+source_merge_commit: 5574825cfc16d33c5a75fc908feb1d323688dc26
+current_main_sync: next_milestone_plans/Layer3_planning_docs/1202-sec-edgar-html-inline-xbrl-fact-to-statement-classification-current-main-sync.md
+depends_on_unmerged_selection_sync_pr: false
+entry_decision: current_main_runtime_verified_after_pr_1901_merge
+runtime_status: implemented_current_main
 implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py
 implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification
 implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/status/{statement_classification_receipt_id}
@@ -63,9 +68,11 @@ baseline_rollback_preserved: true
 candidate_a_semantics_preserved: true
 candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
 local_verification_scope: compile_focused_api_pytest_progress_target_selection_diff_check
+verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS
+verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS
 next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection_v1
 ```
 
-This stacked runtime implements the selected fact-to-statement candidate classification over existing SEC HTML/iXBRL fact authority and fact material bridge receipts. It does not fetch SEC content, reparse HTML/iXBRL, reconstruct raw fact values for operator projection, resolve taxonomies, call SEC CompanyFacts, process standalone XML/XBRL, mutate Gate B or downstream proof state, or claim final audited financial statement semantics.
+This runtime implements the selected fact-to-statement candidate classification over existing SEC HTML/iXBRL fact authority and fact material bridge receipts. It was initially stacked before current-main sync, and PR #1901 is now merged into current main at `5574825cfc16d33c5a75fc908feb1d323688dc26`. It does not fetch SEC content, reparse HTML/iXBRL, reconstruct raw fact values for operator projection, resolve taxonomies, call SEC CompanyFacts, process standalone XML/XBRL, mutate Gate B or downstream proof state, or claim final audited financial statement semantics.
 
 Every fact remains present in exactly one candidate role. Facts that the local deterministic classifier cannot place are retained as `unknown_or_unclassified`, preserving non-loss diagnostics for the later taxonomy-backed or product-semantic slice.
