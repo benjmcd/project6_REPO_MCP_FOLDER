@@ -2640,6 +2640,245 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_statement_candidate_produ
     assert "https://www.sec.gov/raw" not in unsafe_response.text
 
 
+def _prepare_sec_edgar_html_inline_xbrl_statement_candidate_product(
+    client: TestClient,
+    monkeypatch,
+    *,
+    label: str,
+) -> dict[str, object]:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_statement_classification(
+        client,
+        monkeypatch,
+        label=label,
+    )
+    classification = prepared["statement_classification"]
+    authority_hashes = classification["authority_hashes"]
+    payload = {
+        "client_request_id": f"sec-edgar-html-inline-xbrl-statement-candidate-product-{label}",
+        "product_mode": "sec_edgar_html_inline_xbrl_statement_candidate_product_v1",
+        "operator_decision": "build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence",
+        "statement_classification_receipt_id": classification["statement_classification_receipt_id"],
+        "statement_classification_receipt_hash": classification["statement_classification_receipt_hash"],
+        "expected_fact_authority_receipt_hash": classification["fact_authority_receipt_hash"],
+        "expected_fact_material_bridge_receipt_hash": classification["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": classification["parser_receipt_hash"],
+        "expected_connector_receipt_hash": authority_hashes["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": authority_hashes["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": authority_hashes["source_artifact_receipt_hash"],
+        "expected_content_sha256": authority_hashes["content_sha256"],
+        "expected_primary_document_hash": authority_hashes["primary_document_hash"],
+        "expected_document_inventory_hash": authority_hashes["document_inventory_hash"],
+        "expected_content_order_hash": authority_hashes["content_order_hash"],
+        "expected_table_candidate_inventory_hash": authority_hashes["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": authority_hashes["inline_xbrl_marker_inventory_hash"],
+        "expected_fact_inventory_hash": authority_hashes["fact_inventory_hash"],
+        "expected_classification_inventory_hash": classification["classification_inventory_hash"],
+        "expected_classification_order_hash": classification["classification_order_hash"],
+        "expected_statement_group_inventory_hash": classification["statement_group_inventory_hash"],
+        "expected_unclassified_fact_inventory_hash": classification["unclassified_fact_inventory_hash"],
+        "expected_classification_diagnostics_hash": classification["classification_diagnostics_hash"],
+        "expected_materialization_receipt_hash": authority_hashes["materialization_receipt_hash"],
+        "expected_dataset_version_hash": authority_hashes["dataset_version_hash"],
+        "expected_gate_b_decision_manifest_id": authority_hashes["gate_b_decision_manifest_id"],
+        "operator_confirmation": True,
+    }
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+        json=payload,
+    )
+    assert response.status_code == 200, response.text
+    return {**prepared, "statement_candidate_product": response.json()}
+
+
+def test_layer3_api_previews_sec_edgar_html_inline_xbrl_statement_candidate_package_review(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_statement_candidate_product(
+        client,
+        monkeypatch,
+        label="package-review-001",
+    )
+    product = prepared["statement_candidate_product"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-statement-candidate-package-review-001",
+        "package_review_mode": "sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1",
+        "operator_decision": "preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review",
+        "downstream_product_receipt_id": product["downstream_product_receipt_id"],
+        "downstream_product_receipt_hash": product["downstream_product_receipt_hash"],
+        "expected_statement_classification_receipt_hash": product["statement_classification_receipt_hash"],
+        "expected_fact_authority_receipt_hash": product["fact_authority_receipt_hash"],
+        "expected_fact_material_bridge_receipt_hash": product["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": product["parser_receipt_hash"],
+        "expected_product_manifest_hash": product["product_manifest_hash"],
+        "expected_statement_candidate_product_hash": product["statement_candidate_product_hash"],
+        "expected_product_order_hash": product["product_order_hash"],
+        "expected_inspection_summary_hash": product["inspection_summary_hash"],
+        "expected_redaction_manifest_hash": product["redaction_manifest_hash"],
+        "expected_downstream_readiness_hash": product["downstream_readiness_hash"],
+        "operator_confirmation": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/preview",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview.v1"
+    )
+    assert body["package_review_mode"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1"
+    )
+    assert body["package_review_preview_state"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_ready"
+    )
+    assert body["downstream_product_receipt_hash"] == product["downstream_product_receipt_hash"]
+    assert body["product_manifest_hash"] == product["product_manifest_hash"]
+    assert body["statement_candidate_product_hash"] == product["statement_candidate_product_hash"]
+    manifest = body["candidate_package_manifest"]
+    assert manifest["product_evidence_preserved"] is True
+    assert manifest["package_kinds"] == ["canonical_internal", "review_facing", "user_facing"]
+    assert len(manifest["candidate_packages"]) == 3
+    assert manifest["evidence_refs"]["role_group_ref_count"] == len(
+        product["product_manifest"]["role_group_inventory"]
+    )
+    assert manifest["evidence_refs"]["table_anchor_ref_count"] == len(
+        product["product_manifest"]["table_anchor_crosswalk"]
+    )
+    assert manifest["evidence_refs"]["unknown_diagnostics_ref"]["raw_values_included"] is False
+    assert body["review_readiness_manifest"]["product_evidence_preserved"] is True
+    assert body["review_readiness_manifest"]["package_construction_commit_enabled"] is False
+    assert body["review_readiness_manifest"]["package_review_submit_enabled"] is False
+    assert body["status_projection"]["package_rows_written"] is False
+    assert body["status_projection"]["raw_values_returned"] is False
+    assert body["negative_invariants"]["package_rows_written"] is False
+    assert body["negative_invariants"]["package_review_submit_enabled"] is False
+    assert body["negative_invariants"]["source_expansion_admitted"] is False
+    assert "https://www.sec.gov" not in response.text
+    assert "aapl-20240928.htm" not in response.text
+    assert "Company narrative" not in response.text
+    assert "value_text" not in response.text
+    _assert_raw_string_not_projected(body, "123")
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/preview",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["cache"]["idempotent_replay"] is True
+    assert replay_response.json()["package_review_preview_receipt_hash"] == (
+        body["package_review_preview_receipt_hash"]
+    )
+
+    second_request_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/preview",
+        json={**payload, "client_request_id": "sec-edgar-html-inline-xbrl-package-review-same-authority"},
+    )
+    assert second_request_response.status_code == 200, second_request_response.text
+    assert second_request_response.json()["package_review_preview_receipt_hash"] == (
+        body["package_review_preview_receipt_hash"]
+    )
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/"
+        "downstream-product/package-review/preview/status/"
+        f"{body['package_review_preview_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_status.v1"
+    )
+    assert status_response.json()["package_review_preview_receipt_hash"] == (
+        body["package_review_preview_receipt_hash"]
+    )
+    assert "https://www.sec.gov" not in status_response.text
+    assert "Company narrative" not in status_response.text
+    assert "value_text" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_statement_candidate_package_review_stale_or_unsafe(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_statement_candidate_product(
+        client,
+        monkeypatch,
+        label="package-review-reject",
+    )
+    product = prepared["statement_candidate_product"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-statement-candidate-package-review-reject",
+        "package_review_mode": "sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1",
+        "operator_decision": "preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review",
+        "downstream_product_receipt_id": product["downstream_product_receipt_id"],
+        "downstream_product_receipt_hash": product["downstream_product_receipt_hash"],
+        "expected_statement_classification_receipt_hash": product["statement_classification_receipt_hash"],
+        "expected_fact_authority_receipt_hash": product["fact_authority_receipt_hash"],
+        "expected_fact_material_bridge_receipt_hash": product["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": product["parser_receipt_hash"],
+        "expected_product_manifest_hash": product["product_manifest_hash"],
+        "expected_statement_candidate_product_hash": product["statement_candidate_product_hash"],
+        "expected_product_order_hash": product["product_order_hash"],
+        "expected_inspection_summary_hash": product["inspection_summary_hash"],
+        "expected_redaction_manifest_hash": product["redaction_manifest_hash"],
+        "expected_downstream_readiness_hash": product["downstream_readiness_hash"],
+        "operator_confirmation": True,
+    }
+
+    stale_product_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/preview",
+        json={**payload, "downstream_product_receipt_hash": "d" * 64},
+    )
+    assert stale_product_response.status_code == 409, stale_product_response.text
+    assert stale_product_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_package_review_preview_downstream_product_hash_mismatch"
+    )
+
+    stale_manifest_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/preview",
+        json={**payload, "expected_product_manifest_hash": "e" * 64},
+    )
+    assert stale_manifest_response.status_code == 409, stale_manifest_response.text
+    assert stale_manifest_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_package_review_preview_product_manifest_hash_mismatch"
+    )
+
+    unconfirmed_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/preview",
+        json={**payload, "operator_confirmation": False},
+    )
+    assert unconfirmed_response.status_code == 200, unconfirmed_response.text
+    assert unconfirmed_response.json()["package_review_preview_state"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_blocked"
+    )
+    assert unconfirmed_response.json()["status_projection"]["blocked_reasons"][0]["reason"] == (
+        "missing_operator_confirmation"
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/package-review/preview",
+        json={**payload, "value_text": "123", "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_package_review_preview_forbidden_request_fields"
+    )
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
+
+
 def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_material_authority(
     client: TestClient,
     tmp_path,
