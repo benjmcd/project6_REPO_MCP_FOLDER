@@ -1799,6 +1799,123 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     assert str(tmp_path) not in status_response.text
 
 
+def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_real_company_corpus(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_real_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    validation_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-real-company-delivery-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+            "operator_confirmation": True,
+        },
+    )
+    assert validation_response.status_code == 200, validation_response.text
+    validation = validation_response.json()
+    assert len(fake_client.calls) == 12
+
+    delivery_payload = {
+        "client_request_id": "sec-edgar-real-company-delivery-status-001",
+        "status_mode": "sec_edgar_delivery_status_provenance_v1",
+        "operator_decision": "inspect_sec_edgar_real_company_delivery_status_provenance",
+        "sec_edgar_real_company_corpus_validation_receipt_id": validation["validation_receipt_id"],
+        "sec_edgar_real_company_corpus_validation_receipt_hash": validation["validation_receipt_hash"],
+        "operator_confirmation": True,
+    }
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance",
+        json=delivery_payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_delivery_status_provenance.v1"
+    assert body["delivery_status_provenance_state"] == "sec_edgar_delivery_status_provenance_ready"
+    assert body["validation_receipt_hash"] == validation["validation_receipt_hash"]
+    assert body["company_matrix"] == ["MSFT", "STLD", "SONY", "CCJ"]
+    assert body["filing_count"] == 8
+    assert body["validation_receipt_status"] == "ready"
+    assert body["handoff_export_prepare_status"] == "ready"
+    assert body["delivery_readiness_status"] == "ready"
+    assert body["diagnostics"]["delivery_ready_count"] == 8
+    assert body["diagnostics"]["handoff_export_prepare_ready_count"] == 8
+    assert body["diagnostics"]["sec_network_fetch_performed"] is False
+    assert body["diagnostics"]["parser_rerun_performed"] is False
+    assert body["diagnostics"]["package_mutation_performed"] is False
+    assert body["cache"]["network_request_made_by_delivery_status"] is False
+    assert body["cache"]["file_response_served_by_delivery_status"] is False
+    assert body["cache"]["provider_object_created_by_delivery_status"] is False
+    assert len(body["delivery_status_records"]) == 8
+    assert len(body["provenance_hash_matrix"]) == 8
+    assert body["blocked_or_degraded_delivery_gaps"] == []
+    assert all(record["delivery_readiness_status"] == "ready" for record in body["delivery_status_records"])
+    assert all(record["handoff_export_prepare_status"] == "ready" for record in body["delivery_status_records"])
+    assert all(
+        record["provenance_hashes"]["handoff_export_prepare_receipt_hash"]
+        for record in body["delivery_status_records"]
+    )
+    assert len(fake_client.calls) == 12
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000789019-25-000100" not in response.text
+    assert "Microsoft Corporation" not in response.text
+    assert "Business overview" not in response.text
+    assert "value_text" not in response.text
+    _assert_raw_string_not_projected(body, "123")
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance",
+        json=delivery_payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["cache"]["idempotent_replay"] is True
+    assert (
+        replay_response.json()["delivery_status_provenance_receipt_hash"]
+        == body["delivery_status_provenance_receipt_hash"]
+    )
+    assert len(fake_client.calls) == 12
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance/status/"
+        f"{body['delivery_status_provenance_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == "layer3.sec_edgar_delivery_status_provenance_status.v1"
+    assert (
+        status_response.json()["delivery_status_provenance_receipt_hash"]
+        == body["delivery_status_provenance_receipt_hash"]
+    )
+    assert "https://www.sec.gov" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+    mismatch_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance",
+        json={
+            **delivery_payload,
+            "client_request_id": "sec-edgar-real-company-delivery-status-mismatch",
+            "sec_edgar_real_company_corpus_validation_receipt_hash": "f" * 64,
+        },
+    )
+    assert mismatch_response.status_code == 200, mismatch_response.text
+    mismatch = mismatch_response.json()
+    assert mismatch["delivery_status_provenance_state"] == "sec_edgar_delivery_status_provenance_blocked"
+    assert mismatch["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_delivery_status_provenance_validation_hash_mismatch"
+    )
+    assert len(fake_client.calls) == 12
+
+
 def test_layer3_api_rejects_sec_edgar_real_filing_connector_unconfigured_or_unsafe(
     client: TestClient,
     monkeypatch,

@@ -12112,3 +12112,45 @@ next_exact_posture: sec_edgar_delivery_status_provenance_runtime_v1
 ```
 
 This selection freezes the next SEC real-company delivery/status/provenance contract. The future runtime should revalidate the real-company corpus validation receipt and project redacted delivery readiness plus provenance over the handoff/export prepare outputs, without serving artifact bytes, creating provider objects, dispatching connectors, rerunning SEC fetch/parser work, or exposing raw URL/path/value authority.
+
+## SEC EDGAR Delivery Status Provenance Runtime
+
+```yaml
+milestone: sec_edgar_delivery_status_provenance_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1221-sec-edgar-delivery-status-provenance-selection.md
+entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387
+source_runtime_pr: "#1920"
+runtime_status: implemented
+service: backend/app/services/layer3_sec_edgar_delivery_status_provenance.py
+endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance
+status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance/status/{sec_edgar_delivery_status_provenance_receipt_id}
+schema_id: layer3.sec_edgar_delivery_status_provenance.v1
+status_schema_id: layer3.sec_edgar_delivery_status_provenance_status.v1
+status_mode: sec_edgar_delivery_status_provenance_v1
+operator_decision: inspect_sec_edgar_real_company_delivery_status_provenance
+input_authority: sec_edgar_real_company_corpus_validation_receipt_id,sec_edgar_real_company_corpus_validation_receipt_hash
+required_source_status: sec_edgar_real_company_corpus_validation_ready
+required_company_matrix: MSFT,STLD,SONY,CCJ
+required_filing_count: 8
+validation_coverage_revalidated: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare
+delivery_status_projection: validation_receipt_status,handoff_export_prepare_status,delivery_readiness_status,provenance_hash_matrix,blocked_or_degraded_delivery_gaps,next_operator_actions
+provenance_hash_bindings: validation_receipt_hash,connector_receipt_hash,parser_receipt_hash,fact_authority_receipt_hash,fact_material_bridge_receipt_hash,statement_classification_receipt_hash,statement_candidate_product_receipt_hash,package_review_preview_receipt_hash,package_construction_receipt_hash,package_review_submit_receipt_hash,handoff_export_prepare_receipt_hash,delivery_status_provenance_hash
+delivery_boundary_enforced: inspect_delivery_readiness_and_provenance_without_serving_artifact_bytes_or_creating_provider_objects
+fail_closed_conditions_covered: missing_validation_receipt,validation_hash_mismatch,validation_not_ready,company_matrix_mismatch,filing_count_mismatch,missing_handoff_export_prepare_output,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing
+raw_url_path_value_leakage_blocked: true
+sec_network_fetch_performed: false
+parser_rerun_performed: false
+package_mutation_performed: false
+delivery_file_response_served: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+operator_inspection_runtime_in_this_slice: false
+verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "delivery_status_provenance_for_real_company_corpus" -q PASS
+next_exact_posture: sec_edgar_operator_inspection_selection_v1
+```
+
+This runtime records redacted delivery/status/provenance over the SEC real-company corpus validation receipt. It proves the validation receipt, handoff/export prepare outputs, and provenance hash matrix can be inspected without serving artifact bytes, creating provider objects, dispatching connectors, rerunning SEC fetch/parser work, or exposing raw URL/path/value authority.
