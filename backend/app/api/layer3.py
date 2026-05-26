@@ -38,6 +38,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification,
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product,
+    layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -680,6 +681,30 @@ class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductRe
     expected_materialization_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_dataset_version_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_gate_b_decision_manifest_id: str | None = None
+    operator_confirmation: bool = False
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductPackageReviewPreviewRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    package_review_mode: Literal["sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1"]
+    operator_decision: Literal["preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review"]
+    downstream_product_receipt_id: str = Field(min_length=1)
+    downstream_product_receipt_hash: str = Field(min_length=64, max_length=64)
+    expected_statement_classification_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_fact_authority_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_fact_material_bridge_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_parser_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_product_manifest_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_statement_candidate_product_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_product_order_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_inspection_summary_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_redaction_manifest_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_downstream_readiness_hash: str | None = Field(default=None, min_length=64, max_length=64)
     operator_confirmation: bool = False
     actor: str | None = None
 
@@ -8083,6 +8108,45 @@ class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductRe
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductPackageReviewPreviewResponse(
+    Layer3BaseResponse
+):
+    mode: str
+    package_review_mode: str
+    product_mode: str
+    classification_mode: str
+    operator_decision: str
+    package_review_preview_state: str
+    package_review_preview_receipt_id: str | None = None
+    package_review_preview_receipt_ref: str | None = None
+    package_review_preview_receipt_hash: str | None = None
+    downstream_product_receipt_id: str | None = None
+    downstream_product_receipt_hash: str | None = None
+    statement_classification_receipt_id: str | None = None
+    statement_classification_receipt_hash: str | None = None
+    fact_authority_receipt_hash: str | None = None
+    fact_material_bridge_receipt_hash: str | None = None
+    parser_receipt_hash: str | None = None
+    source_family: str | None = None
+    typed_content_contract_id: str | None = None
+    candidate_package_manifest: dict[str, Any] | None = None
+    candidate_package_manifest_hash: str | None = None
+    review_readiness_manifest: dict[str, Any] | None = None
+    review_readiness_hash: str | None = None
+    package_order_hash: str | None = None
+    redaction_manifest_hash: str | None = None
+    product_manifest_hash: str | None = None
+    statement_candidate_product_hash: str | None = None
+    product_order_hash: str | None = None
+    inspection_summary_hash: str | None = None
+    downstream_readiness_hash: str | None = None
+    authority_hashes: dict[str, Any] | None = None
+    status_projection: dict[str, Any]
+    negative_invariants: dict[str, Any]
+    redaction_policy_id: str
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarHtmlInlineXbrlDownstreamProofResponse(Layer3BaseResponse):
     mode: str
     proof_state: str
@@ -15369,6 +15433,36 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_prod
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_status(
             downstream_product_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductPackageReviewPreviewResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview(
+    payload: Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductPackageReviewPreviewRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review.preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review(
+            payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview/status/{package_review_preview_receipt_id}",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductPackageReviewPreviewResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_status(
+    package_review_preview_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_status(
+            package_review_preview_receipt_id,
         )
     )
 
