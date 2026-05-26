@@ -9149,3 +9149,49 @@ next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendere
 The rendered workbench now makes the live source-artifact downstream operator status inspectable from the existing server endpoint. Operators submit the live proof request and expected proof hash for server revalidation, but the panel renders only the redacted status projection. The fixture route is test-only preparation authority for browser proof and is not user-facing durable authority.
 
 The SEC EDGAR browser fixtures use dataset-scoped variable IDs so source-acquisition, live-status, downstream-status, and repeatability fixture preparation can run in one browser server process without fixed `VariableDefinition.variable_id` collisions.
+
+## SEC EDGAR Text Table Live Source Artifact Downstream Rendered Status Current Main Sync
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_current_main_sync_v1
+source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1157-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-runtime.md
+current_main_entry: 1eb4a00e96cd39d5d70f9f7336edb892712cb6cd
+source_pr: "#1860"
+source_merge_commit: 1eb4a00e96cd39d5d70f9f7336edb892712cb6cd
+entry_decision: current_main_sync
+current_main_contains_live_source_artifact_downstream_rendered_status: true
+synced_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+synced_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control
+synced_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1
+synced_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status
+synced_panel: sec-edgar-live-downstream-operator-status-panel
+synced_payload_fields: client_request_id,status_mode,operator_decision,live_downstream_proof_request,expected_proof_hash
+synced_available_requires_server_revalidated_live_proof_request: true
+synced_available_requires_expected_proof_hash_match: true
+synced_browser_held_hash_alone_is_not_authority: true
+synced_stale_or_mismatched_proof_hash_fails_closed: true
+synced_sec_edgar_browser_fixture_state_isolation: true
+synced_sec_edgar_browser_fixture_variable_ids_are_dataset_scoped: true
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_proof_request_rendered_in_status_projection: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+current_main_target_selection_check: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_closeout_readiness_v1
+```
+
+Current main now contains the SEC EDGAR live source-artifact downstream rendered status surface from PR `#1860`. This sync adds no new behavior; it records the landed state and selects a closeout-readiness checkpoint before any repeatability, broader source acquisition, parser expansion, or source-family expansion slice.
