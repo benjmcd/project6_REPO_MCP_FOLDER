@@ -1,0 +1,85 @@
+# SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Status Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_runtime_v1
+source_fact_material_downstream_operator_status_selection: next_milestone_plans/Layer3_planning_docs/1188-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-selection.md
+source_fact_material_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1187-sec-edgar-html-inline-xbrl-fact-material-downstream-proof-runtime.md
+current_main_entry: 8d9564f16fc75a79763ae248824df58ed1beca85
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status
+implemented_request_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusRequest
+implemented_response_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusResponse
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status.v1
+implemented_request_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_request.v1
+implemented_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1
+implemented_operator_decision: inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+implemented_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+implemented_authority_model: fact_material_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+implemented_proof_validator: record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof
+implemented_no_new_storage: true
+implemented_no_proof_creation_by_status: true
+implemented_no_gate_b_material_package_or_delivery_mutation: true
+implemented_no_sec_fetch_or_submissions_lookup: true
+implemented_no_html_inline_xbrl_reparse_or_materialization: true
+implemented_no_fact_value_reconstruction: true
+implemented_no_xml_xbrl_companyfacts_taxonomy_statement_semantics: true
+not_recorded_without_proof_request: true
+available_requires_server_revalidated_fact_material_proof_request: true
+available_requires_expected_proof_hash_match: true
+stale_or_mismatched_proof_hash_returns_blocked_status: true
+raw_or_forbidden_proof_authority_returns_blocked_status: true
+raw_fact_values_rendered: false
+fact_value_reconstruction_enabled: false
+status_projection_fields: operator_status_state,expected_proof_hash,proof_hash,proof_state,dataset_version_id,dataset_version_hash,source_family,parser_family,typed_content_contract_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash,materialization_receipt_hash,fact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,operator_status_projection_ref,proof_summary,blocked_reasons,next_allowed_actions
+status_projection_authority_flags: parser_authority_bound,fact_authority_bound,fact_material_bridge_authority_bound,server_revalidated
+status_can_fetch_sec_content: false
+status_can_run_submissions_lookup: false
+status_can_reparse_or_materialize_html_inline_xbrl: false
+status_can_create_xml_xbrl_fact_authority: false
+status_can_call_sec_companyfacts_api: false
+status_can_resolve_taxonomy_networks: false
+status_can_add_financial_statement_semantics: false
+status_can_classify_facts_to_statements: false
+status_can_create_runtime_storage_root: false
+status_can_start_process: false
+status_can_dispatch_connector: false
+status_can_write_provider_object: false
+status_can_add_rag_or_model_runtime: false
+status_can_activate_full_mockup: false
+raw_proof_request_rendered: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+implementation_duplication_boundary: separate_fact_material_status_service_preserves_existing_html_inline_xbrl_narrative_table_status_contract_without_shared_refactor_in_this_slice
+focused_py_compile: python -m compileall ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py ./backend/app/api/layer3.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_api.py ./backend/tests/test_layer3_bootstrap_contract.py PASS
+focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -q -k "fact_material_downstream_operator_status" PASS
+focused_bootstrap_pytest: python -c "import os, subprocess, sys; os.environ['PYTHONPATH']=r'.\\backend'; sys.exit(subprocess.call(['pytest', r'.\\backend\\tests\\test_layer3_bootstrap_contract.py', '-q']))" PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_selection_v1
+```
+
+This runtime implements the read-only fact-material downstream operator status selected in the prior freeze. The endpoint does not create downstream proof from a browser-held hash. It requires the caller to supply the fact-material downstream proof request plus the expected proof hash, re-runs the existing proof validator server-side, and reports `available` only when the recomputed proof hash matches.
+
+The status projection is deliberately narrower than the proof receipt. It keeps the operator-facing state useful by exposing redacted receipt hashes, fact-authority and fact-material bridge bindings, coverage hash, negative-invariant hash, and blocked reasons. It does not render raw fact values, reconstruct fact values, add taxonomy or financial statement semantics, fetch SEC content, reparse HTML/iXBRL, mutate Gate B/material/package/delivery state, or create runtime storage.
+
+## Coherence Check
+
+- Does this satisfy the older SEC direction file's concern about real examples and acquisition? Recommended answer: this slice is downstream of that concern. Current main already contains the real SEC acquisition connector and HTML/iXBRL/fact-material chain after the older PR #1867 snapshot; this runtime should not reopen connector implementation unless current-main evidence regresses.
+- Should this runtime share a helper with the non-fact HTML/iXBRL status service? Recommended answer: not in this slice. The duplication is intentional and bounded because fact authority adds fact receipt, inventory, diagnostics, raw-value, and semantic expansion constraints that should not be back-propagated into the older narrative/table status contract during an endpoint implementation pass.
+- Is rendered/operator UI status implemented here? Recommended answer: no. The next exact posture is a separate rendered-status selection so the browser surface is not implemented before the server status authority exists on current main.
