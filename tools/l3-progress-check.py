@@ -3380,6 +3380,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
     / "1180-sec-edgar-html-inline-xbrl-downstream-rendered-status-current-main-sync.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_CLOSEOUT_READINESS = (
+    PLANNING_DOCS
+    / "1181-sec-edgar-html-inline-xbrl-downstream-closeout-readiness.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -112607,6 +112611,69 @@ def _check_sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sy
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_downstream_closeout_readiness(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_CLOSEOUT_READINESS: (
+            "SEC EDGAR HTML Inline XBRL Downstream Closeout Readiness",
+            "milestone: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1",
+            "source_html_inline_xbrl_parser_runtime: next_milestone_plans/Layer3_planning_docs/1171-sec-edgar-html-inline-xbrl-source-family-parser-runtime.md",
+            "source_html_inline_xbrl_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1173-sec-edgar-html-inline-xbrl-material-bridge-runtime.md",
+            "source_html_inline_xbrl_downstream_rendered_status_sync: next_milestone_plans/Layer3_planning_docs/1180-sec-edgar-html-inline-xbrl-downstream-rendered-status-current-main-sync.md",
+            "current_main_entry: 7df4bbfd48468a2a6df7628ef7531f93bc7f40a0",
+            'source_rendered_status_sync_pr: "#1883"',
+            "entry_decision: closeout_readiness_checkpoint",
+            "closeout_readiness_state: ready_for_sec_edgar_html_inline_xbrl_fact_authority_selection",
+            "selected_next_selection_target: sec_edgar_html_inline_xbrl_fact_authority_selection_v1",
+            "required_source_family: sec_edgar_html_inline_xbrl",
+            "required_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "required_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1",
+            "required_material_bridge_mode: sec_edgar_html_inline_xbrl_parser_to_layer3_material_authority_v1",
+            "required_downstream_proof_mode: sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1",
+            "required_rendered_status_mode: rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control",
+            "required_parser_authority: connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash,diagnostics_hash",
+            "required_status_authority_model: html_inline_xbrl_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side",
+            "html_inline_xbrl_downstream_chain_closeout_ready: true",
+            "fact_authority_selection_admitted_next: true",
+            "fact_authority_runtime_admitted_now: false",
+            "xml_xbrl_fact_authority_admitted_now: false",
+            "financial_statement_semantics_admitted_now: false",
+            "html_inline_xbrl_reparse_or_rematerialization_admitted_now: false",
+            "sec_edgar_network_fetch_admitted_for_closeout: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1",
+            "current_main_entry: 7df4bbfd48468a2a6df7628ef7531f93bc7f40a0",
+            "selected_next_selection_target: sec_edgar_html_inline_xbrl_fact_authority_selection_v1",
+            "required_source_family: sec_edgar_html_inline_xbrl",
+            "required_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "required_typed_content_contract_id: sec_edgar_html_inline_xbrl_material_units_v1",
+            "html_inline_xbrl_downstream_chain_closeout_ready: true",
+            "fact_authority_selection_admitted_next: true",
+            "fact_authority_runtime_admitted_now: false",
+            "xml_xbrl_fact_authority_admitted_now: false",
+            "financial_statement_semantics_admitted_now: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL downstream closeout readiness term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -113799,6 +113866,7 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sync(
         errors
     )
+    _check_sec_edgar_html_inline_xbrl_downstream_closeout_readiness(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
