@@ -334,6 +334,35 @@ def read_sec_edgar_text_table_live_source_artifact_receipt(
     return receipt
 
 
+def read_sec_edgar_text_table_live_source_artifact_bytes(
+    live_source_artifact_receipt_id: str,
+    *,
+    expected_live_source_artifact_receipt_hash: str | None = None,
+) -> tuple[dict[str, Any], bytes]:
+    receipt = read_sec_edgar_text_table_live_source_artifact_receipt(
+        live_source_artifact_receipt_id,
+        expected_live_source_artifact_receipt_hash=expected_live_source_artifact_receipt_hash,
+    )
+    path = _artifact_path(receipt["live_source_artifact_receipt_id"])
+    try:
+        content = path.read_bytes()
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_retained_artifact_unreadable",
+            "SEC EDGAR live source artifact could not be read for server-side parser use.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
+    expected_hash = str((receipt.get("source_artifact_receipt") or {}).get("content_sha256") or "")
+    if hashlib.sha256(content).hexdigest() != expected_hash:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_retained_artifact_hash_mismatch",
+            "SEC EDGAR retained source artifact no longer matches its receipt hash.",
+            http_status=409,
+        )
+    return receipt, content
+
+
 def _fetch_with_retry(
     *,
     url: str,

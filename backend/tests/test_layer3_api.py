@@ -1501,6 +1501,39 @@ def _sec_edgar_real_filing_connector_payload(
     }
 
 
+def _sec_edgar_html_inline_xbrl_submission_text() -> bytes:
+    return b"""<SEC-DOCUMENT>
+<SEC-HEADER>
+<ACCESSION-NUMBER>0000320193-24-000123
+<CONFORMED-SUBMISSION-TYPE>10-K
+</SEC-HEADER>
+<DOCUMENT>
+<TYPE>10-K
+<SEQUENCE>1
+<FILENAME>aapl-20240928.htm
+<DESCRIPTION>10-K
+<TEXT>
+<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL">
+<body>
+<h1>Item 1. Business</h1>
+<p>Company narrative in source order.</p>
+<ix:nonFraction name="us-gaap:Assets" contextRef="c1">123</ix:nonFraction>
+<table><tr><td>Cash</td><td>123</td></tr></table>
+</body>
+</html>
+</TEXT>
+</DOCUMENT>
+<DOCUMENT>
+<TYPE>EX-99
+<SEQUENCE>2
+<FILENAME>exhibit99.htm
+<DESCRIPTION>EXHIBIT
+<TEXT><html><body><p>Exhibit text</p></body></html></TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+"""
+
+
 def test_layer3_api_acquires_sec_edgar_real_filing_connector_corpus_with_fake_client(
     client: TestClient,
     tmp_path,
@@ -1650,6 +1683,175 @@ def test_layer3_api_rejects_sec_edgar_real_filing_connector_unconfigured_or_unsa
         "sec_edgar_real_filing_acquisition_connector_required_form_missing"
     )
     assert len(fake_client.calls) == 1
+
+
+def test_layer3_api_parses_sec_edgar_html_inline_xbrl_source_family(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(
+        [
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=_sec_edgar_real_filing_submissions_payload(),
+                final_url="https://data.sec.gov/submissions/CIK0000320193.json",
+            ),
+            layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                status_code=200,
+                content=_sec_edgar_html_inline_xbrl_submission_text(),
+                final_url="https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/0000320193-24-000123.txt",
+            ),
+        ]
+    )
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+    connector_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=_sec_edgar_real_filing_connector_payload(
+            client_request_id="sec-edgar-html-inline-xbrl-connector-001",
+            form_types=["10-K"],
+        ),
+    )
+    assert connector_response.status_code == 200, connector_response.text
+    connector = connector_response.json()
+    acquisition = connector["acquisition_receipts"][0]
+    example = connector["corpus_manifest"]["example_records"][0]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-parser-001",
+        "parser_mode": "sec_edgar_html_inline_xbrl_source_family_parser_v1",
+        "operator_decision": "parse_sec_edgar_html_inline_xbrl_source_family",
+        "connector_receipt_id": connector["connector_receipt_id"],
+        "connector_receipt_hash": connector["connector_receipt_hash"],
+        "connector_example_id": acquisition["example_id"],
+        "live_source_artifact_receipt_id": acquisition["live_source_artifact_receipt_id"],
+        "live_source_artifact_receipt_hash": acquisition["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": acquisition["source_artifact_receipt"][
+            "source_artifact_receipt_hash"
+        ],
+        "operator_confirmation": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_source_family_parse_receipt.v1"
+    assert body["parser_state"] == "sec_edgar_html_inline_xbrl_source_family_parsed"
+    assert body["connector_receipt_hash"] == connector["connector_receipt_hash"]
+    assert body["live_source_artifact_receipt_hash"] == acquisition["live_source_artifact_receipt_hash"]
+    assert body["identity_binding"]["cik_hash"] == example["cik_hash"]
+    assert (
+        body["identity_binding"]["accession_or_submission_id_hash"]
+        == example["accession_or_submission_id_hash"]
+    )
+    assert body["document_inventory_hash"]
+    assert len(body["document_inventory"]) == 2
+    assert body["document_inventory"][0]["primary_document_match"] is True
+    assert body["diagnostics"]["html_table_candidate_count"] == 1
+    assert body["diagnostics"]["inline_xbrl_marker_count"] == 1
+    assert body["diagnostics"]["dataset_version_created"] is False
+    assert body["negative_invariants"]["sec_edgar_live_network_fetch_performed_by_parser"] is False
+    assert body["negative_invariants"]["dataset_version_creation_admitted"] is False
+    assert body["negative_invariants"]["xml_xbrl_fact_authority_created"] is False
+    assert "https://www.sec.gov" not in response.text
+    assert "aapl-20240928.htm" not in response.text
+    assert "Company narrative" not in response.text
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["idempotent_replay"] is True
+    assert replay_response.json()["parser_receipt_hash"] == body["parser_receipt_hash"]
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser/status/"
+        f"{body['parser_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_source_family_parser_status.v1"
+    assert "aapl-20240928.htm" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_parser_stale_or_unsafe(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    monkeypatch.setattr(
+        layer3_sec_edgar_live_source_artifact,
+        "SEC_EDGAR_CLIENT",
+        _FakeSecEdgarClient(
+            [
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=_sec_edgar_real_filing_submissions_payload(),
+                ),
+                layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
+                    status_code=200,
+                    content=_sec_edgar_html_inline_xbrl_submission_text(),
+                ),
+            ]
+        ),
+    )
+    connector_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+        json=_sec_edgar_real_filing_connector_payload(
+            client_request_id="sec-edgar-html-inline-xbrl-connector-reject",
+            form_types=["10-K"],
+        ),
+    )
+    assert connector_response.status_code == 200, connector_response.text
+    connector = connector_response.json()
+    acquisition = connector["acquisition_receipts"][0]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-parser-reject",
+        "parser_mode": "sec_edgar_html_inline_xbrl_source_family_parser_v1",
+        "operator_decision": "parse_sec_edgar_html_inline_xbrl_source_family",
+        "connector_receipt_id": connector["connector_receipt_id"],
+        "connector_receipt_hash": connector["connector_receipt_hash"],
+        "connector_example_id": acquisition["example_id"],
+        "live_source_artifact_receipt_id": acquisition["live_source_artifact_receipt_id"],
+        "live_source_artifact_receipt_hash": acquisition["live_source_artifact_receipt_hash"],
+        "operator_confirmation": True,
+    }
+
+    stale_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+        json={**payload, "connector_receipt_hash": "f" * 64},
+    )
+    assert stale_response.status_code == 409, stale_response.text
+    assert stale_response.json()["error_code"] == (
+        "sec_edgar_real_filing_acquisition_connector_receipt_hash_mismatch"
+    )
+
+    source_stale_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+        json={**payload, "expected_source_artifact_receipt_hash": "a" * 64},
+    )
+    assert source_stale_response.status_code == 409, source_stale_response.text
+    assert source_stale_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_parser_source_artifact_hash_mismatch"
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+        json={**payload, "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == "sec_edgar_html_inline_xbrl_parser_forbidden_request_fields"
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
 
 
 def _prepare_real_filing_connector_downstream_authority(
