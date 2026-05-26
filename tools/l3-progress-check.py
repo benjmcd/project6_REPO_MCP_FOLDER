@@ -3601,6 +3601,9 @@ SEC_EDGAR_VALIDATION_BREADTH_EXPANSION_RUNTIME = (
 SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTION = (
     PLANNING_DOCS / "1241-sec-edgar-delivery-status-provenance-breadth-selection.md"
 )
+SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME = (
+    PLANNING_DOCS / "1242-sec-edgar-delivery-status-provenance-breadth-runtime.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117806,7 +117809,6 @@ def _check_sec_edgar_delivery_status_provenance_breadth_selection(
             "DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTION_VERSION",
             "DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_MATRIX",
             "DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_PROFILE_TAGS",
-            "DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED = False",
             'EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")',
             '"XOM"',
             '"PFE"',
@@ -117814,9 +117816,8 @@ def _check_sec_edgar_delivery_status_provenance_breadth_selection(
             '"T"',
         ),
         LAYER3_API_TEST: (
-            "test_layer3_api_selects_sec_edgar_delivery_status_provenance_breadth_without_runtime_admission",
             "sec_edgar_delivery_status_provenance_breadth_selection_v1",
-            "DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED is False",
+            "DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_MATRIX",
             "EXPECTED_COMPANY_MATRIX",
         ),
         SEC_EDGAR_VALIDATION_BREADTH_EXPANSION_RUNTIME: (
@@ -117832,6 +117833,55 @@ def _check_sec_edgar_delivery_status_provenance_breadth_selection(
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing SEC EDGAR delivery status provenance breadth selection term: {term}"
+                )
+
+
+def _check_sec_edgar_delivery_status_provenance_breadth_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME: (
+            "SEC EDGAR Delivery Status Provenance Breadth Runtime",
+            "milestone: sec_edgar_delivery_status_provenance_breadth_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1241-sec-edgar-delivery-status-provenance-breadth-selection.md",
+            "runtime_version: sec_edgar_delivery_status_provenance_breadth_runtime_v1",
+            "runtime_status: implemented",
+            "expanded_validation_matrix_admitted: XOM,PFE,UAL,T",
+            "default_delivery_matrix_preserved: MSFT,STLD,SONY,CCJ",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "operator_inspection_broadened: false",
+            "operator_product_surface_broadened: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_operator_inspection_breadth_selection_v1",
+        ),
+        SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_SERVICE: (
+            "DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_VERSION",
+            "DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED = True",
+            "def _admitted_company_matrices()",
+            "DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_MATRIX",
+            'EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")',
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_admits_sec_edgar_delivery_status_provenance_breadth_runtime",
+            "test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_expanded_breadth_matrix",
+            "sec_edgar_delivery_status_provenance_breadth_runtime_v1",
+            '"company_matrix": ["XOM", "PFE", "UAL", "T"]',
+            "bounded_readiness_audit_available_not_comparable",
+        ),
+        SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTION: (
+            "next_exact_posture: sec_edgar_delivery_status_provenance_breadth_runtime_v1",
+            "delivery_status_provenance_breadth_runtime_in_this_freeze: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR delivery status provenance breadth runtime term: {term}"
                 )
 
 
@@ -119150,6 +119200,7 @@ def main() -> int:
     _check_sec_edgar_validation_breadth_expansion_selection(errors)
     _check_sec_edgar_validation_breadth_expansion_runtime(errors)
     _check_sec_edgar_delivery_status_provenance_breadth_selection(errors)
+    _check_sec_edgar_delivery_status_provenance_breadth_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
