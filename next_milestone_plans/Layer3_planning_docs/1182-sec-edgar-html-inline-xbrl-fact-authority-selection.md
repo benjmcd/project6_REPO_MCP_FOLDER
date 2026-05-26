@@ -1,0 +1,96 @@
+# SEC EDGAR HTML Inline XBRL Fact Authority Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_authority_selection_v1
+source_html_inline_xbrl_downstream_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1181-sec-edgar-html-inline-xbrl-downstream-closeout-readiness.md
+current_main_entry: 65c8cc822c40693f55b59a49113293b61d5cd6af
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1
+selected_fact_authority_mode: sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1
+selected_operator_decision: derive_sec_edgar_html_inline_xbrl_fact_authority
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_authority.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/status/{fact_authority_receipt_id}
+selected_source_family: sec_edgar_html_inline_xbrl
+selected_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1
+selected_parser_schema_id: layer3.sec_edgar_html_inline_xbrl_source_family_parse_receipt.v1
+selected_fact_authority_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_authority.v1
+selected_fact_authority_request_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_authority_request.v1
+selected_receipt_prefix: sec-edgar-html-inline-xbrl-fact-authority
+selected_authority_hash_version: sec_edgar_html_inline_xbrl_fact_authority_hash_v1
+selected_runtime_scope: derive_ordered_inline_xbrl_fact_authority_from_existing_server_owned_parser_receipt_and_retained_primary_document
+selected_input_authority: parser_receipt_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash
+selected_server_read_model: reload_parser_receipt_then_server_read_retained_live_source_artifact_bytes_bound_to_parser_receipt
+selected_fact_payload_scope: inline_xbrl_fact_elements_in_primary_html_inline_xbrl_document_only
+selected_fact_identity_fields: fact_id_or_order_key,marker_order_index,qualified_name,namespace_prefix,local_name,context_ref_hash,unit_ref_hash,decimals_or_precision,scale_or_format,continued_fact_hash_if_present,source_order_hash,source_artifact_receipt_hash,primary_document_hash
+selected_fact_value_policy: preserve_internal_value_authority_with_redacted_operator_projection_and_value_hashes
+selected_order_policy: preserve_primary_document_order_and_marker_inventory_order_without_reordering_by_taxonomy_or_statement_guess
+selected_table_link_policy: retain_table_candidate_inventory_hash_and_optional_fact_to_table_candidate_anchor_hash_without_financial_statement_semantics
+selected_diagnostics: unsupported_marker_shape,missing_context_ref,missing_unit_ref,continued_fact_unresolved,html_parse_warning,empty_fact_value,duplicate_fact_key,non_inline_xbrl_primary_document,raw_authority_rejected
+selected_status_projection: redacted_counts_hashes_diagnostics_only_no_raw_values_no_raw_html_no_raw_urls
+selected_idempotency_contract: same_client_request_id_same_parser_receipt_returns_same_fact_authority_receipt_same_client_request_id_different_parser_receipt_fails_closed_same_parser_receipt_new_client_request_id_returns_existing_status
+selected_failure_lifecycle: fail_closed_on_missing_parser_receipt_stale_parser_receipt_hash_missing_live_source_artifact_stale_live_source_artifact_hash_content_hash_mismatch_primary_document_hash_mismatch_marker_inventory_hash_mismatch_no_inline_xbrl_markers_no_extractable_facts_raw_authority_exposure_forbidden_input_authority
+selected_downstream_future_bridge: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_material_or_evidence_authority_selection_v1
+material_text_table_bridge_preserved: true
+existing_material_bridge_not_weakened: true
+existing_downstream_proof_not_mutated: true
+existing_gate_b_session_not_mutated: true
+fact_authority_runtime_in_this_freeze: false
+rendered_runtime_in_this_freeze: false
+live_sec_network_fetch_in_this_freeze: false
+submissions_lookup_runtime_in_this_freeze: false
+html_inline_xbrl_reparse_from_browser_in_this_freeze: false
+standalone_xml_xbrl_fact_authority_in_this_freeze: false
+sec_companyfacts_api_runtime_in_this_freeze: false
+taxonomy_network_resolution_in_this_freeze: false
+financial_statement_semantics_in_this_freeze: false
+fact_to_statement_classification_in_this_freeze: false
+raw_sec_url_authority_in_this_freeze: false
+browser_supplied_html_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_local_path_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+browser_supplied_command_admitted: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1
+```
+
+This freeze selects the first governed HTML/iXBRL fact-authority runtime. The future runtime should derive ordered inline XBRL fact authority from an existing server-owned parser receipt and the retained live source artifact already bound to that receipt. It should preserve fact identity, source order, marker order, value authority, diagnostics, and table-candidate linkage hashes while exposing only redacted counts/hashes/status in operator projections.
+
+The selected runtime must not accept browser-submitted HTML, raw SEC URLs, local paths, artifact bytes, commands, provider credentials, frontend durable state, or arbitrary parser input. It must not fetch from SEC, run submissions lookup, call SEC Company Facts APIs, resolve taxonomy networks, process standalone XML XBRL, assign financial-statement semantics, classify facts into statements, mutate the existing material bridge, mutate Gate B, mutate downstream proof/status, dispatch connectors, write provider objects, add RAG/model runtime, or activate full mockup behavior.
+
+## Runtime Requirements
+
+1. Load and validate the existing HTML/iXBRL parser receipt by id plus expected hash.
+2. Re-read retained live source-artifact bytes only through server-owned source-artifact authority already bound to that parser receipt.
+3. Require matching connector, source-artifact, content, primary-document, content-order, table-candidate, and inline-marker inventory hashes.
+4. Extract inline XBRL fact elements from the primary HTML/iXBRL document only.
+5. Preserve fact order, qname/local-name identity, context/unit refs as hashes, value authority internally, and redacted value hashes for operator projection.
+6. Preserve table-candidate linkage where available without assigning financial-statement semantics.
+7. Record an append-only fact-authority receipt with deterministic hash/idempotency semantics.
+8. Fail closed on missing/stale parser/source authority, no inline facts, raw authority exposure, unsupported standalone XML, browser-owned content, or forbidden inputs.
+9. Preserve the existing text/table material bridge, downstream proof/status, baseline rollback, Candidate A semantics, and Candidate B default scope.
+10. Keep downstream fact-to-Layer-3 material/evidence bridging for a later selected slice.
+
+## Coherence Check
+
+- Does this freeze implement fact extraction? Recommended answer: no. It selects the runtime contract only.
+- Does this admit financial-statement semantics? Recommended answer: no. The first runtime should preserve ordered fact authority and table anchors, not statement classification.
+- Can the browser provide HTML, URLs, paths, or artifact bytes? Recommended answer: no. The server must reload existing parser/source-artifact authority.
+- What comes next? Recommended answer: implement `sec_edgar_html_inline_xbrl_fact_authority_runtime_v1` with focused service/API tests before any rendered controls or downstream fact bridge.
