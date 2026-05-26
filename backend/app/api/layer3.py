@@ -34,6 +34,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_authority,
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
@@ -673,6 +674,31 @@ class Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusRequest(Ba
     operator_decision: Literal["inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status"]
     fact_material_downstream_proof_request: dict[str, Any] | None = None
     expected_proof_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorRepeatabilityTrialRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    trial_mode: Literal[
+        "append_only_trial_receipt_over_original_and_repeat_fact_material_downstream_status_authority_without_sec_fetch_or_processing_execution"
+    ]
+    operator_decision: Literal[
+        "record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial"
+    ]
+    original_operator_status_request: dict[str, Any]
+    original_operator_status_hash: str = Field(min_length=64, max_length=64)
+    repeat_operator_status_request: dict[str, Any]
+    repeat_operator_status_hash: str = Field(min_length=64, max_length=64)
+    operator_repeatability_disposition: Literal[
+        "no_regression_observed",
+        "delta_reviewed_no_regression",
+        "regression_detected_blocked",
+    ]
+    operator_confirmation: bool
     actor: str | None = None
 
 
@@ -8041,6 +8067,7 @@ class Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusResponse(L
     content_sha256: str
     primary_document_hash: str
     content_order_hash: str
+    inline_xbrl_marker_inventory_hash: str
     fact_authority_receipt_hash: str
     fact_inventory_hash: str
     diagnostics_hash: str
@@ -8076,6 +8103,35 @@ class Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusResponse(L
     frontend_durable_authority_enabled: bool
     browser_storage_authority_enabled: bool
     full_mockup_activation_enabled: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
+class Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorRepeatabilityTrialResponse(Layer3BaseResponse):
+    mode: str
+    operator_decision: str
+    operator_repeatability_trial_state: str
+    operator_repeatability_disposition: str
+    trial_receipt_id: str
+    trial_receipt_hash: str
+    trial_receipt_ref: str
+    trial_receipt_status: str
+    trial_authority_hash: str
+    authority_pair_hash: str
+    idempotent_replay: bool
+    append_only_repeatability_trial_receipt: bool
+    exclusive_trial_per_original_repeat_authority_pair: bool
+    original_operator_status: dict[str, Any]
+    repeat_operator_status: dict[str, Any]
+    authority_bindings: dict[str, Any]
+    operator_status_hash_comparison: str
+    proof_hash_comparison: str
+    coverage_step_set_comparison: str
+    fact_inventory_hash_comparison: str
+    fact_material_authority_hash_comparison: str
+    trial_authority: dict[str, Any]
+    operator_visible_repeatability_trial_status: dict[str, Any]
+    fail_closed_behavior: dict[str, bool]
     negative_invariants: dict[str, bool]
     next_allowed_actions: list[str]
 
@@ -15159,6 +15215,23 @@ def post_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status(
 ) -> dict[str, Any] | JSONResponse:
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorRepeatabilityTrialResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial(
+    payload: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorRepeatabilityTrialRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial.record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial(
             payload.model_dump(exclude_none=True),
             db,
         )
