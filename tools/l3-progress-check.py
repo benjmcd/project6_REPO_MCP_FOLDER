@@ -3376,6 +3376,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_RENDERED_STATUS_RUNTIME = (
     PLANNING_DOCS
     / "1179-sec-edgar-html-inline-xbrl-downstream-rendered-status-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1180-sec-edgar-html-inline-xbrl-downstream-rendered-status-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -112534,6 +112538,75 @@ def _check_sec_edgar_html_inline_xbrl_downstream_rendered_status_runtime(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR HTML Inline XBRL Downstream Rendered Status Current Main Sync",
+            "milestone: sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1179-sec-edgar-html-inline-xbrl-downstream-rendered-status-runtime.md",
+            "current_main_entry: 5af458edb1cdcff523088d37a67ace3db4a4134e",
+            'source_pr: "#1882"',
+            "source_branch: codex/sec-edgar-html-ixbrl-rendered-status-runtime",
+            "source_commit: 0d049c9559d5f1f1f6360dd5aca6b6f3e8028406",
+            "source_merge_commit: 5af458edb1cdcff523088d37a67ace3db4a4134e",
+            "ci_status: passed",
+            "ci_successful_checks: 10",
+            "synced_bootstrap_capability: sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "synced_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+            "synced_rendered_mode: rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control",
+            "synced_status_mode: sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "synced_operator_decision: inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "synced_panel: sec-edgar-html-inline-xbrl-downstream-operator-status-panel",
+            "synced_payload_fields: client_request_id,status_mode,operator_decision,html_inline_xbrl_downstream_proof_request,expected_proof_hash",
+            "synced_available_requires_server_revalidated_html_inline_xbrl_proof_request: true",
+            "synced_parser_authority_bound: true",
+            "synced_material_bridge_authority_bound: true",
+            "synced_test_only_fixture_user_facing_authority: false",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "sec_edgar_network_fetch_admitted_by_sync: false",
+            "html_inline_xbrl_reparse_or_materialization_admitted: false",
+            "xml_xbrl_fact_authority_admitted: false",
+            "financial_statement_semantics_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_proof_request_rendered_in_status_projection: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1179-sec-edgar-html-inline-xbrl-downstream-rendered-status-runtime.md",
+            "current_main_entry: 5af458edb1cdcff523088d37a67ace3db4a4134e",
+            'source_pr: "#1882"',
+            "current_main_contains_html_inline_xbrl_downstream_rendered_status: true",
+            "synced_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+            "synced_rendered_mode: rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control",
+            "synced_panel: sec-edgar-html-inline-xbrl-downstream-operator-status-panel",
+            "synced_available_requires_server_revalidated_html_inline_xbrl_proof_request: true",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "sec_edgar_network_fetch_admitted_by_sync: false",
+            "html_inline_xbrl_reparse_or_materialization_admitted: false",
+            "xml_xbrl_fact_authority_admitted: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_RENDERED_STATUS_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL downstream rendered status current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -113723,6 +113796,9 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_downstream_operator_status_runtime(errors)
     _check_sec_edgar_html_inline_xbrl_downstream_rendered_status_selection(errors)
     _check_sec_edgar_html_inline_xbrl_downstream_rendered_status_runtime(errors)
+    _check_sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sync(
+        errors
+    )
 
     if errors:
         print("Layer 3 progress state check: FAIL")
