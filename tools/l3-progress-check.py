@@ -3480,6 +3480,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_CURR
     PLANNING_DOCS
     / "1205-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-current-main-sync.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACKAGE_REVIEW_SELECTION = (
+    PLANNING_DOCS
+    / "1206-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-selection.md"
+)
 SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
     ROOT
     / "backend"
@@ -115081,6 +115085,83 @@ def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_p
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACKAGE_REVIEW_SELECTION: (
+            "SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Package Review Selection",
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1",
+            "source_downstream_product_current_main_sync: next_milestone_plans/Layer3_planning_docs/1205-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-current-main-sync.md",
+            "current_main_entry: 99fea9c7f402e7734e94bc19079847084fb22967",
+            'source_sync_pr: "#1905"',
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+            "selected_package_review_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1",
+            "selected_operator_decision: preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview/status/{package_review_preview_receipt_id}",
+            "selected_input_authority: downstream_product_receipt_id,downstream_product_receipt_hash,statement_classification_receipt_hash,fact_authority_receipt_hash,fact_material_bridge_receipt_hash,parser_receipt_hash,product_manifest_hash,statement_candidate_product_hash,product_order_hash,inspection_summary_hash,redaction_manifest_hash,downstream_readiness_hash",
+            "selected_package_artifact_roles: canonical_internal,review_facing,user_facing,authority_provenance,review_readiness_manifest,redaction_manifest",
+            "selected_non_loss_policy: package_preview_must_reference_every_statement_candidate_product_group_unknown_diagnostic_and_table_anchor_by_hash_without_discarding_product_evidence",
+            "selected_output_authority: package_review_preview_receipt_id,package_review_preview_receipt_hash,candidate_package_manifest_hash,review_readiness_hash,package_order_hash,redaction_manifest_hash",
+            "package_review_preview_runtime_in_this_freeze: false",
+            "package_construction_commit_in_this_freeze: false",
+            "package_review_submit_in_this_freeze: false",
+            "handoff_export_in_this_freeze: false",
+            "delivery_runtime_in_this_freeze: false",
+            "financial_statement_semantics_runtime_in_this_freeze: false",
+            "taxonomy_network_resolution_in_this_freeze: false",
+            "sec_companyfacts_api_runtime_in_this_freeze: false",
+            "new_sec_network_runtime_in_this_freeze: false",
+            "source_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "raw_fact_values_exposed: false",
+            "verification_progress_check: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1",
+            "source_downstream_product_current_main_sync: next_milestone_plans/Layer3_planning_docs/1205-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-current-main-sync.md",
+            "current_main_entry: 99fea9c7f402e7734e94bc19079847084fb22967",
+            'source_sync_pr: "#1905"',
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+            "selected_package_review_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview",
+            "selected_package_artifact_roles: canonical_internal,review_facing,user_facing,authority_provenance,review_readiness_manifest,redaction_manifest",
+            "selected_non_loss_policy: package_preview_must_reference_every_statement_candidate_product_group_unknown_diagnostic_and_table_anchor_by_hash_without_discarding_product_evidence",
+            "package_review_preview_runtime_in_this_freeze: false",
+            "package_construction_commit_in_this_freeze: false",
+            "package_review_submit_in_this_freeze: false",
+            "handoff_export_in_this_freeze: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_CURRENT_MAIN_SYNC: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact statement-classification downstream product package-review selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -116332,6 +116413,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection(
         errors
     )
 
