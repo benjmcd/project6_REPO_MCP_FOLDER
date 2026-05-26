@@ -10387,3 +10387,53 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1
 ```
 
 This freeze selects the first governed HTML/iXBRL fact-authority runtime. The future runtime must derive ordered inline XBRL facts from existing server-owned parser and retained source-artifact authority, preserve internal value authority with redacted operator projections, retain source/marker order and table-candidate anchors, and keep financial-statement semantics, standalone XML XBRL, SEC Company Facts, taxonomy network resolution, browser-submitted HTML, raw URLs, local paths, artifact bytes, connector dispatch, provider writes, RAG/model runtime, and full mockup activation out of scope.
+
+## SEC EDGAR HTML Inline XBRL Fact Authority Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1
+source_fact_authority_selection: next_milestone_plans/Layer3_planning_docs/1182-sec-edgar-html-inline-xbrl-fact-authority-selection.md
+current_main_entry: 88d518ac31bfa675e6cbb2e2e8e78b357b3507ea
+entry_decision: runtime_implementation
+runtime_status: implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_authority.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/status/{fact_authority_receipt_id}
+implemented_fact_authority_mode: sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1
+implemented_operator_decision: derive_sec_edgar_html_inline_xbrl_fact_authority
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_authority.v1
+implemented_runtime_scope: derive_ordered_inline_xbrl_fact_authority_from_existing_server_owned_parser_receipt_and_retained_primary_document
+implemented_fact_payload_scope: inline_xbrl_fact_elements_in_primary_html_inline_xbrl_document_only
+implemented_fact_value_policy: preserve_internal_value_authority_with_redacted_operator_projection_and_value_hashes
+implemented_status_projection: redacted_counts_hashes_diagnostics_only_no_raw_values_no_raw_html_no_raw_urls
+fact_authority_runtime_implemented: true
+material_text_table_bridge_preserved: true
+existing_material_bridge_not_weakened: true
+existing_downstream_proof_not_mutated: true
+existing_gate_b_session_not_mutated: true
+live_sec_network_fetch_performed_by_fact_authority: false
+submissions_lookup_runtime_performed_by_fact_authority: false
+browser_supplied_html_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_local_path_admitted: false
+standalone_xml_xbrl_fact_authority_enabled: false
+sec_companyfacts_api_runtime_enabled: false
+taxonomy_network_resolution_enabled: false
+financial_statement_semantics_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+verification_backend_tests: python -m pytest backend/tests/test_layer3_api.py -k "sec_edgar_html_inline_xbrl_fact_authority" PASS
+verification_sec_html_inline_xbrl_api_tests: python -m pytest backend/tests/test_layer3_api.py -k "sec_edgar_html_inline_xbrl" PASS
+verification_full_layer3_api_tests: python -m pytest backend/tests/test_layer3_api.py PASS
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_material_or_evidence_authority_selection_v1
+```
+
+The fact-authority runtime uses the existing SEC HTML/iXBRL parser receipt and retained source-artifact authority as input. It records fact identity, order, value hashes, diagnostics, and table-candidate anchors in a deterministic receipt while returning only redacted fact/status projections to operators. The next slice should decide how this fact authority becomes Layer 3 material or evidence authority; this runtime intentionally leaves the existing text/table material bridge and downstream proof unchanged.
