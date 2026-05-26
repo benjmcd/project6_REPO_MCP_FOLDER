@@ -3329,6 +3329,9 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_CLOS
 SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SELECTION = (
     PLANNING_DOCS / "1166-sec-edgar-real-filing-acquisition-connector-selection.md"
 )
+SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_RUNTIME = (
+    PLANNING_DOCS / "1167-sec-edgar-real-filing-acquisition-connector-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111261,6 +111264,109 @@ def _check_sec_edgar_real_filing_acquisition_connector_selection(
                 )
 
 
+def _check_sec_edgar_real_filing_acquisition_connector_runtime(
+    errors: list[str],
+) -> None:
+    runtime_service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_filing_acquisition_connector.py"
+    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
+    required_terms = {
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_RUNTIME: (
+            "SEC EDGAR Real Filing Acquisition Connector Runtime",
+            "milestone: sec_edgar_real_filing_acquisition_connector_runtime_v1",
+            "source_connector_selection: next_milestone_plans/Layer3_planning_docs/1166-sec-edgar-real-filing-acquisition-connector-selection.md",
+            "current_main_entry: d023f4c9e1432af5a71efed37733202636d24f7e",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_real_filing_acquisition_connector.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/status/{sec_edgar_real_filing_acquisition_connector_receipt_id}",
+            "implemented_request_model: Layer3SecEdgarRealFilingAcquisitionConnectorRequest",
+            "implemented_response_model: Layer3SecEdgarRealFilingAcquisitionConnectorResponse",
+            "implemented_schema_id: layer3.sec_edgar_real_filing_acquisition_connector.v1",
+            "implemented_status_schema_id: layer3.sec_edgar_real_filing_acquisition_connector_status.v1",
+            "implemented_corpus_manifest_schema_id: layer3.sec_edgar_real_filing_validation_corpus_manifest.v1",
+            "implemented_connector_mode: sec_edgar_real_filing_acquisition_connector_v1",
+            "implemented_operator_decision: acquire_sec_edgar_real_filing_validation_corpus",
+            "implemented_discovery_api: data_sec_gov_submissions_cik_json",
+            "implemented_default_cik_refs: 0000320193",
+            "implemented_default_form_types: 10-K,10-Q,8-K",
+            "implemented_sec_client_reuse: backend/app/services/layer3_sec_edgar_live_source_artifact.py",
+            "implemented_live_source_artifact_acquisition_reuse: sec_edgar_text_table_live_source_artifact_acquisition_v1",
+            "implemented_sec_user_agent_gate: layer3_sec_edgar_user_agent_required",
+            "implemented_sec_rate_policy: reuse_existing_default_one_request_per_second_ceiling_no_more_than_10_requests_per_second_total_per_user",
+            "implemented_receipt_model: append_only_redacted_connector_receipt_with_corpus_manifest_and_source_artifact_receipt_refs",
+            "implemented_html_inline_xbrl_behavior: classify_not_parse_no_generic_text_downgrade",
+            "implemented_candidate_b_scope: pdf_page_visual_evidence_only_not_general_sec_parser",
+            "implemented_downstream_behavior: connector_records_source_artifact_receipts_only_no_layer3_downstream_execution",
+            "missing_user_agent_must_reject: true",
+            "missing_required_form_must_reject: true",
+            "unsafe_raw_url_or_path_must_reject: true",
+            "html_inline_xbrl_parser_runtime_admitted: false",
+            "xml_xbrl_fact_authority_runtime_admitted: false",
+            "sec_parser_expansion_admitted: false",
+            "dataset_version_or_gate_b_mutation_admitted: false",
+            "layer3_downstream_execution_performed_by_connector: false",
+            "candidate_b_general_sec_parser_admitted: false",
+            "duplicate_sec_network_stack_created: false",
+            "raw_sec_url_rendered: false",
+            "raw_local_path_rendered: false",
+            "artifact_bytes_rendered: false",
+            "focused_py_compile: python -m py_compile ./backend/app/services/layer3_sec_edgar_real_filing_acquisition_connector.py ./backend/app/api/layer3.py PASS",
+            "focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -k \"sec_edgar_real_filing_connector or sec_edgar_text_table_live_source_artifact\" PASS",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_downstream_validation_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_real_filing_acquisition_connector_runtime_v1",
+            "implemented_service: backend/app/services/layer3_sec_edgar_real_filing_acquisition_connector.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector",
+            "implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/real-filing/acquisition/connector/status/{sec_edgar_real_filing_acquisition_connector_receipt_id}",
+            "implemented_sec_client_reuse: backend/app/services/layer3_sec_edgar_live_source_artifact.py",
+            "implemented_html_inline_xbrl_behavior: classify_not_parse_no_generic_text_downgrade",
+            "implemented_downstream_behavior: connector_records_source_artifact_receipts_only_no_layer3_downstream_execution",
+            "duplicate_sec_network_stack_created: false",
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_downstream_validation_selection_v1",
+        ),
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SELECTION: (
+            "next_exact_posture: sec_edgar_real_filing_acquisition_connector_runtime_v1",
+        ),
+        runtime_service: (
+            "SCHEMA_ID = \"layer3.sec_edgar_real_filing_acquisition_connector.v1\"",
+            "CONNECTOR_MODE = \"sec_edgar_real_filing_acquisition_connector_v1\"",
+            "OPERATOR_DECISION = \"acquire_sec_edgar_real_filing_validation_corpus\"",
+            "DEFAULT_FORM_TYPES = (\"10-K\", \"10-Q\", \"8-K\")",
+            "layer3_sec_edgar_live_source_artifact._fetch_with_retry",
+            "layer3_sec_edgar_live_source_artifact.acquire_sec_edgar_text_table_live_source_artifact",
+            "\"html_inline_xbrl_parser_runtime_admitted\": False",
+            "\"duplicate_sec_network_stack_created\": False",
+            "\"layer3_downstream_execution_performed_by_connector\": False",
+        ),
+        api: (
+            "Layer3SecEdgarRealFilingAcquisitionConnectorRequest",
+            "Layer3SecEdgarRealFilingAcquisitionConnectorResponse",
+            "/source/sec-edgar/real-filing/acquisition/connector",
+            "/source/sec-edgar/real-filing/acquisition/connector/status/{sec_edgar_real_filing_acquisition_connector_receipt_id}",
+            "layer3_sec_edgar_real_filing_acquisition_connector.acquire_sec_edgar_real_filing_validation_corpus",
+            "layer3_sec_edgar_real_filing_acquisition_connector.inspect_sec_edgar_real_filing_acquisition_connector_status",
+        ),
+        api_tests: (
+            "test_layer3_api_acquires_sec_edgar_real_filing_connector_corpus_with_fake_client",
+            "test_layer3_api_rejects_sec_edgar_real_filing_connector_unconfigured_or_unsafe",
+            "sec_edgar_real_filing_acquisition_connector_required_form_missing",
+            "duplicate_network_stack_created",
+            "html_inline_xbrl_parser_runtime_admitted",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR real filing acquisition connector runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112433,6 +112539,7 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_real_filing_acquisition_connector_selection(errors)
+    _check_sec_edgar_real_filing_acquisition_connector_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
