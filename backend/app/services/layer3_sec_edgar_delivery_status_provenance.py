@@ -39,7 +39,8 @@ DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_PROFILE_TAGS = (
     "debt_intensive",
     "commodity_exposure",
 )
-DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED = False
+DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_VERSION = "sec_edgar_delivery_status_provenance_breadth_runtime_v1"
+DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED = True
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -253,7 +254,7 @@ def _validation_readiness_reasons(validation: Mapping[str, Any]) -> list[dict[st
     reasons: list[dict[str, Any]] = []
     if validation.get("validation_state") != layer3_sec_edgar_real_company_corpus_validation.READY_STATE:
         reasons.append(_reason("sec_edgar_delivery_status_provenance_validation_not_ready"))
-    if tuple(validation.get("company_matrix") or ()) != EXPECTED_COMPANY_MATRIX:
+    if tuple(validation.get("company_matrix") or ()) not in _admitted_company_matrices():
         reasons.append(_reason("sec_edgar_delivery_status_provenance_company_matrix_mismatch"))
     records = [item for item in validation.get("filing_validation_records") or [] if isinstance(item, Mapping)]
     if len(records) != EXPECTED_FILING_COUNT:
@@ -269,6 +270,13 @@ def _validation_readiness_reasons(validation: Mapping[str, Any]) -> list[dict[st
                 )
             )
     return reasons
+
+
+def _admitted_company_matrices() -> tuple[tuple[str, ...], ...]:
+    matrices = [EXPECTED_COMPANY_MATRIX]
+    if DELIVERY_STATUS_PROVENANCE_BREADTH_RUNTIME_ENABLED:
+        matrices.append(DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_MATRIX)
+    return tuple(matrices)
 
 
 def _delivery_status_records(validation: Mapping[str, Any]) -> list[dict[str, Any]]:
