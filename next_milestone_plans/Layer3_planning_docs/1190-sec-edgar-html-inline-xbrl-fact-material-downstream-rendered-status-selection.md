@@ -1,0 +1,101 @@
+# SEC EDGAR HTML Inline XBRL Fact Material Downstream Rendered Status Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_selection_v1
+source_fact_material_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1189-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-runtime.md
+source_existing_html_inline_xbrl_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1179-sec-edgar-html-inline-xbrl-downstream-rendered-status-runtime.md
+current_main_entry: a11e0f4693bcafd9dab6b9a515d3b31eeb9377cf
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_runtime_v1
+selected_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_control
+selected_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1
+selected_operator_decision: inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status
+selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof
+selected_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+selected_bootstrap_endpoint_field: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_endpoint
+selected_rendered_scope: operator_visible_status_inspection_over_server_revalidated_sec_html_inline_xbrl_fact_material_downstream_proof_authority
+selected_status_states: not_recorded,available,blocked
+selected_rendered_form: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-form
+selected_rendered_submit: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-submit
+selected_rendered_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-panel
+selected_rendered_payload_fields: client_request_id,status_mode,operator_decision,fact_material_downstream_proof_request,expected_proof_hash
+selected_rendered_status_fields: operator_status_state,expected_proof_hash,proof_hash,proof_state,dataset_version_id,dataset_version_hash,source_family,parser_family,typed_content_contract_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash,materialization_receipt_hash,fact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,operator_status_projection_ref,proof_summary,blocked_reasons,next_allowed_actions
+selected_rendered_authority_flags: parser_authority_bound,fact_authority_bound,fact_material_bridge_authority_bound,server_revalidated
+not_recorded_status_must_render: true
+available_status_must_render: true
+blocked_status_must_render: true
+available_requires_server_revalidated_fact_material_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_must_fail_closed: true
+raw_or_forbidden_proof_authority_must_fail_closed: true
+raw_fact_values_must_not_render: true
+fact_value_reconstruction_by_rendered_status_admitted: false
+rendered_status_can_create_downstream_proof: false
+rendered_status_can_mutate_gate_b_session: false
+rendered_status_can_mutate_material_snapshot: false
+rendered_status_can_mutate_package_or_delivery: false
+rendered_status_can_fetch_sec_content: false
+rendered_status_can_run_submissions_lookup: false
+rendered_status_can_reparse_or_materialize_html_inline_xbrl: false
+rendered_status_can_create_xml_xbrl_fact_authority: false
+rendered_status_can_call_sec_companyfacts_api: false
+rendered_status_can_resolve_taxonomy_networks: false
+rendered_status_can_add_financial_statement_semantics: false
+rendered_status_can_classify_facts_to_statements: false
+rendered_status_can_create_runtime_storage_root: false
+rendered_status_can_start_process: false
+rendered_status_can_dispatch_connector: false
+rendered_status_can_write_provider_object: false
+rendered_status_can_add_rag_or_model_runtime: false
+rendered_status_can_activate_full_mockup: false
+raw_proof_request_rendered: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+raw_fact_values_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+html_inline_xbrl_reparse_or_materialization_admitted_in_rendered_status: false
+xml_xbrl_fact_authority_admitted: false
+sec_companyfacts_api_runtime_enabled: false
+taxonomy_network_resolution_enabled: false
+financial_statement_semantics_admitted: false
+fact_to_statement_classification_enabled: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+rendered_status_runtime_in_this_freeze: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_runtime_v1
+```
+
+This freeze selects the rendered/operator inspection surface for the already-merged SEC HTML/iXBRL fact-material downstream status endpoint. The browser may collect the exact fact-material downstream proof request plus expected proof hash and submit them to the server status endpoint, but it must render only the server-returned redacted projection.
+
+The rendered surface must not make browser-held proof JSON or hashes durable authority. It must not create downstream proof, mutate Gate B/session/material/package/delivery state, fetch SEC content, run submissions lookup, reparse or rematerialize HTML/iXBRL, reconstruct fact values, create XML/XBRL or CompanyFacts authority, resolve taxonomy networks, add financial-statement semantics, classify facts to statements, create runtime storage roots, dispatch connectors, write provider objects, add RAG/model runtime, activate full mockup behavior, or expose raw proof requests, raw fact values, raw local paths, raw URLs, artifact bytes, provider tokens, receipt paths, or storage refs in the status panel.
+
+## Coherence Check
+
+- Does this freeze admit rendered implementation now? Recommended answer: yes, but only after this selection lands on current main.
+- Can the rendered panel decide `available` from a browser-held hash alone? Recommended answer: no. The server must revalidate the submitted fact-material downstream proof request and compare the expected proof hash.
+- Does this add SEC CompanyFacts, taxonomy, financial statement semantics, or fact-to-statement classification? Recommended answer: no. Those remain separate future fact/semantics slices.
+- What proof is required next? Recommended answer: implement the rendered control/status projection and prove it in both headless and headed Chrome, including blocked status for stale or raw fact-value-bearing authority.
