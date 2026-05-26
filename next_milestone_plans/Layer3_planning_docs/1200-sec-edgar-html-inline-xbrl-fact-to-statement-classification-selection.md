@@ -1,0 +1,101 @@
+# SEC EDGAR HTML Inline XBRL Fact To Statement Classification Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection_v1
+source_fact_material_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1199-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-closeout-readiness.md
+current_main_entry: b80e211dd5ad03fa06a09a93ca7829a67529ab5a
+source_closeout_pr: "#1901"
+depends_on_unmerged_closeout_sync_pr: true
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+stacked_runtime_implementation_before_current_main_sync: true
+stacked_runtime_pr: "#1901"
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1
+selected_classification_mode: sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1
+selected_operator_decision: classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/status/{statement_classification_receipt_id}
+selected_source_family: sec_edgar_html_inline_xbrl
+selected_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1
+selected_fact_authority_mode: sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1
+selected_fact_material_bridge_mode: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1
+selected_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification.v1
+selected_request_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_request.v1
+selected_status_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_status.v1
+selected_receipt_prefix: sec-edgar-html-inline-xbrl-fact-statement-classification
+selected_authority_hash_version: sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1
+selected_runtime_scope: classify_existing_ordered_inline_xbrl_fact_inventory_into_redacted_statement_candidate_groups_without_taxonomy_network_resolution
+selected_input_authority: fact_authority_receipt_id,fact_authority_receipt_hash,fact_material_bridge_receipt_id,fact_material_bridge_receipt_hash,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash,fact_inventory_hash,materialization_receipt_hash,dataset_version_hash,gate_b_decision_manifest_id
+selected_server_read_model: reload_fact_authority_receipt_then_reload_fact_material_bridge_receipt_then_revalidate_parser_connector_source_artifact_and_dataset_version_hashes_without_reading_raw_values_into_operator_projection
+selected_classification_basis: qualified_name,namespace_prefix,local_name,context_ref_hash,unit_ref_hash,decimals_or_precision,scale_or_format,source_order_hash,table_candidate_anchor_hash,marker_order_index,primary_document_hash,fact_inventory_hash
+selected_statement_candidate_roles: balance_sheet,income_statement,cash_flow_statement,stockholders_equity_statement,comprehensive_income_statement,cover_page,disclosure_or_note,unknown_or_unclassified
+selected_unknown_policy: every_fact_must_receive_exactly_one_candidate_role_and_unknown_or_unclassified_is_retained_as_explicit_non_loss_diagnostic
+selected_order_policy: preserve_fact_authority_order_source_order_and_marker_order_within_each_candidate_group_and_overall_classification_inventory
+selected_value_policy: use_fact_value_hashes_and_lengths_only_no_raw_fact_value_reconstruction_or_operator_projection
+selected_table_link_policy: retain_table_candidate_anchor_hashes_as_classification_evidence_without_claiming_final_statement_semantics
+selected_output_authority: statement_classification_receipt_id,statement_classification_receipt_hash,classification_inventory_hash,classification_order_hash,statement_group_inventory_hash,unclassified_fact_inventory_hash,classification_diagnostics_hash
+selected_status_projection: redacted_counts_hashes_group_summary_diagnostics_only_no_raw_values_no_raw_html_no_raw_urls_no_dataset_storage_ref
+selected_idempotency_contract: same_client_request_id_same_fact_and_bridge_authority_returns_same_classification_receipt_same_client_request_id_different_authority_fails_closed_same_authority_new_client_request_id_returns_existing_status
+selected_failure_lifecycle: fail_closed_on_missing_fact_authority_stale_fact_authority_missing_fact_material_bridge_stale_fact_material_bridge_fact_inventory_hash_mismatch_dataset_version_hash_mismatch_gate_b_manifest_mismatch_missing_fact_inventory_unclassified_count_mismatch_raw_authority_exposure_forbidden_input_authority
+selected_downstream_future_bridge: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection_v1
+fact_authority_runtime_preserved: true
+fact_material_bridge_runtime_preserved: true
+existing_downstream_proof_not_mutated: true
+existing_gate_b_session_not_mutated: true
+classification_runtime_in_this_freeze: false
+rendered_runtime_in_this_freeze: false
+financial_statement_semantics_runtime_in_this_freeze: false
+taxonomy_network_resolution_in_this_freeze: false
+sec_companyfacts_api_runtime_in_this_freeze: false
+xml_xbrl_fact_authority_in_this_freeze: false
+html_inline_xbrl_reparse_or_rematerialization_in_this_freeze: false
+new_sec_network_runtime_in_this_freeze: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+browser_supplied_html_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_local_path_admitted: false
+browser_supplied_artifact_bytes_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1
+```
+
+This freeze selects the next governed SEC HTML/iXBRL product slice: a deterministic, receipt-bound fact-to-statement candidate classification runtime. The future runtime should reload existing fact-authority and fact-material bridge receipts, revalidate their parser/source/material hashes, and classify every retained inline XBRL fact into exactly one redacted statement candidate role. Facts that cannot be classified must remain present as `unknown_or_unclassified` with diagnostics; unknown status is a retained output, not content loss.
+
+The selected runtime is intentionally taxonomy-free and network-free. It may use qname/local-name patterns, namespace prefixes, context/unit hashes, source order, marker order, and table-candidate anchors as local classification evidence, but it must not claim audited financial-statement semantics, resolve taxonomies over the network, call SEC CompanyFacts, process standalone XML/XBRL, reparse retained HTML/iXBRL for new content authority, fetch SEC content, expose raw values, or mutate existing Gate B/downstream proof state.
+
+## Runtime Requirements
+
+1. Load and validate an existing fact-authority receipt and fact-material bridge receipt by id plus expected hashes.
+2. Require matching parser, connector, source-artifact, content, primary-document, content-order, inline-marker, fact-inventory, materialization, dataset-version, and Gate B hashes.
+3. Classify every retained fact into one candidate role: balance sheet, income statement, cash flow statement, stockholders equity statement, comprehensive income statement, cover page, disclosure/note, or unknown/unclassified.
+4. Preserve overall fact order, source order, marker order, and group-local order.
+5. Store only redacted classification receipts/status projections: counts, hashes, role summaries, unknown diagnostics, and authority hashes.
+6. Fail closed on stale authority, fact count mismatch, missing bridge/dataset authority, forbidden input fields, raw path/URL/value exposure, or browser-owned content.
+7. Keep CompanyFacts, taxonomy network resolution, XML/XBRL authority, financial-statement semantics runtime, provider writes, connector dispatch, RAG/model runtime, full mockup activation, and frontend durable authority blocked.
+
+## Coherence Check
+
+- Does this selection implement classification? Recommended answer: no. It freezes the runtime contract only.
+- Why does this document mention a stacked runtime? Recommended answer: the runtime was implemented on the same branch before PR #1901 could merge because GitHub Actions is blocked at checkout by an external account-access failure; current-main admission still depends on syncing after that blocker clears.
+- Does this selection claim final financial-statement semantics? Recommended answer: no. It selects redacted statement candidate classification; final semantics and taxonomy-backed validation remain separate future slices.
+- What prevents content loss? Recommended answer: every fact must receive exactly one role, including explicit `unknown_or_unclassified`, while preserving source and marker order.
+- What comes next? Recommended answer: sync the stacked runtime to current main after PR #1901 can merge, then select the downstream product/inspection slice.
