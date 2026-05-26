@@ -2206,6 +2206,49 @@ def _prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
     return {**prepared, "fact_material_bridge": response.json(), "fact_material_bridge_payload": payload}
 
 
+def _prepare_sec_edgar_html_inline_xbrl_fact_statement_classification(
+    client: TestClient,
+    monkeypatch,
+    *,
+    label: str,
+) -> dict[str, object]:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(client, monkeypatch, label=label)
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    bridge = prepared["fact_material_bridge"]
+    payload = {
+        "client_request_id": f"sec-edgar-html-inline-xbrl-fact-statement-classification-{label}",
+        "classification_mode": "sec_edgar_html_inline_xbrl_fact_to_statement_classification_v1",
+        "operator_decision": "classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates",
+        "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "fact_material_bridge_receipt_id": bridge["fact_material_bridge_receipt_id"],
+        "fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": parser["parser_receipt_hash"],
+        "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+        "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+        "expected_document_inventory_hash": parser["document_inventory_hash"],
+        "expected_content_order_hash": parser["content_order_hash"],
+        "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+        "expected_fact_inventory_hash": fact_authority["fact_inventory_hash"],
+        "expected_diagnostics_hash": fact_authority["diagnostics_hash"],
+        "expected_materialization_receipt_hash": bridge["materialization_receipt_hash"],
+        "expected_dataset_version_hash": bridge["dataset_version_hash"],
+        "expected_gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "operator_confirmation": True,
+    }
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification",
+        json=payload,
+    )
+    assert response.status_code == 200, response.text
+    return {**prepared, "statement_classification": response.json(), "statement_classification_payload": payload}
+
+
 def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     client: TestClient,
     tmp_path,
@@ -2404,6 +2447,181 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_statement_classifica
     assert unsafe_response.status_code == 400, unsafe_response.text
     assert unsafe_response.json()["error_code"] == (
         "sec_edgar_html_inline_xbrl_fact_statement_classification_forbidden_request_fields"
+    )
+    assert "https://www.sec.gov/raw" not in unsafe_response.text
+
+
+def test_layer3_api_builds_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_statement_classification(
+        client,
+        monkeypatch,
+        label="statement-product-001",
+    )
+    classification = prepared["statement_classification"]
+    authority_hashes = classification["authority_hashes"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-statement-candidate-product-001",
+        "product_mode": "sec_edgar_html_inline_xbrl_statement_candidate_product_v1",
+        "operator_decision": "build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence",
+        "statement_classification_receipt_id": classification["statement_classification_receipt_id"],
+        "statement_classification_receipt_hash": classification["statement_classification_receipt_hash"],
+        "expected_fact_authority_receipt_hash": classification["fact_authority_receipt_hash"],
+        "expected_fact_material_bridge_receipt_hash": classification["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": classification["parser_receipt_hash"],
+        "expected_connector_receipt_hash": authority_hashes["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": authority_hashes["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": authority_hashes["source_artifact_receipt_hash"],
+        "expected_content_sha256": authority_hashes["content_sha256"],
+        "expected_primary_document_hash": authority_hashes["primary_document_hash"],
+        "expected_document_inventory_hash": authority_hashes["document_inventory_hash"],
+        "expected_content_order_hash": authority_hashes["content_order_hash"],
+        "expected_table_candidate_inventory_hash": authority_hashes["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": authority_hashes["inline_xbrl_marker_inventory_hash"],
+        "expected_fact_inventory_hash": authority_hashes["fact_inventory_hash"],
+        "expected_classification_inventory_hash": classification["classification_inventory_hash"],
+        "expected_classification_order_hash": classification["classification_order_hash"],
+        "expected_statement_group_inventory_hash": classification["statement_group_inventory_hash"],
+        "expected_unclassified_fact_inventory_hash": classification["unclassified_fact_inventory_hash"],
+        "expected_classification_diagnostics_hash": classification["classification_diagnostics_hash"],
+        "expected_materialization_receipt_hash": authority_hashes["materialization_receipt_hash"],
+        "expected_dataset_version_hash": authority_hashes["dataset_version_hash"],
+        "expected_gate_b_decision_manifest_id": authority_hashes["gate_b_decision_manifest_id"],
+        "operator_confirmation": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.v1"
+    )
+    assert body["product_mode"] == "sec_edgar_html_inline_xbrl_statement_candidate_product_v1"
+    assert body["product_state"] == "sec_edgar_html_inline_xbrl_statement_candidate_product_ready"
+    assert body["statement_classification_receipt_hash"] == classification["statement_classification_receipt_hash"]
+    assert body["fact_authority_receipt_hash"] == classification["fact_authority_receipt_hash"]
+    assert body["fact_material_bridge_receipt_hash"] == classification["fact_material_bridge_receipt_hash"]
+    product_manifest = body["product_manifest"]
+    assert product_manifest["statement_candidate_summary"]["redacted_projection"] is True
+    assert product_manifest["statement_candidate_summary"]["source_order_preserved"] is True
+    assert product_manifest["statement_candidate_summary"]["final_financial_statement_semantics_claimed"] is False
+    assert product_manifest["statement_candidate_summary"]["raw_values_returned"] is False
+    assert product_manifest["role_group_inventory"]
+    assert product_manifest["unknown_fact_diagnostics"]["unknown_facts_retained"] is True
+    assert product_manifest["redaction_manifest"]["raw_fact_values_exposed"] is False
+    assert product_manifest["redaction_manifest"]["raw_urls_exposed"] is False
+    assert product_manifest["downstream_readiness_manifest"]["count_reconciles_with_classification"] is True
+    assert product_manifest["downstream_readiness_manifest"]["fact_count"] == (
+        classification["classification_diagnostics"]["fact_count"]
+    )
+    assert body["status_projection"]["raw_values_returned"] is False
+    assert body["status_projection"]["final_financial_statement_semantics_claimed"] is False
+    assert body["negative_invariants"]["statement_classification_receipt_required"] is True
+    assert body["negative_invariants"]["taxonomy_network_resolution_enabled"] is False
+    assert body["negative_invariants"]["sec_companyfacts_api_runtime_enabled"] is False
+    assert body["negative_invariants"]["source_expansion_admitted"] is False
+    assert "https://www.sec.gov" not in response.text
+    assert "aapl-20240928.htm" not in response.text
+    assert "Company narrative" not in response.text
+    assert "value_text" not in response.text
+    assert "123" not in response.text
+    assert str(tmp_path) not in response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+        json=payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["cache"]["idempotent_replay"] is True
+    assert replay_response.json()["downstream_product_receipt_hash"] == body["downstream_product_receipt_hash"]
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/"
+        "statement-classification/downstream-product/status/"
+        f"{body['downstream_product_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_status.v1"
+    )
+    assert status_response.json()["downstream_product_receipt_hash"] == body["downstream_product_receipt_hash"]
+    assert "https://www.sec.gov" not in status_response.text
+    assert "Company narrative" not in status_response.text
+    assert "value_text" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_statement_candidate_product_stale_or_unsafe(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_statement_classification(
+        client,
+        monkeypatch,
+        label="statement-product-reject",
+    )
+    classification = prepared["statement_classification"]
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-statement-candidate-product-reject",
+        "product_mode": "sec_edgar_html_inline_xbrl_statement_candidate_product_v1",
+        "operator_decision": "build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence",
+        "statement_classification_receipt_id": classification["statement_classification_receipt_id"],
+        "statement_classification_receipt_hash": classification["statement_classification_receipt_hash"],
+        "expected_fact_authority_receipt_hash": classification["fact_authority_receipt_hash"],
+        "expected_fact_material_bridge_receipt_hash": classification["fact_material_bridge_receipt_hash"],
+        "expected_parser_receipt_hash": classification["parser_receipt_hash"],
+        "expected_classification_inventory_hash": classification["classification_inventory_hash"],
+        "expected_classification_order_hash": classification["classification_order_hash"],
+        "expected_statement_group_inventory_hash": classification["statement_group_inventory_hash"],
+        "expected_unclassified_fact_inventory_hash": classification["unclassified_fact_inventory_hash"],
+        "expected_classification_diagnostics_hash": classification["classification_diagnostics_hash"],
+        "operator_confirmation": True,
+    }
+
+    stale_classification_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+        json={**payload, "statement_classification_receipt_hash": "d" * 64},
+    )
+    assert stale_classification_response.status_code == 409, stale_classification_response.text
+    assert stale_classification_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_classification_hash_mismatch"
+    )
+
+    stale_inventory_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+        json={**payload, "expected_classification_inventory_hash": "e" * 64},
+    )
+    assert stale_inventory_response.status_code == 409, stale_inventory_response.text
+    assert stale_inventory_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_classification_inventory_hash_mismatch"
+    )
+
+    unconfirmed_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+        json={**payload, "operator_confirmation": False},
+    )
+    assert unconfirmed_response.status_code == 200, unconfirmed_response.text
+    assert unconfirmed_response.json()["product_state"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_blocked"
+    )
+    assert unconfirmed_response.json()["status_projection"]["blocked_reasons"][0]["reason"] == (
+        "missing_operator_confirmation"
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+        json={**payload, "value_text": "123", "raw_url": "https://www.sec.gov/raw"},
+    )
+    assert unsafe_response.status_code == 400, unsafe_response.text
+    assert unsafe_response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_statement_candidate_product_forbidden_request_fields"
     )
     assert "https://www.sec.gov/raw" not in unsafe_response.text
 

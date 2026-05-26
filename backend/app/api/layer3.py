@@ -37,6 +37,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification,
+    layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -641,6 +642,41 @@ class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationRequest(BaseModel):
     expected_inline_xbrl_marker_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_fact_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_diagnostics_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_materialization_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_dataset_version_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_gate_b_decision_manifest_id: str | None = None
+    operator_confirmation: bool = False
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    product_mode: Literal["sec_edgar_html_inline_xbrl_statement_candidate_product_v1"]
+    operator_decision: Literal["build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence"]
+    statement_classification_receipt_id: str = Field(min_length=1)
+    statement_classification_receipt_hash: str = Field(min_length=64, max_length=64)
+    expected_fact_authority_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_fact_material_bridge_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_parser_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_live_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_source_artifact_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_content_sha256: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_primary_document_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_document_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_content_order_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_table_candidate_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_inline_xbrl_marker_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_fact_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_classification_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_classification_order_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_statement_group_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_unclassified_fact_inventory_hash: str | None = Field(default=None, min_length=64, max_length=64)
+    expected_classification_diagnostics_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_materialization_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_dataset_version_hash: str | None = Field(default=None, min_length=64, max_length=64)
     expected_gate_b_decision_manifest_id: str | None = None
@@ -8016,6 +8052,37 @@ class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationResponse(Layer3Base
     negative_invariants: dict[str, Any]
 
 
+class Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductResponse(Layer3BaseResponse):
+    mode: str
+    product_mode: str
+    classification_mode: str
+    operator_decision: str
+    product_state: str
+    downstream_product_receipt_id: str | None = None
+    downstream_product_receipt_ref: str | None = None
+    downstream_product_receipt_hash: str | None = None
+    statement_classification_receipt_id: str | None = None
+    statement_classification_receipt_hash: str | None = None
+    fact_authority_receipt_hash: str | None = None
+    fact_material_bridge_receipt_hash: str | None = None
+    parser_receipt_hash: str | None = None
+    source_family: str | None = None
+    parser_family: str | None = None
+    typed_content_contract_id: str | None = None
+    product_manifest: dict[str, Any] | None = None
+    product_manifest_hash: str | None = None
+    statement_candidate_product_hash: str | None = None
+    product_order_hash: str | None = None
+    inspection_summary_hash: str | None = None
+    redaction_manifest_hash: str | None = None
+    downstream_readiness_hash: str | None = None
+    authority_hashes: dict[str, Any] | None = None
+    status_projection: dict[str, Any]
+    negative_invariants: dict[str, Any]
+    redaction_policy_id: str
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarHtmlInlineXbrlDownstreamProofResponse(Layer3BaseResponse):
     mode: str
     proof_state: str
@@ -15272,6 +15339,36 @@ def get_sec_edgar_html_inline_xbrl_fact_statement_classification_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.inspect_sec_edgar_html_inline_xbrl_fact_statement_classification_status(
             statement_classification_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product(
+    payload: Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductRequest,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence(
+            payload.model_dump(exclude_none=True),
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/status/{downstream_product_receipt_id}",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactStatementClassificationDownstreamProductResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_status(
+    downstream_product_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.inspect_sec_edgar_html_inline_xbrl_statement_candidate_product_status(
+            downstream_product_receipt_id,
         )
     )
 

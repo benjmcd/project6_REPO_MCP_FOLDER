@@ -11443,3 +11443,39 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 The next selected SEC/iXBRL slice is a no-runtime freeze for a downstream product/inspection manifest over existing statement-classification receipts. The future runtime must create redacted operator product evidence with statement candidate summaries, table-anchor crosswalks, unknown diagnostics, authority provenance, and downstream readiness metadata without final financial-statement semantics, taxonomy resolution, SEC CompanyFacts, XML/XBRL authority, parser expansion, raw value projection, provider writes, connector dispatch, RAG/model runtime, full mockup activation, or frontend durable authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_runtime_v1
+source_downstream_product_selection: next_milestone_plans/Layer3_planning_docs/1203-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-selection.md
+current_main_entry: 0c74ec581efb000970b0cbbd49398a551b40076f
+entry_decision: implement_selected_runtime
+runtime_status: implemented_local
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product
+implemented_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/status/{downstream_product_receipt_id}
+implemented_product_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_v1
+implemented_operator_decision: build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence
+implemented_product_artifact_roles: statement_candidate_summary,role_group_inventory,table_anchor_crosswalk,unknown_fact_diagnostics,authority_provenance,downstream_readiness_manifest,operator_inspection_summary
+implemented_non_loss_policy: every_retained_fact_from_statement_classification_receipt_must_appear_in_exactly_one_product_group_or_unknown_diagnostic_and_counts_hashes_must_reconcile
+implemented_output_authority: downstream_product_receipt_id,downstream_product_receipt_hash,product_manifest_hash,statement_candidate_product_hash,product_order_hash,inspection_summary_hash,redaction_manifest_hash,downstream_readiness_hash
+downstream_product_runtime_implemented: true
+financial_statement_semantics_runtime_in_this_slice: false
+taxonomy_network_resolution_in_this_slice: false
+sec_companyfacts_api_runtime_in_this_slice: false
+xml_xbrl_fact_authority_in_this_slice: false
+new_sec_network_runtime_in_this_slice: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1
+```
+
+The downstream product runtime is API/status evidence over existing statement-classification receipts. It produces redacted product manifests for statement candidate groups, table anchors, unknown diagnostics, authority provenance, and downstream readiness; it does not create final SEC financial statements or add taxonomy, CompanyFacts, XML/XBRL, parser, network, provider, connector, RAG/model, full mockup, or frontend-durable authority.
