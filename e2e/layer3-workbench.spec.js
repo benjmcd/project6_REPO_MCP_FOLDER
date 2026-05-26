@@ -5090,6 +5090,225 @@ test('Layer 3 workbench renders SEC EDGAR downstream operator status through ser
   ]);
 });
 
+test('Layer 3 workbench renders SEC EDGAR operator product surface from receipt authority', async ({ page }) => {
+  const endpoint = '/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface';
+  const operatorInspectionReceiptId = 'sec-edgar-operator-inspection-aaaaaaaaaaaaaaaaaaaaaaaa';
+  const operatorInspectionReceiptHash = 'a'.repeat(64);
+  const surfaceResponse = {
+    schema_id: 'layer3.sec_edgar_operator_product_surface.v1',
+    schema_version: 1,
+    request_id: 'sec-edgar-product-surface-test',
+    server_time: '2026-05-26T00:00:00Z',
+    status: 'ready',
+    surface_mode: 'sec_edgar_operator_product_surface_runtime_v1',
+    rendered_mode: 'rendered_sec_edgar_operator_product_surface_control',
+    operator_decision: 'render_sec_edgar_operator_product_surface',
+    operator_product_surface_state: 'sec_edgar_operator_product_surface_ready',
+    operator_product_surface_receipt_id: 'sec-edgar-operator-product-surface-bbbbbbbbbbbbbbbbbbbbbbbb',
+    operator_product_surface_receipt_hash: 'b'.repeat(64),
+    operator_product_surface_receipt_ref: 'sec-edgar-operator-product-surface:bbbbbbbbbbbbbbbbbbbbbbbb',
+    operator_inspection_receipt_id: operatorInspectionReceiptId,
+    operator_inspection_receipt_hash: operatorInspectionReceiptHash,
+    delivery_status_provenance_receipt_id: 'sec-edgar-delivery-status-provenance-cccccccccccccccccccccccc',
+    delivery_status_provenance_receipt_hash: 'c'.repeat(64),
+    validation_receipt_hash: 'd'.repeat(64),
+    connector_receipt_hash: 'e'.repeat(64),
+    product_views: {
+      company_form_matrix: [{
+        record_index: 1,
+        ticker_hash: 'f'.repeat(64),
+        company_name_hash: '1'.repeat(64),
+        form_type: '10-K',
+        filing_date: '2024-09-30',
+        source_family: 'sec_edgar_html_inline_xbrl',
+        inspection_status: 'inspectable',
+        quality_assessment_status: 'bounded_quality_evidence_available',
+        quality_evidence_hash: '2'.repeat(64),
+      }],
+      filing_identity: [],
+      source_family: {
+        source_family_counts: { sec_edgar_html_inline_xbrl: 1 },
+        source_family_count: 1,
+        source_family_hash: '3'.repeat(64),
+      },
+      statement_candidates: [{ record_index: 1, statement_role_counts: { balance_sheet: 1 } }],
+      fact_inventory: [{ record_index: 1, fact_count: 42, fact_inventory_hash: '4'.repeat(64) }],
+      semantic_profile: [{
+        record_index: 1,
+        semantic_profile_inventory_hash: '5'.repeat(64),
+        financial_statement_semantics_finalized: false,
+        cross_company_comparability_admitted: false,
+      }],
+      extension_unclassified_facts: [{ record_index: 1, extension_fact_count: 7, unknown_or_unclassified_count: 2 }],
+      quality_gaps: {
+        distinct_quality_gaps: [
+          'financial_statement_semantics_not_finalized',
+          'cross_company_comparability_not_admitted',
+        ],
+        financial_statement_semantics_finalized: false,
+        cross_company_comparability_admitted: false,
+        quality_gap_record_count: 2,
+        records: [],
+      },
+      diagnostics_loss_report: {
+        validation_diagnostics_hash: '6'.repeat(64),
+        delivery_diagnostics_hash: '7'.repeat(64),
+        operator_inspection_summary_hash: '8'.repeat(64),
+        blocked_or_degraded_delivery_gaps: [],
+        unclassified_record_count: 1,
+        financial_statement_semantics_finalized: false,
+        cross_company_comparability_admitted: false,
+        taxonomy_network_resolution_performed: false,
+        sec_companyfacts_api_called: false,
+      },
+      package_review_handoff_state: [{ record_index: 1, delivery_readiness_status: 'ready' }],
+      operator_inspection_status_links: [{ record_index: 1, inspection_status: 'inspectable' }],
+    },
+    surface_rollup: {
+      rendered_mode: 'rendered_sec_edgar_operator_product_surface_control',
+      product_view_names: [
+        'company_form_matrix',
+        'statement_candidates',
+        'fact_inventory',
+        'semantic_profile',
+        'extension_unclassified_facts',
+        'quality_gaps',
+        'diagnostics_loss_report',
+        'package_review_handoff_state',
+        'operator_inspection_status_links',
+      ],
+      filing_count: 1,
+      inspectable_count: 1,
+      semantic_profile_record_count: 1,
+      extension_or_unclassified_record_count: 1,
+      distinct_quality_gaps: [
+        'financial_statement_semantics_not_finalized',
+        'cross_company_comparability_not_admitted',
+      ],
+      server_receipt_projection_only: true,
+      frontend_durable_authority_enabled: false,
+    },
+    authority_chain: {
+      validation_receipt_hash: 'd'.repeat(64),
+      delivery_status_provenance_receipt_hash: 'c'.repeat(64),
+      operator_inspection_receipt_hash: operatorInspectionReceiptHash,
+      connector_receipt_hash: 'e'.repeat(64),
+      quality_evidence_hashes_hash: '9'.repeat(64),
+      semantic_profile_inventory_hashes_hash: '0'.repeat(64),
+      product_views_hash: 'a'.repeat(64),
+      receipt_chain_bound: true,
+    },
+    cache: {
+      idempotent_replay: false,
+      network_request_made_by_product_surface: false,
+      parser_rerun_performed_by_product_surface: false,
+      package_mutation_performed_by_product_surface: false,
+      provider_object_created_by_product_surface: false,
+    },
+    negative_invariants: {
+      raw_url_exposed: false,
+      raw_local_path_exposed: false,
+      frontend_durable_authority_enabled: false,
+    },
+    redaction_policy_id: 'sec_edgar_operator_product_surface_redaction_v1',
+    next_allowed_actions: ['inspect SEC EDGAR product surface quality gaps'],
+  };
+
+  await page.route(`**${endpoint}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(surfaceResponse),
+    });
+  });
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-edgar-operator-product-surface-panel');
+  await expect(panel).toBeVisible();
+  await expect(panel).toHaveAttribute('data-rendered-mode', 'rendered_sec_edgar_operator_product_surface_control');
+  await expect(panel).toHaveAttribute('data-frontend-durable-authority', 'false');
+  const form = page.locator('#sec-edgar-operator-product-surface-form');
+  await expect(form).toHaveAttribute('data-rendered-mode', 'rendered_sec_edgar_operator_product_surface_control');
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#sec-edgar-operator-product-surface-submit')).toBeDisabled();
+
+  await page.locator('#sec-edgar-operator-product-surface-inspection-receipt-id').fill(operatorInspectionReceiptId);
+  await page.locator('#sec-edgar-operator-product-surface-inspection-receipt-hash').fill('not-a-sha256');
+  await page.locator('#sec-edgar-operator-product-surface-operator-confirmation').check();
+  await expect(page.locator('#sec-edgar-operator-product-surface-submit')).toBeDisabled();
+  await page.locator('#sec-edgar-operator-product-surface-inspection-receipt-hash').fill(operatorInspectionReceiptHash);
+  await expect(page.locator('#sec-edgar-operator-product-surface-submit')).toBeEnabled();
+
+  const requestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && new URL(apiRequest.url()).pathname === endpoint
+  ));
+  const responsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && new URL(response.url()).pathname === endpoint
+  ));
+  await page.locator('#sec-edgar-operator-product-surface-submit').click();
+  const payload = (await requestPromise).postDataJSON();
+  expectOnlyPayloadKeys(payload, [
+    'client_request_id',
+    'surface_mode',
+    'operator_decision',
+    'sec_edgar_operator_inspection_receipt_id',
+    'sec_edgar_operator_inspection_receipt_hash',
+    'operator_confirmation',
+  ]);
+  expect(payload.surface_mode).toBe('sec_edgar_operator_product_surface_runtime_v1');
+  expect(payload.operator_decision).toBe('render_sec_edgar_operator_product_surface');
+  expect(payload.sec_edgar_operator_inspection_receipt_id).toBe(operatorInspectionReceiptId);
+  expect(payload.sec_edgar_operator_inspection_receipt_hash).toBe(operatorInspectionReceiptHash);
+  expect(payload.operator_confirmation).toBe(true);
+  for (const forbidden of [
+    'path',
+    'local_path',
+    'raw_url',
+    'url',
+    'accession',
+    'ticker',
+    'company_name',
+    'value_text',
+    'artifact_bytes',
+    'connector_dispatch',
+    'frontend_durable_authority',
+  ]) {
+    expect(payload).not.toHaveProperty(forbidden);
+  }
+  const response = await expectJson(await responsePromise);
+  expect(response.operator_product_surface_state).toBe('sec_edgar_operator_product_surface_ready');
+  expect(response.surface_rollup.server_receipt_projection_only).toBe(true);
+  expect(response.surface_rollup.frontend_durable_authority_enabled).toBe(false);
+  expect(response.product_views.quality_gaps.financial_statement_semantics_finalized).toBe(false);
+  expect(response.product_views.quality_gaps.cross_company_comparability_admitted).toBe(false);
+  expect(JSON.stringify(payload)).not.toContain('http://');
+  expect(JSON.stringify(payload)).not.toContain('https://');
+  expect(JSON.stringify(payload)).not.toContain('C:\\');
+
+  await expect(panel).toContainText('sec_edgar_operator_product_surface_ready');
+  await expect(panel).toContainText('server receipt projection only: true');
+  await expect(panel).toContainText('semantic profile record count: 1');
+  await expect(panel).toContainText('financial statement semantics finalized: false');
+  await expect(panel).toContainText('cross company comparability admitted: false');
+  await expect(panel).toContainText('network request made by product surface: false');
+  await expect(panel).toContainText('parser rerun performed by product surface: false');
+  await expect(panel).toContainText('package mutation performed by product surface: false');
+  await expect(panel).toContainText('frontend durable authority enabled: false');
+  await expect(panel).not.toContainText('MSFT');
+  await expect(panel).not.toContainText('Microsoft');
+  await expect(panel).not.toContainText('0000320193');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === endpoint)).toEqual([
+    { method: 'POST', path: endpoint },
+  ]);
+});
+
 test('Layer 3 workbench renders SEC EDGAR live downstream operator status through server revalidation', async ({ page, request }) => {
   const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-live-downstream-status'));
   expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_live_downstream_status_setup.v1');
