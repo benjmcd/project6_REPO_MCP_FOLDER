@@ -27,7 +27,18 @@ REDACTION_POLICY_ID = "sec_edgar_real_filing_acquisition_connector_redaction_v1"
 SOURCE_FAMILY = "sec_edgar"
 DEFAULT_CIK_REFS = ("0000320193",)
 DEFAULT_FORM_TYPES = ("10-K", "10-Q", "8-K")
-MAX_CIK_REFS = 3
+REAL_COMPANY_DISCOVERY_POLICY = "real_company_recent_annual_and_interim_or_current_v1"
+DEFAULT_FILING_SELECTION_POLICY = "explicit_form_types_v1"
+DEFAULT_REAL_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")
+REAL_COMPANY_CIK_REFS = {
+    "MSFT": "789019",
+    "STLD": "1022671",
+    "SONY": "313838",
+    "CCJ": "1009001",
+}
+ANNUAL_FORM_TYPES = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A"}
+INTERIM_OR_CURRENT_FORM_TYPES = {"10-Q", "10-Q/A", "8-K", "8-K/A", "6-K", "6-K/A"}
+MAX_CIK_REFS = 4
 MAX_FORM_TYPES = 6
 MAX_EXAMPLES = 8
 
@@ -40,6 +51,8 @@ ALLOWED_FIELDS = {
     "example_set_mode",
     "cik_refs",
     "form_types",
+    "company_matrix",
+    "filing_selection_policy",
     "operator_confirmation",
     "actor",
 }
@@ -124,7 +137,7 @@ def acquire_sec_edgar_real_filing_validation_corpus(fields: Mapping[str, Any]) -
 
     user_agent = layer3_sec_edgar_live_source_artifact._server_configured_user_agent()
     submissions_records = _fetch_submissions_records(example_set["cik_refs"], user_agent=user_agent)
-    selected_examples = _select_examples(submissions_records, example_set["form_types"])
+    selected_examples = _select_examples(submissions_records, example_set)
     acquisition_receipts = _acquire_complete_submission_text_examples(
         selected_examples,
         request_id=request_id,
@@ -219,9 +232,15 @@ def _fetch_submissions_records(cik_refs: tuple[str, ...], *, user_agent: str) ->
 
 def _select_examples(
     submissions_records: Mapping[str, Mapping[str, Any]],
-    form_types: tuple[str, ...],
+    example_set: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
     selected: list[dict[str, Any]] = []
+    form_types = tuple(str(item) for item in example_set.get("form_types") or ())
+    policy = str(example_set.get("filing_selection_policy") or DEFAULT_FILING_SELECTION_POLICY)
+    company_by_cik = {
+        str(cik): str(ticker)
+        for ticker, cik in zip(example_set.get("company_matrix") or (), example_set.get("cik_refs") or ())
+    }
     for cik, payload in submissions_records.items():
         recent = ((payload.get("filings") or {}).get("recent") or {}) if isinstance(payload, Mapping) else {}
         forms = list(recent.get("form") or [])
@@ -231,22 +250,35 @@ def _select_examples(
         primary_documents = list(recent.get("primaryDocument") or [])
         primary_descriptions = list(recent.get("primaryDocDescription") or [])
         company_name = str(payload.get("name") or "").strip()
-        for form_type in form_types:
-            match_index = _first_form_index(forms, form_type)
-            if match_index is None:
-                _blocked(
-                    "sec_edgar_real_filing_acquisition_connector_required_form_missing",
-                    "SEC EDGAR submissions metadata did not contain a required validation form.",
-                    http_status=409,
-                    blocked_fields=[form_type],
-                )
+        if policy == REAL_COMPANY_DISCOVERY_POLICY:
+            selected_indexes = _discovered_recent_filing_indexes(forms)
+        else:
+            selected_indexes = []
+            for form_type in form_types:
+                match_index = _first_form_index(forms, form_type)
+                if match_index is None:
+                    _blocked(
+                        "sec_edgar_real_filing_acquisition_connector_required_form_missing",
+                        "SEC EDGAR submissions metadata did not contain a required validation form.",
+                        http_status=409,
+                        blocked_fields=[form_type],
+                    )
+                selected_indexes.append(match_index)
+        for match_index in selected_indexes:
+            form_type = _list_value(forms, match_index).upper()
             accession = _list_value(accessions, match_index)
             filing_date = _list_value(filing_dates, match_index)
             primary_document = _list_value(primary_documents, match_index)
             example = {
-                "example_id": f"sec-edgar-real-{_sha256_text(cik + form_type)[:12]}",
+                "example_id": f"sec-edgar-real-{_sha256_text(cik + form_type + accession)[:12]}",
                 "cik": cik,
                 "cik_hash": _sha256_text(cik),
+                "ticker": company_by_cik.get(str(cik), ""),
+                "ticker_hash": (
+                    _sha256_text(company_by_cik[str(cik)])
+                    if str(cik) in company_by_cik
+                    else None
+                ),
                 "accession_or_submission_id": accession,
                 "accession_or_submission_id_hash": _sha256_text(accession),
                 "form_type": form_type,
@@ -263,6 +295,7 @@ def _select_examples(
                 "source_family": "complete_submission_text",
                 "source_family_roles": _source_family_roles(primary_document),
                 "expected_support_status": "supported_complete_submission_text",
+                "selection_policy": policy,
                 "parser_family": "sec_edgar_filing",
                 "parser_contract_id": "aps_sec_edgar_filing_parser_v1",
                 "artifact_role_set": [
@@ -358,6 +391,8 @@ def _build_receipt(
             "example_set_hash": example_set_hash,
             "cik_ref_hashes": [_sha256_text(cik) for cik in example_set["cik_refs"]],
             "form_types": list(example_set["form_types"]),
+            "company_matrix": list(example_set.get("company_matrix") or []),
+            "filing_selection_policy": example_set["filing_selection_policy"],
         },
         "corpus_manifest": {
             "schema_id": CORPUS_MANIFEST_SCHEMA_ID,
@@ -496,13 +531,49 @@ def _example_set(request: Mapping[str, Any]) -> dict[str, Any]:
             "SEC EDGAR real-filing acquisition connector requires the bounded validation corpus mode.",
             blocked_fields=["example_set_mode"],
         )
-    cik_refs = _normalise_cik_refs(request.get("cik_refs") or DEFAULT_CIK_REFS)
-    form_types = _normalise_form_types(request.get("form_types") or DEFAULT_FORM_TYPES)
+    filing_selection_policy = str(request.get("filing_selection_policy") or DEFAULT_FILING_SELECTION_POLICY).strip()
+    if filing_selection_policy not in {DEFAULT_FILING_SELECTION_POLICY, REAL_COMPANY_DISCOVERY_POLICY}:
+        _blocked(
+            "sec_edgar_real_filing_acquisition_connector_selection_policy_not_admitted",
+            "SEC EDGAR real-filing acquisition connector requires an admitted filing selection policy.",
+            blocked_fields=["filing_selection_policy"],
+        )
+    company_matrix = _normalise_company_matrix(request.get("company_matrix") or ())
+    if filing_selection_policy == REAL_COMPANY_DISCOVERY_POLICY:
+        if not company_matrix:
+            company_matrix = DEFAULT_REAL_COMPANY_MATRIX
+        cik_refs = tuple(REAL_COMPANY_CIK_REFS[ticker] for ticker in company_matrix)
+        form_types = ()
+    else:
+        cik_refs = _normalise_cik_refs(request.get("cik_refs") or DEFAULT_CIK_REFS)
+        form_types = _normalise_form_types(request.get("form_types") or DEFAULT_FORM_TYPES)
     return {
         "example_set_mode": example_set_mode,
         "cik_refs": cik_refs,
         "form_types": form_types,
+        "company_matrix": company_matrix,
+        "filing_selection_policy": filing_selection_policy,
     }
+
+
+def _normalise_company_matrix(value: Any) -> tuple[str, ...]:
+    if value in (None, "", ()):
+        return ()
+    values = tuple(dict.fromkeys(str(item or "").strip().upper() for item in _as_list(value)))
+    if not values or len(values) > len(DEFAULT_REAL_COMPANY_MATRIX):
+        _blocked(
+            "sec_edgar_real_filing_acquisition_connector_company_matrix_not_admitted",
+            "SEC EDGAR real-company validation admits only the selected bounded company matrix.",
+            blocked_fields=["company_matrix"],
+        )
+    unknown = [item for item in values if item not in REAL_COMPANY_CIK_REFS]
+    if unknown:
+        _blocked(
+            "sec_edgar_real_filing_acquisition_connector_company_matrix_unknown",
+            "SEC EDGAR real-company validation company matrix contains an unadmitted ticker.",
+            blocked_fields=["company_matrix"],
+        )
+    return values
 
 
 def _normalise_cik_refs(value: Any) -> tuple[str, ...]:
@@ -511,7 +582,7 @@ def _normalise_cik_refs(value: Any) -> tuple[str, ...]:
     if not values or len(values) > MAX_CIK_REFS:
         _blocked(
             "sec_edgar_real_filing_acquisition_connector_cik_refs_not_admitted",
-            "SEC EDGAR real-filing acquisition connector requires one to three CIK refs.",
+            "SEC EDGAR real-filing acquisition connector requires one to four CIK refs.",
             blocked_fields=["cik_refs"],
         )
     for item in values:
@@ -565,6 +636,7 @@ def _redact_example(example: Mapping[str, Any]) -> dict[str, Any]:
     return {
         "example_id": example["example_id"],
         "cik_hash": example["cik_hash"],
+        "ticker_hash": example.get("ticker_hash"),
         "accession_or_submission_id_hash": example["accession_or_submission_id_hash"],
         "form_type": example["form_type"],
         "filing_date": example["filing_date"],
@@ -575,6 +647,7 @@ def _redact_example(example: Mapping[str, Any]) -> dict[str, Any]:
         "source_family": example["source_family"],
         "source_family_roles": list(example["source_family_roles"]),
         "expected_support_status": example["expected_support_status"],
+        "selection_policy": example.get("selection_policy", DEFAULT_FILING_SELECTION_POLICY),
         "parser_family": example["parser_family"],
         "parser_contract_id": example["parser_contract_id"],
         "artifact_role_set": list(example["artifact_role_set"]),
@@ -600,6 +673,27 @@ def _source_family_inventory(examples: list[dict[str, Any]]) -> dict[str, Any]:
 def _first_form_index(forms: list[Any], form_type: str) -> int | None:
     for index, value in enumerate(forms):
         if str(value or "").strip().upper() == form_type:
+            return index
+    return None
+
+
+def _discovered_recent_filing_indexes(forms: list[Any]) -> list[int]:
+    annual_index = _first_form_family_index(forms, ANNUAL_FORM_TYPES)
+    interim_index = _first_form_family_index(forms, INTERIM_OR_CURRENT_FORM_TYPES)
+    selected = list(dict.fromkeys(index for index in (annual_index, interim_index) if index is not None))
+    if not selected:
+        _blocked(
+            "sec_edgar_real_filing_acquisition_connector_no_discovered_validation_filing",
+            "SEC EDGAR submissions metadata did not contain an annual, interim, or current filing for validation.",
+            http_status=409,
+            blocked_fields=["filing_selection_policy"],
+        )
+    return selected
+
+
+def _first_form_family_index(forms: list[Any], allowed: set[str]) -> int | None:
+    for index, value in enumerate(forms):
+        if str(value or "").strip().upper() in allowed:
             return index
     return None
 
