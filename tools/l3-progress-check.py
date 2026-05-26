@@ -3424,6 +3424,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_RENDERED_STATUS_RUNTIME = (
     PLANNING_DOCS
     / "1191-sec-edgar-html-inline-xbrl-fact-material-downstream-rendered-status-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1192-sec-edgar-html-inline-xbrl-fact-material-downstream-rendered-status-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -113711,6 +113715,76 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_r
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR HTML Inline XBRL Fact Material Downstream Rendered Status Current Main Sync",
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1191-sec-edgar-html-inline-xbrl-fact-material-downstream-rendered-status-runtime.md",
+            "current_main_entry: e33116c78c4567075f5aee0ec1c66ce99113414d",
+            'source_pr: "#1894"',
+            "source_commit: 015c37da46d0e683068a1208985f3670b8486930",
+            "source_merge_commit: e33116c78c4567075f5aee0ec1c66ce99113414d",
+            "ci_status: no_checks_reported",
+            "ci_successful_checks: 0",
+            "local_proof_status: passed",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "current_main_target_selection_check: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "synced_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_control",
+            "synced_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1",
+            "synced_operator_decision: inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+            "synced_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-panel",
+            "synced_payload_fields: client_request_id,status_mode,operator_decision,fact_material_downstream_proof_request,expected_proof_hash",
+            "synced_fact_authority_bound: true",
+            "synced_fact_material_bridge_authority_bound: true",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "sec_edgar_network_fetch_admitted_by_sync: false",
+            "html_inline_xbrl_reparse_or_materialization_admitted: false",
+            "sec_companyfacts_api_runtime_enabled: false",
+            "taxonomy_network_resolution_enabled: false",
+            "financial_statement_semantics_admitted: false",
+            "fact_to_statement_classification_enabled: false",
+            "raw_fact_values_rendered: false",
+            "fact_value_reconstruction_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_closeout_readiness_v1",
+            "GitHub did not attach status checks to this PR",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1191-sec-edgar-html-inline-xbrl-fact-material-downstream-rendered-status-runtime.md",
+            "current_main_entry: e33116c78c4567075f5aee0ec1c66ce99113414d",
+            'source_pr: "#1894"',
+            "ci_status: no_checks_reported",
+            "local_proof_status: passed",
+            "synced_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_control",
+            "synced_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1",
+            "synced_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-panel",
+            "synced_fact_authority_bound: true",
+            "synced_fact_material_bridge_authority_bound: true",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "raw_fact_values_rendered: false",
+            "fact_value_reconstruction_enabled: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_closeout_readiness_v1",
+            "GitHub reported no status checks for this PR",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_RENDERED_STATUS_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact material downstream rendered status current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -114920,6 +114994,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_runtime(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_current_main_sync(
         errors
     )
 
