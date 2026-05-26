@@ -3440,6 +3440,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL
     PLANNING_DOCS
     / "1195-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-trial-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_SELECTION = (
+    PLANNING_DOCS
+    / "1196-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-rendered-status-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -114175,6 +114179,102 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatab
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_SELECTION: (
+            "SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Repeatability Rendered Status Selection",
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_selection_v1",
+            "source_repeatability_trial_runtime: next_milestone_plans/Layer3_planning_docs/1195-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-trial-runtime.md",
+            "source_existing_live_repeatability_rendered_status_selection: next_milestone_plans/Layer3_planning_docs/1162-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-selection.md",
+            "source_existing_live_repeatability_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1163-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-runtime.md",
+            "current_main_entry: 9b1b157625857818e113eddb290d2a2cffcd4072",
+            "entry_decision: freeze_only",
+            "runtime_status: already_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_runtime_v1",
+            "selected_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_control",
+            "selected_trial_mode: append_only_trial_receipt_over_original_and_repeat_fact_material_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "selected_operator_decision: record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial",
+            "selected_trial_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+            "selected_existing_fact_material_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status",
+            "selected_existing_fact_material_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof",
+            "selected_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial",
+            "selected_bootstrap_endpoint_field: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_endpoint",
+            "selected_rendered_scope: operator_visible_repeatability_trial_recording_over_two_server_revalidated_sec_edgar_html_inline_xbrl_fact_material_downstream_status_projections",
+            "selected_rendered_form: sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-form",
+            "selected_rendered_submit: sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-submit",
+            "selected_rendered_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-panel",
+            "selected_rendered_payload_fields: client_request_id,trial_mode,operator_decision,original_operator_status_request,original_operator_status_hash,repeat_operator_status_request,repeat_operator_status_hash,operator_repeatability_disposition,operator_confirmation",
+            "selected_rendered_status_fields: operator_repeatability_trial_state,operator_repeatability_disposition,trial_receipt_id,trial_receipt_hash,trial_receipt_ref,authority_pair_hash,idempotent_replay,original_operator_status,repeat_operator_status,authority_bindings,operator_status_hash_comparison,proof_hash_comparison,coverage_step_set_comparison,fact_inventory_hash_comparison,fact_material_authority_hash_comparison,trial_authority,operator_visible_repeatability_trial_status,fail_closed_behavior,negative_invariants,next_allowed_actions",
+            "selected_redacted_authority_fields: dataset_version_id,dataset_version_hash,source_family,parser_family,typed_content_contract_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,inline_xbrl_marker_inventory_hash,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash,materialization_receipt_hash,fact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash",
+            "available_statuses_must_be_server_revalidated: true",
+            "browser_held_status_hash_alone_is_not_authority: true",
+            "append_only_repeatability_trial_receipt_required: true",
+            "idempotent_replay_must_render: true",
+            "stale_original_operator_status_must_fail_closed: true",
+            "mismatched_fact_authority_must_fail_closed: true",
+            "mismatched_fact_inventory_must_fail_closed: true",
+            "mismatched_fact_material_bridge_must_fail_closed: true",
+            "mismatched_inline_xbrl_marker_inventory_must_fail_closed: true",
+            "rendered_trial_can_create_fact_material_downstream_proof: false",
+            "rendered_trial_can_reparse_html_inline_xbrl: false",
+            "rendered_trial_can_reconstruct_raw_fact_values: false",
+            "rendered_trial_can_start_process: false",
+            "rendered_trial_can_dispatch_connector: false",
+            "raw_original_status_request_rendered: false",
+            "raw_repeat_status_request_rendered: false",
+            "raw_local_path_rendered: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "raw_fact_values_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "headless_rendered_trial_proof_required: true",
+            "headed_rendered_trial_proof_required: true",
+            "rendered_trial_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_runtime_v1",
+            "What proof is required next?",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_selection_v1",
+            "source_repeatability_trial_runtime: next_milestone_plans/Layer3_planning_docs/1195-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-trial-runtime.md",
+            "current_main_entry: 9b1b157625857818e113eddb290d2a2cffcd4072",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_runtime_v1",
+            "selected_rendered_mode: rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_control",
+            "selected_trial_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/operator-repeatability/trial",
+            "selected_existing_fact_material_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status",
+            "selected_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial",
+            "selected_rendered_panel: sec-edgar-html-inline-xbrl-fact-material-downstream-repeatability-trial-panel",
+            "selected_rendered_payload_fields: client_request_id,trial_mode,operator_decision,original_operator_status_request,original_operator_status_hash,repeat_operator_status_request,repeat_operator_status_hash,operator_repeatability_disposition,operator_confirmation",
+            "selected_redacted_authority_fields: dataset_version_id,dataset_version_hash,source_family,parser_family,typed_content_contract_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,inline_xbrl_marker_inventory_hash,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash,materialization_receipt_hash,fact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash",
+            "browser_held_status_hash_alone_is_not_authority: true",
+            "idempotent_replay_must_render: true",
+            "mismatched_fact_material_bridge_must_fail_closed: true",
+            "mismatched_inline_xbrl_marker_inventory_must_fail_closed: true",
+            "rendered_trial_can_reconstruct_raw_fact_values: false",
+            "raw_fact_values_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "rendered_trial_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_runtime_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact material downstream repeatability rendered-status selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -115396,6 +115496,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_runtime(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_rendered_status_selection(
         errors
     )
 
