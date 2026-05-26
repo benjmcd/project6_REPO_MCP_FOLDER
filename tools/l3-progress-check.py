@@ -3318,6 +3318,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_REND
     PLANNING_DOCS
     / "1163-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-runtime.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1164-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-current-main-sync.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111012,6 +111016,70 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeata
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Operator Repeatability Rendered Status Current Main Sync",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1163-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-runtime.md",
+            "current_main_entry: 3140ff3ab29cd325c463c6551e3787a70a7e31c8",
+            'source_pr: "#1866"',
+            "source_merge_commit: 3140ff3ab29cd325c463c6551e3787a70a7e31c8",
+            "ci_status: passed",
+            "ci_successful_checks: 10",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "current_main_target_selection_check: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "synced_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial",
+            "synced_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "synced_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control",
+            "synced_trial_mode: append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "synced_operator_decision: record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial",
+            "synced_panel: sec-edgar-live-downstream-repeatability-trial-panel",
+            "synced_payload_fields: client_request_id,trial_mode,operator_decision,original_operator_status_request,original_operator_status_hash,repeat_operator_status_request,repeat_operator_status_hash,operator_repeatability_disposition,operator_confirmation",
+            "synced_server_revalidated_live_status_pair: true",
+            "synced_browser_held_status_hash_alone_is_not_authority: true",
+            "synced_test_only_fixture_route: /__test/layer3/sec-edgar-live-repeatability-trial",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "rendered_behavior_introduced_by_this_sync: false",
+            "backend_behavior_introduced_by_this_sync: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "sec_edgar_parser_expansion_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_url_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync_v1",
+            "source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1163-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-rendered-status-runtime.md",
+            'source_pr: "#1866"',
+            "source_merge_commit: 3140ff3ab29cd325c463c6551e3787a70a7e31c8",
+            "current_main_progress_check: python ./tools/l3-progress-check.py PASS",
+            "synced_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control",
+            "synced_trial_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "synced_panel: sec-edgar-live-downstream-repeatability-trial-panel",
+            "runtime_behavior_introduced_by_this_sync: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_closeout_readiness_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_RENDERED_STATUS_RUNTIME: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream repeatability rendered-status current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112175,6 +112243,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_runtime(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_current_main_sync(
         errors
     )
 
