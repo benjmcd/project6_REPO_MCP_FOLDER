@@ -10045,3 +10045,52 @@ next_exact_posture: sec_edgar_html_inline_xbrl_downstream_operator_status_select
 ```
 
 The runtime is a downstream proof over existing SEC HTML/iXBRL authority, not a new fetch, parser, materialization, status, or rendered-control path. Repeat it by first preparing the real-filing connector receipt, HTML/iXBRL parser receipt, HTML/iXBRL material bridge receipt, and Gate B decision session, then submit the proof request with server-bound coverage evidence and the committed material snapshot hash.
+
+## SEC EDGAR HTML Inline XBRL Downstream Operator Status Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_downstream_operator_status_selection_v1
+source_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1175-sec-edgar-html-inline-xbrl-downstream-layer3-proof-runtime.md
+current_main_entry: d3ac6961ae432e3920d44f08ec6e9d043dbefd2c
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_downstream_operator_status_runtime_v1
+selected_status_mode: sec_edgar_html_inline_xbrl_downstream_operator_status_v1
+selected_operator_decision: inspect_sec_edgar_html_inline_xbrl_downstream_operator_status
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status
+selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_status.py
+selected_request_model_future: Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusRequest
+selected_response_model_future: Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusResponse
+selected_status_states: not_recorded,available,blocked
+selected_authority_model: html_inline_xbrl_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+available_requires_server_revalidated_html_inline_xbrl_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_must_fail_closed: true
+raw_or_forbidden_proof_authority_must_fail_closed: true
+direct_rendered_status_implementation_before_status_endpoint_admitted: false
+status_can_create_downstream_proof: false
+status_can_fetch_sec_content: false
+status_can_run_submissions_lookup: false
+status_can_reparse_or_materialize_html_inline_xbrl: false
+status_can_create_xml_xbrl_fact_authority: false
+status_can_add_financial_statement_semantics: false
+status_can_mutate_gate_b_session: false
+status_can_mutate_material_snapshot: false
+status_can_mutate_package_or_delivery: false
+status_can_dispatch_connector: false
+status_can_write_provider_object: false
+status_can_add_rag_or_model_runtime: false
+status_can_activate_full_mockup: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_downstream_operator_status_runtime_v1
+```
+
+This selection freezes the next server-side status endpoint for the HTML/iXBRL downstream proof. The future status runtime must revalidate a supplied proof request through the existing proof service and compare the recomputed `proof_hash` to the supplied expected hash before returning `available`; missing proof authority remains `not_recorded`, and stale or unsafe authority remains `blocked`.
