@@ -61,6 +61,9 @@ from app.services import (
     layer3_sec_edgar_downstream_proof,
     layer3_sec_edgar_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_downstream_proof,
+    layer3_sec_edgar_html_inline_xbrl_fact_authority,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -1662,6 +1665,245 @@ def _prepare_sec_edgar_html_inline_xbrl_downstream_status_fixture(
     }
 
 
+def _sec_edgar_html_inline_xbrl_fact_material_coverage(
+    parser: dict[str, object],
+    fact_authority: dict[str, object],
+    bridge: dict[str, object],
+    gate_b: dict[str, object],
+    snapshot: L3MaterialSnapshot,
+) -> dict[str, dict[str, object]]:
+    authority_hashes = bridge["authority_hashes"]
+    primary_document_hash = next(
+        str(item["filename_hash"])
+        for item in parser["document_inventory"]
+        if item.get("primary_document_match") is True
+    )
+    required = set(layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof.REQUIRED_COVERAGE)
+    coverage: dict[str, dict[str, object]] = {}
+    for step in required:
+        item: dict[str, object] = {
+            "status": "proven",
+            "evidence_ref": f"sec-edgar-html-inline-xbrl-fact-material-downstream-proof:{step}",
+            "evidence_hash": stable_hash({"fact-step": step, "session_id": gate_b["session_id"]}),
+            "server_response_hash": stable_hash({"fact-response": step, "session_id": gate_b["session_id"]}),
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "artifact_bytes_exposed": False,
+            "raw_fact_values_exposed_in_operator_projection": False,
+            "fact_value_reconstruction_admitted_in_proof": False,
+            "provider_private_token_exposed": False,
+            "provider_public_url_enabled": False,
+            "provider_object_writes_enabled": False,
+            "connector_dispatch_enabled": False,
+            "rag_vector_model_runtime_enabled": False,
+            "browser_storage_authority_enabled": False,
+            "frontend_durable_authority_enabled": False,
+            "full_mockup_activation_enabled": False,
+        }
+        if step not in {
+            "real_filing_connector_acquisition",
+            "live_source_artifact_acquisition",
+            "html_inline_xbrl_source_family_parser",
+            "html_inline_xbrl_fact_authority",
+            "html_inline_xbrl_fact_material_authority_bridge",
+        }:
+            item["session_id"] = gate_b["session_id"]
+        if step == "real_filing_connector_acquisition":
+            item["connector_receipt_hash"] = parser["connector_receipt_hash"]
+        if step == "live_source_artifact_acquisition":
+            item["live_source_artifact_receipt_hash"] = parser["live_source_artifact_receipt_hash"]
+            item["source_artifact_receipt_hash"] = parser["source_artifact_receipt_hash"]
+        if step == "html_inline_xbrl_source_family_parser":
+            item["parser_receipt_hash"] = parser["parser_receipt_hash"]
+            item["content_sha256"] = authority_hashes["content_sha256"]
+            item["primary_document_hash"] = primary_document_hash
+            item["content_order_hash"] = parser["content_order_hash"]
+        if step == "html_inline_xbrl_fact_authority":
+            item["fact_authority_receipt_hash"] = fact_authority["fact_authority_receipt_hash"]
+            item["fact_inventory_hash"] = fact_authority["fact_inventory_hash"]
+            item["diagnostics_hash"] = fact_authority["diagnostics_hash"]
+        if step == "html_inline_xbrl_fact_material_authority_bridge":
+            item["fact_material_bridge_receipt_hash"] = bridge["fact_material_bridge_receipt_hash"]
+            item["bridge_receipt_hash"] = bridge["bridge_receipt_hash"]
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+        if step == "gate_b_commit":
+            item["material_preview_hash"] = bridge["material_preview_hash"]
+            item["gate_b_decision_manifest_id"] = bridge["gate_b_decision_manifest_id"]
+            item["selection_manifest_id"] = gate_b["selection_manifest_id"]
+            item["material_snapshot_payload_hash"] = snapshot.payload_hash
+        coverage[step] = item
+    return coverage
+
+
+def _prepare_sec_edgar_html_inline_xbrl_fact_material_downstream_status_fixture(
+    db,
+    *,
+    fake_client: _ReviewBrowserSeededSecEdgarClient,
+    seed_id: str,
+) -> dict[str, object]:
+    _reset_sec_edgar_live_source_artifact_rate_marker()
+    fake_client.register_complete_submission_text(
+        url="https://data.sec.gov/submissions/CIK0000320193.json",
+        content=_sec_edgar_real_filing_submissions_payload(),
+    )
+    fake_client.register_complete_submission_text(
+        url=(
+            "https://www.sec.gov/Archives/edgar/data/320193/000032019324000123/"
+            "0000320193-24-000123.txt"
+        ),
+        content=_sec_edgar_html_inline_xbrl_submission_text(),
+    )
+    connector = layer3_sec_edgar_real_filing_acquisition_connector.acquire_sec_edgar_real_filing_validation_corpus(
+        {
+            "client_request_id": f"browser-sec-edgar-html-inline-xbrl-fact-material-connector-{seed_id}",
+            "connector_mode": layer3_sec_edgar_real_filing_acquisition_connector.CONNECTOR_MODE,
+            "operator_decision": layer3_sec_edgar_real_filing_acquisition_connector.OPERATOR_DECISION,
+            "example_set_mode": layer3_sec_edgar_real_filing_acquisition_connector.EXAMPLE_SET_MODE,
+            "cik_refs": ["0000320193"],
+            "form_types": ["10-K"],
+            "operator_confirmation": True,
+        }
+    )
+    acquisition = connector["acquisition_receipts"][0]
+    parser = layer3_sec_edgar_html_inline_xbrl_parser.parse_sec_edgar_html_inline_xbrl_source_family(
+        {
+            "client_request_id": f"browser-sec-edgar-html-inline-xbrl-fact-material-parser-{seed_id}",
+            "parser_mode": layer3_sec_edgar_html_inline_xbrl_parser.PARSER_MODE,
+            "operator_decision": layer3_sec_edgar_html_inline_xbrl_parser.OPERATOR_DECISION,
+            "connector_receipt_id": connector["connector_receipt_id"],
+            "connector_receipt_hash": connector["connector_receipt_hash"],
+            "connector_example_id": acquisition["example_id"],
+            "live_source_artifact_receipt_id": acquisition["live_source_artifact_receipt_id"],
+            "live_source_artifact_receipt_hash": acquisition["live_source_artifact_receipt_hash"],
+            "expected_source_artifact_receipt_hash": acquisition["source_artifact_receipt"][
+                "source_artifact_receipt_hash"
+            ],
+            "operator_confirmation": True,
+        }
+    )
+    fact_authority = layer3_sec_edgar_html_inline_xbrl_fact_authority.derive_sec_edgar_html_inline_xbrl_fact_authority(
+        {
+            "client_request_id": f"browser-sec-edgar-html-inline-xbrl-fact-authority-{seed_id}",
+            "fact_authority_mode": layer3_sec_edgar_html_inline_xbrl_fact_authority.FACT_AUTHORITY_MODE,
+            "operator_decision": layer3_sec_edgar_html_inline_xbrl_fact_authority.OPERATOR_DECISION,
+            "parser_receipt_id": parser["parser_receipt_id"],
+            "parser_receipt_hash": parser["parser_receipt_hash"],
+            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+            "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+            "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+            "expected_document_inventory_hash": parser["document_inventory_hash"],
+            "expected_content_order_hash": parser["content_order_hash"],
+            "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+            "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+            "operator_confirmation": True,
+        }
+    )
+    bridge = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
+        {
+            "client_request_id": f"browser-sec-edgar-html-inline-xbrl-fact-material-bridge-{seed_id}",
+            "bridge_mode": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.BRIDGE_MODE,
+            "operator_decision": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.OPERATOR_DECISION,
+            "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+            "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+            "parser_receipt_id": parser["parser_receipt_id"],
+            "parser_receipt_hash": parser["parser_receipt_hash"],
+            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+            "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+            "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+            "expected_document_inventory_hash": parser["document_inventory_hash"],
+            "expected_content_order_hash": parser["content_order_hash"],
+            "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+            "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+            "expected_fact_inventory_hash": fact_authority["fact_inventory_hash"],
+            "expected_diagnostics_hash": fact_authority["diagnostics_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+        db,
+    )
+    gate_b = layer3_workbench.gate_b_decision(db, dict(bridge["gate_b_decision_payload"]))
+    snapshots = (
+        db.query(L3MaterialSnapshot)
+        .filter(L3MaterialSnapshot.session_id == gate_b["session_id"])
+        .filter(L3MaterialSnapshot.source_shape == "dataset_version")
+        .all()
+    )
+    matches = [
+        snapshot
+        for snapshot in snapshots
+        if (snapshot.source_identity_json or {}).get("dataset_version_id") == bridge["dataset_version_id"]
+    ]
+    if len(matches) != 1:
+        raise RuntimeError("SEC EDGAR HTML/iXBRL fact-material snapshot was not created for browser fixture")
+    snapshot = matches[0]
+    proof_request = {
+        "client_request_id": f"browser-sec-edgar-html-inline-xbrl-fact-material-proof-{seed_id}",
+        "proof_mode": layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof.PROOF_MODE,
+        "operator_decision": layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof.OPERATOR_DECISION,
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "fact_material_bridge_receipt_id": bridge["fact_material_bridge_receipt_id"],
+        "fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"],
+        "dataset_version_id": bridge["dataset_version_id"],
+        "material_preview_hash": bridge["material_preview_hash"],
+        "gate_b_decision_manifest_id": bridge["gate_b_decision_manifest_id"],
+        "session_id": gate_b["session_id"],
+        "selection_manifest_id": gate_b["selection_manifest_id"],
+        "material_snapshot_payload_hash": snapshot.payload_hash,
+        "coverage_evidence": _sec_edgar_html_inline_xbrl_fact_material_coverage(
+            parser,
+            fact_authority,
+            bridge,
+            gate_b,
+            snapshot,
+        ),
+        "operator_confirmation": True,
+    }
+    proof = (
+        layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof
+        .record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof(
+            proof_request,
+            db,
+        )
+    )
+    return {
+        "schema_id": "project6.review_browser_sec_edgar_html_inline_xbrl_fact_material_downstream_status_setup.v1",
+        "schema_version": 1,
+        "test_only": True,
+        "dataset_version_id": bridge["dataset_version_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "connector_receipt_hash": parser["connector_receipt_hash"],
+        "live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "fact_inventory_hash": fact_authority["fact_inventory_hash"],
+        "diagnostics_hash": fact_authority["diagnostics_hash"],
+        "fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"],
+        "material_bridge_receipt_hash": bridge["bridge_receipt_hash"],
+        "material_preview_hash": bridge["material_preview_hash"],
+        "fact_material_downstream_proof_request": proof_request,
+        "expected_proof_hash": proof["proof_hash"],
+        "proof_hash": proof["proof_hash"],
+        "status_endpoint": (
+            "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/"
+            "fact-authority/material-bridge/downstream-proof/status"
+        ),
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "raw_fact_values_rendered": False,
+        "fact_value_reconstruction_enabled": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
 def _prepare_sec_edgar_live_repeatability_trial_fixture(
     db,
     temp_path: Path,
@@ -2357,6 +2599,7 @@ def create_app() -> FastAPI:
     sec_edgar_status_counter = count(1)
     sec_edgar_live_status_counter = count(1)
     sec_edgar_html_inline_xbrl_status_counter = count(1)
+    sec_edgar_html_inline_xbrl_fact_material_status_counter = count(1)
     sec_edgar_live_repeatability_counter = count(1)
     sec_edgar_repeatability_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
@@ -2476,6 +2719,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/sec-edgar-downstream-status",
                 "/__test/layer3/sec-edgar-live-downstream-status",
                 "/__test/layer3/sec-edgar-html-inline-xbrl-downstream-status",
+                "/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-downstream-status",
                 "/__test/layer3/sec-edgar-live-repeatability-trial",
                 "/__test/layer3/sec-edgar-repeatability-trial",
                 "/__test/layer3/source-directory-hybrid-authority",
@@ -2751,6 +2995,27 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"SEC EDGAR HTML/iXBRL downstream status setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-downstream-status")
+    def sec_edgar_html_inline_xbrl_fact_material_downstream_status_setup() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = (
+                "browser-html-ixbrl-fact-material-"
+                f"{next(sec_edgar_html_inline_xbrl_fact_material_status_counter):03d}"
+            )
+            return _prepare_sec_edgar_html_inline_xbrl_fact_material_downstream_status_fixture(
+                db,
+                fake_client=app.state.sec_edgar_live_source_artifact_client,
+                seed_id=seed_id,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR HTML/iXBRL fact-material downstream status setup failed: {exc}",
             ) from exc
         finally:
             db.close()

@@ -334,6 +334,9 @@ const SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec
 const SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control';
 const SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_html_inline_xbrl_downstream_operator_status_v1';
 const SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_html_inline_xbrl_downstream_operator_status';
+const SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_control';
+const SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1';
+const SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status';
 const SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control';
 const SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution';
 const SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_OPERATOR_DECISION = 'record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial';
@@ -705,6 +708,13 @@ const State = {
         htmlInlineXbrlDownstreamProofRequestJson: '',
         expectedProofHash: '',
     },
+    secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus: null,
+    secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError: null,
+    secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPending: false,
+    secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusInput: {
+        factMaterialDownstreamProofRequestJson: '',
+        expectedProofHash: '',
+    },
     secEdgarLiveDownstreamRepeatabilityTrial: null,
     secEdgarLiveDownstreamRepeatabilityTrialError: null,
     secEdgarLiveDownstreamRepeatabilityTrialPending: false,
@@ -978,6 +988,7 @@ const elements = {
     secEdgarDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-downstream-operator-status-panel'),
     secEdgarLiveDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-live-downstream-operator-status-panel'),
     secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-html-inline-xbrl-downstream-operator-status-panel'),
+    secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-panel'),
     secEdgarLiveDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-live-downstream-repeatability-trial-panel'),
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
@@ -8055,6 +8066,12 @@ function secEdgarHtmlInlineXbrlDownstreamOperatorStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusEndpointPath(contract) {
+    const endpoint = contract?.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function secEdgarLiveDownstreamRepeatabilityTrialEndpointPath(contract) {
     const endpoint = contract?.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8584,6 +8601,27 @@ function secEdgarHtmlInlineXbrlDownstreamOperatorStatusInputValues() {
         expectedProofHash: (
             expectedHashInput?.value
             || State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusInput.expectedProofHash
+            || ''
+        ).trim(),
+    };
+}
+
+function secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusInputValues() {
+    const proofRequestInput = document.getElementById(
+        'sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-proof-request-json',
+    );
+    const expectedHashInput = document.getElementById(
+        'sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-expected-proof-hash',
+    );
+    return {
+        factMaterialDownstreamProofRequestJson: (
+            proofRequestInput?.value
+            || State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusInput.factMaterialDownstreamProofRequestJson
+            || ''
+        ).trim(),
+        expectedProofHash: (
+            expectedHashInput?.value
+            || State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusInput.expectedProofHash
             || ''
         ).trim(),
     };
@@ -9886,6 +9924,25 @@ function secEdgarHtmlInlineXbrlDownstreamOperatorStatusPayload() {
     return payload;
 }
 
+function secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPayload() {
+    const values = secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusInputValues();
+    State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusInput = values;
+    const payload = {
+        client_request_id: requestId(),
+        status_mode: SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_MODE,
+        operator_decision: SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION,
+    };
+    if (values.factMaterialDownstreamProofRequestJson) {
+        payload.fact_material_downstream_proof_request = JSON.parse(
+            values.factMaterialDownstreamProofRequestJson,
+        );
+    }
+    if (values.expectedProofHash) {
+        payload.expected_proof_hash = values.expectedProofHash;
+    }
+    return payload;
+}
+
 function secEdgarLiveDownstreamRepeatabilityTrialPayload() {
     const values = secEdgarLiveDownstreamRepeatabilityTrialInputValues();
     State.secEdgarLiveDownstreamRepeatabilityTrialInput = values;
@@ -10390,6 +10447,14 @@ function canInspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(contract = lay
         contract?.sec_edgar_html_inline_xbrl_downstream_operator_status_admitted
         && secEdgarHtmlInlineXbrlDownstreamOperatorStatusEndpointPath(contract)
         && !State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPending
+    );
+}
+
+function canInspectSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus(contract = layer3ExecutionReadinessContract()) {
+    return Boolean(
+        contract?.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_admitted
+        && secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusEndpointPath(contract)
+        && !State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPending
     );
 }
 
@@ -11163,6 +11228,27 @@ function secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanelState() {
         return { label: 'sec_edgar_html_inline_xbrl_downstream_operator_status_not_recorded', pill: 'preview' };
     }
     return { label: 'sec_edgar_html_inline_xbrl_downstream_operator_status_not_inspected', pill: 'preview' };
+}
+
+function secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanelState() {
+    if (State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPending) {
+        return { label: 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_pending', pill: 'preview' };
+    }
+    if (State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError) {
+        const code = State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError?.payload?.error?.code;
+        return { label: code || 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_blocked', pill: 'blocked' };
+    }
+    const state = State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus?.operator_status_state;
+    if (state === 'available') {
+        return { label: 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_available', pill: 'ok' };
+    }
+    if (state === 'blocked') {
+        return { label: 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_blocked', pill: 'blocked' };
+    }
+    if (state === 'not_recorded') {
+        return { label: 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_not_recorded', pill: 'preview' };
+    }
+    return { label: 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_not_inspected', pill: 'preview' };
 }
 
 function secEdgarLiveDownstreamRepeatabilityTrialPanelState() {
@@ -12279,6 +12365,96 @@ function secEdgarHtmlInlineXbrlDownstreamOperatorStatusRows(status) {
                     ${fieldItem('raw URL rendered', status.raw_url_rendered)}
                     ${fieldItem('artifact bytes rendered', status.artifact_bytes_rendered)}
                     ${fieldItem('provider private token rendered', status.provider_private_token_rendered)}
+                    ${fieldItem('frontend durable authority enabled', status.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', status.browser_storage_authority_enabled)}
+                    ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusRows(status) {
+    if (!status) return '';
+    const proofSummary = status.proof_summary || {};
+    const projection = status.status_projection || {};
+    const blockedReasons = Array.isArray(status.blocked_reasons) ? status.blocked_reasons : [];
+    const nextActions = Array.isArray(status.next_allowed_actions) ? status.next_allowed_actions : [];
+    const coverage = Array.isArray(proofSummary.coverage) ? proofSummary.coverage : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>SEC EDGAR HTML/iXBRL Fact-Material Operator Status</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('state', status.operator_status_state, { code: true })}
+                    ${fieldItem('status', status.status, { code: true })}
+                    ${fieldItem('proof available', status.proof_available)}
+                    ${fieldItem('operator status hash', status.operator_status_hash, { code: true })}
+                    ${fieldItem('projection ref', status.operator_status_projection_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Fact-Material Proof Binding</strong>
+                <ul>
+                    ${fieldItem('expected proof hash', status.expected_proof_hash, { code: true })}
+                    ${fieldItem('proof hash', status.proof_hash, { code: true })}
+                    ${fieldItem('proof state', status.proof_state, { code: true })}
+                    ${fieldItem('dataset version id', status.dataset_version_id, { code: true })}
+                    ${fieldItem('dataset version hash', status.dataset_version_hash, { code: true })}
+                    ${fieldItem('parser receipt hash', status.parser_receipt_hash, { code: true })}
+                    ${fieldItem('connector receipt hash', status.connector_receipt_hash, { code: true })}
+                    ${fieldItem('live source artifact receipt hash', status.live_source_artifact_receipt_hash, { code: true })}
+                    ${fieldItem('source artifact receipt hash', status.source_artifact_receipt_hash, { code: true })}
+                    ${fieldItem('content sha256', status.content_sha256, { code: true })}
+                    ${fieldItem('primary document hash', status.primary_document_hash, { code: true })}
+                    ${fieldItem('content order hash', status.content_order_hash, { code: true })}
+                    ${fieldItem('fact authority receipt hash', status.fact_authority_receipt_hash, { code: true })}
+                    ${fieldItem('fact inventory hash', status.fact_inventory_hash, { code: true })}
+                    ${fieldItem('diagnostics hash', status.diagnostics_hash, { code: true })}
+                    ${fieldItem('materialization receipt hash', status.materialization_receipt_hash, { code: true })}
+                    ${fieldItem('fact material bridge receipt hash', status.fact_material_bridge_receipt_hash, { code: true })}
+                    ${fieldItem('material bridge receipt hash', status.material_bridge_receipt_hash, { code: true })}
+                    ${fieldItem('material preview hash', status.material_preview_hash, { code: true })}
+                    ${fieldItem('Gate B decision manifest id', status.gate_b_decision_manifest_id, { code: true })}
+                    ${fieldItem('session id', status.session_id, { code: true })}
+                    ${fieldItem('selection manifest id', status.selection_manifest_id, { code: true })}
+                    ${fieldItem('material snapshot payload hash', status.material_snapshot_payload_hash, { code: true })}
+                    ${fieldItem('coverage evidence hash', status.coverage_evidence_hash, { code: true })}
+                    ${fieldItem('negative invariants hash', status.negative_invariants_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Redacted Fact-Material Proof Summary</strong>
+                <ul>
+                    ${fieldItem('source family', proofSummary.source_family, { code: true })}
+                    ${fieldItem('parser family', proofSummary.parser_family, { code: true })}
+                    ${fieldItem('typed content contract id', proofSummary.typed_content_contract_id, { code: true })}
+                    ${fieldItem('fact authority receipt hash', proofSummary.fact_authority_receipt_hash, { code: true })}
+                    ${fieldItem('fact inventory hash', proofSummary.fact_inventory_hash, { code: true })}
+                    ${fieldItem('diagnostics hash', proofSummary.diagnostics_hash, { code: true })}
+                    ${fieldItem('fact material bridge receipt hash', proofSummary.fact_material_bridge_receipt_hash, { code: true })}
+                    ${fieldItem('coverage steps', coverage.join(', '), { code: true })}
+                    ${fieldItem('server revalidated', projection.server_revalidated)}
+                    ${fieldItem('redacted projection', projection.redacted_projection)}
+                    ${fieldItem('parser authority bound', projection.parser_authority_bound)}
+                    ${fieldItem('fact authority bound', projection.fact_authority_bound)}
+                    ${fieldItem('fact material bridge authority bound', projection.fact_material_bridge_authority_bound)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Reasons And Guardrails</strong>
+                <ul>
+                    ${blockedReasons.map((reason) => fieldItem('blocked reason', reason.reason || reason.message, { code: true })).join('')}
+                    ${fieldItem('raw proof request rendered', status.raw_proof_request_rendered)}
+                    ${fieldItem('raw proof receipt path rendered', status.raw_proof_receipt_path_rendered)}
+                    ${fieldItem('raw local path rendered', status.raw_local_path_rendered)}
+                    ${fieldItem('raw URL rendered', status.raw_url_rendered)}
+                    ${fieldItem('artifact bytes rendered', status.artifact_bytes_rendered)}
+                    ${fieldItem('raw fact values rendered', status.raw_fact_values_rendered)}
+                    ${fieldItem('fact value reconstruction enabled', status.fact_value_reconstruction_enabled)}
+                    ${fieldItem('provider private token rendered', status.provider_private_token_rendered)}
+                    ${fieldItem('connector dispatch enabled', status.connector_dispatch_enabled)}
                     ${fieldItem('frontend durable authority enabled', status.frontend_durable_authority_enabled)}
                     ${fieldItem('browser storage authority enabled', status.browser_storage_authority_enabled)}
                     ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
@@ -14434,6 +14610,20 @@ function secEdgarHtmlInlineXbrlDownstreamOperatorStatusError() {
     `;
 }
 
+function secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError() {
+    const error = State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message || 'SEC EDGAR HTML/iXBRL fact-material downstream operator status inspection failed closed.')}</p>
+        </div>
+    `;
+}
+
 function secEdgarLiveDownstreamRepeatabilityTrialError() {
     const error = State.secEdgarLiveDownstreamRepeatabilityTrialError;
     if (!error) return '';
@@ -15631,6 +15821,50 @@ function renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel() {
                 </div>
                 ${secEdgarHtmlInlineXbrlDownstreamOperatorStatusRows(State.secEdgarHtmlInlineXbrlDownstreamOperatorStatus)}
                 ${secEdgarHtmlInlineXbrlDownstreamOperatorStatusError()}
+            </section>
+        </div>
+    `;
+}
+
+function renderSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel() {
+    if (!elements.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel) return;
+    const contract = layer3ExecutionReadinessContract();
+    const statusState = secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanelState();
+    const inputs = secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusInputValues();
+    const endpointAvailable = Boolean(
+        contract?.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_admitted
+        && secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusEndpointPath(contract)
+    );
+    elements.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC EDGAR HTML/iXBRL fact-material status</span>
+                <h2>HTML/iXBRL Fact-Material Downstream Operator Status</h2>
+            </div>
+            <span class="status-pill ${endpointAvailable ? 'ok' : 'blocked'}">
+                ${endpointAvailable ? 'status endpoint admitted' : 'status endpoint blocked'}
+            </span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-card">
+                <strong>SEC EDGAR HTML/iXBRL Fact-Material Downstream Status Inspection</strong>
+                <form id="sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>fact-material downstream proof request JSON</span>
+                        <textarea id="sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-proof-request-json" rows="7" autocomplete="off" spellcheck="false" placeholder="{&quot;proof_mode&quot;:&quot;sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof_v1&quot;,...}">${escapeHtml(inputs.factMaterialDownstreamProofRequestJson)}</textarea>
+                    </label>
+                    <label>
+                        <span>expected proof hash</span>
+                        <input id="sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-expected-proof-hash" type="text" value="${escapeHtml(inputs.expectedProofHash)}" autocomplete="off" spellcheck="false" placeholder="sha256, optional for not_recorded" />
+                    </label>
+                    <button id="sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-submit" type="submit" ${canInspectSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus(contract) ? '' : 'disabled'}>Inspect HTML/iXBRL Fact-Material SEC EDGAR Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server revalidates HTML/iXBRL fact-material downstream proof authority and returns only a redacted operator projection; this surface cannot create proof, mutate Gate B, fetch SEC content, run submissions lookup, reparse or rematerialize HTML/iXBRL, reconstruct fact values, create XML/XBRL or CompanyFacts authority, add taxonomy or statement semantics, expose raw authority, or create frontend durable authority.</span>
+                </div>
+                ${secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusRows(State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus)}
+                ${secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError()}
             </section>
         </div>
     `;
@@ -17175,6 +17409,44 @@ async function inspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(event) {
         addEvent(`SEC EDGAR HTML/iXBRL downstream operator status blocked: ${error.message}`);
     } finally {
         State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPending = false;
+        renderAll();
+    }
+}
+
+async function inspectSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus(event) {
+    event.preventDefault();
+    const contract = layer3ExecutionReadinessContract();
+    if (!canInspectSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus(contract)) {
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus = null;
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError = new Error(
+            'SEC EDGAR HTML/iXBRL fact-material downstream status requires the admitted server status endpoint.',
+        );
+        renderSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel();
+        return;
+    }
+    const path = secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusEndpointPath(contract);
+    let payload;
+    try {
+        payload = secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPayload();
+    } catch (error) {
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus = null;
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError = error;
+        renderSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel();
+        return;
+    }
+    State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPending = true;
+    State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError = null;
+    renderSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel();
+    try {
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus = await postJson(path, payload);
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError = null;
+        addEvent('SEC EDGAR HTML/iXBRL fact-material downstream operator status inspected through server revalidation.');
+    } catch (error) {
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus = null;
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusError = error;
+        addEvent(`SEC EDGAR HTML/iXBRL fact-material downstream operator status blocked: ${error.message}`);
+    } finally {
+        State.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPending = false;
         renderAll();
     }
 }
@@ -21206,6 +21478,7 @@ function renderAll() {
     renderSecEdgarDownstreamOperatorStatusPanel();
     renderSecEdgarLiveDownstreamOperatorStatusPanel();
     renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel();
+    renderSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel();
     renderSecEdgarLiveDownstreamRepeatabilityTrialPanel();
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderMockupActivationReadinessPanel();
@@ -24982,6 +25255,11 @@ elements.secEdgarLiveDownstreamOperatorStatusPanel.addEventListener('submit', (e
 elements.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
     if (event.target?.id === 'sec-edgar-html-inline-xbrl-downstream-operator-status-form') {
         inspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(event);
+    }
+});
+elements.secEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-form') {
+        inspectSecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatus(event);
     }
 });
 elements.secEdgarLiveDownstreamRepeatabilityTrialPanel.addEventListener('submit', (event) => {
