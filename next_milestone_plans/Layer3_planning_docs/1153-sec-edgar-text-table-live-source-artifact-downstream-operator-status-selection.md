@@ -1,0 +1,85 @@
+# SEC EDGAR Text Table Live Source Artifact Downstream Operator Status Selection
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_status_selection_v1
+source_live_downstream_proof_current_main_sync: next_milestone_plans/Layer3_planning_docs/1152-sec-edgar-text-table-live-source-artifact-downstream-layer3-proof-runtime-current-main-sync.md
+source_existing_non_live_status_runtime: next_milestone_plans/Layer3_planning_docs/1122-sec-edgar-text-table-downstream-operator-status-runtime.md
+source_existing_non_live_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md
+current_main_entry: d46b3ea2a918bea1e912befc13cc4ec22d1a6431
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_downstream_operator_status_runtime_v1
+selected_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1
+selected_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof
+selected_existing_non_live_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status
+selected_service_future: backend/app/services/layer3_sec_edgar_live_downstream_status.py
+selected_request_model_future: Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorStatusRequest
+selected_response_model_future: Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorStatusResponse
+selected_status_states: not_recorded,available,blocked
+selected_authority_model: live_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+selected_required_live_proof_bindings: live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash,proof_hash
+selected_status_projection_fields: operator_status_state,expected_proof_hash,proof_hash,proof_state,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,operator_status_projection_ref,proof_summary,blocked_reasons,next_allowed_actions
+not_recorded_status_must_render: true
+available_status_must_render: true
+blocked_status_must_render: true
+available_requires_server_revalidated_live_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_must_fail_closed: true
+raw_or_forbidden_live_proof_authority_must_fail_closed: true
+direct_rendered_status_implementation_before_live_status_endpoint_admitted: false
+selected_deferred_rendered_selection_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+status_can_create_downstream_proof: false
+status_can_mutate_gate_b_session: false
+status_can_mutate_material_snapshot: false
+status_can_mutate_package_or_delivery: false
+status_can_fetch_sec_content: false
+status_can_parse_xml_html_inline_xbrl: false
+status_can_create_runtime_storage_root: false
+status_can_start_process: false
+status_can_dispatch_connector: false
+status_can_write_provider_object: false
+status_can_add_rag_or_model_runtime: false
+status_can_activate_full_mockup: false
+raw_proof_request_rendered: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+runtime_implementation_in_this_freeze: false
+rendered_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_status_runtime_v1
+```
+
+This freeze corrects the next slice against current-main implementation truth. Current main has a live source-artifact downstream proof runtime, and it has an older non-live SEC EDGAR downstream operator-status pattern, but it does not yet have a live source-artifact downstream operator-status endpoint. Implementing rendered status directly would either duplicate server status semantics in the browser or treat browser-held proof JSON as too much authority.
+
+The selected next runtime is therefore a server-owned, read-only live downstream operator-status endpoint. It should mirror the existing non-live downstream status pattern while revalidating the live downstream proof request and expected proof hash through the live proof runtime. `available` may only mean the server revalidated the live proof request and recomputed the expected proof hash. Missing proof authority should render `not_recorded`; stale, mismatched, incomplete, or forbidden authority should render `blocked`.
+
+The later rendered status slice remains valuable, but it should sit behind this endpoint and render only the server-returned redacted projection.
+
+## Coherence Check
+
+- Can rendered status be implemented safely before a live status endpoint exists? Recommended answer: no. The live status endpoint must own proof revalidation first.
+- Should this status endpoint store new durable authority? Recommended answer: no. It should be deterministic no-new-storage status over current live proof authority.
+- Does this reopen SEC fetch, parser, materialization, Gate B, package, provider, connector, RAG/model, browser-storage, or full mockup behavior? Recommended answer: no.
