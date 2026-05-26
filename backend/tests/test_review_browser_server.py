@@ -124,6 +124,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     assert "/__test/layer3/sec-edgar-source-acquisition-authority" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-downstream-status" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-live-downstream-status" in payload["seed_routes"]
+    assert "/__test/layer3/sec-edgar-html-inline-xbrl-downstream-status" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-live-repeatability-trial" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-repeatability-trial" in payload["seed_routes"]
     assert "/__test/layer3/source-directory-fixture-reset" in payload["seed_routes"]
@@ -409,6 +410,66 @@ def test_review_browser_server_prepares_sec_edgar_live_downstream_status_authori
     assert "C:\\" not in str(status)
     assert "http://" not in str(status)
     assert "https://" not in str(status)
+
+
+def test_review_browser_server_prepares_sec_edgar_html_inline_xbrl_downstream_status_authority(
+    client: TestClient,
+) -> None:
+    setup_response = client.post("/__test/layer3/sec-edgar-html-inline-xbrl-downstream-status")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == "project6.review_browser_sec_edgar_html_inline_xbrl_downstream_status_setup.v1"
+    assert setup["test_only"] is True
+    assert setup["dataset_version_id"].startswith("dv-sec-html-")
+    assert setup["expected_proof_hash"] == setup["proof_hash"]
+    assert setup["status_endpoint"] == "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status"
+    assert setup["raw_local_path_exposed"] is False
+    assert setup["raw_url_exposed"] is False
+    assert setup["artifact_bytes_exposed"] is False
+    assert setup["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(setup)
+    assert "http://" not in str(setup)
+    assert "https://" not in str(setup)
+    assert "aapl-20240928.htm" not in str(setup)
+    assert "Company narrative" not in str(setup)
+
+    status_response = client.post(
+        setup["status_endpoint"],
+        json={
+            "client_request_id": "review-browser-sec-edgar-html-inline-xbrl-status",
+            "status_mode": "sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "html_inline_xbrl_downstream_proof_request": setup["html_inline_xbrl_downstream_proof_request"],
+            "expected_proof_hash": setup["expected_proof_hash"],
+        },
+    )
+    assert status_response.status_code == 200, status_response.text
+    status = status_response.json()
+    assert status["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_downstream_operator_status.v1"
+    assert status["operator_status_state"] == "available"
+    assert status["proof_hash"] == setup["expected_proof_hash"]
+    assert status["parser_receipt_hash"] == setup["parser_receipt_hash"]
+    assert status["connector_receipt_hash"] == setup["connector_receipt_hash"]
+    assert status["live_source_artifact_receipt_hash"] == setup["live_source_artifact_receipt_hash"]
+    assert status["source_artifact_receipt_hash"] == setup["source_artifact_receipt_hash"]
+    assert status["material_bridge_receipt_hash"] == setup["material_bridge_receipt_hash"]
+    assert status["material_preview_hash"] == setup["material_preview_hash"]
+    assert status["status_projection"]["server_revalidated"] is True
+    assert status["status_projection"]["parser_authority_bound"] is True
+    assert status["status_projection"]["material_bridge_authority_bound"] is True
+    assert status["raw_proof_request_rendered"] is False
+    assert status["raw_proof_receipt_path_rendered"] is False
+    assert status["raw_local_path_rendered"] is False
+    assert status["raw_url_rendered"] is False
+    assert status["artifact_bytes_rendered"] is False
+    assert status["provider_private_token_rendered"] is False
+    assert status["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(status)
+    assert "http://" not in str(status)
+    assert "https://" not in str(status)
+    assert "aapl-20240928.htm" not in str(status)
+    assert "Company narrative" not in str(status)
 
 
 def test_review_browser_server_prepares_sec_edgar_live_repeatability_trial_authority(

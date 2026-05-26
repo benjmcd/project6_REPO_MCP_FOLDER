@@ -331,6 +331,9 @@ const SEC_EDGAR_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edga
 const SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control';
 const SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1';
 const SEC_EDGAR_LIVE_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status';
+const SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE = 'rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control';
+const SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_MODE = 'sec_edgar_html_inline_xbrl_downstream_operator_status_v1';
+const SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION = 'inspect_sec_edgar_html_inline_xbrl_downstream_operator_status';
 const SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_RENDERED_MODE = 'rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_control';
 const SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_MODE = 'append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution';
 const SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_OPERATOR_DECISION = 'record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial';
@@ -695,6 +698,13 @@ const State = {
         liveDownstreamProofRequestJson: '',
         expectedProofHash: '',
     },
+    secEdgarHtmlInlineXbrlDownstreamOperatorStatus: null,
+    secEdgarHtmlInlineXbrlDownstreamOperatorStatusError: null,
+    secEdgarHtmlInlineXbrlDownstreamOperatorStatusPending: false,
+    secEdgarHtmlInlineXbrlDownstreamOperatorStatusInput: {
+        htmlInlineXbrlDownstreamProofRequestJson: '',
+        expectedProofHash: '',
+    },
     secEdgarLiveDownstreamRepeatabilityTrial: null,
     secEdgarLiveDownstreamRepeatabilityTrialError: null,
     secEdgarLiveDownstreamRepeatabilityTrialPending: false,
@@ -967,6 +977,7 @@ const elements = {
     secEdgarLiveSourceArtifactAcquisitionPanel: document.getElementById('sec-edgar-live-source-artifact-acquisition-panel'),
     secEdgarDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-downstream-operator-status-panel'),
     secEdgarLiveDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-live-downstream-operator-status-panel'),
+    secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel: document.getElementById('sec-edgar-html-inline-xbrl-downstream-operator-status-panel'),
     secEdgarLiveDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-live-downstream-repeatability-trial-panel'),
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
@@ -8038,6 +8049,12 @@ function secEdgarLiveDownstreamOperatorStatusEndpointPath(contract) {
     return endpoint.slice(API_ROOT.length);
 }
 
+function secEdgarHtmlInlineXbrlDownstreamOperatorStatusEndpointPath(contract) {
+    const endpoint = contract?.sec_edgar_html_inline_xbrl_downstream_operator_status_endpoint || '';
+    if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
+    return endpoint.slice(API_ROOT.length);
+}
+
 function secEdgarLiveDownstreamRepeatabilityTrialEndpointPath(contract) {
     const endpoint = contract?.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_endpoint || '';
     if (!endpoint.startsWith(`${API_ROOT}/`)) return null;
@@ -8546,6 +8563,27 @@ function secEdgarLiveDownstreamOperatorStatusInputValues() {
         expectedProofHash: (
             expectedHashInput?.value
             || State.secEdgarLiveDownstreamOperatorStatusInput.expectedProofHash
+            || ''
+        ).trim(),
+    };
+}
+
+function secEdgarHtmlInlineXbrlDownstreamOperatorStatusInputValues() {
+    const proofRequestInput = document.getElementById(
+        'sec-edgar-html-inline-xbrl-downstream-operator-status-proof-request-json',
+    );
+    const expectedHashInput = document.getElementById(
+        'sec-edgar-html-inline-xbrl-downstream-operator-status-expected-proof-hash',
+    );
+    return {
+        htmlInlineXbrlDownstreamProofRequestJson: (
+            proofRequestInput?.value
+            || State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusInput.htmlInlineXbrlDownstreamProofRequestJson
+            || ''
+        ).trim(),
+        expectedProofHash: (
+            expectedHashInput?.value
+            || State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusInput.expectedProofHash
             || ''
         ).trim(),
     };
@@ -9829,6 +9867,25 @@ function secEdgarLiveDownstreamOperatorStatusPayload() {
     return payload;
 }
 
+function secEdgarHtmlInlineXbrlDownstreamOperatorStatusPayload() {
+    const values = secEdgarHtmlInlineXbrlDownstreamOperatorStatusInputValues();
+    State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusInput = values;
+    const payload = {
+        client_request_id: requestId(),
+        status_mode: SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_MODE,
+        operator_decision: SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_OPERATOR_DECISION,
+    };
+    if (values.htmlInlineXbrlDownstreamProofRequestJson) {
+        payload.html_inline_xbrl_downstream_proof_request = JSON.parse(
+            values.htmlInlineXbrlDownstreamProofRequestJson,
+        );
+    }
+    if (values.expectedProofHash) {
+        payload.expected_proof_hash = values.expectedProofHash;
+    }
+    return payload;
+}
+
 function secEdgarLiveDownstreamRepeatabilityTrialPayload() {
     const values = secEdgarLiveDownstreamRepeatabilityTrialInputValues();
     State.secEdgarLiveDownstreamRepeatabilityTrialInput = values;
@@ -10325,6 +10382,14 @@ function canInspectSecEdgarLiveDownstreamOperatorStatus(contract = layer3Executi
         contract?.sec_edgar_text_table_live_source_artifact_downstream_operator_status_admitted
         && secEdgarLiveDownstreamOperatorStatusEndpointPath(contract)
         && !State.secEdgarLiveDownstreamOperatorStatusPending
+    );
+}
+
+function canInspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(contract = layer3ExecutionReadinessContract()) {
+    return Boolean(
+        contract?.sec_edgar_html_inline_xbrl_downstream_operator_status_admitted
+        && secEdgarHtmlInlineXbrlDownstreamOperatorStatusEndpointPath(contract)
+        && !State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPending
     );
 }
 
@@ -11077,6 +11142,27 @@ function secEdgarLiveDownstreamOperatorStatusPanelState() {
         return { label: 'sec_edgar_live_downstream_operator_status_not_recorded', pill: 'preview' };
     }
     return { label: 'sec_edgar_live_downstream_operator_status_not_inspected', pill: 'preview' };
+}
+
+function secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanelState() {
+    if (State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPending) {
+        return { label: 'sec_edgar_html_inline_xbrl_downstream_operator_status_pending', pill: 'preview' };
+    }
+    if (State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError) {
+        const code = State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError?.payload?.error?.code;
+        return { label: code || 'sec_edgar_html_inline_xbrl_downstream_operator_status_blocked', pill: 'blocked' };
+    }
+    const state = State.secEdgarHtmlInlineXbrlDownstreamOperatorStatus?.operator_status_state;
+    if (state === 'available') {
+        return { label: 'sec_edgar_html_inline_xbrl_downstream_operator_status_available', pill: 'ok' };
+    }
+    if (state === 'blocked') {
+        return { label: 'sec_edgar_html_inline_xbrl_downstream_operator_status_blocked', pill: 'blocked' };
+    }
+    if (state === 'not_recorded') {
+        return { label: 'sec_edgar_html_inline_xbrl_downstream_operator_status_not_recorded', pill: 'preview' };
+    }
+    return { label: 'sec_edgar_html_inline_xbrl_downstream_operator_status_not_inspected', pill: 'preview' };
 }
 
 function secEdgarLiveDownstreamRepeatabilityTrialPanelState() {
@@ -12115,6 +12201,84 @@ function secEdgarLiveDownstreamOperatorStatusRows(status) {
                     ${fieldItem('raw local path rendered', status.raw_local_path_rendered)}
                     ${fieldItem('raw URL rendered', status.raw_url_rendered)}
                     ${fieldItem('artifact bytes rendered', status.artifact_bytes_rendered)}
+                    ${fieldItem('frontend durable authority enabled', status.frontend_durable_authority_enabled)}
+                    ${fieldItem('browser storage authority enabled', status.browser_storage_authority_enabled)}
+                    ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secEdgarHtmlInlineXbrlDownstreamOperatorStatusRows(status) {
+    if (!status) return '';
+    const proofSummary = status.proof_summary || {};
+    const projection = status.status_projection || {};
+    const blockedReasons = Array.isArray(status.blocked_reasons) ? status.blocked_reasons : [];
+    const nextActions = Array.isArray(status.next_allowed_actions) ? status.next_allowed_actions : [];
+    const coverage = Array.isArray(proofSummary.coverage) ? proofSummary.coverage : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>SEC EDGAR HTML/iXBRL Operator Status</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('state', status.operator_status_state, { code: true })}
+                    ${fieldItem('status', status.status, { code: true })}
+                    ${fieldItem('proof available', status.proof_available)}
+                    ${fieldItem('operator status hash', status.operator_status_hash, { code: true })}
+                    ${fieldItem('projection ref', status.operator_status_projection_ref, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>HTML/iXBRL Proof Binding</strong>
+                <ul>
+                    ${fieldItem('expected proof hash', status.expected_proof_hash, { code: true })}
+                    ${fieldItem('proof hash', status.proof_hash, { code: true })}
+                    ${fieldItem('proof state', status.proof_state, { code: true })}
+                    ${fieldItem('dataset version id', status.dataset_version_id, { code: true })}
+                    ${fieldItem('dataset version hash', status.dataset_version_hash, { code: true })}
+                    ${fieldItem('parser receipt hash', status.parser_receipt_hash, { code: true })}
+                    ${fieldItem('connector receipt hash', status.connector_receipt_hash, { code: true })}
+                    ${fieldItem('live source artifact receipt hash', status.live_source_artifact_receipt_hash, { code: true })}
+                    ${fieldItem('source artifact receipt hash', status.source_artifact_receipt_hash, { code: true })}
+                    ${fieldItem('content sha256', status.content_sha256, { code: true })}
+                    ${fieldItem('primary document hash', status.primary_document_hash, { code: true })}
+                    ${fieldItem('content order hash', status.content_order_hash, { code: true })}
+                    ${fieldItem('materialization receipt hash', status.materialization_receipt_hash, { code: true })}
+                    ${fieldItem('material bridge receipt hash', status.material_bridge_receipt_hash, { code: true })}
+                    ${fieldItem('material preview hash', status.material_preview_hash, { code: true })}
+                    ${fieldItem('Gate B decision manifest id', status.gate_b_decision_manifest_id, { code: true })}
+                    ${fieldItem('session id', status.session_id, { code: true })}
+                    ${fieldItem('selection manifest id', status.selection_manifest_id, { code: true })}
+                    ${fieldItem('material snapshot payload hash', status.material_snapshot_payload_hash, { code: true })}
+                    ${fieldItem('coverage evidence hash', status.coverage_evidence_hash, { code: true })}
+                    ${fieldItem('negative invariants hash', status.negative_invariants_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Redacted HTML/iXBRL Proof Summary</strong>
+                <ul>
+                    ${fieldItem('source family', proofSummary.source_family, { code: true })}
+                    ${fieldItem('parser family', proofSummary.parser_family, { code: true })}
+                    ${fieldItem('typed content contract id', proofSummary.typed_content_contract_id, { code: true })}
+                    ${fieldItem('coverage steps', coverage.join(', '), { code: true })}
+                    ${fieldItem('server revalidated', projection.server_revalidated)}
+                    ${fieldItem('redacted projection', projection.redacted_projection)}
+                    ${fieldItem('parser authority bound', projection.parser_authority_bound)}
+                    ${fieldItem('material bridge authority bound', projection.material_bridge_authority_bound)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Blocked Reasons And Guardrails</strong>
+                <ul>
+                    ${blockedReasons.map((reason) => fieldItem('blocked reason', reason.reason || reason.message, { code: true })).join('')}
+                    ${fieldItem('raw proof request rendered', status.raw_proof_request_rendered)}
+                    ${fieldItem('raw proof receipt path rendered', status.raw_proof_receipt_path_rendered)}
+                    ${fieldItem('raw local path rendered', status.raw_local_path_rendered)}
+                    ${fieldItem('raw URL rendered', status.raw_url_rendered)}
+                    ${fieldItem('artifact bytes rendered', status.artifact_bytes_rendered)}
+                    ${fieldItem('provider private token rendered', status.provider_private_token_rendered)}
                     ${fieldItem('frontend durable authority enabled', status.frontend_durable_authority_enabled)}
                     ${fieldItem('browser storage authority enabled', status.browser_storage_authority_enabled)}
                     ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
@@ -14256,6 +14420,20 @@ function secEdgarLiveDownstreamOperatorStatusError() {
     `;
 }
 
+function secEdgarHtmlInlineXbrlDownstreamOperatorStatusError() {
+    const error = State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = detail.code || 'sec_edgar_html_inline_xbrl_downstream_operator_status_error';
+    const message = detail.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message || 'SEC EDGAR HTML/iXBRL downstream operator status inspection failed closed.')}</p>
+        </div>
+    `;
+}
+
 function secEdgarLiveDownstreamRepeatabilityTrialError() {
     const error = State.secEdgarLiveDownstreamRepeatabilityTrialError;
     if (!error) return '';
@@ -15409,6 +15587,50 @@ function renderSecEdgarLiveDownstreamOperatorStatusPanel() {
                 </div>
                 ${secEdgarLiveDownstreamOperatorStatusRows(State.secEdgarLiveDownstreamOperatorStatus)}
                 ${secEdgarLiveDownstreamOperatorStatusError()}
+            </section>
+        </div>
+    `;
+}
+
+function renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel() {
+    if (!elements.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel) return;
+    const contract = layer3ExecutionReadinessContract();
+    const statusState = secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanelState();
+    const inputs = secEdgarHtmlInlineXbrlDownstreamOperatorStatusInputValues();
+    const endpointAvailable = Boolean(
+        contract?.sec_edgar_html_inline_xbrl_downstream_operator_status_admitted
+        && secEdgarHtmlInlineXbrlDownstreamOperatorStatusEndpointPath(contract)
+    );
+    elements.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC EDGAR HTML/iXBRL source-family status</span>
+                <h2>HTML/iXBRL Downstream Operator Status</h2>
+            </div>
+            <span class="status-pill ${endpointAvailable ? 'ok' : 'blocked'}">
+                ${endpointAvailable ? 'endpoint_admitted' : 'endpoint_missing'}
+            </span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-edgar-html-inline-xbrl-downstream-operator-status-card">
+                <strong>SEC EDGAR HTML/iXBRL Downstream Status Inspection</strong>
+                <form id="sec-edgar-html-inline-xbrl-downstream-operator-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>HTML/iXBRL downstream proof request JSON</span>
+                        <textarea id="sec-edgar-html-inline-xbrl-downstream-operator-status-proof-request-json" rows="7" autocomplete="off" spellcheck="false" placeholder="{&quot;proof_mode&quot;:&quot;sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1&quot;,...}">${escapeHtml(inputs.htmlInlineXbrlDownstreamProofRequestJson)}</textarea>
+                    </label>
+                    <label>
+                        <span>expected proof hash</span>
+                        <input id="sec-edgar-html-inline-xbrl-downstream-operator-status-expected-proof-hash" type="text" value="${escapeHtml(inputs.expectedProofHash)}" autocomplete="off" spellcheck="false" placeholder="sha256, optional for not_recorded" />
+                    </label>
+                    <button id="sec-edgar-html-inline-xbrl-downstream-operator-status-submit" type="submit" ${canInspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(contract) ? '' : 'disabled'}>Inspect HTML/iXBRL SEC EDGAR Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server revalidates HTML/iXBRL downstream proof authority and returns only a redacted operator projection; this surface cannot create proof, mutate Gate B, fetch SEC content, run submissions lookup, reparse or rematerialize HTML/iXBRL, create XBRL fact authority, expose raw authority, or create frontend durable authority.</span>
+                </div>
+                ${secEdgarHtmlInlineXbrlDownstreamOperatorStatusRows(State.secEdgarHtmlInlineXbrlDownstreamOperatorStatus)}
+                ${secEdgarHtmlInlineXbrlDownstreamOperatorStatusError()}
             </section>
         </div>
     `;
@@ -16915,6 +17137,44 @@ async function inspectSecEdgarLiveDownstreamOperatorStatus(event) {
         addEvent(`SEC EDGAR live downstream operator status blocked: ${error.message}`);
     } finally {
         State.secEdgarLiveDownstreamOperatorStatusPending = false;
+        renderAll();
+    }
+}
+
+async function inspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(event) {
+    event.preventDefault();
+    const contract = layer3ExecutionReadinessContract();
+    if (!canInspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(contract)) {
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatus = null;
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError = new Error(
+            'SEC EDGAR HTML/iXBRL downstream status requires the admitted server status endpoint.',
+        );
+        renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel();
+        return;
+    }
+    const path = secEdgarHtmlInlineXbrlDownstreamOperatorStatusEndpointPath(contract);
+    let payload;
+    try {
+        payload = secEdgarHtmlInlineXbrlDownstreamOperatorStatusPayload();
+    } catch (error) {
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatus = null;
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError = error;
+        renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel();
+        return;
+    }
+    State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPending = true;
+    State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError = null;
+    renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel();
+    try {
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatus = await postJson(path, payload);
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError = null;
+        addEvent('SEC EDGAR HTML/iXBRL downstream operator status inspected through server revalidation.');
+    } catch (error) {
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatus = null;
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusError = error;
+        addEvent(`SEC EDGAR HTML/iXBRL downstream operator status blocked: ${error.message}`);
+    } finally {
+        State.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPending = false;
         renderAll();
     }
 }
@@ -20945,6 +21205,7 @@ function renderAll() {
     renderSecEdgarLiveSourceArtifactAcquisitionPanel();
     renderSecEdgarDownstreamOperatorStatusPanel();
     renderSecEdgarLiveDownstreamOperatorStatusPanel();
+    renderSecEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel();
     renderSecEdgarLiveDownstreamRepeatabilityTrialPanel();
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderMockupActivationReadinessPanel();
@@ -24716,6 +24977,11 @@ elements.secEdgarDownstreamOperatorStatusPanel.addEventListener('submit', (event
 elements.secEdgarLiveDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
     if (event.target?.id === 'sec-edgar-live-downstream-operator-status-form') {
         inspectSecEdgarLiveDownstreamOperatorStatus(event);
+    }
+});
+elements.secEdgarHtmlInlineXbrlDownstreamOperatorStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-edgar-html-inline-xbrl-downstream-operator-status-form') {
+        inspectSecEdgarHtmlInlineXbrlDownstreamOperatorStatus(event);
     }
 });
 elements.secEdgarLiveDownstreamRepeatabilityTrialPanel.addEventListener('submit', (event) => {
