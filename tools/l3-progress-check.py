@@ -3306,6 +3306,10 @@ SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIA
     PLANNING_DOCS
     / "1160-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-selection.md"
 )
+SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_RUNTIME = (
+    PLANNING_DOCS
+    / "1161-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -3818,8 +3822,22 @@ SEC_EDGAR_DOWNSTREAM_PROOF_SERVICE = (
 SEC_EDGAR_DOWNSTREAM_STATUS_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_downstream_status.py"
 )
+SEC_EDGAR_LIVE_DOWNSTREAM_STATUS_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_sec_edgar_live_downstream_status.py"
+)
 SEC_EDGAR_REPEATABILITY_TRIAL_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_repeatability_trial.py"
+)
+SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_SERVICE = (
+    ROOT
+    / "backend"
+    / "app"
+    / "services"
+    / "layer3_sec_edgar_live_repeatability_trial.py"
 )
 SEC_EDGAR_LIVE_SOURCE_ARTIFACT_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_live_source_artifact.py"
@@ -110654,6 +110672,131 @@ def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeata
                 )
 
 
+def _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_RUNTIME: (
+            "SEC EDGAR Text Table Live Source Artifact Downstream Operator Repeatability Trial Runtime",
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_runtime_v1",
+            "source_repeatability_trial_selection: next_milestone_plans/Layer3_planning_docs/1160-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-selection.md",
+            "current_main_entry: 0c89a2af47436a7d3b3c26afeae53478ab188448",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_live_repeatability_trial.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "implemented_request_model: Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialRequest",
+            "implemented_response_model: Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialResponse",
+            "implemented_schema_id: layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial.v1",
+            "implemented_request_schema_id: layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_request.v1",
+            "implemented_trial_mode: append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "implemented_operator_decision: record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial",
+            "implemented_authority_model: two_server_revalidated_sec_edgar_live_source_artifact_downstream_operator_status_requests_plus_expected_status_hashes",
+            "implemented_receipt_model: append_only_trial_receipt_under_existing_server_storage_without_sec_fetch_or_processing_execution",
+            "implemented_hash_bindings: dataset_version_id,authority_envelope_hash,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,proof_hash,coverage_step_set",
+            "implemented_live_status_projection_extension: authority_envelope_hash",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "append_only_repeatability_trial_receipt: true",
+            "exclusive_trial_per_original_repeat_authority_pair: true",
+            "stale_original_operator_status_must_reject: true",
+            "stale_repeat_operator_status_must_reject: true",
+            "mismatched_live_source_artifact_receipt_must_reject: true",
+            "mismatched_source_acquisition_receipt_must_reject: true",
+            "mismatched_live_material_bridge_must_reject: true",
+            "mismatched_authority_envelope_hash_must_reject: true",
+            "mismatched_gate_b_or_selection_must_reject: true",
+            "mismatched_downstream_proof_hash_must_reject: true",
+            "mismatched_coverage_evidence_must_reject: true",
+            "browser_supplied_command_admitted: false",
+            "sec_edgar_network_fetch_admitted: false",
+            "actual_sec_processing_execution_admitted_by_trial_endpoint: false",
+            "actual_subprocess_spawn_admitted_by_trial_endpoint: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "focused_api_pytest: python -m pytest ./backend/tests/test_layer3_api.py -q -k \"live_sec_edgar_downstream_operator_repeatability_trial or live_sec_edgar_repeatability_trial_invalid_authority\" PASS",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_runtime_v1",
+            "source_repeatability_trial_selection: next_milestone_plans/Layer3_planning_docs/1160-sec-edgar-text-table-live-source-artifact-downstream-operator-repeatability-trial-selection.md",
+            "current_main_entry: 0c89a2af47436a7d3b3c26afeae53478ab188448",
+            "implemented_service: backend/app/services/layer3_sec_edgar_live_repeatability_trial.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "implemented_schema_id: layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial.v1",
+            "implemented_trial_mode: append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution",
+            "implemented_authority_model: two_server_revalidated_sec_edgar_live_source_artifact_downstream_operator_status_requests_plus_expected_status_hashes",
+            "implemented_receipt_model: append_only_trial_receipt_under_existing_server_storage_without_sec_fetch_or_processing_execution",
+            "implemented_hash_bindings: dataset_version_id,authority_envelope_hash,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,proof_hash,coverage_step_set",
+            "implemented_live_status_projection_extension: authority_envelope_hash",
+            "accepted_dispositions: no_regression_observed,delta_reviewed_no_regression",
+            "append_only_repeatability_trial_receipt: true",
+            "stale_original_operator_status_must_reject: true",
+            "mismatched_live_source_artifact_receipt_must_reject: true",
+            "mismatched_authority_envelope_hash_must_reject: true",
+            "actual_sec_processing_execution_admitted_by_trial_endpoint: false",
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_rendered_status_selection_v1",
+        ),
+        SEC_EDGAR_TEXT_TABLE_LIVE_SOURCE_ARTIFACT_DOWNSTREAM_OPERATOR_REPEATABILITY_TRIAL_SELECTION: (
+            "next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_runtime_v1",
+        ),
+        SEC_EDGAR_LIVE_REPEATABILITY_TRIAL_SERVICE: (
+            "SCHEMA_ID = \"layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial.v1\"",
+            "REQUEST_SCHEMA_ID = (",
+            "TRIAL_MODE = \"append_only_trial_receipt_over_original_and_repeat_live_downstream_status_authority_without_sec_fetch_or_processing_execution\"",
+            "OPERATOR_DECISION = \"record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial\"",
+            "def record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial(",
+            "inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status(",
+            "\"append_only_repeatability_trial_receipt\": True",
+            "\"exclusive_trial_per_original_repeat_authority_pair\": True",
+            "\"runtime_db_or_storage_expansion_admitted\": False",
+            "\"actual_sec_processing_execution_admitted\": False",
+            "\"actual_subprocess_spawn_admitted\": False",
+            "\"connector_dispatch_enabled\": False",
+            "\"rag_vector_model_runtime_enabled\": False",
+            "\"frontend_durable_authority_enabled\": False",
+            "\"browser_storage_authority_enabled\": False",
+            "\"raw_local_path_exposed\": False",
+            "\"raw_url_exposed\": False",
+            "\"artifact_bytes_exposed\": False",
+            "\"live_source_artifact_receipt_hash\"",
+            "\"source_acquisition_receipt_hash\"",
+            "\"live_source_artifact_material_bridge_receipt_hash\"",
+            "\"authority_envelope_hash\"",
+            "\"downstream_proof_hash\"",
+        ),
+        SEC_EDGAR_LIVE_DOWNSTREAM_STATUS_SERVICE: (
+            "\"authority_envelope_hash\"",
+            "\"authority_envelope_hash\": str(proof.get(\"authority_envelope_hash\") or \"\")",
+        ),
+        LAYER3_API: (
+            "layer3_sec_edgar_live_repeatability_trial",
+            "Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialRequest",
+            "Layer3SecEdgarTextTableLiveSourceArtifactDownstreamOperatorRepeatabilityTrialResponse",
+            "\"/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial\"",
+            "record_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial(",
+        ),
+        LAYER3_API_TEST: (
+            "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream/operator-repeatability/trial",
+            "layer3.sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial.v1",
+            "test_layer3_api_records_live_sec_edgar_downstream_operator_repeatability_trial",
+            "test_layer3_api_rejects_live_sec_edgar_repeatability_trial_invalid_authority",
+            "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_stale_original_operator_status_hash",
+            "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_authority_mismatch",
+            "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_forbidden_request_fields",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR live source artifact downstream repeatability-trial runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -111808,6 +111951,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_selection(
+        errors
+    )
+    _check_sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_runtime(
         errors
     )
 
