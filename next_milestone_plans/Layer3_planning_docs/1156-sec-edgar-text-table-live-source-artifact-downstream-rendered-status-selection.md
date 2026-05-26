@@ -1,0 +1,83 @@
+# SEC EDGAR Text Table Live Source Artifact Downstream Rendered Status Selection
+
+```yaml
+milestone: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_selection_v1
+source_live_downstream_operator_status_current_main_sync: next_milestone_plans/Layer3_planning_docs/1155-sec-edgar-text-table-live-source-artifact-downstream-operator-status-runtime-current-main-sync.md
+source_existing_non_live_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md
+current_main_entry: 7c4b873897021ed473b5f76d5932aa8c6e6b144e
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1
+selected_rendered_mode: rendered_sec_edgar_text_table_live_source_artifact_downstream_operator_status_control
+selected_status_mode: sec_edgar_text_table_live_source_artifact_downstream_operator_status_v1
+selected_operator_decision: inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof/status
+selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof
+selected_bootstrap_capability: sec_edgar_text_table_live_source_artifact_downstream_operator_status
+selected_bootstrap_endpoint_field: sec_edgar_text_table_live_source_artifact_downstream_operator_status_endpoint
+selected_rendered_scope: operator_visible_status_inspection_over_server_revalidated_live_source_artifact_downstream_proof_authority
+selected_status_states: not_recorded,available,blocked
+selected_rendered_form: sec-edgar-live-downstream-operator-status-form
+selected_rendered_submit: sec-edgar-live-downstream-operator-status-submit
+selected_rendered_panel: sec-edgar-live-downstream-operator-status-panel
+selected_rendered_payload_fields: client_request_id,status_mode,operator_decision,live_downstream_proof_request,expected_proof_hash
+selected_rendered_status_fields: operator_status_state,expected_proof_hash,proof_hash,proof_state,dataset_version_id,live_source_artifact_receipt_hash,source_acquisition_receipt_hash,live_source_artifact_material_bridge_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,downstream_proof_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,operator_status_projection_ref,proof_summary,blocked_reasons,next_allowed_actions
+not_recorded_status_must_render: true
+available_status_must_render: true
+blocked_status_must_render: true
+available_requires_server_revalidated_live_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_must_fail_closed: true
+raw_or_forbidden_live_proof_authority_must_fail_closed: true
+rendered_status_can_create_downstream_proof: false
+rendered_status_can_mutate_gate_b_session: false
+rendered_status_can_mutate_material_snapshot: false
+rendered_status_can_mutate_package_or_delivery: false
+rendered_status_can_fetch_sec_content: false
+rendered_status_can_parse_xml_html_inline_xbrl: false
+rendered_status_can_create_runtime_storage_root: false
+rendered_status_can_start_process: false
+rendered_status_can_dispatch_connector: false
+rendered_status_can_write_provider_object: false
+rendered_status_can_add_rag_or_model_runtime: false
+rendered_status_can_activate_full_mockup: false
+raw_proof_request_rendered: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+provider_token_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+source_expansion_admitted: false
+runtime_db_or_storage_expansion_admitted: false
+sec_edgar_network_fetch_admitted: false
+sec_edgar_parser_expansion_admitted: false
+xml_html_inline_xbrl_admitted: false
+raw_sec_filing_url_authority_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+auth_security_expansion_enabled: false
+full_mockup_activation_enabled: false
+baseline_rollback_preserved: true
+candidate_a_semantics_preserved: true
+candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+rendered_status_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_text_table_live_source_artifact_downstream_rendered_status_runtime_v1
+```
+
+This freeze selects a rendered/operator inspection surface over the already-merged live source-artifact downstream status endpoint. The rendered control may collect the exact live downstream proof request and expected proof hash needed by the server endpoint, then render only the server-returned status projection.
+
+The rendered surface must not treat browser-held proof JSON or hashes as durable authority. It must not create downstream proof, mutate Gate B/session/material/package/delivery state, fetch SEC content, parse XML/HTML/inline XBRL, create runtime storage roots, dispatch connectors, write provider objects, add RAG/model runtime, activate full mockup behavior, or expose raw proof requests, raw local paths, raw URLs, artifact bytes, provider tokens, or storage refs in the status panel.
+
+## Coherence Check
+
+- Does this freeze admit UI implementation now? Recommended answer: yes, but only after this selection lands on current main.
+- Can the rendered surface decide `available` from a hash alone? Recommended answer: no. The server must revalidate the submitted live proof request and compare the expected proof hash.
+- What proof is required next? Recommended answer: implement the rendered control/status projection and prove it in both headless and headed Chrome.
