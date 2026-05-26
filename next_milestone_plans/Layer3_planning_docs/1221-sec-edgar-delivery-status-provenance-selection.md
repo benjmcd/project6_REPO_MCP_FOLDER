@@ -1,0 +1,54 @@
+# SEC EDGAR Delivery Status Provenance Selection
+
+```yaml
+milestone: sec_edgar_delivery_status_provenance_selection_v1
+source_real_company_validation_runtime: next_milestone_plans/Layer3_planning_docs/1220-sec-edgar-real-company-corpus-validation-runtime.md
+entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387
+source_runtime_pr: "#1920"
+source_runtime_branch: codex/sec-real-company-validation-runtime
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_delivery_status_provenance_runtime_v1
+selected_future_service: backend/app/services/layer3_sec_edgar_delivery_status_provenance.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance/status/{sec_edgar_delivery_status_provenance_receipt_id}
+selected_schema_id: layer3.sec_edgar_delivery_status_provenance.v1
+selected_status_schema_id: layer3.sec_edgar_delivery_status_provenance_status.v1
+selected_status_mode: sec_edgar_delivery_status_provenance_v1
+selected_operator_decision: inspect_sec_edgar_real_company_delivery_status_provenance
+selected_input_authority: sec_edgar_real_company_corpus_validation_receipt_id,sec_edgar_real_company_corpus_validation_receipt_hash
+selected_required_source_status: sec_edgar_real_company_corpus_validation_ready
+selected_required_company_matrix: MSFT,STLD,SONY,CCJ
+selected_required_filing_count: 8
+selected_required_validation_coverage: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare
+selected_delivery_status_projection: validation_receipt_status,handoff_export_prepare_status,delivery_readiness_status,provenance_hash_matrix,blocked_or_degraded_delivery_gaps,next_operator_actions
+selected_provenance_hash_bindings: validation_receipt_hash,connector_receipt_hash,parser_receipt_hash,fact_authority_receipt_hash,fact_material_bridge_receipt_hash,statement_classification_receipt_hash,statement_candidate_product_receipt_hash,package_review_preview_receipt_hash,package_construction_receipt_hash,package_review_submit_receipt_hash,handoff_export_prepare_receipt_hash,delivery_status_provenance_hash
+selected_delivery_boundary: inspect_delivery_readiness_and_provenance_without_serving_artifact_bytes_or_creating_provider_objects
+selected_fail_closed_conditions: missing_validation_receipt,validation_hash_mismatch,validation_not_ready,company_matrix_mismatch,filing_count_mismatch,missing_handoff_export_prepare_output,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing
+selected_leakage_policy: no_raw_url_path_local_root_storage_ref_artifact_bytes_accession_company_name_or_raw_fact_value_projection
+selected_runtime_negative_scope: no_sec_network_fetch,no_parser_source_expansion,no_package_mutation,no_delivery_file_response,no_provider_object_write,no_connector_dispatch,no_rag_vector_model_runtime,no_full_mockup_activation,no_frontend_durable_authority
+selected_operator_inspection_deferred_until_delivery_status_provenance_runtime_complete: true
+delivery_status_runtime_in_this_freeze: false
+operator_inspection_runtime_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+parser_source_expansion_in_this_freeze: false
+runtime_implementation_in_this_freeze: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_delivery_status_provenance_runtime_v1
+```
+
+This selection freezes the SEC real-company delivery/status/provenance slice. The future runtime should revalidate the server-issued real-company corpus validation receipt, confirm the selected company matrix and supported filing matrix, and project a redacted delivery-readiness/provenance status over the handoff/export prepare outputs already produced by the validation runtime.
+
+The selected runtime must not serve artifact bytes, create provider objects, dispatch connectors, fetch from SEC, rerun parsers, mutate packages, expose raw SEC URLs, local paths, accessions, company names, raw fact values, or widen into Candidate B PDF-only delivery semantics. Operator inspection remains the following slice after delivery/status/provenance is implemented and proven.
+
+## Coherence Check
+
+- Is this the operator-inspection runtime? Recommended answer: no, it is the server-side delivery/status/provenance contract that operator inspection must later consume.
+- Should this runtime create new delivery artifacts? Recommended answer: no, it should inspect and bind existing validation plus handoff/export prepare authority before any artifact-serving or provider-private use path is admitted.
+- What proves adequacy? Recommended answer: a redacted company-by-filing status matrix with validation, handoff/export, delivery-readiness, provenance hashes, and explicit blocked/degraded gaps for every selected filing.
