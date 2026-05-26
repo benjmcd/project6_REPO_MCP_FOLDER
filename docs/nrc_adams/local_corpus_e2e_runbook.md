@@ -10680,3 +10680,50 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator
 ```
 
 This freeze selects read-only fact-material downstream status. The future endpoint must revalidate the supplied fact-material downstream proof request server-side, compare the expected proof hash, and project only redacted status/provenance without creating proof, re-running parsers, reconstructing fact values, resolving taxonomy, or adding rendered/browser authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Status Runtime
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_runtime_v1
+source_fact_material_downstream_operator_status_selection: next_milestone_plans/Layer3_planning_docs/1188-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-selection.md
+current_main_entry: 8d9564f16fc75a79763ae248824df58ed1beca85
+entry_decision: runtime_implementation
+runtime_status: implemented
+rendered_status: not_implemented
+implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status
+implemented_request_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusRequest
+implemented_response_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusResponse
+implemented_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status.v1
+implemented_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1
+implemented_operator_decision: inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status
+implemented_authority_model: fact_material_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side
+implemented_proof_validator: record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof
+implemented_no_new_storage: true
+implemented_no_proof_creation_by_status: true
+available_requires_server_revalidated_fact_material_proof_request: true
+available_requires_expected_proof_hash_match: true
+stale_or_mismatched_proof_hash_returns_blocked_status: true
+raw_or_forbidden_proof_authority_returns_blocked_status: true
+raw_fact_values_rendered: false
+fact_value_reconstruction_enabled: false
+status_can_fetch_sec_content: false
+status_can_run_submissions_lookup: false
+status_can_reparse_or_materialize_html_inline_xbrl: false
+status_can_call_sec_companyfacts_api: false
+status_can_resolve_taxonomy_networks: false
+status_can_add_financial_statement_semantics: false
+status_can_classify_facts_to_statements: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+focused_py_compile: python -m compileall ./backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py ./backend/app/api/layer3.py ./backend/app/services/layer3_bootstrap_contract.py ./backend/tests/test_layer3_api.py ./backend/tests/test_layer3_bootstrap_contract.py PASS
+focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -q -k "fact_material_downstream_operator_status" PASS
+focused_bootstrap_pytest: python -c "import os, subprocess, sys; os.environ['PYTHONPATH']=r'.\\backend'; sys.exit(subprocess.call(['pytest', r'.\\backend\\tests\\test_layer3_bootstrap_contract.py', '-q']))" PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_selection_v1
+```
+
+This runtime exposes the server-owned status surface for fact-derived SEC HTML/iXBRL downstream proof. Operators can now request `not_recorded`, `available`, or `blocked` status for the fact-material downstream chain by supplying the proof request plus expected proof hash; the server revalidates the proof authority before reporting availability.
