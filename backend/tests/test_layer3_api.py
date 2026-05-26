@@ -3618,6 +3618,150 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_downstream_proof_stale_or
     assert "raw-local-material.json" not in missing_payload_response.text
 
 
+def test_layer3_api_reports_sec_edgar_html_inline_xbrl_downstream_operator_status(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    not_recorded_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+        json={
+            "client_request_id": "sec-edgar-html-inline-xbrl-status-not-recorded",
+            "status_mode": "sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+        },
+    )
+    assert not_recorded_response.status_code == 200, not_recorded_response.text
+    not_recorded = not_recorded_response.json()
+    assert not_recorded["schema_id"] == "layer3.sec_edgar_html_inline_xbrl_downstream_operator_status.v1"
+    assert not_recorded["operator_status_state"] == "not_recorded"
+    assert not_recorded["proof_available"] is False
+    assert not_recorded["status_projection"]["server_revalidated"] is False
+
+    proof_request, parser, bridge, gate_b = _prepare_sec_edgar_html_inline_xbrl_downstream_proof_request(
+        client,
+        monkeypatch,
+        label="status-available",
+    )
+    proof_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+        json=proof_request,
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+
+    status_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+        json={
+            "client_request_id": "sec-edgar-html-inline-xbrl-status-available",
+            "status_mode": "sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "html_inline_xbrl_downstream_proof_request": proof_request,
+            "expected_proof_hash": proof["proof_hash"],
+        },
+    )
+
+    assert status_response.status_code == 200, status_response.text
+    body = status_response.json()
+    assert body["operator_status_state"] == "available"
+    assert body["proof_available"] is True
+    assert body["expected_proof_hash"] == proof["proof_hash"]
+    assert body["proof_hash"] == proof["proof_hash"]
+    assert body["source_family"] == "sec_edgar_html_inline_xbrl"
+    assert body["parser_family"] == "sec_edgar_html_inline_xbrl_source_family_parser_v1"
+    assert body["typed_content_contract_id"] == "sec_edgar_html_inline_xbrl_material_units_v1"
+    assert body["parser_receipt_hash"] == parser["parser_receipt_hash"]
+    assert body["material_bridge_receipt_hash"] == bridge["bridge_receipt_hash"]
+    assert body["session_id"] == gate_b["session_id"]
+    assert body["status_projection"]["server_revalidated"] is True
+    assert body["status_projection"]["parser_authority_bound"] is True
+    assert body["status_projection"]["material_bridge_authority_bound"] is True
+    assert body["proof_summary"]["proof_hash"] == proof["proof_hash"]
+    assert body["raw_proof_request_rendered"] is False
+    assert body["raw_url_rendered"] is False
+    assert body["connector_dispatch_enabled"] is False
+    assert body["negative_invariants"]["html_inline_xbrl_reparse_or_materialization_admitted"] is False
+    assert "https://www.sec.gov" not in status_response.text
+    assert "aapl-20240928.htm" not in status_response.text
+    assert "Company narrative" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_downstream_operator_status_stale_or_unsafe(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    proof_request, _parser, _bridge, _gate_b = _prepare_sec_edgar_html_inline_xbrl_downstream_proof_request(
+        client,
+        monkeypatch,
+        label="status-blocked",
+    )
+    proof_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+        json=proof_request,
+    )
+    assert proof_response.status_code == 200, proof_response.text
+    proof = proof_response.json()
+
+    ambiguous_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+        json={
+            "client_request_id": "sec-edgar-html-inline-xbrl-status-ambiguous",
+            "status_mode": "sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "expected_proof_hash": proof["proof_hash"],
+        },
+    )
+    assert ambiguous_response.status_code == 200, ambiguous_response.text
+    ambiguous = ambiguous_response.json()
+    assert ambiguous["operator_status_state"] == "blocked"
+    assert (
+        ambiguous["blocked_reason_codes"]
+        == ["sec_edgar_html_inline_xbrl_downstream_operator_status_ambiguous_proof_authority"]
+    )
+
+    mismatch_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+        json={
+            "client_request_id": "sec-edgar-html-inline-xbrl-status-mismatch",
+            "status_mode": "sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "html_inline_xbrl_downstream_proof_request": proof_request,
+            "expected_proof_hash": "f" * 64,
+        },
+    )
+    assert mismatch_response.status_code == 200, mismatch_response.text
+    mismatch = mismatch_response.json()
+    assert mismatch["operator_status_state"] == "blocked"
+    assert mismatch["proof_hash"] == proof["proof_hash"]
+    assert (
+        mismatch["blocked_reason_codes"]
+        == ["sec_edgar_html_inline_xbrl_downstream_operator_status_proof_hash_mismatch"]
+    )
+
+    unsafe_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+        json={
+            "client_request_id": "sec-edgar-html-inline-xbrl-status-unsafe",
+            "status_mode": "sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "operator_decision": "inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "html_inline_xbrl_downstream_proof_request": {
+                **proof_request,
+                "raw_url": "https://www.sec.gov/raw-status",
+            },
+            "expected_proof_hash": proof["proof_hash"],
+        },
+    )
+    assert unsafe_response.status_code == 200, unsafe_response.text
+    unsafe = unsafe_response.json()
+    assert unsafe["operator_status_state"] == "blocked"
+    assert (
+        unsafe["blocked_reason_codes"]
+        == ["sec_edgar_html_inline_xbrl_downstream_proof_forbidden_request_fields"]
+    )
+    assert "https://www.sec.gov/raw-status" not in unsafe_response.text
+
+
 def test_layer3_api_reports_sec_edgar_downstream_status_not_recorded(client: TestClient) -> None:
     response = client.post(
         "/api/v1/layer3/source/sec-edgar/text-table/downstream-proof/status",
