@@ -51,6 +51,7 @@ from app.services import (
     layer3_sec_edgar_live_material_bridge,
     layer3_sec_edgar_material_bridge,
     layer3_sec_edgar_delivery_status_provenance,
+    layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_real_company_corpus_validation,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_real_filing_downstream_validation,
@@ -559,6 +560,20 @@ class Layer3SecEdgarDeliveryStatusProvenanceRequest(BaseModel):
     operator_decision: Literal["inspect_sec_edgar_real_company_delivery_status_provenance"]
     sec_edgar_real_company_corpus_validation_receipt_id: str = Field(min_length=1)
     sec_edgar_real_company_corpus_validation_receipt_hash: str = Field(min_length=64, max_length=64)
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarOperatorInspectionRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    inspection_mode: Literal["sec_edgar_operator_inspection_v1"]
+    operator_decision: Literal["inspect_sec_edgar_real_company_operator_surface"]
+    sec_edgar_delivery_status_provenance_receipt_id: str = Field(min_length=1)
+    sec_edgar_delivery_status_provenance_receipt_hash: str = Field(min_length=64, max_length=64)
     operator_confirmation: bool
     actor: str | None = None
 
@@ -8154,6 +8169,31 @@ class Layer3SecEdgarDeliveryStatusProvenanceResponse(Layer3BaseResponse):
     next_allowed_actions: list[str] | None = None
 
 
+class Layer3SecEdgarOperatorInspectionResponse(Layer3BaseResponse):
+    inspection_mode: str
+    operator_decision: str
+    operator_inspection_state: str
+    operator_inspection_receipt_id: str | None = None
+    operator_inspection_receipt_hash: str | None = None
+    operator_inspection_receipt_ref: str | None = None
+    delivery_status_provenance_receipt_id: str | None = None
+    delivery_status_provenance_receipt_hash: str | None = None
+    validation_receipt_hash: str | None = None
+    connector_receipt_hash: str | None = None
+    filing_count: int | None = None
+    inspection_status: str | None = None
+    company_filing_inspection_matrix: list[dict[str, Any]] | None = None
+    readiness_rollup: dict[str, Any] | None = None
+    provenance_status: dict[str, Any] | None = None
+    blocked_or_degraded_delivery_gaps: list[dict[str, Any]] | None = None
+    operator_inspection_summary: dict[str, Any] | None = None
+    cache: dict[str, Any] | None = None
+    blocked_reasons: list[dict[str, Any]] | None = None
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str] | None = None
+
+
 class Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse(Layer3BaseResponse):
     parser_mode: str
     operator_decision: str
@@ -15688,6 +15728,38 @@ def get_sec_edgar_delivery_status_provenance_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_delivery_status_provenance.inspect_sec_edgar_delivery_status_provenance_status(
             sec_edgar_delivery_status_provenance_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/real-company-corpus/operator-inspection",
+    response_model=Layer3SecEdgarOperatorInspectionResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_operator_inspection(
+    payload: Layer3SecEdgarOperatorInspectionRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_operator_inspection.inspect_sec_edgar_real_company_operator_surface(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}",
+    response_model=Layer3SecEdgarOperatorInspectionResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_operator_inspection_status(
+    sec_edgar_operator_inspection_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_operator_inspection.inspect_sec_edgar_operator_inspection_status(
+            sec_edgar_operator_inspection_receipt_id,
         )
     )
 

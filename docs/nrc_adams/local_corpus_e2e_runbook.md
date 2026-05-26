@@ -12154,3 +12154,62 @@ next_exact_posture: sec_edgar_operator_inspection_selection_v1
 ```
 
 This runtime records redacted delivery/status/provenance over the SEC real-company corpus validation receipt. It proves the validation receipt, handoff/export prepare outputs, and provenance hash matrix can be inspected without serving artifact bytes, creating provider objects, dispatching connectors, rerunning SEC fetch/parser work, or exposing raw URL/path/value authority.
+
+## SEC EDGAR Operator Inspection Selection
+
+```yaml
+milestone: sec_edgar_operator_inspection_selection_v1
+source_delivery_status_provenance_runtime: next_milestone_plans/Layer3_planning_docs/1222-sec-edgar-delivery-status-provenance-runtime.md
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_operator_inspection_runtime_v1
+selected_future_service: backend/app/services/layer3_sec_edgar_operator_inspection.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}
+selected_schema_id: layer3.sec_edgar_operator_inspection.v1
+selected_status_schema_id: layer3.sec_edgar_operator_inspection_status.v1
+selected_inspection_mode: sec_edgar_operator_inspection_v1
+selected_operator_decision: inspect_sec_edgar_real_company_operator_surface
+selected_input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash
+selected_required_source_status: sec_edgar_delivery_status_provenance_ready
+selected_operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions
+selected_read_only_boundary: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state
+operator_inspection_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_operator_inspection_runtime_v1
+```
+
+This selection freezes the SEC real-company operator inspection surface over the delivery/status/provenance receipt.
+
+## SEC EDGAR Operator Inspection Runtime
+
+```yaml
+milestone: sec_edgar_operator_inspection_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1223-sec-edgar-operator-inspection-selection.md
+runtime_status: implemented
+service: backend/app/services/layer3_sec_edgar_operator_inspection.py
+endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection
+status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}
+schema_id: layer3.sec_edgar_operator_inspection.v1
+status_schema_id: layer3.sec_edgar_operator_inspection_status.v1
+inspection_mode: sec_edgar_operator_inspection_v1
+operator_decision: inspect_sec_edgar_real_company_operator_surface
+input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash
+required_source_status: sec_edgar_delivery_status_provenance_ready
+operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions
+read_only_boundary_enforced: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state
+raw_url_path_value_leakage_blocked: true
+sec_network_fetch_performed: false
+parser_rerun_performed: false
+package_mutation_performed: false
+delivery_file_response_served: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+rendered_frontend_runtime_in_this_slice: false
+verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "operator_inspection_for_real_company_corpus" -q PASS
+next_exact_posture: sec_edgar_completion_audit_v1
+```
+
+This runtime records a read-only operator inspection projection over the SEC real-company delivery/status/provenance receipt. The next posture is a completion audit against the full SEC/EDGAR governed acquisition and filing-processing objective before any broader runtime expansion.

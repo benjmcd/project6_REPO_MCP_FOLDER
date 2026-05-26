@@ -1,0 +1,43 @@
+# SEC EDGAR Operator Inspection Selection
+
+```yaml
+milestone: sec_edgar_operator_inspection_selection_v1
+source_delivery_status_provenance_runtime: next_milestone_plans/Layer3_planning_docs/1222-sec-edgar-delivery-status-provenance-runtime.md
+entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387
+source_runtime_pr: "#1920"
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_operator_inspection_runtime_v1
+selected_future_service: backend/app/services/layer3_sec_edgar_operator_inspection.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}
+selected_schema_id: layer3.sec_edgar_operator_inspection.v1
+selected_status_schema_id: layer3.sec_edgar_operator_inspection_status.v1
+selected_inspection_mode: sec_edgar_operator_inspection_v1
+selected_operator_decision: inspect_sec_edgar_real_company_operator_surface
+selected_input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash
+selected_required_source_status: sec_edgar_delivery_status_provenance_ready
+selected_operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions
+selected_read_only_boundary: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state
+selected_fail_closed_conditions: missing_delivery_status_provenance_receipt,delivery_status_provenance_hash_mismatch,delivery_status_provenance_not_ready,delivery_readiness_not_ready,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing
+selected_leakage_policy: no_raw_url_path_local_root_storage_ref_artifact_bytes_accession_company_name_or_raw_fact_value_projection
+operator_inspection_runtime_in_this_freeze: false
+rendered_frontend_runtime_in_this_freeze: false
+sec_network_fetch_performed: false
+parser_rerun_performed: false
+package_mutation_performed: false
+delivery_file_response_served: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_operator_inspection_runtime_v1
+```
+
+This selection freezes the SEC real-company operator inspection surface. The future runtime should revalidate the delivery/status/provenance receipt and project a redacted operator-readable inspection matrix over company filings, readiness, provenance, and blocked/degraded gaps.
+
+The selected surface must remain read-only over server receipts. It must not fetch SEC content, rerun parsers, mutate packages, serve files, create provider objects, dispatch connectors, expose raw URLs, local paths, accessions, company names, raw fact values, artifact bytes, or add frontend/browser durable authority.

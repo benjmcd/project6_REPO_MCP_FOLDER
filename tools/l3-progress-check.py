@@ -3544,11 +3544,20 @@ SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_SELECTION = (
 SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_RUNTIME = (
     PLANNING_DOCS / "1222-sec-edgar-delivery-status-provenance-runtime.md"
 )
+SEC_EDGAR_OPERATOR_INSPECTION_SELECTION = (
+    PLANNING_DOCS / "1223-sec-edgar-operator-inspection-selection.md"
+)
+SEC_EDGAR_OPERATOR_INSPECTION_RUNTIME = (
+    PLANNING_DOCS / "1224-sec-edgar-operator-inspection-runtime.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
 SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_delivery_status_provenance.py"
+)
+SEC_EDGAR_OPERATOR_INSPECTION_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_operator_inspection.py"
 )
 SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_filing_acquisition_connector.py"
@@ -116667,6 +116676,171 @@ def _check_sec_edgar_delivery_status_provenance_runtime(
                 )
 
 
+def _check_sec_edgar_operator_inspection_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_INSPECTION_SELECTION: (
+            "SEC EDGAR Operator Inspection Selection",
+            "milestone: sec_edgar_operator_inspection_selection_v1",
+            "source_delivery_status_provenance_runtime: next_milestone_plans/Layer3_planning_docs/1222-sec-edgar-delivery-status-provenance-runtime.md",
+            "entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387",
+            'source_runtime_pr: "#1920"',
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_operator_inspection_runtime_v1",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_operator_inspection.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}",
+            "selected_schema_id: layer3.sec_edgar_operator_inspection.v1",
+            "selected_status_schema_id: layer3.sec_edgar_operator_inspection_status.v1",
+            "selected_inspection_mode: sec_edgar_operator_inspection_v1",
+            "selected_operator_decision: inspect_sec_edgar_real_company_operator_surface",
+            "selected_input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash",
+            "selected_required_source_status: sec_edgar_delivery_status_provenance_ready",
+            "selected_operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions",
+            "selected_read_only_boundary: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state",
+            "selected_fail_closed_conditions: missing_delivery_status_provenance_receipt,delivery_status_provenance_hash_mismatch,delivery_status_provenance_not_ready,delivery_readiness_not_ready,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing",
+            "selected_leakage_policy: no_raw_url_path_local_root_storage_ref_artifact_bytes_accession_company_name_or_raw_fact_value_projection",
+            "operator_inspection_runtime_in_this_freeze: false",
+            "rendered_frontend_runtime_in_this_freeze: false",
+            "sec_network_fetch_performed: false",
+            "parser_rerun_performed: false",
+            "package_mutation_performed: false",
+            "delivery_file_response_served: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "candidate_b_pdf_only_routing_for_sec_filings_enabled: false",
+            "next_exact_posture: sec_edgar_operator_inspection_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_operator_inspection_selection_v1",
+            "source_delivery_status_provenance_runtime: next_milestone_plans/Layer3_planning_docs/1222-sec-edgar-delivery-status-provenance-runtime.md",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_operator_inspection_runtime_v1",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_operator_inspection.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}",
+            "selected_inspection_mode: sec_edgar_operator_inspection_v1",
+            "selected_operator_decision: inspect_sec_edgar_real_company_operator_surface",
+            "selected_input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash",
+            "selected_required_source_status: sec_edgar_delivery_status_provenance_ready",
+            "selected_read_only_boundary: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state",
+            "operator_inspection_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_operator_inspection_runtime_v1",
+        ),
+        SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_RUNTIME: (
+            "next_exact_posture: sec_edgar_operator_inspection_selection_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator inspection selection term: {term}"
+                )
+
+
+def _check_sec_edgar_operator_inspection_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_INSPECTION_RUNTIME: (
+            "SEC EDGAR Operator Inspection Runtime",
+            "milestone: sec_edgar_operator_inspection_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1223-sec-edgar-operator-inspection-selection.md",
+            "entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387",
+            'source_runtime_pr: "#1920"',
+            "runtime_status: implemented",
+            "service: backend/app/services/layer3_sec_edgar_operator_inspection.py",
+            "endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+            "status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}",
+            "schema_id: layer3.sec_edgar_operator_inspection.v1",
+            "status_schema_id: layer3.sec_edgar_operator_inspection_status.v1",
+            "inspection_mode: sec_edgar_operator_inspection_v1",
+            "operator_decision: inspect_sec_edgar_real_company_operator_surface",
+            "input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash",
+            "required_source_status: sec_edgar_delivery_status_provenance_ready",
+            "operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions",
+            "read_only_boundary_enforced: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state",
+            "fail_closed_conditions_covered: missing_delivery_status_provenance_receipt,delivery_status_provenance_hash_mismatch,delivery_status_provenance_not_ready,delivery_readiness_not_ready,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing",
+            "raw_url_path_value_leakage_blocked: true",
+            "sec_network_fetch_performed: false",
+            "parser_rerun_performed: false",
+            "package_mutation_performed: false",
+            "delivery_file_response_served: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "candidate_b_pdf_only_routing_for_sec_filings_enabled: false",
+            "rendered_frontend_runtime_in_this_slice: false",
+            'verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "operator_inspection_for_real_company_corpus" -q PASS',
+            "next_exact_posture: sec_edgar_completion_audit_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_operator_inspection_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1223-sec-edgar-operator-inspection-selection.md",
+            "runtime_status: implemented",
+            "service: backend/app/services/layer3_sec_edgar_operator_inspection.py",
+            "endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+            "status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}",
+            "schema_id: layer3.sec_edgar_operator_inspection.v1",
+            "status_schema_id: layer3.sec_edgar_operator_inspection_status.v1",
+            "inspection_mode: sec_edgar_operator_inspection_v1",
+            "operator_decision: inspect_sec_edgar_real_company_operator_surface",
+            "input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash",
+            "required_source_status: sec_edgar_delivery_status_provenance_ready",
+            "read_only_boundary_enforced: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state",
+            "rendered_frontend_runtime_in_this_slice: false",
+            "next_exact_posture: sec_edgar_completion_audit_v1",
+        ),
+        SEC_EDGAR_OPERATOR_INSPECTION_SERVICE: (
+            'SCHEMA_ID = "layer3.sec_edgar_operator_inspection.v1"',
+            'STATUS_SCHEMA_ID = "layer3.sec_edgar_operator_inspection_status.v1"',
+            'INSPECTION_MODE = "sec_edgar_operator_inspection_v1"',
+            'OPERATOR_DECISION = "inspect_sec_edgar_real_company_operator_surface"',
+            "def inspect_sec_edgar_real_company_operator_surface(",
+            "def inspect_sec_edgar_operator_inspection_status(",
+            "sec_edgar_delivery_status_provenance_receipt_id",
+            "sec_edgar_delivery_status_provenance_receipt_hash",
+            "company_filing_inspection_matrix",
+            "readiness_rollup",
+            "provenance_status",
+            "delivery_file_response_served",
+            "sec_network_fetch_performed",
+            "parser_rerun_performed",
+            "provider_object_write_enabled",
+            "connector_dispatch_enabled",
+        ),
+        ROOT / "backend" / "app" / "api" / "layer3.py": (
+            "class Layer3SecEdgarOperatorInspectionRequest(BaseModel):",
+            "class Layer3SecEdgarOperatorInspectionResponse(Layer3BaseResponse):",
+            '"/source/sec-edgar/real-company-corpus/operator-inspection"',
+            '"/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}"',
+        ),
+        ROOT / "backend" / "tests" / "test_layer3_api.py": (
+            "def test_layer3_api_reports_sec_edgar_operator_inspection_for_real_company_corpus(",
+            '"inspection_mode": "sec_edgar_operator_inspection_v1"',
+            '"operator_decision": "inspect_sec_edgar_real_company_operator_surface"',
+            '"network_request_made_by_operator_inspection"] is False',
+            '"file_response_served_by_operator_inspection"] is False',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator inspection runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -117963,6 +118137,8 @@ def main() -> int:
     _check_sec_edgar_real_company_corpus_validation_runtime(errors)
     _check_sec_edgar_delivery_status_provenance_selection(errors)
     _check_sec_edgar_delivery_status_provenance_runtime(errors)
+    _check_sec_edgar_operator_inspection_selection(errors)
+    _check_sec_edgar_operator_inspection_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
