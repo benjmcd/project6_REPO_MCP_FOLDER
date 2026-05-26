@@ -5382,6 +5382,178 @@ test('Layer 3 workbench renders SEC EDGAR HTML/iXBRL downstream operator status 
   ]);
 });
 
+test('Layer 3 workbench renders SEC EDGAR HTML/iXBRL fact-material downstream operator status through server revalidation', async ({ page, request }) => {
+  const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-downstream-status'));
+  expect(setup.schema_id).toBe(
+    'project6.review_browser_sec_edgar_html_inline_xbrl_fact_material_downstream_status_setup.v1',
+  );
+  expect(setup.raw_local_path_exposed).toBe(false);
+  expect(setup.raw_url_exposed).toBe(false);
+  expect(setup.artifact_bytes_exposed).toBe(false);
+  expect(setup.raw_fact_values_rendered).toBe(false);
+  expect(setup.fact_value_reconstruction_enabled).toBe(false);
+
+  const endpoint = '/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status';
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-panel');
+  await expect(panel).toBeVisible();
+  const form = page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-form');
+  await expect(form).toHaveAttribute(
+    'data-rendered-mode',
+    'rendered_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_control',
+  );
+  await expect(form).toHaveAttribute('data-frontend-durable-authority', 'false');
+  await expect(page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-submit')).toBeEnabled();
+
+  const notRecordedRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes(endpoint)
+  ));
+  const notRecordedResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes(endpoint)
+  ));
+  await page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-submit').click();
+  const notRecordedPayload = (await notRecordedRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(notRecordedPayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+  ]);
+  expect(notRecordedPayload.status_mode).toBe(
+    'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1',
+  );
+  expect(notRecordedPayload.operator_decision).toBe(
+    'inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status',
+  );
+  const notRecorded = await expectJson(await notRecordedResponsePromise);
+  expect(notRecorded.operator_status_state).toBe('not_recorded');
+  await expect(panel).toContainText(
+    'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_not_recorded',
+  );
+
+  await page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-proof-request-json').fill(
+    JSON.stringify(setup.fact_material_downstream_proof_request),
+  );
+  await page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-expected-proof-hash').fill(
+    setup.expected_proof_hash,
+  );
+  const availableRequestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && apiRequest.url().includes(endpoint)
+  ));
+  const availableResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes(endpoint)
+  ));
+  await page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-submit').click();
+  const availablePayload = (await availableRequestPromise).postDataJSON();
+  expectOnlyPayloadKeys(availablePayload, [
+    'client_request_id',
+    'status_mode',
+    'operator_decision',
+    'fact_material_downstream_proof_request',
+    'expected_proof_hash',
+  ]);
+  expect(availablePayload.expected_proof_hash).toBe(setup.expected_proof_hash);
+  expect(availablePayload.fact_material_downstream_proof_request).toMatchObject({
+    proof_mode: 'sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof_v1',
+    operator_decision: 'record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof',
+    dataset_version_id: setup.dataset_version_id,
+  });
+  for (const forbidden of [
+    'path',
+    'local_path',
+    'raw_url',
+    'url',
+    'provider_private_url',
+    'provider_public_url',
+    'connector_dispatch',
+    'rag_vector_index',
+    'browser_storage',
+    'frontend_durable_authority',
+    'file_bytes',
+    'value_text',
+  ]) {
+    expect(availablePayload).not.toHaveProperty(forbidden);
+  }
+  const available = await expectJson(await availableResponsePromise);
+  expect(available.schema_id).toBe('layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status.v1');
+  expect(available.operator_status_state).toBe('available');
+  expect(available.proof_available).toBe(true);
+  expect(available.proof_hash).toBe(setup.expected_proof_hash);
+  expect(available.parser_receipt_hash).toBe(setup.parser_receipt_hash);
+  expect(available.connector_receipt_hash).toBe(setup.connector_receipt_hash);
+  expect(available.live_source_artifact_receipt_hash).toBe(setup.live_source_artifact_receipt_hash);
+  expect(available.source_artifact_receipt_hash).toBe(setup.source_artifact_receipt_hash);
+  expect(available.fact_authority_receipt_hash).toBe(setup.fact_authority_receipt_hash);
+  expect(available.fact_inventory_hash).toBe(setup.fact_inventory_hash);
+  expect(available.diagnostics_hash).toBe(setup.diagnostics_hash);
+  expect(available.fact_material_bridge_receipt_hash).toBe(setup.fact_material_bridge_receipt_hash);
+  expect(available.status_projection.server_revalidated).toBe(true);
+  expect(available.status_projection.parser_authority_bound).toBe(true);
+  expect(available.status_projection.fact_authority_bound).toBe(true);
+  expect(available.status_projection.fact_material_bridge_authority_bound).toBe(true);
+  expect(available.raw_proof_request_rendered).toBe(false);
+  expect(available.raw_proof_receipt_path_rendered).toBe(false);
+  expect(available.raw_local_path_rendered).toBe(false);
+  expect(available.raw_url_rendered).toBe(false);
+  expect(available.artifact_bytes_rendered).toBe(false);
+  expect(available.raw_fact_values_rendered).toBe(false);
+  expect(available.fact_value_reconstruction_enabled).toBe(false);
+  expect(available.provider_private_token_rendered).toBe(false);
+  expect(available.frontend_durable_authority_enabled).toBe(false);
+  expect(JSON.stringify(available)).not.toContain('C:\\');
+  expect(JSON.stringify(available)).not.toContain('http://');
+  expect(JSON.stringify(available)).not.toContain('https://');
+  expect(JSON.stringify(available)).not.toContain('aapl-20240928.htm');
+  expect(JSON.stringify(available)).not.toContain('Company narrative');
+  expect(JSON.stringify(available)).not.toContain('value_text');
+  await expect(panel).toContainText('sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_available');
+  await expect(panel).toContainText('sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status:');
+  await expect(panel).toContainText('server revalidated: true');
+  await expect(panel).toContainText('parser authority bound: true');
+  await expect(panel).toContainText('fact authority bound: true');
+  await expect(panel).toContainText('fact material bridge authority bound: true');
+  await expect(panel).toContainText('raw URL rendered: false');
+  await expect(panel).toContainText('raw fact values rendered: false');
+  await expect(panel).toContainText('fact value reconstruction enabled: false');
+  await expect(panel).not.toContainText('file://');
+  await expect(panel).not.toContainText('C:\\');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('aapl-20240928.htm');
+  await expect(panel).not.toContainText('Company narrative');
+  await expect(panel).not.toContainText('value_text');
+
+  await page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-expected-proof-hash').fill('0'.repeat(64));
+  const blockedResponsePromise = page.waitForResponse((response) => (
+    response.request().method() === 'POST'
+    && response.url().includes(endpoint)
+  ));
+  await page.locator('#sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-submit').click();
+  const blocked = await expectJson(await blockedResponsePromise);
+  expect(blocked.operator_status_state).toBe('blocked');
+  expect(blocked.blocked_reasons[0].reason).toBe(
+    'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_proof_hash_mismatch',
+  );
+  await expect(panel).toContainText('sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_blocked');
+  await expect(panel).toContainText(
+    'sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_proof_hash_mismatch',
+  );
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+  await expect(panel).not.toContainText('value_text');
+
+  expect(apiRequests.filter((apiRequest) => apiRequest.path.includes(endpoint))).toEqual([
+    { method: 'POST', path: endpoint },
+    { method: 'POST', path: endpoint },
+    { method: 'POST', path: endpoint },
+  ]);
+});
+
 test('Layer 3 workbench records SEC EDGAR live downstream repeatability trial through server revalidation', async ({ page, request }) => {
   const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-live-repeatability-trial'));
   expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_live_repeatability_trial_setup.v1');
