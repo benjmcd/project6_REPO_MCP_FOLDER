@@ -40,7 +40,8 @@ VALIDATION_BREADTH_EXPANSION_SELECTED_PROFILE_TAGS = (
     "debt_intensive",
     "commodity_exposure",
 )
-VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED = False
+VALIDATION_BREADTH_EXPANSION_RUNTIME_VERSION = "sec_edgar_validation_breadth_expansion_runtime_v1"
+VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED = True
 REAL_COMPANY_CIK_REFS = {
     "MSFT": "789019",
     "STLD": "1022671",
@@ -50,6 +51,10 @@ REAL_COMPANY_CIK_REFS = {
     "MET": "1099219",
     "PLD": "1045609",
     "FIZZ": "69891",
+    "XOM": "34088",
+    "PFE": "78003",
+    "UAL": "100517",
+    "T": "732717",
 }
 REAL_COMPANY_PROFILE_TAGS = {
     "MSFT": ("domestic_large_cap", "technology"),
@@ -60,6 +65,10 @@ REAL_COMPANY_PROFILE_TAGS = {
     "MET": ("insurance", "domestic_large_cap"),
     "PLD": ("reit", "domestic_large_cap"),
     "FIZZ": ("small_cap", "consumer_products"),
+    "XOM": ("energy_major", "commodity_exposure", "domestic_large_cap"),
+    "PFE": ("pharmaceutical_life_sciences", "domestic_large_cap"),
+    "UAL": ("airline_transport", "debt_intensive"),
+    "T": ("telecom_media", "debt_intensive", "domestic_large_cap"),
 }
 ANNUAL_FORM_TYPES = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A"}
 INTERIM_OR_CURRENT_FORM_TYPES = {"10-Q", "10-Q/A", "8-K", "8-K/A", "6-K", "6-K/A"}
