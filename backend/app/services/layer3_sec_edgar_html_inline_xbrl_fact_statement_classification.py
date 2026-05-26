@@ -36,6 +36,7 @@ PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION = "sec_edgar_period_unit_context_d
 STATEMENT_ROLE_QUALITY_PROFILE_VERSION = "sec_edgar_statement_role_quality_profile_v1"
 EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION = "sec_edgar_extension_taxonomy_retention_profile_v1"
 STANDARD_CONCEPT_MAPPING_PROFILE_VERSION = "sec_edgar_standard_concept_mapping_profile_v1"
+FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS_VERSION = "sec_edgar_fact_deduplication_conflict_diagnostics_v1"
 
 STATEMENT_ROLES = (
     "balance_sheet",
@@ -184,6 +185,8 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         if isinstance(profile.get("standard_concept_mapping_profile"), Mapping)
     ]
     standard_concept_mapping_profile_hash = stable_hash(standard_concept_mapping_profiles)
+    fact_deduplication_conflict_diagnostics = _fact_deduplication_conflict_diagnostics(classification_inventory)
+    fact_deduplication_conflict_diagnostics_hash = stable_hash(fact_deduplication_conflict_diagnostics)
     classification_order_hash = stable_hash(
         [
             {
@@ -273,6 +276,7 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "statement_role_quality_profile_version": STATEMENT_ROLE_QUALITY_PROFILE_VERSION,
         "extension_taxonomy_retention_profile_version": EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION,
         "standard_concept_mapping_profile_version": STANDARD_CONCEPT_MAPPING_PROFILE_VERSION,
+        "fact_deduplication_conflict_diagnostics_version": FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS_VERSION,
         "semantic_profile_assigned_count": semantic_profile_assigned_count,
         "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
         "period_unit_context_dimension_profile_hash": period_unit_context_dimension_profile_hash,
@@ -283,6 +287,26 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "extension_taxonomy_retention_profile_assigned_count": len(extension_taxonomy_retention_profiles),
         "standard_concept_mapping_profile_hash": standard_concept_mapping_profile_hash,
         "standard_concept_mapping_profile_assigned_count": len(standard_concept_mapping_profiles),
+        "fact_deduplication_conflict_diagnostics_hash": fact_deduplication_conflict_diagnostics_hash,
+        "fact_deduplication_conflict_diagnostics_status": fact_deduplication_conflict_diagnostics[
+            "diagnostics_status"
+        ],
+        "exact_duplicate_fact_group_count": fact_deduplication_conflict_diagnostics["exact_duplicate_fact_group_count"],
+        "exact_duplicate_fact_candidate_count": fact_deduplication_conflict_diagnostics[
+            "exact_duplicate_fact_candidate_count"
+        ],
+        "conflicting_fact_group_count": fact_deduplication_conflict_diagnostics["conflicting_fact_group_count"],
+        "conflicting_fact_candidate_count": fact_deduplication_conflict_diagnostics[
+            "conflicting_fact_candidate_count"
+        ],
+        "fact_identity_group_count": fact_deduplication_conflict_diagnostics["fact_identity_group_count"],
+        "fact_conflict_basis_group_count": fact_deduplication_conflict_diagnostics["fact_conflict_basis_group_count"],
+        "exact_duplicate_fact_group_hashes_hash": fact_deduplication_conflict_diagnostics[
+            "exact_duplicate_fact_group_hashes_hash"
+        ],
+        "conflicting_fact_group_hashes_hash": fact_deduplication_conflict_diagnostics[
+            "conflicting_fact_group_hashes_hash"
+        ],
         "medium_statement_role_confidence_count": medium_statement_role_confidence_count,
         "low_statement_role_confidence_count": low_statement_role_confidence_count,
         "retained_company_extension_profile_count": retained_company_extension_profile_count,
@@ -303,6 +327,9 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "extension_taxonomy_facts_dropped": False,
         "standard_concept_mapping_performed": False,
         "standard_concept_normalization_performed": False,
+        "fact_deduplication_performed": False,
+        "fact_conflict_resolution_performed": False,
+        "fact_values_dropped": False,
         "every_fact_classified_exactly_once": True,
         "source_order_preserved": True,
         "marker_order_preserved": True,
@@ -626,6 +653,88 @@ def _standard_concept_mapping_profile(
     }
 
 
+def _fact_deduplication_conflict_diagnostics(inventory: list[Mapping[str, Any]]) -> dict[str, Any]:
+    identity_groups: dict[str, list[Mapping[str, Any]]] = {}
+    conflict_basis_groups: dict[str, list[Mapping[str, Any]]] = {}
+    for item in inventory:
+        identity_key = stable_hash(
+            {
+                "qualified_name": str(item.get("qualified_name") or ""),
+                "context_ref_hash": str(item.get("context_ref_hash") or ""),
+                "unit_ref_hash": str(item.get("unit_ref_hash") or ""),
+                "decimals_or_precision": str(item.get("decimals_or_precision") or ""),
+                "scale_or_format": str(item.get("scale_or_format") or ""),
+                "value_hash": str(item.get("value_hash") or ""),
+            }
+        )
+        conflict_basis_key = stable_hash(
+            {
+                "qualified_name": str(item.get("qualified_name") or ""),
+                "context_ref_hash": str(item.get("context_ref_hash") or ""),
+                "unit_ref_hash": str(item.get("unit_ref_hash") or ""),
+            }
+        )
+        identity_groups.setdefault(identity_key, []).append(item)
+        conflict_basis_groups.setdefault(conflict_basis_key, []).append(item)
+
+    exact_duplicate_groups = [
+        {
+            "fact_identity_group_hash": group_hash,
+            "fact_count": len(group),
+            "fact_order_hash": stable_hash([record.get("fact_order") for record in group]),
+        }
+        for group_hash, group in sorted(identity_groups.items())
+        if len(group) > 1
+    ]
+    conflicting_groups = []
+    for group_hash, group in sorted(conflict_basis_groups.items()):
+        value_hashes = {str(record.get("value_hash") or "") for record in group}
+        decimal_profiles = {
+            stable_hash(
+                {
+                    "decimals_or_precision": str(record.get("decimals_or_precision") or ""),
+                    "scale_or_format": str(record.get("scale_or_format") or ""),
+                }
+            )
+            for record in group
+        }
+        if len(value_hashes) > 1 or len(decimal_profiles) > 1:
+            conflicting_groups.append(
+                {
+                    "fact_conflict_basis_group_hash": group_hash,
+                    "fact_count": len(group),
+                    "distinct_value_hash_count": len(value_hashes),
+                    "distinct_decimal_profile_count": len(decimal_profiles),
+                    "fact_order_hash": stable_hash([record.get("fact_order") for record in group]),
+                }
+            )
+    if conflicting_groups:
+        status = "bounded_conflict_candidates_observed_not_resolved"
+    elif exact_duplicate_groups:
+        status = "bounded_duplicate_candidates_observed_not_deduplicated"
+    else:
+        status = "bounded_diagnostics_available_no_duplicate_or_conflict_candidates"
+    return {
+        "fact_deduplication_conflict_diagnostics_version": FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS_VERSION,
+        "diagnostics_status": status,
+        "fact_count": len(inventory),
+        "fact_identity_group_count": len(identity_groups),
+        "fact_conflict_basis_group_count": len(conflict_basis_groups),
+        "exact_duplicate_fact_group_count": len(exact_duplicate_groups),
+        "exact_duplicate_fact_candidate_count": sum(int(group["fact_count"]) for group in exact_duplicate_groups),
+        "conflicting_fact_group_count": len(conflicting_groups),
+        "conflicting_fact_candidate_count": sum(int(group["fact_count"]) for group in conflicting_groups),
+        "exact_duplicate_fact_group_hashes_hash": stable_hash(exact_duplicate_groups),
+        "conflicting_fact_group_hashes_hash": stable_hash(conflicting_groups),
+        "fact_deduplication_performed": False,
+        "fact_conflict_resolution_performed": False,
+        "fact_values_dropped": False,
+        "source_order_preserved": True,
+        "raw_values_returned": False,
+        "final_financial_statement_semantics_claimed": False,
+    }
+
+
 def _extension_taxonomy_retention_profile(
     local_name: str,
     namespace_prefix: str,
@@ -888,6 +997,9 @@ def _response_from_receipt(
             "standard_concept_mapping_profile_version": dict(receipt["classification_diagnostics"]).get(
                 "standard_concept_mapping_profile_version"
             ),
+            "fact_deduplication_conflict_diagnostics_version": dict(receipt["classification_diagnostics"]).get(
+                "fact_deduplication_conflict_diagnostics_version"
+            ),
             "semantic_profile_assigned_count": dict(receipt["classification_diagnostics"]).get("semantic_profile_assigned_count", 0),
             "period_unit_context_dimension_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
                 "period_unit_context_dimension_profile_assigned_count", 0
@@ -913,6 +1025,12 @@ def _response_from_receipt(
             "standard_concept_mapping_profile_hash": dict(receipt["classification_diagnostics"]).get(
                 "standard_concept_mapping_profile_hash"
             ),
+            "fact_deduplication_conflict_diagnostics_hash": dict(receipt["classification_diagnostics"]).get(
+                "fact_deduplication_conflict_diagnostics_hash"
+            ),
+            "fact_deduplication_conflict_diagnostics_status": dict(receipt["classification_diagnostics"]).get(
+                "fact_deduplication_conflict_diagnostics_status"
+            ),
             "medium_statement_role_confidence_count": dict(receipt["classification_diagnostics"]).get(
                 "medium_statement_role_confidence_count", 0
             ),
@@ -937,6 +1055,24 @@ def _response_from_receipt(
             "unknown_taxonomy_standard_concept_unmapped_count": dict(receipt["classification_diagnostics"]).get(
                 "unknown_taxonomy_standard_concept_unmapped_count", 0
             ),
+            "exact_duplicate_fact_group_count": dict(receipt["classification_diagnostics"]).get(
+                "exact_duplicate_fact_group_count", 0
+            ),
+            "exact_duplicate_fact_candidate_count": dict(receipt["classification_diagnostics"]).get(
+                "exact_duplicate_fact_candidate_count", 0
+            ),
+            "conflicting_fact_group_count": dict(receipt["classification_diagnostics"]).get(
+                "conflicting_fact_group_count", 0
+            ),
+            "conflicting_fact_candidate_count": dict(receipt["classification_diagnostics"]).get(
+                "conflicting_fact_candidate_count", 0
+            ),
+            "fact_identity_group_count": dict(receipt["classification_diagnostics"]).get(
+                "fact_identity_group_count", 0
+            ),
+            "fact_conflict_basis_group_count": dict(receipt["classification_diagnostics"]).get(
+                "fact_conflict_basis_group_count", 0
+            ),
             "context_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("context_ref_hash_present_count", 0),
             "unit_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("unit_ref_hash_present_count", 0),
             "decimals_or_precision_present_count": dict(receipt["classification_diagnostics"]).get(
@@ -955,6 +1091,9 @@ def _response_from_receipt(
             "extension_taxonomy_facts_dropped": False,
             "standard_concept_mapping_performed": False,
             "standard_concept_normalization_performed": False,
+            "fact_deduplication_performed": False,
+            "fact_conflict_resolution_performed": False,
+            "fact_values_dropped": False,
             "raw_values_returned": False,
             "final_financial_statement_semantics_claimed": False,
             "next_allowed_actions": ["select_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product"],

@@ -670,6 +670,17 @@ def _quality_evidence_from_outputs(
     standard_concept_mapping_profile_assigned_count = int(
         classification_diagnostics.get("standard_concept_mapping_profile_assigned_count") or 0
     )
+    fact_deduplication_conflict_diagnostics_hash = classification_diagnostics.get(
+        "fact_deduplication_conflict_diagnostics_hash"
+    )
+    exact_duplicate_fact_group_count = int(classification_diagnostics.get("exact_duplicate_fact_group_count") or 0)
+    exact_duplicate_fact_candidate_count = int(
+        classification_diagnostics.get("exact_duplicate_fact_candidate_count") or 0
+    )
+    conflicting_fact_group_count = int(classification_diagnostics.get("conflicting_fact_group_count") or 0)
+    conflicting_fact_candidate_count = int(
+        classification_diagnostics.get("conflicting_fact_candidate_count") or 0
+    )
     context_ref_hash_present_count = int(classification_diagnostics.get("context_ref_hash_present_count") or 0)
     unit_ref_hash_present_count = int(classification_diagnostics.get("unit_ref_hash_present_count") or 0)
     decimals_or_precision_present_count = int(
@@ -686,6 +697,10 @@ def _quality_evidence_from_outputs(
     ]
     if unclassified_count:
         quality_gaps.append("unclassified_fact_candidates_present")
+    if exact_duplicate_fact_candidate_count:
+        quality_gaps.append("duplicate_fact_candidates_present_not_deduplicated")
+    if conflicting_fact_candidate_count:
+        quality_gaps.append("conflicting_fact_candidates_present_not_resolved")
     evidence = {
         "quality_assessment_status": "redacted_quality_evidence_ready_with_known_semantic_gaps",
         "quality_dimensions": {
@@ -716,6 +731,11 @@ def _quality_evidence_from_outputs(
             "standard_concept_mapping_profile": (
                 "bounded_standard_concept_profile_available_not_normalized"
                 if fact_count and standard_concept_mapping_profile_assigned_count == fact_count
+                else "not_evaluated"
+            ),
+            "fact_deduplication_conflict_diagnostics": (
+                "bounded_diagnostics_available_not_deduplicated_or_resolved"
+                if fact_deduplication_conflict_diagnostics_hash
                 else "not_evaluated"
             ),
             "statement_candidate_usefulness": (
@@ -770,6 +790,13 @@ def _quality_evidence_from_outputs(
             "standard_concept_mapping_profile_hash": classification_diagnostics.get(
                 "standard_concept_mapping_profile_hash"
             ),
+            "fact_deduplication_conflict_diagnostics_version": classification_diagnostics.get(
+                "fact_deduplication_conflict_diagnostics_version"
+            ),
+            "fact_deduplication_conflict_diagnostics_hash": fact_deduplication_conflict_diagnostics_hash,
+            "fact_deduplication_conflict_diagnostics_status": classification_diagnostics.get(
+                "fact_deduplication_conflict_diagnostics_status"
+            ),
             "semantic_profile_assigned_count": semantic_profile_assigned_count,
             "period_unit_context_dimension_profile_assigned_count": period_unit_context_dimension_profile_assigned_count,
             "statement_role_quality_profile_assigned_count": statement_role_quality_profile_assigned_count,
@@ -803,6 +830,23 @@ def _quality_evidence_from_outputs(
             "unknown_taxonomy_standard_concept_unmapped_count": int(
                 classification_diagnostics.get("unknown_taxonomy_standard_concept_unmapped_count") or 0
             ),
+            "fact_identity_group_count": int(classification_diagnostics.get("fact_identity_group_count") or 0),
+            "fact_conflict_basis_group_count": int(
+                classification_diagnostics.get("fact_conflict_basis_group_count") or 0
+            ),
+            "exact_duplicate_fact_group_count": exact_duplicate_fact_group_count,
+            "exact_duplicate_fact_candidate_count": exact_duplicate_fact_candidate_count,
+            "conflicting_fact_group_count": conflicting_fact_group_count,
+            "conflicting_fact_candidate_count": conflicting_fact_candidate_count,
+            "exact_duplicate_fact_group_hashes_hash": classification_diagnostics.get(
+                "exact_duplicate_fact_group_hashes_hash"
+            ),
+            "conflicting_fact_group_hashes_hash": classification_diagnostics.get(
+                "conflicting_fact_group_hashes_hash"
+            ),
+            "fact_deduplication_performed": False,
+            "fact_conflict_resolution_performed": False,
+            "fact_values_dropped": False,
             "context_ref_hash_present_count": context_ref_hash_present_count,
             "unit_ref_hash_present_count": unit_ref_hash_present_count,
             "decimals_or_precision_present_count": decimals_or_precision_present_count,
@@ -845,6 +889,7 @@ def _quality_not_evaluated(
             "extension_fact_handling": "not_evaluated",
             "extension_taxonomy_retention_profile": "not_evaluated",
             "standard_concept_mapping_profile": "not_evaluated",
+            "fact_deduplication_conflict_diagnostics": "not_evaluated",
             "statement_candidate_usefulness": "not_evaluated",
             "diagnostics_quality": "not_evaluated",
             "package_review_handoff_coherence": "not_evaluated",
