@@ -1600,12 +1600,40 @@ def _real_company_validation_fake_results() -> list[layer3_sec_edgar_live_source
         ("Sony Group Corporation", [("20-F", "0000313838-25-000100", "sony-20250331.htm"), ("6-K", "0000313838-25-000101", "sony-20250215.htm")]),
         ("Cameco Corporation", [("40-F", "0001009001-25-000100", "ccj-20241231.htm"), ("6-K", "0001009001-25-000101", "ccj-20250215.htm")]),
     ]
+    return _company_validation_fake_results(companies)
+
+
+def _broader_company_validation_fake_results() -> list[layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult]:
+    companies = [
+        ("JPMorgan Chase & Co.", [("10-K", "0000019617-26-000100", "jpm-20251231.htm"), ("10-Q", "0000019617-25-000101", "jpm-20250930.htm")]),
+        ("MetLife Inc.", [("10-K/A", "0001099219-26-000100", "met-20251231a.htm"), ("8-K", "0001099219-25-000101", "met-20251015.htm")]),
+        ("Prologis Inc.", [("10-K", "0001045609-26-000100", "pld-20251231.htm"), ("10-Q", "0001045609-25-000101", "pld-20250930.htm")]),
+        ("National Beverage Corp.", [("10-K", "0000069891-25-000100", "fizz-20250503.htm"), ("10-Q", "0000069891-25-000101", "fizz-20250802.htm")]),
+    ]
+    concepts = {
+        "JPMorgan Chase & Co.": "us-gaap:InterestIncomeExpenseOperatingNet",
+        "MetLife Inc.": "us-gaap:InsurancePolicyholderBenefitsAndClaims",
+        "Prologis Inc.": "company:SameStoreNetOperatingIncome",
+        "National Beverage Corp.": "company:SmallCapExtensionMetric",
+    }
+    return _company_validation_fake_results(companies, concepts=concepts)
+
+
+def _company_validation_fake_results(
+    companies: list[tuple[str, list[tuple[str, str, str]]]],
+    *,
+    concepts: dict[str, str] | None = None,
+) -> list[layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult]:
     results: list[layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult] = []
     for name, filings in companies:
         results.append(layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(status_code=200, content=_real_company_submissions_payload(name, filings)))
-    for _name, filings in companies:
+    for name, filings in companies:
         for form_type, accession, filename in filings:
-            concept = "company:ExtensionMetric" if form_type in {"20-F", "40-F", "6-K"} else "us-gaap:Assets"
+            concept = (
+                concepts[name]
+                if concepts and name in concepts
+                else "company:ExtensionMetric" if form_type in {"20-F", "40-F", "6-K"} else "us-gaap:Assets"
+            )
             results.append(
                 layer3_sec_edgar_live_source_artifact.SecEdgarFetchResult(
                     status_code=200,
@@ -1749,6 +1777,9 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     assert body["diagnostics"]["supported_count"] == 8
     assert body["diagnostics"]["generic_text_downgrade_performed"] is False
     assert body["diagnostics"]["candidate_b_pdf_only_routing_performed"] is False
+    assert body["diagnostics"]["product_quality_matrix_recorded"] is True
+    assert body["diagnostics"]["financial_statement_semantics_finalized"] is False
+    assert body["diagnostics"]["cross_company_comparability_admitted"] is False
     assert {record["form_type"] for record in body["filing_validation_records"]} >= {
         "10-K",
         "10-Q",
@@ -1762,6 +1793,42 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
         for record in body["filing_validation_records"]
     )
     assert all(record["authority_hashes"]["handoff_export_prepare_receipt_hash"] for record in body["filing_validation_records"])
+    assert len(body["product_quality_matrix"]) == 8
+    assert all(
+        record["quality_assessment_status"] == "redacted_quality_evidence_ready_with_known_semantic_gaps"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["financial_statement_semantics"] == "bounded_profile_available_not_finalized"
+        for record in body["product_quality_matrix"]
+    )
+    assert {
+        record["quality_dimensions"]["cross_company_comparability"]
+        for record in body["product_quality_matrix"]
+    } <= {"standard_taxonomy_profile_available_not_admitted", "not_admitted"}
+    assert any(
+        record["quality_dimensions"]["cross_company_comparability"]
+        == "standard_taxonomy_profile_available_not_admitted"
+        for record in body["product_quality_matrix"]
+    )
+    assert all(
+        "cross_company_comparability_not_admitted" in record["quality_gaps"]
+        for record in body["product_quality_matrix"]
+    )
+    assert {
+        record["form_family"]
+        for record in body["product_quality_matrix"]
+        if record["quality_dimensions"]["extension_fact_handling"] == "retained_redacted"
+    } >= {"20-F", "40-F", "6-K"}
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["semantic_profile_assigned_count"]
+        == record["quality_evidence"]["quality_metrics"]["fact_count"]
+        for record in body["filing_validation_records"]
+    )
+    assert any(
+        record["quality_evidence"]["quality_metrics"]["company_extension_unmapped_count"] > 0
+        for record in body["filing_validation_records"]
+    )
     assert len(fake_client.calls) == 12
     assert fake_client.calls[0]["url"] == "https://data.sec.gov/submissions/CIK0000789019.json"
     assert "https://www.sec.gov" not in response.text
@@ -1797,6 +1864,106 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     assert status_response.json()["validation_receipt_hash"] == body["validation_receipt_hash"]
     assert "https://www.sec.gov" not in status_response.text
     assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_broader_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-broader-quality-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["JPM", "MET", "PLD", "FIZZ"],
+            "operator_confirmation": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["validation_state"] == "sec_edgar_real_company_corpus_validation_ready"
+    assert body["company_matrix"] == ["JPM", "MET", "PLD", "FIZZ"]
+    assert body["diagnostics"]["real_company_count"] == 4
+    assert body["diagnostics"]["filing_count"] == 8
+    assert body["diagnostics"]["supported_count"] == 8
+    assert body["diagnostics"]["financial_statement_semantics_finalized"] is False
+    assert body["diagnostics"]["cross_company_comparability_admitted"] is False
+    assert set(body["diagnostics"]["issuer_profile_tags_observed"]) >= {
+        "financial_institution",
+        "insurance",
+        "reit",
+        "small_cap",
+        "amended_filing",
+        "interim_or_current_form_family",
+    }
+    assert {record["form_type"] for record in body["filing_validation_records"]} >= {
+        "10-K",
+        "10-K/A",
+        "10-Q",
+        "8-K",
+    }
+    assert len(body["product_quality_matrix"]) == 8
+    assert all(record["quality_evidence_hash"] for record in body["product_quality_matrix"])
+    assert all(
+        record["quality_assessment_status"] == "redacted_quality_evidence_ready_with_known_semantic_gaps"
+        for record in body["product_quality_matrix"]
+    )
+    assert any(
+        "financial_institution" in record["issuer_profile_tags"]
+        for record in body["product_quality_matrix"]
+    )
+    assert any("insurance" in record["issuer_profile_tags"] for record in body["product_quality_matrix"])
+    assert any("reit" in record["issuer_profile_tags"] for record in body["product_quality_matrix"])
+    assert any("small_cap" in record["issuer_profile_tags"] for record in body["product_quality_matrix"])
+    assert any("amended_filing" in record["issuer_profile_tags"] for record in body["product_quality_matrix"])
+    assert all(
+        record["quality_dimensions"]["financial_statement_semantics"] == "bounded_profile_available_not_finalized"
+        for record in body["product_quality_matrix"]
+    )
+    assert {
+        record["quality_dimensions"]["cross_company_comparability"]
+        for record in body["product_quality_matrix"]
+    } <= {"standard_taxonomy_profile_available_not_admitted", "not_admitted"}
+    assert any(
+        record["quality_dimensions"]["cross_company_comparability"]
+        == "standard_taxonomy_profile_available_not_admitted"
+        for record in body["product_quality_matrix"]
+    )
+    assert {
+        record["form_family"]
+        for record in body["product_quality_matrix"]
+        if record["quality_dimensions"]["extension_fact_handling"] == "retained_redacted"
+    } >= {"10-K", "10-Q"}
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["semantic_profile_inventory_hash"]
+        for record in body["filing_validation_records"]
+    )
+    assert any(
+        record["quality_evidence"]["quality_metrics"]["standard_taxonomy_fact_count"] > 0
+        for record in body["filing_validation_records"]
+    )
+    assert any(
+        record["quality_evidence"]["quality_metrics"]["company_extension_fact_count"] > 0
+        for record in body["filing_validation_records"]
+    )
+    assert len(fake_client.calls) == 12
+    assert fake_client.calls[0]["url"] == "https://data.sec.gov/submissions/CIK0000019617.json"
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000019617-26-000100" not in response.text
+    assert "JPMorgan Chase" not in response.text
+    assert "value_text" not in response.text
+    _assert_raw_string_not_projected(body, "123")
+    assert str(tmp_path) not in response.text
 
 
 def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_real_company_corpus(
@@ -1862,6 +2029,15 @@ def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_real_compan
     assert all(record["handoff_export_prepare_status"] == "ready" for record in body["delivery_status_records"])
     assert all(
         record["provenance_hashes"]["handoff_export_prepare_receipt_hash"]
+        for record in body["delivery_status_records"]
+    )
+    assert all(
+        record["quality_assessment_status"] == "redacted_quality_evidence_ready_with_known_semantic_gaps"
+        for record in body["delivery_status_records"]
+    )
+    assert all(record["quality_evidence_hash"] for record in body["delivery_status_records"])
+    assert all(
+        "financial_statement_semantics_not_finalized" in record["quality_gaps"]
         for record in body["delivery_status_records"]
     )
     assert len(fake_client.calls) == 12
@@ -1994,6 +2170,15 @@ def test_layer3_api_reports_sec_edgar_operator_inspection_for_real_company_corpu
         record["inspection_status"] == "inspectable"
         for record in body["company_filing_inspection_matrix"]
     )
+    assert all(
+        record["quality_assessment_status"] == "redacted_quality_evidence_ready_with_known_semantic_gaps"
+        for record in body["company_filing_inspection_matrix"]
+    )
+    assert all(
+        record["quality_dimensions"]["package_review_handoff_coherence"] == "receipt_chain_bound"
+        for record in body["company_filing_inspection_matrix"]
+    )
+    assert all(record["quality_evidence_hash"] for record in body["company_filing_inspection_matrix"])
     assert body["provenance_status"]["delivery_status_provenance_receipt_hash"] == (
         delivery["delivery_status_provenance_receipt_hash"]
     )
@@ -2724,6 +2909,12 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
     assert body["fact_material_bridge_receipt_hash"] == bridge["fact_material_bridge_receipt_hash"]
     assert body["classification_diagnostics"]["fact_count"] == fact_authority["fact_count"]
     assert body["classification_diagnostics"]["every_fact_classified_exactly_once"] is True
+    assert body["classification_diagnostics"]["semantic_profile_version"] == "sec_edgar_statement_semantic_profile_v1"
+    assert body["classification_diagnostics"]["semantic_profile_assigned_count"] == fact_authority["fact_count"]
+    assert body["classification_diagnostics"]["standard_taxonomy_fact_count"] > 0
+    assert body["classification_diagnostics"]["comparable_standard_fact_count"] > 0
+    assert body["classification_diagnostics"]["financial_statement_semantics_claimed"] is False
+    assert body["semantic_profile_inventory_hash"]
     assert len(body["classification_inventory"]) == fact_authority["fact_count"]
     assert {item["statement_candidate_role"] for item in body["classification_inventory"]} <= {
         "balance_sheet",
@@ -2735,8 +2926,22 @@ def test_layer3_api_classifies_sec_edgar_html_inline_xbrl_facts_to_statement_can
         "disclosure_or_note",
         "unknown_or_unclassified",
     }
+    assert all(
+        item["semantic_profile"]["semantic_profile_version"] == "sec_edgar_statement_semantic_profile_v1"
+        for item in body["classification_inventory"]
+    )
+    assert all(
+        item["semantic_profile"]["final_financial_statement_semantics_claimed"] is False
+        for item in body["classification_inventory"]
+    )
+    assert any(
+        item["semantic_profile"]["comparability_scope"] == "standard_taxonomy_profile"
+        for item in body["classification_inventory"]
+    )
     assert body["statement_group_inventory_hash"]
     assert body["status_projection"]["raw_values_returned"] is False
+    assert body["status_projection"]["semantic_profile_assigned_count"] == fact_authority["fact_count"]
+    assert body["status_projection"]["comparable_standard_fact_count"] > 0
     assert body["status_projection"]["final_financial_statement_semantics_claimed"] is False
     assert body["negative_invariants"]["taxonomy_network_resolution_enabled"] is False
     assert body["negative_invariants"]["sec_companyfacts_api_runtime_enabled"] is False
@@ -5981,7 +6186,7 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_downstream_
     assert unsafe_coverage_response.json()["error_code"] == (
         "sec_edgar_html_inline_xbrl_fact_material_downstream_proof_forbidden_request_fields"
     )
-    assert "123" not in unsafe_coverage_response.text
+    _assert_raw_string_not_projected(unsafe_coverage_response.json(), "123")
 
     db = client.layer3_session_factory()
     try:
@@ -6190,7 +6395,7 @@ def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_downstream_o
     assert unsafe_fact_value["blocked_reason_codes"] == [
         "sec_edgar_html_inline_xbrl_fact_material_downstream_proof_forbidden_request_fields"
     ]
-    assert "123" not in unsafe_fact_value_response.text
+    _assert_raw_string_not_projected(unsafe_fact_value, "123")
 
 
 def test_layer3_api_records_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial(
@@ -6412,7 +6617,7 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_repeatabili
     assert forbidden_response.json()["error_code"] == (
         "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_forbidden_request_fields"
     )
-    assert "123" not in forbidden_response.text
+    _assert_raw_string_not_projected(forbidden_response.json(), "123")
 
 
 def test_layer3_api_records_sec_edgar_html_inline_xbrl_downstream_proof(
