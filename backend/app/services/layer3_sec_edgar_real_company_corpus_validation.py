@@ -661,6 +661,9 @@ def _quality_evidence_from_outputs(
     period_unit_context_dimension_profile_assigned_count = int(
         classification_diagnostics.get("period_unit_context_dimension_profile_assigned_count") or 0
     )
+    statement_role_quality_profile_assigned_count = int(
+        classification_diagnostics.get("statement_role_quality_profile_assigned_count") or 0
+    )
     context_ref_hash_present_count = int(classification_diagnostics.get("context_ref_hash_present_count") or 0)
     unit_ref_hash_present_count = int(classification_diagnostics.get("unit_ref_hash_present_count") or 0)
     decimals_or_precision_present_count = int(
@@ -692,6 +695,11 @@ def _quality_evidence_from_outputs(
                 "bounded_hash_profile_available_not_resolved"
                 if fact_count and period_unit_context_dimension_profile_assigned_count == fact_count
                 else "not_resolved"
+            ),
+            "statement_role_quality_profile": (
+                "bounded_role_rule_profile_available_not_semantics_finalized"
+                if fact_count and statement_role_quality_profile_assigned_count == fact_count
+                else "not_finalized"
             ),
             "extension_fact_handling": "retained_redacted" if extension_fact_count else "not_observed",
             "statement_candidate_usefulness": (
@@ -728,8 +736,21 @@ def _quality_evidence_from_outputs(
             "period_unit_context_dimension_profile_hash": classification_diagnostics.get(
                 "period_unit_context_dimension_profile_hash"
             ),
+            "statement_role_quality_profile_version": classification_diagnostics.get(
+                "statement_role_quality_profile_version"
+            ),
+            "statement_role_quality_profile_hash": classification_diagnostics.get(
+                "statement_role_quality_profile_hash"
+            ),
             "semantic_profile_assigned_count": semantic_profile_assigned_count,
             "period_unit_context_dimension_profile_assigned_count": period_unit_context_dimension_profile_assigned_count,
+            "statement_role_quality_profile_assigned_count": statement_role_quality_profile_assigned_count,
+            "medium_statement_role_confidence_count": int(
+                classification_diagnostics.get("medium_statement_role_confidence_count") or 0
+            ),
+            "low_statement_role_confidence_count": int(
+                classification_diagnostics.get("low_statement_role_confidence_count") or 0
+            ),
             "context_ref_hash_present_count": context_ref_hash_present_count,
             "unit_ref_hash_present_count": unit_ref_hash_present_count,
             "decimals_or_precision_present_count": decimals_or_precision_present_count,
@@ -768,6 +789,7 @@ def _quality_not_evaluated(
             "section_order_preservation": "not_evaluated",
             "fact_context_unit_preservation": "not_evaluated",
             "period_unit_context_dimension_profile": "not_evaluated",
+            "statement_role_quality_profile": "not_evaluated",
             "extension_fact_handling": "not_evaluated",
             "statement_candidate_usefulness": "not_evaluated",
             "diagnostics_quality": "not_evaluated",
