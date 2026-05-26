@@ -126,6 +126,7 @@ def test_review_browser_server_harness_info_is_versioned_and_path_redacted(clien
     assert "/__test/layer3/sec-edgar-live-downstream-status" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-html-inline-xbrl-downstream-status" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-downstream-status" in payload["seed_routes"]
+    assert "/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-repeatability-trial" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-live-repeatability-trial" in payload["seed_routes"]
     assert "/__test/layer3/sec-edgar-repeatability-trial" in payload["seed_routes"]
     assert "/__test/layer3/source-directory-fixture-reset" in payload["seed_routes"]
@@ -551,6 +552,93 @@ def test_review_browser_server_prepares_sec_edgar_html_inline_xbrl_fact_material
     assert "aapl-20240928.htm" not in str(status)
     assert "Company narrative" not in str(status)
     assert "value_text" not in str(status)
+
+
+def test_review_browser_server_prepares_sec_edgar_html_inline_xbrl_fact_material_repeatability_trial_authority(
+    client: TestClient,
+) -> None:
+    setup_response = client.post("/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-repeatability-trial")
+
+    assert setup_response.status_code == 200, setup_response.text
+    setup = setup_response.json()
+    assert setup["schema_id"] == (
+        "project6.review_browser_sec_edgar_html_inline_xbrl_fact_material_repeatability_trial_setup.v1"
+    )
+    assert setup["test_only"] is True
+    assert setup["dataset_version_id"].startswith("dv-sec-ixbrl-facts-")
+    assert setup["original_operator_status_hash"] == setup["repeat_operator_status_hash"]
+    assert setup["trial_endpoint"] == (
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/"
+        "downstream-proof/operator-repeatability/trial"
+    )
+    assert setup["status_endpoint"] == (
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/"
+        "fact-authority/material-bridge/downstream-proof/status"
+    )
+    assert setup["raw_local_path_exposed"] is False
+    assert setup["raw_url_exposed"] is False
+    assert setup["artifact_bytes_exposed"] is False
+    assert setup["raw_fact_values_rendered"] is False
+    assert setup["fact_value_reconstruction_enabled"] is False
+    assert setup["frontend_durable_authority_enabled"] is False
+    assert "C:\\" not in str(setup)
+    assert "http://" not in str(setup)
+    assert "https://" not in str(setup)
+    assert "value_text" not in str(setup)
+
+    trial_response = client.post(
+        setup["trial_endpoint"],
+        json={
+            "client_request_id": "review-browser-sec-edgar-html-inline-xbrl-fact-material-repeatability-trial",
+            "trial_mode": (
+                "append_only_trial_receipt_over_original_and_repeat_fact_material_downstream_status_authority_"
+                "without_sec_fetch_or_processing_execution"
+            ),
+            "operator_decision": (
+                "record_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial"
+            ),
+            "original_operator_status_request": setup["original_operator_status_request"],
+            "original_operator_status_hash": setup["original_operator_status_hash"],
+            "repeat_operator_status_request": setup["repeat_operator_status_request"],
+            "repeat_operator_status_hash": setup["repeat_operator_status_hash"],
+            "operator_repeatability_disposition": "no_regression_observed",
+            "operator_confirmation": True,
+        },
+    )
+    assert trial_response.status_code == 200, trial_response.text
+    trial = trial_response.json()
+    assert trial["schema_id"] == (
+        "layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial.v1"
+    )
+    assert trial["operator_repeatability_trial_state"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_repeatability_trial_accepted"
+    )
+    assert trial["operator_status_hash_comparison"] == "match"
+    assert trial["proof_hash_comparison"] == "match"
+    assert trial["coverage_step_set_comparison"] == "match"
+    assert trial["fact_inventory_hash_comparison"] == "match"
+    assert trial["fact_material_authority_hash_comparison"] == "match"
+    assert trial["authority_bindings"]["fact_authority_receipt_hash"] == (
+        setup["fact_authority_receipt_hash"]
+    )
+    assert trial["authority_bindings"]["fact_inventory_hash"] == setup["fact_inventory_hash"]
+    assert trial["authority_bindings"]["fact_material_bridge_receipt_hash"] == (
+        setup["fact_material_bridge_receipt_hash"]
+    )
+    assert trial["append_only_repeatability_trial_receipt"] is True
+    assert trial["actual_sec_processing_execution_admitted"] is False
+    assert trial["actual_subprocess_spawn_admitted"] is False
+    assert trial["connector_dispatch_enabled"] is False
+    assert trial["rag_vector_model_runtime_enabled"] is False
+    assert trial["frontend_durable_authority_enabled"] is False
+    assert trial["raw_local_path_exposed"] is False
+    assert trial["raw_url_exposed"] is False
+    assert trial["raw_fact_values_exposed"] is False
+    assert trial["fact_value_reconstruction_enabled"] is False
+    assert "C:\\" not in str(trial)
+    assert "http://" not in str(trial)
+    assert "https://" not in str(trial)
+    assert "value_text" not in str(trial)
 
 
 def test_review_browser_server_prepares_sec_edgar_live_repeatability_trial_authority(

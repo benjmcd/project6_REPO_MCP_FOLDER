@@ -64,6 +64,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_authority,
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -1904,6 +1905,77 @@ def _prepare_sec_edgar_html_inline_xbrl_fact_material_downstream_status_fixture(
     }
 
 
+def _prepare_sec_edgar_html_inline_xbrl_fact_material_repeatability_trial_fixture(
+    db,
+    *,
+    fake_client: _ReviewBrowserSeededSecEdgarClient,
+    seed_id: str,
+) -> dict[str, object]:
+    status_fixture = _prepare_sec_edgar_html_inline_xbrl_fact_material_downstream_status_fixture(
+        db,
+        fake_client=fake_client,
+        seed_id=seed_id,
+    )
+    original_status_request = {
+        "client_request_id": f"review-browser-sec-edgar-html-inline-xbrl-fact-material-repeatability-original-{seed_id}",
+        "status_mode": layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.STATUS_MODE,
+        "operator_decision": layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.OPERATOR_DECISION,
+        "fact_material_downstream_proof_request": status_fixture["fact_material_downstream_proof_request"],
+        "expected_proof_hash": status_fixture["expected_proof_hash"],
+    }
+    repeat_status_request = {
+        **original_status_request,
+        "client_request_id": f"review-browser-sec-edgar-html-inline-xbrl-fact-material-repeatability-repeat-{seed_id}",
+    }
+    original_status = (
+        layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status
+        .inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status(
+            original_status_request,
+            db,
+        )
+    )
+    repeat_status = (
+        layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status
+        .inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status(
+            repeat_status_request,
+            db,
+        )
+    )
+    return {
+        "schema_id": (
+            "project6.review_browser_sec_edgar_html_inline_xbrl_fact_material_repeatability_trial_setup.v1"
+        ),
+        "schema_version": 1,
+        "test_only": True,
+        "dataset_version_id": status_fixture["dataset_version_id"],
+        "parser_receipt_hash": status_fixture["parser_receipt_hash"],
+        "connector_receipt_hash": status_fixture["connector_receipt_hash"],
+        "live_source_artifact_receipt_hash": status_fixture["live_source_artifact_receipt_hash"],
+        "source_artifact_receipt_hash": status_fixture["source_artifact_receipt_hash"],
+        "fact_authority_receipt_hash": status_fixture["fact_authority_receipt_hash"],
+        "fact_inventory_hash": status_fixture["fact_inventory_hash"],
+        "diagnostics_hash": status_fixture["diagnostics_hash"],
+        "fact_material_bridge_receipt_hash": status_fixture["fact_material_bridge_receipt_hash"],
+        "material_bridge_receipt_hash": status_fixture["material_bridge_receipt_hash"],
+        "proof_hash": status_fixture["proof_hash"],
+        "original_operator_status_request": original_status_request,
+        "original_operator_status_hash": original_status["operator_status_hash"],
+        "repeat_operator_status_request": repeat_status_request,
+        "repeat_operator_status_hash": repeat_status["operator_status_hash"],
+        "trial_endpoint": (
+            "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/"
+            "downstream-proof/operator-repeatability/trial"
+        ),
+        "status_endpoint": status_fixture["status_endpoint"],
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+        "raw_fact_values_rendered": False,
+        "fact_value_reconstruction_enabled": False,
+        "frontend_durable_authority_enabled": False,
+    }
+
+
 def _prepare_sec_edgar_live_repeatability_trial_fixture(
     db,
     temp_path: Path,
@@ -2600,6 +2672,7 @@ def create_app() -> FastAPI:
     sec_edgar_live_status_counter = count(1)
     sec_edgar_html_inline_xbrl_status_counter = count(1)
     sec_edgar_html_inline_xbrl_fact_material_status_counter = count(1)
+    sec_edgar_html_inline_xbrl_fact_material_repeatability_counter = count(1)
     sec_edgar_live_repeatability_counter = count(1)
     sec_edgar_repeatability_counter = count(1)
     fixture = build_review_browser_fixture(temp_path)
@@ -2720,6 +2793,7 @@ def create_app() -> FastAPI:
                 "/__test/layer3/sec-edgar-live-downstream-status",
                 "/__test/layer3/sec-edgar-html-inline-xbrl-downstream-status",
                 "/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-downstream-status",
+                "/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-repeatability-trial",
                 "/__test/layer3/sec-edgar-live-repeatability-trial",
                 "/__test/layer3/sec-edgar-repeatability-trial",
                 "/__test/layer3/source-directory-hybrid-authority",
@@ -3016,6 +3090,27 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=409,
                 detail=f"SEC EDGAR HTML/iXBRL fact-material downstream status setup failed: {exc}",
+            ) from exc
+        finally:
+            db.close()
+
+    @app.post("/__test/layer3/sec-edgar-html-inline-xbrl-fact-material-repeatability-trial")
+    def sec_edgar_html_inline_xbrl_fact_material_repeatability_trial_setup() -> dict[str, object]:
+        db = SessionLocal()
+        try:
+            seed_id = (
+                "browser-html-ixbrl-fact-material-repeatability-"
+                f"{next(sec_edgar_html_inline_xbrl_fact_material_repeatability_counter):03d}"
+            )
+            return _prepare_sec_edgar_html_inline_xbrl_fact_material_repeatability_trial_fixture(
+                db,
+                fake_client=app.state.sec_edgar_live_source_artifact_client,
+                seed_id=seed_id,
+            )
+        except Exception as exc:
+            raise HTTPException(
+                status_code=409,
+                detail=f"SEC EDGAR HTML/iXBRL fact-material repeatability trial setup failed: {exc}",
             ) from exc
         finally:
             db.close()
