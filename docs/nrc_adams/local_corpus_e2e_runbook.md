@@ -10341,3 +10341,49 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_selection_v1
 ```
 
 This checkpoint closes the bounded HTML/iXBRL downstream path after the merged parser, material bridge, downstream proof, redacted status, rendered inspection, and current-main sync. It does not admit fact extraction runtime, XML/XBRL fact authority, financial-statement semantics, broad HTML/iXBRL reparsing, direct retained-filing rematerialization, live SEC fetch during closeout, provider writes, connector dispatch, RAG/model runtime, full mockup activation, browser storage, frontend durable authority, raw filing URL authority, raw local paths, raw URLs, or artifact bytes. The next governed step is to select the exact server-owned fact-authority contract over existing parser receipts and marker inventory.
+
+## SEC EDGAR HTML Inline XBRL Fact Authority Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_authority_selection_v1
+source_html_inline_xbrl_downstream_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1181-sec-edgar-html-inline-xbrl-downstream-closeout-readiness.md
+current_main_entry: 65c8cc822c40693f55b59a49113293b61d5cd6af
+entry_decision: freeze_only
+runtime_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1
+selected_fact_authority_mode: sec_edgar_html_inline_xbrl_parser_to_fact_authority_v1
+selected_operator_decision: derive_sec_edgar_html_inline_xbrl_fact_authority
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_authority.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority
+selected_source_family: sec_edgar_html_inline_xbrl
+selected_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1
+selected_fact_authority_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_authority.v1
+selected_runtime_scope: derive_ordered_inline_xbrl_fact_authority_from_existing_server_owned_parser_receipt_and_retained_primary_document
+selected_input_authority: parser_receipt_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,document_inventory_hash,content_order_hash,table_candidate_inventory_hash,inline_xbrl_marker_inventory_hash
+selected_fact_payload_scope: inline_xbrl_fact_elements_in_primary_html_inline_xbrl_document_only
+selected_fact_value_policy: preserve_internal_value_authority_with_redacted_operator_projection_and_value_hashes
+selected_order_policy: preserve_primary_document_order_and_marker_inventory_order_without_reordering_by_taxonomy_or_statement_guess
+selected_table_link_policy: retain_table_candidate_inventory_hash_and_optional_fact_to_table_candidate_anchor_hash_without_financial_statement_semantics
+material_text_table_bridge_preserved: true
+existing_material_bridge_not_weakened: true
+fact_authority_runtime_in_this_freeze: false
+standalone_xml_xbrl_fact_authority_in_this_freeze: false
+sec_companyfacts_api_runtime_in_this_freeze: false
+taxonomy_network_resolution_in_this_freeze: false
+financial_statement_semantics_in_this_freeze: false
+browser_supplied_html_admitted: false
+browser_supplied_raw_url_admitted: false
+browser_supplied_local_path_admitted: false
+source_expansion_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_authority_runtime_v1
+```
+
+This freeze selects the first governed HTML/iXBRL fact-authority runtime. The future runtime must derive ordered inline XBRL facts from existing server-owned parser and retained source-artifact authority, preserve internal value authority with redacted operator projections, retain source/marker order and table-candidate anchors, and keep financial-statement semantics, standalone XML XBRL, SEC Company Facts, taxonomy network resolution, browser-submitted HTML, raw URLs, local paths, artifact bytes, connector dispatch, provider writes, RAG/model runtime, and full mockup activation out of scope.
