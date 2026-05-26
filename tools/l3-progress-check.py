@@ -3556,6 +3556,15 @@ SEC_EDGAR_COMPLETION_AUDIT = (
 SEC_EDGAR_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS / "1226-sec-edgar-current-main-sync.md"
 )
+SEC_EDGAR_PRODUCT_QUALITY_MATRIX_RUNTIME = (
+    PLANNING_DOCS / "1227-sec-edgar-product-quality-matrix-runtime.md"
+)
+SEC_EDGAR_BROADER_QUALITY_BREADTH_RUNTIME = (
+    PLANNING_DOCS / "1228-sec-edgar-broader-quality-breadth-runtime.md"
+)
+SEC_EDGAR_SEMANTIC_PROFILE_RUNTIME = (
+    PLANNING_DOCS / "1229-sec-edgar-semantic-profile-runtime.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -113436,7 +113445,7 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_proof_runtime(
             "sec_edgar_html_inline_xbrl_fact_material_units_v1",
             "html_inline_xbrl_fact_material_authority_bridge",
             "\"value_text\" not in response.text",
-            "\"123\" not in unsafe_coverage_response.text",
+            '_assert_raw_string_not_projected(unsafe_coverage_response.json(), "123")',
         ),
     }
     for path, terms in required_terms.items():
@@ -113634,7 +113643,7 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_r
             "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_stale_or_unsafe",
             "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_proof_hash_mismatch",
             "fact_material_downstream_proof_request",
-            "\"123\" not in unsafe_fact_value_response.text",
+            '_assert_raw_string_not_projected(unsafe_fact_value, "123")',
         ),
         bootstrap: (
             "\"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status\": True",
@@ -116983,6 +116992,153 @@ def _check_sec_edgar_current_main_sync(
                 )
 
 
+def _check_sec_edgar_product_quality_matrix_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_PRODUCT_QUALITY_MATRIX_RUNTIME: (
+            "SEC EDGAR Product Quality Matrix Runtime",
+            "milestone: sec_edgar_product_quality_matrix_runtime_v1",
+            "source_current_main_sync: next_milestone_plans/Layer3_planning_docs/1226-sec-edgar-current-main-sync.md",
+            "quality_matrix_surface: product_quality_matrix",
+            "quality_evidence_scope: redacted_hash_count_and_status_projection",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_product_quality_matrix_verification_v1",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "product_quality_matrix",
+            "quality_assessment_status",
+            "financial_statement_semantics_not_finalized",
+            "cross_company_comparability_not_admitted",
+            "extension_fact_handling",
+            "quality_evidence_hash",
+        ),
+        SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_SERVICE: (
+            "quality_assessment_status",
+            "quality_dimensions",
+            "quality_gaps",
+            "quality_evidence_hash",
+        ),
+        SEC_EDGAR_OPERATOR_INSPECTION_SERVICE: (
+            "quality_assessment_status",
+            "quality_dimensions",
+            "quality_gaps",
+            "quality_evidence_hash",
+        ),
+        LAYER3_API_TEST: (
+            "product_quality_matrix",
+            "redacted_quality_evidence_ready_with_known_semantic_gaps",
+            "financial_statement_semantics_not_finalized",
+            "package_review_handoff_coherence",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR product-quality matrix term: {term}"
+                )
+
+
+def _check_sec_edgar_broader_quality_breadth_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_BROADER_QUALITY_BREADTH_RUNTIME: (
+            "SEC EDGAR Broader Quality Breadth Runtime",
+            "milestone: sec_edgar_broader_quality_breadth_runtime_v1",
+            "source_quality_matrix_runtime: next_milestone_plans/Layer3_planning_docs/1227-sec-edgar-product-quality-matrix-runtime.md",
+            "broader_quality_matrix: JPM,MET,PLD,FIZZ",
+            "broader_profile_tags: financial_institution,insurance,reit,small_cap,amended_filing",
+            "delivery_status_provenance_broadened: false",
+            "operator_inspection_broadened: false",
+            "next_exact_posture: sec_edgar_financial_semantics_gap_selection_v1",
+        ),
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SERVICE: (
+            '"JPM": "19617"',
+            '"MET": "1099219"',
+            '"PLD": "1045609"',
+            '"FIZZ": "69891"',
+            "REAL_COMPANY_PROFILE_TAGS",
+            "amended_filing",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "issuer_profile_tags",
+            "issuer_profile_tags_observed",
+            "product_quality_matrix",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix",
+            "_broader_company_validation_fake_results",
+            '"company_matrix": ["JPM", "MET", "PLD", "FIZZ"]',
+            "financial_institution",
+            "insurance",
+            "reit",
+            "small_cap",
+            "amended_filing",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR broader quality-breadth term: {term}"
+                )
+
+
+def _check_sec_edgar_semantic_profile_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_SEMANTIC_PROFILE_RUNTIME: (
+            "SEC EDGAR Semantic Profile Runtime",
+            "milestone: sec_edgar_semantic_profile_runtime_v1",
+            "source_broader_quality_breadth_runtime: next_milestone_plans/Layer3_planning_docs/1228-sec-edgar-broader-quality-breadth-runtime.md",
+            "semantic_profile_surface: semantic_profile",
+            "semantic_profile_version: sec_edgar_statement_semantic_profile_v1",
+            "financial_statement_semantics_finalized: false",
+            "taxonomy_network_resolution_performed: false",
+            "sec_companyfacts_api_called: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_operator_product_surface_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE: (
+            "SEMANTIC_PROFILE_VERSION",
+            "semantic_profile_inventory_hash",
+            "semantic_profile_assigned_count",
+            "standard_taxonomy_fact_count",
+            "company_extension_fact_count",
+            "comparable_standard_fact_count",
+            "company_extension_unmapped_count",
+            "cross_company_comparability_profile_available",
+            "final_financial_statement_semantics_claimed",
+        ),
+        SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE: (
+            "bounded_profile_available_not_finalized",
+            "standard_taxonomy_profile_available_not_admitted",
+            "semantic_profile_inventory_hash",
+            "company_extension_unmapped_count",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_statement_semantic_profile_v1",
+            "semantic_profile_assigned_count",
+            "standard_taxonomy_fact_count",
+            "bounded_profile_available_not_finalized",
+            "standard_taxonomy_profile_available_not_admitted",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR semantic-profile runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118283,6 +118439,9 @@ def main() -> int:
     _check_sec_edgar_operator_inspection_runtime(errors)
     _check_sec_edgar_completion_audit(errors)
     _check_sec_edgar_current_main_sync(errors)
+    _check_sec_edgar_product_quality_matrix_runtime(errors)
+    _check_sec_edgar_broader_quality_breadth_runtime(errors)
+    _check_sec_edgar_semantic_profile_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

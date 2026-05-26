@@ -31,6 +31,7 @@ RECEIPT_PREFIX = "sec-edgar-html-inline-xbrl-fact-statement-classification"
 RECEIPT_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-statement-classification"
 REDACTION_POLICY_ID = "sec_edgar_html_inline_xbrl_fact_statement_classification_redaction_v1"
 AUTHORITY_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1"
+SEMANTIC_PROFILE_VERSION = "sec_edgar_statement_semantic_profile_v1"
 
 STATEMENT_ROLES = (
     "balance_sheet",
@@ -153,6 +154,8 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     _validate_classification_inventory(facts, classification_inventory)
     statement_groups = _statement_groups(classification_inventory)
     classification_inventory_hash = stable_hash(classification_inventory)
+    semantic_profiles = [dict(item["semantic_profile"]) for item in classification_inventory]
+    semantic_profile_inventory_hash = stable_hash(semantic_profiles)
     classification_order_hash = stable_hash(
         [
             {
@@ -167,16 +170,40 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     statement_group_inventory_hash = stable_hash(statement_groups)
     unclassified = [item for item in classification_inventory if item["statement_candidate_role"] == "unknown_or_unclassified"]
     unclassified_fact_inventory_hash = stable_hash(unclassified)
+    semantic_profile_assigned_count = sum(1 for item in classification_inventory if isinstance(item.get("semantic_profile"), Mapping))
+    standard_taxonomy_fact_count = sum(
+        1
+        for profile in semantic_profiles
+        if str(profile.get("taxonomy_class") or "").startswith("standard_")
+    )
+    company_extension_fact_count = sum(
+        1
+        for profile in semantic_profiles
+        if profile.get("taxonomy_class") == "company_extension"
+    )
+    comparable_standard_fact_count = sum(
+        1
+        for profile in semantic_profiles
+        if profile.get("comparability_scope") == "standard_taxonomy_profile"
+    )
     diagnostics = {
         "fact_count": len(facts),
         "classified_fact_count": len(classification_inventory),
         "unknown_or_unclassified_count": len(unclassified),
+        "semantic_profile_version": SEMANTIC_PROFILE_VERSION,
+        "semantic_profile_assigned_count": semantic_profile_assigned_count,
+        "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
+        "standard_taxonomy_fact_count": standard_taxonomy_fact_count,
+        "company_extension_fact_count": company_extension_fact_count,
+        "comparable_standard_fact_count": comparable_standard_fact_count,
+        "company_extension_unmapped_count": company_extension_fact_count,
         "every_fact_classified_exactly_once": True,
         "source_order_preserved": True,
         "marker_order_preserved": True,
         "raw_values_returned": False,
         "raw_html_returned": False,
         "raw_url_returned": False,
+        "cross_company_comparability_profile_available": comparable_standard_fact_count > 0,
         "taxonomy_network_resolution_performed": False,
         "sec_companyfacts_api_called": False,
         "financial_statement_semantics_claimed": False,
@@ -190,6 +217,7 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
             "fact_material_bridge_receipt_hash": bridge_receipt_hash,
             "fact_inventory_hash": fact_receipt["fact_inventory_hash"],
             "classification_inventory_hash": classification_inventory_hash,
+            "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
             "classification_order_hash": classification_order_hash,
             "statement_group_inventory_hash": statement_group_inventory_hash,
             "unclassified_fact_inventory_hash": unclassified_fact_inventory_hash,
@@ -233,6 +261,7 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "gate_b_decision_manifest_id": bridge_status["gate_b_decision_manifest_id"],
         "classification_inventory": classification_inventory,
         "classification_inventory_hash": classification_inventory_hash,
+        "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
         "classification_order_hash": classification_order_hash,
         "statement_group_inventory": statement_groups,
         "statement_group_inventory_hash": statement_group_inventory_hash,
@@ -339,7 +368,10 @@ def _validate_bridge_authority(
 
 
 def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inventory_hash: str) -> dict[str, Any]:
-    role, basis, confidence = _classify_role(str(fact.get("local_name") or ""), str(fact.get("namespace_prefix") or ""))
+    local_name = str(fact.get("local_name") or "")
+    namespace_prefix = str(fact.get("namespace_prefix") or "")
+    role, basis, confidence = _classify_role(local_name, namespace_prefix)
+    semantic_profile = _semantic_profile(local_name, namespace_prefix, role)
     record = {
         "classification_id_or_order_key": stable_hash(
             {
@@ -353,11 +385,12 @@ def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inv
         "fact_order": fact_order,
         "marker_order_index": int(fact.get("marker_order_index") or fact_order),
         "qualified_name": str(fact.get("qualified_name") or ""),
-        "namespace_prefix": str(fact.get("namespace_prefix") or ""),
-        "local_name": str(fact.get("local_name") or ""),
+        "namespace_prefix": namespace_prefix,
+        "local_name": local_name,
         "statement_candidate_role": role,
         "classification_confidence": confidence,
         "classification_basis": basis,
+        "semantic_profile": semantic_profile,
         "context_ref_hash": fact.get("context_ref_hash"),
         "unit_ref_hash": fact.get("unit_ref_hash"),
         "decimals_or_precision": str(fact.get("decimals_or_precision") or ""),
@@ -372,6 +405,66 @@ def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inv
         "final_financial_statement_semantics_claimed": False,
     }
     return record
+
+
+def _semantic_profile(local_name: str, namespace_prefix: str, role: str) -> dict[str, Any]:
+    prefix = namespace_prefix.lower()
+    if prefix == "us-gaap":
+        taxonomy_class = "standard_us_gaap"
+    elif prefix == "dei":
+        taxonomy_class = "standard_dei"
+    elif prefix == "ifrs-full":
+        taxonomy_class = "standard_ifrs"
+    elif prefix:
+        taxonomy_class = "company_extension"
+    else:
+        taxonomy_class = "unknown_taxonomy"
+    concept_family = _concept_family(local_name, role)
+    standard_taxonomy = taxonomy_class.startswith("standard_")
+    return {
+        "semantic_profile_version": SEMANTIC_PROFILE_VERSION,
+        "taxonomy_class": taxonomy_class,
+        "concept_family": concept_family,
+        "statement_candidate_role": role,
+        "comparability_scope": "standard_taxonomy_profile" if standard_taxonomy else "issuer_extension_unmapped",
+        "comparability_key": (
+            f"{taxonomy_class}:{role}:{concept_family}" if standard_taxonomy else "company_extension_unmapped"
+        ),
+        "extension_taxonomy_retained": taxonomy_class == "company_extension",
+        "taxonomy_network_resolution_used": False,
+        "sec_companyfacts_api_used": False,
+        "final_financial_statement_semantics_claimed": False,
+    }
+
+
+def _concept_family(local_name: str, role: str) -> str:
+    local = re.sub(r"[^a-z0-9]+", "", local_name.lower())
+    if role == "cover_page":
+        return "cover_page_or_dei"
+    if role == "disclosure_or_note":
+        return "disclosure_or_note"
+    if role == "unknown_or_unclassified":
+        return "unknown"
+    family_rules = (
+        ("cash", ("cashandcashequivalents", "cash")),
+        ("assets", ("asset",)),
+        ("liabilities", ("liabilit", "payable")),
+        ("equity", ("equity", "stockholder", "shareholder", "commonstock", "preferredstock")),
+        ("debt", ("debt", "borrow", "loan")),
+        ("revenue", ("revenue", "sales")),
+        ("expense_or_cost", ("expense", "costof", "cost")),
+        ("income_or_loss", ("income", "loss", "earnings", "profit")),
+        ("operating_cash_flow", ("operatingactivities", "providedbyusedinoperating")),
+        ("investing_cash_flow", ("investingactivities", "providedbyusedininvesting")),
+        ("financing_cash_flow", ("financingactivities", "providedbyusedinfinancing")),
+        ("net_cash_flow", ("netcash", "cashflow")),
+        ("comprehensive_income", ("comprehensiveincome", "othercomprehensive")),
+        ("retained_earnings", ("retainedearnings",)),
+    )
+    for family, tokens in family_rules:
+        if any(token in local for token in tokens):
+            return family
+    return f"other_{role}"
 
 
 def _classify_role(local_name: str, namespace_prefix: str) -> tuple[str, dict[str, Any], str]:
@@ -485,6 +578,8 @@ def _response_from_receipt(
         "gate_b_decision_manifest_id": receipt["gate_b_decision_manifest_id"],
         "classification_inventory": list(receipt["classification_inventory"]),
         "classification_inventory_hash": receipt["classification_inventory_hash"],
+        "semantic_profile_inventory_hash": receipt.get("semantic_profile_inventory_hash")
+        or dict(receipt["classification_diagnostics"]).get("semantic_profile_inventory_hash"),
         "classification_order_hash": receipt["classification_order_hash"],
         "statement_group_inventory": list(receipt["statement_group_inventory"]),
         "statement_group_inventory_hash": receipt["statement_group_inventory_hash"],
@@ -500,8 +595,15 @@ def _response_from_receipt(
                 item["statement_candidate_role"]: item["fact_count"] for item in receipt["statement_group_inventory"]
             },
             "classification_inventory_hash": receipt["classification_inventory_hash"],
+            "semantic_profile_inventory_hash": receipt.get("semantic_profile_inventory_hash")
+            or dict(receipt["classification_diagnostics"]).get("semantic_profile_inventory_hash"),
             "statement_group_inventory_hash": receipt["statement_group_inventory_hash"],
             "classification_diagnostics_hash": receipt["classification_diagnostics_hash"],
+            "semantic_profile_version": dict(receipt["classification_diagnostics"]).get("semantic_profile_version"),
+            "semantic_profile_assigned_count": dict(receipt["classification_diagnostics"]).get("semantic_profile_assigned_count", 0),
+            "standard_taxonomy_fact_count": dict(receipt["classification_diagnostics"]).get("standard_taxonomy_fact_count", 0),
+            "company_extension_fact_count": dict(receipt["classification_diagnostics"]).get("company_extension_fact_count", 0),
+            "comparable_standard_fact_count": dict(receipt["classification_diagnostics"]).get("comparable_standard_fact_count", 0),
             "raw_values_returned": False,
             "final_financial_statement_semantics_claimed": False,
             "next_allowed_actions": ["select_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product"],
