@@ -33,6 +33,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_downstream_status,
     layer3_sec_edgar_html_inline_xbrl_fact_authority,
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_downstream_proof,
@@ -625,6 +626,31 @@ class Layer3SecEdgarHtmlInlineXbrlDownstreamProofRequest(BaseModel):
     parser_receipt_hash: str = Field(min_length=64, max_length=64)
     material_bridge_receipt_id: str = Field(min_length=1)
     material_bridge_receipt_hash: str = Field(min_length=64, max_length=64)
+    dataset_version_id: str = Field(min_length=1)
+    material_preview_hash: str = Field(min_length=64, max_length=64)
+    gate_b_decision_manifest_id: str = Field(min_length=1)
+    session_id: str = Field(min_length=1)
+    selection_manifest_id: str = Field(min_length=1)
+    material_snapshot_payload_hash: str = Field(min_length=64, max_length=64)
+    coverage_evidence: dict[str, Any]
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamProofRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    proof_mode: Literal["sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof_v1"]
+    operator_decision: Literal["record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof"]
+    parser_receipt_id: str = Field(min_length=1)
+    parser_receipt_hash: str = Field(min_length=64, max_length=64)
+    fact_authority_receipt_id: str = Field(min_length=1)
+    fact_authority_receipt_hash: str = Field(min_length=64, max_length=64)
+    fact_material_bridge_receipt_id: str = Field(min_length=1)
+    fact_material_bridge_receipt_hash: str = Field(min_length=64, max_length=64)
     dataset_version_id: str = Field(min_length=1)
     material_preview_hash: str = Field(min_length=64, max_length=64)
     gate_b_decision_manifest_id: str = Field(min_length=1)
@@ -7935,6 +7961,54 @@ class Layer3SecEdgarHtmlInlineXbrlDownstreamProofResponse(Layer3BaseResponse):
     next_allowed_actions: list[str]
 
 
+class Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamProofResponse(Layer3BaseResponse):
+    mode: str
+    proof_state: str
+    dataset_version_id: str
+    dataset_version_hash: str
+    source_family: str
+    parser_family: str
+    typed_content_contract_id: str
+    parser_receipt_id: str
+    parser_receipt_hash: str
+    fact_authority_receipt_id: str
+    fact_authority_receipt_hash: str
+    fact_inventory_hash: str
+    diagnostics_hash: str
+    fact_material_bridge_receipt_id: str
+    fact_material_bridge_receipt_hash: str
+    bridge_receipt_hash: str
+    materialization_receipt_hash: str
+    material_preview_hash: str
+    gate_b_decision_manifest_id: str
+    session_id: str
+    selection_manifest_id: str
+    material_snapshot_id: str
+    material_snapshot_payload_hash: str
+    proof_hash: str
+    proof_receipt_id: str
+    proof_receipt_ref: str
+    coverage: list[str]
+    coverage_evidence: dict[str, Any]
+    coverage_evidence_hash: str
+    negative_invariants_hash: str
+    status_projection: dict[str, Any]
+    raw_local_path_exposed: bool
+    raw_url_exposed: bool
+    artifact_bytes_exposed: bool
+    provider_private_token_exposed: bool
+    provider_public_url_enabled: bool
+    provider_object_writes_enabled: bool
+    connector_dispatch_enabled: bool
+    rag_vector_model_runtime_enabled: bool
+    runtime_db_or_storage_expansion_admitted: bool
+    frontend_durable_authority_enabled: bool
+    browser_storage_authority_enabled: bool
+    full_mockup_activation_enabled: bool
+    negative_invariants: dict[str, bool]
+    next_allowed_actions: list[str]
+
+
 class Layer3SecEdgarHtmlInlineXbrlDownstreamOperatorStatusResponse(Layer3BaseResponse):
     mode: str
     operator_status_state: str
@@ -14982,6 +15056,23 @@ def get_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
             sec_edgar_html_inline_xbrl_fact_material_bridge_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof",
+    response_model=Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamProofResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_html_inline_xbrl_fact_material_downstream_proof(
+    payload: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamProofRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof.record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof(
+            payload.model_dump(exclude_none=True),
+            db,
         )
     )
 
