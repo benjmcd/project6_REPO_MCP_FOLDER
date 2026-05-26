@@ -10145,3 +10145,62 @@ next_exact_posture: sec_edgar_html_inline_xbrl_downstream_rendered_status_select
 ```
 
 The status runtime is a read-only projection over a supplied proof request plus expected proof hash. It reports `available` only when the existing proof service revalidates the request and recomputes the same hash; it reports `not_recorded` without proof authority and `blocked` for stale, ambiguous, mismatched, or unsafe proof authority.
+
+## SEC EDGAR HTML Inline XBRL Downstream Rendered Status Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_downstream_rendered_status_selection_v1
+source_operator_status_runtime: next_milestone_plans/Layer3_planning_docs/1177-sec-edgar-html-inline-xbrl-downstream-operator-status-runtime.md
+source_existing_text_table_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1124-sec-edgar-text-table-downstream-rendered-operator-status-runtime.md
+source_existing_live_text_table_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1157-sec-edgar-text-table-live-source-artifact-downstream-rendered-status-runtime.md
+current_main_entry: a7e0130c19483f11916d7667f7921a33d396f037
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+implementation_admitted_after_current_main_sync: true
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_downstream_rendered_status_runtime_v1
+selected_rendered_mode: rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control
+selected_status_mode: sec_edgar_html_inline_xbrl_downstream_operator_status_v1
+selected_operator_decision: inspect_sec_edgar_html_inline_xbrl_downstream_operator_status
+selected_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status
+selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof
+selected_bootstrap_capability: sec_edgar_html_inline_xbrl_downstream_operator_status
+selected_bootstrap_endpoint_field: sec_edgar_html_inline_xbrl_downstream_operator_status_endpoint
+selected_rendered_scope: operator_visible_status_inspection_over_server_revalidated_html_inline_xbrl_downstream_proof_authority
+selected_status_states: not_recorded,available,blocked
+selected_rendered_form: sec-edgar-html-inline-xbrl-downstream-operator-status-form
+selected_rendered_submit: sec-edgar-html-inline-xbrl-downstream-operator-status-submit
+selected_rendered_panel: sec-edgar-html-inline-xbrl-downstream-operator-status-panel
+selected_rendered_payload_fields: client_request_id,status_mode,operator_decision,html_inline_xbrl_downstream_proof_request,expected_proof_hash
+selected_rendered_status_fields: operator_status_state,expected_proof_hash,proof_hash,proof_state,dataset_version_id,dataset_version_hash,source_family,parser_family,typed_content_contract_id,parser_receipt_hash,connector_receipt_hash,live_source_artifact_receipt_hash,source_artifact_receipt_hash,content_sha256,primary_document_hash,content_order_hash,materialization_receipt_hash,material_bridge_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,session_id,selection_manifest_id,material_snapshot_payload_hash,coverage_evidence_hash,negative_invariants_hash,operator_status_hash,operator_status_projection_ref,proof_summary,blocked_reasons,next_allowed_actions
+available_requires_server_revalidated_html_inline_xbrl_proof_request: true
+available_requires_expected_proof_hash_match: true
+browser_held_hash_alone_is_not_authority: true
+stale_or_mismatched_proof_hash_must_fail_closed: true
+raw_or_forbidden_proof_authority_must_fail_closed: true
+rendered_status_can_create_downstream_proof: false
+rendered_status_can_fetch_sec_content: false
+rendered_status_can_run_submissions_lookup: false
+rendered_status_can_reparse_or_materialize_html_inline_xbrl: false
+rendered_status_can_create_xml_xbrl_fact_authority: false
+rendered_status_can_add_financial_statement_semantics: false
+rendered_status_can_dispatch_connector: false
+rendered_status_can_write_provider_object: false
+rendered_status_can_add_rag_or_model_runtime: false
+rendered_status_can_activate_full_mockup: false
+raw_proof_request_rendered: false
+raw_proof_receipt_path_rendered: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+browser_storage_authority_admitted: false
+frontend_durable_authority_enabled: false
+headless_rendered_status_proof_required: true
+headed_rendered_status_proof_required: true
+rendered_status_runtime_in_this_freeze: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_downstream_rendered_status_runtime_v1
+```
+
+This selection freezes the rendered control for inspecting the existing HTML/iXBRL downstream status endpoint. The next runtime may render only redacted server status over a server-revalidated proof request plus expected proof hash; it must not create proof, reparse HTML/iXBRL, create XBRL fact authority, fetch SEC content, mutate Layer 3 state, dispatch connectors, write provider objects, activate full mockup behavior, or expose raw proof requests, paths, URLs, receipt paths, artifact bytes, storage refs, or provider credentials.
