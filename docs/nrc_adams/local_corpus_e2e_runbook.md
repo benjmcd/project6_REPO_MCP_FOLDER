@@ -10252,3 +10252,50 @@ next_exact_posture: sec_edgar_html_inline_xbrl_downstream_rendered_status_curren
 ```
 
 The rendered status runtime gives operators an admitted HTML/iXBRL downstream proof inspection control. Operators can paste the existing downstream proof request and expected proof hash, receive `not_recorded`, `available`, or `blocked`, and inspect only redacted hashes/status/provenance. The panel does not create proof, rerun the SEC connector, parse or rematerialize HTML/iXBRL, create XML/XBRL fact authority, mutate Gate B/package/delivery state, or expose raw URLs, local paths, receipt paths, artifact bytes, storage refs, or provider credentials.
+
+## SEC EDGAR HTML Inline XBRL Downstream Rendered Status Current Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_downstream_rendered_status_current_main_sync_v1
+source_rendered_status_runtime: next_milestone_plans/Layer3_planning_docs/1179-sec-edgar-html-inline-xbrl-downstream-rendered-status-runtime.md
+current_main_entry: 5af458edb1cdcff523088d37a67ace3db4a4134e
+source_pr: "#1882"
+source_merge_commit: 5af458edb1cdcff523088d37a67ace3db4a4134e
+current_main_contains_html_inline_xbrl_downstream_rendered_status: true
+current_main_progress_check: python ./tools/l3-progress-check.py PASS
+current_main_target_selection_check: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+synced_bootstrap_capability: sec_edgar_html_inline_xbrl_downstream_operator_status
+synced_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status
+synced_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof
+synced_rendered_mode: rendered_sec_edgar_html_inline_xbrl_downstream_operator_status_control
+synced_status_mode: sec_edgar_html_inline_xbrl_downstream_operator_status_v1
+synced_operator_decision: inspect_sec_edgar_html_inline_xbrl_downstream_operator_status
+synced_panel: sec-edgar-html-inline-xbrl-downstream-operator-status-panel
+synced_payload_fields: client_request_id,status_mode,operator_decision,html_inline_xbrl_downstream_proof_request,expected_proof_hash
+synced_available_requires_server_revalidated_html_inline_xbrl_proof_request: true
+synced_available_requires_expected_proof_hash_match: true
+synced_browser_held_hash_alone_is_not_authority: true
+synced_parser_authority_bound: true
+synced_material_bridge_authority_bound: true
+synced_test_only_fixture_user_facing_authority: false
+runtime_behavior_introduced_by_this_sync: false
+rendered_behavior_introduced_by_this_sync: false
+backend_behavior_introduced_by_this_sync: false
+sec_edgar_network_fetch_admitted_by_sync: false
+sec_edgar_parser_expansion_admitted: false
+html_inline_xbrl_reparse_or_materialization_admitted: false
+xml_xbrl_fact_authority_admitted: false
+financial_statement_semantics_admitted: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_proof_request_rendered_in_status_projection: false
+raw_local_path_rendered: false
+raw_url_rendered: false
+artifact_bytes_rendered: false
+next_exact_posture: sec_edgar_html_inline_xbrl_downstream_closeout_readiness_v1
+```
+
+PR `#1882` merged the SEC EDGAR HTML/iXBRL downstream rendered operator-status inspection surface into current main. This sync records the merged current-main state only; it adds no runtime, parser, connector, source, storage, delivery, provider, model, full-mockup, or frontend durable authority. The next checkpoint should close out the bounded HTML/iXBRL downstream chain and select the next exact SEC/EDGAR slice only if it advances fact/table authority, real corpus execution, or downstream operator usability without widening parser/source/provider/runtime scope.
