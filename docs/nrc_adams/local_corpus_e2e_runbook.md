@@ -11479,3 +11479,33 @@ next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_dow
 ```
 
 The downstream product runtime is API/status evidence over existing statement-classification receipts. It produces redacted product manifests for statement candidate groups, table anchors, unknown diagnostics, authority provenance, and downstream readiness; it does not create final SEC financial statements or add taxonomy, CompanyFacts, XML/XBRL, parser, network, provider, connector, RAG/model, full mockup, or frontend-durable authority.
+
+## SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Current-Main Sync
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_current_main_sync_v1
+source_downstream_product_runtime: next_milestone_plans/Layer3_planning_docs/1204-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-runtime.md
+current_main_entry: a3a77d2433f78505115309bc9c7dcd4d88469df9
+source_pr: "#1904"
+source_pr_status: merged_current_main
+runtime_status: implemented_current_main
+implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product
+downstream_product_runtime_current_main: true
+rendered_runtime_in_this_sync: false
+financial_statement_semantics_runtime_in_this_sync: false
+taxonomy_network_resolution_in_this_sync: false
+sec_companyfacts_api_runtime_in_this_sync: false
+new_sec_network_runtime_in_this_sync: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+raw_local_path_exposed: false
+raw_url_exposed: false
+artifact_bytes_exposed: false
+raw_fact_values_exposed: false
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_v1
+```
+
+Current main now includes the SEC HTML/iXBRL statement-classification downstream product runtime. The next selected slice should move these redacted product receipts into package/review, unless operator-visible rendered inspection is found to be the immediate blocker.
