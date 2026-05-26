@@ -30,6 +30,17 @@ DEFAULT_FORM_TYPES = ("10-K", "10-Q", "8-K")
 REAL_COMPANY_DISCOVERY_POLICY = "real_company_recent_annual_and_interim_or_current_v1"
 DEFAULT_FILING_SELECTION_POLICY = "explicit_form_types_v1"
 DEFAULT_REAL_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")
+VALIDATION_BREADTH_EXPANSION_SELECTION_VERSION = "sec_edgar_validation_breadth_expansion_selection_v1"
+VALIDATION_BREADTH_EXPANSION_SELECTED_MATRIX = ("XOM", "PFE", "UAL", "T")
+VALIDATION_BREADTH_EXPANSION_SELECTED_PROFILE_TAGS = (
+    "energy_major",
+    "pharmaceutical_life_sciences",
+    "airline_transport",
+    "telecom_media",
+    "debt_intensive",
+    "commodity_exposure",
+)
+VALIDATION_BREADTH_EXPANSION_RUNTIME_ENABLED = False
 REAL_COMPANY_CIK_REFS = {
     "MSFT": "789019",
     "STLD": "1022671",
