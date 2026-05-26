@@ -3484,6 +3484,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACK
     PLANNING_DOCS
     / "1206-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACKAGE_REVIEW_SELECTION_CURRENT_MAIN_SYNC = (
+    PLANNING_DOCS
+    / "1207-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-selection-current-main-sync.md"
+)
 SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_SERVICE = (
     ROOT
     / "backend"
@@ -115162,6 +115166,88 @@ def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_p
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_current_main_sync(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACKAGE_REVIEW_SELECTION_CURRENT_MAIN_SYNC: (
+            "SEC EDGAR HTML Inline XBRL Fact Statement Classification Downstream Product Package Review Selection Current-Main Sync",
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_current_main_sync_v1",
+            "source_package_review_selection: next_milestone_plans/Layer3_planning_docs/1206-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-selection.md",
+            "current_main_entry: a3798019972270efb3d8539bea8916ff44b43a6f",
+            'source_pr: "#1906"',
+            "source_pr_status: merged_current_main",
+            "ci_status_after_merge: latest_pr_1906_backend_and_playwright_shards_passed",
+            "sync_status: current_main_verified",
+            "selection_status: implemented_current_main",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+            "selected_package_review_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1",
+            "selected_operator_decision: preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview/status/{package_review_preview_receipt_id}",
+            "selected_runtime_scope: build_redacted_package_review_preview_over_existing_statement_candidate_product_receipt_without_committing_package_rows_or_review_submit",
+            "selected_package_artifact_roles: canonical_internal,review_facing,user_facing,authority_provenance,review_readiness_manifest,redaction_manifest",
+            "selected_non_loss_policy: package_preview_must_reference_every_statement_candidate_product_group_unknown_diagnostic_and_table_anchor_by_hash_without_discarding_product_evidence",
+            "selected_output_authority: package_review_preview_receipt_id,package_review_preview_receipt_hash,candidate_package_manifest_hash,review_readiness_hash,package_order_hash,redaction_manifest_hash",
+            "package_review_preview_runtime_current_main: false",
+            "package_construction_commit_current_main: false",
+            "package_review_submit_current_main: false",
+            "handoff_export_current_main: false",
+            "delivery_runtime_current_main: false",
+            "financial_statement_semantics_runtime_current_main: false",
+            "taxonomy_network_resolution_current_main: false",
+            "sec_companyfacts_api_runtime_current_main: false",
+            "new_sec_network_runtime_current_main: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "raw_fact_values_exposed: false",
+            "verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS",
+            "verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_current_main_sync_v1",
+            "source_package_review_selection: next_milestone_plans/Layer3_planning_docs/1206-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-package-review-selection.md",
+            "current_main_entry: a3798019972270efb3d8539bea8916ff44b43a6f",
+            'source_pr: "#1906"',
+            "source_pr_status: merged_current_main",
+            "sync_status: current_main_verified",
+            "selection_status: implemented_current_main",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+            "selected_package_review_mode: sec_edgar_html_inline_xbrl_statement_candidate_product_package_review_preview_v1",
+            "selected_operator_decision: preview_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/statement-classification/downstream-product/package-review/preview",
+            "selected_package_artifact_roles: canonical_internal,review_facing,user_facing,authority_provenance,review_readiness_manifest,redaction_manifest",
+            "selected_non_loss_policy: package_preview_must_reference_every_statement_candidate_product_group_unknown_diagnostic_and_table_anchor_by_hash_without_discarding_product_evidence",
+            "package_review_preview_runtime_current_main: false",
+            "package_construction_commit_current_main: false",
+            "package_review_submit_current_main: false",
+            "handoff_export_current_main: false",
+            "raw_fact_values_exposed: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_STATEMENT_CLASSIFICATION_DOWNSTREAM_PRODUCT_PACKAGE_REVIEW_SELECTION: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_preview_runtime_v1",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact statement-classification downstream product package-review selection current-main sync term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -116416,6 +116502,9 @@ def main() -> int:
         errors
     )
     _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_selection_current_main_sync(
         errors
     )
 
