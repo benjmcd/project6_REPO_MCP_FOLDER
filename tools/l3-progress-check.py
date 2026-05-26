@@ -3412,6 +3412,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_SELECTION = 
     PLANNING_DOCS
     / "1188-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-selection.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_RUNTIME = (
+    PLANNING_DOCS
+    / "1189-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-runtime.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -113343,6 +113347,121 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_s
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_runtime(
+    errors: list[str],
+) -> None:
+    service = ROOT / "backend" / "app" / "services" / (
+        "layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py"
+    )
+    api = ROOT / "backend" / "app" / "api" / "layer3.py"
+    api_tests = ROOT / "backend" / "tests" / "test_layer3_api.py"
+    bootstrap = ROOT / "backend" / "app" / "services" / "layer3_bootstrap_contract.py"
+    bootstrap_tests = ROOT / "backend" / "tests" / "test_layer3_bootstrap_contract.py"
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_RUNTIME: (
+            "SEC EDGAR HTML Inline XBRL Fact Material Downstream Operator Status Runtime",
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_runtime_v1",
+            "source_fact_material_downstream_operator_status_selection: next_milestone_plans/Layer3_planning_docs/1188-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-status-selection.md",
+            "current_main_entry: 8d9564f16fc75a79763ae248824df58ed1beca85",
+            "entry_decision: runtime_implementation",
+            "runtime_status: implemented",
+            "rendered_status: not_implemented",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status",
+            "implemented_request_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusRequest",
+            "implemented_response_model: Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusResponse",
+            "implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status.v1",
+            "implemented_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1",
+            "implemented_operator_decision: inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+            "implemented_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+            "implemented_authority_model: fact_material_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side",
+            "implemented_proof_validator: record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof",
+            "implemented_no_new_storage: true",
+            "implemented_no_proof_creation_by_status: true",
+            "available_requires_server_revalidated_fact_material_proof_request: true",
+            "available_requires_expected_proof_hash_match: true",
+            "stale_or_mismatched_proof_hash_returns_blocked_status: true",
+            "raw_or_forbidden_proof_authority_returns_blocked_status: true",
+            "raw_fact_values_rendered: false",
+            "fact_value_reconstruction_enabled: false",
+            "status_can_reparse_or_materialize_html_inline_xbrl: false",
+            "status_can_call_sec_companyfacts_api: false",
+            "status_can_add_financial_statement_semantics: false",
+            "status_can_classify_facts_to_statements: false",
+            "implementation_duplication_boundary: separate_fact_material_status_service_preserves_existing_html_inline_xbrl_narrative_table_status_contract_without_shared_refactor_in_this_slice",
+            "focused_api_pytest: pytest ./backend/tests/test_layer3_api.py -q -k \"fact_material_downstream_operator_status\" PASS",
+            "focused_bootstrap_pytest: python -c \"import os, subprocess, sys; os.environ['PYTHONPATH']=r'.\\\\backend'; sys.exit(subprocess.call(['pytest', r'.\\\\backend\\\\tests\\\\test_layer3_bootstrap_contract.py', '-q']))\" PASS",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_selection_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_runtime_v1",
+            "implemented_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status.py",
+            "implemented_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status",
+            "implemented_bootstrap_capability: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+            "implemented_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status.v1",
+            "implemented_status_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1",
+            "implemented_operator_decision: inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+            "implemented_authority_model: fact_material_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side",
+            "implemented_proof_validator: record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof",
+            "available_requires_server_revalidated_fact_material_proof_request: true",
+            "stale_or_mismatched_proof_hash_returns_blocked_status: true",
+            "raw_or_forbidden_proof_authority_returns_blocked_status: true",
+            "raw_fact_values_rendered: false",
+            "status_can_reparse_or_materialize_html_inline_xbrl: false",
+            "status_can_call_sec_companyfacts_api: false",
+            "status_can_add_financial_statement_semantics: false",
+            "status_can_classify_facts_to_statements: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_rendered_status_selection_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_OPERATOR_STATUS_SELECTION: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_runtime_v1",
+        ),
+        service: (
+            "SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status.v1\"",
+            "STATUS_MODE = \"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_v1\"",
+            "OPERATOR_DECISION = \"inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status\"",
+            "def inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status(",
+            "record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof(",
+            "\"fact_material_downstream_proof_request\"",
+            "\"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_proof_hash_mismatch\"",
+            "\"fact_value_reconstruction_admitted_in_status\": False",
+            "\"raw_fact_values_exposed_in_operator_projection\": False",
+            "\"sec_companyfacts_api_runtime_enabled\": False",
+        ),
+        api: (
+            "layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_status",
+            "Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusRequest",
+            "Layer3SecEdgarHtmlInlineXbrlFactMaterialDownstreamOperatorStatusResponse",
+            "\"/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status\"",
+            "inspect_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status(",
+        ),
+        api_tests: (
+            "test_layer3_api_reports_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status",
+            "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_stale_or_unsafe",
+            "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_proof_hash_mismatch",
+            "fact_material_downstream_proof_request",
+            "\"123\" not in unsafe_fact_value_response.text",
+        ),
+        bootstrap: (
+            "\"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status\": True",
+            "\"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_admitted\": True",
+            "\"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_endpoint\"",
+        ),
+        bootstrap_tests: (
+            "\"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status\"",
+            "\"sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_admitted\"",
+            "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact material downstream operator status runtime term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -114543,6 +114662,9 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_fact_material_downstream_proof_selection(errors)
     _check_sec_edgar_html_inline_xbrl_fact_material_downstream_proof_runtime(errors)
     _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_selection(
+        errors
+    )
+    _check_sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_runtime(
         errors
     )
 

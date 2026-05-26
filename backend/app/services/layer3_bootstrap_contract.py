@@ -79,6 +79,7 @@ BOOTSTRAP_FEATURE_FLAGS: Mapping[str, bool] = {
     "sec_edgar_text_table_live_source_artifact_downstream_proof": True,
     "sec_edgar_text_table_live_source_artifact_downstream_operator_status": True,
     "sec_edgar_html_inline_xbrl_downstream_operator_status": True,
+    "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status": True,
     "sec_edgar_text_table_downstream_operator_repeatability_trial": True,
     "source_directory_ingestion_scan": True,
     "source_directory_ingestion_status": True,
@@ -260,6 +261,10 @@ def build_bootstrap_contract(
             "sec_edgar_html_inline_xbrl_downstream_operator_status_admitted": True,
             "sec_edgar_html_inline_xbrl_downstream_operator_status_endpoint": (
                 f"{api_root}/source/sec-edgar/html-inline-xbrl/downstream-proof/status"
+            ),
+            "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_admitted": True,
+            "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_endpoint": (
+                f"{api_root}/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof/status"
             ),
             "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_admitted": True,
             "sec_edgar_text_table_live_source_artifact_downstream_operator_repeatability_trial_endpoint": (
