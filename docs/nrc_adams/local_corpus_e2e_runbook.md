@@ -9784,3 +9784,41 @@ next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_selection_v1
 ```
 
 This runtime turns a connector-acquired supported complete-submission text example into redacted downstream-validation evidence. Operators can verify that the same source artifact/content authority moved through live acquisition, source acquisition, live material bridge, Gate B, downstream proof, and operator status. The runtime deliberately leaves HTML/iXBRL parsing as the next selected source-family gap rather than silently downgrading it into generic text.
+
+## SEC EDGAR HTML Inline XBRL Source Family Parser Selection
+
+```yaml
+milestone: sec_edgar_html_inline_xbrl_source_family_parser_selection_v1
+source_downstream_validation_runtime: next_milestone_plans/Layer3_planning_docs/1169-sec-edgar-real-filing-acquisition-connector-downstream-validation-runtime.md
+current_main_entry: 418471260a1e6bbf529f1ccc78d8cf109908aa1c
+entry_decision: freeze_only
+runtime_status: not_implemented
+rendered_status: not_implemented
+selected_next_runtime_target: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1
+selected_parser_mode: sec_edgar_html_inline_xbrl_source_family_parser_v1
+selected_operator_decision: parse_sec_edgar_html_inline_xbrl_source_family
+selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser/status/{sec_edgar_html_inline_xbrl_parser_receipt_id}
+selected_source_authority: sec_edgar_real_filing_acquisition_connector_receipt_plus_live_source_artifact_receipt_with_retained_complete_submission_text
+selected_first_scope: one_connector_acquired_example_classified_html_inline_xbrl_from_retained_complete_submission_text_artifact
+selected_parser_output_authority: append_only_redacted_html_inline_xbrl_source_family_parse_receipt
+selected_document_inventory_scope: preserve_document_sequence_type_filename_hash_description_hash_text_hash_and_primary_document_binding
+selected_content_order_scope: preserve_source_order_for_document_blocks_text_segments_table_candidates_and_inline_xbrl_marker_inventory
+selected_materialization_behavior: no_dataset_version_creation_no_gate_b_mutation_no_layer3_material_bridge_until_separately_selected
+selected_fact_behavior: detect_inline_xbrl_marker_inventory_only_no_xbrl_fact_authority_or_financial_semantics
+runtime_implementation_in_this_freeze: false
+live_sec_network_fetch_in_this_freeze: false
+arbitrary_url_or_upload_parse_in_this_freeze: false
+dataset_version_creation_in_this_freeze: false
+gate_b_mutation_in_this_freeze: false
+xml_xbrl_fact_authority_in_this_freeze: false
+candidate_b_general_sec_parser_in_this_freeze: false
+generic_connector_dispatch_enabled: false
+raw_sec_url_rendered: false
+raw_local_path_rendered: false
+artifact_bytes_rendered: false
+next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1
+```
+
+This selection admits the next parser slice for modern SEC filings without broadening source acquisition. The future runtime must read only server-retained artifacts already governed by the SEC connector/live source-artifact receipts and must produce parser evidence, order-preservation diagnostics, and candidate inventories before any separate material bridge, DatasetVersion, XBRL fact authority, package, or delivery path is selected.

@@ -3340,6 +3340,9 @@ SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_DOWNSTREAM_VALIDATION_RUNTIME = (
     PLANNING_DOCS
     / "1169-sec-edgar-real-filing-acquisition-connector-downstream-validation-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_SELECTION = (
+    PLANNING_DOCS / "1170-sec-edgar-html-inline-xbrl-source-family-parser-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -111540,6 +111543,85 @@ def _check_sec_edgar_real_filing_acquisition_connector_downstream_validation_run
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_source_family_parser_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_SOURCE_FAMILY_PARSER_SELECTION: (
+            "SEC EDGAR HTML Inline XBRL Source Family Parser Selection",
+            "milestone: sec_edgar_html_inline_xbrl_source_family_parser_selection_v1",
+            "source_downstream_validation_runtime: next_milestone_plans/Layer3_planning_docs/1169-sec-edgar-real-filing-acquisition-connector-downstream-validation-runtime.md",
+            "current_main_entry: 418471260a1e6bbf529f1ccc78d8cf109908aa1c",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1",
+            "selected_parser_mode: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "selected_operator_decision: parse_sec_edgar_html_inline_xbrl_source_family",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser",
+            "selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/source-family/parser/status/{sec_edgar_html_inline_xbrl_parser_receipt_id}",
+            "selected_source_authority: sec_edgar_real_filing_acquisition_connector_receipt_plus_live_source_artifact_receipt_with_retained_complete_submission_text",
+            "selected_first_scope: one_connector_acquired_example_classified_html_inline_xbrl_from_retained_complete_submission_text_artifact",
+            "selected_parser_output_authority: append_only_redacted_html_inline_xbrl_source_family_parse_receipt",
+            "selected_document_inventory_scope: preserve_document_sequence_type_filename_hash_description_hash_text_hash_and_primary_document_binding",
+            "selected_content_order_scope: preserve_source_order_for_document_blocks_text_segments_table_candidates_and_inline_xbrl_marker_inventory",
+            "selected_materialization_behavior: no_dataset_version_creation_no_gate_b_mutation_no_layer3_material_bridge_until_separately_selected",
+            "selected_fact_behavior: detect_inline_xbrl_marker_inventory_only_no_xbrl_fact_authority_or_financial_semantics",
+            "selected_table_behavior: record_html_table_candidate_inventory_hashes_only_no_table_dataset_materialization",
+            "selected_section_behavior: record_ordered_text_section_candidate_hashes_only_no_analysis_materialization",
+            "selected_candidate_b_behavior: pdf_page_visual_evidence_only_not_general_sec_parser",
+            "selected_receipt_schema_id: layer3.sec_edgar_html_inline_xbrl_source_family_parse_receipt.v1",
+            "selected_status_schema_id: layer3.sec_edgar_html_inline_xbrl_source_family_parser_status.v1",
+            "runtime_implementation_in_this_freeze: false",
+            "live_sec_network_fetch_in_this_freeze: false",
+            "arbitrary_url_or_upload_parse_in_this_freeze: false",
+            "dataset_version_creation_in_this_freeze: false",
+            "gate_b_mutation_in_this_freeze: false",
+            "material_bridge_in_this_freeze: false",
+            "xml_xbrl_fact_authority_in_this_freeze: false",
+            "financial_statement_semantics_in_this_freeze: false",
+            "candidate_b_general_sec_parser_in_this_freeze: false",
+            "generic_connector_dispatch_enabled: false",
+            "raw_sec_url_rendered: false",
+            "raw_local_path_rendered: false",
+            "artifact_bytes_rendered: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_source_family_parser_selection_v1",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1",
+            "selected_parser_mode: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_parser.py",
+            "selected_source_authority: sec_edgar_real_filing_acquisition_connector_receipt_plus_live_source_artifact_receipt_with_retained_complete_submission_text",
+            "selected_first_scope: one_connector_acquired_example_classified_html_inline_xbrl_from_retained_complete_submission_text_artifact",
+            "selected_content_order_scope: preserve_source_order_for_document_blocks_text_segments_table_candidates_and_inline_xbrl_marker_inventory",
+            "runtime_implementation_in_this_freeze: false",
+            "dataset_version_creation_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_runtime_v1",
+        ),
+        SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_DOWNSTREAM_VALIDATION_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_source_family_parser_selection_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "nrc_aps_sec_edgar_parser.py": (
+            "sec_edgar_html_document_not_admitted",
+            "sec_edgar_xml_or_inline_xbrl_not_admitted",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_aps_source_family.py": (
+            "\"source_family\": \"xml_html_inline_xbrl\"",
+            "\"admission_state\": \"not_admitted_or_refused\"",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL source-family parser selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -112719,6 +112801,7 @@ def main() -> int:
     _check_sec_edgar_real_filing_acquisition_connector_downstream_validation_runtime(
         errors
     )
+    _check_sec_edgar_html_inline_xbrl_source_family_parser_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
