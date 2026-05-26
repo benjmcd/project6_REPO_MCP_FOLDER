@@ -12029,3 +12029,226 @@ next_exact_posture: sec_edgar_real_company_corpus_validation_runtime_v1
 ```
 
 This freeze selects real-company SEC filing diversity validation as the next runtime over the currently admitted product path. The validation must discover actual filing form families for MSFT, STLD, SONY, and CCJ through SEC connector/submissions authority, record supported/degraded/blocked outcomes, and avoid more delivery plumbing until the current acquisition/parser/fact/product/package/review/handoff path is empirically checked against heterogeneous issuers.
+
+## SEC EDGAR Real Company Corpus Validation Runtime
+
+```yaml
+milestone: sec_edgar_real_company_corpus_validation_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1219-sec-edgar-real-company-corpus-validation-selection.md
+entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387
+entry_pr: "#1919"
+runtime_status: implemented
+service: backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py
+endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation
+status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation/status/{sec_edgar_real_company_corpus_validation_receipt_id}
+schema_id: layer3.sec_edgar_real_company_corpus_validation.v1
+status_schema_id: layer3.sec_edgar_real_company_corpus_validation_status.v1
+validation_mode: sec_edgar_real_company_corpus_validation_v1
+operator_decision: validate_sec_edgar_real_company_corpus_product_path
+connector_selection_policy: real_company_recent_annual_and_interim_or_current_v1
+company_matrix: MSFT,STLD,SONY,CCJ
+discovered_form_families_under_test: 10-K,10-Q,8-K,20-F,40-F,6-K
+path_validated: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare,status
+product_utility_matrix_recorded: true
+order_evidence_recorded: document_order_hash,fact_source_order_inventory,statement_candidate_order,package_artifact_order_hash
+extension_policy_runtime_covered: company_specific_extension_concepts_are_retained_as_redacted_fact_authority_and_classification_evidence
+unsupported_or_degraded_behavior: per_filing_blocked_or_degraded_records_preserve_diagnostics_without_generic_text_downgrade
+raw_url_path_value_leakage_blocked: true
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "real_company_corpus_product_path" -q PASS
+next_exact_posture: sec_edgar_delivery_status_provenance_selection_v1
+```
+
+This runtime records the real-company filing validation matrix against the currently admitted SEC product path. It proves the route and status surface over fake SEC-client fixtures for MSFT, STLD, SONY, and CCJ, including domestic, foreign, annual, interim, and current report forms, while preserving the no raw URL/path/value leakage and no unauthorized runtime expansion invariants.
+
+## SEC EDGAR Delivery Status Provenance Selection
+
+```yaml
+milestone: sec_edgar_delivery_status_provenance_selection_v1
+source_real_company_validation_runtime: next_milestone_plans/Layer3_planning_docs/1220-sec-edgar-real-company-corpus-validation-runtime.md
+entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387
+source_runtime_pr: "#1920"
+source_runtime_branch: codex/sec-real-company-validation-runtime
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_delivery_status_provenance_runtime_v1
+selected_future_service: backend/app/services/layer3_sec_edgar_delivery_status_provenance.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance/status/{sec_edgar_delivery_status_provenance_receipt_id}
+selected_schema_id: layer3.sec_edgar_delivery_status_provenance.v1
+selected_status_schema_id: layer3.sec_edgar_delivery_status_provenance_status.v1
+selected_status_mode: sec_edgar_delivery_status_provenance_v1
+selected_operator_decision: inspect_sec_edgar_real_company_delivery_status_provenance
+selected_input_authority: sec_edgar_real_company_corpus_validation_receipt_id,sec_edgar_real_company_corpus_validation_receipt_hash
+selected_required_source_status: sec_edgar_real_company_corpus_validation_ready
+selected_required_company_matrix: MSFT,STLD,SONY,CCJ
+selected_required_filing_count: 8
+selected_required_validation_coverage: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare
+selected_delivery_status_projection: validation_receipt_status,handoff_export_prepare_status,delivery_readiness_status,provenance_hash_matrix,blocked_or_degraded_delivery_gaps,next_operator_actions
+selected_provenance_hash_bindings: validation_receipt_hash,connector_receipt_hash,parser_receipt_hash,fact_authority_receipt_hash,fact_material_bridge_receipt_hash,statement_classification_receipt_hash,statement_candidate_product_receipt_hash,package_review_preview_receipt_hash,package_construction_receipt_hash,package_review_submit_receipt_hash,handoff_export_prepare_receipt_hash,delivery_status_provenance_hash
+selected_delivery_boundary: inspect_delivery_readiness_and_provenance_without_serving_artifact_bytes_or_creating_provider_objects
+selected_fail_closed_conditions: missing_validation_receipt,validation_hash_mismatch,validation_not_ready,company_matrix_mismatch,filing_count_mismatch,missing_handoff_export_prepare_output,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing
+selected_leakage_policy: no_raw_url_path_local_root_storage_ref_artifact_bytes_accession_company_name_or_raw_fact_value_projection
+selected_runtime_negative_scope: no_sec_network_fetch,no_parser_source_expansion,no_package_mutation,no_delivery_file_response,no_provider_object_write,no_connector_dispatch,no_rag_vector_model_runtime,no_full_mockup_activation,no_frontend_durable_authority
+selected_operator_inspection_deferred_until_delivery_status_provenance_runtime_complete: true
+delivery_status_runtime_in_this_freeze: false
+operator_inspection_runtime_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+parser_source_expansion_in_this_freeze: false
+runtime_implementation_in_this_freeze: false
+verification_progress_check: python ./tools/l3-progress-check.py PASS
+verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_delivery_status_provenance_runtime_v1
+```
+
+This selection freezes the next SEC real-company delivery/status/provenance contract. The future runtime should revalidate the real-company corpus validation receipt and project redacted delivery readiness plus provenance over the handoff/export prepare outputs, without serving artifact bytes, creating provider objects, dispatching connectors, rerunning SEC fetch/parser work, or exposing raw URL/path/value authority.
+
+## SEC EDGAR Delivery Status Provenance Runtime
+
+```yaml
+milestone: sec_edgar_delivery_status_provenance_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1221-sec-edgar-delivery-status-provenance-selection.md
+entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387
+source_runtime_pr: "#1920"
+runtime_status: implemented
+service: backend/app/services/layer3_sec_edgar_delivery_status_provenance.py
+endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance
+status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance/status/{sec_edgar_delivery_status_provenance_receipt_id}
+schema_id: layer3.sec_edgar_delivery_status_provenance.v1
+status_schema_id: layer3.sec_edgar_delivery_status_provenance_status.v1
+status_mode: sec_edgar_delivery_status_provenance_v1
+operator_decision: inspect_sec_edgar_real_company_delivery_status_provenance
+input_authority: sec_edgar_real_company_corpus_validation_receipt_id,sec_edgar_real_company_corpus_validation_receipt_hash
+required_source_status: sec_edgar_real_company_corpus_validation_ready
+required_company_matrix: MSFT,STLD,SONY,CCJ
+required_filing_count: 8
+validation_coverage_revalidated: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare
+delivery_status_projection: validation_receipt_status,handoff_export_prepare_status,delivery_readiness_status,provenance_hash_matrix,blocked_or_degraded_delivery_gaps,next_operator_actions
+provenance_hash_bindings: validation_receipt_hash,connector_receipt_hash,parser_receipt_hash,fact_authority_receipt_hash,fact_material_bridge_receipt_hash,statement_classification_receipt_hash,statement_candidate_product_receipt_hash,package_review_preview_receipt_hash,package_construction_receipt_hash,package_review_submit_receipt_hash,handoff_export_prepare_receipt_hash,delivery_status_provenance_hash
+delivery_boundary_enforced: inspect_delivery_readiness_and_provenance_without_serving_artifact_bytes_or_creating_provider_objects
+fail_closed_conditions_covered: missing_validation_receipt,validation_hash_mismatch,validation_not_ready,company_matrix_mismatch,filing_count_mismatch,missing_handoff_export_prepare_output,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing
+raw_url_path_value_leakage_blocked: true
+sec_network_fetch_performed: false
+parser_rerun_performed: false
+package_mutation_performed: false
+delivery_file_response_served: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+operator_inspection_runtime_in_this_slice: false
+verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "delivery_status_provenance_for_real_company_corpus" -q PASS
+next_exact_posture: sec_edgar_operator_inspection_selection_v1
+```
+
+This runtime records redacted delivery/status/provenance over the SEC real-company corpus validation receipt. It proves the validation receipt, handoff/export prepare outputs, and provenance hash matrix can be inspected without serving artifact bytes, creating provider objects, dispatching connectors, rerunning SEC fetch/parser work, or exposing raw URL/path/value authority.
+
+## SEC EDGAR Operator Inspection Selection
+
+```yaml
+milestone: sec_edgar_operator_inspection_selection_v1
+source_delivery_status_provenance_runtime: next_milestone_plans/Layer3_planning_docs/1222-sec-edgar-delivery-status-provenance-runtime.md
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_operator_inspection_runtime_v1
+selected_future_service: backend/app/services/layer3_sec_edgar_operator_inspection.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}
+selected_schema_id: layer3.sec_edgar_operator_inspection.v1
+selected_status_schema_id: layer3.sec_edgar_operator_inspection_status.v1
+selected_inspection_mode: sec_edgar_operator_inspection_v1
+selected_operator_decision: inspect_sec_edgar_real_company_operator_surface
+selected_input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash
+selected_required_source_status: sec_edgar_delivery_status_provenance_ready
+selected_operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions
+selected_read_only_boundary: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state
+operator_inspection_runtime_in_this_freeze: false
+next_exact_posture: sec_edgar_operator_inspection_runtime_v1
+```
+
+This selection freezes the SEC real-company operator inspection surface over the delivery/status/provenance receipt.
+
+## SEC EDGAR Operator Inspection Runtime
+
+```yaml
+milestone: sec_edgar_operator_inspection_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1223-sec-edgar-operator-inspection-selection.md
+runtime_status: implemented
+service: backend/app/services/layer3_sec_edgar_operator_inspection.py
+endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection
+status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}
+schema_id: layer3.sec_edgar_operator_inspection.v1
+status_schema_id: layer3.sec_edgar_operator_inspection_status.v1
+inspection_mode: sec_edgar_operator_inspection_v1
+operator_decision: inspect_sec_edgar_real_company_operator_surface
+input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash
+required_source_status: sec_edgar_delivery_status_provenance_ready
+operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions
+read_only_boundary_enforced: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state
+raw_url_path_value_leakage_blocked: true
+sec_network_fetch_performed: false
+parser_rerun_performed: false
+package_mutation_performed: false
+delivery_file_response_served: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+rendered_frontend_runtime_in_this_slice: false
+verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "operator_inspection_for_real_company_corpus" -q PASS
+next_exact_posture: sec_edgar_completion_audit_v1
+```
+
+This runtime records a read-only operator inspection projection over the SEC real-company delivery/status/provenance receipt. The next posture is a completion audit against the full SEC/EDGAR governed acquisition and filing-processing objective before any broader runtime expansion.
+
+## SEC EDGAR Governed Filing Path Completion Audit
+
+```yaml
+milestone: sec_edgar_completion_audit_v1
+source_operator_inspection_runtime: next_milestone_plans/Layer3_planning_docs/1224-sec-edgar-operator-inspection-runtime.md
+audit_head_commit: 5cc90dbad844b287a72b1003a383e33e3dc27849
+pr: "#1920"
+pr_state_at_audit: open_draft
+merge_state_at_audit: unstable
+ci_status_at_audit: in_progress
+completion_status: branch_functional_scope_proven_pr_ci_current_main_pending
+goal_marked_complete: false
+real_company_validation_runtime_proven: true
+delivery_status_provenance_runtime_proven: true
+operator_inspection_runtime_proven: true
+current_main_sync_complete: false
+server_owned_connector_authority: true
+real_company_matrix: MSFT,STLD,SONY,CCJ
+filing_count_under_test: 8
+form_families_under_test: 10-K,10-Q,8-K,20-F,40-F,6-K
+validated_processing_path: sec_connector_acquisition,source_family_classification,html_inline_xbrl_parser,fact_authority,fact_material_bridge,statement_classification,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare,delivery_status_provenance,operator_inspection
+identity_order_fact_context_taxonomy_extension_provenance_preserved: true
+explicit_degraded_or_blocked_source_family_handling: true
+raw_url_path_value_leakage_blocked: true
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+unauthorized_source_or_parser_expansion_enabled: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+latest_local_full_api: python -m pytest ./backend/tests/test_layer3_api.py -q PASS 242 passed
+latest_progress_check: python ./tools/l3-progress-check.py PASS
+latest_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_pr_ci_closeout_v1
+```
+
+The branch-functional SEC/EDGAR path is proven locally through real-company validation, delivery/status/provenance, and operator inspection. Whole-goal completion remains pending until PR #1920 has terminal passing CI, a ready/merge decision, and current-main sync proof.

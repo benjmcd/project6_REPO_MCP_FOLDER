@@ -1,0 +1,39 @@
+# SEC EDGAR Operator Inspection Runtime
+
+```yaml
+milestone: sec_edgar_operator_inspection_runtime_v1
+source_selection: next_milestone_plans/Layer3_planning_docs/1223-sec-edgar-operator-inspection-selection.md
+entry_main_commit: 275ae95e3a11303f73e2da07cf01d16f9c3b2387
+source_runtime_pr: "#1920"
+runtime_status: implemented
+service: backend/app/services/layer3_sec_edgar_operator_inspection.py
+endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection
+status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection/status/{sec_edgar_operator_inspection_receipt_id}
+schema_id: layer3.sec_edgar_operator_inspection.v1
+status_schema_id: layer3.sec_edgar_operator_inspection_status.v1
+inspection_mode: sec_edgar_operator_inspection_v1
+operator_decision: inspect_sec_edgar_real_company_operator_surface
+input_authority: sec_edgar_delivery_status_provenance_receipt_id,sec_edgar_delivery_status_provenance_receipt_hash
+required_source_status: sec_edgar_delivery_status_provenance_ready
+operator_projection: company_filing_inspection_matrix,readiness_rollup,provenance_status,blocked_or_degraded_delivery_gaps,next_operator_actions
+read_only_boundary_enforced: inspect_redacted_delivery_status_provenance_without_mutating_validation_delivery_package_provider_or_connector_state
+fail_closed_conditions_covered: missing_delivery_status_provenance_receipt,delivery_status_provenance_hash_mismatch,delivery_status_provenance_not_ready,delivery_readiness_not_ready,raw_url_path_value_or_artifact_bytes_detected,unknown_or_unadmitted_request_field,operator_confirmation_missing
+raw_url_path_value_leakage_blocked: true
+sec_network_fetch_performed: false
+parser_rerun_performed: false
+package_mutation_performed: false
+delivery_file_response_served: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+rendered_frontend_runtime_in_this_slice: false
+verification_focused_api: python -m pytest ./backend/tests/test_layer3_api.py -k "operator_inspection_for_real_company_corpus" -q PASS
+next_exact_posture: sec_edgar_completion_audit_v1
+```
+
+This runtime records a redacted operator inspection projection over the SEC real-company delivery/status/provenance receipt. It revalidates the delivery/status/provenance receipt id and hash, projects inspectable filing rows plus readiness and provenance rollups, and keeps the surface read-only over server receipts.
+
+The runtime does not fetch SEC content, rerun parsers, mutate packages, serve files, create provider objects, dispatch connectors, expose raw URLs, local paths, accessions, company names, raw fact values, artifact bytes, or add frontend/browser durable authority.
