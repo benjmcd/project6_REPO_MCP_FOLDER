@@ -673,6 +673,9 @@ def _quality_evidence_from_outputs(
     fact_deduplication_conflict_diagnostics_hash = classification_diagnostics.get(
         "fact_deduplication_conflict_diagnostics_hash"
     )
+    cross_company_comparability_readiness_audit_hash = classification_diagnostics.get(
+        "cross_company_comparability_readiness_audit_hash"
+    )
     exact_duplicate_fact_group_count = int(classification_diagnostics.get("exact_duplicate_fact_group_count") or 0)
     exact_duplicate_fact_candidate_count = int(
         classification_diagnostics.get("exact_duplicate_fact_candidate_count") or 0
@@ -738,6 +741,11 @@ def _quality_evidence_from_outputs(
                 if fact_deduplication_conflict_diagnostics_hash
                 else "not_evaluated"
             ),
+            "cross_company_comparability_readiness_audit": (
+                "bounded_readiness_audit_available_not_comparable"
+                if cross_company_comparability_readiness_audit_hash
+                else "not_evaluated"
+            ),
             "statement_candidate_usefulness": (
                 "candidate_groups_available" if any(int(value or 0) for value in statement_role_counts.values()) else "not_observed"
             ),
@@ -797,6 +805,22 @@ def _quality_evidence_from_outputs(
             "fact_deduplication_conflict_diagnostics_status": classification_diagnostics.get(
                 "fact_deduplication_conflict_diagnostics_status"
             ),
+            "cross_company_comparability_readiness_audit_version": classification_diagnostics.get(
+                "cross_company_comparability_readiness_audit_version"
+            ),
+            "cross_company_comparability_readiness_audit_hash": (
+                cross_company_comparability_readiness_audit_hash
+            ),
+            "cross_company_comparability_readiness_status": classification_diagnostics.get(
+                "cross_company_comparability_readiness_status"
+            ),
+            "cross_company_comparability_readiness_blocker_count": int(
+                classification_diagnostics.get("cross_company_comparability_readiness_blocker_count") or 0
+            ),
+            "cross_company_comparability_readiness_blockers_hash": classification_diagnostics.get(
+                "cross_company_comparability_readiness_blockers_hash"
+            ),
+            "cross_company_comparability_ready": False,
             "semantic_profile_assigned_count": semantic_profile_assigned_count,
             "period_unit_context_dimension_profile_assigned_count": period_unit_context_dimension_profile_assigned_count,
             "statement_role_quality_profile_assigned_count": statement_role_quality_profile_assigned_count,
@@ -890,6 +914,7 @@ def _quality_not_evaluated(
             "extension_taxonomy_retention_profile": "not_evaluated",
             "standard_concept_mapping_profile": "not_evaluated",
             "fact_deduplication_conflict_diagnostics": "not_evaluated",
+            "cross_company_comparability_readiness_audit": "not_evaluated",
             "statement_candidate_usefulness": "not_evaluated",
             "diagnostics_quality": "not_evaluated",
             "package_review_handoff_coherence": "not_evaluated",

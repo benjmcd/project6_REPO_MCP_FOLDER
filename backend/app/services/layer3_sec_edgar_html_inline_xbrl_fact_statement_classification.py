@@ -37,6 +37,9 @@ STATEMENT_ROLE_QUALITY_PROFILE_VERSION = "sec_edgar_statement_role_quality_profi
 EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION = "sec_edgar_extension_taxonomy_retention_profile_v1"
 STANDARD_CONCEPT_MAPPING_PROFILE_VERSION = "sec_edgar_standard_concept_mapping_profile_v1"
 FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS_VERSION = "sec_edgar_fact_deduplication_conflict_diagnostics_v1"
+CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT_VERSION = (
+    "sec_edgar_cross_company_comparability_readiness_audit_v1"
+)
 
 STATEMENT_ROLES = (
     "balance_sheet",
@@ -187,6 +190,26 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     standard_concept_mapping_profile_hash = stable_hash(standard_concept_mapping_profiles)
     fact_deduplication_conflict_diagnostics = _fact_deduplication_conflict_diagnostics(classification_inventory)
     fact_deduplication_conflict_diagnostics_hash = stable_hash(fact_deduplication_conflict_diagnostics)
+    cross_company_comparability_readiness_audit = _cross_company_comparability_readiness_audit(
+        fact_count=len(facts),
+        semantic_profile_assigned_count=len(semantic_profiles),
+        period_unit_context_dimension_profile_assigned_count=len(period_unit_context_dimension_profiles),
+        statement_role_quality_profile_assigned_count=len(statement_role_quality_profiles),
+        extension_taxonomy_retention_profile_assigned_count=len(extension_taxonomy_retention_profiles),
+        standard_concept_mapping_profile_assigned_count=len(standard_concept_mapping_profiles),
+        semantic_profile_inventory_hash=semantic_profile_inventory_hash,
+        period_unit_context_dimension_profile_hash=period_unit_context_dimension_profile_hash,
+        statement_role_quality_profile_hash=statement_role_quality_profile_hash,
+        extension_taxonomy_retention_profile_hash=extension_taxonomy_retention_profile_hash,
+        standard_concept_mapping_profile_hash=standard_concept_mapping_profile_hash,
+        fact_deduplication_conflict_diagnostics_hash=fact_deduplication_conflict_diagnostics_hash,
+        fact_deduplication_conflict_diagnostics=fact_deduplication_conflict_diagnostics,
+        semantic_profiles=semantic_profiles,
+        standard_concept_mapping_profiles=standard_concept_mapping_profiles,
+    )
+    cross_company_comparability_readiness_audit_hash = stable_hash(
+        cross_company_comparability_readiness_audit
+    )
     classification_order_hash = stable_hash(
         [
             {
@@ -277,6 +300,9 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "extension_taxonomy_retention_profile_version": EXTENSION_TAXONOMY_RETENTION_PROFILE_VERSION,
         "standard_concept_mapping_profile_version": STANDARD_CONCEPT_MAPPING_PROFILE_VERSION,
         "fact_deduplication_conflict_diagnostics_version": FACT_DEDUPLICATION_CONFLICT_DIAGNOSTICS_VERSION,
+        "cross_company_comparability_readiness_audit_version": (
+            CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT_VERSION
+        ),
         "semantic_profile_assigned_count": semantic_profile_assigned_count,
         "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
         "period_unit_context_dimension_profile_hash": period_unit_context_dimension_profile_hash,
@@ -291,6 +317,18 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "fact_deduplication_conflict_diagnostics_status": fact_deduplication_conflict_diagnostics[
             "diagnostics_status"
         ],
+        "cross_company_comparability_readiness_audit_hash": (
+            cross_company_comparability_readiness_audit_hash
+        ),
+        "cross_company_comparability_readiness_status": (
+            cross_company_comparability_readiness_audit["readiness_status"]
+        ),
+        "cross_company_comparability_readiness_blocker_count": (
+            cross_company_comparability_readiness_audit["readiness_blocker_count"]
+        ),
+        "cross_company_comparability_readiness_blockers_hash": (
+            cross_company_comparability_readiness_audit["readiness_blockers_hash"]
+        ),
         "exact_duplicate_fact_group_count": fact_deduplication_conflict_diagnostics["exact_duplicate_fact_group_count"],
         "exact_duplicate_fact_candidate_count": fact_deduplication_conflict_diagnostics[
             "exact_duplicate_fact_candidate_count"
@@ -337,6 +375,10 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "raw_html_returned": False,
         "raw_url_returned": False,
         "cross_company_comparability_profile_available": comparable_standard_fact_count > 0,
+        "cross_company_comparability_readiness_audit_available": True,
+        "cross_company_comparability_ready": False,
+        "cross_company_comparability_admitted": False,
+        "comparability_normalization_performed": False,
         "taxonomy_network_resolution_performed": False,
         "presentation_linkbase_role_resolution_performed": False,
         "sec_companyfacts_api_called": False,
@@ -735,6 +777,110 @@ def _fact_deduplication_conflict_diagnostics(inventory: list[Mapping[str, Any]])
     }
 
 
+def _cross_company_comparability_readiness_audit(
+    *,
+    fact_count: int,
+    semantic_profile_assigned_count: int,
+    period_unit_context_dimension_profile_assigned_count: int,
+    statement_role_quality_profile_assigned_count: int,
+    extension_taxonomy_retention_profile_assigned_count: int,
+    standard_concept_mapping_profile_assigned_count: int,
+    semantic_profile_inventory_hash: str,
+    period_unit_context_dimension_profile_hash: str,
+    statement_role_quality_profile_hash: str,
+    extension_taxonomy_retention_profile_hash: str,
+    standard_concept_mapping_profile_hash: str,
+    fact_deduplication_conflict_diagnostics_hash: str,
+    fact_deduplication_conflict_diagnostics: Mapping[str, Any],
+    semantic_profiles: list[Mapping[str, Any]],
+    standard_concept_mapping_profiles: list[Mapping[str, Any]],
+) -> dict[str, Any]:
+    standard_taxonomy_fact_count = sum(
+        1
+        for profile in semantic_profiles
+        if str(profile.get("taxonomy_class") or "").startswith("standard_")
+    )
+    company_extension_unmapped_count = sum(
+        1
+        for profile in standard_concept_mapping_profiles
+        if profile.get("standard_concept_mapping_status") == "issuer_extension_concept_retained_unmapped"
+    )
+    unknown_taxonomy_unmapped_count = sum(
+        1
+        for profile in standard_concept_mapping_profiles
+        if profile.get("standard_concept_mapping_status") == "unknown_taxonomy_concept_retained_unmapped"
+    )
+    profile_assignment_gaps = [
+        profile_name
+        for profile_name, assigned_count in (
+            ("semantic_profile", semantic_profile_assigned_count),
+            ("period_unit_context_dimension_profile", period_unit_context_dimension_profile_assigned_count),
+            ("statement_role_quality_profile", statement_role_quality_profile_assigned_count),
+            ("extension_taxonomy_retention_profile", extension_taxonomy_retention_profile_assigned_count),
+            ("standard_concept_mapping_profile", standard_concept_mapping_profile_assigned_count),
+        )
+        if fact_count and assigned_count != fact_count
+    ]
+    readiness_blockers = [
+        "financial_statement_semantics_not_finalized",
+        "cross_company_comparability_not_admitted",
+        "context_period_dimension_unit_not_resolved",
+        "statement_role_semantics_not_finalized",
+        "extension_taxonomy_not_mapped",
+        "standard_concept_mapping_not_normalized",
+        "fact_deduplication_not_performed",
+        "fact_conflict_resolution_not_performed",
+        "taxonomy_network_resolution_not_performed",
+        "sec_companyfacts_api_not_used",
+    ]
+    if not standard_taxonomy_fact_count:
+        readiness_blockers.append("standard_taxonomy_profile_not_observed")
+    if company_extension_unmapped_count:
+        readiness_blockers.append("issuer_extension_concepts_unmapped")
+    if unknown_taxonomy_unmapped_count:
+        readiness_blockers.append("unknown_taxonomy_concepts_unmapped")
+    if profile_assignment_gaps:
+        readiness_blockers.append("profile_assignment_incomplete")
+    if int(fact_deduplication_conflict_diagnostics.get("conflicting_fact_candidate_count") or 0):
+        readiness_blockers.append("conflicting_fact_candidates_present_not_resolved")
+    if int(fact_deduplication_conflict_diagnostics.get("exact_duplicate_fact_candidate_count") or 0):
+        readiness_blockers.append("duplicate_fact_candidates_present_not_deduplicated")
+    readiness_blockers = sorted(set(readiness_blockers))
+    return {
+        "cross_company_comparability_readiness_audit_version": (
+            CROSS_COMPANY_COMPARABILITY_READINESS_AUDIT_VERSION
+        ),
+        "readiness_status": "bounded_readiness_audit_available_not_comparable",
+        "fact_count": fact_count,
+        "standard_taxonomy_fact_count": standard_taxonomy_fact_count,
+        "company_extension_unmapped_count": company_extension_unmapped_count,
+        "unknown_taxonomy_unmapped_count": unknown_taxonomy_unmapped_count,
+        "profile_assignment_gap_count": len(profile_assignment_gaps),
+        "profile_assignment_gaps_hash": stable_hash(profile_assignment_gaps),
+        "readiness_blocker_count": len(readiness_blockers),
+        "readiness_blockers_hash": stable_hash(readiness_blockers),
+        "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
+        "period_unit_context_dimension_profile_hash": period_unit_context_dimension_profile_hash,
+        "statement_role_quality_profile_hash": statement_role_quality_profile_hash,
+        "extension_taxonomy_retention_profile_hash": extension_taxonomy_retention_profile_hash,
+        "standard_concept_mapping_profile_hash": standard_concept_mapping_profile_hash,
+        "fact_deduplication_conflict_diagnostics_hash": fact_deduplication_conflict_diagnostics_hash,
+        "cross_company_comparability_ready": False,
+        "cross_company_comparability_admitted": False,
+        "comparability_normalization_performed": False,
+        "period_unit_context_dimension_resolution_performed": False,
+        "statement_role_semantics_finalized": False,
+        "extension_taxonomy_mapping_performed": False,
+        "standard_concept_normalization_performed": False,
+        "fact_deduplication_performed": False,
+        "fact_conflict_resolution_performed": False,
+        "taxonomy_network_resolution_performed": False,
+        "sec_companyfacts_api_called": False,
+        "raw_values_returned": False,
+        "filing_specific_product_only": True,
+    }
+
+
 def _extension_taxonomy_retention_profile(
     local_name: str,
     namespace_prefix: str,
@@ -1000,6 +1146,9 @@ def _response_from_receipt(
             "fact_deduplication_conflict_diagnostics_version": dict(receipt["classification_diagnostics"]).get(
                 "fact_deduplication_conflict_diagnostics_version"
             ),
+            "cross_company_comparability_readiness_audit_version": dict(
+                receipt["classification_diagnostics"]
+            ).get("cross_company_comparability_readiness_audit_version"),
             "semantic_profile_assigned_count": dict(receipt["classification_diagnostics"]).get("semantic_profile_assigned_count", 0),
             "period_unit_context_dimension_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
                 "period_unit_context_dimension_profile_assigned_count", 0
@@ -1031,6 +1180,18 @@ def _response_from_receipt(
             "fact_deduplication_conflict_diagnostics_status": dict(receipt["classification_diagnostics"]).get(
                 "fact_deduplication_conflict_diagnostics_status"
             ),
+            "cross_company_comparability_readiness_audit_hash": dict(
+                receipt["classification_diagnostics"]
+            ).get("cross_company_comparability_readiness_audit_hash"),
+            "cross_company_comparability_readiness_status": dict(
+                receipt["classification_diagnostics"]
+            ).get("cross_company_comparability_readiness_status"),
+            "cross_company_comparability_readiness_blocker_count": dict(
+                receipt["classification_diagnostics"]
+            ).get("cross_company_comparability_readiness_blocker_count", 0),
+            "cross_company_comparability_readiness_blockers_hash": dict(
+                receipt["classification_diagnostics"]
+            ).get("cross_company_comparability_readiness_blockers_hash"),
             "medium_statement_role_confidence_count": dict(receipt["classification_diagnostics"]).get(
                 "medium_statement_role_confidence_count", 0
             ),
@@ -1082,6 +1243,10 @@ def _response_from_receipt(
             "standard_taxonomy_fact_count": dict(receipt["classification_diagnostics"]).get("standard_taxonomy_fact_count", 0),
             "company_extension_fact_count": dict(receipt["classification_diagnostics"]).get("company_extension_fact_count", 0),
             "comparable_standard_fact_count": dict(receipt["classification_diagnostics"]).get("comparable_standard_fact_count", 0),
+            "cross_company_comparability_readiness_audit_available": True,
+            "cross_company_comparability_ready": False,
+            "cross_company_comparability_admitted": False,
+            "comparability_normalization_performed": False,
             "context_period_resolution_performed": False,
             "dimension_member_resolution_performed": False,
             "unit_normalization_performed": False,
