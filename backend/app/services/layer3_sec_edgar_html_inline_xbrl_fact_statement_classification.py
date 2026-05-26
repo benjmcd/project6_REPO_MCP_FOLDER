@@ -33,6 +33,7 @@ REDACTION_POLICY_ID = "sec_edgar_html_inline_xbrl_fact_statement_classification_
 AUTHORITY_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_statement_classification_hash_v1"
 SEMANTIC_PROFILE_VERSION = "sec_edgar_statement_semantic_profile_v1"
 PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION = "sec_edgar_period_unit_context_dimension_profile_v1"
+STATEMENT_ROLE_QUALITY_PROFILE_VERSION = "sec_edgar_statement_role_quality_profile_v1"
 
 STATEMENT_ROLES = (
     "balance_sheet",
@@ -163,6 +164,12 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         if isinstance(profile.get("period_unit_context_dimension_profile"), Mapping)
     ]
     period_unit_context_dimension_profile_hash = stable_hash(period_unit_context_dimension_profiles)
+    statement_role_quality_profiles = [
+        dict(profile["statement_role_quality_profile"])
+        for profile in semantic_profiles
+        if isinstance(profile.get("statement_role_quality_profile"), Mapping)
+    ]
+    statement_role_quality_profile_hash = stable_hash(statement_role_quality_profiles)
     classification_order_hash = stable_hash(
         [
             {
@@ -207,16 +214,27 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     scale_or_format_present_count = sum(
         1 for profile in period_unit_context_dimension_profiles if profile.get("scale_or_format_present") is True
     )
+    medium_statement_role_confidence_count = sum(
+        1 for profile in statement_role_quality_profiles if profile.get("classification_confidence") == "medium"
+    )
+    low_statement_role_confidence_count = sum(
+        1 for profile in statement_role_quality_profiles if profile.get("classification_confidence") == "low"
+    )
     diagnostics = {
         "fact_count": len(facts),
         "classified_fact_count": len(classification_inventory),
         "unknown_or_unclassified_count": len(unclassified),
         "semantic_profile_version": SEMANTIC_PROFILE_VERSION,
         "period_unit_context_dimension_profile_version": PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION,
+        "statement_role_quality_profile_version": STATEMENT_ROLE_QUALITY_PROFILE_VERSION,
         "semantic_profile_assigned_count": semantic_profile_assigned_count,
         "semantic_profile_inventory_hash": semantic_profile_inventory_hash,
         "period_unit_context_dimension_profile_hash": period_unit_context_dimension_profile_hash,
         "period_unit_context_dimension_profile_assigned_count": len(period_unit_context_dimension_profiles),
+        "statement_role_quality_profile_hash": statement_role_quality_profile_hash,
+        "statement_role_quality_profile_assigned_count": len(statement_role_quality_profiles),
+        "medium_statement_role_confidence_count": medium_statement_role_confidence_count,
+        "low_statement_role_confidence_count": low_statement_role_confidence_count,
         "context_ref_hash_present_count": context_ref_hash_present_count,
         "unit_ref_hash_present_count": unit_ref_hash_present_count,
         "decimals_or_precision_present_count": decimals_or_precision_present_count,
@@ -233,10 +251,12 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
         "raw_url_returned": False,
         "cross_company_comparability_profile_available": comparable_standard_fact_count > 0,
         "taxonomy_network_resolution_performed": False,
+        "presentation_linkbase_role_resolution_performed": False,
         "sec_companyfacts_api_called": False,
         "context_period_resolution_performed": False,
         "dimension_member_resolution_performed": False,
         "unit_normalization_performed": False,
+        "statement_role_semantics_claimed": False,
         "financial_statement_semantics_claimed": False,
     }
     diagnostics_hash = stable_hash(diagnostics)
@@ -402,7 +422,7 @@ def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inv
     local_name = str(fact.get("local_name") or "")
     namespace_prefix = str(fact.get("namespace_prefix") or "")
     role, basis, confidence = _classify_role(local_name, namespace_prefix)
-    semantic_profile = _semantic_profile(local_name, namespace_prefix, role, fact)
+    semantic_profile = _semantic_profile(local_name, namespace_prefix, role, fact, basis=basis, confidence=confidence)
     record = {
         "classification_id_or_order_key": stable_hash(
             {
@@ -443,6 +463,9 @@ def _semantic_profile(
     namespace_prefix: str,
     role: str,
     fact: Mapping[str, Any],
+    *,
+    basis: Mapping[str, Any],
+    confidence: str,
 ) -> dict[str, Any]:
     prefix = namespace_prefix.lower()
     if prefix == "us-gaap":
@@ -467,9 +490,37 @@ def _semantic_profile(
             f"{taxonomy_class}:{role}:{concept_family}" if standard_taxonomy else "company_extension_unmapped"
         ),
         "period_unit_context_dimension_profile": _period_unit_context_dimension_profile(fact),
+        "statement_role_quality_profile": _statement_role_quality_profile(role, basis=basis, confidence=confidence),
         "extension_taxonomy_retained": taxonomy_class == "company_extension",
         "taxonomy_network_resolution_used": False,
         "sec_companyfacts_api_used": False,
+        "final_financial_statement_semantics_claimed": False,
+    }
+
+
+def _statement_role_quality_profile(
+    role: str,
+    *,
+    basis: Mapping[str, Any],
+    confidence: str,
+) -> dict[str, Any]:
+    rule_id = str(basis.get("rule_id") or "")
+    return {
+        "statement_role_quality_profile_version": STATEMENT_ROLE_QUALITY_PROFILE_VERSION,
+        "statement_candidate_role": role,
+        "classification_confidence": confidence,
+        "classification_rule_id": rule_id,
+        "role_assignment_basis_hash": stable_hash(
+            {"statement_candidate_role": role, "classification_confidence": confidence, "classification_rule_id": rule_id}
+        ),
+        "role_profile_scope": (
+            "unclassified_no_keyword_match"
+            if role == "unknown_or_unclassified"
+            else "bounded_keyword_or_dei_candidate_not_taxonomy_network_role"
+        ),
+        "taxonomy_network_resolution_used": False,
+        "presentation_linkbase_role_resolution_used": False,
+        "statement_role_semantics_finalized": False,
         "final_financial_statement_semantics_claimed": False,
     }
 
@@ -664,12 +715,27 @@ def _response_from_receipt(
             "period_unit_context_dimension_profile_version": dict(receipt["classification_diagnostics"]).get(
                 "period_unit_context_dimension_profile_version"
             ),
+            "statement_role_quality_profile_version": dict(receipt["classification_diagnostics"]).get(
+                "statement_role_quality_profile_version"
+            ),
             "semantic_profile_assigned_count": dict(receipt["classification_diagnostics"]).get("semantic_profile_assigned_count", 0),
             "period_unit_context_dimension_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
                 "period_unit_context_dimension_profile_assigned_count", 0
             ),
+            "statement_role_quality_profile_assigned_count": dict(receipt["classification_diagnostics"]).get(
+                "statement_role_quality_profile_assigned_count", 0
+            ),
             "period_unit_context_dimension_profile_hash": dict(receipt["classification_diagnostics"]).get(
                 "period_unit_context_dimension_profile_hash"
+            ),
+            "statement_role_quality_profile_hash": dict(receipt["classification_diagnostics"]).get(
+                "statement_role_quality_profile_hash"
+            ),
+            "medium_statement_role_confidence_count": dict(receipt["classification_diagnostics"]).get(
+                "medium_statement_role_confidence_count", 0
+            ),
+            "low_statement_role_confidence_count": dict(receipt["classification_diagnostics"]).get(
+                "low_statement_role_confidence_count", 0
             ),
             "context_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("context_ref_hash_present_count", 0),
             "unit_ref_hash_present_count": dict(receipt["classification_diagnostics"]).get("unit_ref_hash_present_count", 0),
@@ -683,6 +749,8 @@ def _response_from_receipt(
             "context_period_resolution_performed": False,
             "dimension_member_resolution_performed": False,
             "unit_normalization_performed": False,
+            "presentation_linkbase_role_resolution_performed": False,
+            "statement_role_semantics_claimed": False,
             "raw_values_returned": False,
             "final_financial_statement_semantics_claimed": False,
             "next_allowed_actions": ["select_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product"],

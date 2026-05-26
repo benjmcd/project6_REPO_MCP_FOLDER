@@ -100,6 +100,7 @@ PRODUCT_VIEW_NAMES = (
     "statement_candidates",
     "fact_inventory",
     "semantic_profile",
+    "statement_role_quality_profile",
     "period_unit_context_dimension_profile",
     "extension_unclassified_facts",
     "quality_gaps",
@@ -319,6 +320,7 @@ def _product_views(
         "statement_candidates": [view["statement_candidates"] for view in record_views],
         "fact_inventory": [view["fact_inventory"] for view in record_views],
         "semantic_profile": [view["semantic_profile"] for view in record_views],
+        "statement_role_quality_profile": [view["statement_role_quality_profile"] for view in record_views],
         "period_unit_context_dimension_profile": [
             view["period_unit_context_dimension_profile"] for view in record_views
         ],
@@ -406,6 +408,22 @@ def _record_product_view(
             "cross_company_comparability": dimensions.get("cross_company_comparability"),
             "financial_statement_semantics_finalized": False,
             "cross_company_comparability_admitted": False,
+        },
+        "statement_role_quality_profile": {
+            "record_index": index,
+            "statement_role_quality_profile_version": metrics.get("statement_role_quality_profile_version")
+            or "sec_edgar_statement_role_quality_profile_v1",
+            "statement_role_quality_profile_hash": metrics.get("statement_role_quality_profile_hash"),
+            "statement_role_quality_profile_assigned_count": metrics.get(
+                "statement_role_quality_profile_assigned_count"
+            ),
+            "medium_statement_role_confidence_count": metrics.get("medium_statement_role_confidence_count"),
+            "low_statement_role_confidence_count": metrics.get("low_statement_role_confidence_count"),
+            "profile_status": dimensions.get("statement_role_quality_profile"),
+            "taxonomy_network_resolution_performed": False,
+            "presentation_linkbase_role_resolution_performed": False,
+            "statement_role_semantics_finalized": False,
+            "final_financial_statement_semantics_claimed": False,
         },
         "period_unit_context_dimension_profile": {
             "record_index": index,
@@ -518,6 +536,7 @@ def _diagnostics_loss_report(
 def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
     company_form_matrix = list(product_views.get("company_form_matrix") or [])
     semantic_profiles = list(product_views.get("semantic_profile") or [])
+    statement_role_quality_profiles = list(product_views.get("statement_role_quality_profile") or [])
     period_unit_context_dimension_profiles = list(product_views.get("period_unit_context_dimension_profile") or [])
     extension_profiles = list(product_views.get("extension_unclassified_facts") or [])
     quality_gaps = dict(product_views.get("quality_gaps") or {})
@@ -527,6 +546,11 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
         "filing_count": len(company_form_matrix),
         "inspectable_count": sum(1 for record in company_form_matrix if record.get("inspection_status") == "inspectable"),
         "semantic_profile_record_count": sum(1 for record in semantic_profiles if record.get("semantic_profile_inventory_hash")),
+        "statement_role_quality_profile_record_count": sum(
+            1
+            for record in statement_role_quality_profiles
+            if record.get("statement_role_quality_profile_hash")
+        ),
         "period_unit_context_dimension_profile_record_count": sum(
             1
             for record in period_unit_context_dimension_profiles
@@ -560,6 +584,11 @@ def _authority_chain(
         for profile in product_views.get("period_unit_context_dimension_profile", [])
         if isinstance(profile, Mapping) and profile.get("period_unit_context_dimension_profile_hash")
     ]
+    statement_role_quality_hashes = [
+        profile.get("statement_role_quality_profile_hash")
+        for profile in product_views.get("statement_role_quality_profile", [])
+        if isinstance(profile, Mapping) and profile.get("statement_role_quality_profile_hash")
+    ]
     quality_hashes = [
         record.get("quality_evidence_hash")
         for record in product_views.get("company_form_matrix", [])
@@ -572,6 +601,7 @@ def _authority_chain(
         "connector_receipt_hash": validation["connector_receipt_hash"],
         "quality_evidence_hashes_hash": stable_hash(quality_hashes),
         "semantic_profile_inventory_hashes_hash": stable_hash(semantic_hashes),
+        "statement_role_quality_profile_hashes_hash": stable_hash(statement_role_quality_hashes),
         "period_unit_context_dimension_profile_hashes_hash": stable_hash(period_unit_context_dimension_hashes),
         "product_views_hash": stable_hash(product_views),
         "receipt_chain_bound": True,
