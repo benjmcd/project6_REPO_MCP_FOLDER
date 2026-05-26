@@ -3565,6 +3565,9 @@ SEC_EDGAR_BROADER_QUALITY_BREADTH_RUNTIME = (
 SEC_EDGAR_SEMANTIC_PROFILE_RUNTIME = (
     PLANNING_DOCS / "1229-sec-edgar-semantic-profile-runtime.md"
 )
+SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SELECTION = (
+    PLANNING_DOCS / "1230-sec-edgar-operator-product-surface-selection.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117139,6 +117142,58 @@ def _check_sec_edgar_semantic_profile_runtime(
                 )
 
 
+def _check_sec_edgar_operator_product_surface_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SELECTION: (
+            "SEC EDGAR Operator Product Surface Selection",
+            "milestone: sec_edgar_operator_product_surface_selection_v1",
+            "source_semantic_profile_runtime: next_milestone_plans/Layer3_planning_docs/1229-sec-edgar-semantic-profile-runtime.md",
+            "source_operator_inspection_runtime: next_milestone_plans/Layer3_planning_docs/1224-sec-edgar-operator-inspection-runtime.md",
+            "entry_main_commit: 0235496e1e73aed5f2e4ff84c329b94384d27579",
+            "selected_next_runtime_target: sec_edgar_operator_product_surface_runtime_v1",
+            "selected_future_rendered_mode: rendered_sec_edgar_operator_product_surface_control",
+            "selected_product_views: company_form_matrix,filing_identity,source_family,statement_candidates,fact_inventory,semantic_profile,extension_unclassified_facts,quality_gaps,diagnostics_loss_report,package_review_handoff_state,operator_inspection_status_links",
+            "selected_rendered_authority: server_receipt_projection_only",
+            "backend_route_behavior_change: false",
+            "frontend_runtime_behavior_change: false",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "frontend_durable_authority_enabled: false",
+            "next_exact_posture: sec_edgar_operator_product_surface_runtime_v1",
+        ),
+        SEC_EDGAR_SEMANTIC_PROFILE_RUNTIME: (
+            "next_exact_posture: sec_edgar_operator_product_surface_selection_v1",
+            "semantic_profile_surface: semantic_profile",
+            "cross_company_comparability_admitted: false",
+        ),
+        SEC_EDGAR_OPERATOR_INSPECTION_SERVICE: (
+            "company_filing_inspection_matrix",
+            "quality_assessment_status",
+            "quality_dimensions",
+            "quality_gaps",
+            "quality_evidence_hash",
+            "next_allowed_actions",
+            "frontend_durable_authority_enabled",
+        ),
+        SEC_EDGAR_DELIVERY_STATUS_PROVENANCE_SERVICE: (
+            "delivery_status_records",
+            "quality_assessment_status",
+            "quality_dimensions",
+            "quality_gaps",
+            "quality_evidence_hash",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator product-surface selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -118442,6 +118497,7 @@ def main() -> int:
     _check_sec_edgar_product_quality_matrix_runtime(errors)
     _check_sec_edgar_broader_quality_breadth_runtime(errors)
     _check_sec_edgar_semantic_profile_runtime(errors)
+    _check_sec_edgar_operator_product_surface_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
