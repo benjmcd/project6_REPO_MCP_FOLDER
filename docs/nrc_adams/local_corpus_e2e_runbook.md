@@ -11988,3 +11988,44 @@ next_exact_posture: sec_edgar_real_company_corpus_validation_selection_v1
 ```
 
 Current main now includes the SEC HTML/iXBRL handoff/export prepare runtime. The next slice should validate real-company SEC filing diversity through the current admitted acquisition, parser/source-family, fact/material bridge, statement product, package-review, package construction, package-review submit, and handoff/export prepare path before selecting further delivery runtime plumbing. Delivery prepare/status remains a separate future slice after that validation, while internal webhook dispatch, provider writes, connector dispatch, taxonomy/CompanyFacts, RAG/model, full mockup, and frontend durable authority stay separate.
+
+## SEC EDGAR Real Company Corpus Validation Selection
+
+```yaml
+milestone: sec_edgar_real_company_corpus_validation_selection_v1
+source_handoff_export_prepare_current_main_sync: next_milestone_plans/Layer3_planning_docs/1218-sec-edgar-html-inline-xbrl-fact-statement-classification-downstream-product-handoff-export-prepare-runtime-current-main-sync.md
+current_main_entry: cdcb12373d756f71b8528f929c33de389efe2296
+source_sync_pr: "#1918"
+entry_decision: freeze_only
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_real_company_corpus_validation_runtime_v1
+selected_validation_mode: sec_edgar_real_company_corpus_validation_v1
+selected_operator_decision: validate_sec_edgar_real_company_corpus_product_path
+selected_future_service: backend/app/services/layer3_sec_edgar_real_company_corpus_validation.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/validation/status/{sec_edgar_real_company_corpus_validation_receipt_id}
+selected_company_matrix: MSFT,STLD,SONY,CCJ
+selected_filing_policy: one_recent_annual_filing_if_available_and_one_recent_interim_or_current_filing_if_applicable_per_company
+selected_form_discovery_policy: use_sec_connector_submissions_authority_do_not_hardcode_10k_10q_or_domestic_form_families
+selected_sec_access_policy: declared_user_agent_contact_required_and_no_more_than_10_requests_per_second
+selected_path_under_validation: sec_connector_acquisition,source_family_classification,html_inline_xbrl_or_complete_submission_parser_status,fact_material_bridge,statement_candidate_product,package_review_preview,package_construction_commit,package_review_submit,handoff_export_prepare
+selected_content_order_evidence: document_order_hash,section_order_inventory,fact_source_order_inventory,statement_candidate_order,package_artifact_order_hash
+selected_fact_authority_evidence: concept,taxonomy_namespace,period,unit,scale_decimals,context_id,dimensions,segment_entity_context,source_ref_span,fact_hash,redacted_operator_projection
+selected_extension_policy: retain_company_specific_extension_concepts_with_namespace_label_context_source_ref_and_diagnostic_classification
+selected_product_utility_matrix: company,filing,form_family,source_family,supported_degraded_blocked,outputs_produced,gaps_found,operator_usefulness
+selected_blocked_behavior: unsupported_or_missing_artifacts_fail_closed_with_explicit_diagnostics_no_generic_text_downgrade
+delivery_prepare_selection_deferred_until_validation_complete: true
+delivery_runtime_in_this_freeze: false
+internal_webhook_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+full_mockup_activation_enabled: false
+frontend_durable_authority_enabled: false
+candidate_b_pdf_only_routing_for_sec_filings_enabled: false
+parser_source_expansion_in_this_freeze: false
+runtime_implementation_in_this_freeze: false
+next_exact_posture: sec_edgar_real_company_corpus_validation_runtime_v1
+```
+
+This freeze selects real-company SEC filing diversity validation as the next runtime over the currently admitted product path. The validation must discover actual filing form families for MSFT, STLD, SONY, and CCJ through SEC connector/submissions authority, record supported/degraded/blocked outcomes, and avoid more delivery plumbing until the current acquisition/parser/fact/product/package/review/handoff path is empirically checked against heterogeneous issuers.
