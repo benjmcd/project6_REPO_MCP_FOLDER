@@ -3360,6 +3360,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_LAYER3_PROOF_RUNTIME = (
     PLANNING_DOCS
     / "1175-sec-edgar-html-inline-xbrl-downstream-layer3-proof-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_SELECTION = (
+    PLANNING_DOCS
+    / "1176-sec-edgar-html-inline-xbrl-downstream-operator-status-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -112144,6 +112148,72 @@ def _check_sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_downstream_operator_status_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_OPERATOR_STATUS_SELECTION: (
+            "SEC EDGAR HTML Inline XBRL Downstream Operator Status Selection",
+            "milestone: sec_edgar_html_inline_xbrl_downstream_operator_status_selection_v1",
+            "source_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1175-sec-edgar-html-inline-xbrl-downstream-layer3-proof-runtime.md",
+            "current_main_entry: d3ac6961ae432e3920d44f08ec6e9d043dbefd2c",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_downstream_operator_status_runtime_v1",
+            "selected_status_mode: sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "selected_operator_decision: inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "selected_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+            "selected_existing_proof_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_status.py",
+            "selected_authority_model: html_inline_xbrl_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side",
+            "available_requires_server_revalidated_html_inline_xbrl_proof_request: true",
+            "available_requires_expected_proof_hash_match: true",
+            "browser_held_hash_alone_is_not_authority: true",
+            "direct_rendered_status_implementation_before_status_endpoint_admitted: false",
+            "status_can_create_downstream_proof: false",
+            "status_can_fetch_sec_content: false",
+            "status_can_reparse_or_materialize_html_inline_xbrl: false",
+            "status_can_create_xml_xbrl_fact_authority: false",
+            "connector_dispatch_enabled: false",
+            "raw_url_rendered: false",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_operator_status_runtime_v1",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_downstream_operator_status_selection_v1",
+            "source_downstream_proof_runtime: next_milestone_plans/Layer3_planning_docs/1175-sec-edgar-html-inline-xbrl-downstream-layer3-proof-runtime.md",
+            "current_main_entry: d3ac6961ae432e3920d44f08ec6e9d043dbefd2c",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_downstream_operator_status_runtime_v1",
+            "selected_status_mode: sec_edgar_html_inline_xbrl_downstream_operator_status_v1",
+            "selected_operator_decision: inspect_sec_edgar_html_inline_xbrl_downstream_operator_status",
+            "selected_status_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/downstream-proof/status",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_downstream_status.py",
+            "selected_authority_model: html_inline_xbrl_downstream_proof_request_plus_expected_proof_hash_revalidated_server_side",
+            "status_can_create_downstream_proof: false",
+            "status_can_reparse_or_materialize_html_inline_xbrl: false",
+            "status_can_create_xml_xbrl_fact_authority: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_operator_status_runtime_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_DOWNSTREAM_LAYER3_PROOF_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_downstream_operator_status_selection_v1",
+        ),
+        ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_downstream_proof.py": (
+            "SCHEMA_ID = \"layer3.sec_edgar_html_inline_xbrl_downstream_proof.v1\"",
+            "PROOF_MODE = \"sec_edgar_html_inline_xbrl_downstream_layer3_e2e_proof_v1\"",
+            "\"select_sec_edgar_html_inline_xbrl_downstream_operator_status_after_runtime_evidence\"",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL downstream operator status selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -113329,6 +113399,7 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_material_bridge_runtime(errors)
     _check_sec_edgar_html_inline_xbrl_downstream_layer3_proof_selection(errors)
     _check_sec_edgar_html_inline_xbrl_downstream_layer3_proof_runtime(errors)
+    _check_sec_edgar_html_inline_xbrl_downstream_operator_status_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
