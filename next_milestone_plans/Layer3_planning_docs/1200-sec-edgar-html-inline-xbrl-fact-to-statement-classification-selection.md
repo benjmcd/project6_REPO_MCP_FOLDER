@@ -3,12 +3,15 @@
 ```yaml
 milestone: sec_edgar_html_inline_xbrl_fact_to_statement_classification_selection_v1
 source_fact_material_repeatability_closeout_readiness: next_milestone_plans/Layer3_planning_docs/1199-sec-edgar-html-inline-xbrl-fact-material-downstream-operator-repeatability-closeout-readiness.md
-current_main_entry: b80e211dd5ad03fa06a09a93ca7829a67529ab5a
+current_main_entry: 5574825cfc16d33c5a75fc908feb1d323688dc26
 source_closeout_pr: "#1901"
-depends_on_unmerged_closeout_sync_pr: true
+source_closeout_pr_status: merged_current_main
+source_merge_commit: 5574825cfc16d33c5a75fc908feb1d323688dc26
+current_main_sync: next_milestone_plans/Layer3_planning_docs/1202-sec-edgar-html-inline-xbrl-fact-to-statement-classification-current-main-sync.md
+depends_on_unmerged_closeout_sync_pr: false
 entry_decision: freeze_only
-runtime_status: not_implemented
-rendered_status: not_implemented
+runtime_status: implemented_current_main
+rendered_status: not_selected
 implementation_admitted_after_current_main_sync: true
 stacked_runtime_implementation_before_current_main_sync: true
 stacked_runtime_pr: "#1901"
@@ -73,9 +76,9 @@ raw_fact_values_exposed: false
 baseline_rollback_preserved: true
 candidate_a_semantics_preserved: true
 candidate_b_default_scope_preserved: eligible_effective_pdfs_plus_receipt_bound_selected_classes_only
-verification_progress_check: python ./tools/l3-progress-check.py PASS
-verification_target_selection: python ./tools/l3-target-selection-validate.py --expect frozen PASS
-next_exact_posture: sec_edgar_html_inline_xbrl_fact_to_statement_classification_runtime_v1
+verification_progress_check_after_merge: python ./tools/l3-progress-check.py PASS
+verification_target_selection_after_merge: python ./tools/l3-target-selection-validate.py --expect frozen PASS
+next_exact_posture: sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_selection_v1
 ```
 
 This freeze selects the next governed SEC HTML/iXBRL product slice: a deterministic, receipt-bound fact-to-statement candidate classification runtime. The future runtime should reload existing fact-authority and fact-material bridge receipts, revalidate their parser/source/material hashes, and classify every retained inline XBRL fact into exactly one redacted statement candidate role. Facts that cannot be classified must remain present as `unknown_or_unclassified` with diagnostics; unknown status is a retained output, not content loss.
@@ -95,7 +98,7 @@ The selected runtime is intentionally taxonomy-free and network-free. It may use
 ## Coherence Check
 
 - Does this selection implement classification? Recommended answer: no. It freezes the runtime contract only.
-- Why does this document mention a stacked runtime? Recommended answer: the runtime was implemented on the same branch before PR #1901 could merge because GitHub Actions is blocked at checkout by an external account-access failure; current-main admission still depends on syncing after that blocker clears.
+- Why does this document mention a stacked runtime? Recommended answer: the runtime was implemented on the same branch before PR #1901 merged, then PR #1901 was merged into current main at `5574825cfc16d33c5a75fc908feb1d323688dc26`; see the current-main sync document.
 - Does this selection claim final financial-statement semantics? Recommended answer: no. It selects redacted statement candidate classification; final semantics and taxonomy-backed validation remain separate future slices.
 - What prevents content loss? Recommended answer: every fact must receive exactly one role, including explicit `unknown_or_unclassified`, while preserving source and marker order.
-- What comes next? Recommended answer: sync the stacked runtime to current main after PR #1901 can merge, then select the downstream product/inspection slice.
+- What comes next? Recommended answer: select the downstream product/inspection slice for the current-main statement-classification runtime.
