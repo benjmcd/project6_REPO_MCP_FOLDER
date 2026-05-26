@@ -289,11 +289,27 @@ def _validate_bridge_authority(
         "fact_inventory_hash": "expected_fact_inventory_hash",
         "diagnostics_hash": "expected_diagnostics_hash",
     }
-    bridge_hashes = bridge_status.get("authority_hashes") if isinstance(bridge_status.get("authority_hashes"), Mapping) else {}
+    bridge_hashes = bridge_status.get("authority_hashes")
+    if not isinstance(bridge_hashes, Mapping):
+        _blocked(
+            "sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_authority_hashes_missing",
+            "SEC EDGAR HTML/iXBRL statement classification requires material bridge authority hashes.",
+            http_status=409,
+            blocked_fields=["authority_hashes"],
+        )
     for authority_key, request_key in checks.items():
         expected = _expected_or_authority(request, request_key, fact_receipt, authority_key)
-        bridge_value = str(bridge_hashes.get(authority_key) or bridge_status.get(authority_key) or "").strip()
-        if bridge_value and bridge_value != expected:
+        bridge_value = str(bridge_hashes.get(authority_key) or "").strip()
+        if authority_key == "parser_receipt_hash" and not bridge_value:
+            bridge_value = str(bridge_status.get("parser_receipt_hash") or "").strip()
+        if not _is_hash(bridge_value):
+            _blocked(
+                "sec_edgar_html_inline_xbrl_fact_statement_classification_bridge_authority_hash_missing",
+                "SEC EDGAR HTML/iXBRL statement classification requires complete material bridge authority hash parity.",
+                http_status=409,
+                blocked_fields=[f"authority_hashes.{authority_key}"],
+            )
+        if bridge_value != expected:
             _blocked(
                 f"sec_edgar_html_inline_xbrl_fact_statement_classification_{authority_key}_mismatch",
                 "SEC EDGAR HTML/iXBRL statement classification requires fact and bridge authority hash parity.",
