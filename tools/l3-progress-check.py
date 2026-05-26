@@ -3400,6 +3400,10 @@ SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_BRIDGE_RUNTIME = (
     PLANNING_DOCS
     / "1185-sec-edgar-html-inline-xbrl-fact-material-bridge-runtime.md"
 )
+SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_PROOF_SELECTION = (
+    PLANNING_DOCS
+    / "1186-sec-edgar-html-inline-xbrl-fact-material-downstream-proof-selection.md"
+)
 CANDIDATE_B_BROADER_SCOPE_READINESS_SERVICE = (
     ROOT
     / "backend"
@@ -113015,6 +113019,124 @@ def _check_sec_edgar_html_inline_xbrl_fact_material_bridge_runtime(
                 )
 
 
+def _check_sec_edgar_html_inline_xbrl_fact_material_downstream_proof_selection(
+    errors: list[str],
+) -> None:
+    service = ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.py"
+    required_terms = {
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_DOWNSTREAM_PROOF_SELECTION: (
+            "SEC EDGAR HTML Inline XBRL Fact Material Downstream Proof Selection",
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_selection_v1",
+            "source_fact_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1185-sec-edgar-html-inline-xbrl-fact-material-bridge-runtime.md",
+            "current_main_entry: 6638e9da171a3ec2b3c371229fa3f101c5a52329",
+            "entry_decision: freeze_only",
+            "runtime_status: not_implemented",
+            "rendered_status: not_implemented",
+            "implementation_admitted_after_current_main_sync: true",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_runtime_v1",
+            "selected_proof_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof_v1",
+            "selected_operator_decision: record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof",
+            "selected_source_family: sec_edgar_html_inline_xbrl",
+            "selected_parser_family: sec_edgar_html_inline_xbrl_source_family_parser_v1",
+            "selected_typed_content_contract_id: sec_edgar_html_inline_xbrl_fact_material_units_v1",
+            "selected_material_bridge_mode: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+            "selected_material_bridge_ready_state: sec_edgar_html_inline_xbrl_fact_material_bridge_ready",
+            "selected_material_source_class: dataset_version",
+            "selected_material_preview_admission_source_system: nrc_adams_aps",
+            "required_fact_authority_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_authority.v1",
+            "required_fact_material_bridge_schema_id: layer3.sec_edgar_html_inline_xbrl_fact_material_bridge.v1",
+            "required_gate_b_commit_surface: existing_gate_b_decision_api",
+            "required_gate_b_commit_in_bridge: false",
+            "required_fact_authority: fact_authority_receipt_id,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash",
+            "required_fact_material_bridge_authority: fact_material_bridge_receipt_id,fact_material_bridge_receipt_hash,bridge_receipt_hash,dataset_version_id,dataset_version_hash,materialization_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,admitted_subset_hash",
+            "required_downstream_session_authority: L3Session,L3SelectionManifest,L3MaterialSnapshot",
+            "required_material_snapshot_contract: source_family=sec_edgar_html_inline_xbrl,parser_family=sec_edgar_html_inline_xbrl_source_family_parser_v1,typed_content_contract_id=sec_edgar_html_inline_xbrl_fact_material_units_v1",
+            "required_coverage_steps: real_filing_connector_acquisition,live_source_artifact_acquisition,html_inline_xbrl_source_family_parser,html_inline_xbrl_fact_authority,html_inline_xbrl_fact_material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection",
+            "required_evidence_model: server_owned_receipts_and_response_hashes_not_self_declared_coverage_only",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "gate_b_mutation_admitted_in_proof: false",
+            "live_sec_network_fetch_admitted_for_proof: false",
+            "submissions_lookup_runtime_admitted_for_proof: false",
+            "html_inline_xbrl_reparse_or_materialization_admitted_in_proof: false",
+            "fact_value_reconstruction_admitted_in_proof: false",
+            "xml_xbrl_fact_authority_admitted: false",
+            "sec_companyfacts_api_runtime_enabled: false",
+            "taxonomy_network_resolution_enabled: false",
+            "financial_statement_semantics_admitted: false",
+            "fact_to_statement_classification_enabled: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "browser_storage_authority_enabled: false",
+            "raw_local_path_exposed: false",
+            "raw_url_exposed: false",
+            "artifact_bytes_exposed: false",
+            "raw_fact_values_exposed_in_operator_projection: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_runtime_v1",
+            "Can this reuse the existing HTML/iXBRL downstream proof unchanged? Recommended answer: no.",
+            "Should the proof reconstruct values again? Recommended answer: no.",
+        ),
+        LOCAL_CORPUS_E2E_RUNBOOK: (
+            "milestone: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_selection_v1",
+            "source_fact_material_bridge_runtime: next_milestone_plans/Layer3_planning_docs/1185-sec-edgar-html-inline-xbrl-fact-material-bridge-runtime.md",
+            "current_main_entry: 6638e9da171a3ec2b3c371229fa3f101c5a52329",
+            "selected_next_runtime_target: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_runtime_v1",
+            "selected_proof_mode: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof_v1",
+            "selected_operator_decision: record_sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_e2e_proof",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_proof.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge/downstream-proof",
+            "selected_typed_content_contract_id: sec_edgar_html_inline_xbrl_fact_material_units_v1",
+            "selected_material_bridge_mode: sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+            "selected_material_bridge_ready_state: sec_edgar_html_inline_xbrl_fact_material_bridge_ready",
+            "selected_material_source_class: dataset_version",
+            "required_fact_authority: fact_authority_receipt_id,fact_authority_receipt_hash,fact_inventory_hash,diagnostics_hash",
+            "required_fact_material_bridge_authority: fact_material_bridge_receipt_id,fact_material_bridge_receipt_hash,bridge_receipt_hash,dataset_version_id,dataset_version_hash,materialization_receipt_hash,material_preview_hash,gate_b_decision_manifest_id,admitted_subset_hash",
+            "required_downstream_session_authority: L3Session,L3SelectionManifest,L3MaterialSnapshot",
+            "required_material_snapshot_contract: source_family=sec_edgar_html_inline_xbrl,parser_family=sec_edgar_html_inline_xbrl_source_family_parser_v1,typed_content_contract_id=sec_edgar_html_inline_xbrl_fact_material_units_v1",
+            "required_coverage_steps: real_filing_connector_acquisition,live_source_artifact_acquisition,html_inline_xbrl_source_family_parser,html_inline_xbrl_fact_authority,html_inline_xbrl_fact_material_authority_bridge,gate_b_commit,gate_c_typing,retrieval_context,analysis_execution_or_status,package_commit,package_review_submit,handoff_export_prepare,external_export_download_prepare,same_origin_delivery_status,same_origin_delivery,provider_private_prepare,provider_private_status,provider_private_use,provider_private_revoke,internal_webhook_dispatch,internal_webhook_status,session_status_projection,operator_artifact_inspection",
+            "runtime_implementation_in_this_freeze: false",
+            "rendered_runtime_in_this_freeze: false",
+            "gate_b_mutation_admitted_in_proof: false",
+            "live_sec_network_fetch_admitted_for_proof: false",
+            "html_inline_xbrl_reparse_or_materialization_admitted_in_proof: false",
+            "fact_value_reconstruction_admitted_in_proof: false",
+            "sec_companyfacts_api_runtime_enabled: false",
+            "taxonomy_network_resolution_enabled: false",
+            "financial_statement_semantics_admitted: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "rag_vector_model_runtime_enabled: false",
+            "full_mockup_activation_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "raw_fact_values_exposed_in_operator_projection: false",
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_runtime_v1",
+        ),
+        SEC_EDGAR_HTML_INLINE_XBRL_FACT_MATERIAL_BRIDGE_RUNTIME: (
+            "next_exact_posture: sec_edgar_html_inline_xbrl_fact_material_downstream_layer3_proof_selection_v1",
+        ),
+        service: (
+            "READY_STATE = \"sec_edgar_html_inline_xbrl_fact_material_bridge_ready\"",
+            "BRIDGE_MODE = \"sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1\"",
+            "TYPED_CONTENT_CONTRACT_ID = \"sec_edgar_html_inline_xbrl_fact_material_units_v1\"",
+            "fact_material_bridge_receipt_hash",
+            "gate_b_decision_manifest_id",
+            "raw_fact_values_exposed_in_operator_projection",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR HTML inline XBRL fact material downstream proof selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -114212,6 +114334,7 @@ def main() -> int:
     _check_sec_edgar_html_inline_xbrl_fact_authority_runtime(errors)
     _check_sec_edgar_html_inline_xbrl_fact_material_bridge_selection(errors)
     _check_sec_edgar_html_inline_xbrl_fact_material_bridge_runtime(errors)
+    _check_sec_edgar_html_inline_xbrl_fact_material_downstream_proof_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
