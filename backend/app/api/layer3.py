@@ -591,6 +591,9 @@ class Layer3SecEdgarOperatorProductSurfaceRequest(BaseModel):
     sec_edgar_operator_inspection_receipt_id: str = Field(min_length=1)
     sec_edgar_operator_inspection_receipt_hash: str = Field(min_length=64, max_length=64)
     operator_confirmation: bool
+    value_reveal_policy: Literal["sec_edgar_operator_surface_gated_value_reveal_v1"] | None = None
+    value_reveal_confirmation: bool | None = None
+    value_reveal_max_records: int | None = None
     actor: str | None = None
 
 
@@ -8241,6 +8244,7 @@ class Layer3SecEdgarOperatorProductSurfaceResponse(Layer3BaseResponse):
     validation_receipt_hash: str | None = None
     connector_receipt_hash: str | None = None
     product_views: dict[str, Any] | None = None
+    value_reveal: dict[str, Any] | None = None
     surface_rollup: dict[str, Any] | None = None
     authority_chain: dict[str, Any] | None = None
     cache: dict[str, Any] | None = None

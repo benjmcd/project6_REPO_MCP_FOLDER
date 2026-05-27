@@ -4048,19 +4048,80 @@ def _ready_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProce
     return subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps(payload), stderr="")
 
 
+def _standard_numeric_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProcess[str]:
+    payload = {
+        "schema_id": "tools.sec_xbrl_arelle_extract.v1",
+        "arelle_version": "2.41.3",
+        "taxonomy_package_loaded": True,
+        "taxonomy_package_count": 1,
+        "taxonomy_package_hashes": ["d" * 64],
+        "taxonomy_network_resolution_enabled": False,
+        "document_set": {"input_document_count": 1, "fact_bearing_document_count": 1},
+        "diagnostics": {},
+        "fact_count": 1,
+        "facts": [
+            {
+                "source_order": 1,
+                "entry_document_index": 1,
+                "concept": {
+                    "qname": "us-gaap:Assets",
+                    "namespace": "http://fasb.org/us-gaap/2024",
+                    "local_name": "Assets",
+                    "standard": True,
+                    "extension": False,
+                    "resolved_from_dts": True,
+                },
+                "context_id": "ctx-annual",
+                "unit_id": "usd",
+                "period": {
+                    "type": "duration",
+                    "start": "2024-01-01",
+                    "end": "2024-12-31",
+                    "instant": None,
+                    "forever": False,
+                    "resolved": True,
+                },
+                "unit": {
+                    "measures": ["iso4217:USD"],
+                    "currency": "iso4217:USD",
+                    "numerator": ["iso4217:USD"],
+                    "denominator": [],
+                    "resolved": True,
+                },
+                "dimensions": {"explicit": [], "typed": []},
+                "decimals": "-6",
+                "precision": None,
+                "scale": "6",
+                "sign": None,
+                "format": None,
+                "hidden": False,
+                "continued": False,
+                "continued_at": None,
+                "footnote_count": 0,
+                "value": "987654321000000",
+                "effective_value": "987654321000000",
+                "lexical_value": "987654321",
+            }
+        ],
+    }
+    return subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps(payload), stderr="")
+
+
 def _prepare_sec_edgar_arelle_sidecar_authority(
     tmp_path,
     monkeypatch,
     prepared: dict[str, object],
     *,
     label: str,
+    runner=None,
+    expected_resolved_fact_count: int = 2,
 ) -> dict[str, object]:
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [Path(__file__)])
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "arelle-cache")
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
-    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _ready_arelle_sidecar_runner)
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", runner or _ready_arelle_sidecar_runner)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         {
@@ -4084,7 +4145,7 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
         }
     )
     assert response["sidecar_state"] == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
-    assert response["resolved_fact_count"] == 2
+    assert response["resolved_fact_count"] == expected_resolved_fact_count
     return response
 
 
@@ -4286,6 +4347,83 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
     assert "987654321" in csv_text
     assert "-123456789" in csv_text
     assert "arelle_effective_canonical_value_v1" in csv_text
+
+
+def test_layer3_api_reveals_sec_edgar_operator_surface_values_only_when_gated(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="operator-value-reveal")
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    sidecar = _prepare_sec_edgar_arelle_sidecar_authority(
+        tmp_path,
+        monkeypatch,
+        prepared,
+        label="operator-value-reveal",
+        runner=_standard_numeric_arelle_sidecar_runner,
+        expected_resolved_fact_count=1,
+    )
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json={
+            "client_request_id": "sec-edgar-html-inline-xbrl-operator-value-reveal-bridge",
+            "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+            "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+            "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+            "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+            "arelle_sidecar_receipt_id": sidecar["sidecar_receipt_id"],
+            "arelle_sidecar_receipt_hash": sidecar["sidecar_receipt_hash"],
+            "parser_receipt_id": parser["parser_receipt_id"],
+            "parser_receipt_hash": parser["parser_receipt_hash"],
+            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+            "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+            "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+            "expected_document_inventory_hash": parser["document_inventory_hash"],
+            "expected_content_order_hash": parser["content_order_hash"],
+            "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+            "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+            "expected_fact_inventory_hash": sidecar["resolved_fact_inventory_hash"],
+            "expected_diagnostics_hash": sidecar["diagnostics_hash"],
+            "rollback_confirmed": True,
+            "operator_confirmed": True,
+        },
+    )
+    assert response.status_code == 200, response.text
+    bridge = response.json()
+
+    disabled = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
+        {},
+        {"filing_validation_records": [{"record_index": 1, "authority_hashes": {"fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"]}}]},
+    )
+    assert disabled["value_reveal_state"] == "not_requested"
+    assert "987654321000000" not in json.dumps(disabled)
+
+    reveal = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
+        {
+            "value_reveal_policy": "sec_edgar_operator_surface_gated_value_reveal_v1",
+            "value_reveal_confirmation": True,
+            "value_reveal_max_records": 1,
+        },
+        {"filing_validation_records": [{"record_index": 1, "authority_hashes": {"fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"]}}]},
+    )
+    assert reveal["value_reveal_state"] == "ready"
+    assert reveal["value_reveal_scope"] == "standard_numeric_non_dimensional_facts_only"
+    assert reveal["revealed_value_count"] == 1
+    value = reveal["revealed_values"][0]
+    assert value["effective_value"] == "987654321000000"
+    assert value["value_semantics"] == "arelle_effective_canonical_value_v1"
+    assert value["taxonomy_family"] == "us-gaap"
+    assert value["concept_namespace_hash"]
+    reveal_text = json.dumps(reveal)
+    assert "http://fasb.org" not in reveal_text
+    assert '"lexical_value"' not in reveal_text
+    assert str(tmp_path) not in reveal_text
 
 
 def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar(
