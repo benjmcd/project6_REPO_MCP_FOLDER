@@ -1,0 +1,201 @@
+from __future__ import annotations
+
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+import sys
+
+import pytest
+
+BACKEND = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND))
+
+from app.core.config import settings
+from app.services import layer3_sec_xbrl_sidecar
+from app.services.layer3_utils import stable_hash
+from app.services.layer3_workbench_error import Layer3WorkbenchError
+
+
+def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+
+    assert response["status"] == "ready"
+    assert response["resolved_fact_count"] == 2
+    assert response["parity"]["regex_fact_authority_count"] == 1
+    assert response["parity"]["recovered_vs_regex"] == 1
+    assert response["coverage"]["period_resolved_count"] == 2
+    assert response["coverage"]["unit_resolved_count"] == 2
+    assert response["coverage"]["explicit_dimension_fact_count"] == 1
+    assert response["coverage"]["typed_dimension_fact_count"] == 1
+    assert response["coverage"]["hidden_fact_count"] == 1
+    assert response["coverage"]["continued_fact_count"] == 1
+    assert "SECRET_MONETARY_VALUE" not in json.dumps(response, sort_keys=True)
+
+    receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
+        response["sidecar_receipt_id"],
+        expected_sidecar_receipt_hash=response["sidecar_receipt_hash"],
+    )
+    assert receipt["resolved_fact_records"][0]["value"] == "SECRET_MONETARY_VALUE"
+    assert receipt["resolved_fact_projection"][0]["value_redacted"] is True
+    assert "value" not in receipt["resolved_fact_projection"][0]
+    assert receipt["diagnostics"]["app_runtime_imported_arelle"] is False
+    assert receipt["negative_invariants"]["material_bridge_mutated"] is False
+
+
+def test_sec_xbrl_sidecar_fails_closed_when_arelle_is_absent(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _blocked_arelle_runner)
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=None)
+    )
+
+    assert response["status"] == "blocked"
+    assert response["sidecar_receipt_id"] is None
+    assert response["status_projection"]["ready"] is False
+    assert response["status_projection"]["blocked_reasons"][0]["reason"] == "arelle_nonzero_exit"
+    assert response["negative_invariants"]["arelle_imported_into_app_runtime"] is False
+
+
+def test_sec_xbrl_sidecar_rejects_silent_low_fact_cap(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+            {**_request(companyfacts_count=1), "max_facts": 10}
+        )
+
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_max_facts_too_low"
+
+
+def _install_receipt_fakes(monkeypatch, tmp_path, runner):
+    content = b"retained complete submission text"
+    parsed = {
+        "primary_document_hash": _hash("primary-doc"),
+        "document_inventory": [{"document_index": 1}],
+        "content_order": [{"segment_index": 1}],
+        "table_candidate_inventory": [],
+        "inline_xbrl_marker_inventory": [{"marker_index": 1}],
+    }
+    parser = {
+        "parser_receipt_id": "sec-edgar-html-inline-xbrl-parser-" + "a" * 24,
+        "parser_receipt_hash": _hash("parser"),
+        "connector_receipt_id": "sec-edgar-real-filing-acquisition-connector-" + "b" * 24 + "-" + "c" * 24,
+        "connector_receipt_hash": _hash("connector"),
+        "connector_example_id": "example",
+        "live_source_artifact_receipt_id": "sec-edgar-text-table-live-source-artifact-" + "d" * 24 + "-" + "e" * 24,
+        "live_source_artifact_receipt_hash": _hash("live"),
+        "source_artifact_receipt_hash": _hash("source-artifact"),
+        "content_sha256": hashlib.sha256(content).hexdigest(),
+        "primary_document_hash": parsed["primary_document_hash"],
+        "document_inventory_hash": stable_hash(parsed["document_inventory"]),
+        "content_order_hash": stable_hash(parsed["content_order"]),
+        "table_candidate_inventory_hash": stable_hash(parsed["table_candidate_inventory"]),
+        "inline_xbrl_marker_inventory_hash": stable_hash(parsed["inline_xbrl_marker_inventory"]),
+    }
+    live_receipt = {
+        "source_artifact_receipt": {
+            "source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+            "content_sha256": parser["content_sha256"],
+        }
+    }
+    monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar.layer3_sec_edgar_html_inline_xbrl_parser,
+        "read_sec_edgar_html_inline_xbrl_source_family_parser_receipt",
+        lambda *_args, **_kwargs: dict(parser),
+    )
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar.layer3_sec_edgar_real_filing_acquisition_connector,
+        "read_sec_edgar_real_filing_acquisition_connector_receipt",
+        lambda *_args, **_kwargs: {"connector_receipt_hash": parser["connector_receipt_hash"]},
+    )
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar.layer3_sec_edgar_live_source_artifact,
+        "read_sec_edgar_text_table_live_source_artifact_bytes",
+        lambda *_args, **_kwargs: (dict(live_receipt), content),
+    )
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar.layer3_sec_edgar_html_inline_xbrl_parser,
+        "reparse_sec_edgar_html_inline_xbrl_source_family_for_material_bridge",
+        lambda *_args, **_kwargs: {"primary_document_text": "<html>primary</html>", "parsed": parsed},
+    )
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar.layer3_sec_edgar_html_inline_xbrl_fact_authority,
+        "read_sec_edgar_html_inline_xbrl_fact_authority_receipt",
+        lambda *_args, **_kwargs: {"fact_authority_receipt_hash": _hash("regex"), "fact_count": 1},
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", runner)
+
+
+def _request(*, companyfacts_count):
+    payload = {
+        "client_request_id": "sidecar-test",
+        "sidecar_mode": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
+        "operator_decision": layer3_sec_xbrl_sidecar.OPERATOR_DECISION,
+        "parser_receipt_id": "sec-edgar-html-inline-xbrl-parser-" + "a" * 24,
+        "parser_receipt_hash": _hash("parser"),
+        "regex_fact_authority_receipt_id": "sec-edgar-html-inline-xbrl-fact-authority-" + "f" * 24,
+        "regex_fact_authority_receipt_hash": _hash("regex"),
+        "operator_confirmation": True,
+    }
+    if companyfacts_count is not None:
+        payload["companyfacts_standard_fact_count"] = companyfacts_count
+        payload["companyfacts_oracle_confidence"] = "primary_companyfacts_us_gaap_dei_accession_scope"
+    return payload
+
+
+def _ready_arelle_runner(*_args, **_kwargs):
+    payload = {
+        "schema_id": "tools.sec_xbrl_arelle_extract.v1",
+        "arelle_version": layer3_sec_xbrl_sidecar.ARELLE_VERSION,
+        "taxonomy_package_loaded": False,
+        "fact_count": 2,
+        "diagnostics": {"model_error_count": 0, "concept_dts_unresolved_count": 0},
+        "facts": [
+            {
+                "source_order": 1,
+                "concept": {"qname": "us-gaap:Revenue", "namespace": "http://fasb.org/us-gaap/2024", "local_name": "Revenue", "standard": True, "extension": False},
+                "context_id": "ctx-1",
+                "unit_id": "usd",
+                "period": {"type": "duration", "start": "2025-01-01", "end": "2025-12-31", "instant": None, "forever": False, "resolved": True},
+                "unit": {"resolved": True, "measures": ["iso4217:USD"], "currency": "iso4217:USD", "numerator": ["iso4217:USD"], "denominator": []},
+                "dimensions": {"explicit": [{"axis": {"qname": "us-gaap:SegmentAxis"}, "member": {"qname": "us-gaap:SoftwareMember"}}], "typed": [], "resolved": True},
+                "decimals": "-6",
+                "precision": None,
+                "scale": "0",
+                "format": None,
+                "hidden": True,
+                "continued": True,
+                "continued_at": "cont-1",
+                "footnote_count": 0,
+                "value": "SECRET_MONETARY_VALUE",
+            },
+            {
+                "source_order": 2,
+                "concept": {"qname": "issuer:CustomMetric", "namespace": "http://example.invalid/issuer", "local_name": "CustomMetric", "standard": False, "extension": True},
+                "context_id": "ctx-2",
+                "unit_id": "shares",
+                "period": {"type": "instant", "start": None, "end": None, "instant": "2025-12-31", "forever": False, "resolved": True},
+                "unit": {"resolved": True, "measures": ["xbrli:shares"], "currency": None, "numerator": ["xbrli:shares"], "denominator": []},
+                "dimensions": {"explicit": [], "typed": [{"axis": {"qname": "issuer:TypedAxis"}, "member_qname": {"qname": "issuer:TypedMember"}, "value": "typed-code"}], "resolved": True},
+                "hidden": False,
+                "continued": False,
+                "footnote_count": 0,
+                "value": "7",
+            },
+        ],
+    }
+    return subprocess.CompletedProcess(args=["fake"], returncode=0, stdout=json.dumps(payload) + "\n", stderr="")
+
+
+def _blocked_arelle_runner(*_args, **_kwargs):
+    return subprocess.CompletedProcess(args=["fake"], returncode=2, stdout='{"status":"blocked"}\n', stderr="missing")
+
+
+def _hash(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()

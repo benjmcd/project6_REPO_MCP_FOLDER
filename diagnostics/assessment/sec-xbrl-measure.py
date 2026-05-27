@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from typing import Any
+from typing import Any, Mapping
 import urllib.error
 import urllib.request
 
@@ -30,6 +30,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_real_filing_acquisition_connector,
+    layer3_sec_xbrl_sidecar,
 )
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 from sqlalchemy import create_engine
@@ -175,8 +176,30 @@ def build_report(
                 ),
             },
         },
+        "sidecar_summary": _sidecar_summary(rows),
         "per_fixture": rows,
         "headline": headline,
+    }
+
+
+def _sidecar_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    ready = [row for row in rows if row.get("sidecar_state") == layer3_sec_xbrl_sidecar.READY_STATE]
+    counted = [row for row in ready if isinstance(row.get("sidecar_resolved_fact_count"), int)]
+    return {
+        "schema_id": "diagnostics.sec_xbrl_sidecar_summary.v1",
+        "sidecar_target": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
+        "ready_filing_count": len(ready),
+        "measured_filing_count": len(rows),
+        "arelle_dependency": f"{layer3_sec_xbrl_sidecar.ARELLE_PACKAGE}=={layer3_sec_xbrl_sidecar.ARELLE_VERSION}",
+        "resolved_fact_count": sum(int(row.get("sidecar_resolved_fact_count") or 0) for row in counted),
+        "recovered_vs_regex": sum(int(row.get("sidecar_recovered_vs_regex") or 0) for row in counted if isinstance(row.get("sidecar_recovered_vs_regex"), int)),
+        "period_resolved_count": sum(int(row.get("sidecar_period_resolved_count") or 0) for row in counted),
+        "unit_resolved_count": sum(int(row.get("sidecar_unit_resolved_count") or 0) for row in counted),
+        "explicit_dimension_fact_count": sum(int(row.get("sidecar_explicit_dimension_fact_count") or 0) for row in counted),
+        "typed_dimension_fact_count": sum(int(row.get("sidecar_typed_dimension_fact_count") or 0) for row in counted),
+        "values_redacted_in_report": True,
+        "runtime_default_changed": False,
+        "bridge_gate_b_product_package_ui_mutated": False,
     }
 
 
@@ -324,6 +347,9 @@ def _run_live_corpus(
     settings.layer3_sec_edgar_user_agent = user_agent.strip()
     settings.layer3_sec_edgar_rate_limit_per_second = 1
     settings.layer3_sec_edgar_max_bytes = 120_000_000
+    previous_arelle_python = os.environ.get("SEC_XBRL_ARELLE_PYTHON")
+    if arelle_python:
+        os.environ["SEC_XBRL_ARELLE_PYTHON"] = arelle_python
     layer3_sec_edgar_live_source_artifact._enforce_rate_limit = _waiting_rate_limit(
         previous["enforce_rate_limit"]
     )
@@ -340,6 +366,10 @@ def _run_live_corpus(
         settings.layer3_sec_edgar_user_agent = previous["user_agent"]
         settings.layer3_sec_edgar_rate_limit_per_second = previous["rate"]
         settings.layer3_sec_edgar_max_bytes = previous["max_bytes"]
+        if previous_arelle_python is None:
+            os.environ.pop("SEC_XBRL_ARELLE_PYTHON", None)
+        else:
+            os.environ["SEC_XBRL_ARELLE_PYTHON"] = previous_arelle_python
         layer3_sec_edgar_live_source_artifact._enforce_rate_limit = previous["enforce_rate_limit"]
 
 
@@ -474,6 +504,8 @@ def _process_live_filing(
         )
     except Layer3WorkbenchError as exc:
         return _blocked_fact_row(
+            index=index,
+            label=label,
             live_receipt=live_receipt,
             parser=parser,
             primary=primary,
@@ -500,6 +532,7 @@ def _process_live_filing(
         accession=raw_identity["accession"],
         user_agent=user_agent,
     )
+    sidecar = _sidecar_response(index=index, label=label, parser=parser, fact=fact, companyfacts=companyfacts)
     arelle = _arelle_fact_count(primary_document=primary, arelle_python=arelle_python)
     oracle_count = arelle.get("fact_count")
     if not isinstance(oracle_count, int):
@@ -512,6 +545,7 @@ def _process_live_filing(
         "fixture_class": "real_filing",
         "issuer_by_hash": _sha256(raw_identity["cik"].encode("utf-8"))[:24] if raw_identity["cik"] else None,
         "production_factauthority_fact_count": production_count,
+        **_sidecar_fields(sidecar),
         "companyfacts_fact_count": companyfacts.get("fact_count"),
         "companyfacts_oracle_used": companyfacts.get("oracle_used"),
         "companyfacts_confidence": companyfacts.get("confidence"),
@@ -552,8 +586,93 @@ def _fact_authority_payload(*, index: int, label: str, parser: Mapping[str, Any]
     }
 
 
+def _sidecar_response(
+    *,
+    index: int,
+    label: str,
+    parser: Mapping[str, Any],
+    fact: Mapping[str, Any] | None,
+    companyfacts: Mapping[str, Any],
+) -> dict[str, Any]:
+    try:
+        return layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+            _sidecar_payload(index=index, label=label, parser=parser, fact=fact, companyfacts=companyfacts)
+        )
+    except Layer3WorkbenchError as exc:
+        return {
+            "status": "blocked",
+            "sidecar_state": "sec_edgar_arelle_resolved_fact_authority_sidecar_blocked",
+            "status_projection": {
+                "blocked_reasons": [
+                    {
+                        "reason": str(exc.error_code),
+                        "blocked_fields": list(exc.blocked_fields),
+                    }
+                ]
+            },
+        }
+
+
+def _sidecar_payload(
+    *,
+    index: int,
+    label: str,
+    parser: Mapping[str, Any],
+    fact: Mapping[str, Any] | None,
+    companyfacts: Mapping[str, Any],
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "client_request_id": f"sec-xbrl-sidecar-{label}-{index}",
+        "sidecar_mode": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
+        "operator_decision": layer3_sec_xbrl_sidecar.OPERATOR_DECISION,
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "expected_document_inventory_hash": parser["document_inventory_hash"],
+        "expected_content_order_hash": parser["content_order_hash"],
+        "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+        "max_facts": layer3_sec_xbrl_sidecar.DEFAULT_MAX_FACTS,
+        "operator_confirmation": True,
+    }
+    if fact and fact.get("fact_authority_receipt_id") and fact.get("fact_authority_receipt_hash"):
+        payload["regex_fact_authority_receipt_id"] = fact["fact_authority_receipt_id"]
+        payload["regex_fact_authority_receipt_hash"] = fact["fact_authority_receipt_hash"]
+    if isinstance(companyfacts.get("fact_count"), int):
+        payload["companyfacts_standard_fact_count"] = companyfacts["fact_count"]
+        payload["companyfacts_oracle_confidence"] = companyfacts.get("confidence")
+    return payload
+
+
+def _sidecar_fields(sidecar: Mapping[str, Any]) -> dict[str, Any]:
+    coverage = sidecar.get("coverage") if isinstance(sidecar.get("coverage"), Mapping) else {}
+    parity = sidecar.get("parity") if isinstance(sidecar.get("parity"), Mapping) else {}
+    reasons = ((sidecar.get("status_projection") or {}).get("blocked_reasons") or []) if isinstance(sidecar.get("status_projection"), Mapping) else []
+    return {
+        "sidecar_state": sidecar.get("sidecar_state"),
+        "sidecar_receipt_hash": sidecar.get("sidecar_receipt_hash"),
+        "sidecar_resolved_fact_count": sidecar.get("resolved_fact_count"),
+        "sidecar_recovered_vs_regex": parity.get("recovered_vs_regex"),
+        "sidecar_period_resolved_count": coverage.get("period_resolved_count"),
+        "sidecar_unit_resolved_count": coverage.get("unit_resolved_count"),
+        "sidecar_explicit_dimension_fact_count": coverage.get("explicit_dimension_fact_count"),
+        "sidecar_typed_dimension_fact_count": coverage.get("typed_dimension_fact_count"),
+        "sidecar_hidden_fact_count": coverage.get("hidden_fact_count"),
+        "sidecar_continued_fact_count": coverage.get("continued_fact_count"),
+        "sidecar_standard_concept_count": coverage.get("standard_concept_count"),
+        "sidecar_extension_concept_count": coverage.get("extension_concept_count"),
+        "sidecar_blocked_reasons": [str(item.get("reason")) for item in reasons if isinstance(item, Mapping)],
+        "sidecar_values_redacted_in_report": True,
+        "sidecar_local_receipt_retains_values": sidecar.get("status") == "ready",
+    }
+
+
 def _blocked_fact_row(
     *,
+    index: int,
+    label: str,
     live_receipt: Mapping[str, Any],
     parser: Mapping[str, Any],
     primary: str,
@@ -567,6 +686,7 @@ def _blocked_fact_row(
         accession=raw_identity["accession"],
         user_agent=user_agent,
     )
+    sidecar = _sidecar_response(index=index, label=f"{label}-blocked", parser=parser, fact=None, companyfacts=companyfacts)
     arelle = _arelle_fact_count(primary_document=primary, arelle_python=arelle_python)
     oracle_count = arelle.get("fact_count") if isinstance(arelle.get("fact_count"), int) else companyfacts.get("fact_count")
     return {
@@ -575,6 +695,7 @@ def _blocked_fact_row(
         "fixture_class": "real_filing",
         "issuer_by_hash": _sha256(raw_identity["cik"].encode("utf-8"))[:24] if raw_identity["cik"] else None,
         "production_factauthority_fact_count": 0,
+        **_sidecar_fields(sidecar),
         "companyfacts_fact_count": companyfacts.get("fact_count"),
         "companyfacts_oracle_used": companyfacts.get("oracle_used"),
         "companyfacts_confidence": companyfacts.get("confidence"),
