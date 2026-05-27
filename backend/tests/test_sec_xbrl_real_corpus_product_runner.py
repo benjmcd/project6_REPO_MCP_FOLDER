@@ -31,6 +31,9 @@ def test_sec_xbrl_real_corpus_product_runner_blocks_without_live_preflight(monke
         "live_execution_not_requested",
         "sec_user_agent_not_configured",
         "arelle_environment_not_configured",
+        "arelle_python_unavailable",
+        "taxonomy_package_files_unavailable",
+        "arelle_cache_dir_unavailable",
     ]
     assert report["summary"]["real_filing_count"] == 0
     assert report["next_slice"] == "sec_edgar_real_corpus_product_path_runner_live_execution_v1"
@@ -58,8 +61,14 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
     tmp_path: Path,
 ) -> None:
     module = _runner_module()
-    for name in module.REQUIRED_ARELLE_ENV:
-        monkeypatch.setenv(name, f"configured-{name.lower()}")
+    arelle_python = tmp_path / "arelle-python.exe"
+    taxonomy_package = tmp_path / "taxonomy.zip"
+    cache_dir = tmp_path / "arelle-cache"
+    arelle_python.write_text("", encoding="utf-8")
+    taxonomy_package.write_text("", encoding="utf-8")
+    monkeypatch.setenv("SEC_XBRL_ARELLE_PYTHON", str(arelle_python))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", str(taxonomy_package))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_CACHE_DIR", str(cache_dir))
 
     ready_rows = [
         {
