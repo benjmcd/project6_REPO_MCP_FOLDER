@@ -91,6 +91,7 @@ from app.services import (
     layer3_replacement_package_set_authority,
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
+    layer3_sec_edgar_durable_delivery_archive,
     layer3_sec_edgar_delivery_status_provenance,
     layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_operator_product_surface,
@@ -3161,7 +3162,7 @@ def test_layer3_api_admits_sec_edgar_operator_product_surface_breadth_runtime() 
     )
 
 
-def test_layer3_api_selects_sec_edgar_durable_delivery_archive_without_runtime_admission() -> None:
+def test_layer3_api_admits_sec_edgar_durable_delivery_archive_runtime() -> None:
     assert (
         layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION_VERSION
         == "sec_edgar_durable_delivery_archive_selection_v1"
@@ -3182,12 +3183,189 @@ def test_layer3_api_selects_sec_edgar_durable_delivery_archive_without_runtime_a
         "sec_edgar_operator_product_surface_receipt_id",
         "sec_edgar_operator_product_surface_receipt_hash",
     )
-    assert layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED is False
+    assert layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED is True
+    assert (
+        layer3_sec_edgar_durable_delivery_archive.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_VERSION
+        == "sec_edgar_durable_delivery_archive_runtime_v1"
+    )
+    assert layer3_sec_edgar_durable_delivery_archive.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED is True
 
     rollup = layer3_sec_edgar_operator_product_surface._surface_rollup({"company_form_matrix": []})
     assert rollup["server_receipt_projection_only"] is True
     assert rollup["frontend_durable_authority_enabled"] is False
-    assert rollup["durable_delivery_archive_runtime_enabled"] is False
+    assert rollup["durable_delivery_archive_runtime_enabled"] is True
+
+
+def test_layer3_api_archives_sec_edgar_durable_delivery_from_product_surface_receipt(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_real_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    validation_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-durable-archive-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+            "operator_confirmation": True,
+        },
+    )
+    assert validation_response.status_code == 200, validation_response.text
+    validation = validation_response.json()
+
+    delivery_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance",
+        json={
+            "client_request_id": "sec-edgar-durable-archive-delivery-001",
+            "status_mode": "sec_edgar_delivery_status_provenance_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_delivery_status_provenance",
+            "sec_edgar_real_company_corpus_validation_receipt_id": validation["validation_receipt_id"],
+            "sec_edgar_real_company_corpus_validation_receipt_hash": validation["validation_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    assert delivery_response.status_code == 200, delivery_response.text
+    delivery = delivery_response.json()
+
+    operator_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+        json={
+            "client_request_id": "sec-edgar-durable-archive-operator-001",
+            "inspection_mode": "sec_edgar_operator_inspection_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_operator_surface",
+            "sec_edgar_delivery_status_provenance_receipt_id": (
+                delivery["delivery_status_provenance_receipt_id"]
+            ),
+            "sec_edgar_delivery_status_provenance_receipt_hash": (
+                delivery["delivery_status_provenance_receipt_hash"]
+            ),
+            "operator_confirmation": True,
+        },
+    )
+    assert operator_response.status_code == 200, operator_response.text
+    operator = operator_response.json()
+
+    surface_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+        json={
+            "client_request_id": "sec-edgar-durable-archive-product-surface-001",
+            "surface_mode": "sec_edgar_operator_product_surface_runtime_v1",
+            "operator_decision": "render_sec_edgar_operator_product_surface",
+            "sec_edgar_operator_inspection_receipt_id": operator["operator_inspection_receipt_id"],
+            "sec_edgar_operator_inspection_receipt_hash": operator["operator_inspection_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    assert surface_response.status_code == 200, surface_response.text
+    surface = surface_response.json()
+
+    archive_payload = {
+        "client_request_id": "sec-edgar-durable-archive-runtime-001",
+        "archive_mode": "sec_edgar_durable_delivery_archive_v1",
+        "operator_decision": "archive_sec_edgar_operator_product_surface_delivery_package",
+        "sec_edgar_operator_product_surface_receipt_id": surface["operator_product_surface_receipt_id"],
+        "sec_edgar_operator_product_surface_receipt_hash": surface["operator_product_surface_receipt_hash"],
+        "operator_confirmation": True,
+    }
+    archive_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+        json=archive_payload,
+    )
+
+    assert archive_response.status_code == 200, archive_response.text
+    archive = archive_response.json()
+    assert archive["schema_id"] == "layer3.sec_edgar_durable_delivery_archive.v1"
+    assert archive["runtime_version"] == "sec_edgar_durable_delivery_archive_runtime_v1"
+    assert archive["durable_delivery_archive_state"] == "sec_edgar_durable_delivery_archive_ready"
+    assert archive["operator_product_surface_receipt_hash"] == surface["operator_product_surface_receipt_hash"]
+    assert archive["delivery_status_provenance_receipt_hash"] == delivery["delivery_status_provenance_receipt_hash"]
+    assert archive["operator_inspection_receipt_hash"] == operator["operator_inspection_receipt_hash"]
+    assert archive["validation_receipt_hash"] == validation["validation_receipt_hash"]
+    assert archive["archive_manifest_hash"]
+    assert archive["archive_order_hash"]
+    assert archive["source_authority_chain_hash"]
+    assert archive["redaction_manifest_hash"]
+    assert archive["cache"]["archive_receipt_write_performed"] is True
+    assert archive["cache"]["network_request_made_by_archive"] is False
+    assert archive["cache"]["parser_rerun_performed_by_archive"] is False
+    assert archive["cache"]["package_mutation_performed_by_archive"] is False
+    assert archive["cache"]["delivery_file_response_served_by_archive"] is False
+    assert archive["negative_invariants"]["delivery_file_response_served"] is False
+    assert archive["negative_invariants"]["provider_object_write_enabled"] is False
+    assert archive["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert archive["negative_invariants"]["frontend_durable_authority_enabled"] is False
+    assert archive["negative_invariants"]["cross_company_comparability_admitted"] is False
+    assert archive["archive_manifest"]["archive_scope"] == (
+        "redacted_product_surface_package_manifest_and_delivery_readiness_archive"
+    )
+    assert archive["archive_manifest"]["surface_rollup"]["filing_count"] == 8
+    assert archive["archive_manifest"]["surface_rollup"]["durable_delivery_archive_runtime_enabled"] is True
+    assert len(archive["archive_manifest"]["product_view_manifest"]["company_form_matrix"]["records"]) == 8
+    assert len(
+        archive["archive_manifest"]["source_authority_chain"]["delivery_status_record_hashes"]
+    ) == 8
+    assert (
+        "semantic_profile"
+        in archive["archive_manifest"]["archive_order"]["product_view_order"]
+    )
+    assert archive["archive_manifest"]["non_admissions"]["delivery_file_response_served"] is False
+    assert archive["archive_manifest"]["non_admissions"]["provider_object_write_enabled"] is False
+    assert archive["archive_manifest"]["non_admissions"]["cross_company_comparability_admitted"] is False
+    assert "https://www.sec.gov" not in archive_response.text
+    assert "https://data.sec.gov" not in archive_response.text
+    assert "0000789019-25-000100" not in archive_response.text
+    assert "Microsoft Corporation" not in archive_response.text
+    assert "MSFT" not in archive_response.text
+    assert "value_text" not in archive_response.text
+    _assert_raw_string_not_projected(archive, "123")
+    assert str(tmp_path) not in archive_response.text
+    assert len(fake_client.calls) == 12
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+        json=archive_payload,
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["cache"]["idempotent_replay"] is True
+    assert replay_response.json()["sec_edgar_durable_delivery_archive_receipt_hash"] == (
+        archive["sec_edgar_durable_delivery_archive_receipt_hash"]
+    )
+    assert len(fake_client.calls) == 12
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive/status/"
+        f"{archive['sec_edgar_durable_delivery_archive_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    assert status_response.json()["schema_id"] == "layer3.sec_edgar_durable_delivery_archive_status.v1"
+    assert status_response.json()["sec_edgar_durable_delivery_archive_receipt_hash"] == (
+        archive["sec_edgar_durable_delivery_archive_receipt_hash"]
+    )
+    assert "https://www.sec.gov" not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+    mismatch_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+        json={
+            **archive_payload,
+            "client_request_id": "sec-edgar-durable-archive-runtime-mismatch",
+            "sec_edgar_operator_product_surface_receipt_hash": "f" * 64,
+        },
+    )
+    assert mismatch_response.status_code == 200, mismatch_response.text
+    mismatch = mismatch_response.json()
+    assert mismatch["durable_delivery_archive_state"] == "sec_edgar_durable_delivery_archive_blocked"
+    assert mismatch["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_durable_delivery_archive_product_surface_hash_mismatch"
+    )
+    assert len(fake_client.calls) == 12
 
 
 def test_layer3_api_preserves_sec_edgar_operator_product_surface_company_matrix_guard() -> None:
