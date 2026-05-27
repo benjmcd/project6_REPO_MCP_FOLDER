@@ -12990,6 +12990,12 @@ function secEdgarOperatorProductSurfaceRows(surface) {
                     ${fieldItem('filing count', rollup.filing_count)}
                     ${fieldItem('inspectable count', rollup.inspectable_count)}
                     ${fieldItem('semantic profile record count', rollup.semantic_profile_record_count)}
+                    ${fieldItem('statement role quality profile record count', rollup.statement_role_quality_profile_record_count)}
+                    ${fieldItem('period unit context dimension profile record count', rollup.period_unit_context_dimension_profile_record_count)}
+                    ${fieldItem('extension taxonomy retention profile record count', rollup.extension_taxonomy_retention_profile_record_count)}
+                    ${fieldItem('standard concept mapping profile record count', rollup.standard_concept_mapping_profile_record_count)}
+                    ${fieldItem('fact deduplication conflict diagnostics record count', rollup.fact_deduplication_conflict_diagnostics_record_count)}
+                    ${fieldItem('cross company comparability readiness audit record count', rollup.cross_company_comparability_readiness_audit_record_count)}
                     ${fieldItem('extension or unclassified record count', rollup.extension_or_unclassified_record_count)}
                     ${fieldItem('distinct quality gaps', Array.isArray(rollup.distinct_quality_gaps) ? rollup.distinct_quality_gaps.join(', ') : '')}
                     ${fieldItem('product view names', Array.isArray(rollup.product_view_names) ? rollup.product_view_names.join(', ') : '', { code: true })}

@@ -5359,6 +5359,258 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface from receipt 
   ]);
 });
 
+test('Layer 3 workbench renders SEC EDGAR operator product surface expanded breadth receipt authority', async ({ page }) => {
+  const endpoint = '/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface';
+  const operatorInspectionReceiptId = 'sec-edgar-operator-inspection-abababababababababababab';
+  const operatorInspectionReceiptHash = 'a'.repeat(64);
+  const recordIndexes = Array.from({ length: 8 }, (_, index) => index + 1);
+  const surfaceResponse = {
+    schema_id: 'layer3.sec_edgar_operator_product_surface.v1',
+    schema_version: 1,
+    request_id: 'sec-edgar-product-surface-breadth-rendered-ui-test',
+    server_time: '2026-05-27T00:00:00Z',
+    status: 'ready',
+    surface_mode: 'sec_edgar_operator_product_surface_runtime_v1',
+    rendered_mode: 'rendered_sec_edgar_operator_product_surface_control',
+    operator_decision: 'render_sec_edgar_operator_product_surface',
+    operator_product_surface_state: 'sec_edgar_operator_product_surface_ready',
+    operator_product_surface_receipt_id: 'sec-edgar-operator-product-surface-bbbbbbbbbbbbbbbbbbbbbbbb',
+    operator_product_surface_receipt_hash: 'b'.repeat(64),
+    operator_product_surface_receipt_ref: 'sec-edgar-operator-product-surface:bbbbbbbbbbbbbbbbbbbbbbbb',
+    operator_inspection_receipt_id: operatorInspectionReceiptId,
+    operator_inspection_receipt_hash: operatorInspectionReceiptHash,
+    delivery_status_provenance_receipt_id: 'sec-edgar-delivery-status-provenance-cccccccccccccccccccccccc',
+    delivery_status_provenance_receipt_hash: 'c'.repeat(64),
+    validation_receipt_hash: 'd'.repeat(64),
+    connector_receipt_hash: 'e'.repeat(64),
+    product_views: {
+      company_form_matrix: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        ticker_hash: `${recordIndex}`.repeat(64).slice(0, 64),
+        company_name_hash: `${recordIndex + 1}`.repeat(64).slice(0, 64),
+        form_type: recordIndex % 2 === 0 ? '10-Q' : '10-K',
+        filing_date: '2026-05-01',
+        source_family: 'sec_edgar_html_inline_xbrl',
+        inspection_status: 'inspectable',
+        quality_assessment_status: 'bounded_quality_evidence_available',
+        quality_evidence_hash: `${recordIndex + 2}`.repeat(64).slice(0, 64),
+      })),
+      filing_identity: recordIndexes.map((recordIndex) => ({ record_index: recordIndex })),
+      source_family: {
+        source_family_counts: { sec_edgar_html_inline_xbrl: 8 },
+        source_family_count: 1,
+        source_family_hash: '3'.repeat(64),
+      },
+      statement_candidates: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        statement_role_counts: { balance_sheet: 1, income_statement: 1 },
+      })),
+      fact_inventory: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        fact_count: 40 + recordIndex,
+        fact_inventory_hash: '4'.repeat(64),
+      })),
+      fact_deduplication_conflict_diagnostics: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        fact_deduplication_conflict_diagnostics_hash: '1'.repeat(64),
+        fact_deduplication_performed: false,
+        fact_conflict_resolution_performed: false,
+        fact_values_dropped: false,
+      })),
+      cross_company_comparability_readiness_audit: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        cross_company_comparability_readiness_audit_hash: 'd'.repeat(64),
+        cross_company_comparability_readiness_status: 'bounded_readiness_audit_available_not_comparable',
+        cross_company_comparability_ready: false,
+        cross_company_comparability_admitted: false,
+        comparability_normalization_performed: false,
+        filing_specific_product_only: true,
+      })),
+      semantic_profile: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        semantic_profile_inventory_hash: '5'.repeat(64),
+        financial_statement_semantics_finalized: false,
+        cross_company_comparability_admitted: false,
+      })),
+      statement_role_quality_profile: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        statement_role_quality_profile_hash: '6'.repeat(64),
+        statement_role_semantics_finalized: false,
+        final_financial_statement_semantics_claimed: false,
+      })),
+      period_unit_context_dimension_profile: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        period_unit_context_dimension_profile_hash: '7'.repeat(64),
+        final_period_unit_context_dimension_semantics_claimed: false,
+      })),
+      extension_taxonomy_retention_profile: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        extension_taxonomy_retention_profile_hash: '8'.repeat(64),
+        extension_taxonomy_mapping_performed: false,
+        extension_taxonomy_facts_dropped: false,
+      })),
+      standard_concept_mapping_profile: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        standard_concept_mapping_profile_hash: '9'.repeat(64),
+        standard_concept_mapping_performed: false,
+        standard_concept_normalization_performed: false,
+        cross_company_comparability_admitted: false,
+      })),
+      extension_unclassified_facts: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        extension_fact_count: 2,
+        unknown_or_unclassified_count: 1,
+      })),
+      quality_gaps: {
+        distinct_quality_gaps: [
+          'financial_statement_semantics_not_finalized',
+          'cross_company_comparability_not_admitted',
+        ],
+        financial_statement_semantics_finalized: false,
+        cross_company_comparability_admitted: false,
+        quality_gap_record_count: 16,
+        records: [],
+      },
+      diagnostics_loss_report: {
+        validation_diagnostics_hash: '6'.repeat(64),
+        delivery_diagnostics_hash: '7'.repeat(64),
+        operator_inspection_summary_hash: '8'.repeat(64),
+        blocked_or_degraded_delivery_gaps: [],
+        unclassified_record_count: 8,
+        financial_statement_semantics_finalized: false,
+        cross_company_comparability_admitted: false,
+        taxonomy_network_resolution_performed: false,
+        sec_companyfacts_api_called: false,
+      },
+      package_review_handoff_state: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        delivery_readiness_status: 'ready',
+      })),
+      operator_inspection_status_links: recordIndexes.map((recordIndex) => ({
+        record_index: recordIndex,
+        inspection_status: 'inspectable',
+      })),
+    },
+    surface_rollup: {
+      rendered_mode: 'rendered_sec_edgar_operator_product_surface_control',
+      product_view_names: [
+        'company_form_matrix',
+        'statement_candidates',
+        'fact_inventory',
+        'fact_deduplication_conflict_diagnostics',
+        'cross_company_comparability_readiness_audit',
+        'semantic_profile',
+        'statement_role_quality_profile',
+        'period_unit_context_dimension_profile',
+        'extension_taxonomy_retention_profile',
+        'standard_concept_mapping_profile',
+        'extension_unclassified_facts',
+        'quality_gaps',
+        'diagnostics_loss_report',
+        'package_review_handoff_state',
+        'operator_inspection_status_links',
+      ],
+      filing_count: 8,
+      inspectable_count: 8,
+      semantic_profile_record_count: 8,
+      statement_role_quality_profile_record_count: 8,
+      period_unit_context_dimension_profile_record_count: 8,
+      extension_taxonomy_retention_profile_record_count: 8,
+      standard_concept_mapping_profile_record_count: 8,
+      fact_deduplication_conflict_diagnostics_record_count: 8,
+      cross_company_comparability_readiness_audit_record_count: 8,
+      extension_or_unclassified_record_count: 8,
+      distinct_quality_gaps: [
+        'financial_statement_semantics_not_finalized',
+        'cross_company_comparability_not_admitted',
+      ],
+      server_receipt_projection_only: true,
+      frontend_durable_authority_enabled: false,
+    },
+    authority_chain: {
+      validation_receipt_hash: 'd'.repeat(64),
+      delivery_status_provenance_receipt_hash: 'c'.repeat(64),
+      operator_inspection_receipt_hash: operatorInspectionReceiptHash,
+      connector_receipt_hash: 'e'.repeat(64),
+      quality_evidence_hashes_hash: '9'.repeat(64),
+      semantic_profile_inventory_hashes_hash: '0'.repeat(64),
+      product_views_hash: 'a'.repeat(64),
+      receipt_chain_bound: true,
+    },
+    cache: {
+      idempotent_replay: false,
+      network_request_made_by_product_surface: false,
+      parser_rerun_performed_by_product_surface: false,
+      package_mutation_performed_by_product_surface: false,
+      provider_object_created_by_product_surface: false,
+    },
+    negative_invariants: {
+      raw_url_exposed: false,
+      raw_local_path_exposed: false,
+      frontend_durable_authority_enabled: false,
+    },
+    redaction_policy_id: 'sec_edgar_operator_product_surface_redaction_v1',
+  };
+
+  await page.route(`**${endpoint}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(surfaceResponse),
+    });
+  });
+
+  const apiRequests = trackLayer3ApiRequests(page);
+  await page.goto('/review/layer3', { waitUntil: 'domcontentloaded' });
+  const panel = page.locator('#sec-edgar-operator-product-surface-panel');
+  await page.locator('#sec-edgar-operator-product-surface-inspection-receipt-id').fill(operatorInspectionReceiptId);
+  await page.locator('#sec-edgar-operator-product-surface-inspection-receipt-hash').fill(operatorInspectionReceiptHash);
+  await page.locator('#sec-edgar-operator-product-surface-operator-confirmation').check();
+
+  const requestPromise = page.waitForRequest((apiRequest) => (
+    apiRequest.method() === 'POST'
+    && new URL(apiRequest.url()).pathname === endpoint
+  ));
+  await page.locator('#sec-edgar-operator-product-surface-submit').click();
+  const payload = (await requestPromise).postDataJSON();
+  expectOnlyPayloadKeys(payload, [
+    'client_request_id',
+    'surface_mode',
+    'operator_decision',
+    'sec_edgar_operator_inspection_receipt_id',
+    'sec_edgar_operator_inspection_receipt_hash',
+    'operator_confirmation',
+  ]);
+
+  await expect(panel).toContainText('sec_edgar_operator_product_surface_ready');
+  await expect(panel).toContainText('filing count: 8');
+  await expect(panel).toContainText('company form matrix records: 8');
+  await expect(panel).toContainText('semantic profile record count: 8');
+  await expect(panel).toContainText('statement role quality profile record count: 8');
+  await expect(panel).toContainText('period unit context dimension profile record count: 8');
+  await expect(panel).toContainText('extension taxonomy retention profile record count: 8');
+  await expect(panel).toContainText('standard concept mapping profile record count: 8');
+  await expect(panel).toContainText('fact deduplication conflict diagnostics record count: 8');
+  await expect(panel).toContainText('cross company comparability readiness audit record count: 8');
+  await expect(panel).toContainText('financial statement semantics finalized: false');
+  await expect(panel).toContainText('cross company comparability admitted: false');
+  await expect(panel).toContainText('network request made by product surface: false');
+  await expect(panel).toContainText('parser rerun performed by product surface: false');
+  await expect(panel).toContainText('package mutation performed by product surface: false');
+  await expect(panel).toContainText('frontend durable authority enabled: false');
+  await expect(panel).not.toContainText('XOM');
+  await expect(panel).not.toContainText('Exxon');
+  await expect(panel).not.toContainText('0000034088');
+  await expect(panel).not.toContainText('http://');
+  await expect(panel).not.toContainText('https://');
+  await expect(panel).not.toContainText('C:\\');
+
+  expect(JSON.stringify(payload)).not.toContain('path');
+  expect(apiRequests.filter((apiRequest) => apiRequest.path === endpoint)).toEqual([
+    { method: 'POST', path: endpoint },
+  ]);
+});
+
 test('Layer 3 workbench renders SEC EDGAR live downstream operator status through server revalidation', async ({ page, request }) => {
   const setup = await expectJson(await request.post('/__test/layer3/sec-edgar-live-downstream-status'));
   expect(setup.schema_id).toBe('project6.review_browser_sec_edgar_live_downstream_status_setup.v1');
