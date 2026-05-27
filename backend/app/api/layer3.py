@@ -680,6 +680,8 @@ class Layer3SecEdgarHtmlInlineXbrlFactMaterialBridgeRequest(BaseModel):
     operator_decision: Literal["bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority"]
     fact_authority_receipt_id: str = Field(min_length=1)
     fact_authority_receipt_hash: str = Field(min_length=64, max_length=64)
+    arelle_sidecar_receipt_id: str | None = Field(default=None, min_length=1)
+    arelle_sidecar_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)
     parser_receipt_id: str = Field(min_length=1)
     parser_receipt_hash: str = Field(min_length=64, max_length=64)
     expected_connector_receipt_hash: str | None = Field(default=None, min_length=64, max_length=64)

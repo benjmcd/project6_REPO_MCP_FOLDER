@@ -18,6 +18,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_real_filing_acquisition_connector,
+    layer3_sec_xbrl_sidecar,
     layer3_workbench,
 )
 from app.services.layer3_gate_b_state import (
@@ -51,8 +52,10 @@ RECEIPT_PREFIX = "sec-edgar-html-inline-xbrl-fact-material-bridge"
 RECEIPT_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge"
 REDACTION_POLICY_ID = "sec_edgar_html_inline_xbrl_fact_material_bridge_redaction_v1"
 AUTHORITY_HASH_VERSION = "sec_edgar_html_inline_xbrl_fact_material_bridge_hash_v1"
+REGEX_FACT_AUTHORITY_INPUT_MODE = "regex_fact_authority_receipt"
+ARELLE_FACT_AUTHORITY_INPUT_MODE = "arelle_resolved_fact_authority_sidecar_receipt"
 MAX_FACT_UNITS = 1000
-FACT_FIELDNAMES = [
+REGEX_FACT_FIELDNAMES = [
     "fact_order",
     "element_name",
     "qualified_name",
@@ -73,6 +76,39 @@ FACT_FIELDNAMES = [
     "parser_receipt_hash",
     "fact_authority_receipt_hash",
 ]
+ARELLE_FACT_FIELDNAMES = [
+    *REGEX_FACT_FIELDNAMES,
+    "resolved_fact_id",
+    "entry_document_index",
+    "concept_qname",
+    "concept_namespace",
+    "concept_local_name",
+    "concept_standard",
+    "concept_extension",
+    "concept_resolved_from_dts",
+    "context_id",
+    "unit_id",
+    "period_type",
+    "period_start",
+    "period_end",
+    "period_instant",
+    "period_forever",
+    "period_resolved",
+    "unit_measures_json",
+    "unit_currency",
+    "unit_numerator_json",
+    "unit_denominator_json",
+    "unit_resolved",
+    "explicit_dimensions_json",
+    "typed_dimensions_json",
+    "explicit_dimension_count",
+    "typed_dimension_count",
+    "hidden",
+    "continued",
+    "footnote_count",
+    "value_redacted",
+]
+FACT_FIELDNAMES = REGEX_FACT_FIELDNAMES
 
 _ALLOWED_FIELDS = {
     "schema_id",
@@ -82,6 +118,8 @@ _ALLOWED_FIELDS = {
     "operator_decision",
     "fact_authority_receipt_id",
     "fact_authority_receipt_hash",
+    "arelle_sidecar_receipt_id",
+    "arelle_sidecar_receipt_hash",
     "parser_receipt_id",
     "parser_receipt_hash",
     "expected_connector_receipt_hash",
@@ -174,16 +212,29 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
             ],
         )
 
-    fact_receipt = layer3_sec_edgar_html_inline_xbrl_fact_authority.read_sec_edgar_html_inline_xbrl_fact_authority_receipt(
+    regex_fact_receipt = layer3_sec_edgar_html_inline_xbrl_fact_authority.read_sec_edgar_html_inline_xbrl_fact_authority_receipt(
         fact_receipt_id,
         expected_fact_authority_receipt_hash=fact_receipt_hash,
     )
+    fact_receipt: Mapping[str, Any] = regex_fact_receipt
+    sidecar_receipt: Mapping[str, Any] | None = None
+    fact_authority_input_mode = REGEX_FACT_AUTHORITY_INPUT_MODE
+    if _arelle_fact_authority_cutover_enabled():
+        sidecar_check = _read_arelle_sidecar_authority(request, request_id=request_id, regex_fact_authority_receipt_hash=fact_receipt_hash, parser_receipt_hash=parser_receipt_hash)
+        if isinstance(sidecar_check, dict) and sidecar_check.get("bridge_state") == BLOCKED_STATE:
+            return sidecar_check
+        sidecar_receipt = sidecar_check
+        _validate_regex_sidecar_binding(regex_fact_receipt, sidecar_receipt)
+        fact_receipt = _sidecar_fact_authority_view(sidecar_receipt)
+        fact_authority_input_mode = ARELLE_FACT_AUTHORITY_INPUT_MODE
     _validate_fact_authority_request(request, fact_receipt)
     parser_receipt = layer3_sec_edgar_html_inline_xbrl_parser.read_sec_edgar_html_inline_xbrl_source_family_parser_receipt(
         parser_receipt_id,
         expected_parser_receipt_hash=parser_receipt_hash,
     )
     _validate_parser_fact_binding(parser_receipt, fact_receipt)
+    if sidecar_receipt is not None:
+        _validate_parser_fact_binding(parser_receipt, regex_fact_receipt)
     expected = _expected_hashes(request, fact_receipt)
     connector_receipt = layer3_sec_edgar_real_filing_acquisition_connector.read_sec_edgar_real_filing_acquisition_connector_receipt(
         str(parser_receipt["connector_receipt_id"]),
@@ -201,8 +252,18 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
     )
     parsed = reparsed.get("parsed") if isinstance(reparsed.get("parsed"), Mapping) else {}
     _validate_reparse_binding(parser_receipt, fact_receipt, parsed, expected)
-    units = _fact_material_units(str(reparsed["primary_document_text"]), parser_receipt=parser_receipt, fact_receipt=fact_receipt, parsed=parsed)
-    materialization = _materialization_basis(parser_receipt, fact_receipt, units)
+    if sidecar_receipt is None:
+        units = _fact_material_units(str(reparsed["primary_document_text"]), parser_receipt=parser_receipt, fact_receipt=fact_receipt, parsed=parsed)
+    else:
+        units = _fact_material_units_from_sidecar(sidecar_receipt, parser_receipt=parser_receipt)
+    materialization = _materialization_basis(
+        parser_receipt,
+        fact_receipt,
+        units,
+        fact_authority_input_mode=fact_authority_input_mode,
+        sidecar_receipt=sidecar_receipt,
+        regex_fact_receipt=regex_fact_receipt,
+    )
     materialization_hash = stable_hash(materialization)
     expected_materialization = str(request.get("expected_materialization_receipt_hash") or "").strip()
     if expected_materialization and expected_materialization != materialization_hash:
@@ -214,16 +275,25 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
         )
 
     ids = _dataset_ids(materialization_hash)
+    selected_fact_authority_receipt_hash = str(fact_receipt["fact_authority_receipt_hash"])
     dataset_version_hash = stable_hash(
         {
             "dataset_version_id": ids["dataset_version_id"],
-            "fact_authority_receipt_hash": fact_receipt_hash,
+            "fact_authority_receipt_hash": selected_fact_authority_receipt_hash,
             "materialization_receipt_hash": materialization_hash,
             "admitted_subset_hash": materialization["admitted_subset_hash"],
             "fact_count": len(units),
         }
     )
-    _materialize_dataset_version(db, ids=ids, units=units, parser_receipt=parser_receipt, materialization_hash=materialization_hash, dataset_version_hash=dataset_version_hash)
+    _materialize_dataset_version(
+        db,
+        ids=ids,
+        units=units,
+        parser_receipt=parser_receipt,
+        materialization_hash=materialization_hash,
+        dataset_version_hash=dataset_version_hash,
+        fact_authority_input_mode=fact_authority_input_mode,
+    )
     db.flush()
     actor = str(request.get("actor") or "operator").strip() or "operator"
     preview_request = _material_preview_request_basis(request_id=request_id, dataset_version_id=ids["dataset_version_id"], actor=actor)
@@ -264,16 +334,17 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
             blocked_fields=["expected_gate_b_decision_manifest_id"],
         )
     bridge_hash = stable_hash(
-        {
-            "hash_version": AUTHORITY_HASH_VERSION,
-            "bridge_mode": BRIDGE_MODE,
-            "fact_authority_receipt_hash": fact_receipt_hash,
-            "parser_receipt_hash": parser_receipt_hash,
-            "dataset_version_hash": dataset_version_hash,
-            "materialization_receipt_hash": materialization_hash,
-            "material_preview_hash": bridged_preview_hash,
-            "gate_b_decision_manifest_id": gate_b_manifest_id,
-        }
+        _bridge_hash_basis(
+            fact_authority_input_mode=fact_authority_input_mode,
+            fact_authority_receipt_hash=str(fact_receipt["fact_authority_receipt_hash"]),
+            regex_fact_authority_receipt_hash=fact_receipt_hash,
+            sidecar_receipt=sidecar_receipt,
+            parser_receipt_hash=parser_receipt_hash,
+            dataset_version_hash=dataset_version_hash,
+            materialization_hash=materialization_hash,
+            bridged_preview_hash=bridged_preview_hash,
+            gate_b_manifest_id=gate_b_manifest_id,
+        )
     )
     binding = _read_request_binding(request_id)
     if binding and binding.get("fact_material_bridge_basis_hash") != bridge_hash:
@@ -303,7 +374,7 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
         "parser_contract_id": PARSER_CONTRACT_ID,
         "typed_content_contract_id": TYPED_CONTENT_CONTRACT_ID,
         "fact_authority_receipt_id": fact_receipt_id,
-        "fact_authority_receipt_hash": fact_receipt_hash,
+        "fact_authority_receipt_hash": str(fact_receipt["fact_authority_receipt_hash"]),
         "parser_receipt_id": parser_receipt_id,
         "parser_receipt_hash": parser_receipt_hash,
         "materialization_receipt_hash": materialization_hash,
@@ -315,7 +386,7 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
         "gate_b_decision_payload": gate_b_payload,
         "authority_hashes": {
             **expected,
-            "fact_authority_receipt_hash": fact_receipt_hash,
+            "fact_authority_receipt_hash": str(fact_receipt["fact_authority_receipt_hash"]),
             "dataset_version_hash": dataset_version_hash,
             "materialization_receipt_hash": materialization_hash,
             "material_preview_hash": bridged_preview_hash,
@@ -350,8 +421,33 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
         "negative_invariants": _negative_invariants(),
         "redaction_policy_id": REDACTION_POLICY_ID,
     }
+    if sidecar_receipt is not None:
+        response["fact_authority_receipt_id"] = str(fact_receipt["fact_authority_receipt_id"])
+        response["fact_authority_input_mode"] = fact_authority_input_mode
+        response["regex_fact_authority_receipt_id"] = fact_receipt_id
+        response["regex_fact_authority_receipt_hash"] = fact_receipt_hash
+        response["arelle_sidecar_receipt_id"] = str(sidecar_receipt["sidecar_receipt_id"])
+        response["arelle_sidecar_receipt_hash"] = str(sidecar_receipt["sidecar_receipt_hash"])
+        response["authority_hashes"].update(
+            {
+                "regex_fact_authority_receipt_hash": fact_receipt_hash,
+                "arelle_sidecar_receipt_hash": str(sidecar_receipt["sidecar_receipt_hash"]),
+                "resolved_fact_inventory_hash": str(sidecar_receipt["resolved_fact_inventory_hash"]),
+                "local_value_inventory_hash": str(sidecar_receipt["local_value_inventory_hash"]),
+            }
+        )
+        response["materialization_summary"].update(
+            {
+                "fact_authority_input_mode": fact_authority_input_mode,
+                "sidecar_resolved_fact_count": int(sidecar_receipt["resolved_fact_count"]),
+                "regex_fact_authority_count": int(regex_fact_receipt.get("fact_count") or 0),
+                "resolved_period_unit_dimension_fields_materialized": True,
+                "raw_fact_values_materialized": False,
+            }
+        )
+        response["compatibility"]["existing_layer3_dataset_version_material_preview_without_source_class_widening"] = True
     if _contains_forbidden_output_ref(response):
-        return _blocked_response(request_id=request_id, fact_authority_receipt_hash=fact_receipt_hash, parser_receipt_hash=parser_receipt_hash, reasons=[_reason("raw_path_or_url_authority")])
+        return _blocked_response(request_id=request_id, fact_authority_receipt_hash=str(fact_receipt["fact_authority_receipt_hash"]), parser_receipt_hash=parser_receipt_hash, reasons=[_reason("raw_path_or_url_authority")])
     db.commit()
     idempotent_replay = _write_receipt(response)
     _write_request_binding(request_id, bridge_hash, bridge_receipt_id)
@@ -383,12 +479,14 @@ def _materialize_dataset_version(
     parser_receipt: Mapping[str, Any],
     materialization_hash: str,
     dataset_version_hash: str,
+    fact_authority_input_mode: str,
 ) -> None:
     csv_path = _datasets_dir() / f"{ids['dataset_version_id']}.csv"
+    fieldnames = _fact_fieldnames(fact_authority_input_mode)
     if not csv_path.exists():
         csv_path.parent.mkdir(parents=True, exist_ok=True)
         with csv_path.open("x", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=FACT_FIELDNAMES)
+            writer = csv.DictWriter(handle, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(units)
     if db.get(Dataset, ids["dataset_id"]) is None:
@@ -406,26 +504,7 @@ def _materialize_dataset_version(
                 notes=f"materialization_receipt_hash={materialization_hash}",
             )
         )
-        for index, (name, dtype, role, numeric) in enumerate(
-            (
-                ("fact_order", "int64", "ordinal", True),
-                ("element_name", "string", "dimension", False),
-                ("qualified_name", "string", "dimension", False),
-                ("namespace_prefix", "string", "dimension", False),
-                ("local_name", "string", "dimension", False),
-                ("context_ref_hash", "string", "authority_hash", False),
-                ("unit_ref_hash", "string", "authority_hash", False),
-                ("decimals_or_precision", "string", "metadata", False),
-                ("scale_or_format", "string", "metadata", False),
-                ("source_order_hash", "string", "authority_hash", False),
-                ("value_text", "string", "material_payload", False),
-                ("value_hash", "string", "authority_hash", False),
-                ("value_length", "int64", "measure", True),
-                ("table_candidate_anchor_hash", "string", "authority_hash", False),
-                ("parser_receipt_hash", "string", "authority_hash", False),
-                ("fact_authority_receipt_hash", "string", "authority_hash", False),
-            )
-        ):
+        for index, (name, dtype, role, numeric) in enumerate(_variable_definitions(fact_authority_input_mode)):
             db.add(
                 VariableDefinition(
                     variable_id=f"var-{ids['dataset_version_id'][-12:]}-{index}",
@@ -458,6 +537,67 @@ def _materialize_dataset_version(
                 },
             )
         )
+
+
+def _fact_fieldnames(fact_authority_input_mode: str) -> list[str]:
+    if fact_authority_input_mode == ARELLE_FACT_AUTHORITY_INPUT_MODE:
+        return list(ARELLE_FACT_FIELDNAMES)
+    return list(REGEX_FACT_FIELDNAMES)
+
+
+def _variable_definitions(fact_authority_input_mode: str) -> tuple[tuple[str, str, str, bool], ...]:
+    base = (
+        ("fact_order", "int64", "ordinal", True),
+        ("element_name", "string", "dimension", False),
+        ("qualified_name", "string", "dimension", False),
+        ("namespace_prefix", "string", "dimension", False),
+        ("local_name", "string", "dimension", False),
+        ("context_ref_hash", "string", "authority_hash", False),
+        ("unit_ref_hash", "string", "authority_hash", False),
+        ("decimals_or_precision", "string", "metadata", False),
+        ("scale_or_format", "string", "metadata", False),
+        ("source_order_hash", "string", "authority_hash", False),
+        ("value_text", "string", "material_payload", False),
+        ("value_hash", "string", "authority_hash", False),
+        ("value_length", "int64", "measure", True),
+        ("table_candidate_anchor_hash", "string", "authority_hash", False),
+        ("parser_receipt_hash", "string", "authority_hash", False),
+        ("fact_authority_receipt_hash", "string", "authority_hash", False),
+    )
+    if fact_authority_input_mode != ARELLE_FACT_AUTHORITY_INPUT_MODE:
+        return base
+    return (
+        *base,
+        ("resolved_fact_id", "string", "authority_hash", False),
+        ("entry_document_index", "int64", "ordinal", True),
+        ("concept_qname", "string", "dimension", False),
+        ("concept_namespace", "string", "metadata", False),
+        ("concept_local_name", "string", "dimension", False),
+        ("concept_standard", "bool", "metadata", False),
+        ("concept_extension", "bool", "metadata", False),
+        ("concept_resolved_from_dts", "bool", "metadata", False),
+        ("context_id", "string", "metadata", False),
+        ("unit_id", "string", "metadata", False),
+        ("period_type", "string", "metadata", False),
+        ("period_start", "string", "time", False),
+        ("period_end", "string", "time", False),
+        ("period_instant", "string", "time", False),
+        ("period_forever", "bool", "metadata", False),
+        ("period_resolved", "bool", "metadata", False),
+        ("unit_measures_json", "json", "metadata", False),
+        ("unit_currency", "string", "dimension", False),
+        ("unit_numerator_json", "json", "metadata", False),
+        ("unit_denominator_json", "json", "metadata", False),
+        ("unit_resolved", "bool", "metadata", False),
+        ("explicit_dimensions_json", "json", "metadata", False),
+        ("typed_dimensions_json", "json", "metadata", False),
+        ("explicit_dimension_count", "int64", "measure", True),
+        ("typed_dimension_count", "int64", "measure", True),
+        ("hidden", "bool", "metadata", False),
+        ("continued", "bool", "metadata", False),
+        ("footnote_count", "int64", "measure", True),
+        ("value_redacted", "bool", "metadata", False),
+    )
 
 
 def _fact_material_units(
@@ -525,6 +665,121 @@ def _fact_material_units(
     return units
 
 
+def _fact_material_units_from_sidecar(
+    sidecar_receipt: Mapping[str, Any],
+    *,
+    parser_receipt: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    records = list(sidecar_receipt.get("resolved_fact_records") or [])
+    if len(records) != int(sidecar_receipt.get("resolved_fact_count") or -1):
+        _blocked(
+            "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_fact_count_mismatch",
+            "SEC EDGAR HTML/iXBRL fact material bridge requires sidecar resolved records to match sidecar count.",
+            http_status=409,
+            blocked_fields=["arelle_sidecar_receipt_hash"],
+        )
+    projection = [_redacted_sidecar_fact(record) for record in records if isinstance(record, Mapping)]
+    if stable_hash(projection) != str(sidecar_receipt.get("resolved_fact_inventory_hash") or ""):
+        _blocked(
+            "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_inventory_hash_mismatch",
+            "SEC EDGAR HTML/iXBRL fact material bridge requires sidecar resolved fact inventory hash parity.",
+            http_status=409,
+            blocked_fields=["arelle_sidecar_receipt_hash"],
+        )
+    units: list[dict[str, Any]] = []
+    for index, record in enumerate(records, start=1):
+        if not isinstance(record, Mapping):
+            _blocked(
+                "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_fact_record_invalid",
+                "SEC EDGAR HTML/iXBRL fact material bridge requires structured sidecar fact records.",
+                http_status=409,
+                blocked_fields=["resolved_fact_records"],
+            )
+        concept = dict(record.get("concept") or {})
+        period = dict(record.get("period") or {})
+        unit = dict(record.get("unit") or {})
+        dimensions = dict(record.get("dimensions") or {})
+        qname = str(concept.get("qname") or "")
+        prefix, local = _split_qname(qname)
+        resolved_fact_id = str(record.get("resolved_fact_id") or "")
+        source_order = int(record.get("source_order") or index)
+        entry_document_index = int(record.get("entry_document_index") or 1)
+        source_order_hash = stable_hash(
+            {
+                "sidecar_receipt_hash": sidecar_receipt["sidecar_receipt_hash"],
+                "resolved_fact_id": resolved_fact_id,
+                "source_order": source_order,
+                "entry_document_index": entry_document_index,
+            }
+        )
+        explicit_dimensions = list(dimensions.get("explicit") or [])
+        typed_dimensions = list(dimensions.get("typed") or [])
+        units.append(
+            {
+                "fact_order": index,
+                "element_name": "arelle:resolved-fact",
+                "qualified_name": qname,
+                "namespace_prefix": prefix,
+                "local_name": str(concept.get("local_name") or local),
+                "context_ref_hash": _optional_hash(record.get("context_id")),
+                "unit_ref_hash": _optional_hash(record.get("unit_id")),
+                "decimals_or_precision": str(record.get("decimals") or record.get("precision") or ""),
+                "scale_or_format": str(record.get("scale") or record.get("format") or ""),
+                "continued_fact_hash_if_present": _optional_hash(record.get("continued_at")),
+                "source_order_hash": source_order_hash,
+                "source_artifact_receipt_hash": str(record.get("source_artifact_receipt_hash") or parser_receipt["source_artifact_receipt_hash"]),
+                "primary_document_hash": str(record.get("primary_document_hash") or parser_receipt["primary_document_hash"]),
+                "value_text": "",
+                "value_hash": str(record.get("value_hash") or _sha256_text(str(record.get("value") or ""))),
+                "value_length": int(record.get("value_length") or 0),
+                "table_candidate_anchor_hash": None,
+                "parser_receipt_hash": str(parser_receipt["parser_receipt_hash"]),
+                "fact_authority_receipt_hash": str(sidecar_receipt["sidecar_receipt_hash"]),
+                "resolved_fact_id": resolved_fact_id,
+                "entry_document_index": entry_document_index,
+                "concept_qname": qname,
+                "concept_namespace": str(concept.get("namespace") or ""),
+                "concept_local_name": str(concept.get("local_name") or local),
+                "concept_standard": bool(concept.get("standard")),
+                "concept_extension": bool(concept.get("extension")),
+                "concept_resolved_from_dts": bool(concept.get("resolved_from_dts")),
+                "context_id": str(record.get("context_id") or ""),
+                "unit_id": str(record.get("unit_id") or ""),
+                "period_type": str(period.get("type") or ""),
+                "period_start": str(period.get("start") or ""),
+                "period_end": str(period.get("end") or ""),
+                "period_instant": str(period.get("instant") or ""),
+                "period_forever": bool(period.get("forever")),
+                "period_resolved": bool(period.get("resolved")),
+                "unit_measures_json": _json_compact(unit.get("measures") or []),
+                "unit_currency": str(unit.get("currency") or ""),
+                "unit_numerator_json": _json_compact(unit.get("numerator") or []),
+                "unit_denominator_json": _json_compact(unit.get("denominator") or []),
+                "unit_resolved": bool(unit.get("resolved")),
+                "explicit_dimensions_json": _json_compact(explicit_dimensions),
+                "typed_dimensions_json": _json_compact(typed_dimensions),
+                "explicit_dimension_count": len(explicit_dimensions),
+                "typed_dimension_count": len(typed_dimensions),
+                "hidden": bool(record.get("hidden")),
+                "continued": bool(record.get("continued")),
+                "footnote_count": int(record.get("footnote_count") or 0),
+                "value_redacted": True,
+            }
+        )
+    if not units:
+        _blocked(
+            "sec_edgar_html_inline_xbrl_fact_material_bridge_no_fact_units",
+            "SEC EDGAR HTML/iXBRL fact material bridge found no fact units to materialize.",
+            http_status=409,
+            blocked_fields=["resolved_fact_inventory_hash"],
+        )
+    return units
+
+
+def _redacted_sidecar_fact(record: Mapping[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in dict(record).items() if key != "value"} | {"value_redacted": True}
+
+
 def _validate_unit_against_fact_authority(unit: Mapping[str, Any], expected_facts: list[Any], *, order: int) -> None:
     try:
         expected = expected_facts[order - 1]
@@ -574,21 +829,13 @@ def _materialization_basis(
     parser_receipt: Mapping[str, Any],
     fact_receipt: Mapping[str, Any],
     units: list[dict[str, Any]],
+    *,
+    fact_authority_input_mode: str,
+    sidecar_receipt: Mapping[str, Any] | None,
+    regex_fact_receipt: Mapping[str, Any],
 ) -> dict[str, Any]:
-    admitted_subset = [
-        {
-            "fact_order": unit["fact_order"],
-            "qualified_name": unit["qualified_name"],
-            "context_ref_hash": unit["context_ref_hash"],
-            "unit_ref_hash": unit["unit_ref_hash"],
-            "source_order_hash": unit["source_order_hash"],
-            "value_hash": unit["value_hash"],
-            "value_length": unit["value_length"],
-            "table_candidate_anchor_hash": unit["table_candidate_anchor_hash"],
-        }
-        for unit in units
-    ]
-    return {
+    admitted_subset = _materialization_admitted_subset(units, fact_authority_input_mode=fact_authority_input_mode)
+    basis = {
         "schema_id": "layer3.sec_edgar_html_inline_xbrl_fact_materialization_receipt.v1",
         "schema_version": SCHEMA_VERSION,
         "parser_receipt_hash": parser_receipt["parser_receipt_hash"],
@@ -602,6 +849,58 @@ def _materialization_basis(
         "admitted_subset_hash": stable_hash(admitted_subset),
         "fact_count": len(units),
     }
+    if fact_authority_input_mode == ARELLE_FACT_AUTHORITY_INPUT_MODE and sidecar_receipt is not None:
+        basis.update(
+            {
+                "fact_authority_input_mode": fact_authority_input_mode,
+                "arelle_sidecar_receipt_hash": sidecar_receipt["sidecar_receipt_hash"],
+                "regex_fact_authority_receipt_hash": regex_fact_receipt["fact_authority_receipt_hash"],
+                "resolved_fact_inventory_hash": sidecar_receipt["resolved_fact_inventory_hash"],
+                "local_value_inventory_hash": sidecar_receipt["local_value_inventory_hash"],
+                "resolved_structural_semantics_materialized": True,
+                "raw_fact_values_materialized": False,
+            }
+        )
+    return basis
+
+
+def _materialization_admitted_subset(units: list[dict[str, Any]], *, fact_authority_input_mode: str) -> list[dict[str, Any]]:
+    if fact_authority_input_mode != ARELLE_FACT_AUTHORITY_INPUT_MODE:
+        return [
+            {
+                "fact_order": unit["fact_order"],
+                "qualified_name": unit["qualified_name"],
+                "context_ref_hash": unit["context_ref_hash"],
+                "unit_ref_hash": unit["unit_ref_hash"],
+                "source_order_hash": unit["source_order_hash"],
+                "value_hash": unit["value_hash"],
+                "value_length": unit["value_length"],
+                "table_candidate_anchor_hash": unit["table_candidate_anchor_hash"],
+            }
+            for unit in units
+        ]
+    return [
+        {
+            "fact_order": unit["fact_order"],
+            "resolved_fact_id": unit["resolved_fact_id"],
+            "entry_document_index": unit["entry_document_index"],
+            "qualified_name": unit["qualified_name"],
+            "concept_namespace": unit["concept_namespace"],
+            "context_id": unit["context_id"],
+            "unit_id": unit["unit_id"],
+            "period_type": unit["period_type"],
+            "period_start": unit["period_start"],
+            "period_end": unit["period_end"],
+            "period_instant": unit["period_instant"],
+            "unit_currency": unit["unit_currency"],
+            "explicit_dimensions_json": unit["explicit_dimensions_json"],
+            "typed_dimensions_json": unit["typed_dimensions_json"],
+            "source_order_hash": unit["source_order_hash"],
+            "value_hash": unit["value_hash"],
+            "value_length": unit["value_length"],
+        }
+        for unit in units
+    ]
 
 
 def _material_preview_request_basis(*, request_id: str, dataset_version_id: str, actor: str) -> dict[str, Any]:
@@ -617,6 +916,40 @@ def _material_preview_request_basis(*, request_id: str, dataset_version_id: str,
         },
         "actor": actor,
     }
+
+
+def _bridge_hash_basis(
+    *,
+    fact_authority_input_mode: str,
+    fact_authority_receipt_hash: str,
+    regex_fact_authority_receipt_hash: str,
+    sidecar_receipt: Mapping[str, Any] | None,
+    parser_receipt_hash: str,
+    dataset_version_hash: str,
+    materialization_hash: str,
+    bridged_preview_hash: str,
+    gate_b_manifest_id: str,
+) -> dict[str, Any]:
+    basis = {
+        "hash_version": AUTHORITY_HASH_VERSION,
+        "bridge_mode": BRIDGE_MODE,
+        "fact_authority_receipt_hash": fact_authority_receipt_hash,
+        "parser_receipt_hash": parser_receipt_hash,
+        "dataset_version_hash": dataset_version_hash,
+        "materialization_receipt_hash": materialization_hash,
+        "material_preview_hash": bridged_preview_hash,
+        "gate_b_decision_manifest_id": gate_b_manifest_id,
+    }
+    if fact_authority_input_mode == ARELLE_FACT_AUTHORITY_INPUT_MODE and sidecar_receipt is not None:
+        basis.update(
+            {
+                "fact_authority_input_mode": fact_authority_input_mode,
+                "arelle_sidecar_receipt_hash": sidecar_receipt["sidecar_receipt_hash"],
+                "regex_fact_authority_receipt_hash": regex_fact_authority_receipt_hash,
+                "resolved_fact_inventory_hash": sidecar_receipt["resolved_fact_inventory_hash"],
+            }
+        )
+    return basis
 
 
 def _gate_b_payload(
@@ -766,6 +1099,92 @@ def _validate_fact_authority_request(request: Mapping[str, Any], fact_receipt: M
         )
 
 
+def _arelle_fact_authority_cutover_enabled() -> bool:
+    return bool(getattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False))
+
+
+def _read_arelle_sidecar_authority(
+    request: Mapping[str, Any],
+    *,
+    request_id: str,
+    regex_fact_authority_receipt_hash: str,
+    parser_receipt_hash: str,
+) -> Mapping[str, Any]:
+    sidecar_receipt_id = str(request.get("arelle_sidecar_receipt_id") or "").strip()
+    sidecar_receipt_hash = str(request.get("arelle_sidecar_receipt_hash") or "").strip()
+    if not sidecar_receipt_id or not _is_hash(sidecar_receipt_hash):
+        return _blocked_response(
+            request_id=request_id,
+            fact_authority_receipt_hash=regex_fact_authority_receipt_hash,
+            parser_receipt_hash=parser_receipt_hash,
+            reasons=[
+                _reason(
+                    "arelle_sidecar_receipt_required",
+                    persisted_sidecar_required=True,
+                    synchronous_arelle_invocation_performed=False,
+                    regex_fallback_performed=False,
+                )
+            ],
+        )
+    sidecar_receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
+        sidecar_receipt_id,
+        expected_sidecar_receipt_hash=sidecar_receipt_hash,
+    )
+    if sidecar_receipt.get("sidecar_state") != layer3_sec_xbrl_sidecar.READY_STATE:
+        return _blocked_response(
+            request_id=request_id,
+            fact_authority_receipt_hash=regex_fact_authority_receipt_hash,
+            parser_receipt_hash=parser_receipt_hash,
+            reasons=[
+                _reason(
+                    "arelle_sidecar_receipt_not_ready",
+                    sidecar_state=str(sidecar_receipt.get("sidecar_state") or ""),
+                    regex_fallback_performed=False,
+                )
+            ],
+        )
+    return sidecar_receipt
+
+
+def _sidecar_fact_authority_view(sidecar_receipt: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        **dict(sidecar_receipt),
+        "fact_authority_receipt_id": str(sidecar_receipt["sidecar_receipt_id"]),
+        "fact_authority_receipt_hash": str(sidecar_receipt["sidecar_receipt_hash"]),
+        "fact_count": int(sidecar_receipt["resolved_fact_count"]),
+        "fact_inventory_hash": str(sidecar_receipt["resolved_fact_inventory_hash"]),
+        "diagnostics_hash": str(sidecar_receipt["diagnostics_hash"]),
+        "fact_inventory": list(sidecar_receipt.get("resolved_fact_projection") or []),
+    }
+
+
+def _validate_regex_sidecar_binding(regex_fact_receipt: Mapping[str, Any], sidecar_receipt: Mapping[str, Any]) -> None:
+    keys = (
+        "parser_receipt_id",
+        "parser_receipt_hash",
+        "connector_receipt_hash",
+        "live_source_artifact_receipt_hash",
+        "source_artifact_receipt_hash",
+        "content_sha256",
+        "primary_document_hash",
+        "document_inventory_hash",
+        "content_order_hash",
+        "table_candidate_inventory_hash",
+        "inline_xbrl_marker_inventory_hash",
+    )
+    mismatches = [key for key in keys if str(regex_fact_receipt.get(key) or "") != str(sidecar_receipt.get(key) or "")]
+    sidecar_regex_hash = str(sidecar_receipt.get("regex_fact_authority_receipt_hash") or "").strip()
+    if sidecar_regex_hash and sidecar_regex_hash != str(regex_fact_receipt.get("fact_authority_receipt_hash") or ""):
+        mismatches.append("regex_fact_authority_receipt_hash")
+    if mismatches:
+        _blocked(
+            "sec_edgar_html_inline_xbrl_fact_material_bridge_arelle_sidecar_lineage_mismatch",
+            "SEC EDGAR HTML/iXBRL fact material bridge requires sidecar, regex fact authority, and parser lineage to match.",
+            http_status=409,
+            blocked_fields=mismatches,
+        )
+
+
 def _validate_parser_fact_binding(parser_receipt: Mapping[str, Any], fact_receipt: Mapping[str, Any]) -> None:
     keys = (
         "parser_receipt_id",
@@ -897,6 +1316,10 @@ def _attrs(text: str) -> dict[str, str]:
 def _normalise_text(text: str) -> str:
     stripped = _TAG_RE.sub(" ", str(text or ""))
     return re.sub(r"\s+", " ", html_lib.unescape(stripped)).strip()
+
+
+def _json_compact(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
 
 
 def _split_qname(qname: str) -> tuple[str, str]:

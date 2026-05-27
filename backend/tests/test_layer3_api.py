@@ -98,6 +98,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
+    layer3_sec_xbrl_sidecar,
     layer3_workbench,
 )
 from app.services.layer3_aps_handoff import (
@@ -3943,6 +3944,143 @@ def _prepare_sec_edgar_html_inline_xbrl_fact_authority(
     return {**prepared, "fact_authority": response.json(), "fact_authority_payload": payload}
 
 
+def _ready_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProcess[str]:
+    payload = {
+        "schema_id": "tools.sec_xbrl_arelle_extract.v1",
+        "arelle_version": "2.41.3",
+        "taxonomy_package_loaded": True,
+        "taxonomy_package_count": 1,
+        "taxonomy_package_hashes": ["d" * 64],
+        "taxonomy_network_resolution_enabled": False,
+        "document_set": {"input_document_count": 1, "fact_bearing_document_count": 1},
+        "diagnostics": {},
+        "fact_count": 2,
+        "facts": [
+            {
+                "source_order": 1,
+                "entry_document_index": 1,
+                "concept": {
+                    "qname": "us-gaap:Assets",
+                    "namespace": "urn:us-gaap:test",
+                    "local_name": "Assets",
+                    "standard": True,
+                    "extension": False,
+                    "resolved_from_dts": True,
+                },
+                "context_id": "ctx-annual",
+                "unit_id": "usd",
+                "period": {
+                    "type": "duration",
+                    "start": "2024-01-01",
+                    "end": "2024-12-31",
+                    "instant": None,
+                    "forever": False,
+                    "resolved": True,
+                },
+                "unit": {
+                    "measures": ["iso4217:USD"],
+                    "currency": "iso4217:USD",
+                    "numerator": ["iso4217:USD"],
+                    "denominator": [],
+                    "resolved": True,
+                },
+                "dimensions": {
+                    "explicit": [{"axis": "srt:ProductOrServiceAxis", "member": "sec:TestMember"}],
+                    "typed": [{"axis": "sec:TypedAxis", "value": "Typed Segment"}],
+                },
+                "decimals": "-6",
+                "precision": None,
+                "scale": None,
+                "format": None,
+                "hidden": True,
+                "continued": True,
+                "continued_at": "cont-1",
+                "footnote_count": 1,
+                "value": "SECRET_MONETARY_VALUE",
+            },
+            {
+                "source_order": 2,
+                "entry_document_index": 1,
+                "concept": {
+                    "qname": "sec:ExtensionMetric",
+                    "namespace": "urn:sec-extension:test",
+                    "local_name": "ExtensionMetric",
+                    "standard": False,
+                    "extension": True,
+                    "resolved_from_dts": True,
+                },
+                "context_id": "ctx-instant",
+                "unit_id": "shares",
+                "period": {
+                    "type": "instant",
+                    "start": None,
+                    "end": None,
+                    "instant": "2024-12-31",
+                    "forever": False,
+                    "resolved": True,
+                },
+                "unit": {
+                    "measures": ["xbrli:shares"],
+                    "currency": "",
+                    "numerator": ["xbrli:shares"],
+                    "denominator": [],
+                    "resolved": True,
+                },
+                "dimensions": {"explicit": [], "typed": []},
+                "decimals": "0",
+                "precision": None,
+                "scale": None,
+                "format": None,
+                "hidden": False,
+                "continued": False,
+                "continued_at": None,
+                "footnote_count": 0,
+                "value": "SECOND_SECRET_VALUE",
+            },
+        ],
+    }
+    return subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps(payload), stderr="")
+
+
+def _prepare_sec_edgar_arelle_sidecar_authority(
+    tmp_path,
+    monkeypatch,
+    prepared: dict[str, object],
+    *,
+    label: str,
+) -> dict[str, object]:
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [Path(__file__)])
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "arelle-cache")
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _ready_arelle_sidecar_runner)
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        {
+            "client_request_id": f"sec-edgar-arelle-sidecar-{label}",
+            "sidecar_mode": "sec_edgar_arelle_resolved_fact_authority_sidecar_v1",
+            "operator_decision": "derive_sec_edgar_arelle_resolved_fact_authority_sidecar",
+            "parser_receipt_id": parser["parser_receipt_id"],
+            "parser_receipt_hash": parser["parser_receipt_hash"],
+            "regex_fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+            "regex_fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+            "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+            "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+            "expected_document_inventory_hash": parser["document_inventory_hash"],
+            "expected_content_order_hash": parser["content_order_hash"],
+            "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+            "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+            "operator_confirmation": True,
+        }
+    )
+    assert response["sidecar_state"] == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
+    assert response["resolved_fact_count"] == 2
+    return response
+
+
 def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority(
     client: TestClient,
     tmp_path,
@@ -3995,6 +4133,9 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority(
     assert body["negative_invariants"]["taxonomy_network_resolution_enabled"] is False
     assert body["negative_invariants"]["material_text_table_bridge_mutated"] is False
     assert body["authority_hashes"]["fact_authority_receipt_hash"] == fact_authority["fact_authority_receipt_hash"]
+    assert "fact_authority_input_mode" not in body
+    assert "arelle_sidecar_receipt_hash" not in body
+    assert "resolved_fact_inventory_hash" not in body["authority_hashes"]
     assert "https://www.sec.gov" not in response.text
     assert "aapl-20240928.htm" not in response.text
     assert "Company narrative" not in response.text
@@ -4035,6 +4176,192 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority(
     assert "Company narrative" not in status_response.text
     assert "value_text" not in status_response.text
     assert str(tmp_path) not in status_response.text
+
+
+def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle_sidecar_when_flag_enabled(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-arelle")
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    sidecar = _prepare_sec_edgar_arelle_sidecar_authority(
+        tmp_path,
+        monkeypatch,
+        prepared,
+        label="fact-material-arelle",
+    )
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+
+    def _unexpected_arelle_run(*_args, **_kwargs):
+        raise AssertionError("bridge must not invoke Arelle synchronously")
+
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _unexpected_arelle_run)
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-arelle",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+        "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+        "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "arelle_sidecar_receipt_id": sidecar["sidecar_receipt_id"],
+        "arelle_sidecar_receipt_hash": sidecar["sidecar_receipt_hash"],
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+        "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+        "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+        "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+        "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+        "expected_document_inventory_hash": parser["document_inventory_hash"],
+        "expected_content_order_hash": parser["content_order_hash"],
+        "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+        "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+        "expected_fact_inventory_hash": sidecar["resolved_fact_inventory_hash"],
+        "expected_diagnostics_hash": sidecar["diagnostics_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["bridge_state"] == "sec_edgar_html_inline_xbrl_fact_material_bridge_ready"
+    assert body["fact_authority_input_mode"] == "arelle_resolved_fact_authority_sidecar_receipt"
+    assert body["fact_authority_receipt_id"] == sidecar["sidecar_receipt_id"]
+    assert body["fact_authority_receipt_hash"] == sidecar["sidecar_receipt_hash"]
+    assert body["regex_fact_authority_receipt_hash"] == fact_authority["fact_authority_receipt_hash"]
+    assert body["materialization_summary"]["fact_count"] == 2
+    assert body["materialization_summary"]["sidecar_resolved_fact_count"] == 2
+    assert body["materialization_summary"]["regex_fact_authority_count"] == 1
+    assert body["materialization_summary"]["resolved_period_unit_dimension_fields_materialized"] is True
+    assert body["materialization_summary"]["raw_fact_values_materialized"] is False
+    assert body["authority_hashes"]["arelle_sidecar_receipt_hash"] == sidecar["sidecar_receipt_hash"]
+    assert body["authority_hashes"]["resolved_fact_inventory_hash"] == sidecar["resolved_fact_inventory_hash"]
+    assert "SECRET_MONETARY_VALUE" not in response.text
+    assert "SECOND_SECRET_VALUE" not in response.text
+
+    csv_path = (
+        Path(settings.storage_dir)
+        / "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge"
+        / "datasets"
+        / f"{body['dataset_version_id']}.csv"
+    )
+    csv_text = csv_path.read_text(encoding="utf-8")
+    for column in (
+        "period_start",
+        "period_end",
+        "period_instant",
+        "unit_currency",
+        "explicit_dimensions_json",
+        "typed_dimensions_json",
+        "concept_namespace",
+        "concept_standard",
+        "concept_extension",
+        "value_redacted",
+    ):
+        assert column in csv_text
+    assert "2024-01-01" in csv_text
+    assert "iso4217:USD" in csv_text
+    assert "srt:ProductOrServiceAxis" in csv_text
+    assert "SECRET_MONETARY_VALUE" not in csv_text
+    assert "SECOND_SECRET_VALUE" not in csv_text
+
+
+def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-no-sidecar")
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-no-sidecar",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+        "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+        "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["bridge_state"] == "sec_edgar_html_inline_xbrl_fact_material_bridge_blocked"
+    reason = body["status_projection"]["blocked_reasons"][0]
+    assert reason["reason"] == "arelle_sidecar_receipt_required"
+    assert reason["persisted_sidecar_required"] is True
+    assert reason["synchronous_arelle_invocation_performed"] is False
+    assert reason["regex_fallback_performed"] is False
+
+
+def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-lineage")
+    parser = prepared["parser"]
+    fact_authority = prepared["fact_authority"]
+    sidecar = _prepare_sec_edgar_arelle_sidecar_authority(
+        tmp_path,
+        monkeypatch,
+        prepared,
+        label="fact-material-lineage",
+    )
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
+    original_reader = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt
+
+    def _mismatched_reader(receipt_id: str, *, expected_sidecar_receipt_hash: str | None = None) -> dict:
+        receipt = copy.deepcopy(
+            original_reader(receipt_id, expected_sidecar_receipt_hash=expected_sidecar_receipt_hash)
+        )
+        receipt["content_sha256"] = "f" * 64
+        return receipt
+
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar,
+        "read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt",
+        _mismatched_reader,
+    )
+    payload = {
+        "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-lineage",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+        "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
+        "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+        "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+        "arelle_sidecar_receipt_id": sidecar["sidecar_receipt_id"],
+        "arelle_sidecar_receipt_hash": sidecar["sidecar_receipt_hash"],
+        "parser_receipt_id": parser["parser_receipt_id"],
+        "parser_receipt_hash": parser["parser_receipt_hash"],
+        "expected_fact_inventory_hash": sidecar["resolved_fact_inventory_hash"],
+        "expected_diagnostics_hash": sidecar["diagnostics_hash"],
+        "rollback_confirmed": True,
+        "operator_confirmed": True,
+    }
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
+        json=payload,
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_bridge_arelle_sidecar_lineage_mismatch"
+    )
+    assert "content_sha256" in response.json()["blocked_fields"]
 
 
 def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_bridge_stale_or_unsafe(
