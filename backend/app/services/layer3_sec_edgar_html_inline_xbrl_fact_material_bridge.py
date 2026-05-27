@@ -1231,6 +1231,10 @@ def _sidecar_fact_authority_view(sidecar_receipt: Mapping[str, Any]) -> dict[str
     }
 
 
+def sidecar_fact_authority_view_for_downstream(sidecar_receipt: Mapping[str, Any]) -> dict[str, Any]:
+    return _sidecar_fact_authority_view(sidecar_receipt)
+
+
 def _validate_regex_sidecar_binding(regex_fact_receipt: Mapping[str, Any], sidecar_receipt: Mapping[str, Any]) -> None:
     keys = (
         "parser_receipt_id",
