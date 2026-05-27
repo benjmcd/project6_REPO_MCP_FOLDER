@@ -1771,6 +1771,7 @@ def test_layer3_api_validates_sec_edgar_real_company_corpus_product_path(
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -2578,6 +2579,7 @@ def test_layer3_api_reports_sec_edgar_operator_inspection_for_real_company_corpu
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -3440,6 +3442,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_expanded_brea
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -8052,6 +8055,7 @@ def _prepare_sec_edgar_html_inline_xbrl_fact_material_downstream_proof_request(
     prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label=label)
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     bridge_response = client.post(
         "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
         json={
