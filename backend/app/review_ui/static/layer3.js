@@ -13024,6 +13024,17 @@ function secEdgarOperatorProductSurfaceRows(surface) {
     const statementCandidates = Array.isArray(views.statement_candidates) ? views.statement_candidates : [];
     const factInventory = Array.isArray(views.fact_inventory) ? views.fact_inventory : [];
     const semanticProfiles = Array.isArray(views.semantic_profile) ? views.semantic_profile : [];
+    const periodUnitContextDimensionProfiles = Array.isArray(views.period_unit_context_dimension_profile)
+        ? views.period_unit_context_dimension_profile
+        : [];
+    const periodUnitContextDimensionProfileSample = periodUnitContextDimensionProfiles[0] || {};
+    const periodUnitContextDimensionProfileStatuses = [
+        ...new Set(
+            periodUnitContextDimensionProfiles
+                .map((profile) => profile.profile_status)
+                .filter(Boolean)
+        ),
+    ];
     const extensionFacts = Array.isArray(views.extension_unclassified_facts) ? views.extension_unclassified_facts : [];
     const packageState = Array.isArray(views.package_review_handoff_state) ? views.package_review_handoff_state : [];
     const operatorLinks = Array.isArray(views.operator_inspection_status_links) ? views.operator_inspection_status_links : [];
@@ -13086,8 +13097,27 @@ function secEdgarOperatorProductSurfaceRows(surface) {
                     ${fieldItem('connector receipt hash', authority.connector_receipt_hash || surface.connector_receipt_hash, { code: true })}
                     ${fieldItem('quality evidence hashes hash', authority.quality_evidence_hashes_hash, { code: true })}
                     ${fieldItem('semantic profile inventory hashes hash', authority.semantic_profile_inventory_hashes_hash, { code: true })}
+                    ${fieldItem('period unit context dimension profile hashes hash', authority.period_unit_context_dimension_profile_hashes_hash, { code: true })}
                     ${fieldItem('product views hash', authority.product_views_hash, { code: true })}
                     ${fieldItem('receipt chain bound', authority.receipt_chain_bound)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Period Unit Context Dimension Profile</strong>
+                <ul>
+                    ${fieldItem('profile records', periodUnitContextDimensionProfiles.length)}
+                    ${fieldItem('profile statuses', periodUnitContextDimensionProfileStatuses.join(', '), { code: true })}
+                    ${fieldItem('profile version', periodUnitContextDimensionProfileSample.period_unit_context_dimension_profile_version, { code: true })}
+                    ${fieldItem('profile hash', periodUnitContextDimensionProfileSample.period_unit_context_dimension_profile_hash, { code: true })}
+                    ${fieldItem('assigned count', periodUnitContextDimensionProfileSample.period_unit_context_dimension_profile_assigned_count)}
+                    ${fieldItem('context ref hash present count', periodUnitContextDimensionProfileSample.context_ref_hash_present_count)}
+                    ${fieldItem('unit ref hash present count', periodUnitContextDimensionProfileSample.unit_ref_hash_present_count)}
+                    ${fieldItem('decimals or precision present count', periodUnitContextDimensionProfileSample.decimals_or_precision_present_count)}
+                    ${fieldItem('scale or format present count', periodUnitContextDimensionProfileSample.scale_or_format_present_count)}
+                    ${fieldItem('context period resolution performed', periodUnitContextDimensionProfileSample.context_period_resolution_performed)}
+                    ${fieldItem('dimension member resolution performed', periodUnitContextDimensionProfileSample.dimension_member_resolution_performed)}
+                    ${fieldItem('unit normalization performed', periodUnitContextDimensionProfileSample.unit_normalization_performed)}
+                    ${fieldItem('final period unit context dimension semantics claimed', periodUnitContextDimensionProfileSample.final_period_unit_context_dimension_semantics_claimed)}
                 </ul>
             </section>
             <section class="result-review-card">

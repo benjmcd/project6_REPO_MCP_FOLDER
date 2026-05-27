@@ -5440,7 +5440,17 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface expanded brea
       })),
       period_unit_context_dimension_profile: recordIndexes.map((recordIndex) => ({
         record_index: recordIndex,
+        period_unit_context_dimension_profile_version: 'sec_edgar_period_unit_context_dimension_profile_v1',
         period_unit_context_dimension_profile_hash: '7'.repeat(64),
+        period_unit_context_dimension_profile_assigned_count: 40 + recordIndex,
+        context_ref_hash_present_count: 37 + recordIndex,
+        unit_ref_hash_present_count: 29 + recordIndex,
+        decimals_or_precision_present_count: 20 + recordIndex,
+        scale_or_format_present_count: 9 + recordIndex,
+        profile_status: 'bounded_hash_profile_available_not_resolved',
+        context_period_resolution_performed: false,
+        dimension_member_resolution_performed: false,
+        unit_normalization_performed: false,
         final_period_unit_context_dimension_semantics_claimed: false,
       })),
       extension_taxonomy_retention_profile: recordIndexes.map((recordIndex) => ({
@@ -5534,6 +5544,7 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface expanded brea
       connector_receipt_hash: 'e'.repeat(64),
       quality_evidence_hashes_hash: '9'.repeat(64),
       semantic_profile_inventory_hashes_hash: '0'.repeat(64),
+      period_unit_context_dimension_profile_hashes_hash: 'b'.repeat(64),
       product_views_hash: 'a'.repeat(64),
       receipt_chain_bound: true,
     },
@@ -5588,6 +5599,20 @@ test('Layer 3 workbench renders SEC EDGAR operator product surface expanded brea
   await expect(panel).toContainText('semantic profile record count: 8');
   await expect(panel).toContainText('statement role quality profile record count: 8');
   await expect(panel).toContainText('period unit context dimension profile record count: 8');
+  await expect(panel).toContainText('Period Unit Context Dimension Profile');
+  await expect(panel).toContainText('period unit context dimension profile hashes hash');
+  await expect(panel).toContainText('profile records: 8');
+  await expect(panel).toContainText('profile statuses: bounded_hash_profile_available_not_resolved');
+  await expect(panel).toContainText('profile version: sec_edgar_period_unit_context_dimension_profile_v1');
+  await expect(panel).toContainText('assigned count: 41');
+  await expect(panel).toContainText('context ref hash present count: 38');
+  await expect(panel).toContainText('unit ref hash present count: 30');
+  await expect(panel).toContainText('decimals or precision present count: 21');
+  await expect(panel).toContainText('scale or format present count: 10');
+  await expect(panel).toContainText('context period resolution performed: false');
+  await expect(panel).toContainText('dimension member resolution performed: false');
+  await expect(panel).toContainText('unit normalization performed: false');
+  await expect(panel).toContainText('final period unit context dimension semantics claimed: false');
   await expect(panel).toContainText('extension taxonomy retention profile record count: 8');
   await expect(panel).toContainText('standard concept mapping profile record count: 8');
   await expect(panel).toContainText('fact deduplication conflict diagnostics record count: 8');
