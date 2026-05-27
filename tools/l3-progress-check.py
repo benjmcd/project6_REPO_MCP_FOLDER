@@ -3628,6 +3628,9 @@ SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME = (
 SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE = (
     PLANNING_DOCS / "1250-sec-edgar-durable-delivery-archive-status-surface.md"
 )
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_UI = (
+    PLANNING_DOCS / "1251-sec-edgar-durable-delivery-archive-status-rendered-ui.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -118373,6 +118376,61 @@ def _check_sec_edgar_durable_delivery_archive_status_surface(
                 )
 
 
+def _check_sec_edgar_durable_delivery_archive_status_rendered_ui(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_UI: (
+            "SEC EDGAR Durable Delivery Archive Status Rendered UI",
+            "milestone: sec_edgar_durable_delivery_archive_status_rendered_ui_v1",
+            "source_status_surface: next_milestone_plans/Layer3_planning_docs/1250-sec-edgar-durable-delivery-archive-status-surface.md",
+            "rendered_mode: rendered_sec_edgar_durable_delivery_archive_status_control",
+            "status_surface_mode: sec_edgar_durable_delivery_archive_status_surface_v1",
+            "response_authority: sec_edgar_durable_delivery_archive_receipt_and_manifest_readiness",
+            "read_only_status_surface: true",
+            "server_receipt_projection_only: true",
+            "provider_object_write_enabled: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_period_unit_context_dimension_profile_selection_v1",
+        ),
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE: (
+            "next_exact_posture: sec_edgar_durable_delivery_archive_status_rendered_ui_v1",
+        ),
+        LAYER3_HTML: (
+            'id="sec-edgar-durable-delivery-archive-status-panel"',
+            'data-rendered-mode="rendered_sec_edgar_durable_delivery_archive_status_control"',
+            "SEC EDGAR durable delivery archive status authority is not available.",
+        ),
+        LAYER3_JS: (
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_MODE = 'rendered_sec_edgar_durable_delivery_archive_status_control'",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE_MODE = 'sec_edgar_durable_delivery_archive_status_surface_v1'",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_ENDPOINT_PREFIX",
+            "function secEdgarDurableDeliveryArchiveStatusRows",
+            "function renderSecEdgarDurableDeliveryArchiveStatusPanel",
+            "function inspectSecEdgarDurableDeliveryArchiveStatus",
+            "read only status surface",
+            "archive manifest hash verified",
+            "provider object write enabled",
+            "cross company comparability admitted",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench renders SEC EDGAR durable delivery archive status surface from receipt authority",
+            "rendered_sec_edgar_durable_delivery_archive_status_control",
+            "sec_edgar_durable_delivery_archive_status_surface_v1",
+            "archive manifest hash verified: true",
+            "archive receipt write performed: false",
+            "cross_company_comparability_normalization",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR durable delivery archive status rendered UI term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119697,6 +119755,7 @@ def main() -> int:
     _check_sec_edgar_durable_delivery_archive_selection(errors)
     _check_sec_edgar_durable_delivery_archive_runtime(errors)
     _check_sec_edgar_durable_delivery_archive_status_surface(errors)
+    _check_sec_edgar_durable_delivery_archive_status_rendered_ui(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
