@@ -81,6 +81,13 @@ def main() -> int:
     parser.add_argument("--user-agent", default=os.environ.get("LAYER3_SEC_EDGAR_USER_AGENT", ""))
     parser.add_argument("--company-matrix", default="")
     parser.add_argument("--arelle-python", default=os.environ.get("ARELLE_PYTHON", ""))
+    parser.add_argument("--taxonomy-packages", default=os.environ.get("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", ""))
+    parser.add_argument("--taxonomy-cache-dir", default=os.environ.get("SEC_XBRL_ARELLE_CACHE_DIR", ""))
+    parser.add_argument(
+        "--taxonomy-internet-connectivity",
+        default=os.environ.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY", "offline"),
+        choices=("online", "offline"),
+    )
     args = parser.parse_args()
 
     if args.storage_dir:
@@ -99,6 +106,9 @@ def main() -> int:
             for item in args.company_matrix.split(",")
             if item.strip()
         ),
+        taxonomy_packages=args.taxonomy_packages,
+        taxonomy_cache_dir=args.taxonomy_cache_dir,
+        taxonomy_internet_connectivity=args.taxonomy_internet_connectivity,
     )
     output = (ROOT / args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -116,6 +126,9 @@ def build_report(
     corpus_output: Path = DEFAULT_CORPUS_OUTPUT,
     user_agent: str = "",
     company_matrix: tuple[str, ...] = (),
+    taxonomy_packages: str = "",
+    taxonomy_cache_dir: str = "",
+    taxonomy_internet_connectivity: str = "offline",
 ) -> dict[str, Any]:
     candidates = list(_inventoried_ixbrl_candidates(include_storage=not run_live_corpus))
     if corpus_path is not None:
@@ -127,6 +140,9 @@ def build_report(
             company_matrix=company_matrix,
             arelle_python=arelle_python,
             corpus_output=corpus_output,
+            taxonomy_packages=taxonomy_packages,
+            taxonomy_cache_dir=taxonomy_cache_dir,
+            taxonomy_internet_connectivity=taxonomy_internet_connectivity,
         )
     real_candidates = [item for item in candidates if item["fixture_class"] == "real_filing"]
     if live_manifest:
@@ -197,6 +213,10 @@ def _sidecar_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "unit_resolved_count": sum(int(row.get("sidecar_unit_resolved_count") or 0) for row in counted),
         "explicit_dimension_fact_count": sum(int(row.get("sidecar_explicit_dimension_fact_count") or 0) for row in counted),
         "typed_dimension_fact_count": sum(int(row.get("sidecar_typed_dimension_fact_count") or 0) for row in counted),
+        "concept_resolved_from_dts_count": sum(int(row.get("sidecar_concept_resolved_from_dts_count") or 0) for row in counted),
+        "concept_unresolved_from_dts_count": sum(int(row.get("sidecar_concept_unresolved_from_dts_count") or 0) for row in counted),
+        "taxonomy_package_loaded_all_ready_rows": all(row.get("sidecar_taxonomy_package_loaded") is True for row in counted),
+        "max_loaded_document_count": max([int(row.get("sidecar_loaded_document_count") or 0) for row in counted] or [0]),
         "values_redacted_in_report": True,
         "runtime_default_changed": False,
         "bridge_gate_b_product_package_ui_mutated": False,
@@ -333,6 +353,9 @@ def _run_live_corpus(
     company_matrix: tuple[str, ...],
     arelle_python: str,
     corpus_output: Path,
+    taxonomy_packages: str,
+    taxonomy_cache_dir: str,
+    taxonomy_internet_connectivity: str,
 ) -> dict[str, Any]:
     if not user_agent.strip():
         raise RuntimeError("live corpus acquisition requires --user-agent or LAYER3_SEC_EDGAR_USER_AGENT")
@@ -348,8 +371,16 @@ def _run_live_corpus(
     settings.layer3_sec_edgar_rate_limit_per_second = 1
     settings.layer3_sec_edgar_max_bytes = 120_000_000
     previous_arelle_python = os.environ.get("SEC_XBRL_ARELLE_PYTHON")
+    previous_taxonomy_packages = os.environ.get("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES")
+    previous_taxonomy_cache_dir = os.environ.get("SEC_XBRL_ARELLE_CACHE_DIR")
+    previous_taxonomy_internet = os.environ.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY")
     if arelle_python:
         os.environ["SEC_XBRL_ARELLE_PYTHON"] = arelle_python
+    if taxonomy_packages:
+        os.environ["SEC_XBRL_ARELLE_TAXONOMY_PACKAGES"] = taxonomy_packages
+    if taxonomy_cache_dir:
+        os.environ["SEC_XBRL_ARELLE_CACHE_DIR"] = taxonomy_cache_dir
+    os.environ["SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY"] = taxonomy_internet_connectivity
     layer3_sec_edgar_live_source_artifact._enforce_rate_limit = _waiting_rate_limit(
         previous["enforce_rate_limit"]
     )
@@ -370,6 +401,18 @@ def _run_live_corpus(
             os.environ.pop("SEC_XBRL_ARELLE_PYTHON", None)
         else:
             os.environ["SEC_XBRL_ARELLE_PYTHON"] = previous_arelle_python
+        if previous_taxonomy_packages is None:
+            os.environ.pop("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", None)
+        else:
+            os.environ["SEC_XBRL_ARELLE_TAXONOMY_PACKAGES"] = previous_taxonomy_packages
+        if previous_taxonomy_cache_dir is None:
+            os.environ.pop("SEC_XBRL_ARELLE_CACHE_DIR", None)
+        else:
+            os.environ["SEC_XBRL_ARELLE_CACHE_DIR"] = previous_taxonomy_cache_dir
+        if previous_taxonomy_internet is None:
+            os.environ.pop("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY", None)
+        else:
+            os.environ["SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY"] = previous_taxonomy_internet
         layer3_sec_edgar_live_source_artifact._enforce_rate_limit = previous["enforce_rate_limit"]
 
 
@@ -659,10 +702,18 @@ def _sidecar_fields(sidecar: Mapping[str, Any]) -> dict[str, Any]:
         "sidecar_unit_resolved_count": coverage.get("unit_resolved_count"),
         "sidecar_explicit_dimension_fact_count": coverage.get("explicit_dimension_fact_count"),
         "sidecar_typed_dimension_fact_count": coverage.get("typed_dimension_fact_count"),
+        "sidecar_concept_resolved_from_dts_count": coverage.get("concept_resolved_from_dts_count"),
+        "sidecar_concept_unresolved_from_dts_count": coverage.get("concept_unresolved_from_dts_count"),
         "sidecar_hidden_fact_count": coverage.get("hidden_fact_count"),
         "sidecar_continued_fact_count": coverage.get("continued_fact_count"),
         "sidecar_standard_concept_count": coverage.get("standard_concept_count"),
         "sidecar_extension_concept_count": coverage.get("extension_concept_count"),
+        "sidecar_taxonomy_package_loaded": (sidecar.get("diagnostics") or {}).get("taxonomy_package_loaded")
+        if isinstance(sidecar.get("diagnostics"), Mapping)
+        else None,
+        "sidecar_loaded_document_count": ((sidecar.get("diagnostics") or {}).get("document_set") or {}).get("loaded_document_count")
+        if isinstance(sidecar.get("diagnostics"), Mapping)
+        else None,
         "sidecar_blocked_reasons": [str(item.get("reason")) for item in reasons if isinstance(item, Mapping)],
         "sidecar_values_redacted_in_report": True,
         "sidecar_local_receipt_retains_values": sidecar.get("status") == "ready",

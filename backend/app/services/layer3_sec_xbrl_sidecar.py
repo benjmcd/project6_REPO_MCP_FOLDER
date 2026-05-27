@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -109,6 +110,10 @@ _FORBIDDEN_INPUT_KEYS = {
 }
 _LOCAL_PATH_RE = __import__("re").compile(r"^[a-zA-Z]:[\\/]")
 _RAW_URL_RE = __import__("re").compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
+_DOCUMENT_RE = re.compile(r"<DOCUMENT>(?P<body>.*?)</DOCUMENT>", re.IGNORECASE | re.DOTALL)
+_TEXT_RE = re.compile(r"<TEXT>(?P<text>.*?)</TEXT>", re.IGNORECASE | re.DOTALL)
+_TAG_RE = re.compile(r"<([A-Z0-9-]+)>\s*([^\r\n<]*)", re.IGNORECASE)
+_SEC_XBRL_WRAPPER_RE = re.compile(r"^\s*<XBRL>\s*(?P<text>.*?)(?:\s*</XBRL>\s*)?$", re.IGNORECASE | re.DOTALL)
 
 
 def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str, Any]) -> dict[str, Any]:
@@ -156,7 +161,8 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
 
     max_facts = _max_facts(request)
     regex_fact = _optional_regex_fact_authority(request)
-    arelle = _run_arelle(primary_document=primary_document, max_facts=max_facts)
+    submission_documents = _submission_documents(content, primary_document_hash=expected_hashes["primary_document_hash"])
+    arelle = _run_arelle(primary_document=primary_document, max_facts=max_facts, submission_documents=submission_documents)
     if arelle.get("status") != "ready":
         return _blocked_response(
             request_id=request_id,
@@ -294,31 +300,47 @@ def read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
     return receipt
 
 
-def _run_arelle(*, primary_document: str, max_facts: int) -> dict[str, Any]:
+def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: list[dict[str, str]]) -> dict[str, Any]:
     helper = _repo_root() / "tools" / "sec-xbrl-arelle.py"
     if not helper.exists():
         return {"status": "blocked", "reasons": [_reason("arelle_helper_missing")]}
+    taxonomy_packages = _taxonomy_package_files()
+    if not taxonomy_packages:
+        return {"status": "blocked", "reasons": [_reason("taxonomy_package_unavailable")]}
+    cache_dir = _taxonomy_cache_dir()
+    if cache_dir is None:
+        return {"status": "blocked", "reasons": [_reason("taxonomy_cache_unavailable")]}
     with tempfile.TemporaryDirectory(prefix="sec-xbrl-sidecar-") as temp_dir_name:
         temp_dir = Path(temp_dir_name)
-        entry = temp_dir / "filing.htm"
-        entry.write_text(primary_document, encoding="utf-8")
+        entry = _write_submission_documents(
+            temp_dir,
+            primary_document=primary_document,
+            submission_documents=submission_documents,
+        )
         env = dict(os.environ)
         env["XDG_CONFIG_HOME"] = str(temp_dir / "xdg")
-        env["XDG_CACHE_HOME"] = str(temp_dir / "cache")
-        env["ARELLE_CACHE_DIR"] = str(temp_dir / "arelle-cache")
+        env["XDG_CACHE_HOME"] = str(cache_dir)
+        env["ARELLE_CACHE_DIR"] = str(cache_dir)
         env["TMP"] = str(temp_dir / "tmp")
         env["TEMP"] = str(temp_dir / "tmp")
         (temp_dir / "tmp").mkdir(parents=True, exist_ok=True)
+        command = [
+            _arelle_python(),
+            str(helper),
+            "--input",
+            str(entry),
+            "--max-facts",
+            str(max_facts),
+            "--cache-dir",
+            str(cache_dir),
+            "--internet-connectivity",
+            _taxonomy_internet_connectivity(),
+        ]
+        for package in taxonomy_packages:
+            command.extend(["--taxonomy-package", str(package)])
         try:
             completed = ARELLE_SUBPROCESS_RUNNER(
-                [
-                    _arelle_python(),
-                    str(helper),
-                    "--input",
-                    str(entry),
-                    "--max-facts",
-                    str(max_facts),
-                ],
+                command,
                 cwd=str(temp_dir),
                 text=True,
                 stdout=subprocess.PIPE,
@@ -364,6 +386,69 @@ def _run_arelle(*, primary_document: str, max_facts: int) -> dict[str, Any]:
     if len(facts) > max_facts:
         return {"status": "blocked", "reasons": [_reason("arelle_fact_count_exceeds_limit", max_facts=max_facts)]}
     return {"status": "ready", **payload}
+
+
+def _write_submission_documents(
+    temp_dir: Path,
+    *,
+    primary_document: str,
+    submission_documents: list[dict[str, str]],
+) -> Path:
+    entry: Path | None = None
+    seen: set[str] = set()
+    for index, document in enumerate(submission_documents, start=1):
+        filename = _safe_document_filename(document.get("filename") or f"document-{index}.txt")
+        if filename.lower() in seen:
+            filename = f"{index}-{filename}"
+        seen.add(filename.lower())
+        path = temp_dir / filename
+        path.write_text(str(document.get("text") or ""), encoding="utf-8")
+        if document.get("primary") == "true":
+            entry = path
+    if entry is None:
+        entry = temp_dir / "filing.htm"
+        entry.write_text(primary_document, encoding="utf-8")
+    return entry
+
+
+def _submission_documents(content: bytes, *, primary_document_hash: str) -> list[dict[str, str]]:
+    text = content.decode("utf-8", errors="ignore")
+    documents: list[dict[str, str]] = []
+    for match in _DOCUMENT_RE.finditer(text):
+        metadata, doc_text = _document_metadata(match.group("body"))
+        filename = metadata.get("filename") or ""
+        documents.append(
+            {
+                "filename": filename,
+                "text": doc_text,
+                "primary": "true" if doc_text and _sha256_text(doc_text) == primary_document_hash else "false",
+            }
+        )
+    return documents
+
+
+def _document_metadata(document_body: str) -> tuple[dict[str, str], str]:
+    text_match = _TEXT_RE.search(document_body)
+    tag_region = document_body[: text_match.start()] if text_match else document_body
+    tags: dict[str, str] = {}
+    for match in _TAG_RE.finditer(tag_region):
+        key = match.group(1).strip().upper()
+        value = match.group(2).strip()
+        if key and value and key not in tags:
+            tags[key] = value
+    doc_text = text_match.group("text") if text_match else ""
+    wrapper_match = _SEC_XBRL_WRAPPER_RE.match(doc_text)
+    if wrapper_match and wrapper_match.group("text").lstrip().startswith("<?xml"):
+        doc_text = wrapper_match.group("text").lstrip()
+    elif doc_text.lstrip().startswith("<?xml"):
+        doc_text = doc_text.lstrip()
+    return {"filename": tags.get("FILENAME", "")}, doc_text
+
+
+def _safe_document_filename(filename: str) -> str:
+    name = Path(str(filename or "")).name.strip()
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", name)[:160].strip(".-")
+    return safe or "document.txt"
 
 
 def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -446,6 +531,8 @@ def _coverage_stats(facts: list[Mapping[str, Any]]) -> dict[str, Any]:
         "continued_fact_count": sum(1 for fact in facts if fact.get("continued") is True),
         "standard_concept_count": sum(1 for fact in facts if (fact.get("concept") or {}).get("standard") is True),
         "extension_concept_count": sum(1 for fact in facts if (fact.get("concept") or {}).get("extension") is True),
+        "concept_resolved_from_dts_count": sum(1 for fact in facts if (fact.get("concept") or {}).get("resolved_from_dts") is True),
+        "concept_unresolved_from_dts_count": sum(1 for fact in facts if (fact.get("concept") or {}).get("resolved_from_dts") is not True),
         "actual_period_unit_dimension_values_emitted": True,
         "period_unit_dimension_hash_only_projection": False,
         "silent_fact_truncation_performed": False,
@@ -464,7 +551,10 @@ def _diagnostics(*, arelle: Mapping[str, Any], coverage: Mapping[str, Any], max_
         "max_facts_fail_closed": True,
         "max_facts_silent_slice": False,
         "taxonomy_package_loaded": bool(arelle.get("taxonomy_package_loaded")),
-        "taxonomy_network_resolution_enabled": False,
+        "taxonomy_package_count": int(arelle.get("taxonomy_package_count") or 0),
+        "taxonomy_package_hashes": list(arelle.get("taxonomy_package_hashes") or []),
+        "taxonomy_network_resolution_enabled": bool(arelle.get("taxonomy_network_resolution_enabled")),
+        "document_set": dict(arelle.get("document_set") or {}),
         "dts_unresolved_diagnostics": dict(arelle.get("diagnostics") or {}),
         "source_order_preserved": True,
         "resolved_structural_semantics": dict(coverage),
@@ -907,6 +997,47 @@ def _repo_root() -> Path:
 
 def _arelle_python() -> str:
     return str(os.environ.get("SEC_XBRL_ARELLE_PYTHON") or os.environ.get("ARELLE_PYTHON") or sys.executable)
+
+
+def _taxonomy_package_files() -> list[Path]:
+    raw = str(os.environ.get("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES") or "").strip()
+    if not raw:
+        return []
+    paths: list[Path] = []
+    for item in raw.split(os.pathsep):
+        if not item.strip():
+            continue
+        path = Path(item).resolve()
+        if not path.exists() or not path.is_file() or _path_inside_repo_or_onedrive(path):
+            return []
+        paths.append(path)
+    return paths
+
+
+def _taxonomy_cache_dir() -> Path | None:
+    raw = str(os.environ.get("SEC_XBRL_ARELLE_CACHE_DIR") or "").strip()
+    if not raw:
+        return None
+    path = Path(raw).resolve()
+    if _path_inside_repo_or_onedrive(path):
+        return None
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _taxonomy_internet_connectivity() -> str:
+    value = str(os.environ.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY") or "offline").strip().lower()
+    return "online" if value == "online" else "offline"
+
+
+def _path_inside_repo_or_onedrive(path: Path) -> bool:
+    resolved = path.resolve(strict=False)
+    repo = _repo_root().resolve(strict=False)
+    try:
+        resolved.relative_to(repo)
+        return True
+    except ValueError:
+        return any(part.lower() == "onedrive" for part in resolved.parts)
 
 
 def _timeout_seconds() -> int:

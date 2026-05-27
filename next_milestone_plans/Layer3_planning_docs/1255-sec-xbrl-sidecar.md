@@ -15,7 +15,7 @@ This slice is additive only. It emits a governed local sidecar resolved-fact aut
 - Output authority: local gitignored sidecar receipt with raw fact values retained for later governed reveal.
 - Committed/report projection: counts, hashes, resolved structural semantics coverage, parity only; fact values remain redacted.
 - CompanyFacts role: accession-scoped standardized cross-check diagnostic only.
-- Taxonomy posture: no cached taxonomy package is admitted yet; this slice records instance-resolved period/unit/dimension/concept QNames and DTS diagnostics, with taxonomy-package admission deferred to the cutover validation lane.
+- Taxonomy posture: the follow-up DTS confirmation slice `1256-sec-xbrl-dts-confirmation.md` admits external cached taxonomy package/cache provisioning for the sidecar and confirms DTS-loaded counts before cutover.
 - License/security posture: Arelle is pinned as an optional Apache-2.0 dependency behind the subprocess adapter; supply-chain and license review must be repeated before any CI or runtime-default admission.
 
 ## Proof Summary
@@ -52,7 +52,11 @@ Per-filing report:
 - No raw tickers, URLs, paths, storage roots, accessions, or fact values in committed reports.
 - No Arelle import into app runtime.
 
-## Next Slice
+## Follow-Up Slice
+
+`sec_edgar_arelle_dts_confirmation_v1` is recorded in `1256-sec-xbrl-dts-confirmation.md`.
+
+After that confirmation, the next gated production slice is:
 
 `sec_edgar_arelle_fact_authority_input_cutover_v1`
 

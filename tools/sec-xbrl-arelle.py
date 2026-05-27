@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.metadata
 import json
 from pathlib import Path
@@ -18,6 +19,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Contained Arelle iXBRL resolved-fact extractor.")
     parser.add_argument("--input", required=True)
     parser.add_argument("--max-facts", type=int, default=MIN_MAX_FACTS)
+    parser.add_argument("--taxonomy-package", action="append", default=[])
+    parser.add_argument("--cache-dir", default="")
+    parser.add_argument("--internet-connectivity", choices=("online", "offline"), default="offline")
     args = parser.parse_args()
     if args.max_facts < MIN_MAX_FACTS:
         _emit_error("max_facts_too_low", max_facts=args.max_facts)
@@ -32,23 +36,36 @@ def main() -> int:
         return 2
     try:
         from arelle import Cntlr  # type: ignore
+        from arelle import PackageManager  # type: ignore
     except Exception as exc:
         _emit_error("arelle_import_failed", error_class=exc.__class__.__name__)
         return 2
 
     entry = Path(args.input)
+    cntlr = Cntlr.Cntlr(logFileName="logToBuffer")
+    model = None
+    if args.cache_dir:
+        cntlr.webCache.cacheDir = str(Path(args.cache_dir).resolve())
+    cntlr.webCache.workOffline = args.internet_connectivity == "offline"
     try:
-        cntlr = Cntlr.Cntlr(logFileName="logToBuffer")
+        package_hashes = _load_packages(cntlr, PackageManager, args.taxonomy_package)
+    except Exception as exc:
+        _emit_error("taxonomy_package_load_failed", error_class=exc.__class__.__name__)
+        cntlr.close()
+        return 2
+    try:
         model = cntlr.modelManager.load(str(entry))
     except Exception as exc:
         _emit_error("arelle_model_load_failed", error_class=exc.__class__.__name__)
+        cntlr.close()
         return 2
     try:
         raw_facts = list(getattr(model, "facts", []) or []) if model is not None else []
         if len(raw_facts) > args.max_facts:
             _emit_error("fact_count_exceeds_limit", fact_count=len(raw_facts), max_facts=args.max_facts)
             return 2
-        facts = [_fact_payload(fact, index) for index, fact in enumerate(raw_facts, start=1)]
+        concept_index = _concept_index(model)
+        facts = [_fact_payload(model, concept_index, fact, index) for index, fact in enumerate(raw_facts, start=1)]
         diagnostics = _diagnostics(model, facts)
         print(
             json.dumps(
@@ -59,8 +76,14 @@ def main() -> int:
                     "fact_count": len(facts),
                     "facts": facts,
                     "diagnostics": diagnostics,
-                    "taxonomy_package_loaded": False,
-                    "taxonomy_network_resolution_enabled": False,
+                    "taxonomy_package_loaded": bool(package_hashes),
+                    "taxonomy_package_count": len(package_hashes),
+                    "taxonomy_package_hashes": package_hashes,
+                    "taxonomy_network_resolution_enabled": args.internet_connectivity == "online",
+                    "document_set": {
+                        "loaded_document_count": len(getattr(model, "urlDocs", {}) or {}) if model is not None else 0,
+                        "entry_document_loaded": model is not None,
+                    },
                 },
                 sort_keys=True,
                 separators=(",", ":"),
@@ -75,13 +98,30 @@ def main() -> int:
             cntlr.close()
 
 
-def _fact_payload(fact: Any, source_order: int) -> dict[str, Any]:
+def _load_packages(cntlr: Any, package_manager: Any, package_paths: list[str]) -> list[str]:
+    package_hashes: list[str] = []
+    if not package_paths:
+        return package_hashes
+    package_manager.init(cntlr, loadPackagesConfig=False)
+    for raw_path in package_paths:
+        path = Path(raw_path)
+        if not path.exists() or not path.is_file():
+            raise RuntimeError("taxonomy_package_missing")
+        info = package_manager.addPackage(cntlr, str(path.resolve()))
+        if info is None:
+            raise RuntimeError("taxonomy_package_invalid")
+        package_hashes.append(hashlib.sha256(path.read_bytes()).hexdigest())
+    package_manager.rebuildRemappings(cntlr)
+    return package_hashes
+
+
+def _fact_payload(model: Any, concept_index: dict[tuple[str, str], Any], fact: Any, source_order: int) -> dict[str, Any]:
     context = getattr(fact, "context", None)
     unit = getattr(fact, "unit", None)
     value = str(getattr(fact, "value", "") or "")
     return {
         "source_order": source_order,
-        "concept": _concept_payload(fact),
+        "concept": _concept_payload(model, concept_index, fact),
         "context_id": str(getattr(context, "id", "") or _attr(fact, "contextRef") or ""),
         "unit_id": str(getattr(unit, "id", "") or _attr(fact, "unitRef") or ""),
         "period": _period_payload(context),
@@ -99,9 +139,10 @@ def _fact_payload(fact: Any, source_order: int) -> dict[str, Any]:
     }
 
 
-def _concept_payload(fact: Any) -> dict[str, Any]:
+def _concept_payload(model: Any, concept_index: dict[tuple[str, str], Any], fact: Any) -> dict[str, Any]:
     concept = getattr(fact, "concept", None)
     qname = getattr(concept, "qname", None) or getattr(fact, "qname", None)
+    dts_concept = concept or _lookup_concept(model, concept_index, qname)
     payload = _qname_payload(qname)
     namespace = payload["namespace"]
     standard = _is_standard_namespace(namespace)
@@ -109,9 +150,32 @@ def _concept_payload(fact: Any) -> dict[str, Any]:
         **payload,
         "standard": standard,
         "extension": bool(namespace and not standard),
-        "abstract": bool(getattr(concept, "isAbstract", False)) if concept is not None else False,
-        "resolved_from_dts": concept is not None,
+        "abstract": bool(getattr(dts_concept, "isAbstract", False)) if dts_concept is not None else False,
+        "resolved_from_dts": dts_concept is not None,
     }
+
+
+def _concept_index(model: Any) -> dict[tuple[str, str], Any]:
+    qname_concepts = getattr(model, "qnameConcepts", {}) or {}
+    output: dict[tuple[str, str], Any] = {}
+    for candidate_qname, concept in qname_concepts.items():
+        namespace = str(getattr(candidate_qname, "namespaceURI", "") or "")
+        local_name = str(getattr(candidate_qname, "localName", "") or "")
+        if namespace and local_name:
+            output[(namespace, local_name)] = concept
+    return output
+
+
+def _lookup_concept(model: Any, concept_index: dict[tuple[str, str], Any], qname: Any) -> Any:
+    qname_concepts = getattr(model, "qnameConcepts", {}) or {}
+    found = qname_concepts.get(qname)
+    if found is not None:
+        return found
+    namespace = str(getattr(qname, "namespaceURI", "") or "")
+    local_name = str(getattr(qname, "localName", "") or "")
+    if not namespace or not local_name:
+        return None
+    return concept_index.get((namespace, local_name))
 
 
 def _period_payload(context: Any) -> dict[str, Any]:
@@ -153,6 +217,7 @@ def _dimensions_payload(context: Any) -> dict[str, Any]:
 def _diagnostics(model: Any, facts: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "model_error_count": len(list(getattr(model, "errors", []) or [])) if model is not None else 0,
+        "concept_resolved_from_dts_count": sum(1 for fact in facts if fact["concept"]["resolved_from_dts"]),
         "concept_dts_unresolved_count": sum(1 for fact in facts if not fact["concept"]["resolved_from_dts"]),
         "period_unresolved_count": sum(1 for fact in facts if not fact["period"]["resolved"]),
         "unit_unresolved_count": sum(1 for fact in facts if not fact["unit"]["resolved"]),

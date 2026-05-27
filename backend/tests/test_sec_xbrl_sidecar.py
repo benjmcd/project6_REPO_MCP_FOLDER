@@ -34,6 +34,7 @@ def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypa
     assert response["coverage"]["typed_dimension_fact_count"] == 1
     assert response["coverage"]["hidden_fact_count"] == 1
     assert response["coverage"]["continued_fact_count"] == 1
+    assert response["coverage"]["concept_resolved_from_dts_count"] == 2
     assert "SECRET_MONETARY_VALUE" not in json.dumps(response, sort_keys=True)
 
     receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
@@ -70,6 +71,35 @@ def test_sec_xbrl_sidecar_rejects_silent_low_fact_cap(monkeypatch, tmp_path):
         )
 
     assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_max_facts_too_low"
+
+
+def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
+    primary = "<html><head></head><body>inline</body></html>"
+    wrapped_schema = "\r\n<XBRL>\r\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<schema />\r\n</XBRL>\r\n"
+    content = f"""
+<SEC-DOCUMENT>
+<DOCUMENT>
+<TYPE>10-K
+<FILENAME>primary.htm
+<TEXT>{primary}</TEXT>
+</DOCUMENT>
+<DOCUMENT>
+<TYPE>EX-101.SCH
+<FILENAME>issuer.xsd
+<TEXT>{wrapped_schema}</TEXT>
+</DOCUMENT>
+</SEC-DOCUMENT>
+""".encode("utf-8")
+
+    documents = layer3_sec_xbrl_sidecar._submission_documents(
+        content,
+        primary_document_hash=_hash(primary),
+    )
+
+    assert documents[0]["primary"] == "true"
+    assert documents[1]["filename"] == "issuer.xsd"
+    assert documents[1]["text"].startswith("<?xml")
+    assert "<XBRL>" not in documents[1]["text"]
 
 
 def _install_receipt_fakes(monkeypatch, tmp_path, runner):
@@ -130,6 +160,9 @@ def _install_receipt_fakes(monkeypatch, tmp_path, runner):
         lambda *_args, **_kwargs: {"fact_authority_receipt_hash": _hash("regex"), "fact_count": 1},
     )
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", runner)
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [tmp_path / "taxonomy.zip"])
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "cache")
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_internet_connectivity", lambda: "offline")
 
 
 def _request(*, companyfacts_count):
@@ -153,13 +186,16 @@ def _ready_arelle_runner(*_args, **_kwargs):
     payload = {
         "schema_id": "tools.sec_xbrl_arelle_extract.v1",
         "arelle_version": layer3_sec_xbrl_sidecar.ARELLE_VERSION,
-        "taxonomy_package_loaded": False,
+        "taxonomy_package_loaded": True,
+        "taxonomy_package_count": 1,
+        "taxonomy_package_hashes": [_hash("taxonomy")],
         "fact_count": 2,
-        "diagnostics": {"model_error_count": 0, "concept_dts_unresolved_count": 0},
+        "diagnostics": {"model_error_count": 0, "concept_resolved_from_dts_count": 2, "concept_dts_unresolved_count": 0},
+        "document_set": {"loaded_document_count": 5, "entry_document_loaded": True},
         "facts": [
             {
                 "source_order": 1,
-                "concept": {"qname": "us-gaap:Revenue", "namespace": "http://fasb.org/us-gaap/2024", "local_name": "Revenue", "standard": True, "extension": False},
+                "concept": {"qname": "us-gaap:Revenue", "namespace": "http://fasb.org/us-gaap/2024", "local_name": "Revenue", "standard": True, "extension": False, "resolved_from_dts": True},
                 "context_id": "ctx-1",
                 "unit_id": "usd",
                 "period": {"type": "duration", "start": "2025-01-01", "end": "2025-12-31", "instant": None, "forever": False, "resolved": True},
@@ -177,7 +213,7 @@ def _ready_arelle_runner(*_args, **_kwargs):
             },
             {
                 "source_order": 2,
-                "concept": {"qname": "issuer:CustomMetric", "namespace": "http://example.invalid/issuer", "local_name": "CustomMetric", "standard": False, "extension": True},
+                "concept": {"qname": "issuer:CustomMetric", "namespace": "http://example.invalid/issuer", "local_name": "CustomMetric", "standard": False, "extension": True, "resolved_from_dts": True},
                 "context_id": "ctx-2",
                 "unit_id": "shares",
                 "period": {"type": "instant", "start": None, "end": None, "instant": "2025-12-31", "forever": False, "resolved": True},
