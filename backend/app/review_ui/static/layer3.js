@@ -356,6 +356,9 @@ const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE = 'rendered_sec_edgar_ope
 const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_MODE = 'sec_edgar_operator_product_surface_runtime_v1';
 const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_OPERATOR_DECISION = 'render_sec_edgar_operator_product_surface';
 const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_ENDPOINT = '/source/sec-edgar/real-company-corpus/operator-product-surface';
+const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_MODE = 'rendered_sec_edgar_durable_delivery_archive_status_control';
+const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE_MODE = 'sec_edgar_durable_delivery_archive_status_surface_v1';
+const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_ENDPOINT_PREFIX = '/source/sec-edgar/real-company-corpus/durable-delivery/archive/status';
 const CANDIDATE_B_CLOSURE_EVIDENCE_RENDERED_MODE = 'rendered_candidate_b_default_promotion_closure_evidence_control';
 const CANDIDATE_B_CLOSURE_EVIDENCE_MODE = 'candidate_b_default_promotion_closure_evidence_v1';
 const CANDIDATE_B_CLOSURE_EVIDENCE_OPERATOR_DECISION = 'record_candidate_b_default_promotion_closure_evidence';
@@ -765,6 +768,12 @@ const State = {
         operatorInspectionReceiptHash: '',
         operatorConfirmation: false,
     },
+    secEdgarDurableDeliveryArchiveStatus: null,
+    secEdgarDurableDeliveryArchiveStatusError: null,
+    secEdgarDurableDeliveryArchiveStatusPending: false,
+    secEdgarDurableDeliveryArchiveStatusInput: {
+        archiveReceiptId: '',
+    },
     candidateBFullCorpusOperatorWorkflowStatus: null,
     candidateBFullCorpusOperatorWorkflowStatusError: null,
     candidateBFullCorpusOperatorWorkflowStatusPending: false,
@@ -1021,6 +1030,7 @@ const elements = {
     secEdgarLiveDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-live-downstream-repeatability-trial-panel'),
     secEdgarDownstreamRepeatabilityTrialPanel: document.getElementById('sec-edgar-downstream-repeatability-trial-panel'),
     secEdgarOperatorProductSurfacePanel: document.getElementById('sec-edgar-operator-product-surface-panel'),
+    secEdgarDurableDeliveryArchiveStatusPanel: document.getElementById('sec-edgar-durable-delivery-archive-status-panel'),
     mockupActivationReadinessPanel: document.getElementById('mockup-activation-readiness-panel'),
     layer3E2EGovernanceLifecycleDashboardPanel: document.getElementById('layer3-e2e-governance-lifecycle-dashboard-panel'),
     sublayerMapPanel: document.getElementById('sublayer-map-panel'),
@@ -8850,6 +8860,18 @@ function secEdgarOperatorProductSurfaceInputValues() {
     };
 }
 
+function secEdgarDurableDeliveryArchiveStatusInputValues() {
+    const receiptInput = document.getElementById('sec-edgar-durable-delivery-archive-status-receipt-id');
+    const stored = State.secEdgarDurableDeliveryArchiveStatusInput;
+    return {
+        archiveReceiptId: (
+            receiptInput?.value
+            || stored.archiveReceiptId
+            || ''
+        ).trim(),
+    };
+}
+
 function candidateBFullCorpusOperatorWorkflowRunInputValues() {
     const lifecycleInput = document.getElementById('candidate-b-full-corpus-workflow-run-lifecycle-receipt-id');
     const baselineInput = document.getElementById('candidate-b-full-corpus-workflow-run-baseline-run-id');
@@ -10126,6 +10148,18 @@ function secEdgarOperatorProductSurfacePayload() {
     };
 }
 
+function secEdgarDurableDeliveryArchiveStatusPath() {
+    const values = secEdgarDurableDeliveryArchiveStatusInputValues();
+    State.secEdgarDurableDeliveryArchiveStatusInput = values;
+    if (!values.archiveReceiptId) {
+        throw new Error('sec_edgar_durable_delivery_archive_status_receipt_id_required');
+    }
+    if (/[\\/\s]/.test(values.archiveReceiptId)) {
+        throw new Error('sec_edgar_durable_delivery_archive_status_receipt_id_invalid');
+    }
+    return `${SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_ENDPOINT_PREFIX}/${encodeURIComponent(values.archiveReceiptId)}`;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunPayload() {
     const values = candidateBFullCorpusOperatorWorkflowRunInputValues();
     State.candidateBFullCorpusOperatorWorkflowRunInput = values;
@@ -10658,6 +10692,15 @@ function canRenderSecEdgarOperatorProductSurface() {
         && /^[0-9a-fA-F]{64}$/.test(values.operatorInspectionReceiptHash)
         && values.operatorConfirmation
         && !State.secEdgarOperatorProductSurfacePending
+    );
+}
+
+function canInspectSecEdgarDurableDeliveryArchiveStatus() {
+    const values = secEdgarDurableDeliveryArchiveStatusInputValues();
+    return Boolean(
+        values.archiveReceiptId
+        && !/[\\/\s]/.test(values.archiveReceiptId)
+        && !State.secEdgarDurableDeliveryArchiveStatusPending
     );
 }
 
@@ -11508,6 +11551,23 @@ function secEdgarOperatorProductSurfacePanelState() {
         return { label: 'sec_edgar_operator_product_surface_blocked', pill: 'blocked' };
     }
     return { label: 'sec_edgar_operator_product_surface_not_rendered', pill: 'preview' };
+}
+
+function secEdgarDurableDeliveryArchiveStatusPanelState() {
+    if (State.secEdgarDurableDeliveryArchiveStatusPending) {
+        return { label: 'sec_edgar_durable_delivery_archive_status_pending', pill: 'preview' };
+    }
+    if (State.secEdgarDurableDeliveryArchiveStatusError) {
+        const code = (
+            State.secEdgarDurableDeliveryArchiveStatusError?.payload?.error?.code
+            || State.secEdgarDurableDeliveryArchiveStatusError?.payload?.error_code
+        );
+        return { label: code || 'sec_edgar_durable_delivery_archive_status_blocked', pill: 'blocked' };
+    }
+    if (State.secEdgarDurableDeliveryArchiveStatus?.status_surface_mode === SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE_MODE) {
+        return { label: 'sec_edgar_durable_delivery_archive_status_surface_ready', pill: 'ok' };
+    }
+    return { label: 'sec_edgar_durable_delivery_archive_status_not_inspected', pill: 'preview' };
 }
 
 function candidateBFullCorpusOperatorWorkflowRunPanelState() {
@@ -13056,6 +13116,93 @@ function secEdgarOperatorProductSurfaceRows(surface) {
                     ${fieldItem('raw local path exposed', negative.raw_local_path_exposed)}
                     ${fieldItem('frontend durable authority enabled', negative.frontend_durable_authority_enabled)}
                     ${fieldItem('blocked reasons', blockedReasons.map((reason) => reason.reason || reason.message).join(', '), { code: true })}
+                </ul>
+            </section>
+        </div>
+    `;
+}
+
+function secEdgarDurableDeliveryArchiveStatusRows(status) {
+    if (!status) return '';
+    const surface = status.archive_status_surface || {};
+    const readiness = surface.archive_manifest_readiness || {};
+    const authority = surface.authority_chain_status || {};
+    const product = surface.product_view_status || {};
+    const redaction = surface.redaction_status || {};
+    const nonAdmissions = surface.non_admissions || {};
+    const unavailable = Array.isArray(status.downstream_unavailable)
+        ? status.downstream_unavailable
+        : (Array.isArray(surface.downstream_unavailable) ? surface.downstream_unavailable : []);
+    const nextActions = Array.isArray(surface.next_allowed_actions) ? surface.next_allowed_actions : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>SEC EDGAR Archive Status Surface</strong>
+                <ul>
+                    ${fieldItem('schema id', status.schema_id, { code: true })}
+                    ${fieldItem('status', status.status, { code: true })}
+                    ${fieldItem('status surface mode', status.status_surface_mode || surface.status_surface_mode, { code: true })}
+                    ${fieldItem('response authority', status.response_authority || surface.response_authority, { code: true })}
+                    ${fieldItem('read only status surface', status.read_only_status_surface)}
+                    ${fieldItem('server receipt projection only', surface.server_receipt_projection_only)}
+                    ${fieldItem('archive receipt id', status.sec_edgar_durable_delivery_archive_receipt_id, { code: true })}
+                    ${fieldItem('archive receipt hash', status.sec_edgar_durable_delivery_archive_receipt_hash, { code: true })}
+                    ${fieldItem('archive status surface hash', status.archive_status_surface_hash, { code: true })}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Manifest Readiness</strong>
+                <ul>
+                    ${fieldItem('archive manifest ready', readiness.archive_manifest_ready)}
+                    ${fieldItem('archive manifest file backed', readiness.archive_manifest_file_backed)}
+                    ${fieldItem('archive manifest hash verified', readiness.archive_manifest_hash_verified)}
+                    ${fieldItem('archive order hash verified', readiness.archive_order_hash_verified)}
+                    ${fieldItem('source authority chain hash verified', readiness.source_authority_chain_hash_verified)}
+                    ${fieldItem('redaction manifest hash verified', readiness.redaction_manifest_hash_verified)}
+                    ${fieldItem('archive receipt write performed', status.archive_receipt_write_performed)}
+                    ${fieldItem('archive manifest write performed', status.archive_manifest_write_performed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Authority Chain</strong>
+                <ul>
+                    ${fieldItem('operator product surface receipt hash', authority.operator_product_surface_receipt_hash, { code: true })}
+                    ${fieldItem('delivery status provenance receipt hash', authority.delivery_status_provenance_receipt_hash, { code: true })}
+                    ${fieldItem('operator inspection receipt hash', authority.operator_inspection_receipt_hash, { code: true })}
+                    ${fieldItem('validation receipt hash', authority.validation_receipt_hash, { code: true })}
+                    ${fieldItem('connector receipt hash', authority.connector_receipt_hash, { code: true })}
+                    ${fieldItem('delivery status record count', authority.delivery_status_record_count)}
+                    ${fieldItem('operator inspection record count', authority.operator_inspection_record_count)}
+                    ${fieldItem('validation record count', authority.validation_record_count)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Product View And Redaction</strong>
+                <ul>
+                    ${fieldItem('product view count', product.product_view_count)}
+                    ${fieldItem('company form matrix record count', product.company_form_matrix_record_count)}
+                    ${fieldItem('semantic profile section available', product.semantic_profile_section_available)}
+                    ${fieldItem('period unit context dimension profile section available', product.period_unit_context_dimension_profile_section_available)}
+                    ${fieldItem('extension taxonomy retention profile section available', product.extension_taxonomy_retention_profile_section_available)}
+                    ${fieldItem('cross company comparability readiness audit section available', product.cross_company_comparability_readiness_audit_section_available)}
+                    ${fieldItem('redaction policy id', redaction.redaction_policy_id, { code: true })}
+                    ${fieldItem('raw URL exposed', redaction.raw_url_exposed)}
+                    ${fieldItem('raw local path exposed', redaction.raw_local_path_exposed)}
+                    ${fieldItem('raw fact values exposed', redaction.raw_fact_values_exposed)}
+                </ul>
+            </section>
+            <section class="result-review-card">
+                <strong>Non-Admissions</strong>
+                <ul>
+                    ${fieldItem('delivery file response served by archive', nonAdmissions.delivery_file_response_served_by_archive)}
+                    ${fieldItem('provider object write enabled', nonAdmissions.provider_object_write_enabled)}
+                    ${fieldItem('connector dispatch enabled', nonAdmissions.connector_dispatch_enabled)}
+                    ${fieldItem('frontend durable authority enabled', nonAdmissions.frontend_durable_authority_enabled)}
+                    ${fieldItem('RAG/vector/model runtime enabled', nonAdmissions.rag_vector_model_runtime_enabled)}
+                    ${fieldItem('financial statement semantics finalized', nonAdmissions.financial_statement_semantics_finalized)}
+                    ${fieldItem('cross company comparability admitted', nonAdmissions.cross_company_comparability_admitted)}
+                    ${fieldItem('downstream unavailable', unavailable.join(', '), { code: true })}
+                    ${fieldItem('next allowed actions', nextActions.join(', '), { code: true })}
                 </ul>
             </section>
         </div>
@@ -15117,6 +15264,24 @@ function secEdgarOperatorProductSurfaceError() {
     `;
 }
 
+function secEdgarDurableDeliveryArchiveStatusError() {
+    const error = State.secEdgarDurableDeliveryArchiveStatusError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_edgar_durable_delivery_archive_status_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function candidateBFullCorpusOperatorWorkflowRunError() {
     const error = State.candidateBFullCorpusOperatorWorkflowRunError;
     if (!error) return '';
@@ -16592,6 +16757,46 @@ function updateSecEdgarOperatorProductSurfaceControls() {
     const submit = document.getElementById('sec-edgar-operator-product-surface-submit');
     if (submit) {
         submit.disabled = !canRenderSecEdgarOperatorProductSurface();
+    }
+}
+
+function renderSecEdgarDurableDeliveryArchiveStatusPanel() {
+    if (!elements.secEdgarDurableDeliveryArchiveStatusPanel) return;
+    const statusState = secEdgarDurableDeliveryArchiveStatusPanelState();
+    const inputs = secEdgarDurableDeliveryArchiveStatusInputValues();
+    elements.secEdgarDurableDeliveryArchiveStatusPanel.innerHTML = `
+        <div class="workband-heading">
+            <div>
+                <span class="section-kicker">SEC EDGAR durable archive</span>
+                <h2>Archive Status Surface</h2>
+            </div>
+            <span class="status-pill ok">server route admitted</span>
+        </div>
+        <div class="candidate-b-default-promotion-status-grid">
+            <section class="result-review-card sec-edgar-durable-delivery-archive-status-card">
+                <strong>SEC EDGAR Archive Status Inspection</strong>
+                <form id="sec-edgar-durable-delivery-archive-status-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>durable delivery archive receipt id</span>
+                        <input id="sec-edgar-durable-delivery-archive-status-receipt-id" type="text" value="${escapeHtml(inputs.archiveReceiptId)}" autocomplete="off" spellcheck="false" placeholder="sec-edgar-durable-delivery-archive-..." />
+                    </label>
+                    <button id="sec-edgar-durable-delivery-archive-status-submit" type="submit" ${canInspectSecEdgarDurableDeliveryArchiveStatus() ? '' : 'disabled'}>Inspect Archive Status</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill ${escapeHtml(statusState.pill)}">${escapeHtml(statusState.label)}</span>
+                    <span class="rail-label">Server reads the durable archive receipt and stored manifest to project readiness. This rendered control cannot create archives, rewrite manifests, serve files, fetch SEC content, rerun parsers, mutate packages, write provider objects, dispatch connectors, create frontend durable authority, finalize financial-statement semantics, or admit cross-company comparability.</span>
+                </div>
+                ${secEdgarDurableDeliveryArchiveStatusRows(State.secEdgarDurableDeliveryArchiveStatus)}
+                ${secEdgarDurableDeliveryArchiveStatusError()}
+            </section>
+        </div>
+    `;
+}
+
+function updateSecEdgarDurableDeliveryArchiveStatusControls() {
+    const submit = document.getElementById('sec-edgar-durable-delivery-archive-status-submit');
+    if (submit) {
+        submit.disabled = !canInspectSecEdgarDurableDeliveryArchiveStatus();
     }
 }
 
@@ -18191,6 +18396,42 @@ async function renderSecEdgarOperatorProductSurface(event) {
         addEvent(`SEC EDGAR operator product surface blocked: ${error.message}`);
     } finally {
         State.secEdgarOperatorProductSurfacePending = false;
+        renderAll();
+    }
+}
+
+async function inspectSecEdgarDurableDeliveryArchiveStatus(event) {
+    event.preventDefault();
+    if (!canInspectSecEdgarDurableDeliveryArchiveStatus()) {
+        State.secEdgarDurableDeliveryArchiveStatus = null;
+        State.secEdgarDurableDeliveryArchiveStatusError = new Error(
+            'SEC EDGAR durable delivery archive status requires a server-issued archive receipt id.',
+        );
+        renderSecEdgarDurableDeliveryArchiveStatusPanel();
+        return;
+    }
+    let path;
+    try {
+        path = secEdgarDurableDeliveryArchiveStatusPath();
+    } catch (error) {
+        State.secEdgarDurableDeliveryArchiveStatus = null;
+        State.secEdgarDurableDeliveryArchiveStatusError = error;
+        renderSecEdgarDurableDeliveryArchiveStatusPanel();
+        return;
+    }
+    State.secEdgarDurableDeliveryArchiveStatusPending = true;
+    State.secEdgarDurableDeliveryArchiveStatusError = null;
+    renderSecEdgarDurableDeliveryArchiveStatusPanel();
+    try {
+        State.secEdgarDurableDeliveryArchiveStatus = await getJson(path);
+        State.secEdgarDurableDeliveryArchiveStatusError = null;
+        addEvent('SEC EDGAR durable delivery archive status surface inspected from server receipt and manifest authority.');
+    } catch (error) {
+        State.secEdgarDurableDeliveryArchiveStatus = null;
+        State.secEdgarDurableDeliveryArchiveStatusError = error;
+        addEvent(`SEC EDGAR durable delivery archive status surface blocked: ${error.message}`);
+    } finally {
+        State.secEdgarDurableDeliveryArchiveStatusPending = false;
         renderAll();
     }
 }
@@ -22147,6 +22388,7 @@ function renderAll() {
     renderSecEdgarLiveDownstreamRepeatabilityTrialPanel();
     renderSecEdgarDownstreamRepeatabilityTrialPanel();
     renderSecEdgarOperatorProductSurfacePanel();
+    renderSecEdgarDurableDeliveryArchiveStatusPanel();
     renderMockupActivationReadinessPanel();
     renderLayer3E2EGovernanceLifecycleDashboardPanel();
     renderGateCPanel();
@@ -26045,6 +26287,35 @@ elements.secEdgarOperatorProductSurfacePanel.addEventListener('change', (event) 
             renderSecEdgarOperatorProductSurfacePanel();
         } else {
             updateSecEdgarOperatorProductSurfaceControls();
+        }
+    }
+});
+elements.secEdgarDurableDeliveryArchiveStatusPanel.addEventListener('submit', (event) => {
+    if (event.target?.id === 'sec-edgar-durable-delivery-archive-status-form') {
+        inspectSecEdgarDurableDeliveryArchiveStatus(event);
+    }
+});
+elements.secEdgarDurableDeliveryArchiveStatusPanel.addEventListener('input', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-durable-delivery-archive-status-')) {
+        const hadError = Boolean(State.secEdgarDurableDeliveryArchiveStatusError);
+        State.secEdgarDurableDeliveryArchiveStatusInput = secEdgarDurableDeliveryArchiveStatusInputValues();
+        State.secEdgarDurableDeliveryArchiveStatusError = null;
+        if (hadError) {
+            renderSecEdgarDurableDeliveryArchiveStatusPanel();
+        } else {
+            updateSecEdgarDurableDeliveryArchiveStatusControls();
+        }
+    }
+});
+elements.secEdgarDurableDeliveryArchiveStatusPanel.addEventListener('change', (event) => {
+    if (event.target?.id?.startsWith('sec-edgar-durable-delivery-archive-status-')) {
+        const hadError = Boolean(State.secEdgarDurableDeliveryArchiveStatusError);
+        State.secEdgarDurableDeliveryArchiveStatusInput = secEdgarDurableDeliveryArchiveStatusInputValues();
+        State.secEdgarDurableDeliveryArchiveStatusError = null;
+        if (hadError) {
+            renderSecEdgarDurableDeliveryArchiveStatusPanel();
+        } else {
+            updateSecEdgarDurableDeliveryArchiveStatusControls();
         }
     }
 });
