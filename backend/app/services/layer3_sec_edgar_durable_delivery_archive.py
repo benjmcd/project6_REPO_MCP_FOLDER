@@ -26,6 +26,8 @@ STATUS_SCHEMA_ID = "layer3.sec_edgar_durable_delivery_archive_status.v1"
 SCHEMA_VERSION = 1
 ARCHIVE_MODE = "sec_edgar_durable_delivery_archive_v1"
 OPERATOR_DECISION = "archive_sec_edgar_operator_product_surface_delivery_package"
+ARCHIVE_STATUS_SURFACE_MODE = "sec_edgar_durable_delivery_archive_status_surface_v1"
+ARCHIVE_STATUS_RESPONSE_AUTHORITY = "sec_edgar_durable_delivery_archive_receipt_and_manifest_readiness"
 READY_STATE = "sec_edgar_durable_delivery_archive_ready"
 BLOCKED_STATE = "sec_edgar_durable_delivery_archive_blocked"
 RECEIPT_PREFIX = "sec-edgar-durable-delivery-archive"
@@ -87,6 +89,20 @@ ARCHIVE_ROLES = (
     "surface_rollup",
     "diagnostics_loss_report",
     "redaction_manifest",
+)
+ARCHIVE_STATUS_DOWNSTREAM_UNAVAILABLE = (
+    "delivery_file_response",
+    "provider_object_write",
+    "connector_dispatch",
+    "internal_webhook_dispatch",
+    "frontend_durable_authority",
+    "browser_storage_authority",
+    "rag_vector_model_runtime",
+    "package_mutation",
+    "sec_network_fetch",
+    "parser_rerun",
+    "html_inline_xbrl_reparse_or_rematerialization",
+    "cross_company_comparability_normalization",
 )
 _LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 _ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
@@ -229,6 +245,7 @@ def inspect_sec_edgar_durable_delivery_archive_status(
         request_id=f"sec-edgar-durable-delivery-archive-status-{receipt['sec_edgar_durable_delivery_archive_receipt_hash'][:12]}",
         schema_id=STATUS_SCHEMA_ID,
         idempotent_replay=False,
+        include_status_surface=True,
     )
 
 
@@ -492,7 +509,9 @@ def _response_from_receipt(
     request_id: str,
     schema_id: str,
     idempotent_replay: bool,
+    include_status_surface: bool = False,
 ) -> dict[str, Any]:
+    write_performed = not idempotent_replay and not include_status_surface
     response = {
         **dict(receipt),
         "schema_id": schema_id,
@@ -501,8 +520,8 @@ def _response_from_receipt(
         "status": "ready",
         "cache": {
             "idempotent_replay": idempotent_replay,
-            "archive_receipt_write_performed": not idempotent_replay,
-            "archive_manifest_write_performed": not idempotent_replay,
+            "archive_receipt_write_performed": write_performed,
+            "archive_manifest_write_performed": write_performed,
             "network_request_made_by_archive": False,
             "parser_rerun_performed_by_archive": False,
             "package_mutation_performed_by_archive": False,
@@ -512,6 +531,22 @@ def _response_from_receipt(
         },
         "next_allowed_actions": ["inspect_sec_edgar_durable_delivery_archive_status"],
     }
+    if include_status_surface:
+        status_surface = _archive_status_surface(receipt)
+        response.update(
+            {
+                "status_surface_mode": ARCHIVE_STATUS_SURFACE_MODE,
+                "response_authority": ARCHIVE_STATUS_RESPONSE_AUTHORITY,
+                "read_only_status_surface": True,
+                "archive_status_surface_hash": stable_hash(status_surface),
+                "archive_status_surface": status_surface,
+                "downstream_unavailable": list(ARCHIVE_STATUS_DOWNSTREAM_UNAVAILABLE),
+                "next_allowed_actions": [
+                    "inspect_sec_edgar_durable_delivery_archive_status",
+                    "review_sec_edgar_durable_delivery_archive_manifest_readiness",
+                ],
+            }
+        )
     if _contains_forbidden_output_ref(response):
         _blocked(
             "sec_edgar_durable_delivery_archive_response_raw_authority_exposed",
@@ -519,6 +554,141 @@ def _response_from_receipt(
             http_status=409,
         )
     return response
+
+
+def _archive_status_surface(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    archive_manifest = _read_archive_manifest_for_status(receipt)
+    source_authority_chain = archive_manifest.get("source_authority_chain") or {}
+    archive_order = archive_manifest.get("archive_order") or {}
+    product_view_manifest = archive_manifest.get("product_view_manifest") or {}
+    redaction_manifest = archive_manifest.get("redaction_manifest") or {}
+    non_admissions = archive_manifest.get("non_admissions") or {}
+    company_form_matrix = product_view_manifest.get("company_form_matrix") or {}
+    status_surface = {
+        "schema_id": "layer3.sec_edgar_durable_delivery_archive_status_surface.v1",
+        "schema_version": SCHEMA_VERSION,
+        "status_surface_mode": ARCHIVE_STATUS_SURFACE_MODE,
+        "response_authority": ARCHIVE_STATUS_RESPONSE_AUTHORITY,
+        "read_only_status_surface": True,
+        "server_receipt_projection_only": True,
+        "archive_receipt_available": True,
+        "archive_manifest_available": True,
+        "archive_manifest_readiness": {
+            "archive_manifest_ready": True,
+            "archive_manifest_file_backed": True,
+            "archive_manifest_hash_verified": stable_hash(archive_manifest) == receipt.get("archive_manifest_hash"),
+            "archive_order_hash_verified": stable_hash(archive_order) == receipt.get("archive_order_hash"),
+            "source_authority_chain_hash_verified": stable_hash(source_authority_chain)
+            == receipt.get("source_authority_chain_hash"),
+            "redaction_manifest_hash_verified": stable_hash(redaction_manifest)
+            == receipt.get("redaction_manifest_hash"),
+        },
+        "authority_chain_status": {
+            "operator_product_surface_receipt_hash": receipt.get("operator_product_surface_receipt_hash"),
+            "delivery_status_provenance_receipt_hash": receipt.get("delivery_status_provenance_receipt_hash"),
+            "operator_inspection_receipt_hash": receipt.get("operator_inspection_receipt_hash"),
+            "validation_receipt_hash": receipt.get("validation_receipt_hash"),
+            "connector_receipt_hash": receipt.get("connector_receipt_hash"),
+            "delivery_status_record_count": len(source_authority_chain.get("delivery_status_record_hashes") or []),
+            "operator_inspection_record_count": len(
+                source_authority_chain.get("operator_inspection_record_hashes") or []
+            ),
+            "validation_record_count": len(source_authority_chain.get("validation_record_hashes") or []),
+        },
+        "manifest_order_status": {
+            "product_view_order": archive_order.get("product_view_order") or [],
+            "company_form_matrix_record_order": archive_order.get("company_form_matrix_record_order") or [],
+            "delivery_status_record_order": archive_order.get("delivery_status_record_order") or [],
+            "operator_inspection_record_order": archive_order.get("operator_inspection_record_order") or [],
+            "validation_record_order": archive_order.get("validation_record_order") or [],
+        },
+        "product_view_status": {
+            "product_view_count": len(product_view_manifest),
+            "company_form_matrix_record_count": len(company_form_matrix.get("records") or []),
+            "semantic_profile_section_available": "semantic_profile" in product_view_manifest,
+            "statement_role_quality_profile_section_available": "statement_role_quality_profile"
+            in product_view_manifest,
+            "period_unit_context_dimension_profile_section_available": "period_unit_context_dimension_profile"
+            in product_view_manifest,
+            "extension_taxonomy_retention_profile_section_available": "extension_taxonomy_retention_profile"
+            in product_view_manifest,
+            "standard_concept_mapping_profile_section_available": "standard_concept_mapping_profile"
+            in product_view_manifest,
+            "fact_deduplication_conflict_diagnostics_section_available": (
+                "fact_deduplication_conflict_diagnostics" in product_view_manifest
+            ),
+            "cross_company_comparability_readiness_audit_section_available": (
+                "cross_company_comparability_readiness_audit" in product_view_manifest
+            ),
+        },
+        "redaction_status": {
+            "redaction_policy_id": receipt.get("redaction_policy_id"),
+            "redacted_field_count": len(redaction_manifest.get("redacted_fields") or []),
+            "hash_only_field_count": len(redaction_manifest.get("hash_only_fields") or []),
+            "raw_url_exposed": False,
+            "raw_local_path_exposed": False,
+            "artifact_bytes_exposed": False,
+            "raw_fact_values_exposed": False,
+        },
+        "non_admissions": dict(non_admissions),
+        "downstream_unavailable": list(ARCHIVE_STATUS_DOWNSTREAM_UNAVAILABLE),
+        "next_allowed_actions": [
+            "inspect_sec_edgar_durable_delivery_archive_status",
+            "review_sec_edgar_durable_delivery_archive_manifest_readiness",
+        ],
+    }
+    if not all(status_surface["archive_manifest_readiness"].values()):
+        _blocked(
+            "sec_edgar_durable_delivery_archive_status_surface_hash_mismatch",
+            "SEC EDGAR durable delivery archive status surface could not verify archive manifest readiness.",
+            http_status=409,
+        )
+    if _contains_forbidden_output_ref(status_surface):
+        _blocked(
+            "sec_edgar_durable_delivery_archive_status_surface_raw_authority_exposed",
+            "SEC EDGAR durable delivery archive status surface would expose raw authority.",
+            http_status=409,
+        )
+    return status_surface
+
+
+def _read_archive_manifest_for_status(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    receipt_id = str(receipt.get("sec_edgar_durable_delivery_archive_receipt_id") or "")
+    path = _archive_manifest_path(receipt_id)
+    if not path.exists():
+        _blocked(
+            "sec_edgar_durable_delivery_archive_status_surface_manifest_missing",
+            "SEC EDGAR durable delivery archive status surface requires the stored archive manifest.",
+            http_status=404,
+        )
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        _blocked(
+            "sec_edgar_durable_delivery_archive_status_surface_manifest_unreadable",
+            "SEC EDGAR durable delivery archive status surface could not read the archive manifest.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
+    if not isinstance(manifest, dict):
+        _blocked(
+            "sec_edgar_durable_delivery_archive_status_surface_manifest_invalid",
+            "SEC EDGAR durable delivery archive status surface found an invalid archive manifest.",
+            http_status=409,
+        )
+    if stable_hash(manifest) != receipt.get("archive_manifest_hash"):
+        _blocked(
+            "sec_edgar_durable_delivery_archive_status_surface_manifest_hash_mismatch",
+            "SEC EDGAR durable delivery archive status surface found a stale or mismatched archive manifest.",
+            http_status=409,
+        )
+    if _contains_forbidden_output_ref(manifest):
+        _blocked(
+            "sec_edgar_durable_delivery_archive_status_surface_manifest_raw_authority_exposed",
+            "SEC EDGAR durable delivery archive status surface found raw authority in the archive manifest.",
+            http_status=409,
+        )
+    return manifest
 
 
 def _blocked_response(
