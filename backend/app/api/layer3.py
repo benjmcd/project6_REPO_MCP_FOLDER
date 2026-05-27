@@ -44,6 +44,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit,
     layer3_sec_edgar_html_inline_xbrl_material_bridge,
     layer3_sec_edgar_html_inline_xbrl_parser,
+    layer3_sec_edgar_durable_delivery_archive,
     layer3_sec_edgar_live_downstream_proof,
     layer3_sec_edgar_live_downstream_status,
     layer3_sec_edgar_live_repeatability_trial,
@@ -589,6 +590,20 @@ class Layer3SecEdgarOperatorProductSurfaceRequest(BaseModel):
     operator_decision: Literal["render_sec_edgar_operator_product_surface"]
     sec_edgar_operator_inspection_receipt_id: str = Field(min_length=1)
     sec_edgar_operator_inspection_receipt_hash: str = Field(min_length=64, max_length=64)
+    operator_confirmation: bool
+    actor: str | None = None
+
+
+class Layer3SecEdgarDurableDeliveryArchiveRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str = Field(min_length=1)
+    archive_mode: Literal["sec_edgar_durable_delivery_archive_v1"]
+    operator_decision: Literal["archive_sec_edgar_operator_product_surface_delivery_package"]
+    sec_edgar_operator_product_surface_receipt_id: str = Field(min_length=1)
+    sec_edgar_operator_product_surface_receipt_hash: str = Field(min_length=64, max_length=64)
     operator_confirmation: bool
     actor: str | None = None
 
@@ -8233,6 +8248,32 @@ class Layer3SecEdgarOperatorProductSurfaceResponse(Layer3BaseResponse):
     next_allowed_actions: list[str] | None = None
 
 
+class Layer3SecEdgarDurableDeliveryArchiveResponse(Layer3BaseResponse):
+    archive_mode: str
+    runtime_version: str
+    operator_decision: str
+    durable_delivery_archive_state: str
+    sec_edgar_durable_delivery_archive_receipt_id: str | None = None
+    sec_edgar_durable_delivery_archive_receipt_hash: str | None = None
+    sec_edgar_durable_delivery_archive_receipt_ref: str | None = None
+    archive_manifest_hash: str | None = None
+    archive_order_hash: str | None = None
+    source_authority_chain_hash: str | None = None
+    redaction_manifest_hash: str | None = None
+    archive_manifest: dict[str, Any] | None = None
+    operator_product_surface_receipt_id: str | None = None
+    operator_product_surface_receipt_hash: str | None = None
+    delivery_status_provenance_receipt_hash: str | None = None
+    operator_inspection_receipt_hash: str | None = None
+    validation_receipt_hash: str | None = None
+    connector_receipt_hash: str | None = None
+    cache: dict[str, Any] | None = None
+    blocked_reasons: list[dict[str, Any]] | None = None
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str] | None = None
+
+
 class Layer3SecEdgarHtmlInlineXbrlSourceFamilyParserResponse(Layer3BaseResponse):
     parser_mode: str
     operator_decision: str
@@ -15831,6 +15872,38 @@ def get_sec_edgar_operator_product_surface_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_operator_product_surface.inspect_sec_edgar_operator_product_surface_status(
             sec_edgar_operator_product_surface_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+    response_model=Layer3SecEdgarDurableDeliveryArchiveResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_durable_delivery_archive(
+    payload: Layer3SecEdgarDurableDeliveryArchiveRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_durable_delivery_archive.archive_sec_edgar_durable_delivery(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/real-company-corpus/durable-delivery/archive/status/{sec_edgar_durable_delivery_archive_receipt_id}",
+    response_model=Layer3SecEdgarDurableDeliveryArchiveResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_durable_delivery_archive_status(
+    sec_edgar_durable_delivery_archive_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_durable_delivery_archive.inspect_sec_edgar_durable_delivery_archive_status(
+            sec_edgar_durable_delivery_archive_receipt_id,
         )
     )
 

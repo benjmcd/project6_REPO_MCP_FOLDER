@@ -64,7 +64,7 @@ SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_INPUT_AUTHORITY = (
     "sec_edgar_operator_product_surface_receipt_id",
     "sec_edgar_operator_product_surface_receipt_hash",
 )
-SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = False
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = True
 
 ALLOWED_FIELDS = {
     "schema_id",
