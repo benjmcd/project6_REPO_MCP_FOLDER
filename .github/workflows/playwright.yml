@@ -133,7 +133,12 @@ jobs:
     - name: Install Playwright Browsers
       run: |
         SECONDS=0
-        timeout 600s npx playwright install --only-shell chromium
+        if command -v google-chrome >/dev/null 2>&1; then
+          google-chrome --version
+          echo "PLAYWRIGHT_USE_SYSTEM_CHROME=1" >> "$GITHUB_ENV"
+        else
+          timeout 600s npx playwright install --only-shell chromium
+        fi
         echo "playwright_browser_install_seconds=$SECONDS"
     - name: Run Playwright tests
       env:

@@ -4,6 +4,7 @@ import { defineConfig, devices } from '@playwright/test';
 const SERVER_PORT = 8031;
 const PYTHON = process.env.PLAYWRIGHT_PYTHON
   || (process.platform === 'win32' ? 'python' : 'python3');
+const USE_SYSTEM_CHROME = process.env.PLAYWRIGHT_USE_SYSTEM_CHROME === '1';
 
 /**
  * Read environment variables from file.
@@ -40,7 +41,10 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(USE_SYSTEM_CHROME ? { channel: 'chrome' } : {}),
+      },
     },
   ],
 
