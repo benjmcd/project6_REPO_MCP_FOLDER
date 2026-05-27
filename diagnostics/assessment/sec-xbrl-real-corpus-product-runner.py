@@ -486,12 +486,24 @@ def _criterion(name: str, passed: bool, evidence: Mapping[str, Any], blocked_rea
 
 def _live_preflight(*, live: bool, user_agent: str) -> dict[str, Any]:
     missing_env = [name for name in REQUIRED_ARELLE_ENV if not os.environ.get(name)]
+    taxonomy = _taxonomy_package_preflight()
+    cache = _cache_dir_preflight()
+    arelle_python = _arelle_python_preflight()
+    arelle_ready = (
+        not missing_env
+        and arelle_python["configured"]
+        and taxonomy["configured"]
+        and cache["configured"]
+    )
     return {
-        "state": "passed" if live and user_agent.strip() and not missing_env else "blocked",
+        "state": "passed" if live and user_agent.strip() and arelle_ready else "blocked",
         "live_requested": live,
         "user_agent_configured": bool(user_agent.strip()),
-        "required_arelle_env_configured": not missing_env,
+        "required_arelle_env_configured": arelle_ready,
         "missing_env_names": missing_env,
+        "arelle_python": arelle_python,
+        "taxonomy_packages": taxonomy,
+        "arelle_cache": cache,
         "sec_rate_limit_per_second": 1,
         "live_network_default_changed": False,
         "arelle_cutover_default_changed": False,
@@ -499,8 +511,66 @@ def _live_preflight(*, live: bool, user_agent: str) -> dict[str, Any]:
             *([] if live else ["live_execution_not_requested"]),
             *([] if user_agent.strip() else ["sec_user_agent_not_configured"]),
             *([] if not missing_env else ["arelle_environment_not_configured"]),
+            *([] if arelle_python["configured"] else ["arelle_python_unavailable"]),
+            *([] if taxonomy["configured"] else ["taxonomy_package_files_unavailable"]),
+            *([] if cache["configured"] else ["arelle_cache_dir_unavailable"]),
         ],
     }
+
+
+def _arelle_python_preflight() -> dict[str, Any]:
+    raw = str(os.environ.get("SEC_XBRL_ARELLE_PYTHON") or os.environ.get("ARELLE_PYTHON") or "").strip()
+    path = Path(raw).resolve(strict=False) if raw else None
+    return {
+        "configured": bool(path and path.exists() and path.is_file()),
+        "path_redacted": bool(raw),
+    }
+
+
+def _taxonomy_package_preflight() -> dict[str, Any]:
+    raw = str(os.environ.get("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES") or "").strip()
+    entries = [item.strip() for item in raw.split(os.pathsep) if item.strip()]
+    valid_count = 0
+    invalid_reasons: Counter[str] = Counter()
+    for item in entries:
+        path = Path(item).resolve(strict=False)
+        if not path.exists():
+            invalid_reasons["missing"] += 1
+        elif not path.is_file():
+            invalid_reasons["not_file"] += 1
+        elif _path_inside_repo_or_onedrive(path):
+            invalid_reasons["inside_repo_or_onedrive"] += 1
+        else:
+            valid_count += 1
+    return {
+        "configured": bool(valid_count and not invalid_reasons),
+        "entry_count": len(entries),
+        "valid_file_count": valid_count,
+        "invalid_entry_count": sum(invalid_reasons.values()),
+        "invalid_reasons": dict(sorted(invalid_reasons.items())),
+        "paths_redacted": True,
+    }
+
+
+def _cache_dir_preflight() -> dict[str, Any]:
+    raw = str(os.environ.get("SEC_XBRL_ARELLE_CACHE_DIR") or "").strip()
+    path = Path(raw).resolve(strict=False) if raw else None
+    inside_restricted = bool(path and _path_inside_repo_or_onedrive(path))
+    return {
+        "configured": bool(path and not inside_restricted),
+        "path_redacted": bool(raw),
+        "inside_repo_or_onedrive": inside_restricted,
+    }
+
+
+def _path_inside_repo_or_onedrive(path: Path) -> bool:
+    resolved = path.resolve(strict=False)
+    repo = ROOT.resolve(strict=False)
+    try:
+        resolved.relative_to(repo)
+        return True
+    except ValueError:
+        return any(part.lower() == "onedrive" for part in resolved.parts)
 
 
 def _matrix_chunk_projection() -> list[dict[str, Any]]:
