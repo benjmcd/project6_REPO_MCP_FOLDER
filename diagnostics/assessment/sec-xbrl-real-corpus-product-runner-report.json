@@ -1,0 +1,233 @@
+{
+  "blocking_reasons": [
+    {
+      "criterion": "live_preflight",
+      "evidence": {
+        "arelle_cutover_default_changed": false,
+        "blocked_reasons": [
+          "arelle_environment_not_configured"
+        ],
+        "live_network_default_changed": false,
+        "live_requested": true,
+        "missing_env_names": [
+          "SEC_XBRL_ARELLE_PYTHON",
+          "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
+          "SEC_XBRL_ARELLE_CACHE_DIR"
+        ],
+        "required_arelle_env_configured": false,
+        "sec_rate_limit_per_second": 1,
+        "state": "blocked",
+        "user_agent_configured": true
+      },
+      "reason": "real_corpus_product_path_live_preflight_not_satisfied"
+    },
+    {
+      "criterion": "broader_real_product_path_corpus",
+      "evidence": {
+        "forms": {},
+        "real_filing_count": 0,
+        "required_forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ],
+        "required_real_filing_count": 12
+      },
+      "reason": "broader_real_product_path_required_corpus_not_proven"
+    },
+    {
+      "criterion": "arelle_sidecar_selected_for_supported_records",
+      "evidence": {
+        "records_with_arelle_sidecar_output": 0,
+        "records_with_selected_fact_authority_equal_to_sidecar": 0,
+        "supported_record_count": 0
+      },
+      "reason": "arelle_sidecar_not_proven_as_selected_authority_for_all_supported_records"
+    },
+    {
+      "criterion": "product_path_readiness",
+      "evidence": {
+        "delivery_ready_matrix_chunk_count": 0,
+        "durable_delivery_archive_ready_matrix_chunk_count": 0,
+        "matrix_chunk_count": 0,
+        "operator_inspection_ready_matrix_chunk_count": 0,
+        "operator_product_surface_ready_matrix_chunk_count": 0,
+        "ready_matrix_chunk_count": 0
+      },
+      "reason": "real_corpus_product_path_not_ready_across_all_matrix_chunks"
+    }
+  ],
+  "criteria": [
+    {
+      "blocked_reason": "real_corpus_product_path_live_preflight_not_satisfied",
+      "criterion": "live_preflight",
+      "evidence": {
+        "arelle_cutover_default_changed": false,
+        "blocked_reasons": [
+          "arelle_environment_not_configured"
+        ],
+        "live_network_default_changed": false,
+        "live_requested": true,
+        "missing_env_names": [
+          "SEC_XBRL_ARELLE_PYTHON",
+          "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
+          "SEC_XBRL_ARELLE_CACHE_DIR"
+        ],
+        "required_arelle_env_configured": false,
+        "sec_rate_limit_per_second": 1,
+        "state": "blocked",
+        "user_agent_configured": true
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "broader_real_product_path_required_corpus_not_proven",
+      "criterion": "broader_real_product_path_corpus",
+      "evidence": {
+        "forms": {},
+        "real_filing_count": 0,
+        "required_forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ],
+        "required_real_filing_count": 12
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "arelle_sidecar_not_proven_as_selected_authority_for_all_supported_records",
+      "criterion": "arelle_sidecar_selected_for_supported_records",
+      "evidence": {
+        "records_with_arelle_sidecar_output": 0,
+        "records_with_selected_fact_authority_equal_to_sidecar": 0,
+        "supported_record_count": 0
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "real_corpus_product_path_not_ready_across_all_matrix_chunks",
+      "criterion": "product_path_readiness",
+      "evidence": {
+        "delivery_ready_matrix_chunk_count": 0,
+        "durable_delivery_archive_ready_matrix_chunk_count": 0,
+        "matrix_chunk_count": 0,
+        "operator_inspection_ready_matrix_chunk_count": 0,
+        "operator_product_surface_ready_matrix_chunk_count": 0,
+        "ready_matrix_chunk_count": 0
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_and_non_admissions",
+      "evidence": {
+        "candidate_b_sec_routing_performed": false,
+        "cross_company_comparability_claimed": false,
+        "final_financial_statement_semantics_claimed": false,
+        "operator_surface_values_exposed": false
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "real_corpus_product_path_blocked",
+  "diagnostic_request_namespace_hash": "c8e58c12982ac6d48e2dcd08",
+  "fake_sec_client_used": false,
+  "headline": "Broader real-corpus SEC product path remains blocked: real_corpus_product_path_live_preflight_not_satisfied, broader_real_product_path_required_corpus_not_proven, arelle_sidecar_not_proven_as_selected_authority_for_all_supported_records.",
+  "live_sec_network_used": false,
+  "matrix_chunks": [
+    {
+      "issuer_count": 4,
+      "matrix_label": "core",
+      "matrix_ref_hash": "4a848ad29df6c958d8ee4347",
+      "raw_identity_redacted": true
+    },
+    {
+      "issuer_count": 4,
+      "matrix_label": "breadth",
+      "matrix_ref_hash": "f0daf67b3e3f8cf389656efe",
+      "raw_identity_redacted": true
+    },
+    {
+      "issuer_count": 4,
+      "matrix_label": "expansion",
+      "matrix_ref_hash": "f187ea4633533cbe39294ce7",
+      "raw_identity_redacted": true
+    }
+  ],
+  "next_slice": "sec_edgar_real_corpus_product_path_runner_live_execution_v1",
+  "non_goals_preserved": {
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "gate_b_product_package_ui_redesign_performed": false,
+    "new_layer3_source_shape_created": false,
+    "operator_value_reveal_enabled": false,
+    "rag_vector_model_provider_auth_behavior_added": false,
+    "runtime_default_changed": false
+  },
+  "per_matrix": [],
+  "preflight": {
+    "arelle_cutover_default_changed": false,
+    "blocked_reasons": [
+      "arelle_environment_not_configured"
+    ],
+    "live_network_default_changed": false,
+    "live_requested": true,
+    "missing_env_names": [
+      "SEC_XBRL_ARELLE_PYTHON",
+      "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
+      "SEC_XBRL_ARELLE_CACHE_DIR"
+    ],
+    "required_arelle_env_configured": false,
+    "sec_rate_limit_per_second": 1,
+    "state": "blocked",
+    "user_agent_configured": true
+  },
+  "redaction": {
+    "identity_hash_only": true,
+    "local_storage_roots_committed": false,
+    "raw_accessions_committed": false,
+    "raw_sec_urls_committed": false,
+    "raw_tickers_committed": false,
+    "raw_values_committed": false
+  },
+  "schema_id": "diagnostics.sec_xbrl_real_corpus_product_runner.v1",
+  "storage_dir_marker": null,
+  "storage_dir_paths_redacted": true,
+  "summary": {
+    "blocked_matrix_chunk_count": 0,
+    "blocked_or_degraded_record_count": 0,
+    "delivery_ready_matrix_chunk_count": 0,
+    "durable_delivery_archive_ready_matrix_chunk_count": 0,
+    "forms": {},
+    "issuer_hash_count_sum": 0,
+    "matrix_chunk_count": 0,
+    "operator_inspection_ready_matrix_chunk_count": 0,
+    "operator_product_surface_ready_matrix_chunk_count": 0,
+    "operator_surface_values_exposed": false,
+    "ready_matrix_chunk_count": 0,
+    "real_filing_count": 0,
+    "records_with_arelle_sidecar_output": 0,
+    "records_with_handoff_export_prepare": 0,
+    "records_with_selected_fact_authority_equal_to_sidecar": 0,
+    "required_forms": [
+      "10-K",
+      "10-Q",
+      "20-F",
+      "40-F",
+      "6-K",
+      "8-K"
+    ],
+    "required_forms_present": false,
+    "resolved_fact_count": 0,
+    "supported_record_count": 0
+  },
+  "target": "sec_edgar_real_corpus_product_path_runner_v1"
+}
