@@ -133,7 +133,7 @@ jobs:
     - name: Install Playwright Browsers
       run: |
         SECONDS=0
-        timeout 600s npx playwright install chromium
+        timeout 240s npx playwright install --only-shell chromium
         echo "playwright_browser_install_seconds=$SECONDS"
     - name: Run Playwright tests
       env:
