@@ -1,0 +1,112 @@
+{
+  "candidate_b_sec_routing_performed": false,
+  "cross_company_comparability_claimed": false,
+  "final_financial_statement_semantics_claimed": false,
+  "headline": "UNVERIFIED: current parser fact coverage cannot be graded from this environment because only synthetic/minimal iXBRL fixtures and no retained real filing bytes were found.",
+  "identity_redaction": {
+    "fixture_identity_hash_only": true,
+    "raw_tickers_urls_paths_storage_roots_committed": false
+  },
+  "inventory_summary": {
+    "committed_ixbrl_candidate_count": 3,
+    "real_filing_candidate_count": 0,
+    "retained_artifact_byte_status": "absent_empty_storage_dir",
+    "retained_artifacts_observed": false,
+    "storage_dir_file_count": 0,
+    "storage_dir_gitignored": true,
+    "storage_dir_observed": true,
+    "synthetic_stub_candidate_count": 3
+  },
+  "oracle_status": {
+    "gold_arelle": {
+      "confidence": "available_no_real_input",
+      "oracle_used": false,
+      "reason": "Contained Arelle invocation succeeded, but no real retained iXBRL filing input existed for gold counts.",
+      "return_code": 0,
+      "version_output_hash": "c84fe512c3a739c2a7eb749d"
+    },
+    "primary_companyfacts": {
+      "confidence": "unverified",
+      "oracle_used": false,
+      "reason": "No retained real filing bytes or real filing fixture identity existed in this environment."
+    },
+    "sanity_shadow_parse": {
+      "confidence": "low_lower_bound",
+      "oracle_used": true,
+      "reason": "Counts fact-bearing inline XBRL elements by tag shape only and shares blind spots with the regex parser under test."
+    }
+  },
+  "parser_expansion_performed": false,
+  "per_fixture": [
+    {
+      "confidence": "inconclusive",
+      "context_element_count": 0,
+      "continuation_element_count": 0,
+      "continued_at_reference_count": 0,
+      "current_parser_fact_count": 1,
+      "fixture_class": "synthetic_stub",
+      "fixture_hash": "371930594e0cc23415822fbc",
+      "form": "10-K",
+      "hidden_fact_bearing_count": 0,
+      "issuer_by_hash": "d38621b5810ea8081cfb1979",
+      "missed_categories": [
+        "none_observed_in_fixture"
+      ],
+      "missed_count": null,
+      "oracle_fact_count": null,
+      "oracle_used": "none_real_oracle_unavailable_synthetic_fixture",
+      "shadow_lower_bound_fact_count": 1,
+      "source_kind": "committed_test_source",
+      "text_segment_cap_impact_assessed": "not_applicable_to_fact_count_measurement",
+      "unit_element_count": 0
+    },
+    {
+      "confidence": "inconclusive",
+      "context_element_count": 0,
+      "continuation_element_count": 0,
+      "continued_at_reference_count": 0,
+      "current_parser_fact_count": 1,
+      "fixture_class": "synthetic_stub",
+      "fixture_hash": "371930594e0cc23415822fbc",
+      "form": "10-K",
+      "hidden_fact_bearing_count": 0,
+      "issuer_by_hash": "d38621b5810ea8081cfb1979",
+      "missed_categories": [
+        "none_observed_in_fixture"
+      ],
+      "missed_count": null,
+      "oracle_fact_count": null,
+      "oracle_used": "none_real_oracle_unavailable_synthetic_fixture",
+      "shadow_lower_bound_fact_count": 1,
+      "source_kind": "committed_test_source",
+      "text_segment_cap_impact_assessed": "not_applicable_to_fact_count_measurement",
+      "unit_element_count": 0
+    },
+    {
+      "confidence": "inconclusive",
+      "context_element_count": 0,
+      "continuation_element_count": 0,
+      "continued_at_reference_count": 0,
+      "current_parser_fact_count": 1,
+      "fixture_class": "synthetic_stub",
+      "fixture_hash": "51e402bba322811d84231722",
+      "form": "unknown",
+      "hidden_fact_bearing_count": 0,
+      "issuer_by_hash": "0d96764b5deba880eff9c684",
+      "missed_categories": [
+        "none_observed_in_fixture"
+      ],
+      "missed_count": null,
+      "oracle_fact_count": null,
+      "oracle_used": "none_real_oracle_unavailable_synthetic_fixture",
+      "shadow_lower_bound_fact_count": 1,
+      "source_kind": "committed_test_source",
+      "text_segment_cap_impact_assessed": "not_applicable_to_fact_count_measurement",
+      "unit_element_count": 0
+    }
+  ],
+  "purpose": "Measure whether Strategy A coverage/fact counts are trustworthy without mutating runtime authority.",
+  "runtime_authority_created": false,
+  "schema_id": "diagnostics.sec_xbrl_measure.v1",
+  "value_unredaction_performed": false
+}
