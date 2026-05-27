@@ -1,0 +1,162 @@
+{
+  "blocking_reasons": [
+    {
+      "criterion": "internal_value_materialization_full_corpus",
+      "evidence": {
+        "effective_value_empty_count": 9,
+        "effective_value_nonempty_count": 10863,
+        "expected_real_filing_count": 12,
+        "expected_sidecar_resolved_fact_count": 18156,
+        "real_filing_count": 8,
+        "sidecar_resolved_fact_count": 10872,
+        "verdict": "trustworthy_for_gated_cutover"
+      },
+      "reason": "default_on_gate_internal_values_not_proven_on_expanded_corpus"
+    },
+    {
+      "criterion": "companyfacts_effective_value_correctness",
+      "evidence": {
+        "compared_count": 1028,
+        "forms_with_value_oracle": [
+          "10-K",
+          "40-F"
+        ],
+        "match_count": 1022,
+        "match_rate": 0.9942,
+        "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
+        "required_forms_with_value_oracle": [
+          "10-K",
+          "10-Q"
+        ]
+      },
+      "reason": "default_on_gate_companyfacts_value_correctness_incomplete"
+    }
+  ],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "corpus_breadth",
+      "evidence": {
+        "forms": {
+          "10-K": 4,
+          "10-Q": 1,
+          "20-F": 1,
+          "40-F": 1,
+          "6-K": 2,
+          "8-K": 3
+        },
+        "issuer_hash_count": 6,
+        "real_filing_count": 12,
+        "required_forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ]
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "independent_count_and_dts_completeness",
+      "evidence": {
+        "arelle_resolved_fact_count": 18156,
+        "concept_unresolved_from_dts_count": 0,
+        "independent_count_all_reconciled": true,
+        "independent_inline_fact_count": 18156,
+        "real_filing_count": 12,
+        "taxonomy_package_loaded_all_ready_rows": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "bridge_cutover_parity",
+      "evidence": {
+        "blocked_count": 0,
+        "bridge_fact_count": 18156,
+        "inline_bridge_ready_count": 10,
+        "real_filing_count": 12,
+        "required_typed_fields_present_all_ready_rows": true,
+        "sidecar_resolved_fact_count": 18156,
+        "verdict": "trustworthy_for_gated_cutover",
+        "zero_inline_not_applicable_count": 2
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "default_on_gate_internal_values_not_proven_on_expanded_corpus",
+      "criterion": "internal_value_materialization_full_corpus",
+      "evidence": {
+        "effective_value_empty_count": 9,
+        "effective_value_nonempty_count": 10863,
+        "expected_real_filing_count": 12,
+        "expected_sidecar_resolved_fact_count": 18156,
+        "real_filing_count": 8,
+        "sidecar_resolved_fact_count": 10872,
+        "verdict": "trustworthy_for_gated_cutover"
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "default_on_gate_companyfacts_value_correctness_incomplete",
+      "criterion": "companyfacts_effective_value_correctness",
+      "evidence": {
+        "compared_count": 1028,
+        "forms_with_value_oracle": [
+          "10-K",
+          "40-F"
+        ],
+        "match_count": 1022,
+        "match_rate": 0.9942,
+        "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
+        "required_forms_with_value_oracle": [
+          "10-K",
+          "10-Q"
+        ]
+      },
+      "state": "blocked"
+    }
+  ],
+  "decision": "default_on_not_admitted",
+  "headline": "Default-on Arelle cutover is not admitted by the current corpus gate: default_on_gate_internal_values_not_proven_on_expanded_corpus, default_on_gate_companyfacts_value_correctness_incomplete.",
+  "next_slice": "sec_edgar_arelle_expanded_value_materialization_and_companyfacts_gate_v1",
+  "non_goals_preserved": {
+    "bridge_gate_b_product_package_ui_mutated": false,
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "rag_vector_model_provider_auth_behavior_added": false,
+    "raw_identity_urls_paths_storage_roots_committed": false,
+    "runtime_default_changed": false
+  },
+  "ready_for_default_on": false,
+  "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
+  "source_reports": {
+    "bridge": "diagnostics/assessment/sec-xbrl-bridge-cutover-report.json",
+    "completeness": "diagnostics/assessment/sec-xbrl-completeness-report.json",
+    "sidecar": "diagnostics/assessment/sec-xbrl-sidecar-report.json",
+    "value": "diagnostics/assessment/sec-xbrl-value-reveal-report.json",
+    "value_bridge": "diagnostics/assessment/sec-xbrl-value-reveal-bridge-report.json"
+  },
+  "summary": {
+    "arelle_resolved_fact_count": 18156,
+    "bridge_fact_count": 18156,
+    "companyfacts_value_compared_count": 1028,
+    "companyfacts_value_match_rate": 0.9942,
+    "forms": {
+      "10-K": 4,
+      "10-Q": 1,
+      "20-F": 1,
+      "40-F": 1,
+      "6-K": 2,
+      "8-K": 3
+    },
+    "issuer_hash_count": 6,
+    "real_filing_count": 12,
+    "value_bridge_fact_count": 10872
+  },
+  "target": "sec_edgar_arelle_default_on_corpus_expansion_gate_v1"
+}
