@@ -1,0 +1,53 @@
+{
+  "schema_id": "diagnostics.sec_xbrl_product_path_corpus_validation_report.v1",
+  "target": "sec_edgar_arelle_default_on_product_path_corpus_validation_v1",
+  "status": "focused_runtime_proof_passed",
+  "authority_model": {
+    "selected_fact_authority": "arelle_resolved_fact_authority_sidecar_receipt",
+    "legacy_fact_authority_retained": "regex_fact_authority_receipt",
+    "arelle_invoked_in_bridge_or_product_path": false,
+    "new_layer3_source_shape_created": false,
+    "dataset_version_reused": true
+  },
+  "corpus": {
+    "company_matrix_ref": "redacted_core_real_company_matrix_v1",
+    "filing_count": 8,
+    "forms": [
+      "10-K",
+      "10-Q",
+      "8-K",
+      "20-F",
+      "40-F",
+      "6-K"
+    ],
+    "fake_sec_client_used": true,
+    "live_sec_network_used": false,
+    "real_identity_values_redacted_in_outputs": true
+  },
+  "proof": {
+    "focused_test": "python -m pytest ./backend/tests/test_layer3_api.py::test_layer3_api_runs_sec_edgar_default_on_arelle_product_path_through_archive -q",
+    "focused_test_result": "PASS",
+    "supported_records": 8,
+    "records_with_arelle_sidecar_output": 8,
+    "records_with_selected_fact_authority_equal_to_sidecar": 8,
+    "records_with_regex_comparison_authority_retained": 8,
+    "delivery_records_with_sidecar_fact_authority_provenance": 8,
+    "operator_inspection_ready": true,
+    "operator_product_surface_ready": true,
+    "durable_delivery_archive_ready": true,
+    "operator_surface_values_exposed": false
+  },
+  "redaction": {
+    "effective_values_exposed_in_validation_delivery_operator_surface_archive": false,
+    "raw_sec_urls_exposed": false,
+    "raw_company_names_exposed": false,
+    "local_storage_roots_exposed": false
+  },
+  "non_admissions": {
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_admitted": false,
+    "candidate_b_sec_routing_performed": false,
+    "rag_model_provider_auth_added": false
+  },
+  "next_slice": "sec_edgar_default_on_broader_corpus_reliability_gate_v1"
+}
