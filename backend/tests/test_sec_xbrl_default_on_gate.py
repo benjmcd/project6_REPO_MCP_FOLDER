@@ -72,9 +72,19 @@ def _reports(tmp_path: Path, *, expanded_value_corpus: bool, include_ten_q_value
                     "real_filing_count": 12 if expanded_value_corpus else 8,
                     "sidecar_resolved_fact_count": 18156 if expanded_value_corpus else 10872,
                     "bridge_fact_count": 18156 if expanded_value_corpus else 10872,
+                    "blocked_count": 0,
+                    "bridge_matches_sidecar_all_ready_rows": True,
                     "effective_value_nonempty_count": 18140 if expanded_value_corpus else 10863,
                     "effective_value_empty_count": 16 if expanded_value_corpus else 9,
                 },
+                "per_fixture": [
+                    {"form": "10-K"},
+                    {"form": "10-Q"} if expanded_value_corpus else {"form": "10-K"},
+                    {"form": "20-F"} if expanded_value_corpus else {"form": "8-K"},
+                    {"form": "40-F"} if expanded_value_corpus else {"form": "10-K"},
+                    {"form": "6-K"} if expanded_value_corpus else {"form": "8-K"},
+                    {"form": "8-K"},
+                ],
             },
         ),
         "value": _write_json(
@@ -106,7 +116,7 @@ def test_sec_xbrl_default_on_gate_blocks_when_values_do_not_cover_expanded_corpu
         sidecar_report_path=reports["sidecar"],
         completeness_report_path=reports["completeness"],
         bridge_report_path=reports["bridge"],
-        value_report_path=reports["value"],
+        value_report_paths=[reports["value"]],
         value_bridge_report_path=reports["value_bridge"],
     )
 
@@ -127,7 +137,7 @@ def test_sec_xbrl_default_on_gate_admits_when_all_criteria_are_proven(tmp_path: 
         sidecar_report_path=reports["sidecar"],
         completeness_report_path=reports["completeness"],
         bridge_report_path=reports["bridge"],
-        value_report_path=reports["value"],
+        value_report_paths=[reports["value"]],
         value_bridge_report_path=reports["value_bridge"],
     )
 

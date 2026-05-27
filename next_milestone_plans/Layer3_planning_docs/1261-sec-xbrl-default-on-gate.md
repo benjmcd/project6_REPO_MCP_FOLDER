@@ -22,19 +22,20 @@ The default-on candidate must have all of the following current evidence:
 
 ## Current decision
 
-Current evidence does not admit default-on behavior yet.
+Current evidence admits default-on behavior as a candidate for an explicit admission review. This is not itself a default-on runtime change.
 
-The count/DTS and structural bridge evidence cover the expanded 12-filing corpus, but the value materialization and CompanyFacts effective-value correctness reports still cover the later 8-filing value corpus. That leaves the 10-Q expansion filing without effective-value correctness proof.
+The count/DTS and structural bridge evidence cover the expanded 12-filing corpus. The value materialization evidence now covers a 16-filing superset with `23,102` sidecar facts materialized through the bridge, including the 10-Q expansion filing. CompanyFacts effective-value correctness is `3,761/3,790` over the accession-scoped standard numeric intersection and includes both 10-K and 10-Q evidence.
 
 ## Required follow-up
 
-`sec_edgar_arelle_expanded_value_materialization_and_companyfacts_gate_v1`
+`sec_edgar_arelle_default_off_to_default_on_admission_review_v1`
 
 Scope:
 
-- rerun the value materialization report over the expanded corpus
-- prove bridge effective values across the same 12-filing sidecar/completeness corpus
-- prove CompanyFacts effective-value correctness includes both 10-K and 10-Q standard numeric intersections
+- review the default-on candidate evidence without changing the runtime default
+- confirm CI/local behavior remains green with Arelle absent and the flag defaulting off
+- define the exact default-on admission switch and rollback criteria
+- preserve the explicit operator-gated value reveal policy
 - preserve default-off behavior and all existing non-admissions
 
-Only after that gate passes should a default-on admission review be considered.
+Only after that review should a runtime-default change be considered.

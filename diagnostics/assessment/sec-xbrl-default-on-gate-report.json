@@ -1,37 +1,5 @@
 {
-  "blocking_reasons": [
-    {
-      "criterion": "internal_value_materialization_full_corpus",
-      "evidence": {
-        "effective_value_empty_count": 9,
-        "effective_value_nonempty_count": 10863,
-        "expected_real_filing_count": 12,
-        "expected_sidecar_resolved_fact_count": 18156,
-        "real_filing_count": 8,
-        "sidecar_resolved_fact_count": 10872,
-        "verdict": "trustworthy_for_gated_cutover"
-      },
-      "reason": "default_on_gate_internal_values_not_proven_on_expanded_corpus"
-    },
-    {
-      "criterion": "companyfacts_effective_value_correctness",
-      "evidence": {
-        "compared_count": 1028,
-        "forms_with_value_oracle": [
-          "10-K",
-          "40-F"
-        ],
-        "match_count": 1022,
-        "match_rate": 0.9942,
-        "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
-        "required_forms_with_value_oracle": [
-          "10-K",
-          "10-Q"
-        ]
-      },
-      "reason": "default_on_gate_companyfacts_value_correctness_incomplete"
-    }
-  ],
+  "blocking_reasons": [],
   "criteria": [
     {
       "blocked_reason": null,
@@ -87,42 +55,63 @@
       "state": "passed"
     },
     {
-      "blocked_reason": "default_on_gate_internal_values_not_proven_on_expanded_corpus",
+      "blocked_reason": null,
       "criterion": "internal_value_materialization_full_corpus",
       "evidence": {
-        "effective_value_empty_count": 9,
-        "effective_value_nonempty_count": 10863,
-        "expected_real_filing_count": 12,
-        "expected_sidecar_resolved_fact_count": 18156,
-        "real_filing_count": 8,
-        "sidecar_resolved_fact_count": 10872,
+        "blocked_count": 0,
+        "bridge_matches_sidecar_all_ready_rows": true,
+        "effective_value_empty_count": 24,
+        "effective_value_nonempty_count": 23078,
+        "forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ],
+        "minimum_real_filing_count": 12,
+        "minimum_sidecar_resolved_fact_count": 18156,
+        "real_filing_count": 16,
+        "required_forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ],
+        "sidecar_resolved_fact_count": 23102,
         "verdict": "trustworthy_for_gated_cutover"
       },
-      "state": "blocked"
+      "state": "passed"
     },
     {
-      "blocked_reason": "default_on_gate_companyfacts_value_correctness_incomplete",
+      "blocked_reason": null,
       "criterion": "companyfacts_effective_value_correctness",
       "evidence": {
-        "compared_count": 1028,
+        "compared_count": 3790,
         "forms_with_value_oracle": [
           "10-K",
+          "10-Q",
           "40-F"
         ],
-        "match_count": 1022,
-        "match_rate": 0.9942,
-        "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
+        "match_count": 3761,
+        "match_rate": 0.9923,
+        "oracle": [
+          "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection"
+        ],
         "required_forms_with_value_oracle": [
           "10-K",
           "10-Q"
         ]
       },
-      "state": "blocked"
+      "state": "passed"
     }
   ],
-  "decision": "default_on_not_admitted",
-  "headline": "Default-on Arelle cutover is not admitted by the current corpus gate: default_on_gate_internal_values_not_proven_on_expanded_corpus, default_on_gate_companyfacts_value_correctness_incomplete.",
-  "next_slice": "sec_edgar_arelle_expanded_value_materialization_and_companyfacts_gate_v1",
+  "decision": "default_on_admitted_candidate",
+  "headline": "Default-on Arelle cutover is admitted as a candidate by the current corpus gate.",
+  "next_slice": "sec_edgar_arelle_default_off_to_default_on_admission_review_v1",
   "non_goals_preserved": {
     "bridge_gate_b_product_package_ui_mutated": false,
     "candidate_b_sec_routing_performed": false,
@@ -132,20 +121,24 @@
     "raw_identity_urls_paths_storage_roots_committed": false,
     "runtime_default_changed": false
   },
-  "ready_for_default_on": false,
+  "ready_for_default_on": true,
   "schema_id": "diagnostics.sec_xbrl_default_on_corpus_expansion_gate.v1",
   "source_reports": {
     "bridge": "diagnostics/assessment/sec-xbrl-bridge-cutover-report.json",
     "completeness": "diagnostics/assessment/sec-xbrl-completeness-report.json",
     "sidecar": "diagnostics/assessment/sec-xbrl-sidecar-report.json",
-    "value": "diagnostics/assessment/sec-xbrl-value-reveal-report.json",
-    "value_bridge": "diagnostics/assessment/sec-xbrl-value-reveal-bridge-report.json"
+    "value": [
+      "diagnostics/assessment/sec-xbrl-value-reveal-report.json",
+      "diagnostics/assessment/sec-xbrl-expanded-value-report.json"
+    ],
+    "value_bridge": "diagnostics/assessment/sec-xbrl-expanded-value-bridge-report.json"
   },
   "summary": {
     "arelle_resolved_fact_count": 18156,
     "bridge_fact_count": 18156,
-    "companyfacts_value_compared_count": 1028,
-    "companyfacts_value_match_rate": 0.9942,
+    "companyfacts_value_compared_count": 3790,
+    "companyfacts_value_match_count": 3761,
+    "companyfacts_value_match_rate": 0.9923,
     "forms": {
       "10-K": 4,
       "10-Q": 1,
@@ -156,7 +149,7 @@
     },
     "issuer_hash_count": 6,
     "real_filing_count": 12,
-    "value_bridge_fact_count": 10872
+    "value_bridge_fact_count": 23102
   },
   "target": "sec_edgar_arelle_default_on_corpus_expansion_gate_v1"
 }

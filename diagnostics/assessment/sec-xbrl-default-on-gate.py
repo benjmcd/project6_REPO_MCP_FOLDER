@@ -12,7 +12,8 @@ DEFAULT_SIDECAR_REPORT = Path("diagnostics/assessment/sec-xbrl-sidecar-report.js
 DEFAULT_COMPLETENESS_REPORT = Path("diagnostics/assessment/sec-xbrl-completeness-report.json")
 DEFAULT_BRIDGE_REPORT = Path("diagnostics/assessment/sec-xbrl-bridge-cutover-report.json")
 DEFAULT_VALUE_REPORT = Path("diagnostics/assessment/sec-xbrl-value-reveal-report.json")
-DEFAULT_VALUE_BRIDGE_REPORT = Path("diagnostics/assessment/sec-xbrl-value-reveal-bridge-report.json")
+DEFAULT_EXPANDED_VALUE_REPORT = Path("diagnostics/assessment/sec-xbrl-expanded-value-report.json")
+DEFAULT_VALUE_BRIDGE_REPORT = Path("diagnostics/assessment/sec-xbrl-expanded-value-bridge-report.json")
 
 REQUIRED_FORMS = {"10-K", "10-Q", "20-F", "40-F", "6-K", "8-K"}
 VALUE_CORRECTNESS_FORMS = {"10-K", "10-Q"}
@@ -32,7 +33,11 @@ def main() -> int:
     parser.add_argument("--sidecar-report", default=str(DEFAULT_SIDECAR_REPORT))
     parser.add_argument("--completeness-report", default=str(DEFAULT_COMPLETENESS_REPORT))
     parser.add_argument("--bridge-report", default=str(DEFAULT_BRIDGE_REPORT))
-    parser.add_argument("--value-report", default=str(DEFAULT_VALUE_REPORT))
+    parser.add_argument(
+        "--value-report",
+        action="append",
+        default=[str(DEFAULT_VALUE_REPORT), str(DEFAULT_EXPANDED_VALUE_REPORT)],
+    )
     parser.add_argument("--value-bridge-report", default=str(DEFAULT_VALUE_BRIDGE_REPORT))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     args = parser.parse_args()
@@ -41,7 +46,7 @@ def main() -> int:
         sidecar_report_path=_resolve_path(args.sidecar_report),
         completeness_report_path=_resolve_path(args.completeness_report),
         bridge_report_path=_resolve_path(args.bridge_report),
-        value_report_path=_resolve_path(args.value_report),
+        value_report_paths=[_resolve_path(item) for item in args.value_report],
         value_bridge_report_path=_resolve_path(args.value_bridge_report),
     )
     output = _resolve_path(args.output)
@@ -57,23 +62,26 @@ def build_report(
     sidecar_report_path: Path,
     completeness_report_path: Path,
     bridge_report_path: Path,
-    value_report_path: Path,
+    value_report_paths: list[Path],
     value_bridge_report_path: Path,
 ) -> dict[str, Any]:
     sidecar = _read_json(sidecar_report_path)
     completeness = _read_json(completeness_report_path)
     bridge = _read_json(bridge_report_path)
-    value = _read_json(value_report_path)
+    values = [_read_json(path) for path in value_report_paths]
     value_bridge = _read_json(value_bridge_report_path)
 
     sidecar_corpus = dict(sidecar.get("corpus_summary") or {})
     completeness_summary = dict(completeness.get("summary") or {})
     bridge_summary = dict(bridge.get("summary") or {})
-    value_summary = dict(value.get("companyfacts_effective_value_correctness") or {})
+    value_summary = _combined_companyfacts_value_summary(values)
     value_bridge_summary = dict(value_bridge.get("summary") or {})
 
     forms = set((sidecar_corpus.get("forms") or {}).keys())
-    value_forms_with_oracle = _forms_with_companyfacts_value_oracle(value.get("per_fixture") or [])
+    value_forms_with_oracle = _forms_with_companyfacts_value_oracle(
+        row for value in values for row in (value.get("per_fixture") or [])
+    )
+    value_bridge_forms = _forms_from_rows(value_bridge.get("per_fixture") or [])
     criteria = [
         _criterion(
             "corpus_breadth",
@@ -130,16 +138,25 @@ def build_report(
             "internal_value_materialization_full_corpus",
             value_bridge.get("verdict") == "trustworthy_for_gated_cutover"
             and _int(value_bridge_summary.get("real_filing_count"), default=-1)
-            == _int(sidecar_corpus.get("real_filing_count"), default=-2)
+            >= _int(sidecar_corpus.get("real_filing_count"), default=MIN_REAL_FILINGS)
             and _int(value_bridge_summary.get("sidecar_resolved_fact_count"), default=-1)
-            == _int(completeness_summary.get("arelle_resolved_fact_count"), default=-2)
-            and _int(value_bridge_summary.get("effective_value_nonempty_count")) > 0,
+            >= _int(completeness_summary.get("arelle_resolved_fact_count"), default=-2)
+            and _int(value_bridge_summary.get("blocked_count"), default=-1) == 0
+            and value_bridge_summary.get("bridge_matches_sidecar_all_ready_rows") is True
+            and _int(value_bridge_summary.get("effective_value_nonempty_count")) > 0
+            and REQUIRED_FORMS.issubset(value_bridge_forms),
             {
                 "verdict": value_bridge.get("verdict"),
                 "real_filing_count": value_bridge_summary.get("real_filing_count"),
-                "expected_real_filing_count": sidecar_corpus.get("real_filing_count"),
+                "minimum_real_filing_count": sidecar_corpus.get("real_filing_count"),
                 "sidecar_resolved_fact_count": value_bridge_summary.get("sidecar_resolved_fact_count"),
-                "expected_sidecar_resolved_fact_count": completeness_summary.get("arelle_resolved_fact_count"),
+                "minimum_sidecar_resolved_fact_count": completeness_summary.get("arelle_resolved_fact_count"),
+                "bridge_matches_sidecar_all_ready_rows": value_bridge_summary.get(
+                    "bridge_matches_sidecar_all_ready_rows"
+                ),
+                "blocked_count": value_bridge_summary.get("blocked_count"),
+                "forms": sorted(value_bridge_forms),
+                "required_forms": sorted(REQUIRED_FORMS),
                 "effective_value_nonempty_count": value_bridge_summary.get("effective_value_nonempty_count"),
                 "effective_value_empty_count": value_bridge_summary.get("effective_value_empty_count"),
             },
@@ -176,7 +193,7 @@ def build_report(
             "sidecar": _repo_display_path(sidecar_report_path),
             "completeness": _repo_display_path(completeness_report_path),
             "bridge": _repo_display_path(bridge_report_path),
-            "value": _repo_display_path(value_report_path),
+            "value": [_repo_display_path(path) for path in value_report_paths],
             "value_bridge": _repo_display_path(value_bridge_report_path),
         },
         "criteria": criteria,
@@ -190,6 +207,7 @@ def build_report(
             "value_bridge_fact_count": value_bridge_summary.get("bridge_fact_count"),
             "companyfacts_value_match_rate": value_summary.get("match_rate"),
             "companyfacts_value_compared_count": value_summary.get("compared_count"),
+            "companyfacts_value_match_count": value_summary.get("match_count"),
         },
         "non_goals_preserved": {
             "runtime_default_changed": False,
@@ -217,7 +235,27 @@ def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocke
     }
 
 
-def _forms_with_companyfacts_value_oracle(rows: list[Any]) -> set[str]:
+def _combined_companyfacts_value_summary(reports: list[Mapping[str, Any]]) -> dict[str, Any]:
+    compared = 0
+    matched = 0
+    oracles: set[str] = set()
+    for report in reports:
+        summary = dict(report.get("companyfacts_effective_value_correctness") or {})
+        compared += _int(summary.get("compared_count"))
+        matched += _int(summary.get("match_count"))
+        if summary.get("oracle"):
+            oracles.add(str(summary["oracle"]))
+    return {
+        "oracle": sorted(oracles),
+        "match_count": matched,
+        "compared_count": compared,
+        "match_rate": round(matched / compared, 4) if compared else None,
+        "values_redacted_in_report": True,
+        "identity_redacted": True,
+    }
+
+
+def _forms_with_companyfacts_value_oracle(rows: Any) -> set[str]:
     forms: set[str] = set()
     for row in rows:
         if not isinstance(row, Mapping):
@@ -225,6 +263,10 @@ def _forms_with_companyfacts_value_oracle(rows: list[Any]) -> set[str]:
         if _int(row.get("companyfacts_effective_value_compared_count")) > 0:
             forms.add(str(row.get("form") or "unknown"))
     return forms
+
+
+def _forms_from_rows(rows: list[Any]) -> set[str]:
+    return {str(row.get("form") or "unknown") for row in rows if isinstance(row, Mapping)}
 
 
 def _int(value: Any, *, default: int = 0) -> int:
