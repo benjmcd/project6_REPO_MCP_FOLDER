@@ -44,6 +44,27 @@ OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_PROFILE_TAGS = (
 )
 OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_VERSION = "sec_edgar_operator_product_surface_breadth_runtime_v1"
 OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED = True
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION_VERSION = "sec_edgar_durable_delivery_archive_selection_v1"
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_RUNTIME_TARGET = "sec_edgar_durable_delivery_archive_runtime_v1"
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_SERVICE = (
+    "backend/app/services/layer3_sec_edgar_durable_delivery_archive.py"
+)
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_ENDPOINT = (
+    "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive"
+)
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_STATUS_ENDPOINT = (
+    "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive/status/"
+    "{sec_edgar_durable_delivery_archive_receipt_id}"
+)
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_MODE = "sec_edgar_durable_delivery_archive_v1"
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_OPERATOR_DECISION = (
+    "archive_sec_edgar_operator_product_surface_delivery_package"
+)
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_INPUT_AUTHORITY = (
+    "sec_edgar_operator_product_surface_receipt_id",
+    "sec_edgar_operator_product_surface_receipt_hash",
+)
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = False
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -746,6 +767,7 @@ def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
         "distinct_quality_gaps": list(quality_gaps.get("distinct_quality_gaps") or []),
         "server_receipt_projection_only": True,
         "frontend_durable_authority_enabled": False,
+        "durable_delivery_archive_runtime_enabled": SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED,
     }
 
 
