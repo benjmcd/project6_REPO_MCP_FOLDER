@@ -93,6 +93,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_material_downstream_repeatability_trial,
     layer3_sec_edgar_delivery_status_provenance,
     layer3_sec_edgar_operator_inspection,
+    layer3_sec_edgar_operator_product_surface,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
@@ -3127,6 +3128,118 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
         "sec_edgar_operator_product_surface_operator_inspection_hash_mismatch"
     )
     assert len(fake_client.calls) == 12
+
+
+def test_layer3_api_selects_sec_edgar_operator_product_surface_breadth_without_runtime_admission() -> None:
+    assert (
+        layer3_sec_edgar_operator_product_surface.OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION_VERSION
+        == "sec_edgar_operator_product_surface_breadth_selection_v1"
+    )
+    assert layer3_sec_edgar_operator_product_surface.OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_MATRIX == (
+        "XOM",
+        "PFE",
+        "UAL",
+        "T",
+    )
+    assert set(layer3_sec_edgar_operator_product_surface.OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_PROFILE_TAGS) >= {
+        "energy_major",
+        "pharmaceutical_life_sciences",
+        "airline_transport",
+        "telecom_media",
+        "debt_intensive",
+        "commodity_exposure",
+    }
+    assert layer3_sec_edgar_operator_inspection.OPERATOR_INSPECTION_BREADTH_RUNTIME_ENABLED is True
+    assert layer3_sec_edgar_operator_product_surface.OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED is False
+
+
+def test_layer3_api_blocks_sec_edgar_operator_product_surface_for_unadmitted_expanded_breadth_matrix(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_expanded_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    validation_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-product-surface-breadth-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["XOM", "PFE", "UAL", "T"],
+            "operator_confirmation": True,
+        },
+    )
+    assert validation_response.status_code == 200, validation_response.text
+    validation = validation_response.json()
+
+    delivery_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance",
+        json={
+            "client_request_id": "sec-edgar-product-surface-breadth-delivery-001",
+            "status_mode": "sec_edgar_delivery_status_provenance_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_delivery_status_provenance",
+            "sec_edgar_real_company_corpus_validation_receipt_id": validation["validation_receipt_id"],
+            "sec_edgar_real_company_corpus_validation_receipt_hash": validation["validation_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    assert delivery_response.status_code == 200, delivery_response.text
+    delivery = delivery_response.json()
+
+    operator_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+        json={
+            "client_request_id": "sec-edgar-product-surface-breadth-operator-001",
+            "inspection_mode": "sec_edgar_operator_inspection_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_operator_surface",
+            "sec_edgar_delivery_status_provenance_receipt_id": (
+                delivery["delivery_status_provenance_receipt_id"]
+            ),
+            "sec_edgar_delivery_status_provenance_receipt_hash": (
+                delivery["delivery_status_provenance_receipt_hash"]
+            ),
+            "operator_confirmation": True,
+        },
+    )
+    assert operator_response.status_code == 200, operator_response.text
+    operator = operator_response.json()
+    assert operator["operator_inspection_state"] == "sec_edgar_operator_inspection_ready"
+    assert operator["readiness_rollup"]["expanded_company_matrix_admitted"] is True
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+        json={
+            "client_request_id": "sec-edgar-product-surface-breadth-selection-001",
+            "surface_mode": "sec_edgar_operator_product_surface_runtime_v1",
+            "operator_decision": "render_sec_edgar_operator_product_surface",
+            "sec_edgar_operator_inspection_receipt_id": operator["operator_inspection_receipt_id"],
+            "sec_edgar_operator_inspection_receipt_hash": operator["operator_inspection_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["schema_id"] == "layer3.sec_edgar_operator_product_surface.v1"
+    assert body["operator_product_surface_state"] == "sec_edgar_operator_product_surface_blocked"
+    assert body["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_operator_product_surface_company_matrix_mismatch"
+    )
+    assert body["negative_invariants"]["provider_object_write_enabled"] is False
+    assert body["negative_invariants"]["connector_dispatch_enabled"] is False
+    assert len(fake_client.calls) == 12
+    assert "https://www.sec.gov" not in response.text
+    assert "https://data.sec.gov" not in response.text
+    assert "0000034088-26-000100" not in response.text
+    assert "Exxon Mobil" not in response.text
+    assert "XOM" not in response.text
+    assert "value_text" not in response.text
+    assert str(tmp_path) not in response.text
 
 
 def test_layer3_api_rejects_sec_edgar_real_filing_connector_unconfigured_or_unsafe(

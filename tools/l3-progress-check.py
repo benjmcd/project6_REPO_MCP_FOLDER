@@ -3610,6 +3610,9 @@ SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_SELECTION = (
 SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_RUNTIME = (
     PLANNING_DOCS / "1244-sec-edgar-operator-inspection-breadth-runtime.md"
 )
+SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION = (
+    PLANNING_DOCS / "1245-sec-edgar-operator-product-surface-breadth-selection.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -117984,6 +117987,59 @@ def _check_sec_edgar_operator_inspection_breadth_runtime(errors: list[str]) -> N
                 )
 
 
+def _check_sec_edgar_operator_product_surface_breadth_selection(errors: list[str]) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION: (
+            "SEC EDGAR Operator Product Surface Breadth Selection",
+            "milestone: sec_edgar_operator_product_surface_breadth_selection_v1",
+            "source_operator_inspection_breadth_runtime: next_milestone_plans/Layer3_planning_docs/1244-sec-edgar-operator-inspection-breadth-runtime.md",
+            "entry_main_commit: 42c6401b03f7b72c09a329e29231d1fb592fb562",
+            "runtime_status: not_implemented",
+            "selected_next_runtime_target: sec_edgar_operator_product_surface_breadth_runtime_v1",
+            "selected_runtime_service: backend/app/services/layer3_sec_edgar_operator_product_surface.py",
+            "selected_expanded_validation_matrix: XOM,PFE,UAL,T",
+            "selection_guard_added: sec_edgar_operator_product_surface_company_matrix_mismatch",
+            "operator_product_surface_breadth_runtime_in_this_freeze: false",
+            "expanded_product_surface_runtime_admitted: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_operator_product_surface_breadth_runtime_v1",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION_VERSION",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_MATRIX",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_PROFILE_TAGS",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED = False",
+            "def _admitted_company_matrices()",
+            "sec_edgar_operator_product_surface_company_matrix_mismatch",
+            'EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")',
+            '"XOM"',
+            '"PFE"',
+            '"UAL"',
+            '"T"',
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_selects_sec_edgar_operator_product_surface_breadth_without_runtime_admission",
+            "test_layer3_api_blocks_sec_edgar_operator_product_surface_for_unadmitted_expanded_breadth_matrix",
+            "sec_edgar_operator_product_surface_breadth_selection_v1",
+            "sec_edgar_operator_product_surface_company_matrix_mismatch",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED is False",
+        ),
+        SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_RUNTIME: (
+            "next_exact_posture: sec_edgar_operator_product_surface_breadth_selection_v1",
+            "operator_product_surface_broadened: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator product surface breadth selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119302,6 +119358,7 @@ def main() -> int:
     _check_sec_edgar_delivery_status_provenance_breadth_runtime(errors)
     _check_sec_edgar_operator_inspection_breadth_selection(errors)
     _check_sec_edgar_operator_inspection_breadth_runtime(errors)
+    _check_sec_edgar_operator_product_surface_breadth_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
