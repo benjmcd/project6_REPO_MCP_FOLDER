@@ -1,0 +1,307 @@
+{
+  "candidate_b_sec_routing_performed": false,
+  "cross_company_comparability_claimed": false,
+  "final_financial_statement_semantics_claimed": false,
+  "headline": "POOR: production fact-authority coverage captured only 2523/5709 Arelle facts across real filings.",
+  "identity_redaction": {
+    "fixture_identity_hash_only": true,
+    "raw_tickers_urls_paths_storage_roots_committed": false
+  },
+  "inventory_summary": {
+    "committed_ixbrl_candidate_count": 3,
+    "live_corpus_run_performed": true,
+    "real_filing_candidate_count": 6,
+    "retained_artifact_byte_status": "retained_source_bytes_present",
+    "retained_artifacts_observed": true,
+    "retained_sec_source_byte_file_count": 9,
+    "sec_receipt_dir_count": 6,
+    "sec_receipt_dir_hashes": [
+      "12afea94cf6fbcf8",
+      "911d09dddb709467",
+      "928a30173e0047fd",
+      "446a2981090e86f8",
+      "8f83e76d9393f162",
+      "4ff48b2c84252bcf"
+    ],
+    "storage_dir_file_count": 56,
+    "storage_dir_gitignored": true,
+    "storage_dir_marker": "79a0df4885c8716110178a4c",
+    "storage_dir_observed": true,
+    "storage_dir_path_redacted": true,
+    "synthetic_stub_candidate_count": 3
+  },
+  "live_corpus_manifest": {
+    "connector_example_count": 6,
+    "connector_receipt_hash": "a078ba92f3c06d45359f9489614f1308fff61ca399495867ba8cc569a03c4c81",
+    "forms": [
+      "10-K",
+      "20-F",
+      "40-F",
+      "6-K",
+      "8-K"
+    ],
+    "issuer_hashes": [
+      "731f4e7b487469523c95ab4b",
+      "9f3cfc584cc24cdaeba38336",
+      "cf3bb86ac8478448a335fcac"
+    ],
+    "processed_filing_count": 6,
+    "raw_tickers_urls_paths_storage_roots_committed": false,
+    "schema_id": "diagnostics.sec_xbrl_real_corpus_manifest.v1",
+    "source_identity_redacted": true
+  },
+  "oracle_status": {
+    "gold_arelle": {
+      "confidence": "gold_arelle_inline_xbrl_model_fact_count",
+      "filing_count_with_arelle": 6,
+      "oracle_used": true,
+      "reason": "Arelle extracted model fact counts for retained real filing primary documents."
+    },
+    "primary_companyfacts": {
+      "confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+      "filing_count_with_companyfacts": 6,
+      "oracle_used": true,
+      "reason": "CompanyFacts was fetched for retained real filings and counted us-gaap/dei facts by accession."
+    },
+    "sanity_shadow_parse": {
+      "confidence": "low_lower_bound",
+      "oracle_used": true,
+      "reason": "Counts fact-bearing inline XBRL elements by tag shape only and shares blind spots with the regex parser under test."
+    }
+  },
+  "parser_expansion_performed": false,
+  "per_fixture": [
+    {
+      "confidence": "inconclusive",
+      "context_element_count": 0,
+      "continuation_element_count": 0,
+      "continued_at_reference_count": 0,
+      "current_parser_fact_count": 1,
+      "fixture_class": "synthetic_stub",
+      "fixture_hash": "371930594e0cc23415822fbc",
+      "form": "10-K",
+      "hidden_fact_bearing_count": 0,
+      "issuer_by_hash": "d38621b5810ea8081cfb1979",
+      "missed_categories": [
+        "none_observed_in_fixture"
+      ],
+      "missed_count": null,
+      "oracle_fact_count": null,
+      "oracle_used": "none_real_oracle_unavailable_synthetic_fixture",
+      "shadow_lower_bound_fact_count": 1,
+      "source_kind": "committed_test_source",
+      "text_segment_cap_impact_assessed": "not_applicable_to_fact_count_measurement",
+      "unit_element_count": 0
+    },
+    {
+      "confidence": "inconclusive",
+      "context_element_count": 0,
+      "continuation_element_count": 0,
+      "continued_at_reference_count": 0,
+      "current_parser_fact_count": 1,
+      "fixture_class": "synthetic_stub",
+      "fixture_hash": "371930594e0cc23415822fbc",
+      "form": "10-K",
+      "hidden_fact_bearing_count": 0,
+      "issuer_by_hash": "d38621b5810ea8081cfb1979",
+      "missed_categories": [
+        "none_observed_in_fixture"
+      ],
+      "missed_count": null,
+      "oracle_fact_count": null,
+      "oracle_used": "none_real_oracle_unavailable_synthetic_fixture",
+      "shadow_lower_bound_fact_count": 1,
+      "source_kind": "committed_test_source",
+      "text_segment_cap_impact_assessed": "not_applicable_to_fact_count_measurement",
+      "unit_element_count": 0
+    },
+    {
+      "confidence": "inconclusive",
+      "context_element_count": 0,
+      "continuation_element_count": 0,
+      "continued_at_reference_count": 0,
+      "current_parser_fact_count": 1,
+      "fixture_class": "synthetic_stub",
+      "fixture_hash": "51e402bba322811d84231722",
+      "form": "unknown",
+      "hidden_fact_bearing_count": 0,
+      "issuer_by_hash": "0d96764b5deba880eff9c684",
+      "missed_categories": [
+        "none_observed_in_fixture"
+      ],
+      "missed_count": null,
+      "oracle_fact_count": null,
+      "oracle_used": "none_real_oracle_unavailable_synthetic_fixture",
+      "shadow_lower_bound_fact_count": 1,
+      "source_kind": "committed_test_source",
+      "text_segment_cap_impact_assessed": "not_applicable_to_fact_count_measurement",
+      "unit_element_count": 0
+    },
+    {
+      "arelle_confidence": "gold_arelle_inline_xbrl_model_fact_count",
+      "arelle_fact_count": 643,
+      "arelle_oracle_used": true,
+      "classification_ready": true,
+      "classification_receipt_hash": null,
+      "companyfacts_confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+      "companyfacts_fact_count": 359,
+      "companyfacts_oracle_used": true,
+      "confidence": "gold_arelle_count_available",
+      "downstream_pipeline_block": null,
+      "fact_material_bridge_ready": true,
+      "fact_values_redacted": true,
+      "fixture_class": "real_filing",
+      "fixture_hash": "e2a1ce9350e4e36a977f2c92",
+      "form": "10-K",
+      "issuer_by_hash": "731f4e7b487469523c95ab4b",
+      "missed_categories": [
+        "ix_hidden_present",
+        "contexts_present_but_unresolved",
+        "units_present_but_unresolved",
+        "text_segment_inventory_cap_possible",
+        "unsupported_marker_shape"
+      ],
+      "missed_count": 205,
+      "production_factauthority_fact_count": 438,
+      "raw_identity_redacted": true
+    },
+    {
+      "arelle_confidence": "gold_arelle_inline_xbrl_model_fact_count",
+      "arelle_fact_count": 23,
+      "arelle_oracle_used": true,
+      "classification_ready": true,
+      "classification_receipt_hash": null,
+      "companyfacts_confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+      "companyfacts_fact_count": 0,
+      "companyfacts_oracle_used": true,
+      "confidence": "gold_arelle_count_available",
+      "downstream_pipeline_block": null,
+      "fact_material_bridge_ready": true,
+      "fact_values_redacted": true,
+      "fixture_class": "real_filing",
+      "fixture_hash": "89552a931742f0f75ab5d071",
+      "form": "8-K",
+      "issuer_by_hash": "731f4e7b487469523c95ab4b",
+      "missed_categories": [
+        "ix_hidden_present",
+        "contexts_present_but_unresolved",
+        "unsupported_marker_shape"
+      ],
+      "missed_count": 0,
+      "production_factauthority_fact_count": 23,
+      "raw_identity_redacted": true
+    },
+    {
+      "arelle_confidence": "gold_arelle_inline_xbrl_model_fact_count",
+      "arelle_fact_count": 5000,
+      "arelle_oracle_used": true,
+      "classification_ready": false,
+      "classification_receipt_hash": null,
+      "companyfacts_confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+      "companyfacts_fact_count": 0,
+      "companyfacts_oracle_used": true,
+      "confidence": "gold_arelle_count_available",
+      "downstream_pipeline_block": "sec_edgar_html_inline_xbrl_fact_material_bridge_fact_count_mismatch",
+      "fact_material_bridge_ready": false,
+      "fact_values_redacted": true,
+      "fixture_class": "real_filing",
+      "fixture_hash": "fc184386967ce997055b62e1",
+      "form": "20-F",
+      "issuer_by_hash": "cf3bb86ac8478448a335fcac",
+      "missed_categories": [
+        "ix_hidden_present",
+        "continuation_present",
+        "contexts_present_but_unresolved",
+        "units_present_but_unresolved",
+        "text_segment_inventory_cap_possible",
+        "unsupported_marker_shape"
+      ],
+      "missed_count": 2981,
+      "production_factauthority_fact_count": 2019,
+      "raw_identity_redacted": true
+    },
+    {
+      "arelle_confidence": "gold_arelle_inline_xbrl_model_fact_count",
+      "arelle_fact_count": 0,
+      "arelle_oracle_used": true,
+      "classification_ready": false,
+      "classification_receipt_hash": null,
+      "companyfacts_confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+      "companyfacts_fact_count": 0,
+      "companyfacts_oracle_used": true,
+      "confidence": "gold_arelle_count_available",
+      "downstream_pipeline_block": "sec_edgar_html_inline_xbrl_fact_authority_no_inline_xbrl_markers",
+      "fact_material_bridge_ready": false,
+      "fact_values_redacted": true,
+      "fixture_class": "real_filing",
+      "fixture_hash": "69a4911cba60d2db0c2bfd02",
+      "form": "6-K",
+      "issuer_by_hash": "cf3bb86ac8478448a335fcac",
+      "missed_categories": [
+        "fact_authority_blocked"
+      ],
+      "missed_count": 0,
+      "parser_marker_count": 0,
+      "production_factauthority_fact_count": 0,
+      "raw_identity_redacted": true
+    },
+    {
+      "arelle_confidence": "gold_arelle_inline_xbrl_model_fact_count",
+      "arelle_fact_count": 43,
+      "arelle_oracle_used": true,
+      "classification_ready": true,
+      "classification_receipt_hash": null,
+      "companyfacts_confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+      "companyfacts_fact_count": 2,
+      "companyfacts_oracle_used": true,
+      "confidence": "gold_arelle_count_available",
+      "downstream_pipeline_block": null,
+      "fact_material_bridge_ready": true,
+      "fact_values_redacted": true,
+      "fixture_class": "real_filing",
+      "fixture_hash": "dd5a43fd97ace277e35a8917",
+      "form": "40-F",
+      "issuer_by_hash": "9f3cfc584cc24cdaeba38336",
+      "missed_categories": [
+        "ix_hidden_present",
+        "continuation_present",
+        "contexts_present_but_unresolved",
+        "units_present_but_unresolved",
+        "text_segment_inventory_cap_possible",
+        "unsupported_marker_shape"
+      ],
+      "missed_count": 0,
+      "production_factauthority_fact_count": 43,
+      "raw_identity_redacted": true
+    },
+    {
+      "arelle_confidence": "gold_arelle_inline_xbrl_model_fact_count",
+      "arelle_fact_count": 0,
+      "arelle_oracle_used": true,
+      "classification_ready": false,
+      "classification_receipt_hash": null,
+      "companyfacts_confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+      "companyfacts_fact_count": 0,
+      "companyfacts_oracle_used": true,
+      "confidence": "gold_arelle_count_available",
+      "downstream_pipeline_block": "sec_edgar_html_inline_xbrl_fact_authority_no_inline_xbrl_markers",
+      "fact_material_bridge_ready": false,
+      "fact_values_redacted": true,
+      "fixture_class": "real_filing",
+      "fixture_hash": "79db4eac8f68f3307aaa23b3",
+      "form": "6-K",
+      "issuer_by_hash": "9f3cfc584cc24cdaeba38336",
+      "missed_categories": [
+        "fact_authority_blocked"
+      ],
+      "missed_count": 0,
+      "parser_marker_count": 0,
+      "production_factauthority_fact_count": 0,
+      "raw_identity_redacted": true
+    }
+  ],
+  "purpose": "Measure whether Strategy A coverage/fact counts are trustworthy without mutating runtime authority.",
+  "runtime_authority_created": false,
+  "schema_id": "diagnostics.sec_xbrl_measure.v1",
+  "value_unredaction_performed": false
+}

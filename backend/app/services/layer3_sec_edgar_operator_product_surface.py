@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import csv
 from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
 import re
+from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
@@ -12,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.services import (
     layer3_sec_edgar_delivery_status_provenance,
+    layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_real_company_corpus_validation,
 )
@@ -31,6 +34,9 @@ RECEIPT_PREFIX = "sec-edgar-operator-product-surface"
 RECEIPT_DIR = "layer3-sec-edgar-operator-product-surface"
 REDACTION_POLICY_ID = "sec_edgar_operator_product_surface_redaction_v1"
 RENDERED_MODE = "rendered_sec_edgar_operator_product_surface_control"
+VALUE_REVEAL_POLICY_ID = "sec_edgar_operator_surface_gated_value_reveal_v1"
+VALUE_REVEAL_MAX_RECORDS_DEFAULT = 25
+VALUE_REVEAL_MAX_RECORDS_LIMIT = 50
 EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")
 OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION_VERSION = "sec_edgar_operator_product_surface_breadth_selection_v1"
 OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_MATRIX = ("XOM", "PFE", "UAL", "T")
@@ -75,6 +81,9 @@ ALLOWED_FIELDS = {
     "sec_edgar_operator_inspection_receipt_id",
     "sec_edgar_operator_inspection_receipt_hash",
     "operator_confirmation",
+    "value_reveal_policy",
+    "value_reveal_confirmation",
+    "value_reveal_max_records",
     "actor",
 }
 FORBIDDEN_REQUEST_FIELDS = {
@@ -223,6 +232,15 @@ def render_sec_edgar_operator_product_surface(
         )
 
     product_views = _product_views(operator, delivery, validation)
+    value_reveal = _value_reveal_surface(request, validation)
+    if value_reveal["value_reveal_requested"] and value_reveal["value_reveal_state"] != "ready":
+        return _blocked_response(
+            request_id=request_id,
+            operator=operator,
+            delivery=delivery,
+            validation=validation,
+            reasons=list(value_reveal["blocked_reasons"]),
+        )
     surface_rollup = _surface_rollup(product_views)
     authority_chain = _authority_chain(operator, delivery, validation, product_views)
     receipt_hash = stable_hash(
@@ -234,6 +252,7 @@ def render_sec_edgar_operator_product_surface(
             "delivery_status_provenance_receipt_hash": delivery["delivery_status_provenance_receipt_hash"],
             "validation_receipt_hash": validation["validation_receipt_hash"],
             "product_views_hash": stable_hash(product_views),
+            "value_reveal_hash": stable_hash(value_reveal),
             "surface_rollup_hash": stable_hash(surface_rollup),
             "authority_chain_hash": stable_hash(authority_chain),
         }
@@ -268,6 +287,7 @@ def render_sec_edgar_operator_product_surface(
         "validation_receipt_hash": validation["validation_receipt_hash"],
         "connector_receipt_hash": validation["connector_receipt_hash"],
         "product_views": product_views,
+        "value_reveal": value_reveal,
         "surface_rollup": surface_rollup,
         "authority_chain": authority_chain,
         "negative_invariants": _negative_invariants(),
@@ -707,6 +727,204 @@ def _diagnostics_loss_report(
     }
 
 
+def _value_reveal_surface(request: Mapping[str, Any], validation: Mapping[str, Any]) -> dict[str, Any]:
+    if not any(key in request for key in ("value_reveal_policy", "value_reveal_confirmation", "value_reveal_max_records")):
+        return _value_reveal_disabled()
+    if str(request.get("value_reveal_policy") or "") != VALUE_REVEAL_POLICY_ID:
+        return _value_reveal_blocked("sec_edgar_operator_product_surface_value_reveal_policy_not_admitted")
+    if request.get("value_reveal_confirmation") is not True:
+        return _value_reveal_blocked("sec_edgar_operator_product_surface_value_reveal_confirmation_missing")
+    max_records = _value_reveal_max_records(request.get("value_reveal_max_records"))
+    revealed: list[dict[str, Any]] = []
+    diagnostics: list[dict[str, Any]] = []
+    eligible_count = 0
+    inspected_bridge_count = 0
+    for validation_record in validation.get("filing_validation_records") or []:
+        if not isinstance(validation_record, Mapping):
+            continue
+        record_index = int(validation_record.get("record_index") or 0)
+        authority_hashes = dict(validation_record.get("authority_hashes") or {})
+        bridge_hash = str(authority_hashes.get("fact_material_bridge_receipt_hash") or "")
+        if not _is_sha256(bridge_hash):
+            diagnostics.append({"record_index": record_index, "reason": "fact_material_bridge_hash_missing"})
+            continue
+        try:
+            bridge_receipt = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge._read_verified_receipt(
+                f"{layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.RECEIPT_PREFIX}-{bridge_hash[:24]}"
+            )
+        except Layer3WorkbenchError as exc:
+            diagnostics.append({"record_index": record_index, "reason": exc.error_code})
+            continue
+        bridge_response = dict(bridge_receipt.get("response") or {})
+        if bridge_response.get("fact_authority_input_mode") != (
+            layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.ARELLE_FACT_AUTHORITY_INPUT_MODE
+        ):
+            diagnostics.append({"record_index": record_index, "reason": "arelle_fact_authority_input_not_active"})
+            continue
+        inspected_bridge_count += 1
+        rows, row_diagnostics = _bridge_value_rows(bridge_response, record_index=record_index)
+        diagnostics.extend(row_diagnostics)
+        for row in rows:
+            if not _row_is_standard_numeric_non_dimensional(row):
+                continue
+            eligible_count += 1
+            if len(revealed) < max_records:
+                revealed.append(_revealed_value_record(row, record_index=record_index, bridge_hash=bridge_hash))
+    if not revealed:
+        return _value_reveal_blocked(
+            "sec_edgar_operator_product_surface_value_reveal_no_arelle_values",
+            diagnostics=diagnostics,
+        )
+    return {
+        "schema_id": "layer3.sec_edgar_operator_surface_value_reveal.v1",
+        "value_reveal_policy": VALUE_REVEAL_POLICY_ID,
+        "value_reveal_requested": True,
+        "value_reveal_state": "ready",
+        "value_reveal_scope": "standard_numeric_non_dimensional_facts_only",
+        "value_semantics": "arelle_effective_canonical_value_v1",
+        "governed_operator_fact_values_revealed": True,
+        "raw_identity_revealed": False,
+        "raw_urls_paths_storage_roots_revealed": False,
+        "final_financial_statement_semantics_claimed": False,
+        "cross_company_comparability_claimed": False,
+        "bridge_receipt_count": inspected_bridge_count,
+        "eligible_value_count": eligible_count,
+        "revealed_value_count": len(revealed),
+        "max_revealed_value_count": max_records,
+        "redacted_or_deferred_value_categories": [
+            "extension_concept_values",
+            "dimensional_fact_values",
+            "non_numeric_fact_values",
+            "lexical_raw_values",
+        ],
+        "revealed_values": revealed,
+        "diagnostics": diagnostics,
+        "value_reveal_hash": stable_hash(revealed),
+    }
+
+
+def _value_reveal_disabled() -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.sec_edgar_operator_surface_value_reveal.v1",
+        "value_reveal_policy": VALUE_REVEAL_POLICY_ID,
+        "value_reveal_requested": False,
+        "value_reveal_state": "not_requested",
+        "governed_operator_fact_values_revealed": False,
+        "revealed_value_count": 0,
+        "revealed_values": [],
+    }
+
+
+def _value_reveal_blocked(reason: str, *, diagnostics: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    return {
+        "schema_id": "layer3.sec_edgar_operator_surface_value_reveal.v1",
+        "value_reveal_policy": VALUE_REVEAL_POLICY_ID,
+        "value_reveal_requested": True,
+        "value_reveal_state": "blocked",
+        "governed_operator_fact_values_revealed": False,
+        "revealed_value_count": 0,
+        "revealed_values": [],
+        "blocked_reasons": [{"reason": reason, "diagnostics": diagnostics or []}],
+    }
+
+
+def _value_reveal_max_records(value: Any) -> int:
+    try:
+        count = int(value or VALUE_REVEAL_MAX_RECORDS_DEFAULT)
+    except (TypeError, ValueError):
+        _blocked(
+            "sec_edgar_operator_product_surface_value_reveal_max_records_invalid",
+            "SEC EDGAR operator value reveal requires a positive bounded max record count.",
+            blocked_fields=["value_reveal_max_records"],
+        )
+    if count <= 0 or count > VALUE_REVEAL_MAX_RECORDS_LIMIT:
+        _blocked(
+            "sec_edgar_operator_product_surface_value_reveal_max_records_not_admitted",
+            "SEC EDGAR operator value reveal is capped for this slice.",
+            blocked_fields=["value_reveal_max_records"],
+        )
+    return count
+
+
+def _bridge_value_rows(bridge_response: Mapping[str, Any], *, record_index: int) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
+    dataset_version_id = str(bridge_response.get("dataset_version_id") or "")
+    if not dataset_version_id:
+        return [], [{"record_index": record_index, "reason": "dataset_version_id_missing"}]
+    csv_path = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge._datasets_dir() / f"{dataset_version_id}.csv"
+    try:
+        with csv_path.open(newline="", encoding="utf-8") as handle:
+            return list(csv.DictReader(handle)), []
+    except FileNotFoundError:
+        return [], [{"record_index": record_index, "reason": "dataset_version_rows_missing"}]
+    except (OSError, csv.Error):
+        return [], [{"record_index": record_index, "reason": "dataset_version_rows_unreadable"}]
+
+
+def _row_is_standard_numeric_non_dimensional(row: Mapping[str, Any]) -> bool:
+    namespace = str(row.get("concept_namespace") or "")
+    if "fasb.org/us-gaap" not in namespace and "xbrl.sec.gov/dei" not in namespace:
+        return False
+    if str(row.get("concept_standard") or "").strip().lower() not in {"true", "1"}:
+        return False
+    if str(row.get("explicit_dimension_count") or "0") not in {"", "0"}:
+        return False
+    if str(row.get("typed_dimension_count") or "0") not in {"", "0"}:
+        return False
+    if not (str(row.get("unit_currency") or "").strip() or str(row.get("unit_measures_json") or "").strip()):
+        return False
+    try:
+        Decimal(str(row.get("effective_value_text") or ""))
+    except (InvalidOperation, ValueError):
+        return False
+    return True
+
+
+def _revealed_value_record(row: Mapping[str, Any], *, record_index: int, bridge_hash: str) -> dict[str, Any]:
+    return {
+        "record_index": record_index,
+        "fact_record_hash": stable_hash(
+            {
+                "bridge_hash": bridge_hash,
+                "resolved_fact_id": str(row.get("resolved_fact_id") or ""),
+                "fact_order": str(row.get("fact_order") or ""),
+            }
+        ),
+        "fact_order": int(row.get("fact_order") or 0),
+        "concept_qname": str(row.get("concept_qname") or ""),
+        "concept_namespace_hash": stable_hash({"concept_namespace": str(row.get("concept_namespace") or "")}),
+        "taxonomy_family": _taxonomy_family(str(row.get("concept_namespace") or "")),
+        "concept_local_name": str(row.get("concept_local_name") or ""),
+        "concept_standard": str(row.get("concept_standard") or "").strip().lower() in {"true", "1"},
+        "concept_extension": False,
+        "period_type": str(row.get("period_type") or ""),
+        "period_start": str(row.get("period_start") or ""),
+        "period_end": str(row.get("period_end") or ""),
+        "period_instant": str(row.get("period_instant") or ""),
+        "unit_currency": str(row.get("unit_currency") or ""),
+        "unit_measures_json": str(row.get("unit_measures_json") or ""),
+        "effective_value": str(row.get("effective_value_text") or ""),
+        "effective_value_hash": str(row.get("effective_value_hash") or ""),
+        "effective_value_length": int(row.get("effective_value_length") or 0),
+        "value_semantics": str(row.get("value_semantics") or "arelle_effective_canonical_value_v1"),
+        "lexical_value_hash": str(row.get("lexical_value_hash") or ""),
+        "lexical_value_length": int(row.get("lexical_value_length") or 0),
+        "transform_sign": str(row.get("transform_sign") or ""),
+        "transform_scale": str(row.get("transform_scale") or ""),
+        "transform_decimals": str(row.get("transform_decimals") or ""),
+        "transform_precision": str(row.get("transform_precision") or ""),
+        "transform_format": str(row.get("transform_format") or ""),
+        "source_identity_redacted": True,
+    }
+
+
+def _taxonomy_family(namespace: str) -> str:
+    if "fasb.org/us-gaap" in namespace:
+        return "us-gaap"
+    if "xbrl.sec.gov/dei" in namespace:
+        return "dei"
+    return "other"
+
+
 def _surface_rollup(product_views: Mapping[str, Any]) -> dict[str, Any]:
     company_form_matrix = list(product_views.get("company_form_matrix") or [])
     semantic_profiles = list(product_views.get("semantic_profile") or [])
@@ -866,6 +1084,7 @@ def _response_from_receipt(
         "validation_receipt_hash": receipt["validation_receipt_hash"],
         "connector_receipt_hash": receipt["connector_receipt_hash"],
         "product_views": dict(receipt["product_views"]),
+        "value_reveal": dict(receipt.get("value_reveal") or _value_reveal_disabled()),
         "surface_rollup": dict(receipt["surface_rollup"]),
         "authority_chain": dict(receipt["authority_chain"]),
         "cache": {
@@ -874,12 +1093,16 @@ def _response_from_receipt(
             "parser_rerun_performed_by_product_surface": False,
             "package_mutation_performed_by_product_surface": False,
             "provider_object_created_by_product_surface": False,
+            "value_reveal_dataset_version_read_performed": bool(
+                (receipt.get("value_reveal") or {}).get("value_reveal_requested")
+            ),
         },
         "negative_invariants": dict(receipt["negative_invariants"]),
         "redaction_policy_id": REDACTION_POLICY_ID,
         "next_allowed_actions": [
             "inspect SEC EDGAR product surface quality gaps",
             "render SEC EDGAR product surface in the operator workbench",
+            "request governed SEC EDGAR operator value reveal",
         ],
     }
     if _contains_forbidden_output_ref(response):

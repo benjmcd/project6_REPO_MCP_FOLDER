@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_authority,
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
+    layer3_sec_xbrl_sidecar,
 )
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -131,12 +132,13 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
             reasons=[_reason("missing_operator_confirmation")],
         )
 
-    fact_receipt = layer3_sec_edgar_html_inline_xbrl_fact_authority.read_sec_edgar_html_inline_xbrl_fact_authority_receipt(
-        fact_receipt_id,
-        expected_fact_authority_receipt_hash=fact_receipt_hash,
-    )
     bridge_status = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.inspect_sec_edgar_html_inline_xbrl_fact_material_bridge_status(
         bridge_receipt_id
+    )
+    fact_receipt = _read_fact_authority_for_bridge_input(
+        bridge_status,
+        fact_receipt_id=fact_receipt_id,
+        fact_receipt_hash=fact_receipt_hash,
     )
     _validate_bridge_authority(request, fact_receipt, bridge_status, bridge_receipt_hash=bridge_receipt_hash)
     facts = list(fact_receipt.get("fact_inventory") or [])
@@ -545,6 +547,37 @@ def _validate_bridge_authority(
             http_status=409,
             blocked_fields=["expected_gate_b_decision_manifest_id"],
         )
+
+
+def _read_fact_authority_for_bridge_input(
+    bridge_status: Mapping[str, Any],
+    *,
+    fact_receipt_id: str,
+    fact_receipt_hash: str,
+) -> Mapping[str, Any]:
+    input_mode = str(
+        bridge_status.get("fact_authority_input_mode")
+        or layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.REGEX_FACT_AUTHORITY_INPUT_MODE
+    )
+    if input_mode == layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.REGEX_FACT_AUTHORITY_INPUT_MODE:
+        return layer3_sec_edgar_html_inline_xbrl_fact_authority.read_sec_edgar_html_inline_xbrl_fact_authority_receipt(
+            fact_receipt_id,
+            expected_fact_authority_receipt_hash=fact_receipt_hash,
+        )
+    if input_mode == layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.ARELLE_FACT_AUTHORITY_INPUT_MODE:
+        sidecar_receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
+            fact_receipt_id,
+            expected_sidecar_receipt_hash=fact_receipt_hash,
+        )
+        return layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.sidecar_fact_authority_view_for_downstream(
+            sidecar_receipt
+        )
+    _blocked(
+        "sec_edgar_html_inline_xbrl_fact_statement_classification_unsupported_fact_authority_input_mode",
+        "SEC EDGAR HTML/iXBRL fact statement classification requires a supported material bridge fact-authority input mode.",
+        http_status=409,
+        blocked_fields=["fact_authority_input_mode"],
+    )
 
 
 def _classification_record(fact: Mapping[str, Any], *, fact_order: int, fact_inventory_hash: str) -> dict[str, Any]:
