@@ -3161,6 +3161,35 @@ def test_layer3_api_admits_sec_edgar_operator_product_surface_breadth_runtime() 
     )
 
 
+def test_layer3_api_selects_sec_edgar_durable_delivery_archive_without_runtime_admission() -> None:
+    assert (
+        layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION_VERSION
+        == "sec_edgar_durable_delivery_archive_selection_v1"
+    )
+    assert (
+        layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_RUNTIME_TARGET
+        == "sec_edgar_durable_delivery_archive_runtime_v1"
+    )
+    assert (
+        layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_SERVICE
+        == "backend/app/services/layer3_sec_edgar_durable_delivery_archive.py"
+    )
+    assert (
+        layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_ENDPOINT
+        == "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive"
+    )
+    assert layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_INPUT_AUTHORITY == (
+        "sec_edgar_operator_product_surface_receipt_id",
+        "sec_edgar_operator_product_surface_receipt_hash",
+    )
+    assert layer3_sec_edgar_operator_product_surface.SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED is False
+
+    rollup = layer3_sec_edgar_operator_product_surface._surface_rollup({"company_form_matrix": []})
+    assert rollup["server_receipt_projection_only"] is True
+    assert rollup["frontend_durable_authority_enabled"] is False
+    assert rollup["durable_delivery_archive_runtime_enabled"] is False
+
+
 def test_layer3_api_preserves_sec_edgar_operator_product_surface_company_matrix_guard() -> None:
     reasons = layer3_sec_edgar_operator_product_surface._readiness_reasons(
         {
