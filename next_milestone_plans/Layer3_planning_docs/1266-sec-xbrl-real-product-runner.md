@@ -14,7 +14,8 @@ It fails closed unless a live run is explicitly requested with:
 
 - a descriptive SEC user agent;
 - the pinned Arelle execution environment;
-- the offline taxonomy package/cache configuration;
+- the offline taxonomy package configuration as explicit package files, not a package directory;
+- an Arelle cache directory outside the repo and outside OneDrive, matching the sidecar containment contract;
 - the default-off Arelle cutover enabled only inside the diagnostic run.
 
 ## Current Committed Report
@@ -27,7 +28,7 @@ Current decision:
 
 `real_corpus_product_path_blocked`
 
-The committed report is a preflight-safe blocked report. It records that a live run was requested with a configured SEC user agent, but the Arelle environment variables were not configured here. It therefore made no network call, records zero real product-path filings, and does not admit broader real-corpus product reliability.
+The committed report is a preflight-safe blocked report. It records that a live run was requested with a configured SEC user agent and Arelle Python, but the taxonomy env pointed at a directory and the cache env pointed inside the repo. Both are rejected by the sidecar containment contract. It therefore made no network call, records zero real product-path filings, and does not admit broader real-corpus product reliability.
 
 This preserves the prior gate result instead of upgrading fake-client product-chain evidence into a real-corpus claim.
 
@@ -75,6 +76,8 @@ The report admits only if all criteria pass:
 ## Next Action
 
 Run the same diagnostic with the provisioned SEC/Arelle environment and a descriptive SEC user agent. If the live report admits, the next slice is:
+
+The taxonomy package env must be an `os.pathsep`-separated list of package zip files. The cache env must point outside the repo and outside OneDrive. The runner preflight now mirrors this sidecar contract so invalid Arelle setup blocks before SEC acquisition.
 
 `sec_edgar_operator_surface_gated_value_reveal_v1`
 
