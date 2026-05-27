@@ -3616,6 +3616,9 @@ SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION = (
 SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME = (
     PLANNING_DOCS / "1246-sec-edgar-operator-product-surface-breadth-runtime.md"
 )
+SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RENDERED_UI_VERIFICATION = (
+    PLANNING_DOCS / "1247-sec-edgar-operator-product-surface-breadth-rendered-ui-verification.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -118101,6 +118104,68 @@ def _check_sec_edgar_operator_product_surface_breadth_runtime(errors: list[str])
                 )
 
 
+def _check_sec_edgar_operator_product_surface_breadth_rendered_ui_verification(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RENDERED_UI_VERIFICATION: (
+            "SEC EDGAR Operator Product Surface Breadth Rendered UI Verification",
+            "milestone: sec_edgar_operator_product_surface_breadth_rendered_ui_verification_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1246-sec-edgar-operator-product-surface-breadth-runtime.md",
+            "source_rendered_ui: next_milestone_plans/Layer3_planning_docs/1232-sec-edgar-operator-product-surface-rendered-ui.md",
+            "expanded_product_surface_runtime_admitted: XOM,PFE,UAL,T",
+            "expanded_breadth_rendered_record_count: 8",
+            "server_receipt_projection_only: true",
+            "raw_ticker_or_company_name_rendered: false",
+            "frontend_durable_authority_enabled: false",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "comparability_normalization_performed: false",
+            "next_exact_posture: sec_edgar_durable_delivery_archive_selection_v1",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME: (
+            "next_exact_posture: sec_edgar_operator_product_surface_breadth_rendered_ui_verification_v1",
+            "expanded_product_surface_runtime_admitted: XOM,PFE,UAL,T",
+        ),
+        LAYER3_JS: (
+            "statement role quality profile record count",
+            "period unit context dimension profile record count",
+            "extension taxonomy retention profile record count",
+            "standard concept mapping profile record count",
+            "fact deduplication conflict diagnostics record count",
+            "cross company comparability readiness audit record count",
+            "frontend durable authority enabled",
+            "network request made by product surface",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "Layer 3 workbench renders SEC EDGAR operator product surface expanded breadth receipt authority",
+            "sec-edgar-product-surface-breadth-rendered-ui-test",
+            "filing count: 8",
+            "company form matrix records: 8",
+            "semantic profile record count: 8",
+            "statement role quality profile record count: 8",
+            "period unit context dimension profile record count: 8",
+            "extension taxonomy retention profile record count: 8",
+            "standard concept mapping profile record count: 8",
+            "fact deduplication conflict diagnostics record count: 8",
+            "cross company comparability readiness audit record count: 8",
+            "XOM",
+            "Exxon",
+            "0000034088",
+            "expectOnlyPayloadKeys(payload",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator product surface breadth rendered UI verification term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119421,6 +119486,7 @@ def main() -> int:
     _check_sec_edgar_operator_inspection_breadth_runtime(errors)
     _check_sec_edgar_operator_product_surface_breadth_selection(errors)
     _check_sec_edgar_operator_product_surface_breadth_runtime(errors)
+    _check_sec_edgar_operator_product_surface_breadth_rendered_ui_verification(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
