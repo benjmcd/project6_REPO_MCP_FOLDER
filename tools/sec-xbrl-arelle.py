@@ -17,7 +17,7 @@ MIN_MAX_FACTS = 100_000
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Contained Arelle iXBRL resolved-fact extractor.")
-    parser.add_argument("--input", required=True)
+    parser.add_argument("--input", action="append", required=True)
     parser.add_argument("--max-facts", type=int, default=MIN_MAX_FACTS)
     parser.add_argument("--taxonomy-package", action="append", default=[])
     parser.add_argument("--cache-dir", default="")
@@ -41,9 +41,8 @@ def main() -> int:
         _emit_error("arelle_import_failed", error_class=exc.__class__.__name__)
         return 2
 
-    entry = Path(args.input)
+    entries = [Path(item) for item in args.input]
     cntlr = Cntlr.Cntlr(logFileName="logToBuffer")
-    model = None
     if args.cache_dir:
         cntlr.webCache.cacheDir = str(Path(args.cache_dir).resolve())
     cntlr.webCache.workOffline = args.internet_connectivity == "offline"
@@ -53,20 +52,32 @@ def main() -> int:
         _emit_error("taxonomy_package_load_failed", error_class=exc.__class__.__name__)
         cntlr.close()
         return 2
+    facts: list[dict[str, Any]] = []
+    loaded_document_counts: list[int] = []
+    model_error_count = 0
     try:
-        model = cntlr.modelManager.load(str(entry))
-    except Exception as exc:
-        _emit_error("arelle_model_load_failed", error_class=exc.__class__.__name__)
-        cntlr.close()
-        return 2
-    try:
-        raw_facts = list(getattr(model, "facts", []) or []) if model is not None else []
-        if len(raw_facts) > args.max_facts:
-            _emit_error("fact_count_exceeds_limit", fact_count=len(raw_facts), max_facts=args.max_facts)
-            return 2
-        concept_index = _concept_index(model)
-        facts = [_fact_payload(model, concept_index, fact, index) for index, fact in enumerate(raw_facts, start=1)]
-        diagnostics = _diagnostics(model, facts)
+        for entry_index, entry in enumerate(entries, start=1):
+            try:
+                model = cntlr.modelManager.load(str(entry))
+            except Exception as exc:
+                _emit_error("arelle_model_load_failed", error_class=exc.__class__.__name__, entry_document_index=entry_index)
+                return 2
+            try:
+                raw_facts = list(getattr(model, "facts", []) or []) if model is not None else []
+                if len(facts) + len(raw_facts) > args.max_facts:
+                    _emit_error("fact_count_exceeds_limit", fact_count=len(facts) + len(raw_facts), max_facts=args.max_facts)
+                    return 2
+                concept_index = _concept_index(model)
+                facts.extend(
+                    _fact_payload(model, concept_index, fact, len(facts) + index, entry_index=entry_index)
+                    for index, fact in enumerate(raw_facts, start=1)
+                )
+                loaded_document_counts.append(len(getattr(model, "urlDocs", {}) or {}) if model is not None else 0)
+                model_error_count += len(list(getattr(model, "errors", []) or [])) if model is not None else 0
+            finally:
+                if model is not None:
+                    model.close()
+        diagnostics = _diagnostics(model_error_count=model_error_count, facts=facts)
         print(
             json.dumps(
                 {
@@ -81,8 +92,11 @@ def main() -> int:
                     "taxonomy_package_hashes": package_hashes,
                     "taxonomy_network_resolution_enabled": args.internet_connectivity == "online",
                     "document_set": {
-                        "loaded_document_count": len(getattr(model, "urlDocs", {}) or {}) if model is not None else 0,
-                        "entry_document_loaded": model is not None,
+                        "entry_document_count": len(entries),
+                        "loaded_document_count": sum(loaded_document_counts),
+                        "max_loaded_document_count": max(loaded_document_counts or [0]),
+                        "entry_documents_loaded": len(loaded_document_counts),
+                        "entry_document_loaded": len(loaded_document_counts) == len(entries),
                     },
                 },
                 sort_keys=True,
@@ -91,11 +105,7 @@ def main() -> int:
         )
         return 0
     finally:
-        try:
-            if model is not None:
-                model.close()
-        finally:
-            cntlr.close()
+        cntlr.close()
 
 
 def _load_packages(cntlr: Any, package_manager: Any, package_paths: list[str]) -> list[str]:
@@ -115,12 +125,20 @@ def _load_packages(cntlr: Any, package_manager: Any, package_paths: list[str]) -
     return package_hashes
 
 
-def _fact_payload(model: Any, concept_index: dict[tuple[str, str], Any], fact: Any, source_order: int) -> dict[str, Any]:
+def _fact_payload(
+    model: Any,
+    concept_index: dict[tuple[str, str], Any],
+    fact: Any,
+    source_order: int,
+    *,
+    entry_index: int,
+) -> dict[str, Any]:
     context = getattr(fact, "context", None)
     unit = getattr(fact, "unit", None)
     value = str(getattr(fact, "value", "") or "")
     return {
         "source_order": source_order,
+        "entry_document_index": entry_index,
         "concept": _concept_payload(model, concept_index, fact),
         "context_id": str(getattr(context, "id", "") or _attr(fact, "contextRef") or ""),
         "unit_id": str(getattr(unit, "id", "") or _attr(fact, "unitRef") or ""),
@@ -214,9 +232,9 @@ def _dimensions_payload(context: Any) -> dict[str, Any]:
     return {"explicit": explicit, "typed": typed, "resolved": context is not None}
 
 
-def _diagnostics(model: Any, facts: list[dict[str, Any]]) -> dict[str, Any]:
+def _diagnostics(*, model_error_count: int, facts: list[dict[str, Any]]) -> dict[str, Any]:
     return {
-        "model_error_count": len(list(getattr(model, "errors", []) or [])) if model is not None else 0,
+        "model_error_count": model_error_count,
         "concept_resolved_from_dts_count": sum(1 for fact in facts if fact["concept"]["resolved_from_dts"]),
         "concept_dts_unresolved_count": sum(1 for fact in facts if not fact["concept"]["resolved_from_dts"]),
         "period_unresolved_count": sum(1 for fact in facts if not fact["period"]["resolved"]),

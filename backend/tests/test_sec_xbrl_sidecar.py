@@ -73,9 +73,34 @@ def test_sec_xbrl_sidecar_rejects_silent_low_fact_cap(monkeypatch, tmp_path):
     assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_max_facts_too_low"
 
 
+def test_sec_xbrl_sidecar_fails_closed_on_independent_fact_undercount(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+    monkeypatch.setattr(
+        layer3_sec_xbrl_sidecar,
+        "_independent_inline_fact_tally",
+        lambda _documents: {
+            "inline_fact_count": 3,
+            "scanned_document_count": 1,
+            "inline_document_count": 1,
+            "document_tally": [{"document_index": 1, "inline_fact_count": 3}],
+        },
+    )
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+
+    assert response["status"] == "blocked"
+    assert response["status_projection"]["blocked_reasons"][0]["reason"] == "arelle_independent_inline_fact_count_mismatch"
+    assert response["status_projection"]["blocked_reasons"][0]["independent_inline_fact_count"] == 3
+    assert response["status_projection"]["blocked_reasons"][0]["arelle_fact_count"] == 2
+
+
 def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
     primary = "<html><head></head><body>inline</body></html>"
     wrapped_schema = "\r\n<XBRL>\r\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<schema />\r\n</XBRL>\r\n"
+    inline = '<html xmlns:ix="http://www.xbrl.org/2013/inlineXBRL"><body><ix:nonFraction name="a" contextRef="c">1</ix:nonFraction></body></html>'
+    inline_exhibit = '<html xmlns:ixt="http://www.xbrl.org/2013/inlineXBRL"><body><ixt:nonNumeric name="b" contextRef="c">x</ixt:nonNumeric></body></html>'
     content = f"""
 <SEC-DOCUMENT>
 <DOCUMENT>
@@ -87,6 +112,16 @@ def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
 <TYPE>EX-101.SCH
 <FILENAME>issuer.xsd
 <TEXT>{wrapped_schema}</TEXT>
+</DOCUMENT>
+<DOCUMENT>
+<TYPE>EX-101.INS
+<FILENAME>instance.htm
+<TEXT>{inline}</TEXT>
+</DOCUMENT>
+<DOCUMENT>
+<TYPE>EX-99.2
+<FILENAME>exhibit.htm
+<TEXT>{inline_exhibit}</TEXT>
 </DOCUMENT>
 </SEC-DOCUMENT>
 """.encode("utf-8")
@@ -100,6 +135,11 @@ def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
     assert documents[1]["filename"] == "issuer.xsd"
     assert documents[1]["text"].startswith("<?xml")
     assert "<XBRL>" not in documents[1]["text"]
+    tally = layer3_sec_xbrl_sidecar._independent_inline_fact_tally(documents)
+    assert tally["inline_fact_count"] == 2
+    assert tally["inline_document_count"] == 2
+    assert tally["document_tally"][0]["document_type"] == "EX-101.INS"
+    assert tally["document_tally"][1]["document_type"] == "EX-99.2"
 
 
 def _install_receipt_fakes(monkeypatch, tmp_path, runner):

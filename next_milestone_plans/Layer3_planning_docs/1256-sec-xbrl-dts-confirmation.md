@@ -1,5 +1,9 @@
 # 1256 - SEC XBRL Arelle DTS Confirmation
 
+## Superseded Completeness Note
+
+This document is retained as the `sec_edgar_arelle_dts_confirmation_v1` record. Its count-completeness conclusion is superseded by `1257-sec-xbrl-completeness-verification.md`, which independently reconciles raw inline-XBRL counts against the Arelle sidecar and identifies a 40-F multi-inline-document undercount that this slice did not catch.
+
 ## Target
 
 `sec_edgar_arelle_dts_confirmation_v1`

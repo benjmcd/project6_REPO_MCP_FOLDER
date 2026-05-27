@@ -114,6 +114,8 @@ _DOCUMENT_RE = re.compile(r"<DOCUMENT>(?P<body>.*?)</DOCUMENT>", re.IGNORECASE |
 _TEXT_RE = re.compile(r"<TEXT>(?P<text>.*?)</TEXT>", re.IGNORECASE | re.DOTALL)
 _TAG_RE = re.compile(r"<([A-Z0-9-]+)>\s*([^\r\n<]*)", re.IGNORECASE)
 _SEC_XBRL_WRAPPER_RE = re.compile(r"^\s*<XBRL>\s*(?P<text>.*?)(?:\s*</XBRL>\s*)?$", re.IGNORECASE | re.DOTALL)
+_XMLNS_RE = re.compile(r"xmlns:([A-Za-z_][\w.-]*)\s*=\s*['\"]([^'\"]+)['\"]", re.IGNORECASE)
+_INLINE_XBRL_NAMESPACES = frozenset({"http://www.xbrl.org/2013/inlineXBRL", "http://www.xbrl.org/2008/inlineXBRL"})
 
 
 def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str, Any]) -> dict[str, Any]:
@@ -162,6 +164,7 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
     max_facts = _max_facts(request)
     regex_fact = _optional_regex_fact_authority(request)
     submission_documents = _submission_documents(content, primary_document_hash=expected_hashes["primary_document_hash"])
+    independent_inline_facts = _independent_inline_fact_tally(submission_documents)
     arelle = _run_arelle(primary_document=primary_document, max_facts=max_facts, submission_documents=submission_documents)
     if arelle.get("status") != "ready":
         return _blocked_response(
@@ -169,11 +172,31 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
             parser_receipt_hash=parser_receipt_hash,
             reasons=list(arelle.get("reasons") or [_reason("arelle_unavailable")]),
         )
+    independent_count = int(independent_inline_facts.get("inline_fact_count") or 0)
+    arelle_count = int(arelle.get("fact_count") or 0)
+    if independent_count > arelle_count:
+        return _blocked_response(
+            request_id=request_id,
+            parser_receipt_hash=parser_receipt_hash,
+            reasons=[
+                _reason(
+                    "arelle_independent_inline_fact_count_mismatch",
+                    independent_inline_fact_count=independent_count,
+                    arelle_fact_count=arelle_count,
+                    independent_inline_fact_tally_hash=stable_hash(independent_inline_facts.get("document_tally") or []),
+                )
+            ],
+        )
 
     local_facts = _local_facts(arelle["facts"], parser_receipt=parser_receipt)
     redacted_facts = [_redacted_fact(fact) for fact in local_facts]
     coverage = _coverage_stats(redacted_facts)
-    diagnostics = _diagnostics(arelle=arelle, coverage=coverage, max_facts=max_facts)
+    diagnostics = _diagnostics(
+        arelle=arelle,
+        coverage=coverage,
+        max_facts=max_facts,
+        independent_inline_facts=independent_inline_facts,
+    )
     resolved_fact_inventory_hash = stable_hash(redacted_facts)
     local_value_inventory_hash = stable_hash([fact["value_hash"] for fact in redacted_facts])
     diagnostics_hash = stable_hash(diagnostics)
@@ -312,7 +335,7 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
         return {"status": "blocked", "reasons": [_reason("taxonomy_cache_unavailable")]}
     with tempfile.TemporaryDirectory(prefix="sec-xbrl-sidecar-") as temp_dir_name:
         temp_dir = Path(temp_dir_name)
-        entry = _write_submission_documents(
+        entry, inline_entries = _write_submission_documents(
             temp_dir,
             primary_document=primary_document,
             submission_documents=submission_documents,
@@ -327,8 +350,6 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
         command = [
             _arelle_python(),
             str(helper),
-            "--input",
-            str(entry),
             "--max-facts",
             str(max_facts),
             "--cache-dir",
@@ -336,6 +357,8 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
             "--internet-connectivity",
             _taxonomy_internet_connectivity(),
         ]
+        for input_path in inline_entries or [entry]:
+            command.extend(["--input", str(input_path)])
         for package in taxonomy_packages:
             command.extend(["--taxonomy-package", str(package)])
         try:
@@ -393,8 +416,10 @@ def _write_submission_documents(
     *,
     primary_document: str,
     submission_documents: list[dict[str, str]],
-) -> Path:
+) -> tuple[Path, list[Path]]:
     entry: Path | None = None
+    inline_entries: list[Path] = []
+    inline_hashes: set[str] = set()
     seen: set[str] = set()
     for index, document in enumerate(submission_documents, start=1):
         filename = _safe_document_filename(document.get("filename") or f"document-{index}.txt")
@@ -402,13 +427,24 @@ def _write_submission_documents(
             filename = f"{index}-{filename}"
         seen.add(filename.lower())
         path = temp_dir / filename
-        path.write_text(str(document.get("text") or ""), encoding="utf-8")
+        text = str(document.get("text") or "")
+        path.write_text(text, encoding="utf-8")
+        prefixes = _inline_prefixes(text)
+        if _inline_fact_count_for_prefixes(text, prefixes):
+            inline_entries.append(path)
+            inline_hashes.add(_sha256_text(text))
         if document.get("primary") == "true":
             entry = path
+    if entry is None and inline_entries:
+        entry = inline_entries[0]
     if entry is None:
         entry = temp_dir / "filing.htm"
         entry.write_text(primary_document, encoding="utf-8")
-    return entry
+        prefixes = _inline_prefixes(primary_document)
+        primary_hash = _sha256_text(primary_document)
+        if _inline_fact_count_for_prefixes(primary_document, prefixes) and primary_hash not in inline_hashes:
+            inline_entries.append(entry)
+    return entry, inline_entries
 
 
 def _submission_documents(content: bytes, *, primary_document_hash: str) -> list[dict[str, str]]:
@@ -420,11 +456,19 @@ def _submission_documents(content: bytes, *, primary_document_hash: str) -> list
         documents.append(
             {
                 "filename": filename,
+                "type": metadata.get("type") or "",
                 "text": doc_text,
-                "primary": "true" if doc_text and _sha256_text(doc_text) == primary_document_hash else "false",
+                "primary": "true" if _document_matches_primary(filename=filename, text=doc_text, primary_document_hash=primary_document_hash) else "false",
             }
         )
     return documents
+
+
+def _document_matches_primary(*, filename: str, text: str, primary_document_hash: str) -> bool:
+    expected = str(primary_document_hash or "").strip()
+    if not expected:
+        return False
+    return (bool(filename) and _sha256_text(filename) == expected) or (bool(text) and _sha256_text(text) == expected)
 
 
 def _document_metadata(document_body: str) -> tuple[dict[str, str], str]:
@@ -442,13 +486,62 @@ def _document_metadata(document_body: str) -> tuple[dict[str, str], str]:
         doc_text = wrapper_match.group("text").lstrip()
     elif doc_text.lstrip().startswith("<?xml"):
         doc_text = doc_text.lstrip()
-    return {"filename": tags.get("FILENAME", "")}, doc_text
+    return {"filename": tags.get("FILENAME", ""), "type": tags.get("TYPE", "")}, doc_text
 
 
 def _safe_document_filename(filename: str) -> str:
     name = Path(str(filename or "")).name.strip()
     safe = re.sub(r"[^A-Za-z0-9._-]+", "-", name)[:160].strip(".-")
     return safe or "document.txt"
+
+
+def _independent_inline_fact_tally(submission_documents: list[dict[str, str]]) -> dict[str, Any]:
+    tally: list[dict[str, Any]] = []
+    total = 0
+    scanned = 0
+    for index, document in enumerate(submission_documents, start=1):
+        text = str(document.get("text") or "")
+        scanned += 1
+        prefixes = _inline_prefixes(text)
+        count = _inline_fact_count_for_prefixes(text, prefixes)
+        total += count
+        if count or prefixes:
+            tally.append(
+                {
+                    "document_index": index,
+                    "document_type": str(document.get("type") or ""),
+                    "document_filename_hash": _sha256_text(str(document.get("filename") or ""))[:24] if document.get("filename") else None,
+                    "document_text_hash": _sha256_text(text)[:24],
+                    "inline_prefixes": prefixes,
+                    "inline_fact_count": count,
+                    "primary_document": document.get("primary") == "true",
+                }
+            )
+    return {
+        "schema_id": "layer3.sec_edgar_arelle_independent_inline_fact_tally.v1",
+        "method": "namespace_bound_raw_inline_xbrl_start_tag_count",
+        "scanned_document_count": scanned,
+        "inline_document_count": len(tally),
+        "inline_fact_count": total,
+        "document_tally": tally,
+        "values_inspected_or_emitted": False,
+    }
+
+
+def _inline_fact_count_for_prefixes(text: str, prefixes: list[str]) -> int:
+    if not prefixes:
+        return 0
+    pattern = re.compile(
+        r"<\s*(?:"
+        + "|".join(re.escape(prefix) for prefix in prefixes)
+        + r"):(?:nonFraction|nonNumeric|fraction)\b",
+        re.IGNORECASE,
+    )
+    return len(pattern.findall(text))
+
+
+def _inline_prefixes(text: str) -> list[str]:
+    return sorted({prefix for prefix, namespace in _XMLNS_RE.findall(text) if namespace in _INLINE_XBRL_NAMESPACES})
 
 
 def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -465,6 +558,7 @@ def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> list
             {
                 "parser_receipt_hash": parser_receipt["parser_receipt_hash"],
                 "source_order": int(item.get("source_order") or index),
+                "entry_document_index": int(item.get("entry_document_index") or 1),
                 "concept_qname": concept.get("qname"),
                 "context_id": item.get("context_id"),
                 "unit_id": item.get("unit_id"),
@@ -478,6 +572,7 @@ def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> list
             {
                 "resolved_fact_id": fact_key,
                 "source_order": int(item.get("source_order") or index),
+                "entry_document_index": int(item.get("entry_document_index") or 1),
                 "concept": concept,
                 "context_id": str(item.get("context_id") or ""),
                 "unit_id": str(item.get("unit_id") or ""),
@@ -539,7 +634,14 @@ def _coverage_stats(facts: list[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _diagnostics(*, arelle: Mapping[str, Any], coverage: Mapping[str, Any], max_facts: int) -> dict[str, Any]:
+def _diagnostics(
+    *,
+    arelle: Mapping[str, Any],
+    coverage: Mapping[str, Any],
+    max_facts: int,
+    independent_inline_facts: Mapping[str, Any],
+) -> dict[str, Any]:
+    document_tally = list(independent_inline_facts.get("document_tally") or [])
     return {
         "adapter_execution": "isolated_subprocess_cli",
         "app_runtime_imported_arelle": False,
@@ -556,6 +658,12 @@ def _diagnostics(*, arelle: Mapping[str, Any], coverage: Mapping[str, Any], max_
         "taxonomy_network_resolution_enabled": bool(arelle.get("taxonomy_network_resolution_enabled")),
         "document_set": dict(arelle.get("document_set") or {}),
         "dts_unresolved_diagnostics": dict(arelle.get("diagnostics") or {}),
+        "independent_inline_fact_count": int(independent_inline_facts.get("inline_fact_count") or 0),
+        "independent_inline_fact_scanned_document_count": int(independent_inline_facts.get("scanned_document_count") or 0),
+        "independent_inline_fact_document_count": int(independent_inline_facts.get("inline_document_count") or 0),
+        "independent_inline_fact_tally_hash": stable_hash(document_tally),
+        "independent_inline_fact_document_tally": document_tally,
+        "independent_inline_fact_count_reconciled": int(independent_inline_facts.get("inline_fact_count") or 0) <= int(coverage.get("resolved_fact_count") or 0),
         "source_order_preserved": True,
         "resolved_structural_semantics": dict(coverage),
         "raw_fact_values_exposed_in_response": False,

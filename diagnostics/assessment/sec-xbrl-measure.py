@@ -215,6 +215,8 @@ def _sidecar_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "typed_dimension_fact_count": sum(int(row.get("sidecar_typed_dimension_fact_count") or 0) for row in counted),
         "concept_resolved_from_dts_count": sum(int(row.get("sidecar_concept_resolved_from_dts_count") or 0) for row in counted),
         "concept_unresolved_from_dts_count": sum(int(row.get("sidecar_concept_unresolved_from_dts_count") or 0) for row in counted),
+        "independent_inline_fact_count": sum(int(row.get("sidecar_independent_inline_fact_count") or 0) for row in counted),
+        "independent_inline_fact_count_all_reconciled": all(row.get("sidecar_independent_inline_fact_count_reconciled") is True for row in counted),
         "taxonomy_package_loaded_all_ready_rows": all(row.get("sidecar_taxonomy_package_loaded") is True for row in counted),
         "max_loaded_document_count": max([int(row.get("sidecar_loaded_document_count") or 0) for row in counted] or [0]),
         "values_redacted_in_report": True,
@@ -692,6 +694,7 @@ def _sidecar_payload(
 def _sidecar_fields(sidecar: Mapping[str, Any]) -> dict[str, Any]:
     coverage = sidecar.get("coverage") if isinstance(sidecar.get("coverage"), Mapping) else {}
     parity = sidecar.get("parity") if isinstance(sidecar.get("parity"), Mapping) else {}
+    diagnostics = sidecar.get("diagnostics") if isinstance(sidecar.get("diagnostics"), Mapping) else {}
     reasons = ((sidecar.get("status_projection") or {}).get("blocked_reasons") or []) if isinstance(sidecar.get("status_projection"), Mapping) else []
     return {
         "sidecar_state": sidecar.get("sidecar_state"),
@@ -708,12 +711,14 @@ def _sidecar_fields(sidecar: Mapping[str, Any]) -> dict[str, Any]:
         "sidecar_continued_fact_count": coverage.get("continued_fact_count"),
         "sidecar_standard_concept_count": coverage.get("standard_concept_count"),
         "sidecar_extension_concept_count": coverage.get("extension_concept_count"),
-        "sidecar_taxonomy_package_loaded": (sidecar.get("diagnostics") or {}).get("taxonomy_package_loaded")
-        if isinstance(sidecar.get("diagnostics"), Mapping)
-        else None,
-        "sidecar_loaded_document_count": ((sidecar.get("diagnostics") or {}).get("document_set") or {}).get("loaded_document_count")
-        if isinstance(sidecar.get("diagnostics"), Mapping)
-        else None,
+        "sidecar_taxonomy_package_loaded": diagnostics.get("taxonomy_package_loaded"),
+        "sidecar_loaded_document_count": (diagnostics.get("document_set") or {}).get("loaded_document_count"),
+        "sidecar_independent_inline_fact_count": diagnostics.get("independent_inline_fact_count"),
+        "sidecar_independent_inline_fact_scanned_document_count": diagnostics.get("independent_inline_fact_scanned_document_count"),
+        "sidecar_independent_inline_fact_document_count": diagnostics.get("independent_inline_fact_document_count"),
+        "sidecar_independent_inline_fact_tally_hash": diagnostics.get("independent_inline_fact_tally_hash"),
+        "sidecar_independent_inline_fact_document_tally": diagnostics.get("independent_inline_fact_document_tally"),
+        "sidecar_independent_inline_fact_count_reconciled": diagnostics.get("independent_inline_fact_count_reconciled"),
         "sidecar_blocked_reasons": [str(item.get("reason")) for item in reasons if isinstance(item, Mapping)],
         "sidecar_values_redacted_in_report": True,
         "sidecar_local_receipt_retains_values": sidecar.get("status") == "ready",
@@ -934,7 +939,7 @@ def _gold_oracle_status(*, live_manifest: Mapping[str, Any] | None, fallback: Ma
         "confidence": "gold_arelle_inline_xbrl_model_fact_count" if used else str(fallback.get("confidence") or "unverified"),
         "filing_count_with_arelle": len(used),
         "reason": (
-            "Arelle extracted model fact counts for retained real filing primary documents."
+            "Arelle extracted model fact counts for retained real filing documents; sidecar resolved counts are used when available."
             if used
             else str(fallback.get("reason") or "Arelle did not produce retained filing counts.")
         ),
@@ -1223,12 +1228,12 @@ def _headline(*, rows: list[dict[str, Any]], real_input_available: bool) -> str:
         row
         for row in real_rows
         if isinstance(row.get("production_factauthority_fact_count"), int)
-        and isinstance(row.get("arelle_fact_count"), int)
-        and int(row.get("arelle_fact_count") or 0) > 0
+        and isinstance(_gold_count_for_headline(row), int)
+        and int(_gold_count_for_headline(row) or 0) > 0
     ]
     if counted:
         production = sum(int(row["production_factauthority_fact_count"]) for row in counted)
-        arelle = sum(int(row["arelle_fact_count"]) for row in counted)
+        arelle = sum(int(_gold_count_for_headline(row) or 0) for row in counted)
         ratio = production / arelle if arelle else 0.0
         if ratio >= 0.98:
             return f"TRUSTWORTHY: production fact-authority coverage matched {production}/{arelle} Arelle facts across real filings."
@@ -1238,6 +1243,14 @@ def _headline(*, rows: list[dict[str, Any]], real_input_available: bool) -> str:
     if not rows:
         return "UNVERIFIED: no iXBRL fixture rows were measured."
     return "UNVERIFIED: real rows exist, but no gold Arelle fact counts were available."
+
+
+def _gold_count_for_headline(row: Mapping[str, Any]) -> int | None:
+    if row.get("sidecar_state") == layer3_sec_xbrl_sidecar.READY_STATE and isinstance(row.get("sidecar_resolved_fact_count"), int):
+        return int(row["sidecar_resolved_fact_count"])
+    if isinstance(row.get("arelle_fact_count"), int):
+        return int(row["arelle_fact_count"])
+    return None
 
 
 def _sha256(data: bytes) -> str:
