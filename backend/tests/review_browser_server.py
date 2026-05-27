@@ -1802,31 +1802,36 @@ def _prepare_sec_edgar_html_inline_xbrl_fact_material_downstream_status_fixture(
             "operator_confirmation": True,
         }
     )
-    bridge = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
-        {
-            "client_request_id": f"browser-sec-edgar-html-inline-xbrl-fact-material-bridge-{seed_id}",
-            "bridge_mode": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.BRIDGE_MODE,
-            "operator_decision": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.OPERATOR_DECISION,
-            "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
-            "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
-            "parser_receipt_id": parser["parser_receipt_id"],
-            "parser_receipt_hash": parser["parser_receipt_hash"],
-            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
-            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
-            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
-            "expected_content_sha256": parser["identity_binding"]["content_sha256"],
-            "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
-            "expected_document_inventory_hash": parser["document_inventory_hash"],
-            "expected_content_order_hash": parser["content_order_hash"],
-            "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
-            "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
-            "expected_fact_inventory_hash": fact_authority["fact_inventory_hash"],
-            "expected_diagnostics_hash": fact_authority["diagnostics_hash"],
-            "rollback_confirmed": True,
-            "operator_confirmed": True,
-        },
-        db,
-    )
+    original_cutover_enabled = settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled
+    settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled = False
+    try:
+        bridge = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
+            {
+                "client_request_id": f"browser-sec-edgar-html-inline-xbrl-fact-material-bridge-{seed_id}",
+                "bridge_mode": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.BRIDGE_MODE,
+                "operator_decision": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.OPERATOR_DECISION,
+                "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
+                "fact_authority_receipt_hash": fact_authority["fact_authority_receipt_hash"],
+                "parser_receipt_id": parser["parser_receipt_id"],
+                "parser_receipt_hash": parser["parser_receipt_hash"],
+                "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+                "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+                "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+                "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+                "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+                "expected_document_inventory_hash": parser["document_inventory_hash"],
+                "expected_content_order_hash": parser["content_order_hash"],
+                "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+                "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+                "expected_fact_inventory_hash": fact_authority["fact_inventory_hash"],
+                "expected_diagnostics_hash": fact_authority["diagnostics_hash"],
+                "rollback_confirmed": True,
+                "operator_confirmed": True,
+            },
+            db,
+        )
+    finally:
+        settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled = original_cutover_enabled
     gate_b = layer3_workbench.gate_b_decision(db, dict(bridge["gate_b_decision_payload"]))
     snapshots = (
         db.query(L3MaterialSnapshot)

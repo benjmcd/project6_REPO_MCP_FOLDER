@@ -1983,6 +1983,7 @@ def test_layer3_api_validates_sec_edgar_broader_issuer_form_quality_matrix(
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -2128,6 +2129,7 @@ def test_layer3_api_validates_sec_edgar_selected_breadth_expansion_quality_matri
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -2322,6 +2324,7 @@ def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_real_compan
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -2448,6 +2451,7 @@ def test_layer3_api_reports_sec_edgar_delivery_status_provenance_for_expanded_br
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -2729,6 +2733,7 @@ def test_layer3_api_reports_sec_edgar_operator_inspection_for_expanded_breadth_m
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -2866,6 +2871,7 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -3205,6 +3211,7 @@ def test_layer3_api_archives_sec_edgar_durable_delivery_from_product_surface_rec
     tmp_path,
     monkeypatch,
 ) -> None:
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
@@ -4618,6 +4625,7 @@ def test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_bridge_stal
     prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="fact-material-reject")
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
     payload = {
         "client_request_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-reject",
         "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
