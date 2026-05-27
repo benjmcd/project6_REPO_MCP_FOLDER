@@ -3613,6 +3613,9 @@ SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_RUNTIME = (
 SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION = (
     PLANNING_DOCS / "1245-sec-edgar-operator-product-surface-breadth-selection.md"
 )
+SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME = (
+    PLANNING_DOCS / "1246-sec-edgar-operator-product-surface-breadth-runtime.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -118008,7 +118011,6 @@ def _check_sec_edgar_operator_product_surface_breadth_selection(errors: list[str
             "OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION_VERSION",
             "OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_MATRIX",
             "OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_PROFILE_TAGS",
-            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED = False",
             "def _admitted_company_matrices()",
             "sec_edgar_operator_product_surface_company_matrix_mismatch",
             'EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")',
@@ -118018,11 +118020,11 @@ def _check_sec_edgar_operator_product_surface_breadth_selection(errors: list[str
             '"T"',
         ),
         LAYER3_API_TEST: (
-            "test_layer3_api_selects_sec_edgar_operator_product_surface_breadth_without_runtime_admission",
-            "test_layer3_api_blocks_sec_edgar_operator_product_surface_for_unadmitted_expanded_breadth_matrix",
+            "test_layer3_api_admits_sec_edgar_operator_product_surface_breadth_runtime",
+            "test_layer3_api_reports_sec_edgar_operator_product_surface_for_expanded_breadth_matrix",
             "sec_edgar_operator_product_surface_breadth_selection_v1",
             "sec_edgar_operator_product_surface_company_matrix_mismatch",
-            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED is False",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED is True",
         ),
         SEC_EDGAR_OPERATOR_INSPECTION_BREADTH_RUNTIME: (
             "next_exact_posture: sec_edgar_operator_product_surface_breadth_selection_v1",
@@ -118037,6 +118039,65 @@ def _check_sec_edgar_operator_product_surface_breadth_selection(errors: list[str
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing SEC EDGAR operator product surface breadth selection term: {term}"
+                )
+
+
+def _check_sec_edgar_operator_product_surface_breadth_runtime(errors: list[str]) -> None:
+    required_terms = {
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME: (
+            "SEC EDGAR Operator Product Surface Breadth Runtime",
+            "milestone: sec_edgar_operator_product_surface_breadth_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1245-sec-edgar-operator-product-surface-breadth-selection.md",
+            "source_operator_inspection_breadth_runtime: next_milestone_plans/Layer3_planning_docs/1244-sec-edgar-operator-inspection-breadth-runtime.md",
+            "runtime_version: sec_edgar_operator_product_surface_breadth_runtime_v1",
+            "runtime_status: implemented",
+            "expanded_product_surface_runtime_admitted: XOM,PFE,UAL,T",
+            "default_product_surface_matrix_preserved: MSFT,STLD,SONY,CCJ",
+            "server_receipt_projection_only: true",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "comparability_normalization_performed: false",
+            "next_exact_posture: sec_edgar_operator_product_surface_breadth_rendered_ui_verification_v1",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION: (
+            "operator_product_surface_breadth_runtime_in_this_freeze: false",
+            "expanded_product_surface_runtime_admitted: false",
+            "next_exact_posture: sec_edgar_operator_product_surface_breadth_runtime_v1",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_VERSION",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED = True",
+            "def _admitted_company_matrices()",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_MATRIX",
+            'EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")',
+            '"XOM"',
+            '"PFE"',
+            '"UAL"',
+            '"T"',
+            "server_receipt_projection_only",
+            "frontend_durable_authority_enabled",
+            "cross_company_comparability_ready",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_admits_sec_edgar_operator_product_surface_breadth_runtime",
+            "test_layer3_api_reports_sec_edgar_operator_product_surface_for_expanded_breadth_matrix",
+            "sec_edgar_operator_product_surface_breadth_runtime_v1",
+            "sec_edgar_operator_product_surface_ready",
+            "server_receipt_projection_only",
+            "financial_statement_semantics_not_finalized",
+            "comparability_normalization_performed",
+            "network_request_made_by_product_surface",
+            "OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED is True",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR operator product surface breadth runtime term: {term}"
                 )
 
 
@@ -119359,6 +119420,7 @@ def main() -> int:
     _check_sec_edgar_operator_inspection_breadth_selection(errors)
     _check_sec_edgar_operator_inspection_breadth_runtime(errors)
     _check_sec_edgar_operator_product_surface_breadth_selection(errors)
+    _check_sec_edgar_operator_product_surface_breadth_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
