@@ -3,20 +3,36 @@
     {
       "criterion": "live_preflight",
       "evidence": {
+        "arelle_cache": {
+          "configured": false,
+          "inside_repo_or_onedrive": true,
+          "path_redacted": true
+        },
         "arelle_cutover_default_changed": false,
+        "arelle_python": {
+          "configured": true,
+          "path_redacted": true
+        },
         "blocked_reasons": [
-          "arelle_environment_not_configured"
+          "taxonomy_package_files_unavailable",
+          "arelle_cache_dir_unavailable"
         ],
         "live_network_default_changed": false,
         "live_requested": true,
-        "missing_env_names": [
-          "SEC_XBRL_ARELLE_PYTHON",
-          "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
-          "SEC_XBRL_ARELLE_CACHE_DIR"
-        ],
+        "missing_env_names": [],
         "required_arelle_env_configured": false,
         "sec_rate_limit_per_second": 1,
         "state": "blocked",
+        "taxonomy_packages": {
+          "configured": false,
+          "entry_count": 1,
+          "invalid_entry_count": 1,
+          "invalid_reasons": {
+            "not_file": 1
+          },
+          "paths_redacted": true,
+          "valid_file_count": 0
+        },
         "user_agent_configured": true
       },
       "reason": "real_corpus_product_path_live_preflight_not_satisfied"
@@ -65,20 +81,36 @@
       "blocked_reason": "real_corpus_product_path_live_preflight_not_satisfied",
       "criterion": "live_preflight",
       "evidence": {
+        "arelle_cache": {
+          "configured": false,
+          "inside_repo_or_onedrive": true,
+          "path_redacted": true
+        },
         "arelle_cutover_default_changed": false,
+        "arelle_python": {
+          "configured": true,
+          "path_redacted": true
+        },
         "blocked_reasons": [
-          "arelle_environment_not_configured"
+          "taxonomy_package_files_unavailable",
+          "arelle_cache_dir_unavailable"
         ],
         "live_network_default_changed": false,
         "live_requested": true,
-        "missing_env_names": [
-          "SEC_XBRL_ARELLE_PYTHON",
-          "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
-          "SEC_XBRL_ARELLE_CACHE_DIR"
-        ],
+        "missing_env_names": [],
         "required_arelle_env_configured": false,
         "sec_rate_limit_per_second": 1,
         "state": "blocked",
+        "taxonomy_packages": {
+          "configured": false,
+          "entry_count": 1,
+          "invalid_entry_count": 1,
+          "invalid_reasons": {
+            "not_file": 1
+          },
+          "paths_redacted": true,
+          "valid_file_count": 0
+        },
         "user_agent_configured": true
       },
       "state": "blocked"
@@ -174,20 +206,36 @@
   },
   "per_matrix": [],
   "preflight": {
+    "arelle_cache": {
+      "configured": false,
+      "inside_repo_or_onedrive": true,
+      "path_redacted": true
+    },
     "arelle_cutover_default_changed": false,
+    "arelle_python": {
+      "configured": true,
+      "path_redacted": true
+    },
     "blocked_reasons": [
-      "arelle_environment_not_configured"
+      "taxonomy_package_files_unavailable",
+      "arelle_cache_dir_unavailable"
     ],
     "live_network_default_changed": false,
     "live_requested": true,
-    "missing_env_names": [
-      "SEC_XBRL_ARELLE_PYTHON",
-      "SEC_XBRL_ARELLE_TAXONOMY_PACKAGES",
-      "SEC_XBRL_ARELLE_CACHE_DIR"
-    ],
+    "missing_env_names": [],
     "required_arelle_env_configured": false,
     "sec_rate_limit_per_second": 1,
     "state": "blocked",
+    "taxonomy_packages": {
+      "configured": false,
+      "entry_count": 1,
+      "invalid_entry_count": 1,
+      "invalid_reasons": {
+        "not_file": 1
+      },
+      "paths_redacted": true,
+      "valid_file_count": 0
+    },
     "user_agent_configured": true
   },
   "redaction": {
