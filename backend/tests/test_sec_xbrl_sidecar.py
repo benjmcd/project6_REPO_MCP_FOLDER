@@ -35,17 +35,38 @@ def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypa
     assert response["coverage"]["hidden_fact_count"] == 1
     assert response["coverage"]["continued_fact_count"] == 1
     assert response["coverage"]["concept_resolved_from_dts_count"] == 2
-    assert "SECRET_MONETARY_VALUE" not in json.dumps(response, sort_keys=True)
+    assert "987654321000000" not in json.dumps(response, sort_keys=True)
 
     receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
         response["sidecar_receipt_id"],
         expected_sidecar_receipt_hash=response["sidecar_receipt_hash"],
     )
-    assert receipt["resolved_fact_records"][0]["value"] == "SECRET_MONETARY_VALUE"
+    assert "value" not in receipt["resolved_fact_records"][0]
+    assert receipt["internal_value_store"]["store_state"] == "persisted"
+    value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
+    assert value_store["value_records"][0]["effective_value"] == "987654321000000"
+    assert value_store["value_records"][0]["lexical_value"] == "987654321"
     assert receipt["resolved_fact_projection"][0]["value_redacted"] is True
     assert "value" not in receipt["resolved_fact_projection"][0]
     assert receipt["diagnostics"]["app_runtime_imported_arelle"] is False
     assert receipt["negative_invariants"]["material_bridge_mutated"] is False
+
+
+def test_sec_xbrl_sidecar_internal_value_store_missing_fails_closed(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _ready_arelle_runner)
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+    receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
+        response["sidecar_receipt_id"],
+        expected_sidecar_receipt_hash=response["sidecar_receipt_hash"],
+    )
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_value_store_path", lambda _receipt_id: tmp_path / "missing.json")
+
+    with pytest.raises(Layer3WorkbenchError) as excinfo:
+        layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
+
+    assert excinfo.value.error_code == "sec_edgar_arelle_sidecar_internal_value_store_missing"
 
 
 def test_sec_xbrl_sidecar_fails_closed_when_arelle_is_absent(monkeypatch, tmp_path):
@@ -174,6 +195,7 @@ def _install_receipt_fakes(monkeypatch, tmp_path, runner):
         }
     }
     monkeypatch.setattr(settings, "storage_dir", str(tmp_path))
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
     monkeypatch.setattr(
         layer3_sec_xbrl_sidecar.layer3_sec_edgar_html_inline_xbrl_parser,
         "read_sec_edgar_html_inline_xbrl_source_family_parser_receipt",
@@ -244,12 +266,15 @@ def _ready_arelle_runner(*_args, **_kwargs):
                 "decimals": "-6",
                 "precision": None,
                 "scale": "0",
+                "sign": None,
                 "format": None,
                 "hidden": True,
                 "continued": True,
                 "continued_at": "cont-1",
                 "footnote_count": 0,
-                "value": "SECRET_MONETARY_VALUE",
+                "value": "987654321000000",
+                "effective_value": "987654321000000",
+                "lexical_value": "987654321",
             },
             {
                 "source_order": 2,
@@ -262,7 +287,13 @@ def _ready_arelle_runner(*_args, **_kwargs):
                 "hidden": False,
                 "continued": False,
                 "footnote_count": 0,
-                "value": "7",
+                "sign": "-",
+                "scale": None,
+                "decimals": "0",
+                "format": None,
+                "value": "-123456789",
+                "effective_value": "-123456789",
+                "lexical_value": "123456789",
             },
         ],
     }

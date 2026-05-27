@@ -26,6 +26,7 @@ from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-bridge-cutover-report.json")
+csv.field_size_limit(10_000_000)
 REQUIRED_TYPED_FIELDS = (
     "concept_qname",
     "concept_namespace",
@@ -49,6 +50,18 @@ REQUIRED_TYPED_FIELDS = (
     "explicit_dimension_count",
     "typed_dimension_count",
     "value_redacted",
+    "value_semantics",
+    "effective_value_text",
+    "effective_value_hash",
+    "effective_value_length",
+    "lexical_value_text",
+    "lexical_value_hash",
+    "lexical_value_length",
+    "transform_sign",
+    "transform_scale",
+    "transform_decimals",
+    "transform_precision",
+    "transform_format",
 )
 
 
@@ -124,6 +137,8 @@ def build_report(*, storage_dirs: list[Path], source_reports: list[Path], reques
         "new_layer3_source_shape_created": False,
         "candidate_b_sec_routing_performed": False,
         "value_unredaction_performed": False,
+        "internal_analysis_layer_value_materialization_performed": True,
+        "operator_surface_value_exposure_performed": False,
         "final_financial_statement_semantics_claimed": False,
         "cross_company_comparability_claimed": False,
         "summary": {
@@ -141,6 +156,10 @@ def build_report(*, storage_dirs: list[Path], source_reports: list[Path], reques
             "raw_values_detected_in_dataset_rows": any(
                 row.get("raw_values_detected_in_dataset_rows") is True for row in ready_rows
             ),
+            "effective_value_nonempty_count": sum(int(row.get("effective_value_nonempty_count") or 0) for row in ready_rows),
+            "lexical_value_nonempty_count": sum(int(row.get("lexical_value_nonempty_count") or 0) for row in ready_rows),
+            "effective_value_empty_count": sum(int(row.get("effective_value_empty_count") or 0) for row in ready_rows),
+            "value_hash_present_count": sum(int(row.get("value_hash_present_count") or 0) for row in ready_rows),
             "twenty_f_bridge_fact_count": twenty_f.get("bridge_fact_count") if twenty_f else None,
             "twenty_f_sidecar_resolved_fact_count": twenty_f.get("sidecar_resolved_fact_count") if twenty_f else None,
             "forty_f_bridge_fact_count": forty_f.get("bridge_fact_count") if forty_f else None,
@@ -254,6 +273,10 @@ def _run_sidecar_bridge(
         "typed_dimension_row_count": dataset_checks["typed_dimension_row_count"],
         "concept_namespace_nonempty_count": dataset_checks["concept_namespace_nonempty_count"],
         "raw_values_detected_in_dataset_rows": dataset_checks["raw_values_detected_in_dataset_rows"],
+        "analysis_layer_values_materialized": dataset_checks["analysis_layer_values_materialized"],
+        "effective_value_nonempty_count": dataset_checks["effective_value_nonempty_count"],
+        "effective_value_empty_count": dataset_checks["effective_value_empty_count"],
+        "lexical_value_nonempty_count": dataset_checks["lexical_value_nonempty_count"],
         "value_text_nonempty_count": dataset_checks["value_text_nonempty_count"],
         "value_hash_present_count": dataset_checks["value_hash_present_count"],
         "value_redacted_false_count": dataset_checks["value_redacted_false_count"],
@@ -302,6 +325,8 @@ def _dataset_checks(bridge: Mapping[str, Any], sidecar: Mapping[str, Any]) -> di
         rows = list(reader)
     missing = [field for field in REQUIRED_TYPED_FIELDS if field not in fieldnames]
     value_text_nonempty_count = sum(1 for row in rows if str(row.get("value_text") or "").strip())
+    effective_value_nonempty_count = sum(1 for row in rows if str(row.get("effective_value_text") or "").strip())
+    lexical_value_nonempty_count = sum(1 for row in rows if str(row.get("lexical_value_text") or "").strip())
     value_hash_present_count = sum(1 for row in rows if str(row.get("value_hash") or "").strip())
     value_redacted_false_count = sum(
         1 for row in rows if str(row.get("value_redacted") or "").strip().lower() not in {"true", "1"}
@@ -319,7 +344,11 @@ def _dataset_checks(bridge: Mapping[str, Any], sidecar: Mapping[str, Any]) -> di
         "explicit_dimension_row_count": sum(1 for row in rows if row.get("explicit_dimension_count") not in {"", "0", None}),
         "typed_dimension_row_count": sum(1 for row in rows if row.get("typed_dimension_count") not in {"", "0", None}),
         "concept_namespace_nonempty_count": sum(1 for row in rows if row.get("concept_namespace")),
-        "raw_values_detected_in_dataset_rows": value_text_nonempty_count > 0 or value_redacted_false_count > 0,
+        "raw_values_detected_in_dataset_rows": effective_value_nonempty_count > 0 or lexical_value_nonempty_count > 0,
+        "analysis_layer_values_materialized": value_hash_present_count == len(rows),
+        "effective_value_nonempty_count": effective_value_nonempty_count,
+        "effective_value_empty_count": len(rows) - effective_value_nonempty_count,
+        "lexical_value_nonempty_count": lexical_value_nonempty_count,
         "value_text_nonempty_count": value_text_nonempty_count,
         "value_hash_present_count": value_hash_present_count,
         "value_redacted_false_count": value_redacted_false_count,

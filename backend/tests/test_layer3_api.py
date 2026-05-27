@@ -3990,13 +3990,16 @@ def _ready_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProce
                 },
                 "decimals": "-6",
                 "precision": None,
-                "scale": None,
+                "scale": "6",
+                "sign": None,
                 "format": None,
                 "hidden": True,
                 "continued": True,
                 "continued_at": "cont-1",
                 "footnote_count": 1,
-                "value": "SECRET_MONETARY_VALUE",
+                "value": "987654321000000",
+                "effective_value": "987654321000000",
+                "lexical_value": "987654321",
             },
             {
                 "source_order": 2,
@@ -4030,12 +4033,15 @@ def _ready_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProce
                 "decimals": "0",
                 "precision": None,
                 "scale": None,
+                "sign": "-",
                 "format": None,
                 "hidden": False,
                 "continued": False,
                 "continued_at": None,
                 "footnote_count": 0,
-                "value": "SECOND_SECRET_VALUE",
+                "value": "-123456789",
+                "effective_value": "-123456789",
+                "lexical_value": "123456789",
             },
         ],
     }
@@ -4055,6 +4061,7 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "arelle-cache")
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
     monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _ready_arelle_sidecar_runner)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
     response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
         {
             "client_request_id": f"sec-edgar-arelle-sidecar-{label}",
@@ -4239,11 +4246,13 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
     assert body["materialization_summary"]["sidecar_resolved_fact_count"] == 2
     assert body["materialization_summary"]["regex_fact_authority_count"] == 1
     assert body["materialization_summary"]["resolved_period_unit_dimension_fields_materialized"] is True
-    assert body["materialization_summary"]["raw_fact_values_materialized"] is False
+    assert body["materialization_summary"]["raw_fact_values_materialized"] is True
+    assert body["materialization_summary"]["internal_effective_values_materialized"] is True
+    assert body["materialization_summary"]["operator_surface_values_exposed"] is False
     assert body["authority_hashes"]["arelle_sidecar_receipt_hash"] == sidecar["sidecar_receipt_hash"]
     assert body["authority_hashes"]["resolved_fact_inventory_hash"] == sidecar["resolved_fact_inventory_hash"]
-    assert "SECRET_MONETARY_VALUE" not in response.text
-    assert "SECOND_SECRET_VALUE" not in response.text
+    assert "987654321000000" not in response.text
+    assert "-123456789" not in response.text
 
     csv_path = (
         Path(settings.storage_dir)
@@ -4263,13 +4272,20 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
         "concept_standard",
         "concept_extension",
         "value_redacted",
+        "effective_value_text",
+        "lexical_value_text",
+        "transform_scale",
+        "transform_sign",
+        "value_semantics",
     ):
         assert column in csv_text
     assert "2024-01-01" in csv_text
     assert "iso4217:USD" in csv_text
     assert "srt:ProductOrServiceAxis" in csv_text
-    assert "SECRET_MONETARY_VALUE" not in csv_text
-    assert "SECOND_SECRET_VALUE" not in csv_text
+    assert "987654321000000" in csv_text
+    assert "987654321" in csv_text
+    assert "-123456789" in csv_text
+    assert "arelle_effective_canonical_value_v1" in csv_text
 
 
 def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar(

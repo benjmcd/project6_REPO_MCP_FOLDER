@@ -107,6 +107,18 @@ ARELLE_FACT_FIELDNAMES = [
     "continued",
     "footnote_count",
     "value_redacted",
+    "value_semantics",
+    "effective_value_text",
+    "effective_value_hash",
+    "effective_value_length",
+    "lexical_value_text",
+    "lexical_value_hash",
+    "lexical_value_length",
+    "transform_sign",
+    "transform_scale",
+    "transform_decimals",
+    "transform_precision",
+    "transform_format",
 ]
 FACT_FIELDNAMES = REGEX_FACT_FIELDNAMES
 
@@ -218,12 +230,14 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
     )
     fact_receipt: Mapping[str, Any] = regex_fact_receipt
     sidecar_receipt: Mapping[str, Any] | None = None
+    sidecar_value_store: Mapping[str, Any] | None = None
     fact_authority_input_mode = REGEX_FACT_AUTHORITY_INPUT_MODE
     if _arelle_fact_authority_cutover_enabled():
         sidecar_check = _read_arelle_sidecar_authority(request, request_id=request_id, regex_fact_authority_receipt_hash=fact_receipt_hash, parser_receipt_hash=parser_receipt_hash)
         if isinstance(sidecar_check, dict) and sidecar_check.get("bridge_state") == BLOCKED_STATE:
             return sidecar_check
         sidecar_receipt = sidecar_check
+        sidecar_value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(sidecar_receipt)
         _validate_regex_sidecar_binding(regex_fact_receipt, sidecar_receipt)
         fact_receipt = _sidecar_fact_authority_view(sidecar_receipt)
         fact_authority_input_mode = ARELLE_FACT_AUTHORITY_INPUT_MODE
@@ -255,7 +269,7 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
     if sidecar_receipt is None:
         units = _fact_material_units(str(reparsed["primary_document_text"]), parser_receipt=parser_receipt, fact_receipt=fact_receipt, parsed=parsed)
     else:
-        units = _fact_material_units_from_sidecar(sidecar_receipt, parser_receipt=parser_receipt)
+        units = _fact_material_units_from_sidecar(sidecar_receipt, parser_receipt=parser_receipt, value_store=sidecar_value_store)
     materialization = _materialization_basis(
         parser_receipt,
         fact_receipt,
@@ -442,7 +456,9 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
                 "sidecar_resolved_fact_count": int(sidecar_receipt["resolved_fact_count"]),
                 "regex_fact_authority_count": int(regex_fact_receipt.get("fact_count") or 0),
                 "resolved_period_unit_dimension_fields_materialized": True,
-                "raw_fact_values_materialized": False,
+                "raw_fact_values_materialized": True,
+                "internal_effective_values_materialized": True,
+                "operator_surface_values_exposed": False,
             }
         )
         response["compatibility"]["existing_layer3_dataset_version_material_preview_without_source_class_widening"] = True
@@ -597,6 +613,18 @@ def _variable_definitions(fact_authority_input_mode: str) -> tuple[tuple[str, st
         ("continued", "bool", "metadata", False),
         ("footnote_count", "int64", "measure", True),
         ("value_redacted", "bool", "metadata", False),
+        ("value_semantics", "string", "metadata", False),
+        ("effective_value_text", "string", "material_payload", False),
+        ("effective_value_hash", "string", "authority_hash", False),
+        ("effective_value_length", "int64", "measure", True),
+        ("lexical_value_text", "string", "material_payload", False),
+        ("lexical_value_hash", "string", "authority_hash", False),
+        ("lexical_value_length", "int64", "measure", True),
+        ("transform_sign", "string", "metadata", False),
+        ("transform_scale", "string", "metadata", False),
+        ("transform_decimals", "string", "metadata", False),
+        ("transform_precision", "string", "metadata", False),
+        ("transform_format", "string", "metadata", False),
     )
 
 
@@ -669,6 +697,7 @@ def _fact_material_units_from_sidecar(
     sidecar_receipt: Mapping[str, Any],
     *,
     parser_receipt: Mapping[str, Any],
+    value_store: Mapping[str, Any] | None,
 ) -> list[dict[str, Any]]:
     records = list(sidecar_receipt.get("resolved_fact_records") or [])
     if len(records) != int(sidecar_receipt.get("resolved_fact_count") or -1):
@@ -685,6 +714,15 @@ def _fact_material_units_from_sidecar(
             "SEC EDGAR HTML/iXBRL fact material bridge requires sidecar resolved fact inventory hash parity.",
             http_status=409,
             blocked_fields=["arelle_sidecar_receipt_hash"],
+        )
+    value_records = list((value_store or {}).get("value_records") or [])
+    values_by_id = {str(item.get("resolved_fact_id") or ""): item for item in value_records if isinstance(item, Mapping)}
+    if len(values_by_id) != len(records):
+        _blocked(
+            "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_value_store_count_mismatch",
+            "SEC EDGAR HTML/iXBRL fact material bridge requires one internal value-store record for each resolved sidecar fact.",
+            http_status=409,
+            blocked_fields=["internal_value_store"],
         )
     units: list[dict[str, Any]] = []
     for index, record in enumerate(records, start=1):
@@ -704,6 +742,17 @@ def _fact_material_units_from_sidecar(
         resolved_fact_id = str(record.get("resolved_fact_id") or "")
         source_order = int(record.get("source_order") or index)
         entry_document_index = int(record.get("entry_document_index") or 1)
+        value_record = values_by_id.get(resolved_fact_id)
+        if value_record is None:
+            _blocked(
+                "sec_edgar_html_inline_xbrl_fact_material_bridge_sidecar_value_record_missing",
+                "SEC EDGAR HTML/iXBRL fact material bridge requires persisted internal values for each resolved sidecar fact.",
+                http_status=409,
+                blocked_fields=["resolved_fact_id"],
+            )
+        effective_value = str(value_record.get("effective_value") or "")
+        lexical_value = str(value_record.get("lexical_value") or "")
+        transform = dict(value_record.get("transform") or {})
         source_order_hash = stable_hash(
             {
                 "sidecar_receipt_hash": sidecar_receipt["sidecar_receipt_hash"],
@@ -730,8 +779,8 @@ def _fact_material_units_from_sidecar(
                 "source_artifact_receipt_hash": str(record.get("source_artifact_receipt_hash") or parser_receipt["source_artifact_receipt_hash"]),
                 "primary_document_hash": str(record.get("primary_document_hash") or parser_receipt["primary_document_hash"]),
                 "value_text": "",
-                "value_hash": str(record.get("value_hash") or _sha256_text(str(record.get("value") or ""))),
-                "value_length": int(record.get("value_length") or 0),
+                "value_hash": str(record.get("value_hash") or value_record.get("effective_value_hash") or _sha256_text(effective_value)),
+                "value_length": int(record.get("value_length") or value_record.get("effective_value_length") or len(effective_value)),
                 "table_candidate_anchor_hash": None,
                 "parser_receipt_hash": str(parser_receipt["parser_receipt_hash"]),
                 "fact_authority_receipt_hash": str(sidecar_receipt["sidecar_receipt_hash"]),
@@ -763,7 +812,19 @@ def _fact_material_units_from_sidecar(
                 "hidden": bool(record.get("hidden")),
                 "continued": bool(record.get("continued")),
                 "footnote_count": int(record.get("footnote_count") or 0),
-                "value_redacted": True,
+                "value_redacted": False,
+                "value_semantics": str(value_record.get("value_semantics") or record.get("value_semantics") or "arelle_effective_canonical_value_v1"),
+                "effective_value_text": effective_value,
+                "effective_value_hash": str(value_record.get("effective_value_hash") or _sha256_text(effective_value)),
+                "effective_value_length": int(value_record.get("effective_value_length") or len(effective_value)),
+                "lexical_value_text": lexical_value,
+                "lexical_value_hash": str(value_record.get("lexical_value_hash") or _sha256_text(lexical_value)),
+                "lexical_value_length": int(value_record.get("lexical_value_length") or len(lexical_value)),
+                "transform_sign": str(transform.get("sign") or record.get("sign") or ""),
+                "transform_scale": str(transform.get("scale") or record.get("scale") or ""),
+                "transform_decimals": str(transform.get("decimals") or record.get("decimals") or ""),
+                "transform_precision": str(transform.get("precision") or record.get("precision") or ""),
+                "transform_format": str(transform.get("format") or record.get("format") or ""),
             }
         )
     if not units:
@@ -857,8 +918,10 @@ def _materialization_basis(
                 "regex_fact_authority_receipt_hash": regex_fact_receipt["fact_authority_receipt_hash"],
                 "resolved_fact_inventory_hash": sidecar_receipt["resolved_fact_inventory_hash"],
                 "local_value_inventory_hash": sidecar_receipt["local_value_inventory_hash"],
+                "internal_value_store_hash": (sidecar_receipt.get("internal_value_store") or {}).get("value_store_hash"),
                 "resolved_structural_semantics_materialized": True,
-                "raw_fact_values_materialized": False,
+                "raw_fact_values_materialized": True,
+                "operator_surface_values_exposed": False,
             }
         )
     return basis
@@ -898,6 +961,15 @@ def _materialization_admitted_subset(units: list[dict[str, Any]], *, fact_author
             "source_order_hash": unit["source_order_hash"],
             "value_hash": unit["value_hash"],
             "value_length": unit["value_length"],
+            "effective_value_hash": unit["effective_value_hash"],
+            "effective_value_length": unit["effective_value_length"],
+            "lexical_value_hash": unit["lexical_value_hash"],
+            "lexical_value_length": unit["lexical_value_length"],
+            "value_semantics": unit["value_semantics"],
+            "transform_sign": unit["transform_sign"],
+            "transform_scale": unit["transform_scale"],
+            "transform_decimals": unit["transform_decimals"],
+            "transform_format": unit["transform_format"],
         }
         for unit in units
     ]
@@ -947,6 +1019,7 @@ def _bridge_hash_basis(
                 "arelle_sidecar_receipt_hash": sidecar_receipt["sidecar_receipt_hash"],
                 "regex_fact_authority_receipt_hash": regex_fact_authority_receipt_hash,
                 "resolved_fact_inventory_hash": sidecar_receipt["resolved_fact_inventory_hash"],
+                "internal_value_store_hash": (sidecar_receipt.get("internal_value_store") or {}).get("value_store_hash"),
             }
         )
     return basis

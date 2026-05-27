@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import http.client
 import json
@@ -11,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 import urllib.error
 import urllib.request
@@ -95,21 +97,27 @@ def main() -> int:
     elif args.run_live_corpus:
         _override_storage_dir(DEFAULT_LIVE_STORAGE / time.strftime("%Y%m%d%H%M%S", time.gmtime()))
 
-    report = build_report(
-        arelle_python=args.arelle_python,
-        corpus_path=Path(args.corpus) if args.corpus else None,
-        run_live_corpus=args.run_live_corpus,
-        corpus_output=Path(args.corpus_output),
-        user_agent=args.user_agent,
-        company_matrix=tuple(
-            item.strip().upper()
-            for item in args.company_matrix.split(",")
-            if item.strip()
-        ),
-        taxonomy_packages=args.taxonomy_packages,
-        taxonomy_cache_dir=args.taxonomy_cache_dir,
-        taxonomy_internet_connectivity=args.taxonomy_internet_connectivity,
-    )
+    previous_cutover = getattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False)
+    if args.run_live_corpus:
+        settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled = True
+    try:
+        report = build_report(
+            arelle_python=args.arelle_python,
+            corpus_path=Path(args.corpus) if args.corpus else None,
+            run_live_corpus=args.run_live_corpus,
+            corpus_output=Path(args.corpus_output),
+            user_agent=args.user_agent,
+            company_matrix=tuple(
+                item.strip().upper()
+                for item in args.company_matrix.split(",")
+                if item.strip()
+            ),
+            taxonomy_packages=args.taxonomy_packages,
+            taxonomy_cache_dir=args.taxonomy_cache_dir,
+            taxonomy_internet_connectivity=args.taxonomy_internet_connectivity,
+        )
+    finally:
+        settings.layer3_sec_edgar_arelle_fact_authority_cutover_enabled = previous_cutover
     output = (ROOT / args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -193,6 +201,7 @@ def build_report(
             },
         },
         "sidecar_summary": _sidecar_summary(rows),
+        "companyfacts_effective_value_correctness": _companyfacts_effective_value_summary(rows),
         "per_fixture": rows,
         "headline": headline,
     }
@@ -222,6 +231,26 @@ def _sidecar_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "values_redacted_in_report": True,
         "runtime_default_changed": False,
         "bridge_gate_b_product_package_ui_mutated": False,
+    }
+
+
+def _companyfacts_effective_value_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    counted = [
+        row
+        for row in rows
+        if isinstance(row.get("companyfacts_effective_value_match_count"), int)
+        and isinstance(row.get("companyfacts_effective_value_compared_count"), int)
+    ]
+    compared = sum(int(row.get("companyfacts_effective_value_compared_count") or 0) for row in counted)
+    matched = sum(int(row.get("companyfacts_effective_value_match_count") or 0) for row in counted)
+    return {
+        "schema_id": "diagnostics.sec_xbrl_companyfacts_effective_value_correctness.v1",
+        "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
+        "match_count": matched,
+        "compared_count": compared,
+        "match_rate": round(matched / compared, 4) if compared else None,
+        "values_redacted_in_report": True,
+        "identity_redacted": True,
     }
 
 
@@ -559,25 +588,29 @@ def _process_live_filing(
             user_agent=user_agent,
             block=str(exc.args[0] if exc.args else exc).strip(),
         )
-    bridge: dict[str, Any] | None = None
-    classification: dict[str, Any] | None = None
-    pipeline_block: str | None = None
-    try:
-        bridge = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
-            _fact_material_payload(index=index, label=label, parser=parser, fact=fact),
-            db,
-        )
-        classification = layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
-            _classification_payload(index=index, label=label, parser=parser, fact=fact, bridge=bridge)
-        )
-    except Layer3WorkbenchError as exc:
-        pipeline_block = str(exc.args[0] if exc.args else exc).strip()
     companyfacts = _companyfacts_count(
         cik=raw_identity["cik"],
         accession=raw_identity["accession"],
         user_agent=user_agent,
     )
     sidecar = _sidecar_response(index=index, label=label, parser=parser, fact=fact, companyfacts=companyfacts)
+    value_match = _companyfacts_value_match(sidecar=sidecar, companyfacts=companyfacts)
+    bridge: dict[str, Any] | None = None
+    classification: dict[str, Any] | None = None
+    pipeline_block: str | None = None
+    try:
+        bridge = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
+            _fact_material_payload(index=index, label=label, parser=parser, fact=fact, sidecar=sidecar),
+            db,
+        )
+        if bridge.get("bridge_state") != layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.READY_STATE:
+            pipeline_block = str(((bridge.get("status_projection") or {}).get("blocked_reasons") or [{}])[0].get("reason") or "bridge_blocked")
+        elif bridge.get("fact_authority_input_mode") != layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.ARELLE_FACT_AUTHORITY_INPUT_MODE:
+            classification = layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
+                _classification_payload(index=index, label=label, parser=parser, fact=fact, bridge=bridge)
+            )
+    except Layer3WorkbenchError as exc:
+        pipeline_block = str(exc.args[0] if exc.args else exc).strip()
     arelle = _arelle_fact_count(primary_document=primary, arelle_python=arelle_python)
     oracle_count = arelle.get("fact_count")
     if not isinstance(oracle_count, int):
@@ -594,6 +627,9 @@ def _process_live_filing(
         "companyfacts_fact_count": companyfacts.get("fact_count"),
         "companyfacts_oracle_used": companyfacts.get("oracle_used"),
         "companyfacts_confidence": companyfacts.get("confidence"),
+        "companyfacts_effective_value_match_count": value_match["match_count"],
+        "companyfacts_effective_value_compared_count": value_match["compared_count"],
+        "companyfacts_effective_value_match_rate": value_match["match_rate"],
         "arelle_fact_count": arelle.get("fact_count"),
         "arelle_oracle_used": arelle.get("oracle_used"),
         "arelle_confidence": arelle.get("confidence"),
@@ -721,7 +757,9 @@ def _sidecar_fields(sidecar: Mapping[str, Any]) -> dict[str, Any]:
         "sidecar_independent_inline_fact_count_reconciled": diagnostics.get("independent_inline_fact_count_reconciled"),
         "sidecar_blocked_reasons": [str(item.get("reason")) for item in reasons if isinstance(item, Mapping)],
         "sidecar_values_redacted_in_report": True,
-        "sidecar_local_receipt_retains_values": sidecar.get("status") == "ready",
+        "sidecar_local_receipt_retains_values": False,
+        "sidecar_internal_value_store_state": (sidecar.get("internal_value_store") or {}).get("store_state") if isinstance(sidecar.get("internal_value_store"), Mapping) else None,
+        "sidecar_internal_value_store_hash": (sidecar.get("internal_value_store") or {}).get("value_store_hash") if isinstance(sidecar.get("internal_value_store"), Mapping) else None,
     }
 
 
@@ -779,8 +817,15 @@ def _blocked_fact_row(
     }
 
 
-def _fact_material_payload(*, index: int, label: str, parser: Mapping[str, Any], fact: Mapping[str, Any]) -> dict[str, Any]:
-    return {
+def _fact_material_payload(
+    *,
+    index: int,
+    label: str,
+    parser: Mapping[str, Any],
+    fact: Mapping[str, Any],
+    sidecar: Mapping[str, Any],
+) -> dict[str, Any]:
+    payload = {
         "client_request_id": f"sec-xbrl-measure-fact-material-{label}-{index}",
         "bridge_mode": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.BRIDGE_MODE,
         "operator_decision": layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.OPERATOR_DECISION,
@@ -800,6 +845,12 @@ def _fact_material_payload(*, index: int, label: str, parser: Mapping[str, Any],
         "rollback_confirmed": True,
         "operator_confirmed": True,
     }
+    if sidecar.get("sidecar_state") == layer3_sec_xbrl_sidecar.READY_STATE:
+        payload["arelle_sidecar_receipt_id"] = sidecar["sidecar_receipt_id"]
+        payload["arelle_sidecar_receipt_hash"] = sidecar["sidecar_receipt_hash"]
+        payload["expected_fact_inventory_hash"] = sidecar["resolved_fact_inventory_hash"]
+        payload["expected_diagnostics_hash"] = sidecar["diagnostics_hash"]
+    return payload
 
 
 def _classification_payload(
@@ -1005,6 +1056,7 @@ def _companyfacts_count(*, cik: str, accession: str, user_agent: str) -> dict[st
             "error_hash": _sha256(type(exc).__name__.encode("utf-8"))[:16],
         }
     count = 0
+    value_keys: list[tuple[str, str, str]] = []
     taxonomies = payload.get("facts") if isinstance(payload, dict) else {}
     if not isinstance(taxonomies, dict):
         return {"oracle_used": False, "confidence": "unavailable_invalid_payload", "fact_count": None}
@@ -1012,19 +1064,134 @@ def _companyfacts_count(*, cik: str, accession: str, user_agent: str) -> dict[st
         concepts = taxonomies.get(taxonomy_name) or {}
         if not isinstance(concepts, dict):
             continue
-        for concept in concepts.values():
+        for concept_name, concept in concepts.items():
             units = concept.get("units") if isinstance(concept, dict) else {}
             if not isinstance(units, dict):
                 continue
-            for facts in units.values():
+            for unit_name, facts in units.items():
                 if not isinstance(facts, list):
                     continue
-                count += sum(1 for fact in facts if isinstance(fact, dict) and fact.get("accn") == accession)
+                for fact in facts:
+                    if not isinstance(fact, dict) or fact.get("accn") != accession:
+                        continue
+                    count += 1
+                    value_key = _numeric_value_key(concept_name, unit_name, fact.get("val"))
+                    if value_key is not None:
+                        value_keys.append(value_key)
     return {
         "oracle_used": True,
         "confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
         "fact_count": count,
+        "_value_keys": value_keys,
     }
+
+
+def _companyfacts_value_match(*, sidecar: Mapping[str, Any], companyfacts: Mapping[str, Any]) -> dict[str, Any]:
+    if sidecar.get("sidecar_state") != layer3_sec_xbrl_sidecar.READY_STATE:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    value_keys = companyfacts.get("_value_keys")
+    if not isinstance(value_keys, list) or not value_keys:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    try:
+        receipt = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
+            str(sidecar["sidecar_receipt_id"]),
+            expected_sidecar_receipt_hash=str(sidecar["sidecar_receipt_hash"]),
+        )
+        store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
+    except Layer3WorkbenchError:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    values_by_id = {
+        str(item.get("resolved_fact_id") or ""): item
+        for item in store.get("value_records") or []
+        if isinstance(item, Mapping)
+    }
+    companyfacts_by_concept_unit: dict[tuple[str, str], list[Decimal]] = {}
+    for item in value_keys:
+        if not isinstance(item, (list, tuple)) or len(item) != 3:
+            continue
+        concept_name, unit_name, value_text = item
+        try:
+            value_decimal = Decimal(str(value_text))
+        except (InvalidOperation, ValueError):
+            continue
+        companyfacts_by_concept_unit.setdefault((str(concept_name), str(unit_name)), []).append(value_decimal)
+    compared = 0
+    matched = 0
+    for record in receipt.get("resolved_fact_records") or []:
+        if not isinstance(record, Mapping):
+            continue
+        concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+        namespace = str(concept.get("namespace") or "")
+        if not concept.get("standard") or not ("fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace):
+            continue
+        value_record = values_by_id.get(str(record.get("resolved_fact_id") or ""))
+        if not isinstance(value_record, Mapping):
+            continue
+        unit = record.get("unit") if isinstance(record.get("unit"), Mapping) else {}
+        dimensions = record.get("dimensions") if isinstance(record.get("dimensions"), Mapping) else {}
+        if list(dimensions.get("explicit") or []) or list(dimensions.get("typed") or []):
+            continue
+        concept_unit = (str(concept.get("local_name") or ""), _companyfacts_unit_name(unit))
+        candidates = companyfacts_by_concept_unit.get(concept_unit)
+        if not candidates:
+            continue
+        try:
+            effective_value = Decimal(str(value_record.get("effective_value")))
+        except (InvalidOperation, ValueError):
+            continue
+        tolerance = _decimals_tolerance(record.get("decimals"))
+        compared += 1
+        match_index = _matching_decimal_index(candidates, effective_value, tolerance)
+        if match_index is not None:
+            matched += 1
+            candidates.pop(match_index)
+    return {
+        "match_count": matched,
+        "compared_count": compared,
+        "match_rate": round(matched / compared, 4) if compared else None,
+    }
+
+
+def _numeric_value_key(concept_name: Any, unit_name: Any, value: Any) -> tuple[str, str, str] | None:
+    try:
+        numeric = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    return (
+        str(concept_name or ""),
+        str(unit_name or ""),
+        format(numeric.normalize(), "f"),
+    )
+
+
+def _decimals_tolerance(decimals: Any) -> Decimal:
+    if decimals is None or decimals == "":
+        return Decimal("0")
+    text = str(decimals).strip()
+    if text.upper() in {"INF", "INFINITY"}:
+        return Decimal("0")
+    try:
+        return Decimal(1).scaleb(-int(text))
+    except (ValueError, InvalidOperation):
+        return Decimal("0")
+
+
+def _matching_decimal_index(candidates: list[Decimal], effective_value: Decimal, tolerance: Decimal) -> int | None:
+    for index, candidate in enumerate(candidates):
+        if abs(candidate - effective_value) <= tolerance:
+            return index
+    return None
+
+
+def _companyfacts_unit_name(unit: Mapping[str, Any]) -> str:
+    currency = str(unit.get("currency") or "")
+    if currency.startswith("iso4217:"):
+        return currency.split(":", 1)[1]
+    measures = list(unit.get("measures") or [])
+    if measures:
+        measure = str(measures[0])
+        return measure.split(":", 1)[1] if ":" in measure else measure
+    return ""
 
 
 def _arelle_fact_count(*, primary_document: str, arelle_python: str) -> dict[str, Any]:

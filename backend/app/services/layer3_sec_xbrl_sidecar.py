@@ -37,6 +37,9 @@ ARELLE_VERSION = "2.41.3"
 ADAPTER_VERSION = f"{ADAPTER_ID}:{ARELLE_PACKAGE}=={ARELLE_VERSION}"
 RECEIPT_PREFIX = "sec-edgar-arelle-resolved-fact-authority"
 RECEIPT_DIR = "layer3-sec-edgar-arelle-resolved-fact-authority"
+INTERNAL_VALUE_STORE_SCHEMA_ID = "layer3.sec_edgar_arelle_resolved_fact_authority_internal_value_store.v1"
+INTERNAL_VALUE_STORE_DIR = "internal-value-stores"
+VALUE_SEMANTICS_ID = "arelle_effective_canonical_value_v1"
 REDACTION_POLICY_ID = "sec_edgar_arelle_resolved_fact_authority_sidecar_redaction_v1"
 AUTHORITY_HASH_VERSION = "sec_edgar_arelle_resolved_fact_authority_sidecar_hash_v1"
 DEFAULT_TIMEOUT_SECONDS = 120
@@ -188,14 +191,22 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
             ],
         )
 
-    local_facts = _local_facts(arelle["facts"], parser_receipt=parser_receipt)
+    local_facts, value_records = _local_facts(arelle["facts"], parser_receipt=parser_receipt)
     redacted_facts = [_redacted_fact(fact) for fact in local_facts]
     coverage = _coverage_stats(redacted_facts)
+    internal_value_store_enabled = _arelle_fact_authority_cutover_enabled()
+    internal_value_store_hash = stable_hash(value_records) if internal_value_store_enabled else None
+    internal_value_store = _internal_value_store_metadata(
+        enabled=internal_value_store_enabled,
+        value_store_hash=internal_value_store_hash,
+        value_record_count=len(value_records) if internal_value_store_enabled else 0,
+    )
     diagnostics = _diagnostics(
         arelle=arelle,
         coverage=coverage,
         max_facts=max_facts,
         independent_inline_facts=independent_inline_facts,
+        internal_value_store_enabled=internal_value_store_enabled,
     )
     resolved_fact_inventory_hash = stable_hash(redacted_facts)
     local_value_inventory_hash = stable_hash([fact["value_hash"] for fact in redacted_facts])
@@ -224,6 +235,8 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
             "inline_xbrl_marker_inventory_hash": expected_hashes["inline_xbrl_marker_inventory_hash"],
             "resolved_fact_inventory_hash": resolved_fact_inventory_hash,
             "local_value_inventory_hash": local_value_inventory_hash,
+            "internal_value_store_enabled": internal_value_store_enabled,
+            "internal_value_store_hash": internal_value_store_hash,
             "diagnostics_hash": diagnostics_hash,
             "parity_hash": stable_hash(parity),
         }
@@ -273,6 +286,7 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
         "resolved_fact_projection": redacted_facts,
         "resolved_fact_inventory_hash": resolved_fact_inventory_hash,
         "local_value_inventory_hash": local_value_inventory_hash,
+        "internal_value_store": internal_value_store,
         "coverage": coverage,
         "parity": parity,
         "diagnostics": diagnostics,
@@ -282,6 +296,7 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
             **expected_hashes,
             "resolved_fact_inventory_hash": resolved_fact_inventory_hash,
             "local_value_inventory_hash": local_value_inventory_hash,
+            "internal_value_store_hash": internal_value_store_hash,
             "diagnostics_hash": diagnostics_hash,
             "sidecar_receipt_hash": receipt_hash,
         },
@@ -291,6 +306,8 @@ def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str,
         "recorded_at": _server_time(),
         "updated_at": _server_time(),
     }
+    if internal_value_store_enabled:
+        _write_internal_value_store(receipt, value_records)
     _write_receipt(receipt)
     _write_request_binding(request_id, receipt_hash, receipt_id)
     return _response_from_receipt(receipt, request_id=request_id, schema_id=SCHEMA_ID, idempotent_replay=False)
@@ -321,6 +338,67 @@ def read_sec_edgar_arelle_resolved_fact_authority_sidecar_receipt(
             blocked_fields=["sidecar_receipt_hash"],
         )
     return receipt
+
+
+def read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(
+    receipt: Mapping[str, Any],
+) -> dict[str, Any]:
+    metadata = receipt.get("internal_value_store") if isinstance(receipt.get("internal_value_store"), Mapping) else {}
+    if metadata.get("store_state") != "persisted":
+        _blocked(
+            "sec_edgar_arelle_sidecar_internal_value_store_not_persisted",
+            "SEC EDGAR Arelle sidecar internal value store is required for governed value materialization.",
+            http_status=409,
+            blocked_fields=["internal_value_store"],
+        )
+    receipt_id = str(receipt.get("sidecar_receipt_id") or "")
+    receipt_hash = str(receipt.get("sidecar_receipt_hash") or "")
+    try:
+        value_store = json.loads(_value_store_path(receipt_id).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        _blocked(
+            "sec_edgar_arelle_sidecar_internal_value_store_missing",
+            "SEC EDGAR Arelle sidecar internal value store was not found.",
+            http_status=404,
+            blocked_fields=["internal_value_store"],
+        )
+    except (OSError, json.JSONDecodeError):
+        _blocked(
+            "sec_edgar_arelle_sidecar_internal_value_store_unreadable",
+            "SEC EDGAR Arelle sidecar internal value store could not be read.",
+            http_status=409,
+            blocked_fields=["internal_value_store"],
+        )
+    records = value_store.get("value_records") if isinstance(value_store, Mapping) else None
+    if not isinstance(records, list):
+        _blocked(
+            "sec_edgar_arelle_sidecar_internal_value_store_invalid",
+            "SEC EDGAR Arelle sidecar internal value store is invalid.",
+            http_status=409,
+            blocked_fields=["internal_value_store"],
+        )
+    expected_hash = str(metadata.get("value_store_hash") or "")
+    checks = {
+        "sidecar_receipt_id": str(value_store.get("sidecar_receipt_id") or ""),
+        "sidecar_receipt_hash": str(value_store.get("sidecar_receipt_hash") or ""),
+        "value_store_hash": stable_hash(records),
+        "value_record_count": len(records),
+    }
+    if checks["sidecar_receipt_id"] != receipt_id or checks["sidecar_receipt_hash"] != receipt_hash:
+        _blocked(
+            "sec_edgar_arelle_sidecar_internal_value_store_lineage_mismatch",
+            "SEC EDGAR Arelle sidecar internal value store lineage does not match its sidecar receipt.",
+            http_status=409,
+            blocked_fields=["sidecar_receipt_hash"],
+        )
+    if checks["value_store_hash"] != expected_hash or checks["value_record_count"] != int(metadata.get("value_record_count") or -1):
+        _blocked(
+            "sec_edgar_arelle_sidecar_internal_value_store_hash_mismatch",
+            "SEC EDGAR Arelle sidecar internal value store hash or count is stale.",
+            http_status=409,
+            blocked_fields=["internal_value_store_hash"],
+        )
+    return dict(value_store)
 
 
 def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: list[dict[str, str]]) -> dict[str, Any]:
@@ -544,16 +622,25 @@ def _inline_prefixes(text: str) -> list[str]:
     return sorted({prefix for prefix, namespace in _XMLNS_RE.findall(text) if namespace in _INLINE_XBRL_NAMESPACES})
 
 
-def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> list[dict[str, Any]]:
+def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     output: list[dict[str, Any]] = []
+    value_records: list[dict[str, Any]] = []
     for index, item in enumerate(facts, start=1):
         if not isinstance(item, Mapping):
             continue
-        value = str(item.get("value") or "")
+        effective_value = str(item.get("effective_value") if item.get("effective_value") is not None else item.get("value") or "")
+        lexical_value = str(item.get("lexical_value") or "")
         concept = dict(item.get("concept") or {})
         period = dict(item.get("period") or {})
         unit = dict(item.get("unit") or {})
         dimensions = dict(item.get("dimensions") or {})
+        transform = {
+            "sign": _optional_str(item.get("sign")),
+            "scale": _optional_str(item.get("scale")),
+            "decimals": _optional_str(item.get("decimals")),
+            "precision": _optional_str(item.get("precision")),
+            "format": _optional_str(item.get("format")),
+        }
         fact_key = stable_hash(
             {
                 "parser_receipt_hash": parser_receipt["parser_receipt_hash"],
@@ -565,9 +652,11 @@ def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> list
                 "period": period,
                 "unit": unit,
                 "dimensions": dimensions,
-                "value_hash": _sha256_text(value),
+                "effective_value_hash": _sha256_text(effective_value),
             }
         )
+        value_hash = _sha256_text(effective_value)
+        lexical_value_hash = _sha256_text(lexical_value)
         output.append(
             {
                 "resolved_fact_id": fact_key,
@@ -579,30 +668,50 @@ def _local_facts(facts: list[Any], *, parser_receipt: Mapping[str, Any]) -> list
                 "period": period,
                 "unit": unit,
                 "dimensions": dimensions,
-                "decimals": _optional_str(item.get("decimals")),
-                "precision": _optional_str(item.get("precision")),
-                "scale": _optional_str(item.get("scale")),
-                "format": _optional_str(item.get("format")),
+                "decimals": transform["decimals"],
+                "precision": transform["precision"],
+                "scale": transform["scale"],
+                "format": transform["format"],
+                "sign": transform["sign"],
                 "hidden": bool(item.get("hidden")),
                 "continued": bool(item.get("continued")),
                 "continued_at": _optional_str(item.get("continued_at")),
                 "footnote_count": int(item.get("footnote_count") or 0),
-                "value": value,
-                "value_hash": _sha256_text(value),
-                "value_length": len(value),
+                "value_hash": value_hash,
+                "value_length": len(effective_value),
+                "effective_value_hash": value_hash,
+                "effective_value_length": len(effective_value),
+                "lexical_value_hash": lexical_value_hash,
+                "lexical_value_length": len(lexical_value),
+                "value_semantics": VALUE_SEMANTICS_ID,
                 "value_redacted_in_projection": True,
                 "source_artifact_receipt_hash": str(parser_receipt["source_artifact_receipt_hash"]),
                 "primary_document_hash": str(parser_receipt["primary_document_hash"]),
             }
         )
-    return output
+        value_records.append(
+            {
+                "resolved_fact_id": fact_key,
+                "source_order": int(item.get("source_order") or index),
+                "entry_document_index": int(item.get("entry_document_index") or 1),
+                "effective_value": effective_value,
+                "effective_value_hash": value_hash,
+                "effective_value_length": len(effective_value),
+                "lexical_value": lexical_value,
+                "lexical_value_hash": lexical_value_hash,
+                "lexical_value_length": len(lexical_value),
+                "transform": transform,
+                "value_semantics": VALUE_SEMANTICS_ID,
+            }
+        )
+    return output, value_records
 
 
 def _redacted_fact(fact: Mapping[str, Any]) -> dict[str, Any]:
     return {
         key: value
         for key, value in fact.items()
-        if key not in {"value"}
+        if key not in {"value", "effective_value", "lexical_value"}
     } | {"value_redacted": True}
 
 
@@ -640,6 +749,7 @@ def _diagnostics(
     coverage: Mapping[str, Any],
     max_facts: int,
     independent_inline_facts: Mapping[str, Any],
+    internal_value_store_enabled: bool,
 ) -> dict[str, Any]:
     document_tally = list(independent_inline_facts.get("document_tally") or [])
     return {
@@ -667,7 +777,9 @@ def _diagnostics(
         "source_order_preserved": True,
         "resolved_structural_semantics": dict(coverage),
         "raw_fact_values_exposed_in_response": False,
-        "raw_fact_values_retained_local_receipt": True,
+        "raw_fact_values_retained_local_receipt": False,
+        "raw_fact_values_retained_internal_value_store": internal_value_store_enabled,
+        "internal_value_store_retention_policy": "tied_to_sidecar_receipt_lifecycle" if internal_value_store_enabled else "not_created_without_cutover_flag",
         "bridge_gate_b_product_package_ui_mutated": False,
         "final_financial_statement_semantics_claimed": False,
         "cross_company_comparability_claimed": False,
@@ -762,6 +874,7 @@ def _response_from_receipt(
         "resolved_fact_count": receipt["resolved_fact_count"],
         "resolved_fact_inventory_hash": receipt["resolved_fact_inventory_hash"],
         "local_value_inventory_hash": receipt["local_value_inventory_hash"],
+        "internal_value_store": dict(receipt.get("internal_value_store") or {}),
         "coverage": dict(receipt["coverage"]),
         "parity": dict(receipt["parity"]),
         "diagnostics": dict(receipt["diagnostics"]),
@@ -773,7 +886,9 @@ def _response_from_receipt(
             "resolved_fact_count": receipt["resolved_fact_count"],
             "structural_semantics_resolved": True,
             "fact_values_returned": False,
-            "local_receipt_retains_fact_values": True,
+            "local_receipt_retains_fact_values": False,
+            "internal_value_store_state": (receipt.get("internal_value_store") or {}).get("store_state"),
+            "internal_value_store_retention_policy": (receipt.get("internal_value_store") or {}).get("retention_policy"),
             "bridge_mutated": False,
             "gate_b_mutated": False,
             "product_mutated": False,
@@ -947,6 +1062,72 @@ def _write_receipt(receipt: Mapping[str, Any]) -> None:
         handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
 
 
+def _write_internal_value_store(receipt: Mapping[str, Any], value_records: list[dict[str, Any]]) -> None:
+    metadata = receipt.get("internal_value_store") if isinstance(receipt.get("internal_value_store"), Mapping) else {}
+    expected_hash = str(metadata.get("value_store_hash") or "")
+    payload = {
+        "schema_id": INTERNAL_VALUE_STORE_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "sidecar_receipt_id": receipt["sidecar_receipt_id"],
+        "sidecar_receipt_hash": receipt["sidecar_receipt_hash"],
+        "value_store_hash": expected_hash,
+        "value_record_count": len(value_records),
+        "value_semantics": VALUE_SEMANTICS_ID,
+        "retention_policy": "tied_to_sidecar_receipt_lifecycle",
+        "gitignored_local_storage": True,
+        "operator_surface_exposure": False,
+        "committed_artifact_exposure": False,
+        "created_by_cutover_flag": True,
+        "recorded_at": _server_time(),
+        "value_records": value_records,
+    }
+    if stable_hash(value_records) != expected_hash:
+        _blocked(
+            "sec_edgar_arelle_sidecar_internal_value_store_hash_invalid",
+            "SEC EDGAR Arelle sidecar internal value store basis is invalid.",
+            http_status=409,
+            blocked_fields=["internal_value_store_hash"],
+        )
+    target = _value_store_path(str(receipt["sidecar_receipt_id"]))
+    if target.exists():
+        read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(receipt)
+        return
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open("x", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, sort_keys=True, indent=2) + "\n")
+
+
+def _internal_value_store_metadata(
+    *,
+    enabled: bool,
+    value_store_hash: str | None,
+    value_record_count: int,
+) -> dict[str, Any]:
+    if not enabled:
+        return {
+            "schema_id": INTERNAL_VALUE_STORE_SCHEMA_ID,
+            "store_state": "not_created_cutover_flag_off",
+            "creation_gated_by_cutover_flag": True,
+            "consumption_gated_by_cutover_flag": True,
+            "value_record_count": 0,
+            "values_exposed_in_status_projection": False,
+            "retention_policy": "not_created_without_cutover_flag",
+        }
+    return {
+        "schema_id": INTERNAL_VALUE_STORE_SCHEMA_ID,
+        "store_state": "persisted",
+        "creation_gated_by_cutover_flag": True,
+        "consumption_gated_by_cutover_flag": True,
+        "value_store_hash": value_store_hash,
+        "value_record_count": value_record_count,
+        "value_semantics": VALUE_SEMANTICS_ID,
+        "retention_policy": "tied_to_sidecar_receipt_lifecycle",
+        "gitignored_local_storage": True,
+        "operator_surface_exposure": False,
+        "committed_artifact_exposure": False,
+    }
+
+
 def _read_receipt_by_hash(receipt_hash: str) -> dict[str, Any] | None:
     path = _receipt_path(f"{RECEIPT_PREFIX}-{receipt_hash[:24]}")
     if not path.exists():
@@ -1088,6 +1269,10 @@ def _receipt_path(receipt_id: str) -> Path:
     return _root() / "receipts" / f"{receipt_id}.json"
 
 
+def _value_store_path(receipt_id: str) -> Path:
+    return _root() / INTERNAL_VALUE_STORE_DIR / f"{receipt_id}.json"
+
+
 def _request_bindings_dir() -> Path:
     return _root() / "request-bindings"
 
@@ -1136,6 +1321,10 @@ def _taxonomy_cache_dir() -> Path | None:
 def _taxonomy_internet_connectivity() -> str:
     value = str(os.environ.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY") or "offline").strip().lower()
     return "online" if value == "online" else "offline"
+
+
+def _arelle_fact_authority_cutover_enabled() -> bool:
+    return bool(getattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False))
 
 
 def _path_inside_repo_or_onedrive(path: Path) -> bool:

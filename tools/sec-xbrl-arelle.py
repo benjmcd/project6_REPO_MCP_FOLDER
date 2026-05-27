@@ -135,7 +135,8 @@ def _fact_payload(
 ) -> dict[str, Any]:
     context = getattr(fact, "context", None)
     unit = getattr(fact, "unit", None)
-    value = str(getattr(fact, "value", "") or "")
+    effective_value = str(getattr(fact, "value", "") or "")
+    lexical_value = _lexical_value(fact)
     return {
         "source_order": source_order,
         "entry_document_index": entry_index,
@@ -149,11 +150,14 @@ def _fact_payload(
         "precision": _attr(fact, "precision"),
         "scale": _attr(fact, "scale"),
         "format": _attr(fact, "format"),
+        "sign": _attr(fact, "sign"),
         "hidden": _hidden(fact),
         "continued": bool(_attr(fact, "continuedAt")),
         "continued_at": _attr(fact, "continuedAt"),
         "footnote_count": len(list(getattr(fact, "footnotes", []) or [])),
-        "value": value,
+        "value": effective_value,
+        "effective_value": effective_value,
+        "lexical_value": lexical_value,
     }
 
 
@@ -296,6 +300,16 @@ def _typed_value(node: Any) -> str:
     if callable(itertext):
         return " ".join(part.strip() for part in itertext() if str(part).strip())
     return str(getattr(node, "text", "") or "")
+
+
+def _lexical_value(fact: Any) -> str:
+    itertext = getattr(fact, "itertext", None)
+    if callable(itertext):
+        return " ".join(part.strip() for part in itertext() if str(part).strip())
+    text = getattr(fact, "text", None)
+    if text is not None:
+        return str(text)
+    return ""
 
 
 def _date(value: Any) -> str | None:
