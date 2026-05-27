@@ -1,0 +1,81 @@
+# SEC EDGAR Durable Delivery Archive Selection
+
+```yaml
+milestone: sec_edgar_durable_delivery_archive_selection_v1
+source_operator_product_surface_breadth_rendered_ui_verification: next_milestone_plans/Layer3_planning_docs/1247-sec-edgar-operator-product-surface-breadth-rendered-ui-verification.md
+entry_main_commit: d756f16d0cd6fdcaafe4555351d07f81d1d8eedd
+entry_decision: freeze_only_with_runtime_disabled_guard
+runtime_status: not_implemented
+selected_next_runtime_target: sec_edgar_durable_delivery_archive_runtime_v1
+selected_future_service: backend/app/services/layer3_sec_edgar_durable_delivery_archive.py
+selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive
+selected_future_status_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive/status/{sec_edgar_durable_delivery_archive_receipt_id}
+selected_archive_mode: sec_edgar_durable_delivery_archive_v1
+selected_operator_decision: archive_sec_edgar_operator_product_surface_delivery_package
+selected_input_authority: sec_edgar_operator_product_surface_receipt_id,sec_edgar_operator_product_surface_receipt_hash
+selected_required_source_status: sec_edgar_operator_product_surface_ready
+selected_required_company_matrices: MSFT,STLD,SONY,CCJ|XOM,PFE,UAL,T
+selected_archive_scope: redacted_product_surface_package_manifest_and_delivery_readiness_archive
+selected_archive_roles: product_surface_receipt,delivery_status_provenance_receipt,operator_inspection_receipt,validation_receipt,authority_chain,product_view_manifest,surface_rollup,diagnostics_loss_report,redaction_manifest
+selected_output_authority: sec_edgar_durable_delivery_archive_receipt_id,sec_edgar_durable_delivery_archive_receipt_hash,archive_manifest_hash,archive_order_hash,source_authority_chain_hash,redaction_manifest_hash
+selected_storage_policy: existing_layer3_storage_root_only_no_new_runtime_storage_root
+selected_non_loss_policy: archive_manifest_references_every_product_view_authority_chain_delivery_record_quality_gap_semantic_profile_extension_unclassified_record_and_diagnostics_loss_report_without_discarding_product_evidence
+selected_order_policy: preserve_company_form_matrix_order_product_view_order_authority_chain_order_delivery_status_record_order_and_diagnostics_order
+selected_redaction_policy: archive_redacted_manifest_and_authority_hashes_only_no_raw_url_path_accession_ticker_company_name_artifact_bytes_or_raw_fact_value_projection
+selected_idempotency_contract: same_client_request_id_same_product_surface_authority_returns_same_archive_receipt_same_client_request_id_different_authority_fails_closed_same_product_surface_authority_new_client_request_id_returns_existing_archive_status
+selected_failure_lifecycle: fail_closed_on_missing_product_surface_receipt_product_surface_hash_mismatch_product_surface_not_ready_company_matrix_not_admitted_missing_delivery_or_operator_authority_raw_leakage_detected_unknown_request_field_operator_confirmation_missing_or_attempted_provider_connector_frontend_runtime_mutation
+selected_runtime_guard: SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED=false
+runtime_admission_in_this_freeze: false
+archive_receipt_write_in_this_freeze: false
+delivery_file_response_in_this_freeze: false
+provider_object_write_enabled: false
+connector_dispatch_enabled: false
+internal_webhook_dispatch_enabled: false
+rag_vector_model_runtime_enabled: false
+frontend_durable_authority_enabled: false
+browser_storage_authority_enabled: false
+package_mutation_performed: false
+sec_network_fetch_performed: false
+parser_rerun_performed: false
+html_inline_xbrl_reparse_or_rematerialization_performed: false
+financial_statement_semantics_finalized: false
+cross_company_comparability_ready: false
+cross_company_comparability_admitted: false
+comparability_normalization_performed: false
+next_exact_posture: sec_edgar_durable_delivery_archive_runtime_v1
+```
+
+## Purpose
+
+Select the next SEC/EDGAR product-grade hardening slice: a durable, server-owned delivery/archive receipt over the already rendered operator product surface. The runtime should let the SEC product package move beyond status/provenance inspection by recording a redacted archive manifest under existing Layer 3 storage authority.
+
+## Boundary
+
+This pass is selection only. It records the future durable archive target in documentation, service constants, and tests while keeping runtime admission disabled. The future runtime must consume only server-issued operator product-surface receipt authority and must fail closed on stale hashes, unadmitted company matrices, missing upstream delivery/operator authority, raw leakage, unknown fields, missing operator confirmation, or any attempted provider, connector, frontend, or package mutation.
+
+## Non-Admissions
+
+This selection does not admit:
+
+- durable archive receipt writes
+- delivery file responses
+- provider object writes
+- connector or internal webhook dispatch
+- browser storage or frontend durable authority
+- package mutation or package payload rewrite
+- SEC network fetches
+- parser reruns or HTML/iXBRL rematerialization
+- RAG/vector/model runtime
+- final financial-statement semantics
+- cross-company comparability or comparability normalization
+
+## Coherence Checks
+
+1. Is durable delivery/archive runtime admitted in this pass?
+   Recommended answer: no. `SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED` remains false.
+
+2. What authority should the future runtime consume?
+   Recommended answer: only `sec_edgar_operator_product_surface_receipt_id` plus `sec_edgar_operator_product_surface_receipt_hash`, then server-read upstream delivery, operator-inspection, validation, product-view, diagnostics, and redaction evidence.
+
+3. Does durable archive mean provider delivery or file serving?
+   Recommended answer: no. The selected archive is a server-owned redacted manifest/receipt. Provider delivery, connector dispatch, and delivery file responses remain separate future lanes.

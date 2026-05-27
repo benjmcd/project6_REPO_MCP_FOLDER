@@ -3619,6 +3619,9 @@ SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME = (
 SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RENDERED_UI_VERIFICATION = (
     PLANNING_DOCS / "1247-sec-edgar-operator-product-surface-breadth-rendered-ui-verification.md"
 )
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION = (
+    PLANNING_DOCS / "1248-sec-edgar-durable-delivery-archive-selection.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -118166,6 +118169,63 @@ def _check_sec_edgar_operator_product_surface_breadth_rendered_ui_verification(
                 )
 
 
+def _check_sec_edgar_durable_delivery_archive_selection(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION: (
+            "SEC EDGAR Durable Delivery Archive Selection",
+            "milestone: sec_edgar_durable_delivery_archive_selection_v1",
+            "source_operator_product_surface_breadth_rendered_ui_verification: next_milestone_plans/Layer3_planning_docs/1247-sec-edgar-operator-product-surface-breadth-rendered-ui-verification.md",
+            "selected_next_runtime_target: sec_edgar_durable_delivery_archive_runtime_v1",
+            "selected_future_service: backend/app/services/layer3_sec_edgar_durable_delivery_archive.py",
+            "selected_future_endpoint: /api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+            "selected_input_authority: sec_edgar_operator_product_surface_receipt_id,sec_edgar_operator_product_surface_receipt_hash",
+            "selected_runtime_guard: SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED=false",
+            "runtime_admission_in_this_freeze: false",
+            "archive_receipt_write_in_this_freeze: false",
+            "delivery_file_response_in_this_freeze: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "frontend_durable_authority_enabled: false",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "comparability_normalization_performed: false",
+            "next_exact_posture: sec_edgar_durable_delivery_archive_runtime_v1",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RENDERED_UI_VERIFICATION: (
+            "next_exact_posture: sec_edgar_durable_delivery_archive_selection_v1",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION_VERSION",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_RUNTIME_TARGET",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_SERVICE",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_ENDPOINT",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_STATUS_ENDPOINT",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_INPUT_AUTHORITY",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = False",
+            '"durable_delivery_archive_runtime_enabled"',
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_selects_sec_edgar_durable_delivery_archive_without_runtime_admission",
+            "sec_edgar_durable_delivery_archive_selection_v1",
+            "sec_edgar_durable_delivery_archive_runtime_v1",
+            "backend/app/services/layer3_sec_edgar_durable_delivery_archive.py",
+            "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+            '"durable_delivery_archive_runtime_enabled"',
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        if not body:
+            continue
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR durable delivery archive selection term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119487,6 +119547,7 @@ def main() -> int:
     _check_sec_edgar_operator_product_surface_breadth_selection(errors)
     _check_sec_edgar_operator_product_surface_breadth_runtime(errors)
     _check_sec_edgar_operator_product_surface_breadth_rendered_ui_verification(errors)
+    _check_sec_edgar_durable_delivery_archive_selection(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
