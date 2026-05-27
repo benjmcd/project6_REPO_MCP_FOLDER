@@ -3631,6 +3631,9 @@ SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE = (
 SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_UI = (
     PLANNING_DOCS / "1251-sec-edgar-durable-delivery-archive-status-rendered-ui.md"
 )
+SEC_EDGAR_PERIOD_UNIT_CONTEXT_DIMENSION_RENDERED_DETAIL_UI = (
+    PLANNING_DOCS / "1252-sec-edgar-period-unit-context-dimension-rendered-detail-ui.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -118431,6 +118434,63 @@ def _check_sec_edgar_durable_delivery_archive_status_rendered_ui(
                 )
 
 
+def _check_sec_edgar_period_unit_context_dimension_rendered_detail_ui(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_PERIOD_UNIT_CONTEXT_DIMENSION_RENDERED_DETAIL_UI: (
+            "SEC EDGAR Period Unit Context Dimension Rendered Detail UI",
+            "milestone: sec_edgar_period_unit_context_dimension_rendered_detail_ui_v1",
+            "source_profile: next_milestone_plans/Layer3_planning_docs/1233-sec-edgar-period-unit-context-dimension-profile.md",
+            "source_archive_status_ui: next_milestone_plans/Layer3_planning_docs/1251-sec-edgar-durable-delivery-archive-status-rendered-ui.md",
+            "profile_version: sec_edgar_period_unit_context_dimension_profile_v1",
+            "profile_scope: redacted_context_unit_precision_scale_hash_profile",
+            "server_receipt_projection_only: true",
+            "context_period_resolution_performed: false",
+            "dimension_member_resolution_performed: false",
+            "unit_normalization_performed: false",
+            "financial_statement_semantics_finalized: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_statement_role_quality_profile_rendered_detail_ui_v1",
+        ),
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_UI: (
+            "next_exact_posture: sec_edgar_period_unit_context_dimension_profile_selection_v1",
+        ),
+        LAYER3_JS: (
+            "Period Unit Context Dimension Profile",
+            "periodUnitContextDimensionProfiles",
+            "period unit context dimension profile hashes hash",
+            "context ref hash present count",
+            "unit ref hash present count",
+            "decimals or precision present count",
+            "scale or format present count",
+            "context period resolution performed",
+            "dimension member resolution performed",
+            "unit normalization performed",
+            "final period unit context dimension semantics claimed",
+        ),
+        LAYER3_WORKBENCH_E2E: (
+            "profile statuses: bounded_hash_profile_available_not_resolved",
+            "profile version: sec_edgar_period_unit_context_dimension_profile_v1",
+            "context ref hash present count: 38",
+            "unit ref hash present count: 30",
+            "decimals or precision present count: 21",
+            "scale or format present count: 10",
+            "context period resolution performed: false",
+            "dimension member resolution performed: false",
+            "unit normalization performed: false",
+            "final period unit context dimension semantics claimed: false",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR period/unit/context/dimension rendered detail UI term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119756,6 +119816,7 @@ def main() -> int:
     _check_sec_edgar_durable_delivery_archive_runtime(errors)
     _check_sec_edgar_durable_delivery_archive_status_surface(errors)
     _check_sec_edgar_durable_delivery_archive_status_rendered_ui(errors)
+    _check_sec_edgar_period_unit_context_dimension_rendered_detail_ui(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
