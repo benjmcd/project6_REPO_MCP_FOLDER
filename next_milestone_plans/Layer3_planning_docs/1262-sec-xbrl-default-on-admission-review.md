@@ -27,6 +27,14 @@ The Arelle fact-authority path is now admitted as a default-on candidate by the 
 - keep final financial-statement semantics and cross-company comparability non-admitted
 - keep operator value reveal explicitly gated and capped
 
+## Review result
+
+`diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json`
+
+Decision: `admission_review_passed`.
+
+The runtime default remains off in this slice. The report verifies the default-on candidate gate, default-off configuration, fail-closed rollback signals, focused fail-closed tests, operator value reveal gating, and standing non-admissions.
+
 ## Next slice
 
 If the admission review passes:
