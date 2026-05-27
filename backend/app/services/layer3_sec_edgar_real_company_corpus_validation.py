@@ -21,6 +21,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_review_submit,
     layer3_sec_edgar_html_inline_xbrl_parser,
     layer3_sec_edgar_real_filing_acquisition_connector,
+    layer3_sec_xbrl_sidecar,
 )
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -244,14 +245,30 @@ def _run_html_inline_xbrl_path(
         fact = layer3_sec_edgar_html_inline_xbrl_fact_authority.derive_sec_edgar_html_inline_xbrl_fact_authority(
             _fact_authority_payload(request_id, example, parser)
         )
+        sidecar = _derive_arelle_sidecar_authority(request_id, example, parser, fact)
+        selected_fact = (
+            layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.sidecar_fact_authority_view_for_downstream(
+                sidecar
+            )
+            if sidecar is not None
+            else fact
+        )
         bridge = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(
-            _fact_material_bridge_payload(request_id, example, parser, fact),
+            _fact_material_bridge_payload(request_id, example, parser, fact, sidecar=sidecar),
             db,
         )
         classification = (
             layer3_sec_edgar_html_inline_xbrl_fact_statement_classification
             .classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
-                _statement_classification_payload(request_id, example, parser, fact, bridge)
+                _statement_classification_payload(
+                    request_id,
+                    example,
+                    parser,
+                    fact,
+                    selected_fact,
+                    bridge,
+                    sidecar=sidecar,
+                )
             )
         )
         product = (
@@ -299,6 +316,11 @@ def _run_html_inline_xbrl_path(
     outputs["outputs_produced"] = [
         "parser",
         "fact_authority",
+        *(
+            ["arelle_resolved_fact_authority_sidecar"]
+            if sidecar is not None
+            else []
+        ),
         "fact_material_bridge",
         "statement_classification",
         "statement_candidate_product",
@@ -309,8 +331,9 @@ def _run_html_inline_xbrl_path(
     ]
     outputs["authority_hashes"] = {
         "parser_receipt_hash": parser["parser_receipt_hash"],
-        "fact_authority_receipt_hash": fact["fact_authority_receipt_hash"],
-        "fact_inventory_hash": fact["fact_inventory_hash"],
+        "regex_fact_authority_receipt_hash": fact["fact_authority_receipt_hash"],
+        "fact_authority_receipt_hash": selected_fact["fact_authority_receipt_hash"],
+        "fact_inventory_hash": selected_fact["fact_inventory_hash"],
         "fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"],
         "statement_classification_receipt_hash": classification["statement_classification_receipt_hash"],
         "downstream_product_receipt_hash": product["downstream_product_receipt_hash"],
@@ -319,9 +342,18 @@ def _run_html_inline_xbrl_path(
         "package_review_submit_receipt_hash": submit["package_review_submit_receipt_hash"],
         "handoff_export_prepare_receipt_hash": handoff["handoff_export_prepare_receipt_hash"],
     }
+    if sidecar is not None:
+        outputs["authority_hashes"].update(
+            {
+                "arelle_sidecar_receipt_hash": sidecar["sidecar_receipt_hash"],
+                "resolved_fact_inventory_hash": sidecar["resolved_fact_inventory_hash"],
+                "local_value_inventory_hash": sidecar["local_value_inventory_hash"],
+                "internal_value_store_hash": (sidecar.get("internal_value_store") or {}).get("value_store_hash"),
+            }
+        )
     outputs["order_evidence"] = {
         "document_order_hash": parser["content_order_hash"],
-        "fact_source_order_inventory": fact["fact_inventory_hash"],
+        "fact_source_order_inventory": selected_fact["fact_inventory_hash"],
         "statement_candidate_order": classification["classification_order_hash"],
         "package_artifact_order_hash": construction["package_payload_order_hash"],
     }
@@ -331,12 +363,13 @@ def _run_html_inline_xbrl_path(
     outputs["operator_usefulness"] = "product_path_validated"
     outputs["quality_evidence"] = _quality_evidence_from_outputs(
         parser=parser,
-        fact=fact,
+        fact=selected_fact,
         classification=classification,
         product=product,
         construction=construction,
         submit=submit,
         handoff=handoff,
+        sidecar=sidecar,
     )
     return outputs
 
@@ -388,11 +421,56 @@ def _fact_authority_payload(request_id: str, example: Mapping[str, Any], parser:
     }
 
 
+def _derive_arelle_sidecar_authority(
+    request_id: str,
+    example: Mapping[str, Any],
+    parser: Mapping[str, Any],
+    fact: Mapping[str, Any],
+) -> dict[str, Any] | None:
+    if not _arelle_fact_authority_cutover_enabled():
+        return None
+    sidecar = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        {
+            "client_request_id": f"{request_id}-{example['example_id']}-arelle-sidecar",
+            "sidecar_mode": layer3_sec_xbrl_sidecar.SIDECAR_MODE,
+            "operator_decision": layer3_sec_xbrl_sidecar.OPERATOR_DECISION,
+            "parser_receipt_id": parser["parser_receipt_id"],
+            "parser_receipt_hash": parser["parser_receipt_hash"],
+            "regex_fact_authority_receipt_id": fact["fact_authority_receipt_id"],
+            "regex_fact_authority_receipt_hash": fact["fact_authority_receipt_hash"],
+            "expected_connector_receipt_hash": parser["connector_receipt_hash"],
+            "expected_live_source_artifact_receipt_hash": parser["live_source_artifact_receipt_hash"],
+            "expected_source_artifact_receipt_hash": parser["source_artifact_receipt_hash"],
+            "expected_content_sha256": parser["identity_binding"]["content_sha256"],
+            "expected_primary_document_hash": parser["identity_binding"]["primary_document_hash"],
+            "expected_document_inventory_hash": parser["document_inventory_hash"],
+            "expected_content_order_hash": parser["content_order_hash"],
+            "expected_table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
+            "expected_inline_xbrl_marker_inventory_hash": parser["inline_xbrl_marker_inventory_hash"],
+            "operator_confirmation": True,
+        }
+    )
+    if sidecar.get("sidecar_state") != layer3_sec_xbrl_sidecar.READY_STATE:
+        reasons = [
+            str(reason.get("reason") or "sec_edgar_arelle_resolved_fact_authority_sidecar_blocked")
+            for reason in list(sidecar.get("status_projection", {}).get("blocked_reasons") or [])
+            if isinstance(reason, Mapping)
+        ]
+        error_code = reasons[0] if reasons else "sec_edgar_arelle_resolved_fact_authority_sidecar_blocked"
+        raise Layer3WorkbenchError(
+            error_code,
+            "SEC EDGAR real-company validation requires a ready persisted Arelle resolved-fact sidecar when the cutover is enabled.",
+        )
+    return sidecar
+
+
 def _fact_material_bridge_payload(
     request_id: str,
     example: Mapping[str, Any],
     parser: Mapping[str, Any],
     fact: Mapping[str, Any],
+    *,
+    sidecar: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     payload = _fact_authority_payload(request_id, example, parser)
     payload.pop("fact_authority_mode")
@@ -401,8 +479,14 @@ def _fact_material_bridge_payload(
     payload["operator_decision"] = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.OPERATOR_DECISION
     payload["fact_authority_receipt_id"] = fact["fact_authority_receipt_id"]
     payload["fact_authority_receipt_hash"] = fact["fact_authority_receipt_hash"]
-    payload["expected_fact_inventory_hash"] = fact["fact_inventory_hash"]
-    payload["expected_diagnostics_hash"] = fact["diagnostics_hash"]
+    if sidecar is not None:
+        payload["arelle_sidecar_receipt_id"] = sidecar["sidecar_receipt_id"]
+        payload["arelle_sidecar_receipt_hash"] = sidecar["sidecar_receipt_hash"]
+        payload["expected_fact_inventory_hash"] = sidecar["resolved_fact_inventory_hash"]
+        payload["expected_diagnostics_hash"] = sidecar["diagnostics_hash"]
+    else:
+        payload["expected_fact_inventory_hash"] = fact["fact_inventory_hash"]
+        payload["expected_diagnostics_hash"] = fact["diagnostics_hash"]
     payload["rollback_confirmed"] = True
     payload["operator_confirmed"] = True
     payload.pop("operator_confirmation")
@@ -413,13 +497,20 @@ def _statement_classification_payload(
     request_id: str,
     example: Mapping[str, Any],
     parser: Mapping[str, Any],
-    fact: Mapping[str, Any],
+    regex_fact: Mapping[str, Any],
+    selected_fact: Mapping[str, Any],
     bridge: Mapping[str, Any],
+    *,
+    sidecar: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    payload = _fact_material_bridge_payload(request_id, example, parser, fact)
+    payload = _fact_material_bridge_payload(request_id, example, parser, regex_fact, sidecar=sidecar)
     payload["client_request_id"] = f"{request_id}-{example['example_id']}-statement-classification"
     payload["classification_mode"] = layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.CLASSIFICATION_MODE
     payload["operator_decision"] = layer3_sec_edgar_html_inline_xbrl_fact_statement_classification.OPERATOR_DECISION
+    payload["fact_authority_receipt_id"] = selected_fact["fact_authority_receipt_id"]
+    payload["fact_authority_receipt_hash"] = selected_fact["fact_authority_receipt_hash"]
+    payload["expected_fact_inventory_hash"] = selected_fact["fact_inventory_hash"]
+    payload["expected_diagnostics_hash"] = selected_fact["diagnostics_hash"]
     payload["fact_material_bridge_receipt_id"] = bridge["fact_material_bridge_receipt_id"]
     payload["fact_material_bridge_receipt_hash"] = bridge["fact_material_bridge_receipt_hash"]
     payload["expected_materialization_receipt_hash"] = bridge["materialization_receipt_hash"]
@@ -431,6 +522,8 @@ def _statement_classification_payload(
     payload.pop("parser_receipt_hash")
     payload.pop("rollback_confirmed")
     payload.pop("operator_confirmed")
+    payload.pop("arelle_sidecar_receipt_id", None)
+    payload.pop("arelle_sidecar_receipt_hash", None)
     return payload
 
 
@@ -648,6 +741,7 @@ def _quality_evidence_from_outputs(
     construction: Mapping[str, Any],
     submit: Mapping[str, Any],
     handoff: Mapping[str, Any],
+    sidecar: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     fact_inventory = [item for item in fact.get("fact_inventory") or [] if isinstance(item, Mapping)]
     fact_diagnostics = dict(fact.get("diagnostics") or {})
@@ -704,19 +798,26 @@ def _quality_evidence_from_outputs(
         quality_gaps.append("duplicate_fact_candidates_present_not_deduplicated")
     if conflicting_fact_candidate_count:
         quality_gaps.append("conflicting_fact_candidates_present_not_resolved")
+    sidecar_metrics = _sidecar_quality_metrics(sidecar)
     evidence = {
         "quality_assessment_status": "redacted_quality_evidence_ready_with_known_semantic_gaps",
         "quality_dimensions": {
             "filing_identity_correctness": "hash_bound",
             "section_order_preservation": "hash_bound",
             "fact_context_unit_preservation": (
-                "redacted_hash_bound"
-                if fact_diagnostics.get("missing_context_ref") == 0
-                and fact_diagnostics.get("missing_unit_ref") == 0
-                else "diagnostic_gap_recorded"
+                "arelle_resolved_structural_semantics_materialized"
+                if sidecar is not None
+                else (
+                    "redacted_hash_bound"
+                    if fact_diagnostics.get("missing_context_ref") == 0
+                    and fact_diagnostics.get("missing_unit_ref") == 0
+                    else "diagnostic_gap_recorded"
+                )
             ),
             "period_unit_context_dimension_profile": (
-                "bounded_hash_profile_available_not_resolved"
+                "arelle_resolved_structural_profile_available_not_final_financial_semantics"
+                if sidecar is not None
+                else "bounded_hash_profile_available_not_resolved"
                 if fact_count and period_unit_context_dimension_profile_assigned_count == fact_count
                 else "not_resolved"
             ),
@@ -763,6 +864,11 @@ def _quality_evidence_from_outputs(
             ),
         },
         "quality_metrics": {
+            "fact_authority_input_mode": (
+                "arelle_resolved_fact_authority_sidecar_receipt"
+                if sidecar is not None
+                else "regex_fact_authority_receipt"
+            ),
             "document_inventory_hash": parser["document_inventory_hash"],
             "content_order_hash": parser["content_order_hash"],
             "table_candidate_inventory_hash": parser["table_candidate_inventory_hash"],
@@ -890,11 +996,42 @@ def _quality_evidence_from_outputs(
             "package_payload_order_hash": construction["package_payload_order_hash"],
             "package_review_submit_receipt_hash": submit["package_review_submit_receipt_hash"],
             "handoff_export_prepare_receipt_hash": handoff["handoff_export_prepare_receipt_hash"],
+            **sidecar_metrics,
         },
         "quality_gaps": quality_gaps,
     }
     evidence["quality_evidence_hash"] = stable_hash(evidence)
     return evidence
+
+
+def _sidecar_quality_metrics(sidecar: Mapping[str, Any] | None) -> dict[str, Any]:
+    if sidecar is None:
+        return {}
+    coverage = dict(sidecar.get("coverage") or {})
+    internal_value_store = dict(sidecar.get("internal_value_store") or {})
+    return {
+        "arelle_sidecar_receipt_hash": sidecar["sidecar_receipt_hash"],
+        "resolved_fact_inventory_hash": sidecar["resolved_fact_inventory_hash"],
+        "local_value_inventory_hash": sidecar["local_value_inventory_hash"],
+        "internal_value_store_hash": internal_value_store.get("value_store_hash"),
+        "resolved_fact_count": int(sidecar.get("resolved_fact_count") or 0),
+        "period_resolved_count": int(coverage.get("period_resolved_count") or 0),
+        "unit_resolved_count": int(coverage.get("unit_resolved_count") or 0),
+        "explicit_dimension_fact_count": int(coverage.get("explicit_dimension_fact_count") or 0),
+        "typed_dimension_fact_count": int(coverage.get("typed_dimension_fact_count") or 0),
+        "standard_concept_count": int(coverage.get("standard_concept_count") or 0),
+        "extension_concept_count": int(coverage.get("extension_concept_count") or 0),
+        "concept_resolved_from_dts_count": int(coverage.get("concept_resolved_from_dts_count") or 0),
+        "actual_period_unit_dimension_values_emitted": bool(
+            coverage.get("actual_period_unit_dimension_values_emitted")
+        ),
+        "period_unit_dimension_hash_only_projection": bool(
+            coverage.get("period_unit_dimension_hash_only_projection")
+        ),
+        "operator_surface_values_exposed": False,
+        "final_financial_statement_semantics_claimed": False,
+        "cross_company_comparability_admitted": False,
+    }
 
 
 def _quality_not_evaluated(
@@ -1030,6 +1167,8 @@ def _blocked_response(request_id: str, *, reasons: list[dict[str, Any]]) -> dict
 def _failure_classification(error_code: str) -> str:
     if "parser" in error_code:
         return "parser_family"
+    if "sidecar" in error_code or "arelle" in error_code:
+        return "resolved_fact_authority"
     if "fact_authority" in error_code:
         return "fact_authority"
     if "statement_classification" in error_code:
@@ -1274,6 +1413,10 @@ def _sha256_text(value: str) -> str:
 
 def _server_time() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def _arelle_fact_authority_cutover_enabled() -> bool:
+    return bool(getattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", False))
 
 
 def _blocked(

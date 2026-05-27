@@ -3141,6 +3141,162 @@ def test_layer3_api_reports_sec_edgar_operator_product_surface_for_real_company_
     assert len(fake_client.calls) == 12
 
 
+def test_layer3_api_runs_sec_edgar_default_on_arelle_product_path_through_archive(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _enable_sec_edgar_arelle_sidecar_for_corpus_validation(tmp_path, monkeypatch)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
+    fake_client = _FakeSecEdgarClient(_real_company_validation_fake_results())
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_CLIENT", fake_client)
+
+    validation_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/validation",
+        json={
+            "client_request_id": "sec-edgar-default-on-arelle-product-path-validation-001",
+            "validation_mode": "sec_edgar_real_company_corpus_validation_v1",
+            "operator_decision": "validate_sec_edgar_real_company_corpus_product_path",
+            "company_matrix": ["MSFT", "STLD", "SONY", "CCJ"],
+            "operator_confirmation": True,
+        },
+    )
+    assert validation_response.status_code == 200, validation_response.text
+    validation = validation_response.json()
+    assert validation["validation_state"] == "sec_edgar_real_company_corpus_validation_ready"
+    assert validation["diagnostics"]["supported_count"] == 8
+    assert all(
+        "arelle_resolved_fact_authority_sidecar" in record["outputs_produced"]
+        for record in validation["filing_validation_records"]
+    )
+    assert all(
+        record["authority_hashes"]["fact_authority_receipt_hash"]
+        == record["authority_hashes"]["arelle_sidecar_receipt_hash"]
+        for record in validation["filing_validation_records"]
+    )
+    assert all(
+        record["authority_hashes"]["regex_fact_authority_receipt_hash"]
+        != record["authority_hashes"]["fact_authority_receipt_hash"]
+        for record in validation["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["fact_authority_input_mode"]
+        == "arelle_resolved_fact_authority_sidecar_receipt"
+        for record in validation["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["resolved_fact_count"] == 2
+        for record in validation["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_dimensions"]["period_unit_context_dimension_profile"]
+        == "arelle_resolved_structural_profile_available_not_final_financial_semantics"
+        for record in validation["filing_validation_records"]
+    )
+    assert all(
+        record["quality_evidence"]["quality_metrics"]["operator_surface_values_exposed"] is False
+        for record in validation["filing_validation_records"]
+    )
+
+    delivery_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/delivery-status/provenance",
+        json={
+            "client_request_id": "sec-edgar-default-on-arelle-product-path-delivery-001",
+            "status_mode": "sec_edgar_delivery_status_provenance_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_delivery_status_provenance",
+            "sec_edgar_real_company_corpus_validation_receipt_id": validation["validation_receipt_id"],
+            "sec_edgar_real_company_corpus_validation_receipt_hash": validation["validation_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    assert delivery_response.status_code == 200, delivery_response.text
+    delivery = delivery_response.json()
+    assert delivery["delivery_status_provenance_state"] == "sec_edgar_delivery_status_provenance_ready"
+    assert delivery["diagnostics"]["delivery_ready_count"] == 8
+    assert all(
+        record["provenance_hashes"]["fact_authority_receipt_hash"]
+        == validation["filing_validation_records"][index]["authority_hashes"]["arelle_sidecar_receipt_hash"]
+        for index, record in enumerate(delivery["delivery_status_records"])
+    )
+
+    operator_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-inspection",
+        json={
+            "client_request_id": "sec-edgar-default-on-arelle-product-path-operator-001",
+            "inspection_mode": "sec_edgar_operator_inspection_v1",
+            "operator_decision": "inspect_sec_edgar_real_company_operator_surface",
+            "sec_edgar_delivery_status_provenance_receipt_id": (
+                delivery["delivery_status_provenance_receipt_id"]
+            ),
+            "sec_edgar_delivery_status_provenance_receipt_hash": (
+                delivery["delivery_status_provenance_receipt_hash"]
+            ),
+            "operator_confirmation": True,
+        },
+    )
+    assert operator_response.status_code == 200, operator_response.text
+    operator = operator_response.json()
+    assert operator["operator_inspection_state"] == "sec_edgar_operator_inspection_ready"
+    assert operator["readiness_rollup"]["inspectable_count"] == 8
+
+    surface_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-product-surface",
+        json={
+            "client_request_id": "sec-edgar-default-on-arelle-product-path-surface-001",
+            "surface_mode": "sec_edgar_operator_product_surface_runtime_v1",
+            "operator_decision": "render_sec_edgar_operator_product_surface",
+            "sec_edgar_operator_inspection_receipt_id": operator["operator_inspection_receipt_id"],
+            "sec_edgar_operator_inspection_receipt_hash": operator["operator_inspection_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    assert surface_response.status_code == 200, surface_response.text
+    surface = surface_response.json()
+    assert surface["operator_product_surface_state"] == "sec_edgar_operator_product_surface_ready"
+    assert surface["surface_rollup"]["filing_count"] == 8
+    assert all(
+        record["profile_status"]
+        == "arelle_resolved_structural_profile_available_not_final_financial_semantics"
+        for record in surface["product_views"]["period_unit_context_dimension_profile"]
+    )
+    assert surface["product_views"]["diagnostics_loss_report"]["cross_company_comparability_ready"] is False
+
+    archive_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+        json={
+            "client_request_id": "sec-edgar-default-on-arelle-product-path-archive-001",
+            "archive_mode": "sec_edgar_durable_delivery_archive_v1",
+            "operator_decision": "archive_sec_edgar_operator_product_surface_delivery_package",
+            "sec_edgar_operator_product_surface_receipt_id": surface["operator_product_surface_receipt_id"],
+            "sec_edgar_operator_product_surface_receipt_hash": surface["operator_product_surface_receipt_hash"],
+            "operator_confirmation": True,
+        },
+    )
+    assert archive_response.status_code == 200, archive_response.text
+    archive = archive_response.json()
+    assert archive["durable_delivery_archive_state"] == "sec_edgar_durable_delivery_archive_ready"
+    assert archive["archive_manifest"]["surface_rollup"]["filing_count"] == 8
+    assert archive["archive_manifest"]["non_admissions"]["cross_company_comparability_admitted"] is False
+    assert len(fake_client.calls) == 12
+    for text in (
+        validation_response.text,
+        delivery_response.text,
+        operator_response.text,
+        surface_response.text,
+        archive_response.text,
+    ):
+        assert "987654321000000" not in text
+        assert "-123456789" not in text
+        assert "https://www.sec.gov" not in text
+        assert "https://data.sec.gov" not in text
+        assert "Microsoft Corporation" not in text
+        assert str(tmp_path) not in text
+    assert "MSFT" not in surface_response.text
+    assert "MSFT" not in archive_response.text
+
+
 def test_layer3_api_admits_sec_edgar_operator_product_surface_breadth_runtime() -> None:
     assert (
         layer3_sec_edgar_operator_product_surface.OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION_VERSION
@@ -4158,6 +4314,14 @@ def _prepare_sec_edgar_arelle_sidecar_authority(
     assert response["sidecar_state"] == "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
     assert response["resolved_fact_count"] == expected_resolved_fact_count
     return response
+
+
+def _enable_sec_edgar_arelle_sidecar_for_corpus_validation(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_package_files", lambda: [Path(__file__)])
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_taxonomy_cache_dir", lambda: tmp_path / "arelle-cache")
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "_arelle_python", lambda: sys.executable)
+    monkeypatch.setattr(layer3_sec_xbrl_sidecar, "ARELLE_SUBPROCESS_RUNNER", _ready_arelle_sidecar_runner)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
 
 
 def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_authority(
