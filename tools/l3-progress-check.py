@@ -3622,6 +3622,9 @@ SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_BREADTH_RENDERED_UI_VERIFICATION = (
 SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION = (
     PLANNING_DOCS / "1248-sec-edgar-durable-delivery-archive-selection.md"
 )
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME = (
+    PLANNING_DOCS / "1249-sec-edgar-durable-delivery-archive-runtime.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -3633,6 +3636,9 @@ SEC_EDGAR_OPERATOR_INSPECTION_SERVICE = (
 )
 SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_operator_product_surface.py"
+)
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SERVICE = (
+    ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_durable_delivery_archive.py"
 )
 SEC_EDGAR_REAL_FILING_ACQUISITION_CONNECTOR_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_filing_acquisition_connector.py"
@@ -118203,11 +118209,11 @@ def _check_sec_edgar_durable_delivery_archive_selection(
             "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_ENDPOINT",
             "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_STATUS_ENDPOINT",
             "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTED_INPUT_AUTHORITY",
-            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = False",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = True",
             '"durable_delivery_archive_runtime_enabled"',
         ),
         LAYER3_API_TEST: (
-            "test_layer3_api_selects_sec_edgar_durable_delivery_archive_without_runtime_admission",
+            "test_layer3_api_admits_sec_edgar_durable_delivery_archive_runtime",
             "sec_edgar_durable_delivery_archive_selection_v1",
             "sec_edgar_durable_delivery_archive_runtime_v1",
             "backend/app/services/layer3_sec_edgar_durable_delivery_archive.py",
@@ -118223,6 +118229,85 @@ def _check_sec_edgar_durable_delivery_archive_selection(
             if term not in body:
                 errors.append(
                     f"{_rel(path)} missing SEC EDGAR durable delivery archive selection term: {term}"
+                )
+
+
+def _check_sec_edgar_durable_delivery_archive_runtime(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME: (
+            "SEC EDGAR Durable Delivery Archive Runtime",
+            "milestone: sec_edgar_durable_delivery_archive_runtime_v1",
+            "source_selection: next_milestone_plans/Layer3_planning_docs/1248-sec-edgar-durable-delivery-archive-selection.md",
+            "runtime_status: implemented",
+            "runtime_service: backend/app/services/layer3_sec_edgar_durable_delivery_archive.py",
+            "route: /api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+            "status_route: /api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive/status/{sec_edgar_durable_delivery_archive_receipt_id}",
+            "archive_mode: sec_edgar_durable_delivery_archive_v1",
+            "input_authority: sec_edgar_operator_product_surface_receipt_id,sec_edgar_operator_product_surface_receipt_hash",
+            "archive_receipt_write_in_this_freeze: true",
+            "archive_manifest_write_in_this_freeze: true",
+            "delivery_file_response_in_this_freeze: false",
+            "provider_object_write_enabled: false",
+            "connector_dispatch_enabled: false",
+            "sec_network_fetch_performed: false",
+            "parser_rerun_performed: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_durable_delivery_archive_status_surface_v1",
+        ),
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION: (
+            "next_exact_posture: sec_edgar_durable_delivery_archive_runtime_v1",
+            "archive_receipt_write_in_this_freeze: false",
+        ),
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SERVICE: (
+            "SCHEMA_ID = \"layer3.sec_edgar_durable_delivery_archive.v1\"",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_VERSION = \"sec_edgar_durable_delivery_archive_runtime_v1\"",
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = True",
+            "ARCHIVE_MODE = \"sec_edgar_durable_delivery_archive_v1\"",
+            "OPERATOR_DECISION = \"archive_sec_edgar_operator_product_surface_delivery_package\"",
+            "def archive_sec_edgar_durable_delivery",
+            "def inspect_sec_edgar_durable_delivery_archive_status",
+            "archive_manifest_hash",
+            "archive_order_hash",
+            "source_authority_chain_hash",
+            "redaction_manifest_hash",
+            "delivery_file_response_served_by_archive",
+            "provider_object_write_performed_by_archive",
+            "connector_dispatch_performed_by_archive",
+            "cross_company_comparability_admitted",
+        ),
+        SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_SERVICE: (
+            "SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME_ENABLED = True",
+            '"durable_delivery_archive_runtime_enabled"',
+        ),
+        LAYER3_API: (
+            "Layer3SecEdgarDurableDeliveryArchiveRequest",
+            "Layer3SecEdgarDurableDeliveryArchiveResponse",
+            "/source/sec-edgar/real-company-corpus/durable-delivery/archive",
+            "/source/sec-edgar/real-company-corpus/durable-delivery/archive/status/{sec_edgar_durable_delivery_archive_receipt_id}",
+            "archive_sec_edgar_durable_delivery",
+        ),
+        LAYER3_API_TEST: (
+            "test_layer3_api_admits_sec_edgar_durable_delivery_archive_runtime",
+            "test_layer3_api_archives_sec_edgar_durable_delivery_from_product_surface_receipt",
+            "sec_edgar_durable_delivery_archive_ready",
+            "archive_manifest_hash",
+            "archive_order_hash",
+            "source_authority_chain_hash",
+            "redaction_manifest_hash",
+            "network_request_made_by_archive",
+            "delivery_file_response_served_by_archive",
+            "provider_object_write_enabled",
+            "sec_edgar_durable_delivery_archive_product_surface_hash_mismatch",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR durable delivery archive runtime term: {term}"
                 )
 
 
@@ -119548,6 +119633,7 @@ def main() -> int:
     _check_sec_edgar_operator_product_surface_breadth_runtime(errors)
     _check_sec_edgar_operator_product_surface_breadth_rendered_ui_verification(errors)
     _check_sec_edgar_durable_delivery_archive_selection(errors)
+    _check_sec_edgar_durable_delivery_archive_runtime(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")
