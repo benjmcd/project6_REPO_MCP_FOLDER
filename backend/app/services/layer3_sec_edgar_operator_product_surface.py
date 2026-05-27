@@ -31,6 +31,18 @@ RECEIPT_PREFIX = "sec-edgar-operator-product-surface"
 RECEIPT_DIR = "layer3-sec-edgar-operator-product-surface"
 REDACTION_POLICY_ID = "sec_edgar_operator_product_surface_redaction_v1"
 RENDERED_MODE = "rendered_sec_edgar_operator_product_surface_control"
+EXPECTED_COMPANY_MATRIX = ("MSFT", "STLD", "SONY", "CCJ")
+OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTION_VERSION = "sec_edgar_operator_product_surface_breadth_selection_v1"
+OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_MATRIX = ("XOM", "PFE", "UAL", "T")
+OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_PROFILE_TAGS = (
+    "energy_major",
+    "pharmaceutical_life_sciences",
+    "airline_transport",
+    "telecom_media",
+    "debt_intensive",
+    "commodity_exposure",
+)
+OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED = False
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -271,11 +283,20 @@ def _readiness_reasons(
         reasons.append(_reason("sec_edgar_operator_product_surface_delivery_status_provenance_not_ready"))
     if validation.get("validation_state") != layer3_sec_edgar_real_company_corpus_validation.READY_STATE:
         reasons.append(_reason("sec_edgar_operator_product_surface_validation_not_ready"))
+    if tuple(validation.get("company_matrix") or ()) not in _admitted_company_matrices():
+        reasons.append(_reason("sec_edgar_operator_product_surface_company_matrix_mismatch"))
     if operator.get("delivery_status_provenance_receipt_hash") != delivery.get("delivery_status_provenance_receipt_hash"):
         reasons.append(_reason("sec_edgar_operator_product_surface_delivery_hash_chain_mismatch"))
     if delivery.get("validation_receipt_hash") != validation.get("validation_receipt_hash"):
         reasons.append(_reason("sec_edgar_operator_product_surface_validation_hash_chain_mismatch"))
     return reasons
+
+
+def _admitted_company_matrices() -> tuple[tuple[str, ...], ...]:
+    matrices = [EXPECTED_COMPANY_MATRIX]
+    if OPERATOR_PRODUCT_SURFACE_BREADTH_RUNTIME_ENABLED:
+        matrices.append(OPERATOR_PRODUCT_SURFACE_BREADTH_SELECTED_MATRIX)
+    return tuple(matrices)
 
 
 def _product_views(
