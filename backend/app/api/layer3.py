@@ -8271,6 +8271,12 @@ class Layer3SecEdgarDurableDeliveryArchiveResponse(Layer3BaseResponse):
     blocked_reasons: list[dict[str, Any]] | None = None
     negative_invariants: dict[str, bool]
     redaction_policy_id: str
+    status_surface_mode: str | None = None
+    response_authority: str | None = None
+    read_only_status_surface: bool | None = None
+    archive_status_surface_hash: str | None = None
+    archive_status_surface: dict[str, Any] | None = None
+    downstream_unavailable: list[str] | None = None
     next_allowed_actions: list[str] | None = None
 
 

@@ -3625,6 +3625,9 @@ SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SELECTION = (
 SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME = (
     PLANNING_DOCS / "1249-sec-edgar-durable-delivery-archive-runtime.md"
 )
+SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE = (
+    PLANNING_DOCS / "1250-sec-edgar-durable-delivery-archive-status-surface.md"
+)
 SEC_EDGAR_REAL_COMPANY_CORPUS_VALIDATION_SERVICE = (
     ROOT / "backend" / "app" / "services" / "layer3_sec_edgar_real_company_corpus_validation.py"
 )
@@ -118311,6 +118314,65 @@ def _check_sec_edgar_durable_delivery_archive_runtime(
                 )
 
 
+def _check_sec_edgar_durable_delivery_archive_status_surface(
+    errors: list[str],
+) -> None:
+    required_terms = {
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE: (
+            "SEC EDGAR Durable Delivery Archive Status Surface",
+            "milestone: sec_edgar_durable_delivery_archive_status_surface_v1",
+            "source_runtime: next_milestone_plans/Layer3_planning_docs/1249-sec-edgar-durable-delivery-archive-runtime.md",
+            "status_surface_mode: sec_edgar_durable_delivery_archive_status_surface_v1",
+            "response_authority: sec_edgar_durable_delivery_archive_receipt_and_manifest_readiness",
+            "read_only_status_surface: true",
+            "manifest_readiness_verified: true",
+            "archive_manifest_hash_verified: true",
+            "source_authority_chain_hash_verified: true",
+            "delivery_file_response_in_this_freeze: false",
+            "provider_object_write_enabled: false",
+            "cross_company_comparability_admitted: false",
+            "next_exact_posture: sec_edgar_durable_delivery_archive_status_rendered_ui_v1",
+        ),
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_RUNTIME: (
+            "next_exact_posture: sec_edgar_durable_delivery_archive_status_surface_v1",
+        ),
+        SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_SERVICE: (
+            "ARCHIVE_STATUS_SURFACE_MODE = \"sec_edgar_durable_delivery_archive_status_surface_v1\"",
+            "ARCHIVE_STATUS_RESPONSE_AUTHORITY = \"sec_edgar_durable_delivery_archive_receipt_and_manifest_readiness\"",
+            "ARCHIVE_STATUS_DOWNSTREAM_UNAVAILABLE",
+            "def _archive_status_surface",
+            "def _read_archive_manifest_for_status",
+            "archive_manifest_hash_verified",
+            "source_authority_chain_hash_verified",
+            "sec_edgar_durable_delivery_archive_status_surface_manifest_hash_mismatch",
+            "cross_company_comparability_normalization",
+        ),
+        LAYER3_API: (
+            "status_surface_mode: str | None = None",
+            "response_authority: str | None = None",
+            "read_only_status_surface: bool | None = None",
+            "archive_status_surface_hash: str | None = None",
+            "archive_status_surface: dict[str, Any] | None = None",
+            "downstream_unavailable: list[str] | None = None",
+        ),
+        LAYER3_API_TEST: (
+            "sec_edgar_durable_delivery_archive_status_surface_v1",
+            "sec_edgar_durable_delivery_archive_receipt_and_manifest_readiness",
+            "archive_manifest_hash_verified",
+            "delivery_status_record_count",
+            "cross_company_comparability_normalization",
+            "sec_edgar_durable_delivery_archive_status_surface_manifest_hash_mismatch",
+        ),
+    }
+    for path, terms in required_terms.items():
+        body = _read_required_text(path, errors)
+        for term in terms:
+            if term not in body:
+                errors.append(
+                    f"{_rel(path)} missing SEC EDGAR durable delivery archive status surface term: {term}"
+                )
+
+
 def main() -> int:
     errors: list[str] = []
     for path in (
@@ -119634,6 +119696,7 @@ def main() -> int:
     _check_sec_edgar_operator_product_surface_breadth_rendered_ui_verification(errors)
     _check_sec_edgar_durable_delivery_archive_selection(errors)
     _check_sec_edgar_durable_delivery_archive_runtime(errors)
+    _check_sec_edgar_durable_delivery_archive_status_surface(errors)
 
     if errors:
         print("Layer 3 progress state check: FAIL")

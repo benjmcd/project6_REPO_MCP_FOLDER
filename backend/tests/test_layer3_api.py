@@ -3344,10 +3344,40 @@ def test_layer3_api_archives_sec_edgar_durable_delivery_from_product_surface_rec
         f"{archive['sec_edgar_durable_delivery_archive_receipt_id']}"
     )
     assert status_response.status_code == 200, status_response.text
-    assert status_response.json()["schema_id"] == "layer3.sec_edgar_durable_delivery_archive_status.v1"
-    assert status_response.json()["sec_edgar_durable_delivery_archive_receipt_hash"] == (
+    status_body = status_response.json()
+    assert status_body["schema_id"] == "layer3.sec_edgar_durable_delivery_archive_status.v1"
+    assert status_body["status_surface_mode"] == "sec_edgar_durable_delivery_archive_status_surface_v1"
+    assert (
+        status_body["response_authority"]
+        == "sec_edgar_durable_delivery_archive_receipt_and_manifest_readiness"
+    )
+    assert status_body["read_only_status_surface"] is True
+    assert status_body["cache"]["archive_receipt_write_performed"] is False
+    assert status_body["cache"]["archive_manifest_write_performed"] is False
+    assert status_body["sec_edgar_durable_delivery_archive_receipt_hash"] == (
         archive["sec_edgar_durable_delivery_archive_receipt_hash"]
     )
+    assert status_body["archive_status_surface_hash"]
+    archive_status_surface = status_body["archive_status_surface"]
+    assert archive_status_surface["archive_manifest_readiness"] == {
+        "archive_manifest_ready": True,
+        "archive_manifest_file_backed": True,
+        "archive_manifest_hash_verified": True,
+        "archive_order_hash_verified": True,
+        "source_authority_chain_hash_verified": True,
+        "redaction_manifest_hash_verified": True,
+    }
+    assert archive_status_surface["authority_chain_status"]["delivery_status_record_count"] == 8
+    assert archive_status_surface["authority_chain_status"]["operator_inspection_record_count"] == 8
+    assert archive_status_surface["authority_chain_status"]["validation_record_count"] == 8
+    assert archive_status_surface["product_view_status"]["company_form_matrix_record_count"] == 8
+    assert archive_status_surface["product_view_status"]["semantic_profile_section_available"] is True
+    assert archive_status_surface["non_admissions"]["provider_object_write_enabled"] is False
+    assert archive_status_surface["non_admissions"]["delivery_file_response_served"] is False
+    assert archive_status_surface["non_admissions"]["cross_company_comparability_admitted"] is False
+    assert "delivery_file_response" in archive_status_surface["downstream_unavailable"]
+    assert "provider_object_write" in archive_status_surface["downstream_unavailable"]
+    assert "cross_company_comparability_normalization" in archive_status_surface["downstream_unavailable"]
     assert "https://www.sec.gov" not in status_response.text
     assert str(tmp_path) not in status_response.text
 
@@ -3366,6 +3396,21 @@ def test_layer3_api_archives_sec_edgar_durable_delivery_from_product_surface_rec
         "sec_edgar_durable_delivery_archive_product_surface_hash_mismatch"
     )
     assert len(fake_client.calls) == 12
+
+    manifest_path = layer3_sec_edgar_durable_delivery_archive._archive_manifest_path(
+        archive["sec_edgar_durable_delivery_archive_receipt_id"]
+    )
+    manifest_payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_payload["archive_scope"] = "tampered"
+    manifest_path.write_text(json.dumps(manifest_payload, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    stale_status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/durable-delivery/archive/status/"
+        f"{archive['sec_edgar_durable_delivery_archive_receipt_id']}"
+    )
+    assert stale_status_response.status_code == 409, stale_status_response.text
+    assert stale_status_response.json()["error_code"] == (
+        "sec_edgar_durable_delivery_archive_status_surface_manifest_hash_mismatch"
+    )
 
 
 def test_layer3_api_preserves_sec_edgar_operator_product_surface_company_matrix_guard() -> None:
