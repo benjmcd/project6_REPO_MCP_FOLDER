@@ -26,14 +26,22 @@ def build_report() -> dict[str, Any]:
         "api_tests": _read("backend/tests/test_layer3_api.py"),
         "admission": _load_json("diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"),
         "gate": _load_json("diagnostics/assessment/sec-xbrl-default-on-gate-report.json"),
+        "real_corpus_gate": _load_json("diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"),
     }
+    default_enabled = (
+        'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=True,'
+        in sources["config"]
+    )
     criteria = [
         _criterion(
             "runtime_default_on",
-            'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=True,'
-            in sources["config"],
-            {"config_file": "backend/app/core/config.py"},
-            "default_on_runtime_config_not_enabled",
+            default_enabled,
+            {
+                "config_file": "backend/app/core/config.py",
+                "real_corpus_gate_decision": sources["real_corpus_gate"].get("decision"),
+                "real_corpus_gate_verdict": sources["real_corpus_gate"].get("gate_verdict"),
+            },
+            "default_on_runtime_rolled_back_by_real_corpus_gate",
         ),
         _criterion(
             "persisted_sidecar_required_without_regex_fallback",
@@ -99,6 +107,11 @@ def build_report() -> dict[str, Any]:
     ]
     blockers = [item for item in criteria if item["state"] != "passed"]
     gate_summary = sources["gate"].get("summary") if isinstance(sources["gate"].get("summary"), dict) else {}
+    real_corpus_summary = (
+        sources["real_corpus_gate"].get("summary")
+        if isinstance(sources["real_corpus_gate"].get("summary"), dict)
+        else {}
+    )
     return {
         "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
         "target": "sec_edgar_arelle_fact_authority_default_on_runtime_v1",
@@ -123,11 +136,16 @@ def build_report() -> dict[str, Any]:
             "companyfacts_value_match_count": gate_summary.get("companyfacts_value_match_count"),
             "companyfacts_value_compared_count": gate_summary.get("companyfacts_value_compared_count"),
             "companyfacts_value_match_rate": gate_summary.get("companyfacts_value_match_rate"),
+            "broader_real_corpus_gate_decision": sources["real_corpus_gate"].get("decision"),
+            "broader_real_corpus_gate_verdict": sources["real_corpus_gate"].get("gate_verdict"),
+            "broader_real_filing_count": real_corpus_summary.get("real_filing_count"),
+            "broader_issuer_hash_count": real_corpus_summary.get("issuer_hash_count"),
+            "broader_failure_reasons": real_corpus_summary.get("failure_reasons"),
         },
         "runtime_posture": {
-            "default_cutover_enabled": True,
+            "default_cutover_enabled": default_enabled,
             "persisted_sidecar_required": True,
-            "regex_fallback_while_default_on": False,
+            "regex_fallback_while_default_on": False if default_enabled else None,
             "synchronous_arelle_in_bridge": False,
             "regex_rollback_env_supported": True,
             "operator_value_reveal_default_enabled": False,
@@ -139,7 +157,11 @@ def build_report() -> dict[str, Any]:
             "gate_b_product_package_ui_redesign_performed": False,
             "rag_vector_model_provider_auth_behavior_added": False,
         },
-        "next_slice": "sec_edgar_arelle_default_on_product_path_corpus_validation_v1",
+        "next_slice": (
+            "sec_edgar_arelle_default_on_product_path_corpus_validation_v1"
+            if default_enabled
+            else "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1"
+        ),
     }
 
 

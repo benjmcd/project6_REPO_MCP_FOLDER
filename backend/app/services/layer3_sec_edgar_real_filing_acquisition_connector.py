@@ -55,6 +55,10 @@ REAL_COMPANY_CIK_REFS = {
     "PFE": "78003",
     "UAL": "100517",
     "T": "732717",
+    "AAPL": "320193",
+    "NVDA": "1045810",
+    "AMZN": "1018724",
+    "TSLA": "1318605",
 }
 REAL_COMPANY_PROFILE_TAGS = {
     "MSFT": ("domestic_large_cap", "technology"),
@@ -69,6 +73,10 @@ REAL_COMPANY_PROFILE_TAGS = {
     "PFE": ("pharmaceutical_life_sciences", "domestic_large_cap"),
     "UAL": ("airline_transport", "debt_intensive"),
     "T": ("telecom_media", "debt_intensive", "domestic_large_cap"),
+    "AAPL": ("domestic_large_cap", "technology", "extension_heavy_candidate"),
+    "NVDA": ("domestic_large_cap", "technology", "extension_heavy_candidate"),
+    "AMZN": ("domestic_large_cap", "consumer_products", "varied_fiscal_calendar_candidate"),
+    "TSLA": ("domestic_large_cap", "automotive", "extension_heavy_candidate"),
 }
 ANNUAL_FORM_TYPES = {"10-K", "10-K/A", "20-F", "20-F/A", "40-F", "40-F/A"}
 INTERIM_OR_CURRENT_FORM_TYPES = {"10-Q", "10-Q/A", "8-K", "8-K/A", "6-K", "6-K/A"}
