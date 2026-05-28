@@ -158,6 +158,71 @@ def test_candidate_b_broader_scope_runtime_fails_closed_without_ready_audit(clie
     assert body["selector_mutation_performed"] is False
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_broader_scope_runtime_ready_audit_field_mismatch" in codes
+    assert "candidate_b_broader_scope_runtime_server_ready_audit_receipt_unavailable" in codes
+
+
+def test_candidate_b_broader_scope_runtime_rejects_fabricated_non_server_audit(
+    client: TestClient,
+    monkeypatch,
+) -> None:
+    runtime_dir = settings.layer3_candidate_b_runtime_bridge_dir
+    monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", "")
+    fabricated_audit = layer3_candidate_b_broader_scope_readiness.evaluate_candidate_b_broader_scope_readiness(
+        _readiness_payload()
+    )
+    assert fabricated_audit["status"] == "ready"
+    assert fabricated_audit["audit_receipt_status"] == "not_recorded"
+    monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", runtime_dir)
+
+    response = client.post(RUNTIME_ENDPOINT, json=_runtime_payload(fabricated_audit))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["readiness_audit_binding"]["server_issued_receipt_required"] is True
+    assert body["readiness_audit_binding"]["binding_verified"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_runtime_server_ready_audit_receipt_unavailable" in codes
+    assert body["selection_receipt_status"] == "not_recorded"
+
+
+def test_candidate_b_broader_scope_runtime_rejects_persisted_semantic_drift(client: TestClient) -> None:
+    readiness_audit = _ready_audit(client)
+    drifted_audit = json.loads(json.dumps(readiness_audit))
+    drifted_audit["candidate_a_semantics"]["visual_lane_mode"] = "candidate_a_semantic_drift"
+    drifted_hash = layer3_candidate_b_broader_scope_runtime._readiness_audit_hash(drifted_audit)
+    drifted_audit["audit_hash"] = drifted_hash
+    drifted_audit["audit_id"] = f"cb-broader-scope-readiness-{drifted_hash[:24]}"
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-readiness"
+        / f"{drifted_audit['audit_id']}.json"
+    )
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(
+        json.dumps(
+            {
+                "schema_id": "layer3.candidate_b_broader_eligible_corpus_scope_readiness_audit_receipt.v1",
+                "schema_version": 1,
+                "audit_id": drifted_audit["audit_id"],
+                "audit_hash": drifted_hash,
+                "readiness_audit": drifted_audit,
+            },
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    response = client.post(RUNTIME_ENDPOINT, json=_runtime_payload(drifted_audit))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["selection_receipt_status"] == "not_recorded"
+    codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_runtime_ready_audit_semantic_authority_drift" in codes
 
 
 def test_candidate_b_broader_scope_runtime_rejects_stale_hash_and_unproposed_class(client: TestClient) -> None:
@@ -174,8 +239,24 @@ def test_candidate_b_broader_scope_runtime_rejects_stale_hash_and_unproposed_cla
     assert body["selection_receipt_status"] == "not_recorded"
     assert body["default_scope_expansion_enabled"] is False
     codes = {item["code"] for item in body["blocked_reasons"]}
+    assert "candidate_b_broader_scope_runtime_server_ready_audit_receipt_unavailable" in codes
     assert "candidate_b_broader_scope_runtime_ready_audit_field_mismatch" in codes
     assert "candidate_b_broader_scope_runtime_stale_audit_hash" in codes
+
+
+def test_candidate_b_broader_scope_runtime_rejects_unproposed_class_from_server_audit(client: TestClient) -> None:
+    readiness_audit = _ready_audit(client)
+    payload = _runtime_payload(readiness_audit)
+    payload["selected_scope_classes"] = ["office_documents"]
+
+    response = client.post(RUNTIME_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["selection_receipt_status"] == "not_recorded"
+    assert body["default_scope_expansion_enabled"] is False
+    codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_broader_scope_runtime_selected_classes_do_not_match_ready_audit" in codes
     assert "candidate_b_broader_scope_runtime_unproposed_scope_class" in codes
 
