@@ -1309,6 +1309,7 @@ def test_layer3_api_acquires_sec_edgar_text_table_live_source_artifact_with_fake
 ) -> None:
     monkeypatch.setattr(settings, "layer3_sec_edgar_user_agent", "Layer3 Test contact@example.com")
     monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "SEC_EDGAR_SLEEP", lambda _seconds: None)
+    monkeypatch.setattr(layer3_sec_edgar_live_source_artifact, "_enforce_rate_limit", lambda: None)
     content = b"<SEC-DOCUMENT>candidate sec edgar filing text</SEC-DOCUMENT>\n"
     fake_client = _FakeSecEdgarClient(
         [
@@ -7714,9 +7715,9 @@ def test_layer3_api_rejects_live_sec_edgar_downstream_proof_stale_or_forbidden_a
         "/api/v1/layer3/source/sec-edgar/text-table/live-source-artifact/downstream-proof",
         json={**payload, "coverage_evidence": forbidden_coverage_ref},
     )
-    assert forbidden_ref_response.status_code == 409, forbidden_ref_response.text
+    assert forbidden_ref_response.status_code == 400, forbidden_ref_response.text
     assert forbidden_ref_response.json()["error_code"] == (
-        "sec_edgar_text_table_live_source_artifact_downstream_proof_coverage_forbidden_reference"
+        "sec_edgar_text_table_live_source_artifact_downstream_proof_forbidden_request_fields"
     )
 
 
@@ -7808,11 +7809,10 @@ def test_layer3_api_reports_live_sec_edgar_downstream_operator_status(
             "expected_proof_hash": proof["proof_hash"],
         },
     )
-    assert forbidden_response.status_code == 200, forbidden_response.text
+    assert forbidden_response.status_code == 400, forbidden_response.text
     forbidden = forbidden_response.json()
-    assert forbidden["operator_status_state"] == "blocked"
-    assert forbidden["blocked_reasons"][0]["reason"] == (
-        "sec_edgar_text_table_live_source_artifact_downstream_proof_coverage_forbidden_reference"
+    assert forbidden["error_code"] == (
+        "sec_edgar_text_table_live_source_artifact_downstream_operator_status_forbidden_request_fields"
     )
 
 
@@ -8942,12 +8942,11 @@ def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_downstream_o
             "expected_proof_hash": proof["proof_hash"],
         },
     )
-    assert unsafe_response.status_code == 200, unsafe_response.text
+    assert unsafe_response.status_code == 400, unsafe_response.text
     unsafe = unsafe_response.json()
-    assert unsafe["operator_status_state"] == "blocked"
-    assert unsafe["blocked_reason_codes"] == [
-        "sec_edgar_html_inline_xbrl_fact_material_downstream_proof_forbidden_request_fields"
-    ]
+    assert unsafe["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_forbidden_request_fields"
+    )
     assert "https://www.sec.gov/raw-status" not in unsafe_response.text
 
     unsafe_coverage = copy.deepcopy(proof_request["coverage_evidence"])
@@ -8966,12 +8965,11 @@ def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_downstream_o
             "expected_proof_hash": proof["proof_hash"],
         },
     )
-    assert unsafe_fact_value_response.status_code == 200, unsafe_fact_value_response.text
+    assert unsafe_fact_value_response.status_code == 400, unsafe_fact_value_response.text
     unsafe_fact_value = unsafe_fact_value_response.json()
-    assert unsafe_fact_value["operator_status_state"] == "blocked"
-    assert unsafe_fact_value["blocked_reason_codes"] == [
-        "sec_edgar_html_inline_xbrl_fact_material_downstream_proof_forbidden_request_fields"
-    ]
+    assert unsafe_fact_value["error_code"] == (
+        "sec_edgar_html_inline_xbrl_fact_material_downstream_operator_status_forbidden_request_fields"
+    )
     _assert_raw_string_not_projected(unsafe_fact_value, "123")
 
 
@@ -9431,12 +9429,10 @@ def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_downstream_operator_status
             "expected_proof_hash": proof["proof_hash"],
         },
     )
-    assert unsafe_response.status_code == 200, unsafe_response.text
+    assert unsafe_response.status_code == 400, unsafe_response.text
     unsafe = unsafe_response.json()
-    assert unsafe["operator_status_state"] == "blocked"
-    assert (
-        unsafe["blocked_reason_codes"]
-        == ["sec_edgar_html_inline_xbrl_downstream_proof_forbidden_request_fields"]
+    assert unsafe["error_code"] == (
+        "sec_edgar_html_inline_xbrl_downstream_operator_status_forbidden_request_fields"
     )
     assert "https://www.sec.gov/raw-status" not in unsafe_response.text
 

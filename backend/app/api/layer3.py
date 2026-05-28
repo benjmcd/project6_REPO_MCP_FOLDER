@@ -4230,7 +4230,7 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeRuntimeRequest(BaseModel)
     runtime_mode: Literal["candidate_b_broader_eligible_corpus_default_scope_runtime_v1"]
     readiness_audit_id: str = Field(min_length=1)
     readiness_audit_hash: str = Field(min_length=1)
-    readiness_audit: dict[str, Any]
+    readiness_audit: dict[str, Any] | None = None
     selected_scope_classes: list[str]
     rollback_to_baseline_confirmation: bool
     operator_confirmation: bool

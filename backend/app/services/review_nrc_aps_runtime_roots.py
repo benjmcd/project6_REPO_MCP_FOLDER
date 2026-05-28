@@ -14,15 +14,15 @@ def _normalize_runtime_root(candidate: str | Path | None) -> Path | None:
 
     root = Path(raw)
     if not root.is_absolute():
-        root = root.resolve()
+        try:
+            root = root.resolve()
+        except OSError:
+            return None
 
     if root.name in {"storage", "storage_test_runtime"}:
         root = root / "lc_e2e"
 
-    try:
-        return root.resolve()
-    except OSError:
-        return None
+    return root
 
 
 def candidate_review_runtime_roots(

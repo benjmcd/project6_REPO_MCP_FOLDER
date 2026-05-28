@@ -326,12 +326,31 @@
       "backend/tests/test_layer3_state_model_contract.py",
       "backend/tests/test_layer3_readiness_contract.py",
       "backend/tests/test_layer3_bootstrap_contract.py",
+      "next_milestone_plans/Layer3_execution_handoff/07_L3_UI_MANUAL_RUNBOOK.md",
+      "next_milestone_plans/Layer3_execution_handoff/08_L3_POST_695_REFERENCE_PLAN.md",
       "tools/l3-progress-check.py"
     ],
     "branch_state_summary": "PR #593 remains the bounded live `replacement_package_namespace_rows` runtime as separate `l3_replacement_output_package` metadata rows; broad package mutation/reconstruction remains blocked. Current main includes the bounded live `approved_plan_cancel_without_replacement` runtime selected by doc 136: POST /api/v1/layer3/plan/approved/cancel through `backend/app/services/layer3_approved_plan_correction.py` marks the existing approved `L3AnalysisPlan` row as cancelled, records `approved_plan_cancel` state in the existing plan/session JSON, and creates no replacement plan. It does not create `L3PassRun` or `AnalysisRun` rows, output/package/handoff/export artifacts, connector/destination dispatch, source/schema/runtime widening, provider/public URLs, broad qualitative/hybrid/RAG behavior, frontend-only durable state, hidden LLM planning, full mockup activation, authentication/security hardening, or broad package mutation/reconstruction; this proof branch adds direct owner-service tests without changing runtime behavior.",
     "current_main_summaries": [
       "Current main now includes the bounded provider_private_signed_url_rendered_ui implementation: /review/layer3 now renders provider-private signed URL prepare/status/revoke controls over existing backend APIs, derives prepare authority from existing external export/download state, stores only the returned receipt id in browser state, shows only redacted provider-private state, keeps the provider-private use route/control absent, and proves request allowlists, status-after-prepare, status-after-revoke, forbidden-control absence, and headed/headless live-theme behavior across system/light/dark/workbench. This pass admits no backend/API/model/migration/service change, raw token exposure, raw token durable persistence, provider network/object-store writes, provider/public URL runtime beyond the redacted provider-private marker, public-proxy runtime, connector/destination dispatch, package mutation/reconstruction, source expansion, same-origin delivery changes, same-origin signed-reference changes, broad qualitative/hybrid/RAG/vector runtime, hidden LLM planning, full mockup activation, auth/security behavior change, or frontend-only durable authority."
-    ]
+    ],
+    "post_695_reference_plan_progress_tracking": {
+      "progress_tracking_surface": true,
+      "source_pr": "#696",
+      "source_branch": "codex/l3-post-695-reference-plan",
+      "merge_commit": "ddf41deaed0b41d5be9018747e7db541d0d06a2a",
+      "reference_plan": "next_milestone_plans/Layer3_execution_handoff/08_L3_POST_695_REFERENCE_PLAN.md",
+      "manual_runbook": "next_milestone_plans/Layer3_execution_handoff/07_L3_UI_MANUAL_RUNBOOK.md",
+      "tracked_in": [
+        "next_milestone_plans/README_LAYER3_PHASE1A_PACK.md",
+        "next_milestone_plans/layer3_progress_board.md",
+        "next_milestone_plans/layer3_progress_manifest.json",
+        "next_milestone_plans/layer3_workbench_proof_manifest.json",
+        "tools/l3-progress-check.py"
+      ],
+      "live_behavior_change": false,
+      "summary": "PR #696 records the post-PR #695 execution-handoff reference plan as documentation/control authority only. It keeps the raw mixed bridge/rendered closeout sequence tracked across the README, progress board, progress manifest, and proof manifest while admitting no runtime, route/API, model/migration, rendered control, raw ingestion, source expansion, package mutation, connector/destination, provider/public URL, RAG/vector, full mockup, auth/security, or frontend-only durable authority behavior."
+    }
   },
   "authority_order": [
     {
@@ -42185,5 +42204,25 @@
   "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_frontend_only_durable_authority_selected_now": false,
   "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_implementation_entry_allowed_by_this_sync_alone": false,
   "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_next_posture": "bounded_trial_readiness_closed_await_operator_runbook_evidence_or_product_authority",
-  "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_summary": "Doc 957 re-audits current-main Layer 3 mockup readiness after the query/source and output review/package/handoff activation-entry freezes. The bounded trial runbook remains doc 952, every remaining read-only or blocked journey has current-main projection or blocker evidence, and full mockup activation plus frontend-only durable authority remain blocked."
+  "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_summary": "Doc 957 re-audits current-main Layer 3 mockup readiness after the query/source and output review/package/handoff activation-entry freezes. The bounded trial runbook remains doc 952, every remaining read-only or blocked journey has current-main projection or blocker evidence, and full mockup activation plus frontend-only durable authority remain blocked.",
+  "candidate_b_broader_scope_activation_consumption_runtime_tracking": {
+    "status": "current_main_synced_candidate_b_activation_receipt_consumption_runtime",
+    "source_pr": "#1790",
+    "source_branch": "codex/cb-activation-consumption-runtime",
+    "merge_commit": "8b852aff55f55cd295fe0c09ccc231b85fd8603f",
+    "milestone": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1087-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-runtime.md",
+    "implemented_schema_id": "layer3.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption.v1",
+    "implemented_runtime_mode": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
+    "implemented_endpoint": "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume",
+    "proof_status": "tracked_in_progress_manifest_after_review_thread_audit",
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_behavior_admitted_by_source_pr": true,
+    "selector_mutation_performed_by_tracking": false,
+    "default_scope_mutation_performed_by_tracking": false,
+    "source_expansion_admitted_by_tracking": false,
+    "raw_local_path_exposed": false,
+    "raw_url_exposed": false,
+    "next_posture": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_rendered_status_v1"
+  }
 }

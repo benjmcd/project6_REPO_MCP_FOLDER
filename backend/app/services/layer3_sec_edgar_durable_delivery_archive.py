@@ -16,6 +16,10 @@ from app.services import (
     layer3_sec_edgar_operator_product_surface,
     layer3_sec_edgar_real_company_corpus_validation,
 )
+from app.services.layer3_sec_edgar_ref_safety import (
+    contains_forbidden_ref,
+    find_forbidden_ref_paths,
+)
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -104,7 +108,6 @@ ARCHIVE_STATUS_DOWNSTREAM_UNAVAILABLE = (
     "html_inline_xbrl_reparse_or_rematerialization",
     "cross_company_comparability_normalization",
 )
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 _ACCESSION_RE = re.compile(r"\b\d{10}-\d{2}-\d{6}\b")
 
 
@@ -140,13 +143,13 @@ def archive_sec_edgar_durable_delivery(
             product_surface_receipt_id
         )
         operator = layer3_sec_edgar_operator_inspection._read_verified_receipt(
-            str(product_surface["operator_inspection_receipt_id"])
+            _required_receipt_field(product_surface, "operator_inspection_receipt_id")
         )
         delivery = layer3_sec_edgar_delivery_status_provenance._read_verified_receipt(
-            str(product_surface["delivery_status_provenance_receipt_id"])
+            _required_receipt_field(product_surface, "delivery_status_provenance_receipt_id")
         )
         validation = layer3_sec_edgar_real_company_corpus_validation._read_verified_receipt(
-            str(delivery["validation_receipt_id"])
+            _required_receipt_field(delivery, "validation_receipt_id")
         )
     except Layer3WorkbenchError as exc:
         return _blocked_response(
@@ -764,17 +767,7 @@ def _validate_request_fields(fields: Mapping[str, Any]) -> None:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, child in value.items():
-            path = f"{prefix}.{key}" if prefix else str(key)
-            if str(key) in FORBIDDEN_REQUEST_FIELDS:
-                found.append(path)
-            found.extend(_find_forbidden_nested_fields(child, path))
-    elif isinstance(value, list):
-        for index, child in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(child, f"{prefix}[{index}]"))
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -787,7 +780,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
         if (
             "https://www.sec.gov" in lowered
             or "https://data.sec.gov" in lowered
-            or _LOCAL_PATH_RE.match(value)
+            or contains_forbidden_ref(value)
             or _ACCESSION_RE.search(value)
         ):
             return True
@@ -833,16 +826,42 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
             "SEC EDGAR durable delivery archive receipt is invalid or mismatched.",
             http_status=409,
         )
-    if receipt.get("sec_edgar_durable_delivery_archive_receipt_hash") != suffix + receipt.get(
-        "sec_edgar_durable_delivery_archive_receipt_hash",
-        "",
-    )[24:]:
+    receipt_hash = str(receipt.get("sec_edgar_durable_delivery_archive_receipt_hash") or "")
+    if receipt_hash[:24] != suffix or receipt_hash != _durable_delivery_archive_receipt_hash(receipt):
         _blocked(
             "sec_edgar_durable_delivery_archive_receipt_hash_mismatch",
             "SEC EDGAR durable delivery archive receipt hash is stale or mismatched.",
             http_status=409,
         )
     return receipt
+
+
+def _durable_delivery_archive_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    return stable_hash(
+        {
+            "schema_id": SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "archive_mode": ARCHIVE_MODE,
+            "operator_decision": OPERATOR_DECISION,
+            "operator_product_surface_receipt_hash": receipt.get("operator_product_surface_receipt_hash"),
+            "archive_manifest_hash": receipt.get("archive_manifest_hash"),
+            "archive_order_hash": receipt.get("archive_order_hash"),
+            "source_authority_chain_hash": receipt.get("source_authority_chain_hash"),
+            "redaction_manifest_hash": receipt.get("redaction_manifest_hash"),
+        }
+    )
+
+
+def _required_receipt_field(receipt: Mapping[str, Any], key: str) -> str:
+    value = str(receipt.get(key) or "").strip()
+    if not value:
+        _blocked(
+            f"sec_edgar_durable_delivery_archive_{key}_missing",
+            "SEC EDGAR durable delivery archive requires complete upstream receipt lineage.",
+            http_status=409,
+            blocked_fields=[key],
+        )
+    return value
 
 
 def _write_archive_manifest(receipt_id: str, archive_manifest: Mapping[str, Any]) -> None:
@@ -875,8 +894,18 @@ def _write_receipt(receipt: Mapping[str, Any]) -> None:
         _read_verified_receipt(target.stem)
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        _read_verified_receipt(target.stem)
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_durable_delivery_archive_receipt_write_failed",
+            "SEC EDGAR durable delivery archive receipt could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
 
 
 def _read_request_binding(request_id: str) -> dict[str, Any] | None:
@@ -914,8 +943,24 @@ def _write_request_binding(request_id: str, basis_hash: str, receipt_id: str) ->
             )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_request_binding(request_id) or {}
+        if existing.get("durable_delivery_archive_basis_hash") != basis_hash:
+            _blocked(
+                "sec_edgar_durable_delivery_archive_request_binding_conflict",
+                "SEC EDGAR durable delivery archive request binding conflicts with existing authority.",
+                http_status=409,
+            )
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_durable_delivery_archive_request_binding_write_failed",
+            "SEC EDGAR durable delivery archive request binding could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
 
 
 def _negative_invariants() -> dict[str, bool]:

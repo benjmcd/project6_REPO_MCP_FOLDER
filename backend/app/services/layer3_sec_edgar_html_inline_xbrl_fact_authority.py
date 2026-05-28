@@ -14,6 +14,7 @@ from app.services import (
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_real_filing_acquisition_connector,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -93,8 +94,6 @@ _FORBIDDEN_INPUT_KEYS = {
     "url",
     "urls",
 }
-_RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 _IX_FACT_RE = re.compile(
     r"<\s*(?P<tag>ix:(?:nonFraction|nonNumeric|fraction))\b(?P<attrs>[^>]*)>"
     r"(?P<body>.*?)</\s*(?P=tag)\s*>",
@@ -712,20 +711,7 @@ def _optional_hash(value: Any) -> str | None:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text.lower() in _FORBIDDEN_INPUT_KEYS:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(nested, child))
-    elif isinstance(value, list):
-        for index, nested in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str) and (_RAW_URL_RE.search(value) or _LOCAL_PATH_RE.search(value)):
-        found.append(prefix or "request_body")
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=_FORBIDDEN_INPUT_KEYS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -734,8 +720,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith(("http://", "https://", "file://", "\\\\")))
+        return contains_forbidden_ref(value)
     return False
 
 

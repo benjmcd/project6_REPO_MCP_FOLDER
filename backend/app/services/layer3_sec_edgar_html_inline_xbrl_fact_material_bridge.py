@@ -28,6 +28,7 @@ from app.services.layer3_gate_b_state import (
     material_candidate_basis_from_preview,
     material_preview_hash,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -193,8 +194,6 @@ _FORBIDDEN_INPUT_KEYS = {
     "urls",
 }
 _REDACT_KEYS = {"blob_ref", "content_units_ref", "diagnostics_ref", "download_exchange_ref", "raw_storage_ref", "source_artifact_key", "storage_ref"}
-_RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 _IX_FACT_RE = re.compile(
     r"<\s*(?P<tag>ix:(?:nonFraction|nonNumeric|fraction))\b(?P<attrs>[^>]*)>"
     r"(?P<body>.*?)</\s*(?P=tag)\s*>",
@@ -1220,19 +1219,65 @@ def _read_arelle_sidecar_authority(
 
 
 def _sidecar_fact_authority_view(sidecar_receipt: Mapping[str, Any]) -> dict[str, Any]:
+    fact_inventory = [
+        _flatten_sidecar_fact_for_statement_classification(record)
+        for record in sidecar_receipt.get("resolved_fact_projection") or []
+        if isinstance(record, Mapping)
+    ]
     return {
         **dict(sidecar_receipt),
         "fact_authority_receipt_id": str(sidecar_receipt["sidecar_receipt_id"]),
         "fact_authority_receipt_hash": str(sidecar_receipt["sidecar_receipt_hash"]),
         "fact_count": int(sidecar_receipt["resolved_fact_count"]),
         "fact_inventory_hash": str(sidecar_receipt["resolved_fact_inventory_hash"]),
+        "statement_classification_fact_inventory_hash": stable_hash(fact_inventory),
         "diagnostics_hash": str(sidecar_receipt["diagnostics_hash"]),
-        "fact_inventory": list(sidecar_receipt.get("resolved_fact_projection") or []),
+        "fact_inventory": fact_inventory,
     }
 
 
 def sidecar_fact_authority_view_for_downstream(sidecar_receipt: Mapping[str, Any]) -> dict[str, Any]:
     return _sidecar_fact_authority_view(sidecar_receipt)
+
+
+def _flatten_sidecar_fact_for_statement_classification(record: Mapping[str, Any]) -> dict[str, Any]:
+    concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+    qname = str(concept.get("qname") or "")
+    namespace_prefix, local_name = _split_qname(qname)
+    if not local_name:
+        local_name = str(concept.get("local_name") or "")
+    return {
+        "fact_id_or_order_key": str(record.get("resolved_fact_id") or ""),
+        "marker_order_index": int(record.get("source_order") or 0),
+        "source_order": int(record.get("source_order") or 0),
+        "entry_document_index": int(record.get("entry_document_index") or 1),
+        "element_name": qname,
+        "qualified_name": qname,
+        "namespace_prefix": namespace_prefix,
+        "concept_namespace": str(concept.get("namespace") or ""),
+        "local_name": local_name,
+        "context_ref_hash": _sha256_text(str(record.get("context_id") or "")),
+        "unit_ref_hash": _sha256_text(str(record.get("unit_id") or "")),
+        "decimals_or_precision": str(record.get("decimals") or record.get("precision") or ""),
+        "scale_or_format": str(record.get("scale") or record.get("format") or ""),
+        "source_order_hash": stable_hash(
+            {
+                "entry_document_index": int(record.get("entry_document_index") or 1),
+                "source_order": int(record.get("source_order") or 0),
+            }
+        ),
+        "source_artifact_receipt_hash": str(record.get("source_artifact_receipt_hash") or ""),
+        "primary_document_hash": str(record.get("primary_document_hash") or ""),
+        "value_hash": str(record.get("value_hash") or record.get("effective_value_hash") or ""),
+        "value_length": int(record.get("value_length") or record.get("effective_value_length") or 0),
+        "period": dict(record.get("period") or {}),
+        "unit": dict(record.get("unit") or {}),
+        "dimensions": dict(record.get("dimensions") or {}),
+        "concept_standard": bool(concept.get("standard")),
+        "concept_extension": bool(concept.get("extension")),
+        "concept_resolved_from_dts": bool(concept.get("resolved_from_dts")),
+        "value_semantics": str(record.get("value_semantics") or ""),
+    }
 
 
 def _validate_regex_sidecar_binding(regex_fact_receipt: Mapping[str, Any], sidecar_receipt: Mapping[str, Any]) -> None:
@@ -1613,7 +1658,7 @@ def _redact_value(value: Any) -> Any:
         }
     if isinstance(value, list):
         return [_redact_value(item) for item in value]
-    if isinstance(value, str) and (_RAW_URL_RE.search(value) or _LOCAL_PATH_RE.search(value)):
+    if isinstance(value, str) and contains_forbidden_ref(value):
         return _redacted_ref(value)
     return value
 
@@ -1624,20 +1669,7 @@ def _redacted_ref(value: Any) -> dict[str, Any]:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text.lower() in _FORBIDDEN_INPUT_KEYS:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(nested, child))
-    elif isinstance(value, list):
-        for index, nested in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str) and (_RAW_URL_RE.search(value) or _LOCAL_PATH_RE.search(value)):
-        found.append(prefix or "request_body")
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=_FORBIDDEN_INPUT_KEYS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -1646,8 +1678,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith(("http://", "https://", "file://", "\\\\")))
+        return contains_forbidden_ref(value)
     return False
 
 

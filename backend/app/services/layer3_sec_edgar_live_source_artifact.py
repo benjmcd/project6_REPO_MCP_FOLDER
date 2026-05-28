@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
+import email.utils
 import hashlib
 import json
 import os
@@ -15,6 +16,10 @@ import urllib.request
 
 from app.core.config import settings
 from app.services import layer3_sec_edgar_authority_envelope
+from app.services.layer3_sec_edgar_ref_safety import (
+    contains_forbidden_ref_tree,
+    find_forbidden_ref_paths,
+)
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -38,7 +43,7 @@ RECEIPT_DIR = "layer3-sec-edgar-live-source-artifact-acquisition"
 REDACTION_POLICY_ID = "sec_edgar_text_table_live_source_artifact_acquisition_redaction_v1"
 RATE_POLICY_ID = "sec_edgar_text_table_live_source_artifact_default_1rps_max_10rps_v1"
 SEC_RATE_LIMIT_CEILING_PER_SECOND = 10
-RETRYABLE_STATUS_CODES = {403, 429, 500, 502, 503, 504}
+RETRYABLE_STATUS_CODES = {408, 403, 429, 500, 502, 503, 504}
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -93,8 +98,6 @@ FORBIDDEN_REQUEST_FIELDS = {
     "runtime_db_write",
     "storage_dir",
 }
-_RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 _CIK_RE = re.compile(r"^\d{1,10}$")
 _ACCESSION_RE = re.compile(r"^\d{10}-\d{2}-\d{6}$")
 _FORM_TYPE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./-]{0,31}$")
@@ -219,6 +222,7 @@ def acquire_sec_edgar_text_table_live_source_artifact(fields: Mapping[str, Any])
         )
     existing = _find_existing_receipt(source_identity_hash)
     if existing is not None:
+        _verify_expected_content_hash_for_receipt(request, existing)
         _write_request_binding(request_id, source_identity_hash, existing["live_source_artifact_receipt_id"])
         return _response_from_receipt(
             existing,
@@ -373,6 +377,8 @@ def _fetch_with_retry(
     attempts = 0
     result = SecEdgarFetchResult(status_code=503, complete=False)
     while attempts < 3:
+        if attempts:
+            _enforce_rate_limit()
         result = SEC_EDGAR_CLIENT.fetch_complete_submission_text(
             url=url,
             user_agent=user_agent,
@@ -752,6 +758,13 @@ def _write_receipt(receipt: Mapping[str, Any]) -> None:
         with target.open("x", encoding="utf-8") as handle:
             handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
     except FileExistsError:
+        existing = _read_verified_receipt(target.stem)
+        if existing.get("live_source_artifact_receipt_hash") != receipt.get("live_source_artifact_receipt_hash"):
+            _blocked(
+                "sec_edgar_text_table_live_source_artifact_receipt_conflict",
+                "A SEC EDGAR live source-artifact receipt already exists for this authority.",
+                http_status=409,
+            )
         return
     except OSError as exc:
         _blocked(
@@ -847,7 +860,21 @@ def _write_request_binding(request_id: str, source_identity_hash: str, receipt_i
         with target.open("x", encoding="utf-8") as handle:
             handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
     except FileExistsError:
+        existing = _read_request_binding(request_id) or {}
+        if existing.get("source_identity_hash") != source_identity_hash:
+            _blocked(
+                "sec_edgar_text_table_live_source_artifact_request_binding_conflict",
+                "SEC EDGAR live source-artifact request binding conflicts with existing authority.",
+                http_status=409,
+            )
         return
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_request_binding_write_failed",
+            "SEC EDGAR live source-artifact request binding could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
 
 
 def _enforce_rate_limit() -> None:
@@ -940,22 +967,7 @@ def _artifact_path(receipt_id: str) -> Path:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            key_text = str(key)
-            child_path = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text.lower() in FORBIDDEN_REQUEST_FIELDS:
-                found.append(child_path)
-            found.extend(_find_forbidden_nested_fields(nested, child_path))
-    elif isinstance(value, list):
-        for index, nested in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str):
-        text = value.strip()
-        if _RAW_URL_RE.search(text) or _LOCAL_PATH_RE.search(text):
-            found.append(prefix or "request_body")
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _read_bounded_bytes(response: Any, max_bytes: int) -> bytes:
@@ -982,7 +994,29 @@ def _retry_after_seconds(headers: Mapping[str, str]) -> float:
     try:
         return max(0.0, float(value))
     except ValueError:
+        try:
+            parsed = email.utils.parsedate_to_datetime(value) if value else None
+        except (TypeError, ValueError):
+            parsed = None
+        if parsed is not None:
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return max(0.0, (parsed - datetime.now(timezone.utc)).total_seconds())
         return 0.1
+
+
+def _verify_expected_content_hash_for_receipt(request: Mapping[str, Any], receipt: Mapping[str, Any]) -> None:
+    expected_content_sha256 = str(request.get("expected_content_sha256") or "").strip().lower()
+    if not expected_content_sha256:
+        return
+    observed = str((receipt.get("source_artifact_receipt") or {}).get("content_sha256") or "").strip().lower()
+    if observed != expected_content_sha256:
+        _blocked(
+            "sec_edgar_text_table_live_source_artifact_content_hash_mismatch",
+            "SEC EDGAR cached source-artifact acquisition content hash did not match expected authority.",
+            http_status=409,
+            blocked_fields=["expected_content_sha256"],
+        )
 
 
 def _required(fields: Mapping[str, Any], key: str) -> str:
@@ -1019,14 +1053,7 @@ def _server_time() -> str:
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return any(_contains_forbidden_output_ref(item) for item in value.values())
-    if isinstance(value, list):
-        return any(_contains_forbidden_output_ref(item) for item in value)
-    if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith("http://") or text.startswith("https://"))
-    return False
+    return contains_forbidden_ref_tree(value)
 
 
 def _negative_invariants() -> dict[str, bool]:

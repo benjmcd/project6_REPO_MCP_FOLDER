@@ -9029,6 +9029,36 @@ def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing raw mixed bridge proof term: {term}")
 
 
+def _check_post_695_reference_plan_tracking(errors: list[str]) -> None:
+    required_terms = {
+        PHASE1A_README: (
+            "Current post-PR #695 execution-handoff references:",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+        ),
+        BOARD: (
+            "Raw mixed bridge E2E/UI closeout through rendered plan approval",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+            "PR `#692` through PR `#700`",
+        ),
+        MANIFEST: (
+            "post_695_reference_plan_progress_tracking",
+            "progress_tracking_surface",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+            "ddf41deaed0b41d5be9018747e7db541d0d06a2a",
+        ),
+        PROOF_MANIFEST: (
+            "raw_mixed_bridge_e2e_ui_closeout_proof",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+            '"#696": "ddf41deaed0b41d5be9018747e7db541d0d06a2a"',
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing post-695 reference plan tracking term: {term}")
+
+
 def _check_source_breadth_freeze(errors: list[str]) -> None:
     doc_text = _read_required_text(SOURCE_BREADTH_FREEZE, errors)
     for term in (
@@ -103674,6 +103704,37 @@ def _check_candidate_b_broader_eligible_corpus_default_scope_activation_receipt_
             "candidate_b_broader_scope_activation_consumption_stale_activation_receipt_hash",
             "default_scope_mutation_performed",
         ),
+        MANIFEST: (
+            "candidate_b_broader_scope_activation_consumption_runtime_tracking",
+            '"source_pr": "#1790"',
+            '"merge_commit": "8b852aff55f55cd295fe0c09ccc231b85fd8603f"',
+            '"milestone": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1"',
+            '"implemented_endpoint": "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume"',
+            '"live_behavior_change_introduced_by_tracking": false',
+            '"runtime_behavior_admitted_by_source_pr": true',
+            '"raw_local_path_exposed": false',
+            '"raw_url_exposed": false',
+        ),
+        PROOF_MANIFEST: (
+            "candidate_b_broader_scope_activation_consumption_runtime_proof",
+            '"source_pr": "#1790"',
+            '"merge_commit": "8b852aff55f55cd295fe0c09ccc231b85fd8603f"',
+            '"milestone": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1"',
+            "record_candidate_b_broader_scope_activation_receipt_consumption",
+            "redacted_candidate_b_broader_scope_selector_activation_receipt",
+            "candidate_b_broader_scope_activation_consumption_stale_activation_receipt_hash",
+            '"source_expansion_admitted_by_tracking": false',
+        ),
+        BOARD: (
+            "Candidate B Activation Receipt Consumption Runtime Tracking",
+            "Source PR: `#1790`",
+            "Merge commit: `8b852aff55f55cd295fe0c09ccc231b85fd8603f`",
+            "Milestone: `candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1`",
+            "Tracking behavior change introduced by this sync: `false`",
+            "Runtime behavior admitted by source PR: `true`",
+            "Raw local path exposed: `false`",
+            "Raw URL exposed: `false`",
+        ),
         CANDIDATE_B_BROADER_ELIGIBLE_CORPUS_DEFAULT_SCOPE_ACTIVATION_RECEIPT_CONSUMPTION_SELECTION: (
             "next_exact_posture: candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
         ),
@@ -106716,7 +106777,8 @@ def _check_sec_edgar_text_table_downstream_layer3_proof_runtime(
             "sec_edgar_text_table_downstream_layer3_e2e_proven",
             "sec_edgar_text_table_downstream_proof_bridge_hash_mismatch",
             "sec_edgar_text_table_downstream_proof_coverage_not_bound_to_server_receipt",
-            "sec_edgar_text_table_downstream_proof_coverage_exposes_forbidden_reference",
+            "sec_edgar_text_table_downstream_proof_forbidden_request_fields",
+            "https://example.test/raw-proof\" not in str(exc.value)",
             "str(tmp_path) not in str(result)",
         ),
         LAYER3_API_TEST: (
@@ -106954,7 +107016,11 @@ def _check_sec_edgar_text_table_downstream_layer3_operator_status_runtime(
             "test_sec_edgar_text_table_downstream_operator_status_blocks_stale_proof_hash",
             "test_sec_edgar_text_table_downstream_operator_status_blocks_raw_url_proof",
             "sec_edgar_text_table_downstream_operator_status_proof_hash_mismatch",
-            "https://example.test/raw-proof\" not in str(result)",
+            (
+                "assert exc.value.error_code == "
+                '"sec_edgar_text_table_downstream_operator_status_forbidden_request_fields"\n'
+                '    assert "https://example.test/raw-proof" not in str(exc.value)'
+            ),
         ),
         LAYER3_API_TEST: (
             "test_layer3_api_reports_sec_edgar_downstream_status_not_recorded",
@@ -118776,6 +118842,7 @@ def main() -> int:
     _check_qualitative_aps_rendered_ui_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
+    _check_post_695_reference_plan_tracking(errors)
     _check_source_breadth_freeze(errors)
     _check_raw_ingestion_materialization_freeze(errors)
     _check_raw_mixed_rendered_ui_freeze(errors)

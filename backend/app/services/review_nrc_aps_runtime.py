@@ -172,7 +172,7 @@ def connector_run_is_baseline_visible(run: Any) -> bool:
     return request_config_is_baseline_visible(getattr(run, "request_config_json", None))
 
 
-@lru_cache(maxsize=256)
+@lru_cache(maxsize=0)
 def _load_binding_request_config_json(database_path_str: str, run_id: str) -> dict[str, Any] | None:
     database_path = Path(database_path_str).resolve()
     if not database_path.exists() or not database_path.is_file():

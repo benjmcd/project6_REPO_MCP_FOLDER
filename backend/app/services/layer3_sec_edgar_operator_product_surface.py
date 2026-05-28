@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-import re
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
@@ -18,6 +17,7 @@ from app.services import (
     layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_real_company_corpus_validation,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -155,7 +155,6 @@ PRODUCT_VIEW_NAMES = (
     "package_review_handoff_state",
     "operator_inspection_status_links",
 )
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 
 
 def render_sec_edgar_operator_product_surface(
@@ -1154,7 +1153,9 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
             "SEC EDGAR operator product surface receipt is invalid or mismatched.",
             http_status=409,
         )
-    if receipt.get("operator_product_surface_receipt_hash") != suffix + receipt.get("operator_product_surface_receipt_hash", "")[24:]:
+    _validate_required_receipt_keys(receipt)
+    receipt_hash = str(receipt.get("operator_product_surface_receipt_hash") or "")
+    if receipt_hash[:24] != suffix or receipt_hash != _operator_product_surface_receipt_hash(receipt):
         _blocked(
             "sec_edgar_operator_product_surface_receipt_hash_mismatch",
             "SEC EDGAR operator product surface receipt hash is stale or mismatched.",
@@ -1163,14 +1164,66 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
     return receipt
 
 
+def _validate_required_receipt_keys(receipt: Mapping[str, Any]) -> None:
+    required = (
+        "operator_product_surface_state",
+        "operator_product_surface_receipt_hash",
+        "operator_product_surface_receipt_ref",
+        "operator_inspection_receipt_id",
+        "operator_inspection_receipt_hash",
+        "delivery_status_provenance_receipt_id",
+        "delivery_status_provenance_receipt_hash",
+        "validation_receipt_hash",
+        "connector_receipt_hash",
+        "product_views",
+        "surface_rollup",
+        "authority_chain",
+    )
+    missing = [key for key in required if key not in receipt]
+    if missing:
+        _blocked(
+            "sec_edgar_operator_product_surface_receipt_required_keys_missing",
+            "SEC EDGAR operator product surface receipt is missing required authority fields.",
+            http_status=409,
+            blocked_fields=missing,
+        )
+
+
+def _operator_product_surface_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    return stable_hash(
+        {
+            "schema_id": SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "surface_mode": SURFACE_MODE,
+            "operator_inspection_receipt_hash": receipt.get("operator_inspection_receipt_hash"),
+            "delivery_status_provenance_receipt_hash": receipt.get("delivery_status_provenance_receipt_hash"),
+            "validation_receipt_hash": receipt.get("validation_receipt_hash"),
+            "product_views_hash": stable_hash(receipt.get("product_views") or {}),
+            "value_reveal_hash": stable_hash(receipt.get("value_reveal") or _value_reveal_disabled()),
+            "surface_rollup_hash": stable_hash(receipt.get("surface_rollup") or {}),
+            "authority_chain_hash": stable_hash(receipt.get("authority_chain") or {}),
+        }
+    )
+
+
 def _write_receipt(receipt: Mapping[str, Any]) -> None:
     target = _receipt_path(str(receipt["operator_product_surface_receipt_id"]))
     if target.exists():
         _read_verified_receipt(target.stem)
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        _read_verified_receipt(target.stem)
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_operator_product_surface_receipt_write_failed",
+            "SEC EDGAR operator product surface receipt could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
 
 
 def _read_request_binding(request_id: str) -> dict[str, Any] | None:
@@ -1208,8 +1261,24 @@ def _write_request_binding(request_id: str, basis_hash: str, receipt_id: str) ->
             )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_request_binding(request_id) or {}
+        if existing.get("operator_product_surface_basis_hash") != basis_hash:
+            _blocked(
+                "sec_edgar_operator_product_surface_request_binding_conflict",
+                "SEC EDGAR operator product surface request binding conflicts with existing authority.",
+                http_status=409,
+            )
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_operator_product_surface_request_binding_write_failed",
+            "SEC EDGAR operator product surface request binding could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
 
 
 def _negative_invariants() -> dict[str, bool]:
@@ -1268,10 +1337,9 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
 def _is_forbidden_ref(value: str) -> bool:
     text = value.strip().lower()
     return (
-        text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/"))
+        contains_forbidden_ref(value)
         or "aps-target-artifacts/" in text
         or "storage://" in text
-        or bool(_LOCAL_PATH_RE.match(value.strip()))
     )
 
 

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -11,6 +10,7 @@ from app.core.config import settings
 from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification_downstream_product_package_construction,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -104,9 +104,6 @@ _FORBIDDEN_INPUT_KEYS = {
     "browser_storage",
     "frontend_authority",
 }
-_LOCAL_PATH_RE = re.compile(r"(^[A-Za-z]:[\\/])|([\\/]{2,})")
-
-
 def submit_sec_edgar_html_inline_xbrl_statement_candidate_product_package_review(
     fields: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -773,23 +770,12 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return text.startswith(("http://", "https://", "file://")) or bool(_LOCAL_PATH_RE.search(text))
+        return contains_forbidden_ref(value)
     return False
 
 
 def _find_forbidden_nested_fields(value: Any, *, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            field = f"{prefix}.{key}" if prefix else str(key)
-            if str(key).lower() in _FORBIDDEN_INPUT_KEYS:
-                found.append(field)
-            found.extend(_find_forbidden_nested_fields(item, prefix=field))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(item, prefix=f"{prefix}[{index}]"))
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=_FORBIDDEN_INPUT_KEYS, prefix=prefix)
 
 
 def _reason(reason: str) -> dict[str, Any]:
