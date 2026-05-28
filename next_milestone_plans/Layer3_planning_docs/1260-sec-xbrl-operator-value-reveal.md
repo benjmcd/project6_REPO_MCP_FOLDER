@@ -1,61 +1,96 @@
-# 1260 - SEC XBRL Operator Value Reveal
+# 1260 - SEC XBRL Governed Value Reveal
 
 ## Target
 
-`sec_edgar_arelle_operator_surface_gated_value_reveal_v1`
+`sec_edgar_arelle_governed_value_reveal_v1`
 
 ## Governing posture
 
-This is Option 2, operator-surface gated reveal. It exposes a capped sample of already-materialized Arelle effective values from existing `dataset_version` rows. It does not acquire filings, run Arelle, change the bridge authority input, alter Gate B decisions, redesign product/package surfaces, or enable any default-on SEC behavior.
+This is Option 2, analysis-layer operator reveal. It adds a sibling governed value-reveal capability for persisted Arelle resolved-fact authorities and bridge-materialized `dataset_version` rows. The default operator product surface remains redacted and continues to report no raw values unless an operator performs an explicit reveal through the sibling endpoint.
 
-The reveal is explicit, receipt-bound, and reversible:
+The reveal is default-off, per-request, and audit-bound:
 
-- caller must request `sec_edgar_operator_surface_gated_value_reveal_v1`
-- caller must set the confirmation field
-- response is capped to the admitted maximum
-- source identity, URLs, local paths, accessions, tickers, storage roots, and provider fields remain redacted
-- final financial-statement semantics and cross-company comparability remain non-admitted
+- `layer3_sec_edgar_arelle_value_reveal_enabled` defaults to `False`
+- caller must provide `layer3.sec_edgar_arelle_value_reveal_request.v1`
+- caller must bind both the sidecar receipt id/hash and the dataset version id/hash
+- caller must provide an actor self-attestation and explicit reveal confirmation
+- server verifies sidecar, bridge, source-artifact, parser, connector, and dataset lineage before returning values
+- successful reveals write a persisted audit receipt with hashes only, not raw values or raw identity
+
+The Arelle cutover flag remains separate and unchanged. This slice does not enable the cutover by default, run Arelle synchronously, change Gate B, redesign product/package behavior, or create a new Layer 3 source shape.
 
 ## Reveal scope
 
-The first admitted surface scope is intentionally narrow:
+The admitted response exposes per-fact values and resolved structural semantics only after the explicit reveal request succeeds:
 
-- standard `us-gaap` / `dei` numeric facts only
-- non-dimensional rows only
-- Arelle cutover bridge receipts only
-- values read from the persisted bridge `dataset_version`, not by synchronously invoking Arelle
-- effective canonical values only; lexical raw values remain hidden behind hashes and lengths
+- effective canonical value
+- lexical as-reported value
+- transform inputs: sign, scale, decimals, precision, and format
+- resolved period fields
+- resolved unit/currency fields
+- explicit and typed dimensions
+- concept QName, namespace, local name, and standard-vs-extension flags
+- source order and per-fact identity hash
 
-Extension, dimensional, non-numeric, and statement-assembled values are deferred until their operator use and disclosure policy are proven.
+The response excludes raw SEC URLs, local paths, storage roots, accessions, raw tickers, contact strings, credentials, provider fields, and frontend durable authority. Existing default status and product-surface projections remain redacted.
 
-## Retention and lifecycle
+Identity-like fact values are not revealed even when they are present in the resolved-fact authority. Concepts or values that indicate registrant name, ticker/trading symbol, contact/address, website/URL, tax id, or similar issuer identity are projected with empty value fields, a value hash, and an explicit redaction reason.
 
-The operator product-surface receipt can contain the capped governed value reveal when the operator explicitly requests it. That receipt is a value-bearing operator artifact and its lifecycle is tied to the operator product-surface receipt. The broader internal value store remains tied to the Arelle sidecar receipt, as documented in `1259-sec-xbrl-governed-value-reveal.md`.
+## Audit receipt
 
-No committed report or planning artifact may contain real issuer identity, raw SEC URLs, local paths, storage roots, accessions, tickers, or uncapped corpus values.
+Each successful reveal persists a server-owned receipt under `settings.storage_dir` in the value-reveal receipt family. The receipt is idempotent by stable hashes of request id, sidecar receipt, dataset version, actor, fact inventory, and value inventory.
+
+The audit receipt records:
+
+- reveal receipt id/hash/ref
+- actor hash only
+- server time
+- sidecar, dataset, parser, connector, source-artifact, and bridge lineage hashes
+- fact count
+- fact inventory hash
+- value inventory hash
+- redaction policy id
+- negative invariant state
+
+Audit receipt projections and committed artifacts contain hashes and counts only. Raw values appear only in the confirmed reveal response, transient UI render, and already-internal dataset materialization.
+
+## Default surface boundary
+
+The operator product surface remains the redacted inspection surface. Legacy in-surface `value_reveal_*` requests fail closed and direct operators to the sibling reveal endpoint. This prevents values from becoming a mode of the default product surface.
 
 ## Non-admissions preserved
 
-- no default-on Arelle cutover
+- no default-on reveal
+- no default-on Arelle cutover change
 - no new Layer 3 source shape
 - no bridge, Gate B, package, archive, or product decision redesign
+- no synchronous Arelle invocation in request paths
 - no final financial-statement semantics
 - no cross-company comparability
 - no Candidate B routing for SEC semantics
 - no RAG, model, provider, auth, or mockup behavior
+- no raw identity, URL, path, storage-root, or contact disclosure outside the governed value response
 
 ## Proof required
 
-- flag-off/no-request path returns no values
-- explicit reveal request returns only the capped standard numeric non-dimensional sample
-- revealed value uses Arelle effective canonical semantics
-- lexical value remains hidden except for hash/length
-- namespace and source identity are hashed or categorized, not exposed as raw URLs or paths
-- existing bridge cutover tests remain green
-- standard Layer 3 progress and target-selection checks remain green
+- flag-off reveal requests block with an explicit reason
+- flag-on valid reveal returns effective values and resolved semantics for the bound filing
+- audit receipt persists and replays idempotently for identical requests
+- status projection for the audit receipt returns no raw values and no raw identity
+- default product surface over the same filing returns no values
+- legacy in-surface value reveal requests fail closed to the sibling endpoint
+- identity-like fact values are redacted from reveal responses while preserving their value hash
+- corrupted audit receipts fail closed when the stored hash no longer matches the receipt basis
+- missing confirmation, missing actor, missing/invalid sidecar, missing/invalid dataset, lineage mismatch, forbidden request fields, and response-redaction violations are test-covered
+- node syntax, Python compile, sidecar tests, bridge cutover tests, Layer 3 progress, and target-selection checks remain green
 
-## Next slice
+## Next slices
 
-`sec_edgar_arelle_default_on_corpus_expansion_gate_v1`
+1. `sec_edgar_arelle_value_reveal_operator_exercise_v1`
+   Validate the reveal workflow with operators against real persisted sidecar and dataset receipts before any deployment-wide reveal-flag enablement.
 
-Before any default-on cutover, expand the real filing corpus and re-run extraction, CompanyFacts correctness, redaction, and operator utility proof across heterogeneous 10-K, 10-Q, 20-F/40-F, 8-K, and extension-heavy filings.
+2. `sec_edgar_arelle_default_on_matrix_coverage_remediation_v1`
+   Address the broader-corpus gate issues that rolled the Arelle cutover default back to off: oracle coverage, matrix readiness, and corpus-policy evidence.
+
+3. `sec_edgar_arelle_value_reveal_default_enablement_gate_v1`
+   Consider enabling the reveal flag only after audit-receipt review, redaction proof, operator utility evidence, and rollback posture are proven.
