@@ -64,6 +64,18 @@ def build_report(*, source_root: Path, run_report_path: Path, env: Mapping[str, 
             "authority_provisioning_preflight_live_network_default_changed",
         ),
         _criterion(
+            "explicit_live_network_env_enabled_for_granted_run",
+            live_network["runtime_env_enabled_for_this_preflight"],
+            live_network,
+            "authority_provisioning_preflight_live_network_env_missing",
+        ),
+        _criterion(
+            "sec_user_agent_env_present_for_granted_run",
+            live_network["user_agent_env_present"],
+            live_network,
+            "authority_provisioning_preflight_user_agent_env_missing",
+        ),
+        _criterion(
             "arelle_environment_available_for_future_granted_run",
             arelle["python_exists"] and arelle["taxonomy_packages_all_exist"] and arelle["cache_dir_exists"],
             arelle,
@@ -71,7 +83,7 @@ def build_report(*, source_root: Path, run_report_path: Path, env: Mapping[str, 
         ),
     ]
     blockers = [item for item in criteria if item["state"] != "passed"]
-    env_ready = not blockers and live_network["runtime_env_enabled_for_this_preflight"] and live_network["user_agent_env_present"]
+    env_ready = not blockers
     return {
         "schema_id": "diagnostics.sec_xbrl_value_reveal_authority_provisioning_preflight.v1",
         "target": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",

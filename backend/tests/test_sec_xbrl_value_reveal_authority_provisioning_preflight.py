@@ -45,8 +45,12 @@ def test_sec_xbrl_value_reveal_authority_provisioning_preflight_requires_grant_o
     module = _preflight_module()
 
     report = module.build_report(source_root=ROOT, run_report_path=_run_report(tmp_path), env={})
+    blockers = {item["blocked_reason"] for item in report["blocking_reasons"]}
 
     assert report["decision"] == "authority_provisioning_preflight_requires_explicit_grant_or_environment"
+    assert "authority_provisioning_preflight_live_network_env_missing" in blockers
+    assert "authority_provisioning_preflight_user_agent_env_missing" in blockers
+    assert "authority_provisioning_preflight_arelle_environment_missing" in blockers
     assert report["operator_exercise_run_report_summary"]["decision"] == (
         "value_reveal_operator_exercise_blocked_missing_authority"
     )
@@ -75,9 +79,13 @@ def test_sec_xbrl_value_reveal_authority_provisioning_preflight_rejects_nonexist
             "LAYER3_SEC_EDGAR_USER_AGENT": "redacted operator test agent",
         },
     )
+    blockers = {item["blocked_reason"] for item in report["blocking_reasons"]}
 
     arelle = report["arelle_environment_preflight"]
     assert report["decision"] == "authority_provisioning_preflight_requires_explicit_grant_or_environment"
+    assert "authority_provisioning_preflight_live_network_env_missing" not in blockers
+    assert "authority_provisioning_preflight_user_agent_env_missing" not in blockers
+    assert "authority_provisioning_preflight_arelle_environment_missing" in blockers
     assert arelle["python_present"] is True
     assert arelle["python_exists"] is False
     assert arelle["taxonomy_packages_present"] is True

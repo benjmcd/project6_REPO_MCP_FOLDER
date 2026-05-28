@@ -38,6 +38,11 @@ The actual provisioning run requires an explicit operator grant for:
 
 The preflight can report `authority_provisioning_preflight_ready_for_explicit_granted_run` only when all of the above environment references exist and the live-network/User-Agent environment is explicitly enabled for that process. That decision is still not permission to proceed by itself; the live run remains a separate operator-granted action.
 
+The report exposes missing live-network and User-Agent process settings as separate blocking criteria:
+
+- `authority_provisioning_preflight_live_network_env_missing`
+- `authority_provisioning_preflight_user_agent_env_missing`
+
 No committed default may be flipped. `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED`, `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED`, and `LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED` remain default-off in source.
 
 ## Stop Conditions

@@ -15,6 +15,26 @@
   },
   "blocking_reasons": [
     {
+      "blocked_reason": "authority_provisioning_preflight_live_network_env_missing",
+      "criterion": "explicit_live_network_env_enabled_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_env_enabled_for_this_preflight": false,
+        "user_agent_env_present": false
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "authority_provisioning_preflight_user_agent_env_missing",
+      "criterion": "sec_user_agent_env_present_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_env_enabled_for_this_preflight": false,
+        "user_agent_env_present": false
+      },
+      "state": "blocked"
+    },
+    {
       "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
       "criterion": "arelle_environment_available_for_future_granted_run",
       "evidence": {
@@ -54,6 +74,26 @@
         "user_agent_env_present": false
       },
       "state": "passed"
+    },
+    {
+      "blocked_reason": "authority_provisioning_preflight_live_network_env_missing",
+      "criterion": "explicit_live_network_env_enabled_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_env_enabled_for_this_preflight": false,
+        "user_agent_env_present": false
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "authority_provisioning_preflight_user_agent_env_missing",
+      "criterion": "sec_user_agent_env_present_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_env_enabled_for_this_preflight": false,
+        "user_agent_env_present": false
+      },
+      "state": "blocked"
     },
     {
       "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
