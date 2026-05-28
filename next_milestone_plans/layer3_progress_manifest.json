@@ -42204,5 +42204,25 @@
   "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_frontend_only_durable_authority_selected_now": false,
   "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_implementation_entry_allowed_by_this_sync_alone": false,
   "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_next_posture": "bounded_trial_readiness_closed_await_operator_runbook_evidence_or_product_authority",
-  "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_summary": "Doc 957 re-audits current-main Layer 3 mockup readiness after the query/source and output review/package/handoff activation-entry freezes. The bounded trial runbook remains doc 952, every remaining read-only or blocked journey has current-main projection or blocker evidence, and full mockup activation plus frontend-only durable authority remain blocked."
+  "latest_layer3_bounded_trial_readiness_closure_after_activation_entry_freezes_summary": "Doc 957 re-audits current-main Layer 3 mockup readiness after the query/source and output review/package/handoff activation-entry freezes. The bounded trial runbook remains doc 952, every remaining read-only or blocked journey has current-main projection or blocker evidence, and full mockup activation plus frontend-only durable authority remain blocked.",
+  "candidate_b_broader_scope_activation_consumption_runtime_tracking": {
+    "status": "current_main_synced_candidate_b_activation_receipt_consumption_runtime",
+    "source_pr": "#1790",
+    "source_branch": "codex/cb-activation-consumption-runtime",
+    "merge_commit": "8b852aff55f55cd295fe0c09ccc231b85fd8603f",
+    "milestone": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1087-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-runtime.md",
+    "implemented_schema_id": "layer3.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption.v1",
+    "implemented_runtime_mode": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
+    "implemented_endpoint": "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume",
+    "proof_status": "tracked_in_progress_manifest_after_review_thread_audit",
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_behavior_admitted_by_source_pr": true,
+    "selector_mutation_performed_by_tracking": false,
+    "default_scope_mutation_performed_by_tracking": false,
+    "source_expansion_admitted_by_tracking": false,
+    "raw_local_path_exposed": false,
+    "raw_url_exposed": false,
+    "next_posture": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_rendered_status_v1"
+  }
 }

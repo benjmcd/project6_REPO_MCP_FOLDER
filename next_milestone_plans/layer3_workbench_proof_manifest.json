@@ -40383,5 +40383,32 @@
       "full mockup activation remains blocked",
       "bounded_trial_readiness_closed_await_operator_runbook_evidence_or_product_authority"
     ]
+  },
+  "candidate_b_broader_scope_activation_consumption_runtime_proof": {
+    "proof_kind": "candidate_b_broader_scope_activation_consumption_runtime_proof",
+    "status": "current_main_synced_candidate_b_activation_receipt_consumption_runtime",
+    "source_pr": "#1790",
+    "source_branch": "codex/cb-activation-consumption-runtime",
+    "merge_commit": "8b852aff55f55cd295fe0c09ccc231b85fd8603f",
+    "milestone": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1087-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-runtime.md",
+    "implemented_schema_id": "layer3.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption.v1",
+    "implemented_runtime_mode": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1",
+    "implemented_endpoint": "/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume",
+    "proof_terms": [
+      "record_candidate_b_broader_scope_activation_receipt_consumption",
+      "CONSUMPTION_SCHEMA_ID",
+      "CONSUMPTION_MODE",
+      "redacted_candidate_b_broader_scope_selector_activation_receipt",
+      "candidate_b_broader_scope_activation_consumption_missing_activation_receipt",
+      "candidate_b_broader_scope_activation_consumption_stale_activation_receipt_hash",
+      "raw_local_path_exposed false",
+      "raw_url_exposed false"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_behavior_admitted_by_source_pr": true,
+    "selector_mutation_performed_by_tracking": false,
+    "default_scope_mutation_performed_by_tracking": false,
+    "source_expansion_admitted_by_tracking": false
   }
 }
