@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -37,14 +38,7 @@ def build_report(*, source_root: Path, run_report_path: Path, env: Mapping[str, 
     run_report = _read_json(run_report_path)
     config_text = (source_root / "backend" / "app" / "core" / "config.py").read_text(encoding="utf-8")
     arelle = _arelle_env(current_env)
-    live_network = {
-        "committed_default_off": _contains(
-            config_text,
-            'layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False,',
-        ),
-        "runtime_env_enabled_for_this_preflight": _truthy(current_env.get("LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED")),
-        "user_agent_env_present": bool(str(current_env.get("LAYER3_SEC_EDGAR_USER_AGENT") or "").strip()),
-    }
+    live_network = _live_network_preflight(source_root=source_root, config_text=config_text, env=env)
     authority_blocked = run_report.get("decision") == "value_reveal_operator_exercise_blocked_missing_authority"
     criteria = [
         _criterion(
@@ -64,16 +58,16 @@ def build_report(*, source_root: Path, run_report_path: Path, env: Mapping[str, 
             "authority_provisioning_preflight_live_network_default_changed",
         ),
         _criterion(
-            "explicit_live_network_env_enabled_for_granted_run",
-            live_network["runtime_env_enabled_for_this_preflight"],
+            "explicit_live_network_setting_enabled_for_granted_run",
+            live_network["runtime_setting_enabled_for_this_preflight"],
             live_network,
-            "authority_provisioning_preflight_live_network_env_missing",
+            "authority_provisioning_preflight_live_network_setting_missing",
         ),
         _criterion(
-            "sec_user_agent_env_present_for_granted_run",
-            live_network["user_agent_env_present"],
+            "sec_user_agent_setting_present_for_granted_run",
+            live_network["user_agent_setting_present"],
             live_network,
-            "authority_provisioning_preflight_user_agent_env_missing",
+            "authority_provisioning_preflight_user_agent_setting_missing",
         ),
         _criterion(
             "arelle_environment_available_for_future_granted_run",
@@ -153,6 +147,39 @@ def _arelle_env(env: Mapping[str, str]) -> dict[str, Any]:
         "cache_dir_marker": _marker(cache_dir) if cache_dir else None,
         "internet_connectivity_mode": str(env.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY") or "offline").strip().lower(),
     }
+
+
+def _live_network_preflight(
+    *, source_root: Path, config_text: str, env: Mapping[str, str] | None
+) -> dict[str, Any]:
+    if env is None:
+        enabled, user_agent_present = _settings_live_network(source_root)
+        source = "settings"
+    else:
+        enabled = _truthy(env.get("LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED"))
+        user_agent_present = bool(str(env.get("LAYER3_SEC_EDGAR_USER_AGENT") or "").strip())
+        source = "env_override"
+    return {
+        "committed_default_off": _contains(
+            config_text,
+            'layer3_sec_edgar_live_network_enabled: bool = Field(\n        default=False,',
+        ),
+        "runtime_setting_enabled_for_this_preflight": enabled,
+        "user_agent_setting_present": user_agent_present,
+        "runtime_settings_source": source,
+    }
+
+
+def _settings_live_network(source_root: Path) -> tuple[bool, bool]:
+    backend = source_root / "backend"
+    if str(backend) not in sys.path:
+        sys.path.insert(0, str(backend))
+    from app.core.config import settings
+
+    return (
+        bool(getattr(settings, "layer3_sec_edgar_live_network_enabled", False)),
+        bool(str(getattr(settings, "layer3_sec_edgar_user_agent", "") or "").strip()),
+    )
 
 
 def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:

@@ -48,8 +48,8 @@ def test_sec_xbrl_value_reveal_authority_provisioning_preflight_requires_grant_o
     blockers = {item["blocked_reason"] for item in report["blocking_reasons"]}
 
     assert report["decision"] == "authority_provisioning_preflight_requires_explicit_grant_or_environment"
-    assert "authority_provisioning_preflight_live_network_env_missing" in blockers
-    assert "authority_provisioning_preflight_user_agent_env_missing" in blockers
+    assert "authority_provisioning_preflight_live_network_setting_missing" in blockers
+    assert "authority_provisioning_preflight_user_agent_setting_missing" in blockers
     assert "authority_provisioning_preflight_arelle_environment_missing" in blockers
     assert report["operator_exercise_run_report_summary"]["decision"] == (
         "value_reveal_operator_exercise_blocked_missing_authority"
@@ -83,8 +83,8 @@ def test_sec_xbrl_value_reveal_authority_provisioning_preflight_rejects_nonexist
 
     arelle = report["arelle_environment_preflight"]
     assert report["decision"] == "authority_provisioning_preflight_requires_explicit_grant_or_environment"
-    assert "authority_provisioning_preflight_live_network_env_missing" not in blockers
-    assert "authority_provisioning_preflight_user_agent_env_missing" not in blockers
+    assert "authority_provisioning_preflight_live_network_setting_missing" not in blockers
+    assert "authority_provisioning_preflight_user_agent_setting_missing" not in blockers
     assert "authority_provisioning_preflight_arelle_environment_missing" in blockers
     assert arelle["python_present"] is True
     assert arelle["python_exists"] is False
@@ -123,3 +123,30 @@ def test_sec_xbrl_value_reveal_authority_provisioning_preflight_admits_existing_
     assert report["arelle_environment_preflight"]["taxonomy_packages_all_exist"] is True
     assert report["arelle_environment_preflight"]["cache_dir_exists"] is True
     assert report["required_next_action"] == "run_authority_provisioning_with_explicit_operator_grant"
+
+
+def test_sec_xbrl_value_reveal_authority_provisioning_preflight_uses_runtime_settings_without_env_override(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    module = _preflight_module()
+
+    arelle_python = tmp_path / "python.exe"
+    taxonomy_package = tmp_path / "taxonomy.zip"
+    cache_dir = tmp_path / "cache"
+    arelle_python.write_text("", encoding="utf-8")
+    taxonomy_package.write_text("", encoding="utf-8")
+    cache_dir.mkdir()
+    monkeypatch.setenv("SEC_XBRL_ARELLE_PYTHON", str(arelle_python))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", str(taxonomy_package))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_CACHE_DIR", str(cache_dir))
+    monkeypatch.delenv("LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED", raising=False)
+    monkeypatch.delenv("LAYER3_SEC_EDGAR_USER_AGENT", raising=False)
+    monkeypatch.setattr(module, "_settings_live_network", lambda source_root: (True, True))
+
+    report = module.build_report(source_root=ROOT, run_report_path=_run_report(tmp_path))
+
+    assert report["decision"] == "authority_provisioning_preflight_ready_for_explicit_granted_run"
+    assert report["live_network_preflight"]["runtime_settings_source"] == "settings"
+    assert report["live_network_preflight"]["runtime_setting_enabled_for_this_preflight"] is True
+    assert report["live_network_preflight"]["user_agent_setting_present"] is True
