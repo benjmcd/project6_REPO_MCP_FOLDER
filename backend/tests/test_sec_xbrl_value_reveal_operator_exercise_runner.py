@@ -55,6 +55,22 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def _load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _sidecar_path(module: Any, storage: Path, sidecar_id: str) -> Path:
+    return storage / module.SIDECAR_RECEIPT_DIR / "receipts" / f"{sidecar_id}.json"
+
+
+def _value_store_path(module: Any, storage: Path, sidecar_id: str) -> Path:
+    return storage / module.SIDECAR_RECEIPT_DIR / module.INTERNAL_VALUE_STORE_DIR / f"{sidecar_id}.json"
+
+
+def _bridge_path(module: Any, storage: Path, bridge_id: str) -> Path:
+    return storage / module.BRIDGE_RECEIPT_DIR / "receipts" / f"{bridge_id}.json"
+
+
 def _authority_bundle(
     module: Any,
     storage: Path,
@@ -230,6 +246,142 @@ def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_value_store_hash_
 
     assert "value_reveal_operator_exercise_internal_value_store_hash_mismatch" in _blocked_reasons(report)
     assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_malformed_sidecar_value_count(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path)
+    sidecar_path = _sidecar_path(module, tmp_path, bundle["sidecar_id"])
+    payload = _load_json(sidecar_path)
+    payload["internal_value_store"]["value_record_count"] = "abc"
+    _write_json(sidecar_path, payload)
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]))
+
+    assert module.MALFORMED_AUTHORITY_COUNT_REASON in _blocked_reasons(report)
+    assert report["redacted_inventory"]["sidecar_receipt_count"] == 1
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_malformed_value_store_count(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path)
+    value_store_path = _value_store_path(module, tmp_path, bundle["sidecar_id"])
+    payload = _load_json(value_store_path)
+    payload["value_record_count"] = "abc"
+    _write_json(value_store_path, payload)
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]))
+
+    assert module.MALFORMED_AUTHORITY_COUNT_REASON in _blocked_reasons(report)
+    assert report["redacted_inventory"]["internal_value_store_file_count"] == 1
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_value_store_count_mismatch(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path)
+    value_store_path = _value_store_path(module, tmp_path, bundle["sidecar_id"])
+    payload = _load_json(value_store_path)
+    payload["value_record_count"] = 2
+    _write_json(value_store_path, payload)
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]))
+
+    assert "value_reveal_operator_exercise_internal_value_store_hash_mismatch" in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_malformed_bridge_fact_count(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path)
+    bridge_path = _bridge_path(module, tmp_path, "sec-edgar-html-inline-xbrl-fact-material-bridge-cccccccccccccccccccccccc")
+    payload = _load_json(bridge_path)
+    payload["response"]["materialization_summary"]["fact_count"] = "abc"
+    _write_json(bridge_path, payload)
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]))
+
+    assert module.MALFORMED_AUTHORITY_COUNT_REASON in _blocked_reasons(report)
+    assert report["redacted_inventory"]["bridge_receipt_count"] == 1
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_malformed_sidecar_receipt_hash(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path, sidecar_hash="not-a-sha")
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]))
+
+    assert module.MALFORMED_AUTHORITY_HASH_REASON in _blocked_reasons(report)
+    assert report["redacted_inventory"]["sidecar_receipt_count"] == 1
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_malformed_bridge_receipt_hash(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path, bridge_hash="not-a-sha")
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]))
+
+    assert module.MALFORMED_AUTHORITY_HASH_REASON in _blocked_reasons(report)
+    assert report["redacted_inventory"]["bridge_receipt_count"] == 1
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_malformed_dataset_version_hash(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path, dataset_version_hash="not-a-sha")
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], "not-a-sha"))
+
+    assert module.MALFORMED_AUTHORITY_HASH_REASON in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_malformed_lineage_hash(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(
+        module,
+        tmp_path,
+        sidecar_overrides={"parser_receipt_hash": "not-a-sha"},
+        bridge_overrides={"parser_receipt_hash": "not-a-sha"},
+    )
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]))
+
+    assert module.MALFORMED_AUTHORITY_HASH_REASON in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_rejects_echoed_non_sha_authorities(tmp_path: Path) -> None:
+    module = _runner_module()
+    bad_hash = "g" * 64
+    bad_lineage = {key: bad_hash for key in _lineage()}
+    bundle = _authority_bundle(
+        module,
+        tmp_path,
+        sidecar_hash=bad_hash,
+        bridge_hash=bad_hash,
+        dataset_version_hash=bad_hash,
+        sidecar_overrides=bad_lineage,
+        bridge_overrides=bad_lineage,
+    )
+
+    report = module.build_report(source_root=ROOT, storage_dir=tmp_path, db=_ready_db(bundle["dataset_version_id"], bad_hash))
+
+    assert module.MALFORMED_AUTHORITY_HASH_REASON in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    assert report["selected_authority_bundle"] is None
     _assert_redacted(report)
 
 

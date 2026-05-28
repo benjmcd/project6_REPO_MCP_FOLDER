@@ -15,9 +15,15 @@ DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exe
 SIDECAR_RECEIPT_DIR = "layer3-sec-edgar-arelle-resolved-fact-authority"
 BRIDGE_RECEIPT_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge"
 VALUE_REVEAL_RECEIPT_DIR = "layer3-sec-edgar-arelle-value-reveal"
+SIDECAR_RECEIPT_PREFIX = "sec-edgar-arelle-resolved-fact-authority"
+BRIDGE_RECEIPT_PREFIX = "sec-edgar-html-inline-xbrl-fact-material-bridge"
 READY_SIDECAR_STATE = "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
 ARELLE_FACT_AUTHORITY_INPUT_MODE = "arelle_resolved_fact_authority_sidecar_receipt"
 INTERNAL_VALUE_STORE_DIR = "internal-value-stores"
+MALFORMED_AUTHORITY_COUNT_REASON = "value_reveal_operator_exercise_malformed_authority_count"
+MALFORMED_AUTHORITY_HASH_REASON = "value_reveal_operator_exercise_malformed_authority_hash"
+MALFORMED_AUTHORITY_RECEIPT_REASON = "value_reveal_operator_exercise_malformed_authority_receipt"
+PARTIAL_AUTHORITY_RECEIPT_REASON = "value_reveal_operator_exercise_partial_authority_receipt"
 LINEAGE_KEYS = (
     "parser_receipt_hash",
     "connector_receipt_hash",
@@ -237,15 +243,29 @@ def _ready_sidecars(storage: Path) -> tuple[list[dict[str, Any]], list[dict[str,
     for path in _json_files(storage / SIDECAR_RECEIPT_DIR / "receipts"):
         payload, reason = _read_json(path)
         if reason is not None:
-            blockers.append(_blocked("value_reveal_operator_exercise_malformed_authority_receipt"))
+            blockers.append(_blocked(MALFORMED_AUTHORITY_RECEIPT_REASON))
             continue
         if not isinstance(payload, Mapping):
-            blockers.append(_blocked("value_reveal_operator_exercise_malformed_authority_receipt"))
+            blockers.append(_blocked(MALFORMED_AUTHORITY_RECEIPT_REASON))
             continue
         if payload.get("sidecar_state") != READY_SIDECAR_STATE:
             continue
         if not payload.get("sidecar_receipt_id") or not payload.get("sidecar_receipt_hash"):
-            blockers.append(_blocked("value_reveal_operator_exercise_partial_authority_receipt"))
+            blockers.append(_blocked(PARTIAL_AUTHORITY_RECEIPT_REASON))
+            continue
+        if not _valid_receipt_id(payload.get("sidecar_receipt_id"), SIDECAR_RECEIPT_PREFIX):
+            blockers.append(_blocked(MALFORMED_AUTHORITY_HASH_REASON))
+            continue
+        if not _is_hash(payload.get("sidecar_receipt_hash")):
+            blockers.append(_blocked(MALFORMED_AUTHORITY_HASH_REASON))
+            continue
+        _, count_blocker = _non_negative_int(payload.get("resolved_fact_count"))
+        if count_blocker is not None:
+            blockers.append(count_blocker)
+            continue
+        lineage_blocker = _hash_fields_blocker(payload, LINEAGE_KEYS)
+        if lineage_blocker is not None:
+            blockers.append(lineage_blocker)
             continue
         ready.append(dict(payload))
     return ready, blockers
@@ -257,14 +277,14 @@ def _bridge_responses(storage: Path) -> tuple[list[dict[str, Any]], list[dict[st
     for path in _json_files(storage / BRIDGE_RECEIPT_DIR / "receipts"):
         payload, reason = _read_json(path)
         if reason is not None:
-            blockers.append(_blocked("value_reveal_operator_exercise_malformed_authority_receipt"))
+            blockers.append(_blocked(MALFORMED_AUTHORITY_RECEIPT_REASON))
             continue
         if not isinstance(payload, Mapping):
-            blockers.append(_blocked("value_reveal_operator_exercise_malformed_authority_receipt"))
+            blockers.append(_blocked(MALFORMED_AUTHORITY_RECEIPT_REASON))
             continue
         response = payload.get("response") if isinstance(payload.get("response"), Mapping) else payload
         if not isinstance(response, Mapping):
-            blockers.append(_blocked("value_reveal_operator_exercise_partial_authority_receipt"))
+            blockers.append(_blocked(PARTIAL_AUTHORITY_RECEIPT_REASON))
             continue
         if not response.get("dataset_version_id"):
             blockers.append(_blocked("value_reveal_operator_exercise_bridge_dataset_version_id_missing"))
@@ -272,10 +292,38 @@ def _bridge_responses(storage: Path) -> tuple[list[dict[str, Any]], list[dict[st
         if not response.get("dataset_version_hash"):
             blockers.append(_blocked("value_reveal_operator_exercise_bridge_dataset_version_hash_missing"))
             continue
+        bridge_receipt_id = str(response.get("fact_material_bridge_receipt_id") or response.get("bridge_receipt_id") or "")
+        bridge_receipt_hash = str(response.get("fact_material_bridge_receipt_hash") or response.get("bridge_receipt_hash") or "")
+        if not bridge_receipt_id or not bridge_receipt_hash:
+            blockers.append(_blocked(PARTIAL_AUTHORITY_RECEIPT_REASON))
+            continue
+        if not _valid_receipt_id(bridge_receipt_id, BRIDGE_RECEIPT_PREFIX):
+            blockers.append(_blocked(MALFORMED_AUTHORITY_HASH_REASON))
+            continue
+        if not _is_hash(bridge_receipt_hash) or not _is_hash(response.get("dataset_version_hash")):
+            blockers.append(_blocked(MALFORMED_AUTHORITY_HASH_REASON))
+            continue
+        if response.get("fact_authority_input_mode") == ARELLE_FACT_AUTHORITY_INPUT_MODE:
+            if not _valid_receipt_id(response.get("arelle_sidecar_receipt_id"), SIDECAR_RECEIPT_PREFIX):
+                blockers.append(_blocked(MALFORMED_AUTHORITY_HASH_REASON))
+                continue
+            if not _is_hash(response.get("arelle_sidecar_receipt_hash")):
+                blockers.append(_blocked(MALFORMED_AUTHORITY_HASH_REASON))
+                continue
+        lineage_blocker = _hash_fields_blocker(response, LINEAGE_KEYS, fallback=response.get("authority_hashes"))
+        if lineage_blocker is not None:
+            blockers.append(lineage_blocker)
+            continue
+        materialization = response.get("materialization_summary")
+        if isinstance(materialization, Mapping):
+            _, count_blocker = _non_negative_int(materialization.get("fact_count"))
+            if count_blocker is not None:
+                blockers.append(count_blocker)
+                continue
         bridges.append(
             {
-                "receipt_id": str(response.get("fact_material_bridge_receipt_id") or path.stem),
-                "receipt_hash": str(response.get("fact_material_bridge_receipt_hash") or ""),
+                "receipt_id": bridge_receipt_id,
+                "receipt_hash": bridge_receipt_hash,
                 "response": dict(response),
             }
         )
@@ -286,6 +334,11 @@ def _verified_value_store(storage: Path, sidecar: Mapping[str, Any]) -> dict[str
     metadata = sidecar.get("internal_value_store") if isinstance(sidecar.get("internal_value_store"), Mapping) else {}
     if metadata.get("store_state") != "persisted" or not metadata.get("value_store_hash"):
         return {"blocked_reason": _blocked("value_reveal_operator_exercise_internal_value_store_missing")}
+    if not _is_hash(metadata.get("value_store_hash")):
+        return {"blocked_reason": _blocked(MALFORMED_AUTHORITY_HASH_REASON)}
+    metadata_count, metadata_count_blocker = _non_negative_int(metadata.get("value_record_count"))
+    if metadata_count_blocker is not None:
+        return {"blocked_reason": metadata_count_blocker}
     receipt_id = str(sidecar.get("sidecar_receipt_id") or "")
     receipt_hash = str(sidecar.get("sidecar_receipt_hash") or "")
     value_store_path = storage / SIDECAR_RECEIPT_DIR / INTERNAL_VALUE_STORE_DIR / f"{receipt_id}.json"
@@ -293,17 +346,21 @@ def _verified_value_store(storage: Path, sidecar: Mapping[str, Any]) -> dict[str
     if reason == "missing":
         return {"blocked_reason": _blocked("value_reveal_operator_exercise_internal_value_store_missing")}
     if reason is not None or not isinstance(payload, Mapping):
-        return {"blocked_reason": _blocked("value_reveal_operator_exercise_malformed_authority_receipt")}
+        return {"blocked_reason": _blocked(MALFORMED_AUTHORITY_RECEIPT_REASON)}
     records = payload.get("value_records")
     if not isinstance(records, list):
-        return {"blocked_reason": _blocked("value_reveal_operator_exercise_malformed_authority_receipt")}
+        return {"blocked_reason": _blocked(MALFORMED_AUTHORITY_RECEIPT_REASON)}
+    payload_count, payload_count_blocker = _non_negative_int(payload.get("value_record_count"))
+    if payload_count_blocker is not None:
+        return {"blocked_reason": payload_count_blocker}
     expected_hash = str(metadata.get("value_store_hash") or "")
     value_store_hash = _stable_hash(records)
     if (
         str(payload.get("sidecar_receipt_id") or "") != receipt_id
         or str(payload.get("sidecar_receipt_hash") or "") != receipt_hash
         or value_store_hash != expected_hash
-        or int(payload.get("value_record_count") or len(records)) != int(metadata.get("value_record_count") or -1)
+        or payload_count != metadata_count
+        or payload_count != len(records)
     ):
         return {"blocked_reason": _blocked("value_reveal_operator_exercise_internal_value_store_hash_mismatch")}
     return {"blocked_reason": None, "value_store_hash": value_store_hash}
@@ -329,7 +386,11 @@ def _lineage_mismatches(sidecar: Mapping[str, Any], response: Mapping[str, Any])
             mismatches.append(key)
     materialization = response.get("materialization_summary")
     if isinstance(materialization, Mapping):
-        if int(materialization.get("fact_count") or -1) != int(sidecar.get("resolved_fact_count") or -2):
+        materialized_count, materialized_blocker = _non_negative_int(materialization.get("fact_count"))
+        resolved_count, resolved_blocker = _non_negative_int(sidecar.get("resolved_fact_count"))
+        if materialized_blocker is not None or resolved_blocker is not None:
+            mismatches.append("resolved_fact_count")
+        elif materialized_count != resolved_count:
             mismatches.append("resolved_fact_count")
     return sorted(set(mismatches))
 
@@ -337,6 +398,8 @@ def _lineage_mismatches(sidecar: Mapping[str, Any], response: Mapping[str, Any])
 def _dataset_context(db: Any | None, response: Mapping[str, Any]) -> dict[str, Any]:
     dataset_version_id = str(response.get("dataset_version_id") or "")
     dataset_version_hash = str(response.get("dataset_version_hash") or "")
+    if not _is_hash(dataset_version_hash):
+        return {"blocked_reason": _blocked(MALFORMED_AUTHORITY_HASH_REASON)}
     if db is None:
         return {"blocked_reason": _blocked("value_reveal_operator_exercise_runtime_db_unavailable")}
     try:
@@ -365,7 +428,10 @@ def _dataset_context(db: Any | None, response: Mapping[str, Any]) -> dict[str, A
     source_reference = getattr(provenance, "source_reference_json", None)
     if not isinstance(source_reference, Mapping):
         return {"blocked_reason": _blocked("value_reveal_operator_exercise_dataset_provenance_missing")}
-    if str(source_reference.get("dataset_version_hash") or "") != dataset_version_hash:
+    provenance_dataset_version_hash = str(source_reference.get("dataset_version_hash") or "")
+    if not _is_hash(provenance_dataset_version_hash):
+        return {"blocked_reason": _blocked(MALFORMED_AUTHORITY_HASH_REASON)}
+    if provenance_dataset_version_hash != dataset_version_hash:
         return {"blocked_reason": _blocked("value_reveal_operator_exercise_dataset_version_hash_mismatch")}
     return {"blocked_reason": None, "provenance_hash": _stable_hash(source_reference)}
 
@@ -414,6 +480,41 @@ def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocke
         "blocked_reason": None if passed else blocked_reason,
         "evidence": dict(evidence),
     }
+
+
+def _non_negative_int(value: Any) -> tuple[int | None, dict[str, Any] | None]:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None, _blocked(MALFORMED_AUTHORITY_COUNT_REASON)
+    return value, None
+
+
+def _hash_fields_blocker(
+    payload: Mapping[str, Any],
+    keys: tuple[str, ...],
+    *,
+    fallback: Any | None = None,
+) -> dict[str, Any] | None:
+    fallback_mapping = fallback if isinstance(fallback, Mapping) else {}
+    for key in keys:
+        value = payload.get(key) if payload.get(key) is not None else fallback_mapping.get(key)
+        if not _is_hash(value):
+            return _blocked(MALFORMED_AUTHORITY_HASH_REASON)
+    return None
+
+
+def _valid_receipt_id(value: Any, prefix: str) -> bool:
+    if not isinstance(value, str):
+        return False
+    suffix = value.removeprefix(f"{prefix}-")
+    return value.startswith(f"{prefix}-") and len(suffix) == 24 and _is_hex(suffix)
+
+
+def _is_hash(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 64 and _is_hex(value)
+
+
+def _is_hex(value: str) -> bool:
+    return all(char in "0123456789abcdefABCDEF" for char in value)
 
 
 def _configured_storage_dir(source_root: Path) -> Path:
