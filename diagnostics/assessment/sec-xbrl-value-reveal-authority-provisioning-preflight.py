@@ -65,7 +65,7 @@ def build_report(*, source_root: Path, run_report_path: Path, env: Mapping[str, 
         ),
         _criterion(
             "arelle_environment_available_for_future_granted_run",
-            arelle["python_present"] and arelle["taxonomy_packages_present"] and arelle["cache_dir_present"],
+            arelle["python_exists"] and arelle["taxonomy_packages_all_exist"] and arelle["cache_dir_exists"],
             arelle,
             "authority_provisioning_preflight_arelle_environment_missing",
         ),
@@ -124,13 +124,20 @@ def _arelle_env(env: Mapping[str, str]) -> dict[str, Any]:
         if item.strip()
     ]
     cache_dir = str(env.get("SEC_XBRL_ARELLE_CACHE_DIR") or "").strip()
+    python_exists = Path(python_path).is_file() if python_path else False
+    package_exists = [Path(item).is_file() for item in packages]
+    cache_exists = Path(cache_dir).is_dir() if cache_dir else False
     return {
         "python_present": bool(python_path),
+        "python_exists": python_exists,
         "python_marker": _marker(python_path) if python_path else None,
         "taxonomy_packages_present": bool(packages),
         "taxonomy_package_count": len(packages),
+        "taxonomy_package_existing_count": sum(1 for item in package_exists if item),
         "taxonomy_package_markers": [_marker(item) for item in packages],
+        "taxonomy_packages_all_exist": bool(packages) and all(package_exists),
         "cache_dir_present": bool(cache_dir),
+        "cache_dir_exists": cache_exists,
         "cache_dir_marker": _marker(cache_dir) if cache_dir else None,
         "internet_connectivity_mode": str(env.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY") or "offline").strip().lower(),
     }
