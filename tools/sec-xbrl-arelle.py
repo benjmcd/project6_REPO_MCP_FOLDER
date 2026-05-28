@@ -47,11 +47,12 @@ def main() -> int:
         cntlr.webCache.cacheDir = str(Path(args.cache_dir).resolve())
     cntlr.webCache.workOffline = args.internet_connectivity == "offline"
     try:
-        package_hashes = _load_packages(cntlr, PackageManager, args.taxonomy_package)
+        package_status = _load_packages(cntlr, PackageManager, args.taxonomy_package)
     except Exception as exc:
         _emit_error("taxonomy_package_load_failed", error_class=exc.__class__.__name__)
         cntlr.close()
         return 2
+    package_hashes = package_status["loaded_hashes"]
     facts: list[dict[str, Any]] = []
     loaded_document_counts: list[int] = []
     model_error_count = 0
@@ -90,6 +91,8 @@ def main() -> int:
                     "taxonomy_package_loaded": bool(package_hashes),
                     "taxonomy_package_count": len(package_hashes),
                     "taxonomy_package_hashes": package_hashes,
+                    "taxonomy_package_invalid_count": len(package_status["invalid_hashes"]),
+                    "taxonomy_package_invalid_hashes": package_status["invalid_hashes"],
                     "taxonomy_network_resolution_enabled": args.internet_connectivity == "online",
                     "document_set": {
                         "entry_document_count": len(entries),
@@ -108,21 +111,31 @@ def main() -> int:
         cntlr.close()
 
 
-def _load_packages(cntlr: Any, package_manager: Any, package_paths: list[str]) -> list[str]:
+def _load_packages(cntlr: Any, package_manager: Any, package_paths: list[str]) -> dict[str, list[str]]:
     package_hashes: list[str] = []
+    invalid_hashes: list[str] = []
     if not package_paths:
-        return package_hashes
+        return {"loaded_hashes": package_hashes, "invalid_hashes": invalid_hashes}
     package_manager.init(cntlr, loadPackagesConfig=False)
     for raw_path in package_paths:
         path = Path(raw_path)
         if not path.exists() or not path.is_file():
-            raise RuntimeError("taxonomy_package_missing")
-        info = package_manager.addPackage(cntlr, str(path.resolve()))
+            invalid_hashes.append(hashlib.sha256(str(raw_path).encode("utf-8")).hexdigest())
+            continue
+        package_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+        try:
+            info = package_manager.addPackage(cntlr, str(path.resolve()))
+        except Exception:
+            invalid_hashes.append(package_hash)
+            continue
         if info is None:
-            raise RuntimeError("taxonomy_package_invalid")
-        package_hashes.append(hashlib.sha256(path.read_bytes()).hexdigest())
+            invalid_hashes.append(package_hash)
+            continue
+        package_hashes.append(package_hash)
+    if not package_hashes:
+        raise RuntimeError("taxonomy_package_valid_package_missing")
     package_manager.rebuildRemappings(cntlr)
-    return package_hashes
+    return {"loaded_hashes": package_hashes, "invalid_hashes": invalid_hashes}
 
 
 def _fact_payload(

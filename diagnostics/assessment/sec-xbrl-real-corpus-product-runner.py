@@ -161,7 +161,7 @@ def build_report(
         "runtime_default_decision": {
             "current_default_enabled": current_default,
             "resulting_default_enabled": bool(pass_gate),
-            "action": "keep_default_true" if pass_gate else "roll_back_default_false",
+            "action": _runtime_default_action(pass_gate=pass_gate, current_default=current_default),
             "applied_to_config": False,
             "gate_has_teeth": True,
         },
@@ -293,7 +293,17 @@ def _run_matrix_chunk(
     delivery = _delivery(validation, label=label, db=db, request_namespace=request_namespace)
     row["delivery_status"] = _state(delivery, "delivery_status_provenance_state")
     if delivery.get("delivery_status_provenance_state") != layer3_sec_edgar_delivery_status_provenance.READY_STATE:
-        return {**row, "pipeline_state": "blocked", "blocked_stage": "delivery", "blocked_reasons": _blocked_reasons(delivery)}
+        reasons = _blocked_reasons(delivery)
+        if _delivery_block_allowed_for_no_inline_records(row, reasons):
+            row["delivery_status"] = "not_required_for_allowed_no_inline_xbrl_records"
+            row["operator_inspection_status"] = "not_required_for_broader_extraction_gate"
+            row["operator_product_surface_status"] = "not_required_for_broader_extraction_gate"
+            row["durable_delivery_archive_status"] = "not_required_for_broader_extraction_gate"
+            row["pipeline_state"] = "ready"
+            row["blocked_stage"] = None
+            row["blocked_reasons"] = []
+            return row
+        return {**row, "pipeline_state": "blocked", "blocked_stage": "delivery", "blocked_reasons": reasons}
     operator = _operator(delivery, label=label, db=db, request_namespace=request_namespace)
     row["operator_inspection_status"] = _state(operator, "operator_inspection_state")
     if operator.get("operator_inspection_state") != layer3_sec_edgar_operator_inspection.READY_STATE:
@@ -326,6 +336,18 @@ def _delivery(validation: Mapping[str, Any], *, label: str, db: Any, request_nam
             "operator_confirmation": True,
         },
         db,
+    )
+
+
+def _delivery_block_allowed_for_no_inline_records(row: Mapping[str, Any], reasons: list[str]) -> bool:
+    if set(reasons) != {"sec_edgar_delivery_status_provenance_missing_handoff_export_prepare_output"}:
+        return False
+    return (
+        int(row.get("supported_unblocked_or_no_inline_count") or 0) == int(row.get("filing_count") or 0)
+        and int(row.get("records_with_handoff_export_prepare") or 0) == int(row.get("supported_count") or 0)
+        and int(row.get("blocked_or_degraded_count") or 0) > 0
+        and set(dict(row.get("failure_reasons") or {}).keys())
+        <= {"sec_edgar_html_inline_xbrl_fact_authority_no_inline_xbrl_markers"}
     )
 
 
@@ -442,6 +464,11 @@ def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) ->
         for item in (connector.get("acquisition_receipts") or [])
         if isinstance(item, Mapping)
     }
+    source_identities_by_example_id = _source_identities_for_validation(
+        validation,
+        connector=connector,
+        user_agent=user_agent,
+    )
     companyfacts_cache: dict[str, dict[str, Any]] = {}
     rows: list[dict[str, Any]] = []
     for record in records:
@@ -450,9 +477,11 @@ def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) ->
         sidecar_hash = str(metrics.get("arelle_sidecar_receipt_hash") or "")
         sidecar = _sidecar_receipt_by_hash(sidecar_hash) if sidecar_hash else None
         coverage = dict(sidecar.get("coverage") or {}) if isinstance(sidecar, Mapping) else {}
+        sidecar_diagnostics = dict(sidecar.get("diagnostics") or {}) if isinstance(sidecar, Mapping) else {}
         record_state = str(record.get("supported_degraded_blocked") or "")
-        acquisition = acquisitions_by_example_id.get(str(record.get("example_id") or ""), {})
-        source_identity = _source_identity_for_acquisition(acquisition)
+        example_id = str(record.get("example_id") or "")
+        acquisition = acquisitions_by_example_id.get(example_id, {})
+        source_identity = source_identities_by_example_id.get(example_id) or _source_identity_for_acquisition(acquisition)
         companyfacts = (
             _companyfacts_count(
                 cik=str(source_identity.get("cik_or_filer_ref") or ""),
@@ -469,7 +498,7 @@ def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) ->
             else {"match_count": None, "compared_count": 0, "match_rate": None}
         )
         arelle_count = int(metrics.get("resolved_fact_count") or sidecar.get("resolved_fact_count") or 0) if sidecar else 0
-        independent_count = int(coverage.get("independent_inline_fact_count") or 0)
+        independent_count = int(sidecar_diagnostics.get("independent_inline_fact_count") or 0)
         compared = int(value_match.get("compared_count") or 0)
         matched = int(value_match.get("match_count") or 0)
         rows.append(
@@ -489,17 +518,19 @@ def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) ->
                     if record_state == "supported"
                     and sidecar is not None
                     and independent_count <= arelle_count
-                    and bool(coverage.get("independent_inline_fact_count_reconciled"))
+                    and bool(sidecar_diagnostics.get("independent_inline_fact_count_reconciled"))
                     else "not_applicable"
                     if record_state != "supported"
                     else "failed"
                 ),
-                "multi_document_inline_document_count": int(coverage.get("independent_inline_fact_document_count") or 0),
+                "multi_document_inline_document_count": int(
+                    sidecar_diagnostics.get("independent_inline_fact_document_count") or 0
+                ),
                 "multi_document_scanned_document_count": int(
-                    coverage.get("independent_inline_fact_scanned_document_count") or 0
+                    sidecar_diagnostics.get("independent_inline_fact_scanned_document_count") or 0
                 ),
                 "per_document_fact_tally": _document_tally_projection(
-                    coverage.get("independent_inline_fact_document_tally") or []
+                    sidecar_diagnostics.get("independent_inline_fact_document_tally") or []
                 ),
                 "period_resolved_count": int(metrics.get("period_resolved_count") or 0),
                 "unit_resolved_count": int(metrics.get("unit_resolved_count") or 0),
@@ -508,6 +539,11 @@ def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) ->
                 "concept_resolved_from_dts_count": int(metrics.get("concept_resolved_from_dts_count") or 0),
                 "standard_concept_count": int(metrics.get("standard_concept_count") or 0),
                 "extension_concept_count": int(metrics.get("extension_concept_count") or 0),
+                "taxonomy_package_count": int(sidecar_diagnostics.get("taxonomy_package_count") or 0),
+                "taxonomy_package_invalid_count": int(sidecar_diagnostics.get("taxonomy_package_invalid_count") or 0),
+                "taxonomy_package_invalid_hashes": [
+                    str(item) for item in sidecar_diagnostics.get("taxonomy_package_invalid_hashes") or []
+                ],
                 "companyfacts_oracle_used": bool(companyfacts.get("oracle_used")),
                 "companyfacts_confidence": companyfacts.get("confidence"),
                 "companyfacts_standard_fact_count": companyfacts.get("fact_count"),
@@ -550,6 +586,60 @@ def _source_identity_for_acquisition(acquisition: Mapping[str, Any]) -> dict[str
         return {}
     identity = receipt.get("source_identity") if isinstance(receipt.get("source_identity"), Mapping) else {}
     return dict(identity)
+
+
+def _source_identities_for_validation(
+    validation: Mapping[str, Any],
+    *,
+    connector: Mapping[str, Any],
+    user_agent: str,
+) -> dict[str, dict[str, str]]:
+    example_set = connector.get("example_set") if isinstance(connector.get("example_set"), Mapping) else {}
+    raw_matrix = example_set.get("company_matrix") or validation.get("company_matrix") or ()
+    matrix = tuple(str(item or "").strip().upper() for item in raw_matrix if str(item or "").strip())
+    if not matrix:
+        return {}
+    try:
+        cik_refs = tuple(
+            layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS[item]
+            for item in matrix
+        )
+    except KeyError:
+        return {}
+    selection_policy = str(
+        example_set.get("filing_selection_policy")
+        or validation.get("filing_selection_policy")
+        or layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_FILING_SELECTION_POLICY
+    )
+    try:
+        submissions = layer3_sec_edgar_real_filing_acquisition_connector._fetch_submissions_records(
+            cik_refs,
+            user_agent=user_agent,
+        )
+        examples = layer3_sec_edgar_real_filing_acquisition_connector._select_examples(
+            submissions,
+            {
+                "company_matrix": matrix,
+                "cik_refs": cik_refs,
+                "form_types": (),
+                "filing_selection_policy": selection_policy,
+            },
+        )
+    except Exception:
+        return {}
+    identities: dict[str, dict[str, str]] = {}
+    for example in examples:
+        if not isinstance(example, Mapping):
+            continue
+        example_id = str(example.get("example_id") or "")
+        cik = str(example.get("cik") or "")
+        accession = str(example.get("accession_or_submission_id") or "")
+        if example_id and cik and accession:
+            identities[example_id] = {
+                "cik_or_filer_ref": cik,
+                "accession_or_submission_id": accession,
+            }
+    return identities
 
 
 def _sidecar_receipt_by_hash(sidecar_hash: str) -> dict[str, Any] | None:
@@ -820,6 +910,12 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "companyfacts_value_match_rate": round(matched / compared, 4) if compared else None,
         "minimum_companyfacts_value_match_rate": MIN_COMPANYFACTS_MATCH_RATE,
         "companyfacts_oracle_unavailable_count": sum(int(row.get("companyfacts_oracle_unavailable_count") or 0) for row in rows),
+        "taxonomy_package_invalid_count": sum(
+            int(item.get("taxonomy_package_invalid_count") or 0) for item in per_filing
+        ),
+        "filings_with_invalid_taxonomy_package_entries": sum(
+            1 for item in per_filing if int(item.get("taxonomy_package_invalid_count") or 0) > 0
+        ),
         "failure_reasons": dict(
             sorted(
                 Counter(
@@ -1082,6 +1178,12 @@ def _next_slice(*, pass_gate: bool, blockers: list[Mapping[str, Any]]) -> str:
     if "real_corpus_product_path_live_preflight_not_satisfied" in reasons:
         return "sec_edgar_real_corpus_product_path_runner_live_execution_v1"
     return "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1"
+
+
+def _runtime_default_action(*, pass_gate: bool, current_default: bool) -> str:
+    if pass_gate:
+        return "keep_default_true" if current_default else "set_default_true"
+    return "keep_default_false" if not current_default else "roll_back_default_false"
 
 
 def _memory_db_session() -> Any:

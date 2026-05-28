@@ -1,26 +1,15 @@
 {
-  "blocking_reasons": [
-    {
-      "blocked_reason": "default_on_runtime_rolled_back_by_real_corpus_gate",
-      "criterion": "runtime_default_on",
-      "evidence": {
-        "config_file": "backend/app/core/config.py",
-        "real_corpus_gate_decision": "real_corpus_default_on_blocked",
-        "real_corpus_gate_verdict": "FAIL_OR_INCONCLUSIVE"
-      },
-      "state": "blocked"
-    }
-  ],
+  "blocking_reasons": [],
   "criteria": [
     {
-      "blocked_reason": "default_on_runtime_rolled_back_by_real_corpus_gate",
+      "blocked_reason": null,
       "criterion": "runtime_default_on",
       "evidence": {
         "config_file": "backend/app/core/config.py",
-        "real_corpus_gate_decision": "real_corpus_default_on_blocked",
-        "real_corpus_gate_verdict": "FAIL_OR_INCONCLUSIVE"
+        "real_corpus_gate_decision": "real_corpus_default_on_validated",
+        "real_corpus_gate_verdict": "PASS"
       },
-      "state": "blocked"
+      "state": "passed"
     },
     {
       "blocked_reason": null,
@@ -70,20 +59,24 @@
       "state": "passed"
     }
   ],
-  "decision": "default_on_runtime_blocked",
-  "headline": "Default-on runtime is blocked by missing source/test evidence.",
+  "decision": "default_on_runtime_enabled",
+  "headline": "Arelle resolved-fact authority is now the default bridge input, with explicit persisted sidecar requirements and a reversible regex rollback flag.",
   "inherited_real_corpus_evidence": {
     "admission_review_decision": "admission_review_passed",
     "arelle_resolved_fact_count": 18156,
     "bridge_fact_count": 18156,
+    "broader_companyfacts_value_compared_count": 9131,
+    "broader_companyfacts_value_match_count": 9040,
+    "broader_companyfacts_value_match_rate": 0.99,
     "broader_failure_reasons": {
-      "arelle_nonzero_exit": 30,
       "sec_edgar_html_inline_xbrl_fact_authority_no_inline_xbrl_markers": 2
     },
+    "broader_independent_inline_fact_count": 52558,
     "broader_issuer_hash_count": 16,
-    "broader_real_corpus_gate_decision": "real_corpus_default_on_blocked",
-    "broader_real_corpus_gate_verdict": "FAIL_OR_INCONCLUSIVE",
+    "broader_real_corpus_gate_decision": "real_corpus_default_on_validated",
+    "broader_real_corpus_gate_verdict": "PASS",
     "broader_real_filing_count": 32,
+    "broader_resolved_fact_count": 52558,
     "companyfacts_value_compared_count": 3790,
     "companyfacts_value_match_count": 3761,
     "companyfacts_value_match_rate": 0.9923,
@@ -100,7 +93,7 @@
     "real_filing_count": 12,
     "value_bridge_fact_count": 23102
   },
-  "next_slice": "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1",
+  "next_slice": "sec_edgar_operator_surface_gated_value_reveal_v1",
   "non_goals_preserved": {
     "candidate_b_sec_routing_performed": false,
     "cross_company_comparability_claimed": false,
@@ -109,10 +102,10 @@
     "rag_vector_model_provider_auth_behavior_added": false
   },
   "runtime_posture": {
-    "default_cutover_enabled": false,
+    "default_cutover_enabled": true,
     "operator_value_reveal_default_enabled": false,
     "persisted_sidecar_required": true,
-    "regex_fallback_while_default_on": null,
+    "regex_fallback_while_default_on": false,
     "regex_rollback_env_supported": true,
     "synchronous_arelle_in_bridge": false
   },

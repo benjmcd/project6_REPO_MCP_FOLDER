@@ -49,6 +49,9 @@ def test_sec_xbrl_sidecar_emits_resolved_semantics_and_redacts_response(monkeypa
     assert receipt["resolved_fact_projection"][0]["value_redacted"] is True
     assert "value" not in receipt["resolved_fact_projection"][0]
     assert receipt["diagnostics"]["app_runtime_imported_arelle"] is False
+    assert receipt["diagnostics"]["taxonomy_package_count"] == 1
+    assert receipt["diagnostics"]["taxonomy_package_invalid_count"] == 1
+    assert receipt["diagnostics"]["taxonomy_package_invalid_hashes"] == [_hash("invalid-taxonomy")]
     assert receipt["negative_invariants"]["material_bridge_mutated"] is False
 
 
@@ -80,6 +83,10 @@ def test_sec_xbrl_sidecar_fails_closed_when_arelle_is_absent(monkeypatch, tmp_pa
     assert response["sidecar_receipt_id"] is None
     assert response["status_projection"]["ready"] is False
     assert response["status_projection"]["blocked_reasons"][0]["reason"] == "arelle_nonzero_exit"
+    assert (
+        response["status_projection"]["blocked_reasons"][0]["arelle_error_reason"]
+        == "taxonomy_package_valid_package_missing"
+    )
     assert response["negative_invariants"]["arelle_imported_into_app_runtime"] is False
 
 
@@ -251,6 +258,8 @@ def _ready_arelle_runner(*_args, **_kwargs):
         "taxonomy_package_loaded": True,
         "taxonomy_package_count": 1,
         "taxonomy_package_hashes": [_hash("taxonomy")],
+        "taxonomy_package_invalid_count": 1,
+        "taxonomy_package_invalid_hashes": [_hash("invalid-taxonomy")],
         "fact_count": 2,
         "diagnostics": {"model_error_count": 0, "concept_resolved_from_dts_count": 2, "concept_dts_unresolved_count": 0},
         "document_set": {"loaded_document_count": 5, "entry_document_loaded": True},
@@ -301,7 +310,12 @@ def _ready_arelle_runner(*_args, **_kwargs):
 
 
 def _blocked_arelle_runner(*_args, **_kwargs):
-    return subprocess.CompletedProcess(args=["fake"], returncode=2, stdout='{"status":"blocked"}\n', stderr="missing")
+    return subprocess.CompletedProcess(
+        args=["fake"],
+        returncode=2,
+        stdout='{"reason":"taxonomy_package_valid_package_missing","error_class":"RuntimeError"}\n',
+        stderr="missing",
+    )
 
 
 def _hash(value: str) -> str:
