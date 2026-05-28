@@ -79,7 +79,7 @@ The separate run preflight is:
 
 `diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py`
 
-It must block, not fabricate, when the configured storage authority does not contain READY sidecar and bridge/dataset receipts. Its current blocked result is recorded in doc `1265`.
+It must block, not fabricate, when the configured storage authority does not contain one coherent selected authority bundle that the real value-reveal endpoint would accept. Independent counts are insufficient: the runner must verify a READY sidecar receipt, its persisted internal value store and hash, a bridge receipt bound to that sidecar, a dataset version id/hash, a matching runtime `DatasetVersion`, and matching dataset source provenance. Its current blocked result is recorded in doc `1265`.
 
 ## Non-Goals
 

@@ -40410,5 +40410,63 @@
     "selector_mutation_performed_by_tracking": false,
     "default_scope_mutation_performed_by_tracking": false,
     "source_expansion_admitted_by_tracking": false
+  },
+  "sec_edgar_arelle_value_reveal_operator_exercise_readiness_proof": {
+    "proof_kind": "sec_edgar_arelle_value_reveal_operator_exercise_readiness_proof",
+    "status": "operator_exercise_readiness_packet_recorded_blocked_until_coherent_authority_bundle",
+    "milestone": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1264-sec-xbrl-value-reveal-operator-exercise.md",
+    "authority_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md",
+    "runner": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py",
+    "report": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json",
+    "proof_terms": [
+      "sec_edgar_arelle_value_reveal_operator_exercise_v1",
+      "ready_to_run_operator_exercise false",
+      "operator_exercise_performed false",
+      "coherent sidecar value-store bridge dataset provenance bundle required",
+      "independent authority counts are insufficient",
+      "defaults remain off",
+      "no live network",
+      "no arelle subprocess",
+      "no sidecar dataset audit receipt creation"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_network_performed": false,
+    "arelle_subprocess_invoked": false,
+    "sidecar_created": false,
+    "dataset_created": false,
+    "audit_receipt_created": false
+  },
+  "sec_edgar_arelle_value_reveal_authority_provisioning_preflight_proof": {
+    "proof_kind": "sec_edgar_arelle_value_reveal_authority_provisioning_preflight_proof",
+    "status": "authority_provisioning_preflight_recorded_live_arelle_run_not_granted_or_performed",
+    "milestone": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md",
+    "preflight_report": "diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json",
+    "proof_terms": [
+      "validate-only authority provisioning preflight exists",
+      "live_arelle_run_granted false",
+      "live_arelle_run_performed false",
+      "defaults remain off",
+      "operator exercise remains blocked until coherent authority bundle exists"
+    ],
+    "live_behavior_change_introduced_by_tracking": false
+  },
+  "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
+    "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
+    "status": "branch_local_review_debt_closure_in_progress",
+    "milestone": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1",
+    "branch": "codex/post-1968-1969-sec-value-reveal-preflight-review-debt",
+    "base_main": "4291fcde489e7b8eec05c4067543d824fe728667",
+    "proof_terms": [
+      "PR 1968 planning packet registered in progress and proof surfaces",
+      "PR 1969 dataset hash readiness debt closed",
+      "PR 1969 internal value-store verification debt closed",
+      "PR 1969 sidecar bridge lineage debt closed",
+      "PR 1969 runtime dataset row and provenance debt closed",
+      "readiness requires one coherent selected bundle",
+      "no live network or arelle invocation in this pass"
+    ],
+    "live_behavior_change_introduced_by_tracking": false
   }
 }
