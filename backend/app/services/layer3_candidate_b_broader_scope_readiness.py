@@ -486,6 +486,13 @@ def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             "The broader scope readiness audit does not admit caller paths, selector mutation, URLs, connectors, or browser authority.",
             details={"blocked_fields": blocked},
         )
+    blocked_values = sorted(_find_forbidden_values(fields))
+    if blocked_values:
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_forbidden_request_values",
+            "The broader scope readiness audit does not admit caller paths, URLs, or secret-like values.",
+            details={"blocked_values": blocked_values},
+        )
     return fields
 
 
@@ -501,6 +508,34 @@ def _find_forbidden_fields(value: Any, *, prefix: str = "") -> list[str]:
         for index, child in enumerate(value):
             found.extend(_find_forbidden_fields(child, prefix=f"{prefix}[{index}]"))
     return found
+
+
+def _find_forbidden_values(value: Any, *, prefix: str = "") -> list[str]:
+    found: list[str] = []
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else str(key)
+            found.extend(_find_forbidden_values(child, prefix=path))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            found.extend(_find_forbidden_values(child, prefix=f"{prefix}[{index}]"))
+    elif isinstance(value, str) and _looks_like_forbidden_value(value):
+        found.append(prefix)
+    return found
+
+
+def _looks_like_forbidden_value(value: str) -> bool:
+    candidate = value.strip()
+    lowered = candidate.lower()
+    return (
+        "://" in candidate
+        or candidate.startswith(("\\\\", "/"))
+        or (len(candidate) >= 3 and candidate[1] == ":" and candidate[2] in {"\\", "/"})
+        or "begin private key" in lowered
+        or "password=" in lowered
+        or "secret=" in lowered
+        or "token=" in lowered
+    )
 
 
 def _required_str(fields: Mapping[str, Any], key: str) -> str:

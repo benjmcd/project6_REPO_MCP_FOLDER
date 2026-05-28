@@ -141,6 +141,11 @@ def runtime_is_baseline_visible(runtime: AuditedReviewRuntime) -> bool:
 
 
 def discover_passed_runtimes() -> list[AuditedReviewRuntime]:
+    runtimes = _discover_all_passed_runtimes()
+    return _prefer_localaps_runtimes(runtimes)
+
+
+def _discover_all_passed_runtimes() -> list[AuditedReviewRuntime]:
     runtimes: list[AuditedReviewRuntime] = []
     runtime_parents = [candidate for candidate in RUNTIME_PARENTS if candidate.exists()]
     if not runtime_parents:
@@ -180,12 +185,17 @@ def discover_passed_runtimes() -> list[AuditedReviewRuntime]:
                     storage_dir=storage_dir,
                 )
             )
+    return runtimes
+
+
+def _prefer_localaps_runtimes(runtimes: list[AuditedReviewRuntime]) -> list[AuditedReviewRuntime]:
     preferred_runtimes = [runtime for runtime in runtimes if _runtime_has_accession_prefix(runtime, "LOCALAPS")]
     return preferred_runtimes or runtimes
 
 
 def discover_baseline_visible_passed_runtimes() -> list[AuditedReviewRuntime]:
-    return [runtime for runtime in discover_passed_runtimes() if runtime_is_baseline_visible(runtime)]
+    visible_runtimes = [runtime for runtime in _discover_all_passed_runtimes() if runtime_is_baseline_visible(runtime)]
+    return _prefer_localaps_runtimes(visible_runtimes)
 
 
 def latest_baseline_visible_passed_runtime() -> AuditedReviewRuntime:
