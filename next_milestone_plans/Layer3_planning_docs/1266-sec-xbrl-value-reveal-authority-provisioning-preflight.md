@@ -36,7 +36,12 @@ The actual provisioning run requires an explicit operator grant for:
 - taxonomy package and cache paths outside the repo and synced workspace
 - isolated storage/runtime state for retained source bytes, sidecar receipts, internal value stores, bridge receipts, and dataset rows
 
-The preflight can report `authority_provisioning_preflight_ready_for_explicit_granted_run` only when all of the above environment references exist and the live-network/User-Agent environment is explicitly enabled for that process. That decision is still not permission to proceed by itself; the live run remains a separate operator-granted action.
+The preflight can report `authority_provisioning_preflight_ready_for_explicit_granted_run` only when all of the above environment references exist and the live-network/User-Agent runtime settings are explicitly enabled for that process. The runtime settings check follows the same `settings` path as SEC acquisition, including the supported `backend/.env` source; focused tests use an explicit environment override only for deterministic coverage. That decision is still not permission to proceed by itself; the live run remains a separate operator-granted action.
+
+The report exposes missing live-network and User-Agent runtime settings as separate blocking criteria:
+
+- `authority_provisioning_preflight_live_network_setting_missing`
+- `authority_provisioning_preflight_user_agent_setting_missing`
 
 No committed default may be flipped. `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED`, `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED`, and `LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED` remain default-off in source.
 

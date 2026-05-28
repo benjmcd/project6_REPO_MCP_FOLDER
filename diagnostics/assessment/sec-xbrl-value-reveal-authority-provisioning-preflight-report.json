@@ -15,6 +15,28 @@
   },
   "blocking_reasons": [
     {
+      "blocked_reason": "authority_provisioning_preflight_live_network_setting_missing",
+      "criterion": "explicit_live_network_setting_enabled_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_setting_enabled_for_this_preflight": false,
+        "runtime_settings_source": "settings",
+        "user_agent_setting_present": false
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "authority_provisioning_preflight_user_agent_setting_missing",
+      "criterion": "sec_user_agent_setting_present_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_setting_enabled_for_this_preflight": false,
+        "runtime_settings_source": "settings",
+        "user_agent_setting_present": false
+      },
+      "state": "blocked"
+    },
+    {
       "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
       "criterion": "arelle_environment_available_for_future_granted_run",
       "evidence": {
@@ -50,10 +72,33 @@
       "criterion": "live_network_not_enabled_by_committed_default",
       "evidence": {
         "committed_default_off": true,
-        "runtime_env_enabled_for_this_preflight": false,
-        "user_agent_env_present": false
+        "runtime_setting_enabled_for_this_preflight": false,
+        "runtime_settings_source": "settings",
+        "user_agent_setting_present": false
       },
       "state": "passed"
+    },
+    {
+      "blocked_reason": "authority_provisioning_preflight_live_network_setting_missing",
+      "criterion": "explicit_live_network_setting_enabled_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_setting_enabled_for_this_preflight": false,
+        "runtime_settings_source": "settings",
+        "user_agent_setting_present": false
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "authority_provisioning_preflight_user_agent_setting_missing",
+      "criterion": "sec_user_agent_setting_present_for_granted_run",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_setting_enabled_for_this_preflight": false,
+        "runtime_settings_source": "settings",
+        "user_agent_setting_present": false
+      },
+      "state": "blocked"
     },
     {
       "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
@@ -79,8 +124,9 @@
   "headline": "Authority provisioning can proceed only in a separately granted live run with network, user-agent, and Arelle environment enabled.",
   "live_network_preflight": {
     "committed_default_off": true,
-    "runtime_env_enabled_for_this_preflight": false,
-    "user_agent_env_present": false
+    "runtime_setting_enabled_for_this_preflight": false,
+    "runtime_settings_source": "settings",
+    "user_agent_setting_present": false
   },
   "next_slice": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
   "non_goals_preserved": {
