@@ -17,12 +17,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.api.deps import get_db
 from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 from main import app
-from review_nrc_aps_runtime_fixture import discover_passed_runtimes, latest_passed_runtime
+import review_nrc_aps_runtime_fixture as runtime_fixture
+from review_nrc_aps_runtime_fixture import (
+    discover_baseline_visible_passed_runtimes,
+    latest_baseline_visible_passed_runtime,
+    runtime_is_baseline_visible,
+)
 
 
-RUNTIME = latest_passed_runtime()
+RUNTIME = latest_baseline_visible_passed_runtime()
 RUN_ID = RUNTIME.run_id
-MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_passed_runtimes()[:3]}
+MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_baseline_visible_passed_runtimes()[:3]}
 
 
 def override_get_db():
@@ -34,6 +39,11 @@ def override_get_db():
 
 
 client = TestClient(app)
+
+
+def test_review_api_suite_anchor_runtime_is_baseline_visible():
+    assert runtime_is_baseline_visible(RUNTIME) is True
+    assert RUN_ID in MULTI_RUNTIME_RUN_IDS
 
 
 @pytest.fixture(autouse=True)
@@ -89,6 +99,7 @@ def _write_runtime_db(
     include_connector_run_row: bool,
     document_processing_engine: str | None = None,
     document_processing_engine_explicit: bool | None = None,
+    accession_number: str | None = None,
 ) -> None:
     database_path = runtime_dir / "lc.db"
     connection = sqlite3.connect(str(database_path))
@@ -104,7 +115,7 @@ def _write_runtime_db(
             """
         )
         connection.execute("CREATE TABLE connector_run_target (connector_run_target_id TEXT PRIMARY KEY)")
-        connection.execute("CREATE TABLE aps_content_linkage (content_id TEXT)")
+        connection.execute("CREATE TABLE aps_content_linkage (run_id TEXT, accession_number TEXT, content_id TEXT)")
         connection.execute("CREATE TABLE aps_content_document (content_id TEXT)")
         connection.execute("CREATE TABLE aps_content_chunk (chunk_id TEXT)")
         if include_connector_run_row:
@@ -123,6 +134,14 @@ def _write_runtime_db(
                 """,
                 (run_id, "nrc_adams_aps", request_config_json, "completed"),
             )
+        if accession_number is not None:
+            connection.execute(
+                """
+                INSERT INTO aps_content_linkage (run_id, accession_number, content_id)
+                VALUES (?, ?, ?)
+                """,
+                (run_id, accession_number, f"content-{run_id[-4:]}"),
+            )
         connection.commit()
     finally:
         connection.close()
@@ -138,9 +157,11 @@ def _create_temp_review_runtime(
     document_processing_engine: str | None = None,
     document_processing_engine_explicit: bool | None = None,
     advanced_metrics: dict[str, object] | None = None,
+    accession_number: str | None = None,
 ) -> Path:
     runtime_dir = base_storage_root / "lc_e2e" / runtime_name
     runtime_dir.mkdir(parents=True, exist_ok=True)
+    (runtime_dir / "storage").mkdir(parents=True, exist_ok=True)
     _write_runtime_summary(runtime_dir, run_id=run_id, advanced_metrics=advanced_metrics)
     _write_runtime_db(
         runtime_dir,
@@ -149,6 +170,7 @@ def _create_temp_review_runtime(
         include_connector_run_row=include_connector_run_row,
         document_processing_engine=document_processing_engine,
         document_processing_engine_explicit=document_processing_engine_explicit,
+        accession_number=accession_number,
     )
     return runtime_dir
 
@@ -252,6 +274,27 @@ def test_candidate_review_runtime_roots_accept_configured_storage_test_runtime(t
     assert (configured_storage_root / "lc_e2e").resolve() in roots
 
 
+def test_candidate_review_runtime_roots_preserve_configured_symlink_storage_semantics(tmp_path):
+    app_root = tmp_path / "backend" / "app"
+    backend_root = app_root.parent
+    app_root.mkdir(parents=True)
+    target_storage_root = tmp_path / "mounted" / "runtime-root"
+    target_storage_root.mkdir(parents=True)
+    configured_storage_root = tmp_path / "storage_test_runtime"
+    try:
+        configured_storage_root.symlink_to(target_storage_root, target_is_directory=True)
+    except OSError:
+        pytest.skip("Directory symlinks are unavailable in this environment")
+
+    roots = candidate_review_runtime_roots(
+        app_root=app_root,
+        backend_root=backend_root,
+        storage_dir=configured_storage_root,
+    )
+
+    assert (target_storage_root / "lc_e2e").resolve() in roots
+
+
 def test_candidate_review_runtime_roots_reject_arbitrary_configured_root(tmp_path):
     app_root = tmp_path / "backend" / "app"
     backend_root = app_root.parent
@@ -295,6 +338,69 @@ def test_api_runs_omit_experiment_hidden_runtime_and_keep_legacy_runtime_visible
     returned_run_ids = {item["run_id"] for item in data["runs"]}
     assert hidden_run_id not in returned_run_ids
     assert legacy_run_id in returned_run_ids
+
+
+def test_baseline_visible_runtime_discovery_filters_before_localaps_preference(tmp_path, monkeypatch):
+    storage_root = tmp_path / "storage_test_runtime"
+    hidden_localaps_run_id = "00000000-0000-0000-0000-00000000c501"
+    visible_legacy_run_id = "00000000-0000-0000-0000-00000000c502"
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="zz_hidden_localaps_runtime",
+        run_id=hidden_localaps_run_id,
+        visual_lane_mode="variant_hidden",
+        include_connector_run_row=True,
+        accession_number="LOCALAPS-HIDDEN",
+    )
+    _create_temp_review_runtime(
+        storage_root,
+        runtime_name="aa_visible_legacy_runtime",
+        run_id=visible_legacy_run_id,
+        visual_lane_mode=None,
+        include_connector_run_row=False,
+    )
+    monkeypatch.setattr(runtime_fixture, "RUNTIME_PARENTS", [storage_root / "lc_e2e"])
+
+    runtimes = runtime_fixture.discover_baseline_visible_passed_runtimes()
+
+    returned_run_ids = {runtime.run_id for runtime in runtimes}
+    assert hidden_localaps_run_id not in returned_run_ids
+    assert visible_legacy_run_id in returned_run_ids
+
+
+def test_api_runs_reloads_visibility_config_across_discovery_calls(tmp_path, monkeypatch):
+    storage_root = tmp_path / "storage_test_runtime"
+    run_id = "00000000-0000-0000-0000-00000000a506"
+    runtime_dir = _create_temp_review_runtime(
+        storage_root,
+        runtime_name="visibility_reload_runtime",
+        run_id=run_id,
+        visual_lane_mode="baseline",
+        include_connector_run_row=True,
+    )
+
+    monkeypatch.setattr("app.services.review_nrc_aps_runtime.settings.storage_dir", str(storage_root))
+    first_response = client.get("/api/v1/review/nrc-aps/runs")
+    assert first_response.status_code == 200
+    assert run_id in {item["run_id"] for item in first_response.json()["runs"]}
+
+    connection = sqlite3.connect(str(runtime_dir / "lc.db"))
+    try:
+        connection.execute(
+            """
+            UPDATE connector_run
+            SET request_config_json = ?
+            WHERE connector_run_id = ?
+            """,
+            (json.dumps({"visual_lane_mode": "variant_hidden"}), run_id),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    second_response = client.get("/api/v1/review/nrc-aps/runs")
+    assert second_response.status_code == 200
+    assert run_id not in {item["run_id"] for item in second_response.json()["runs"]}
 
 
 def test_api_documents_404_for_experiment_hidden_runtime(tmp_path, monkeypatch):

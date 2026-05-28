@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timedelta
 import hashlib
 import importlib.metadata
 import json
@@ -69,8 +70,9 @@ def main() -> int:
                     _emit_error("fact_count_exceeds_limit", fact_count=len(facts) + len(raw_facts), max_facts=args.max_facts)
                     return 2
                 concept_index = _concept_index(model)
+                source_order_base = len(facts)
                 facts.extend(
-                    _fact_payload(model, concept_index, fact, len(facts) + index, entry_index=entry_index)
+                    _fact_payload(model, concept_index, fact, source_order_base + index, entry_index=entry_index)
                     for index, fact in enumerate(raw_facts, start=1)
                 )
                 loaded_document_counts.append(len(getattr(model, "urlDocs", {}) or {}) if model is not None else 0)
@@ -219,9 +221,23 @@ def _period_payload(context: Any) -> dict[str, Any]:
     if bool(getattr(context, "isForeverPeriod", False)):
         return {"type": "forever", "start": None, "end": None, "instant": None, "forever": True, "resolved": True}
     if bool(getattr(context, "isInstantPeriod", False)):
-        return {"type": "instant", "start": None, "end": None, "instant": _date(getattr(context, "instantDatetime", None)), "forever": False, "resolved": True}
+        return {
+            "type": "instant",
+            "start": None,
+            "end": None,
+            "instant": _context_date(context, "instantDate", "instantDatetime", adjusted_end=True),
+            "forever": False,
+            "resolved": True,
+        }
     if bool(getattr(context, "isStartEndPeriod", False)):
-        return {"type": "duration", "start": _date(getattr(context, "startDatetime", None)), "end": _date(getattr(context, "endDatetime", None)), "instant": None, "forever": False, "resolved": True}
+        return {
+            "type": "duration",
+            "start": _context_date(context, "startDate", "startDatetime"),
+            "end": _context_date(context, "endDate", "endDatetime", adjusted_end=True),
+            "instant": None,
+            "forever": False,
+            "resolved": True,
+        }
     return {"type": "unknown", "start": None, "end": None, "instant": None, "forever": False, "resolved": False}
 
 
@@ -332,6 +348,16 @@ def _date(value: Any) -> str | None:
     if callable(date_method):
         return date_method().isoformat()
     return str(value)
+
+
+def _context_date(context: Any, date_attr: str, datetime_attr: str, *, adjusted_end: bool = False) -> str | None:
+    direct = getattr(context, date_attr, None)
+    if direct is not None:
+        return _date(direct)
+    value = getattr(context, datetime_attr, None)
+    if adjusted_end and isinstance(value, datetime):
+        return (value - timedelta(days=1)).date().isoformat()
+    return _date(value)
 
 
 def _emit_error(reason: str, **details: Any) -> None:

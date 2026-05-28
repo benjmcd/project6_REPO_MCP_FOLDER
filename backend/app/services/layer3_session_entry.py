@@ -305,6 +305,8 @@ def record_retrieval_event(
     storage_root: Path | None = None,
 ) -> tuple[L3RetrievalEvent, list[L3MaterialSnapshot]]:
     validated_outcome = _validate_retrieval_outcome(outcome)
+    if descriptor.session_id != session.session_id:
+        raise Layer3SessionEntryError("descriptor does not belong to session")
     normalized_failed_items = [_json_clone(item) for item in (failed_items or [])]
     _validate_retrieval_payload(
         outcome=validated_outcome,
@@ -373,8 +375,12 @@ def finalize_session(db: Session, *, session: L3Session) -> L3Session:
     source_planes = sorted({descriptor.source_plane for descriptor in descriptors})
     loaded_snapshot_count = sum(len(event.material_snapshot_ids_json or []) for event in retrieval_events)
     warning_reasons = sorted({event.reason_code for event in retrieval_events if event.outcome != "loaded"})
+    descriptor_ids = {descriptor.descriptor_id for descriptor in descriptors}
+    retrieved_descriptor_ids = {event.descriptor_id for event in retrieval_events}
+    unresolved_descriptor_count = len(descriptor_ids - retrieved_descriptor_ids)
+    descriptor_coverage_complete = bool(descriptor_ids) and unresolved_descriptor_count == 0
 
-    if retrieval_events and all(event.outcome == "loaded" for event in retrieval_events):
+    if descriptor_coverage_complete and retrieval_events and all(event.outcome == "loaded" for event in retrieval_events):
         final_status = SESSION_STATUS_COMPLETED
     elif retrieval_events and any(event.outcome == "loaded" for event in retrieval_events):
         final_status = SESSION_STATUS_COMPLETED_WITH_WARNINGS
@@ -390,6 +396,9 @@ def finalize_session(db: Session, *, session: L3Session) -> L3Session:
         "loaded_snapshot_count": loaded_snapshot_count,
         "source_planes": source_planes,
         "warning_reasons": warning_reasons,
+        "retrieved_descriptor_count": len(descriptor_ids & retrieved_descriptor_ids),
+        "unresolved_descriptor_count": unresolved_descriptor_count,
+        "descriptor_coverage_status": "complete" if descriptor_coverage_complete else "incomplete",
     }
     db.flush()
     return session

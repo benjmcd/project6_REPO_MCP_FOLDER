@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 import sys
@@ -11,6 +12,7 @@ os.environ["DB_INIT_MODE"] = "none"
 BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
+from app.core.config import settings
 from app.services import layer3_candidate_b_broader_scope_readiness
 from main import app
 
@@ -54,7 +56,9 @@ def _payload() -> dict[str, object]:
     }
 
 
-def test_candidate_b_broader_scope_readiness_audit_ready_for_separate_selection() -> None:
+def test_candidate_b_broader_scope_readiness_audit_ready_for_separate_selection(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", str(tmp_path / "runtime-bridge"))
+
     with TestClient(app) as client:
         response = client.post(ENDPOINT, json=_payload())
 
@@ -77,12 +81,23 @@ def test_candidate_b_broader_scope_readiness_audit_ready_for_separate_selection(
     assert body["full_mockup_activation_enabled"] is False
     assert body["raw_local_path_exposed"] is False
     assert body["raw_url_exposed"] is False
+    assert body["audit_receipt_status"] == "recorded"
+    assert body["audit_receipt_ref"].startswith("candidate-b-broader-scope-readiness://")
     ready_rows = [
         row
         for row in body["scope_class_results"]
         if row["scope_readiness"] == "ready_for_separate_selection"
     ]
     assert [row["scope_class"] for row in ready_rows] == ["structured_json_or_csv_or_xlsx"]
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-readiness"
+        / f"{body['audit_id']}.json"
+    )
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    assert receipt["audit_hash"] == body["audit_hash"]
+    assert receipt["readiness_audit"]["audit_id"] == body["audit_id"]
+    assert receipt["readiness_audit"]["candidate_a_semantics"]["visual_lane_mode"] == "candidate_a_page_evidence_v1"
 
 
 def test_candidate_b_broader_scope_readiness_blocks_missing_scope_evidence() -> None:
@@ -127,6 +142,29 @@ def test_candidate_b_broader_scope_readiness_rejects_nested_path_and_selector_fi
     assert request_schema["additionalProperties"] is False
     for field in ("visual_lane_mode", "document_processing_engine", "local_path", "url", "default_selector"):
         assert field not in request_schema["properties"]
+
+
+def test_candidate_b_broader_scope_readiness_rejects_raw_url_values_before_receipt(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", str(tmp_path / "runtime-bridge"))
+    payload = _payload()
+    scope_evidence = dict(payload["scope_evidence"])  # type: ignore[arg-type]
+    structured = dict(scope_evidence["structured_json_or_csv_or_xlsx"])
+    structured["current_parser_or_engine_authority"] = "https://example.invalid/raw-authority"
+    scope_evidence["structured_json_or_csv_or_xlsx"] = structured
+    payload["scope_evidence"] = scope_evidence
+
+    with TestClient(app) as client:
+        response = client.post(ENDPOINT, json=payload)
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_broader_scope_readiness_forbidden_request_values"
+    assert (
+        "scope_evidence.structured_json_or_csv_or_xlsx.current_parser_or_engine_authority"
+        in body["error"]["details"]["blocked_values"]
+    )
+    assert not list((tmp_path / "runtime-bridge").glob("**/*.json"))
 
 
 def test_candidate_b_broader_scope_readiness_is_exposed_in_readiness_contract() -> None:

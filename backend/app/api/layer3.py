@@ -54,6 +54,7 @@ from app.services import (
     layer3_sec_edgar_delivery_status_provenance,
     layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_operator_product_surface,
+    layer3_sec_edgar_arelle_value_reveal,
     layer3_sec_edgar_real_company_corpus_validation,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_real_filing_downstream_validation,
@@ -595,6 +596,20 @@ class Layer3SecEdgarOperatorProductSurfaceRequest(BaseModel):
     value_reveal_confirmation: bool | None = None
     value_reveal_max_records: int | None = None
     actor: str | None = None
+
+
+class Layer3SecEdgarArelleValueRevealRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+    schema_id: str | None = None
+    schema_version: int | None = None
+    client_request_id: str | None = None
+    actor: str | None = None
+    operator_reveal_confirmation: bool | None = None
+    sidecar_receipt_id: str | None = None
+    sidecar_receipt_hash: str | None = None
+    dataset_version_id: str | None = None
+    dataset_version_hash: str | None = None
 
 
 class Layer3SecEdgarDurableDeliveryArchiveRequest(BaseModel):
@@ -4215,7 +4230,7 @@ class Layer3CandidateBBroaderEligibleCorpusDefaultScopeRuntimeRequest(BaseModel)
     runtime_mode: Literal["candidate_b_broader_eligible_corpus_default_scope_runtime_v1"]
     readiness_audit_id: str = Field(min_length=1)
     readiness_audit_hash: str = Field(min_length=1)
-    readiness_audit: dict[str, Any]
+    readiness_audit: dict[str, Any] | None = None
     selected_scope_classes: list[str]
     rollback_to_baseline_confirmation: bool
     operator_confirmation: bool
@@ -8248,6 +8263,34 @@ class Layer3SecEdgarOperatorProductSurfaceResponse(Layer3BaseResponse):
     surface_rollup: dict[str, Any] | None = None
     authority_chain: dict[str, Any] | None = None
     cache: dict[str, Any] | None = None
+    blocked_reasons: list[dict[str, Any]] | None = None
+    negative_invariants: dict[str, bool]
+    redaction_policy_id: str
+    next_allowed_actions: list[str] | None = None
+
+
+class Layer3SecEdgarArelleValueRevealResponse(Layer3BaseResponse):
+    reveal_mode: str
+    reveal_state: str
+    reveal_receipt_id: str | None = None
+    reveal_receipt_hash: str | None = None
+    reveal_receipt_ref: str | None = None
+    actor_hash: str | None = None
+    audit_server_time: str | None = None
+    sidecar_receipt_id: str | None = None
+    sidecar_receipt_hash: str | None = None
+    dataset_version_id: str | None = None
+    dataset_version_hash: str | None = None
+    lineage_hashes: dict[str, Any] | None = None
+    fact_count: int | None = None
+    fact_inventory_hash: str | None = None
+    value_inventory_hash: str | None = None
+    value_semantics: str | None = None
+    audit_receipt: dict[str, Any] | None = None
+    idempotent_replay: bool | None = None
+    revealed_fact_count: int
+    revealed_facts: list[dict[str, Any]]
+    status_projection: dict[str, Any] | None = None
     blocked_reasons: list[dict[str, Any]] | None = None
     negative_invariants: dict[str, bool]
     redaction_policy_id: str
@@ -15884,6 +15927,38 @@ def get_sec_edgar_operator_product_surface_status(
     return _json_or_error(
         lambda: layer3_sec_edgar_operator_product_surface.inspect_sec_edgar_operator_product_surface_status(
             sec_edgar_operator_product_surface_receipt_id,
+        )
+    )
+
+
+@router.post(
+    "/source/sec-edgar/real-company-corpus/operator-value-reveal",
+    response_model=Layer3SecEdgarArelleValueRevealResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def post_sec_edgar_arelle_value_reveal(
+    payload: Layer3SecEdgarArelleValueRevealRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_arelle_value_reveal.reveal_sec_edgar_arelle_values(
+            payload.model_dump(exclude_none=True),
+            db,
+        )
+    )
+
+
+@router.get(
+    "/source/sec-edgar/real-company-corpus/operator-value-reveal/status/{reveal_receipt_id}",
+    response_model=Layer3SecEdgarArelleValueRevealResponse,
+    responses=_workbench_error_responses(400, 404, 409),
+)
+def get_sec_edgar_arelle_value_reveal_status(
+    reveal_receipt_id: str,
+) -> dict[str, Any] | JSONResponse:
+    return _json_or_error(
+        lambda: layer3_sec_edgar_arelle_value_reveal.inspect_sec_edgar_arelle_value_reveal_status(
+            reveal_receipt_id,
         )
     )
 

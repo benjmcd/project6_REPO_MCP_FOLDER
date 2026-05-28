@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.models.models import ApsContentLinkage
 from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 from app.services.review_nrc_aps_runtime import (
+    request_config_is_baseline_visible,
     resolve_runtime_database_path,
     resolve_runtime_storage_dir,
 )
@@ -104,7 +105,47 @@ def _runtime_has_accession_prefix(runtime: AuditedReviewRuntime, prefix: str) ->
     return row is not None
 
 
+def _runtime_request_config_json(runtime: AuditedReviewRuntime) -> dict | None:
+    database_uri = f"{runtime.db_path.resolve().as_uri()}?mode=ro"
+    try:
+        connection = sqlite3.connect(database_uri, uri=True)
+    except sqlite3.DatabaseError:
+        return None
+
+    try:
+        row = connection.execute(
+            """
+            SELECT request_config_json
+            FROM connector_run
+            WHERE connector_run_id = ? AND connector_key = ?
+            LIMIT 1
+            """,
+            (runtime.run_id, "nrc_adams_aps"),
+        ).fetchone()
+    except sqlite3.DatabaseError:
+        return None
+    finally:
+        connection.close()
+
+    if row is None or row[0] in {None, ""}:
+        return None
+    try:
+        payload = json.loads(row[0])
+    except (TypeError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def runtime_is_baseline_visible(runtime: AuditedReviewRuntime) -> bool:
+    return request_config_is_baseline_visible(_runtime_request_config_json(runtime))
+
+
 def discover_passed_runtimes() -> list[AuditedReviewRuntime]:
+    runtimes = _discover_all_passed_runtimes()
+    return _prefer_localaps_runtimes(runtimes)
+
+
+def _discover_all_passed_runtimes() -> list[AuditedReviewRuntime]:
     runtimes: list[AuditedReviewRuntime] = []
     runtime_parents = [candidate for candidate in RUNTIME_PARENTS if candidate.exists()]
     if not runtime_parents:
@@ -144,8 +185,28 @@ def discover_passed_runtimes() -> list[AuditedReviewRuntime]:
                     storage_dir=storage_dir,
                 )
             )
+    return runtimes
+
+
+def _prefer_localaps_runtimes(runtimes: list[AuditedReviewRuntime]) -> list[AuditedReviewRuntime]:
     preferred_runtimes = [runtime for runtime in runtimes if _runtime_has_accession_prefix(runtime, "LOCALAPS")]
     return preferred_runtimes or runtimes
+
+
+def discover_baseline_visible_passed_runtimes() -> list[AuditedReviewRuntime]:
+    visible_runtimes = [runtime for runtime in _discover_all_passed_runtimes() if runtime_is_baseline_visible(runtime)]
+    return _prefer_localaps_runtimes(visible_runtimes)
+
+
+def latest_baseline_visible_passed_runtime() -> AuditedReviewRuntime:
+    runtimes = discover_baseline_visible_passed_runtimes()
+    assert runtimes, f"No baseline-visible passed local-corpus runtime found under {RUNTIME_PARENT}"
+    selected_runtime = runtimes[0]
+    if not INITIAL_STORAGE_DIR:
+        selected_storage_root = selected_runtime.runtime_dir.parent.resolve()
+        os.environ["STORAGE_DIR"] = str(selected_storage_root)
+        settings.storage_dir = str(selected_storage_root)
+    return selected_runtime
 
 
 def latest_passed_runtime() -> AuditedReviewRuntime:

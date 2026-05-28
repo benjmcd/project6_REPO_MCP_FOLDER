@@ -3,7 +3,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import json
+from pathlib import Path
 from typing import Any, Mapping
+
+from app.core.config import settings
 
 
 SCHEMA_ID = "layer3.candidate_b_broader_eligible_corpus_scope_readiness_audit.v1"
@@ -181,22 +184,18 @@ def evaluate_candidate_b_broader_scope_readiness(payload: Mapping[str, Any]) -> 
         blocked.extend(result["blocked_reasons"])
         scope_results.append(result["summary"])
 
-    audit_hash = _stable_hash(
-        {
-            "hash_version": "candidate_b_broader_scope_readiness_audit_hash_v1",
-            "audit_mode": AUDIT_MODE,
-            "exact_corpus_class_list": exact_scope_classes,
-            "explicit_exclusion_list": sorted(explicit_exclusions),
-            "proposed_default_scope_classes": proposed_scope_classes,
-            "scope_results": scope_results,
-            "operator_confirmation": fields.get("operator_confirmation") is True,
-            "rollback_to_baseline_confirmation": fields.get("rollback_to_baseline_confirmation") is True,
-        }
+    audit_hash = _readiness_audit_hash(
+        exact_scope_classes=exact_scope_classes,
+        explicit_exclusions=explicit_exclusions,
+        proposed_scope_classes=proposed_scope_classes,
+        scope_results=scope_results,
+        operator_confirmation=fields.get("operator_confirmation") is True,
+        rollback_to_baseline_confirmation=fields.get("rollback_to_baseline_confirmation") is True,
     )
     audit_state = READY_STATE if not blocked else BLOCKED_STATE
     default_scope_expansion_admitted = False
 
-    return {
+    audit = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "request_id": request_id,
@@ -255,6 +254,159 @@ def evaluate_candidate_b_broader_scope_readiness(payload: Mapping[str, Any]) -> 
             else ["repair_missing_scope_evidence_or_keep_candidate_b_pdf_only_default"]
         ),
     }
+    receipt = _record_readiness_audit_receipt(audit) if audit_state == READY_STATE else None
+    audit["audit_receipt_status"] = "recorded" if receipt is not None else "not_recorded"
+    audit["audit_receipt_ref"] = receipt["ref"] if receipt is not None else None
+    return audit
+
+
+def read_candidate_b_broader_scope_readiness_audit_receipt(
+    audit_id: str,
+    *,
+    expected_audit_hash: str,
+) -> dict[str, Any]:
+    path = _readiness_receipt_path(audit_id)
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_receipt_missing",
+            "The Candidate B broader-scope readiness audit must be server-issued and persisted before runtime selection.",
+            http_status=409,
+            details={"audit_id": audit_id},
+        ) from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_receipt_unreadable",
+            "The Candidate B broader-scope readiness audit receipt could not be read.",
+            http_status=409,
+            details={"reason": exc.__class__.__name__},
+        ) from exc
+    if not isinstance(receipt, dict) or not isinstance(receipt.get("readiness_audit"), dict):
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_receipt_invalid",
+            "The Candidate B broader-scope readiness audit receipt must contain a readiness audit object.",
+            http_status=409,
+        )
+    if receipt.get("audit_id") != audit_id or receipt.get("audit_hash") != expected_audit_hash:
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_receipt_binding_mismatch",
+            "The Candidate B broader-scope readiness audit receipt does not match the requested audit binding.",
+            http_status=409,
+            details={"audit_id": audit_id},
+        )
+    return dict(receipt["readiness_audit"])
+
+
+def _record_readiness_audit_receipt(audit: Mapping[str, Any]) -> dict[str, str] | None:
+    configured = str(settings.layer3_candidate_b_runtime_bridge_dir or "").strip()
+    if not configured:
+        return None
+    audit_id = str(audit.get("audit_id") or "")
+    audit_hash = str(audit.get("audit_hash") or "")
+    target = _readiness_receipt_path(audit_id)
+    receipt = {
+        "schema_id": "layer3.candidate_b_broader_eligible_corpus_scope_readiness_audit_receipt.v1",
+        "schema_version": 1,
+        "audit_id": audit_id,
+        "audit_hash": audit_hash,
+        "readiness_audit": dict(audit),
+        "redaction_policy_id": "candidate_b_broader_scope_readiness_audit_receipt_redaction_v1",
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "provider_or_connector_secret_exposed": False,
+        "recorded_at": _server_time(),
+    }
+    if target.exists():
+        try:
+            existing = json.loads(target.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise CandidateBBroaderScopeReadinessError(
+                "candidate_b_broader_scope_readiness_receipt_unreadable",
+                "The Candidate B broader-scope readiness audit receipt could not be read.",
+                http_status=409,
+                details={"reason": exc.__class__.__name__},
+            ) from exc
+        if not isinstance(existing, dict) or existing.get("audit_hash") != audit_hash:
+            raise CandidateBBroaderScopeReadinessError(
+                "candidate_b_broader_scope_readiness_receipt_conflict",
+                "The Candidate B broader-scope readiness audit receipt is stale or contradictory.",
+                http_status=409,
+                details={"audit_id": audit_id},
+            )
+    else:
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        except OSError as exc:
+            raise CandidateBBroaderScopeReadinessError(
+                "candidate_b_broader_scope_readiness_receipt_write_failed",
+                "The Candidate B broader-scope readiness audit receipt could not be recorded.",
+                http_status=409,
+                details={"reason": exc.__class__.__name__},
+            ) from exc
+    return {"ref": f"candidate-b-broader-scope-readiness://{audit_id}/{audit_hash[:24]}"}
+
+
+def _readiness_receipt_path(audit_id: str) -> Path:
+    configured = str(settings.layer3_candidate_b_runtime_bridge_dir or "").strip()
+    if not configured:
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_receipt_dir_unset",
+            "LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR must be set before readiness audits can bind runtime selection.",
+            http_status=409,
+        )
+    if not _is_storage_id(audit_id):
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_receipt_id_invalid",
+            "Candidate B broader-scope readiness audit ids must be server-owned storage identifiers.",
+            http_status=400,
+            details={"field": "audit_id"},
+        )
+    root = Path(configured)
+    if not root.is_absolute():
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_receipt_dir_not_absolute",
+            "LAYER3_CANDIDATE_B_RUNTIME_BRIDGE_DIR must be an absolute server-owned directory.",
+            http_status=409,
+        )
+    return root.resolve() / "broader-scope-readiness" / f"{audit_id}.json"
+
+
+def _readiness_audit_hash(
+    *,
+    exact_scope_classes: list[str],
+    explicit_exclusions: list[str],
+    proposed_scope_classes: list[str],
+    scope_results: list[dict[str, Any]],
+    operator_confirmation: bool,
+    rollback_to_baseline_confirmation: bool,
+) -> str:
+    return _stable_hash(
+        {
+            "hash_version": "candidate_b_broader_scope_readiness_audit_hash_v1",
+            "audit_mode": AUDIT_MODE,
+            "exact_corpus_class_list": exact_scope_classes,
+            "explicit_exclusion_list": sorted(explicit_exclusions),
+            "proposed_default_scope_classes": proposed_scope_classes,
+            "scope_results": scope_results,
+            "operator_confirmation": operator_confirmation,
+            "rollback_to_baseline_confirmation": rollback_to_baseline_confirmation,
+            "candidate_a_semantics": {
+                "visual_lane_mode": "candidate_a_page_evidence_v1",
+                "preserved": True,
+            },
+            "candidate_b_scope_authority": {
+                "document_processing_engine": CANDIDATE_B_ENGINE_SCOPE,
+                "visual_lane_mode": CANDIDATE_B_VISUAL_LANE_SCOPE,
+                "bundle_and_runtime_authority_remain_distinct": True,
+            },
+        }
+    )
+
+
+def _is_storage_id(value: str) -> bool:
+    return bool(value) and all(ch.isascii() and (ch.isalnum() or ch in {"-", "_"}) for ch in value)
 
 
 def _evaluate_scope_class(scope_class: str, evidence: Any, *, proposed: bool) -> dict[str, Any]:
@@ -334,6 +486,13 @@ def _normalise_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
             "The broader scope readiness audit does not admit caller paths, selector mutation, URLs, connectors, or browser authority.",
             details={"blocked_fields": blocked},
         )
+    blocked_values = sorted(_find_forbidden_values(fields))
+    if blocked_values:
+        raise CandidateBBroaderScopeReadinessError(
+            "candidate_b_broader_scope_readiness_forbidden_request_values",
+            "The broader scope readiness audit does not admit caller paths, URLs, or secret-like values.",
+            details={"blocked_values": blocked_values},
+        )
     return fields
 
 
@@ -349,6 +508,34 @@ def _find_forbidden_fields(value: Any, *, prefix: str = "") -> list[str]:
         for index, child in enumerate(value):
             found.extend(_find_forbidden_fields(child, prefix=f"{prefix}[{index}]"))
     return found
+
+
+def _find_forbidden_values(value: Any, *, prefix: str = "") -> list[str]:
+    found: list[str] = []
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            path = f"{prefix}.{key}" if prefix else str(key)
+            found.extend(_find_forbidden_values(child, prefix=path))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            found.extend(_find_forbidden_values(child, prefix=f"{prefix}[{index}]"))
+    elif isinstance(value, str) and _looks_like_forbidden_value(value):
+        found.append(prefix)
+    return found
+
+
+def _looks_like_forbidden_value(value: str) -> bool:
+    candidate = value.strip()
+    lowered = candidate.lower()
+    return (
+        "://" in candidate
+        or candidate.startswith(("\\\\", "/"))
+        or (len(candidate) >= 3 and candidate[1] == ":" and candidate[2] in {"\\", "/"})
+        or "begin private key" in lowered
+        or "password=" in lowered
+        or "secret=" in lowered
+        or "token=" in lowered
+    )
 
 
 def _required_str(fields: Mapping[str, Any], key: str) -> str:

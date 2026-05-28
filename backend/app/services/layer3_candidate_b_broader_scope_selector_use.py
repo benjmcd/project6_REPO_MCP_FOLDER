@@ -213,7 +213,11 @@ def record_candidate_b_broader_scope_selector_use(payload: Mapping[str, Any]) ->
             details={"expected_selector_use_mode": RUNTIME_MODE, "received_selector_use_mode": selector_use_mode},
         )
 
-    source_receipt_id = _required_str(fields, "runtime_selection_receipt_id")
+    source_receipt_id = _required_storage_id(
+        fields,
+        "runtime_selection_receipt_id",
+        prefix=layer3_candidate_b_broader_scope_runtime.RECEIPT_PREFIX,
+    )
     source_receipt_hash = _required_str(fields, "runtime_selection_receipt_hash")
     selected_scope_classes = _string_list(fields.get("selected_scope_classes"))
 
@@ -383,9 +387,10 @@ def inspect_candidate_b_broader_scope_selector_use_status(payload: Mapping[str, 
         "selector_use_receipt_hash",
         error_cls=CandidateBBroaderScopeSelectorUseStatusError,
     )
-    runtime_selection_receipt_id = _required_str(
+    runtime_selection_receipt_id = _required_storage_id(
         fields,
         "runtime_selection_receipt_id",
+        prefix=layer3_candidate_b_broader_scope_runtime.RECEIPT_PREFIX,
         error_cls=CandidateBBroaderScopeSelectorUseStatusError,
     )
     runtime_selection_receipt_hash = _required_str(
@@ -1282,7 +1287,10 @@ def record_candidate_b_broader_scope_consumption_receipt_use(
                 )
             )
 
-        activation_receipt = _read_selector_activation_receipt(activation_receipt_id)
+        activation_receipt = _read_selector_activation_receipt(
+            activation_receipt_id,
+            error_cls=CandidateBBroaderScopeConsumptionReceiptUseError,
+        )
         if activation_receipt is None:
             blocked.append(
                 _reason(
@@ -2044,12 +2052,18 @@ def _validate_source_runtime_receipt(
     error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
 ) -> dict[str, Any]:
     blocked: list[dict[str, Any]] = []
+    receipt_id = _validate_storage_id_value(
+        receipt_id,
+        key="runtime_selection_receipt_id",
+        prefix=layer3_candidate_b_broader_scope_runtime.RECEIPT_PREFIX,
+        error_cls=error_cls,
+    )
     receipt_path = (
         _runtime_receipt_root(create=create_root, error_cls=error_cls)
         / "broader-scope-runtime"
         / f"{receipt_id}.json"
     )
-    receipt = _read_optional_receipt(receipt_path)
+    receipt = _read_optional_receipt(receipt_path, error_cls=error_cls)
     if receipt is None:
         return {
             "blocked_reasons": [_reason("candidate_b_broader_scope_selector_use_runtime_receipt_missing")],
@@ -2191,7 +2205,7 @@ def _write_selector_use_receipt(
     }
     target = _runtime_receipt_root() / "broader-scope-selector-use" / f"{receipt_id}.json"
     if target.exists():
-        existing = _read_required_receipt(target)
+        existing = _read_required_receipt(target, error_cls=CandidateBBroaderScopeSelectorUseError)
         if existing.get("selector_use_receipt_hash") != receipt_hash:
             raise CandidateBBroaderScopeSelectorUseError(
                 "candidate_b_broader_scope_selector_use_receipt_conflict",
@@ -2256,7 +2270,7 @@ def _write_selector_activation_receipt(
     }
     target = _runtime_receipt_root() / "broader-scope-selector-activation" / f"{receipt_id}.json"
     if target.exists():
-        existing = _read_required_receipt(target)
+        existing = _read_required_receipt(target, error_cls=CandidateBBroaderScopeSelectorActivationError)
         if existing.get("activation_receipt_hash") != receipt_hash:
             raise CandidateBBroaderScopeSelectorActivationError(
                 "candidate_b_broader_scope_selector_activation_receipt_conflict",
@@ -2325,7 +2339,7 @@ def _write_activation_consumption_receipt(
     }
     target = _runtime_receipt_root() / "broader-scope-activation-consumption" / f"{receipt_id}.json"
     if target.exists():
-        existing = _read_required_receipt(target)
+        existing = _read_required_receipt(target, error_cls=CandidateBBroaderScopeActivationConsumptionError)
         if existing.get("consumption_receipt_hash") != receipt_hash:
             raise CandidateBBroaderScopeActivationConsumptionError(
                 "candidate_b_broader_scope_activation_consumption_receipt_conflict",
@@ -2399,7 +2413,7 @@ def _write_consumption_receipt_use_receipt(
     }
     target = _runtime_receipt_root() / "broader-scope-consumption-receipt-use" / f"{receipt_id}.json"
     if target.exists():
-        existing = _read_required_receipt(target)
+        existing = _read_required_receipt(target, error_cls=CandidateBBroaderScopeConsumptionReceiptUseError)
         if existing.get("use_receipt_hash") != receipt_hash:
             raise CandidateBBroaderScopeConsumptionReceiptUseError(
                 "candidate_b_broader_scope_consumption_receipt_use_receipt_conflict",
@@ -2816,10 +2830,14 @@ def _runtime_receipt_root(
     return resolved
 
 
-def _read_optional_receipt(path: Path) -> dict[str, Any] | None:
+def _read_optional_receipt(
+    path: Path,
+    *,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
+) -> dict[str, Any] | None:
     if not path.exists():
         return None
-    return _read_required_receipt(path)
+    return _read_required_receipt(path, error_cls=error_cls)
 
 
 def _read_required_receipt(
@@ -2899,18 +2917,29 @@ def _required_storage_id(
     error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
 ) -> str:
     value = _required_str(fields, key, error_cls=error_cls)
+    return _validate_storage_id_value(value, key=key, prefix=prefix, error_cls=error_cls)
+
+
+def _validate_storage_id_value(
+    value: str,
+    *,
+    key: str,
+    prefix: str,
+    error_cls: type[CandidateBBroaderScopeSelectorUseError] = CandidateBBroaderScopeSelectorUseError,
+) -> str:
     if (
         not value.startswith(f"{prefix}-")
         or "/" in value
         or "\\" in value
         or ".." in value
         or value in {".", ".."}
+        or any(not (char.isascii() and (char.isalnum() or char in {"-", "_"})) for char in value)
     ):
         raise error_cls(
             "candidate_b_broader_scope_selector_use_storage_id_invalid",
             "Candidate B broader-scope selector-use receipt identifiers must be server-owned storage identifiers.",
             http_status=409,
-            details={"expected_prefix": prefix},
+            details={"field": key, "expected_prefix": prefix},
         )
     return value
 

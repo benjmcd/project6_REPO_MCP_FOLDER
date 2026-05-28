@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-import re
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
@@ -17,6 +16,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_source_acquisition,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -112,9 +112,6 @@ RECEIPT_HASH_KEYS = (
     "identity_binding_hash",
     "diagnostics_hash",
 )
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
-
-
 def record_sec_edgar_real_filing_connector_downstream_validation(
     fields: Mapping[str, Any],
     db: Session,
@@ -595,11 +592,26 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
 def _write_receipt(receipt: Mapping[str, Any]) -> None:
     target = _receipts_dir() / f"{receipt['validation_receipt_id']}.json"
     if target.exists():
-        _read_verified_receipt(target.stem)
+        existing = _read_verified_receipt(target.stem)
+        if existing.get("validation_receipt_hash") != receipt.get("validation_receipt_hash"):
+            _blocked(
+                "sec_edgar_real_filing_downstream_validation_receipt_write_race_conflict",
+                "Concurrent SEC EDGAR connector downstream validation receipt write produced a conflicting authority.",
+                http_status=409,
+            )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_verified_receipt(target.stem)
+        if existing.get("validation_receipt_hash") != receipt.get("validation_receipt_hash"):
+            _blocked(
+                "sec_edgar_real_filing_downstream_validation_receipt_write_race_conflict",
+                "Concurrent SEC EDGAR connector downstream validation receipt write produced a conflicting authority.",
+                http_status=409,
+            )
 
 
 def _read_request_binding(request_id: str) -> dict[str, Any] | None:
@@ -629,7 +641,7 @@ def _write_request_binding(request_id: str, validation_basis_hash: str, receipt_
     }
     if target.exists():
         existing = _read_request_binding(request_id) or {}
-        if existing.get("validation_basis_hash") != validation_basis_hash:
+        if existing.get("validation_basis_hash") != validation_basis_hash or existing.get("validation_receipt_id") != receipt_id:
             _blocked(
                 "sec_edgar_real_filing_downstream_validation_request_binding_conflict",
                 "SEC EDGAR connector downstream validation request binding conflicts with existing authority.",
@@ -637,8 +649,17 @@ def _write_request_binding(request_id: str, validation_basis_hash: str, receipt_
             )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_request_binding(request_id) or {}
+        if existing.get("validation_basis_hash") != validation_basis_hash or existing.get("validation_receipt_id") != receipt_id:
+            _blocked(
+                "sec_edgar_real_filing_downstream_validation_request_binding_write_race_conflict",
+                "Concurrent SEC EDGAR connector downstream validation request binding write produced a conflicting authority.",
+                http_status=409,
+            )
 
 
 def _mapping(value: Mapping[str, Any], key: str) -> Mapping[str, Any]:
@@ -654,22 +675,7 @@ def _mapping(value: Mapping[str, Any], key: str) -> Mapping[str, Any]:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text in FORBIDDEN_REQUEST_FIELDS and item is not None:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(item, child))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(item, f"{prefix}[{index}]"))
-    elif isinstance(value, str):
-        text = value.strip()
-        if text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/")) or _LOCAL_PATH_RE.match(text):
-            found.append(prefix or "request_body")
-    return sorted(set(found))
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _negative_invariants() -> dict[str, bool]:
@@ -707,10 +713,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/")) or bool(
-            _LOCAL_PATH_RE.match(text)
-        )
+        return contains_forbidden_ref(value)
     return False
 
 

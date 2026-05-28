@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import json
-import re
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
@@ -15,6 +14,10 @@ from app.services.layer3_gate_b_state import (
     material_candidate_basis_from_decision,
     material_candidate_basis_from_preview,
     material_preview_hash,
+)
+from app.services.layer3_sec_edgar_ref_safety import (
+    contains_forbidden_ref,
+    contains_forbidden_ref_tree,
 )
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
@@ -88,8 +91,6 @@ _REDACT_KEYS = {
     "public_url",
     "signed_url",
 }
-_RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 
 
 def prepare_sec_edgar_text_table_material_authority_bridge(
@@ -530,7 +531,7 @@ def _redact_value(value: Any) -> Any:
         return [_redact_value(item) for item in value]
     if isinstance(value, str):
         text = value.strip()
-        if _RAW_URL_RE.search(text) or _LOCAL_PATH_RE.search(text) or "aps-target-artifacts/" in text:
+        if contains_forbidden_ref(text) or "aps-target-artifacts/" in text:
             return _redacted_ref(text)
         return value
     return value
@@ -546,14 +547,7 @@ def _redacted_ref(value: Any) -> dict[str, Any]:
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return any(_contains_forbidden_output_ref(item) for item in value.values())
-    if isinstance(value, list):
-        return any(_contains_forbidden_output_ref(item) for item in value)
-    if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith("http://") or text.startswith("https://"))
-    return False
+    return contains_forbidden_ref_tree(value)
 
 
 def _reject_forbidden_input_authority(value: Any, path: str = "") -> None:
@@ -573,7 +567,7 @@ def _reject_forbidden_input_authority(value: Any, path: str = "") -> None:
     elif isinstance(value, list):
         for index, nested in enumerate(value):
             _reject_forbidden_input_authority(nested, f"{path}[{index}]")
-    elif isinstance(value, str) and (_LOCAL_PATH_RE.search(value) or value.startswith("http://") or value.startswith("https://")):
+    elif isinstance(value, str) and contains_forbidden_ref(value):
         raise Layer3WorkbenchError(
             "sec_edgar_text_table_material_bridge_forbidden_input_ref",
             "SEC EDGAR text-table material bridge rejects caller-supplied raw paths and URLs.",

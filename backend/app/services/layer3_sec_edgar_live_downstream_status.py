@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import re
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
 
 from app.services import layer3_sec_edgar_live_downstream_proof
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -89,9 +89,6 @@ STATUS_HASH_KEYS = (
     "negative_invariants_hash",
     "blocked_reason_codes",
 )
-
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
-
 
 def inspect_sec_edgar_text_table_live_source_artifact_downstream_operator_status(
     fields: Mapping[str, Any],
@@ -363,11 +360,12 @@ def _proof_summary(proof: Mapping[str, Any]) -> dict[str, Any]:
 def _normalise_request(fields: Mapping[str, Any]) -> dict[str, Any]:
     request = {str(key): value for key, value in dict(fields or {}).items() if value is not None}
     blocked = sorted(key for key in request if key in FORBIDDEN_REQUEST_FIELDS)
-    if blocked:
+    nested_blocked = find_forbidden_ref_paths(request, forbidden_keys=FORBIDDEN_REQUEST_FIELDS)
+    if blocked or nested_blocked:
         _blocked(
             "sec_edgar_text_table_live_source_artifact_downstream_operator_status_forbidden_request_fields",
             "SEC EDGAR live downstream status does not admit caller paths, URLs, bytes, credentials, connector, model, browser, source-expansion, or frontend authority.",
-            blocked_fields=blocked,
+            blocked_fields=[*blocked, *nested_blocked],
         )
     unknown = sorted(set(request) - ALLOWED_FIELDS)
     if unknown:
@@ -426,9 +424,8 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
 def _is_forbidden_ref(value: str) -> bool:
     text = value.strip().lower()
     return (
-        text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/"))
+        contains_forbidden_ref(value)
         or "aps-target-artifacts/" in text
-        or bool(_LOCAL_PATH_RE.match(value.strip()))
     )
 
 

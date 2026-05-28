@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-import re
 from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
@@ -18,6 +17,7 @@ from app.services import (
     layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_real_company_corpus_validation,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -155,7 +155,6 @@ PRODUCT_VIEW_NAMES = (
     "package_review_handoff_state",
     "operator_inspection_status_links",
 )
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 
 
 def render_sec_edgar_operator_product_surface(
@@ -730,77 +729,15 @@ def _diagnostics_loss_report(
 def _value_reveal_surface(request: Mapping[str, Any], validation: Mapping[str, Any]) -> dict[str, Any]:
     if not any(key in request for key in ("value_reveal_policy", "value_reveal_confirmation", "value_reveal_max_records")):
         return _value_reveal_disabled()
-    if str(request.get("value_reveal_policy") or "") != VALUE_REVEAL_POLICY_ID:
-        return _value_reveal_blocked("sec_edgar_operator_product_surface_value_reveal_policy_not_admitted")
-    if request.get("value_reveal_confirmation") is not True:
-        return _value_reveal_blocked("sec_edgar_operator_product_surface_value_reveal_confirmation_missing")
-    max_records = _value_reveal_max_records(request.get("value_reveal_max_records"))
-    revealed: list[dict[str, Any]] = []
-    diagnostics: list[dict[str, Any]] = []
-    eligible_count = 0
-    inspected_bridge_count = 0
-    for validation_record in validation.get("filing_validation_records") or []:
-        if not isinstance(validation_record, Mapping):
-            continue
-        record_index = int(validation_record.get("record_index") or 0)
-        authority_hashes = dict(validation_record.get("authority_hashes") or {})
-        bridge_hash = str(authority_hashes.get("fact_material_bridge_receipt_hash") or "")
-        if not _is_sha256(bridge_hash):
-            diagnostics.append({"record_index": record_index, "reason": "fact_material_bridge_hash_missing"})
-            continue
-        try:
-            bridge_receipt = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge._read_verified_receipt(
-                f"{layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.RECEIPT_PREFIX}-{bridge_hash[:24]}"
-            )
-        except Layer3WorkbenchError as exc:
-            diagnostics.append({"record_index": record_index, "reason": exc.error_code})
-            continue
-        bridge_response = dict(bridge_receipt.get("response") or {})
-        if bridge_response.get("fact_authority_input_mode") != (
-            layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.ARELLE_FACT_AUTHORITY_INPUT_MODE
-        ):
-            diagnostics.append({"record_index": record_index, "reason": "arelle_fact_authority_input_not_active"})
-            continue
-        inspected_bridge_count += 1
-        rows, row_diagnostics = _bridge_value_rows(bridge_response, record_index=record_index)
-        diagnostics.extend(row_diagnostics)
-        for row in rows:
-            if not _row_is_standard_numeric_non_dimensional(row):
-                continue
-            eligible_count += 1
-            if len(revealed) < max_records:
-                revealed.append(_revealed_value_record(row, record_index=record_index, bridge_hash=bridge_hash))
-    if not revealed:
-        return _value_reveal_blocked(
-            "sec_edgar_operator_product_surface_value_reveal_no_arelle_values",
-            diagnostics=diagnostics,
-        )
-    return {
-        "schema_id": "layer3.sec_edgar_operator_surface_value_reveal.v1",
-        "value_reveal_policy": VALUE_REVEAL_POLICY_ID,
-        "value_reveal_requested": True,
-        "value_reveal_state": "ready",
-        "value_reveal_scope": "standard_numeric_non_dimensional_facts_only",
-        "value_semantics": "arelle_effective_canonical_value_v1",
-        "governed_operator_fact_values_revealed": True,
-        "raw_identity_revealed": False,
-        "raw_urls_paths_storage_roots_revealed": False,
-        "final_financial_statement_semantics_claimed": False,
-        "cross_company_comparability_claimed": False,
-        "bridge_receipt_count": inspected_bridge_count,
-        "eligible_value_count": eligible_count,
-        "revealed_value_count": len(revealed),
-        "max_revealed_value_count": max_records,
-        "redacted_or_deferred_value_categories": [
-            "extension_concept_values",
-            "dimensional_fact_values",
-            "non_numeric_fact_values",
-            "lexical_raw_values",
+    return _value_reveal_blocked(
+        "sec_edgar_operator_product_surface_value_reveal_requires_sibling_endpoint",
+        diagnostics=[
+            {
+                "sibling_endpoint": "/source/sec-edgar/real-company-corpus/operator-value-reveal",
+                "default_operator_product_surface_remains_redacted": True,
+            }
         ],
-        "revealed_values": revealed,
-        "diagnostics": diagnostics,
-        "value_reveal_hash": stable_hash(revealed),
-    }
+    )
 
 
 def _value_reveal_disabled() -> dict[str, Any]:
@@ -1216,7 +1153,9 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
             "SEC EDGAR operator product surface receipt is invalid or mismatched.",
             http_status=409,
         )
-    if receipt.get("operator_product_surface_receipt_hash") != suffix + receipt.get("operator_product_surface_receipt_hash", "")[24:]:
+    _validate_required_receipt_keys(receipt)
+    receipt_hash = str(receipt.get("operator_product_surface_receipt_hash") or "")
+    if receipt_hash[:24] != suffix or receipt_hash != _operator_product_surface_receipt_hash(receipt):
         _blocked(
             "sec_edgar_operator_product_surface_receipt_hash_mismatch",
             "SEC EDGAR operator product surface receipt hash is stale or mismatched.",
@@ -1225,14 +1164,66 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
     return receipt
 
 
+def _validate_required_receipt_keys(receipt: Mapping[str, Any]) -> None:
+    required = (
+        "operator_product_surface_state",
+        "operator_product_surface_receipt_hash",
+        "operator_product_surface_receipt_ref",
+        "operator_inspection_receipt_id",
+        "operator_inspection_receipt_hash",
+        "delivery_status_provenance_receipt_id",
+        "delivery_status_provenance_receipt_hash",
+        "validation_receipt_hash",
+        "connector_receipt_hash",
+        "product_views",
+        "surface_rollup",
+        "authority_chain",
+    )
+    missing = [key for key in required if key not in receipt]
+    if missing:
+        _blocked(
+            "sec_edgar_operator_product_surface_receipt_required_keys_missing",
+            "SEC EDGAR operator product surface receipt is missing required authority fields.",
+            http_status=409,
+            blocked_fields=missing,
+        )
+
+
+def _operator_product_surface_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    return stable_hash(
+        {
+            "schema_id": SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "surface_mode": SURFACE_MODE,
+            "operator_inspection_receipt_hash": receipt.get("operator_inspection_receipt_hash"),
+            "delivery_status_provenance_receipt_hash": receipt.get("delivery_status_provenance_receipt_hash"),
+            "validation_receipt_hash": receipt.get("validation_receipt_hash"),
+            "product_views_hash": stable_hash(receipt.get("product_views") or {}),
+            "value_reveal_hash": stable_hash(receipt.get("value_reveal") or _value_reveal_disabled()),
+            "surface_rollup_hash": stable_hash(receipt.get("surface_rollup") or {}),
+            "authority_chain_hash": stable_hash(receipt.get("authority_chain") or {}),
+        }
+    )
+
+
 def _write_receipt(receipt: Mapping[str, Any]) -> None:
     target = _receipt_path(str(receipt["operator_product_surface_receipt_id"]))
     if target.exists():
         _read_verified_receipt(target.stem)
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        _read_verified_receipt(target.stem)
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_operator_product_surface_receipt_write_failed",
+            "SEC EDGAR operator product surface receipt could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
 
 
 def _read_request_binding(request_id: str) -> dict[str, Any] | None:
@@ -1270,8 +1261,24 @@ def _write_request_binding(request_id: str, basis_hash: str, receipt_id: str) ->
             )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_request_binding(request_id) or {}
+        if existing.get("operator_product_surface_basis_hash") != basis_hash:
+            _blocked(
+                "sec_edgar_operator_product_surface_request_binding_conflict",
+                "SEC EDGAR operator product surface request binding conflicts with existing authority.",
+                http_status=409,
+            )
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_operator_product_surface_request_binding_write_failed",
+            "SEC EDGAR operator product surface request binding could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
 
 
 def _negative_invariants() -> dict[str, bool]:
@@ -1330,10 +1337,9 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
 def _is_forbidden_ref(value: str) -> bool:
     text = value.strip().lower()
     return (
-        text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/"))
+        contains_forbidden_ref(value)
         or "aps-target-artifacts/" in text
         or "storage://" in text
-        or bool(_LOCAL_PATH_RE.match(value.strip()))
     )
 
 
