@@ -189,14 +189,14 @@ def client(tmp_path, monkeypatch):
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_layer3_deployment_profile_local_defaults_preserve_proof_posture() -> None:
+def test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover() -> None:
     profile = _settings_for_test()
 
     assert profile.deployment_mode == "local"
     assert profile.allowed_origin_list == ["*"]
     assert profile.cors_allow_credentials_enabled is True
     assert profile.storage_mount_enabled is True
-    assert profile.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is False
+    assert profile.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
 
     cors_middleware = next(middleware for middleware in app.user_middleware if middleware.cls.__name__ == "CORSMiddleware")
     assert cors_middleware.kwargs["allow_origins"] == ["*"]

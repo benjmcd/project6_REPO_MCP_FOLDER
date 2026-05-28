@@ -119,6 +119,7 @@ _TAG_RE = re.compile(r"<([A-Z0-9-]+)>\s*([^\r\n<]*)", re.IGNORECASE)
 _SEC_XBRL_WRAPPER_RE = re.compile(r"^\s*<XBRL>\s*(?P<text>.*?)(?:\s*</XBRL>\s*)?$", re.IGNORECASE | re.DOTALL)
 _XMLNS_RE = re.compile(r"xmlns:([A-Za-z_][\w.-]*)\s*=\s*['\"]([^'\"]+)['\"]", re.IGNORECASE)
 _INLINE_XBRL_NAMESPACES = frozenset({"http://www.xbrl.org/2013/inlineXBRL", "http://www.xbrl.org/2008/inlineXBRL"})
+_SAFE_ARELLE_ERROR_RE = re.compile(r"^[A-Za-z0-9_.-]{1,96}$")
 
 
 def derive_sec_edgar_arelle_resolved_fact_authority_sidecar(fields: Mapping[str, Any]) -> dict[str, Any]:
@@ -458,6 +459,7 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
                 "reasons": [_reason("arelle_invocation_failed", error_class=exc.__class__.__name__)],
             }
     if completed.returncode != 0:
+        error_projection = _arelle_error_projection(completed.stdout)
         return {
             "status": "blocked",
             "reasons": [
@@ -466,6 +468,7 @@ def _run_arelle(*, primary_document: str, max_facts: int, submission_documents: 
                     return_code=completed.returncode,
                     stdout_hash=_sha256_text(completed.stdout),
                     stderr_hash=_sha256_text(completed.stderr),
+                    **error_projection,
                 )
             ],
         }
@@ -765,6 +768,8 @@ def _diagnostics(
         "taxonomy_package_loaded": bool(arelle.get("taxonomy_package_loaded")),
         "taxonomy_package_count": int(arelle.get("taxonomy_package_count") or 0),
         "taxonomy_package_hashes": list(arelle.get("taxonomy_package_hashes") or []),
+        "taxonomy_package_invalid_count": int(arelle.get("taxonomy_package_invalid_count") or 0),
+        "taxonomy_package_invalid_hashes": list(arelle.get("taxonomy_package_invalid_hashes") or []),
         "taxonomy_network_resolution_enabled": bool(arelle.get("taxonomy_network_resolution_enabled")),
         "document_set": dict(arelle.get("document_set") or {}),
         "dts_unresolved_diagnostics": dict(arelle.get("diagnostics") or {}),
@@ -796,6 +801,23 @@ def _parity(*, regex_count: int | None, arelle_count: int, companyfacts_count: A
         "companyfacts_oracle_confidence": confidence or None,
         "companyfacts_scope": "us_gaap_dei_accession_crosscheck_only" if standard_count is not None else "not_recorded",
     }
+
+
+def _arelle_error_projection(stdout: str) -> dict[str, str]:
+    try:
+        payload = json.loads(str(stdout or "").strip().splitlines()[-1])
+    except (IndexError, json.JSONDecodeError):
+        return {}
+    if not isinstance(payload, Mapping):
+        return {}
+    reason = str(payload.get("reason") or "").strip()
+    error_class = str(payload.get("error_class") or "").strip()
+    projection: dict[str, str] = {}
+    if reason and _SAFE_ARELLE_ERROR_RE.match(reason):
+        projection["arelle_error_reason"] = reason
+    if error_class and _SAFE_ARELLE_ERROR_RE.match(error_class):
+        projection["arelle_error_class"] = error_class
+    return projection
 
 
 def _optional_regex_fact_authority(request: Mapping[str, Any]) -> dict[str, Any] | None:

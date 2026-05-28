@@ -78,7 +78,7 @@ def build_report() -> dict[str, Any]:
             all(
                 test_name in sources["api_tests"]
                 for test_name in (
-                    "test_layer3_deployment_profile_local_defaults_preserve_proof_posture",
+                    "test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover",
                     "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on",
                     "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
                     "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",
@@ -86,7 +86,7 @@ def build_report() -> dict[str, Any]:
             ),
             {
                 "focused_tests": [
-                    "test_layer3_deployment_profile_local_defaults_preserve_proof_posture",
+                    "test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover",
                     "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on",
                     "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
                     "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",
@@ -140,6 +140,11 @@ def build_report() -> dict[str, Any]:
             "broader_real_corpus_gate_verdict": sources["real_corpus_gate"].get("gate_verdict"),
             "broader_real_filing_count": real_corpus_summary.get("real_filing_count"),
             "broader_issuer_hash_count": real_corpus_summary.get("issuer_hash_count"),
+            "broader_resolved_fact_count": real_corpus_summary.get("resolved_fact_count"),
+            "broader_independent_inline_fact_count": real_corpus_summary.get("independent_inline_fact_count"),
+            "broader_companyfacts_value_match_count": real_corpus_summary.get("companyfacts_value_match_count"),
+            "broader_companyfacts_value_compared_count": real_corpus_summary.get("companyfacts_value_compared_count"),
+            "broader_companyfacts_value_match_rate": real_corpus_summary.get("companyfacts_value_match_rate"),
             "broader_failure_reasons": real_corpus_summary.get("failure_reasons"),
         },
         "runtime_posture": {
@@ -158,7 +163,7 @@ def build_report() -> dict[str, Any]:
             "rag_vector_model_provider_auth_behavior_added": False,
         },
         "next_slice": (
-            "sec_edgar_arelle_default_on_product_path_corpus_validation_v1"
+            "sec_edgar_operator_surface_gated_value_reveal_v1"
             if default_enabled
             else "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1"
         ),

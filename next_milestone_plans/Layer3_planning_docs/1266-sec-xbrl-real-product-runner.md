@@ -6,7 +6,7 @@
 
 ## Governing Posture
 
-This is a diagnostic runner and gate report for the real-corpus product path. It does not change runtime defaults, product/package/UI behavior, Gate B logic, operator value exposure, source shapes, or SEC routing.
+This is a diagnostic runner and gate report for the real-corpus product path. It changes the Arelle cutover runtime default only when invoked with `--apply-default-decision`; the gate has teeth. It does not change product/package/UI behavior, Gate B logic, operator value exposure, source shapes, or SEC routing.
 
 The runner uses the existing governed SEC acquisition/source-artifact/receipt spine and the existing Arelle sidecar, bridge, statement classification, statement product, package/review, and handoff/export services for every supported filing. For matrices already admitted by the delivery/operator/archive services it also drives delivery/status/provenance, operator inspection, operator product surface, and durable archive. Broader extraction-gate matrices are not allowed to fail the default-on gate merely because the later archive surface admits a narrower matrix.
 
@@ -26,11 +26,18 @@ Report:
 
 Current decision:
 
-`real_corpus_default_on_blocked`
+`real_corpus_default_on_validated`
 
-The committed report now records a live broader-corpus gate run. Breadth passed: 32 filings, 16 issuer hashes, all required forms present, and one `10-K/A` amended form observed. The reliability gate failed before sidecar authority output: 30 rows blocked with `arelle_nonzero_exit`; 2 rows were diagnosed as no-inline-marker rows. Because the gate failed/inconclusive, the runtime cutover default was rolled back to `false`.
+The committed report now records a live broader-corpus gate rerun after remediation. Breadth passed: 32 filings, 16 issuer hashes, all required forms present, and one `10-K/A` amended form observed. The product-path reliability gate passed:
 
-This preserves the prior gate result instead of upgrading fake-client product-chain evidence into a real-corpus claim.
+- 30 supported inline-XBRL filings emitted Arelle sidecar authority and selected that sidecar as fact authority.
+- 2 genuine no-inline-marker filings were diagnosed and allowed as zero-fact records.
+- Arelle resolved facts matched the independent raw-inline lower-bound count: `52,558/52,558`.
+- CompanyFacts effective-value correctness was `9,040/9,131`, match rate `0.99`, above the `0.98` gate.
+- Operator value exposure remained disabled.
+- The runtime cutover default was restored to `true` by the gate verdict.
+
+The remediation fixed the gate mechanics rather than weakening criteria: mixed taxonomy zip directories now load valid Arelle packages while reporting invalid package hashes/counts, the runner reads independent raw-inline counts from sidecar diagnostics, allowed no-inline records do not fail the extraction gate, and CompanyFacts identity is reconstructed only inside the diagnostic process without committing raw identities.
 
 ## Runner Behavior
 
@@ -83,11 +90,11 @@ The report admits only if all criteria pass:
 
 Next slice:
 
-`sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1`
+`sec_edgar_operator_surface_gated_value_reveal_v1`
 
 Scope:
 
-- diagnose the retained broader-corpus `arelle_nonzero_exit` failures without committing raw filing bytes, paths, URLs, values, or identities;
-- preserve the default-off rollback until the same gate passes;
-- rerun the same broader gate after remediation;
-- proceed to `sec_edgar_operator_surface_gated_value_reveal_v1` only after a real PASS.
+- add the explicit governed operator-surface value reveal path;
+- preserve redaction and audit boundaries by default;
+- expose values only through a gated, reviewed operator action;
+- preserve no final financial-statement semantics and no cross-company comparability claims.

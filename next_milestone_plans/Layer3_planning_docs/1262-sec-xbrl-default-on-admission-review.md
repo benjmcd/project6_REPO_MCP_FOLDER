@@ -31,9 +31,11 @@ The Arelle fact-authority path is now admitted as a default-on candidate by the 
 
 `diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json`
 
-Decision: `admission_review_passed`.
+Decision on the admission-review slice: `admission_review_passed`.
 
 The runtime default remains off in this slice. The report verifies the default-on candidate gate, default-off configuration, fail-closed rollback signals, focused fail-closed tests, operator value reveal gating, and standing non-admissions.
+
+On the later default-on runtime branch, regenerating the same report records `admission_review_superseded_by_default_on_runtime` instead of replaying a stale pre-cutover PASS packet. That regenerated posture records `flag_default_true: true` and points forward to the runtime/value-reveal path while preserving the admission evidence.
 
 ## Next slice
 
