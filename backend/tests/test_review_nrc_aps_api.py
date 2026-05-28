@@ -252,6 +252,27 @@ def test_candidate_review_runtime_roots_accept_configured_storage_test_runtime(t
     assert (configured_storage_root / "lc_e2e").resolve() in roots
 
 
+def test_candidate_review_runtime_roots_preserve_configured_symlink_storage_semantics(tmp_path):
+    app_root = tmp_path / "backend" / "app"
+    backend_root = app_root.parent
+    app_root.mkdir(parents=True)
+    target_storage_root = tmp_path / "mounted" / "runtime-root"
+    target_storage_root.mkdir(parents=True)
+    configured_storage_root = tmp_path / "storage_test_runtime"
+    try:
+        configured_storage_root.symlink_to(target_storage_root, target_is_directory=True)
+    except OSError:
+        pytest.skip("Directory symlinks are unavailable in this environment")
+
+    roots = candidate_review_runtime_roots(
+        app_root=app_root,
+        backend_root=backend_root,
+        storage_dir=configured_storage_root,
+    )
+
+    assert (target_storage_root / "lc_e2e").resolve() in roots
+
+
 def test_candidate_review_runtime_roots_reject_arbitrary_configured_root(tmp_path):
     app_root = tmp_path / "backend" / "app"
     backend_root = app_root.parent
@@ -295,6 +316,41 @@ def test_api_runs_omit_experiment_hidden_runtime_and_keep_legacy_runtime_visible
     returned_run_ids = {item["run_id"] for item in data["runs"]}
     assert hidden_run_id not in returned_run_ids
     assert legacy_run_id in returned_run_ids
+
+
+def test_api_runs_reloads_visibility_config_across_discovery_calls(tmp_path, monkeypatch):
+    storage_root = tmp_path / "storage_test_runtime"
+    run_id = "00000000-0000-0000-0000-00000000a506"
+    runtime_dir = _create_temp_review_runtime(
+        storage_root,
+        runtime_name="visibility_reload_runtime",
+        run_id=run_id,
+        visual_lane_mode="baseline",
+        include_connector_run_row=True,
+    )
+
+    monkeypatch.setattr("app.services.review_nrc_aps_runtime.settings.storage_dir", str(storage_root))
+    first_response = client.get("/api/v1/review/nrc-aps/runs")
+    assert first_response.status_code == 200
+    assert run_id in {item["run_id"] for item in first_response.json()["runs"]}
+
+    connection = sqlite3.connect(str(runtime_dir / "lc.db"))
+    try:
+        connection.execute(
+            """
+            UPDATE connector_run
+            SET request_config_json = ?
+            WHERE connector_run_id = ?
+            """,
+            (json.dumps({"visual_lane_mode": "variant_hidden"}), run_id),
+        )
+        connection.commit()
+    finally:
+        connection.close()
+
+    second_response = client.get("/api/v1/review/nrc-aps/runs")
+    assert second_response.status_code == 200
+    assert run_id not in {item["run_id"] for item in second_response.json()["runs"]}
 
 
 def test_api_documents_404_for_experiment_hidden_runtime(tmp_path, monkeypatch):
