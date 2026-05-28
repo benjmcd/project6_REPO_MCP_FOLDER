@@ -106955,8 +106955,11 @@ def _check_sec_edgar_text_table_downstream_layer3_operator_status_runtime(
             "test_sec_edgar_text_table_downstream_operator_status_blocks_stale_proof_hash",
             "test_sec_edgar_text_table_downstream_operator_status_blocks_raw_url_proof",
             "sec_edgar_text_table_downstream_operator_status_proof_hash_mismatch",
-            "sec_edgar_text_table_downstream_operator_status_forbidden_request_fields",
-            "https://example.test/raw-proof\" not in str(exc.value)",
+            (
+                "assert exc.value.error_code == "
+                '"sec_edgar_text_table_downstream_operator_status_forbidden_request_fields"\n'
+                '    assert "https://example.test/raw-proof" not in str(exc.value)'
+            ),
         ),
         LAYER3_API_TEST: (
             "test_layer3_api_reports_sec_edgar_downstream_status_not_recorded",
