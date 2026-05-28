@@ -94,6 +94,10 @@ class Settings(BaseSettings):
         default=False,
         alias="LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED",
     )
+    layer3_sec_edgar_arelle_value_reveal_enabled: bool = Field(
+        default=False,
+        alias="LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED",
+    )
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
     cors_allow_credentials: bool | None = Field(default=None, alias="CORS_ALLOW_CREDENTIALS")
     auth_owner: Literal["none", "proxy"] = Field(default="none", alias="AUTH_OWNER")
