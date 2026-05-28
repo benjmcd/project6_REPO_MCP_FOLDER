@@ -1,0 +1,91 @@
+{
+  "blocking_reasons": [
+    {
+      "blocked_reason": "value_reveal_operator_exercise_ready_sidecar_authority_missing",
+      "criterion": "ready_sidecar_with_internal_value_store_available",
+      "evidence": {
+        "internal_value_store_file_count": 0,
+        "ready_sidecar_count": 0,
+        "ready_sidecar_with_internal_value_store_count": 0,
+        "sidecar_receipt_count": 0
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "value_reveal_operator_exercise_bridge_dataset_authority_missing",
+      "criterion": "bridge_dataset_authority_available",
+      "evidence": {
+        "bridge_receipt_count": 0,
+        "bridge_receipt_with_dataset_hash_count": 0
+      },
+      "state": "blocked"
+    }
+  ],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "configured_storage_available",
+      "evidence": {
+        "storage_exists": true,
+        "storage_file_count": 0,
+        "storage_marker": "1024374bbd830e65"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "value_reveal_operator_exercise_ready_sidecar_authority_missing",
+      "criterion": "ready_sidecar_with_internal_value_store_available",
+      "evidence": {
+        "internal_value_store_file_count": 0,
+        "ready_sidecar_count": 0,
+        "ready_sidecar_with_internal_value_store_count": 0,
+        "sidecar_receipt_count": 0
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "value_reveal_operator_exercise_bridge_dataset_authority_missing",
+      "criterion": "bridge_dataset_authority_available",
+      "evidence": {
+        "bridge_receipt_count": 0,
+        "bridge_receipt_with_dataset_hash_count": 0
+      },
+      "state": "blocked"
+    }
+  ],
+  "decision": "value_reveal_operator_exercise_blocked_missing_authority",
+  "headline": "Operator exercise cannot run from current configured storage because persisted sidecar/dataset authority is missing.",
+  "next_slice": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
+  "non_goals_preserved": {
+    "arelle_subprocess_invoked": false,
+    "audit_receipt_created": false,
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "cutover_default_enabled": false,
+    "dataset_version_created": false,
+    "final_financial_statement_semantics_claimed": false,
+    "raw_identity_committed": false,
+    "raw_values_committed": false,
+    "raw_values_returned": false,
+    "sec_network_fetch_performed": false,
+    "sidecar_receipt_created": false,
+    "value_reveal_default_enabled": false
+  },
+  "operator_exercise_performed": false,
+  "ready_to_run_operator_exercise": false,
+  "redacted_inventory": {
+    "bridge_receipt_count": 0,
+    "bridge_receipt_with_dataset_hash_count": 0,
+    "internal_value_store_file_count": 0,
+    "ready_sidecar_count": 0,
+    "ready_sidecar_with_internal_value_store_count": 0,
+    "sidecar_receipt_count": 0,
+    "storage_exists": true,
+    "storage_file_count": 0,
+    "storage_marker": "1024374bbd830e65",
+    "value_reveal_receipt_count": 0
+  },
+  "required_next_action": "provision_or_point_to_existing_real_filing_sidecar_and_dataset_authorities_then_rerun",
+  "schema_id": "diagnostics.sec_xbrl_value_reveal_operator_exercise_run.v1",
+  "target": "sec_edgar_arelle_value_reveal_operator_exercise_v1"
+}

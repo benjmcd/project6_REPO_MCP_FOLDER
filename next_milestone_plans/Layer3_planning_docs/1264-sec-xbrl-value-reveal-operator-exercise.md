@@ -75,6 +75,12 @@ The committed report is:
 
 `diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-report.json`
 
+The separate run preflight is:
+
+`diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py`
+
+It must block, not fabricate, when the configured storage authority does not contain READY sidecar and bridge/dataset receipts. Its current blocked result is recorded in doc `1265`.
+
 ## Non-Goals
 
 - no default-on Arelle cutover
@@ -104,3 +110,8 @@ If the operator exercise fails:
 
 1. `sec_edgar_arelle_value_reveal_operator_exercise_remediation_v1`
    Patch only the failed reveal/audit/redaction/operator-utility criterion, then rerun the exercise.
+
+If the operator exercise cannot start because persisted real-filing authorities are absent:
+
+1. `sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1`
+   Point the isolated runtime at existing retained real-filing sidecar/dataset authorities, or run a separate governed authority-provisioning pass before submitting any reveal request.
