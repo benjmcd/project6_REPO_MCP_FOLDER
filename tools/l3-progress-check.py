@@ -106716,7 +106716,8 @@ def _check_sec_edgar_text_table_downstream_layer3_proof_runtime(
             "sec_edgar_text_table_downstream_layer3_e2e_proven",
             "sec_edgar_text_table_downstream_proof_bridge_hash_mismatch",
             "sec_edgar_text_table_downstream_proof_coverage_not_bound_to_server_receipt",
-            "sec_edgar_text_table_downstream_proof_coverage_exposes_forbidden_reference",
+            "sec_edgar_text_table_downstream_proof_forbidden_request_fields",
+            "https://example.test/raw-proof\" not in str(exc.value)",
             "str(tmp_path) not in str(result)",
         ),
         LAYER3_API_TEST: (
@@ -106954,7 +106955,8 @@ def _check_sec_edgar_text_table_downstream_layer3_operator_status_runtime(
             "test_sec_edgar_text_table_downstream_operator_status_blocks_stale_proof_hash",
             "test_sec_edgar_text_table_downstream_operator_status_blocks_raw_url_proof",
             "sec_edgar_text_table_downstream_operator_status_proof_hash_mismatch",
-            "https://example.test/raw-proof\" not in str(result)",
+            "sec_edgar_text_table_downstream_operator_status_forbidden_request_fields",
+            "https://example.test/raw-proof\" not in str(exc.value)",
         ),
         LAYER3_API_TEST: (
             "test_layer3_api_reports_sec_edgar_downstream_status_not_recorded",

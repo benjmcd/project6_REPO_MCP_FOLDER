@@ -550,6 +550,7 @@ def test_sec_edgar_text_table_downstream_proof_rejects_raw_url_evidence_ref(db_s
         layer3_sec_edgar_downstream_proof.record_sec_edgar_text_table_downstream_layer3_proof(payload, db_session)
 
     assert exc.value.error_code == "sec_edgar_text_table_downstream_proof_forbidden_request_fields"
+    assert "https://example.test/raw-proof" not in str(exc.value)
 
 
 def test_sec_edgar_text_table_downstream_operator_status_renders_not_recorded(db_session) -> None:
