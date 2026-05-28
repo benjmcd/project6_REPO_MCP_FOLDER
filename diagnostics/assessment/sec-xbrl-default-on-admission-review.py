@@ -25,7 +25,7 @@ REQUIRED_TEST_SIGNALS = {
     "arelle_absent": "test_sec_xbrl_sidecar_fails_closed_when_arelle_is_absent",
     "missing_sidecar": "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
     "lineage_mismatch": "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",
-    "operator_value_gate": "test_layer3_api_reveals_sec_edgar_operator_surface_values_only_when_gated",
+    "operator_value_gate": "test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_sibling_endpoint",
 }
 
 
@@ -77,11 +77,8 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
     operator_gate = {
         "policy_id_present": _contains_any(sources, "sec_edgar_operator_surface_gated_value_reveal_v1"),
         "max_records_cap_present": _contains_any(sources, "VALUE_REVEAL_MAX_RECORDS_LIMIT = 50"),
-        "confirmation_required": _contains_any(
-            sources,
-            "sec_edgar_operator_product_surface_value_reveal_confirmation_missing",
-        ),
-        "policy_required": _contains_any(sources, "sec_edgar_operator_product_surface_value_reveal_policy_not_admitted"),
+        "confirmation_required": _contains_any(sources, "sec_edgar_arelle_value_reveal_operator_confirmation_required"),
+        "feature_flag_required": _contains_any(sources, "sec_edgar_arelle_value_reveal_feature_flag_disabled"),
     }
     non_admissions = {
         "candidate_b_sec_routing_not_admitted": _contains_any(

@@ -44,9 +44,10 @@ def test_sec_xbrl_default_on_admission_review_blocks_after_runtime_default_chang
 
     report = module.build_report(gate_report_path=_gate_report(tmp_path, admitted=True), source_root=ROOT)
 
-    assert report["decision"] == "admission_review_blocked"
+    assert report["decision"] == "admission_review_superseded_by_default_on_runtime"
     assert report["ready_for_default_on_runtime_slice"] is False
-    assert report["blocking_reasons"][0]["reason"] == "admission_review_runtime_default_already_changed"
+    assert report["blocking_reasons"] == []
+    assert report["non_goals_preserved"]["runtime_default_enabled_by_follow_on_runtime_slice"] is True
 
 
 def test_sec_xbrl_default_on_admission_review_blocks_when_gate_is_not_admitted(tmp_path: Path) -> None:

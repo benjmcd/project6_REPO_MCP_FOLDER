@@ -96,7 +96,7 @@
         },
         "operator_value_gate": {
           "present": true,
-          "test_signal": "test_layer3_api_reveals_sec_edgar_operator_surface_values_only_when_gated"
+          "test_signal": "test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_sibling_endpoint"
         }
       },
       "state": "passed"
@@ -106,9 +106,9 @@
       "criterion": "operator_value_reveal_remains_gated",
       "evidence": {
         "confirmation_required": true,
+        "feature_flag_required": true,
         "max_records_cap_present": true,
-        "policy_id_present": true,
-        "policy_required": true
+        "policy_id_present": true
       },
       "state": "passed"
     },
