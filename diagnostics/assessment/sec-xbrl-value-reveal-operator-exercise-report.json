@@ -1,0 +1,132 @@
+{
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "deployment_defaults_remain_off",
+      "evidence": {
+        "arelle_cutover_default_off": true,
+        "value_reveal_default_off": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "sibling_endpoint_available",
+      "evidence": {
+        "post_reveal_route_present": true,
+        "request_schema_present": true,
+        "status_route_present": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "audit_receipt_governance_available",
+      "evidence": {
+        "actor_hash_used": true,
+        "current_and_legacy_hash_basis": true,
+        "idempotency_key_hash_used": true,
+        "lineage_hashes_projected": true,
+        "receipt_dir_separate": true,
+        "status_projection_hashes_only": true,
+        "write_failure_blocks": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "default_surface_boundary_preserved",
+      "evidence": {
+        "default_surface_not_requested": true,
+        "legacy_surface_fields_fail_closed": true,
+        "surface_flag_check_reason": true
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "focused_operator_exercise_tests_present",
+      "evidence": {
+        "audit_receipt_redacted_status": {
+          "present": true,
+          "test_signal": "layer3.sec_edgar_arelle_value_reveal_status.v1"
+        },
+        "corrupted_receipt_blocks": {
+          "present": true,
+          "test_signal": "test_layer3_api_rejects_corrupted_sec_edgar_arelle_value_reveal_audit_receipt"
+        },
+        "fail_closed_inputs": {
+          "present": true,
+          "test_signal": "test_layer3_api_blocks_sec_edgar_arelle_value_reveal_fail_closed_inputs"
+        },
+        "flag_off_endpoint_blocks": {
+          "present": true,
+          "test_signal": "sec_edgar_arelle_value_reveal_feature_flag_disabled"
+        },
+        "flag_off_surface_blocks_legacy_fields": {
+          "present": true,
+          "test_signal": "sec_edgar_operator_product_surface_value_reveal_flag_disabled"
+        },
+        "flag_on_sibling_endpoint_ready": {
+          "present": true,
+          "test_signal": "test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_sibling_endpoint"
+        },
+        "idempotent_replay": {
+          "present": true,
+          "test_signal": "\"idempotent_replay\"] is True"
+        },
+        "identity_like_value_redaction": {
+          "present": true,
+          "test_signal": "sec_edgar_arelle_value_reveal_raw_identity_value_redacted"
+        },
+        "legacy_receipt_status_compatibility": {
+          "present": true,
+          "test_signal": "test_layer3_api_reads_legacy_sec_edgar_arelle_value_reveal_audit_receipt"
+        },
+        "lineage_and_write_fail_closed": {
+          "present": true,
+          "test_signal": "test_layer3_api_blocks_sec_edgar_arelle_value_reveal_lineage_and_redaction_guards"
+        }
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "planning_names_operator_exercise_before_default_enablement",
+      "evidence": {
+        "default_enablement_gate_separate": true,
+        "default_on_followup_separate": true,
+        "operator_exercise_named_next": true
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "value_reveal_operator_exercise_ready",
+  "headline": "Governed value reveal is ready for an isolated operator exercise; this check did not perform the exercise.",
+  "next_slice": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
+  "non_goals_preserved": {
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "cutover_default_enabled": false,
+    "final_financial_statement_semantics_claimed": false,
+    "operator_exercise_performed_by_this_check": false,
+    "raw_values_committed": false,
+    "sec_network_fetch_performed": false,
+    "sidecar_receipt_created": false,
+    "value_reveal_default_enabled": false
+  },
+  "operator_exercise_performed": false,
+  "operator_exercise_requirements": [
+    "enable LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED only in isolated local/operator runtime",
+    "bind a persisted READY Arelle sidecar receipt id/hash and matching dataset_version id/hash",
+    "submit an explicit actor self-attestation and operator_reveal_confirmation=true",
+    "verify returned values are effective Arelle values and identity-like values stay redacted",
+    "verify audit receipt status projection is hashes-only and idempotent replay returns the same receipt",
+    "verify the default product surface over the same filing still returns no raw values",
+    "turn the reveal flag back off after the exercise"
+  ],
+  "ready_for_operator_exercise": true,
+  "schema_id": "diagnostics.sec_xbrl_value_reveal_operator_exercise.v1",
+  "target": "sec_edgar_arelle_value_reveal_operator_exercise_v1"
+}
