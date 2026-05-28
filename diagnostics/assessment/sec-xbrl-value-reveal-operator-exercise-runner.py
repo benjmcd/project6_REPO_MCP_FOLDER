@@ -1,0 +1,217 @@
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import sys
+from pathlib import Path
+from typing import Any, Mapping
+
+
+ROOT = Path(__file__).resolve().parents[2]
+BACKEND = ROOT / "backend"
+DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json")
+SIDECAR_RECEIPT_DIR = "layer3-sec-edgar-arelle-resolved-fact-authority"
+BRIDGE_RECEIPT_DIR = "layer3-sec-edgar-html-inline-xbrl-fact-material-bridge"
+VALUE_REVEAL_RECEIPT_DIR = "layer3-sec-edgar-arelle-value-reveal"
+READY_SIDECAR_STATE = "sec_edgar_arelle_resolved_fact_authority_sidecar_ready"
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description=(
+            "SEC XBRL value-reveal operator-exercise runner. This fail-closed preflight "
+            "uses the configured storage authority and does not fabricate sidecars or datasets."
+        )
+    )
+    parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
+    args = parser.parse_args()
+    report = build_report(source_root=ROOT)
+    output = _resolve_path(args.output)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"wrote {_repo_display_path(output)}")
+    print(f"decision={report['decision']}")
+    return 0
+
+
+def build_report(*, source_root: Path, storage_dir: Path | None = None) -> dict[str, Any]:
+    storage = storage_dir if storage_dir is not None else _configured_storage_dir(source_root)
+    inventory = _inventory_storage(storage)
+    criteria = [
+        _criterion(
+            "configured_storage_available",
+            inventory["storage_exists"],
+            {
+                "storage_marker": inventory["storage_marker"],
+                "storage_exists": inventory["storage_exists"],
+                "storage_file_count": inventory["storage_file_count"],
+            },
+            "value_reveal_operator_exercise_storage_unavailable",
+        ),
+        _criterion(
+            "ready_sidecar_with_internal_value_store_available",
+            inventory["ready_sidecar_with_internal_value_store_count"] > 0,
+            {
+                "sidecar_receipt_count": inventory["sidecar_receipt_count"],
+                "ready_sidecar_count": inventory["ready_sidecar_count"],
+                "ready_sidecar_with_internal_value_store_count": inventory[
+                    "ready_sidecar_with_internal_value_store_count"
+                ],
+                "internal_value_store_file_count": inventory["internal_value_store_file_count"],
+            },
+            "value_reveal_operator_exercise_ready_sidecar_authority_missing",
+        ),
+        _criterion(
+            "bridge_dataset_authority_available",
+            inventory["bridge_receipt_count"] > 0,
+            {
+                "bridge_receipt_count": inventory["bridge_receipt_count"],
+                "bridge_receipt_with_dataset_hash_count": inventory["bridge_receipt_with_dataset_hash_count"],
+            },
+            "value_reveal_operator_exercise_bridge_dataset_authority_missing",
+        ),
+    ]
+    blockers = [item for item in criteria if item["state"] != "passed"]
+    ready = not blockers
+    return {
+        "schema_id": "diagnostics.sec_xbrl_value_reveal_operator_exercise_run.v1",
+        "target": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
+        "decision": (
+            "value_reveal_operator_exercise_ready_to_run"
+            if ready
+            else "value_reveal_operator_exercise_blocked_missing_authority"
+        ),
+        "headline": (
+            "Configured storage has the persisted sidecar and bridge dataset authority required for an isolated operator exercise."
+            if ready
+            else "Operator exercise cannot run from current configured storage because persisted sidecar/dataset authority is missing."
+        ),
+        "operator_exercise_performed": False,
+        "ready_to_run_operator_exercise": ready,
+        "criteria": criteria,
+        "blocking_reasons": blockers,
+        "redacted_inventory": inventory,
+        "required_next_action": (
+            "run_isolated_value_reveal_operator_exercise_against_existing_authorities"
+            if ready
+            else "provision_or_point_to_existing_real_filing_sidecar_and_dataset_authorities_then_rerun"
+        ),
+        "non_goals_preserved": {
+            "cutover_default_enabled": False,
+            "value_reveal_default_enabled": False,
+            "sec_network_fetch_performed": False,
+            "arelle_subprocess_invoked": False,
+            "sidecar_receipt_created": False,
+            "dataset_version_created": False,
+            "audit_receipt_created": False,
+            "raw_values_returned": False,
+            "raw_values_committed": False,
+            "raw_identity_committed": False,
+            "candidate_b_sec_routing_performed": False,
+            "final_financial_statement_semantics_claimed": False,
+            "cross_company_comparability_claimed": False,
+        },
+        "next_slice": (
+            "sec_edgar_arelle_value_reveal_operator_exercise_v1"
+            if ready
+            else "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1"
+        ),
+    }
+
+
+def _inventory_storage(storage: Path) -> dict[str, Any]:
+    exists = storage.exists()
+    sidecar_receipts = _json_files(storage / SIDECAR_RECEIPT_DIR / "receipts")
+    bridge_receipts = _json_files(storage / BRIDGE_RECEIPT_DIR / "receipts")
+    internal_value_stores = _json_files(storage / SIDECAR_RECEIPT_DIR / "internal-value-stores")
+    ready_sidecars = []
+    ready_sidecars_with_values = []
+    for receipt_path in sidecar_receipts:
+        receipt = _read_json_or_none(receipt_path)
+        if not isinstance(receipt, Mapping):
+            continue
+        if receipt.get("sidecar_state") != READY_SIDECAR_STATE:
+            continue
+        ready_sidecars.append(receipt)
+        metadata = receipt.get("internal_value_store") if isinstance(receipt.get("internal_value_store"), Mapping) else {}
+        if (
+            metadata.get("enabled") is True
+            and metadata.get("store_state") == "persisted"
+            and isinstance(metadata.get("value_store_hash"), str)
+        ):
+            ready_sidecars_with_values.append(receipt)
+    bridge_with_dataset_hash = 0
+    for receipt_path in bridge_receipts:
+        receipt = _read_json_or_none(receipt_path)
+        if not isinstance(receipt, Mapping):
+            continue
+        response = receipt.get("response") if isinstance(receipt.get("response"), Mapping) else receipt
+        if isinstance(response.get("dataset_version_hash"), str):
+            bridge_with_dataset_hash += 1
+    return {
+        "storage_marker": _redacted_marker(storage),
+        "storage_exists": exists,
+        "storage_file_count": _file_count(storage) if exists else 0,
+        "sidecar_receipt_count": len(sidecar_receipts),
+        "ready_sidecar_count": len(ready_sidecars),
+        "ready_sidecar_with_internal_value_store_count": len(ready_sidecars_with_values),
+        "internal_value_store_file_count": len(internal_value_stores),
+        "bridge_receipt_count": len(bridge_receipts),
+        "bridge_receipt_with_dataset_hash_count": bridge_with_dataset_hash,
+        "value_reveal_receipt_count": len(_json_files(storage / VALUE_REVEAL_RECEIPT_DIR / "receipts")),
+    }
+
+
+def _criterion(criterion: str, passed: bool, evidence: Mapping[str, Any], blocked_reason: str) -> dict[str, Any]:
+    return {
+        "criterion": criterion,
+        "state": "passed" if passed else "blocked",
+        "blocked_reason": None if passed else blocked_reason,
+        "evidence": dict(evidence),
+    }
+
+
+def _configured_storage_dir(source_root: Path) -> Path:
+    if str(BACKEND) not in sys.path:
+        sys.path.insert(0, str(source_root / "backend"))
+    from app.core.config import settings
+
+    return Path(settings.storage_dir)
+
+
+def _json_files(path: Path) -> list[Path]:
+    if not path.exists():
+        return []
+    return sorted(item for item in path.glob("*.json") if item.is_file())
+
+
+def _read_json_or_none(path: Path) -> Any:
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _file_count(path: Path) -> int:
+    return sum(1 for item in path.rglob("*") if item.is_file())
+
+
+def _redacted_marker(path: Path) -> str:
+    return hashlib.sha256(str(path.resolve()).encode("utf-8")).hexdigest()[:16]
+
+
+def _resolve_path(path: str) -> Path:
+    candidate = Path(path)
+    return candidate if candidate.is_absolute() else ROOT / candidate
+
+
+def _repo_display_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
