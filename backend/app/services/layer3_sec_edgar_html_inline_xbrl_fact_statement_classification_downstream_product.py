@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -14,6 +13,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_statement_classification,
     layer3_sec_xbrl_sidecar,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -96,10 +96,6 @@ _FORBIDDEN_INPUT_KEYS = {
     "frontend_authority",
     "full_mockup",
 }
-_RAW_URL_RE = re.compile(r"\b(?:https?|file)://", re.IGNORECASE)
-_LOCAL_PATH_RE = re.compile(r"(?:[A-Za-z]:\\|\\\\|/tmp/|/var/|/home/)", re.IGNORECASE)
-
-
 def build_sec_edgar_html_inline_xbrl_statement_candidate_product_evidence(
     fields: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -807,20 +803,7 @@ def _write_request_binding(request_id: str, basis_hash: str, receipt_id: str) ->
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text.lower() in _FORBIDDEN_INPUT_KEYS:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(nested, child))
-    elif isinstance(value, list):
-        for index, nested in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str) and (_RAW_URL_RE.search(value) or _LOCAL_PATH_RE.search(value)):
-        found.append(prefix or "request_body")
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=_FORBIDDEN_INPUT_KEYS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -829,8 +812,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith(("http://", "https://", "file://", "\\\\")))
+        return contains_forbidden_ref(value)
     return False
 
 

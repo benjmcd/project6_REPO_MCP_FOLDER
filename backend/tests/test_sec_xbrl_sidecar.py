@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import runpy
 import subprocess
+from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 import sys
 
 import pytest
@@ -161,6 +164,38 @@ def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
     assert tally["inline_document_count"] == 2
     assert tally["document_tally"][0]["document_type"] == "EX-101.INS"
     assert tally["document_tally"][1]["document_type"] == "EX-99.2"
+
+
+def test_sec_xbrl_arelle_tool_prefers_context_dates_and_corrects_adjusted_end_datetimes():
+    tool = runpy.run_path(str(Path(__file__).resolve().parents[2] / "tools" / "sec-xbrl-arelle.py"), run_name="sec_xbrl_arelle_test")
+    period_payload = tool["_period_payload"]
+
+    instant_context = SimpleNamespace(
+        isForeverPeriod=False,
+        isInstantPeriod=True,
+        isStartEndPeriod=False,
+        instantDate="2025-12-31",
+        instantDatetime=datetime(2026, 1, 1),
+    )
+    duration_context = SimpleNamespace(
+        isForeverPeriod=False,
+        isInstantPeriod=False,
+        isStartEndPeriod=True,
+        startDate=None,
+        startDatetime=datetime(2025, 1, 1),
+        endDate=None,
+        endDatetime=datetime(2026, 1, 1),
+    )
+
+    assert period_payload(instant_context)["instant"] == "2025-12-31"
+    assert period_payload(duration_context) == {
+        "type": "duration",
+        "start": "2025-01-01",
+        "end": "2025-12-31",
+        "instant": None,
+        "forever": False,
+        "resolved": True,
+    }
 
 
 def _install_receipt_fakes(monkeypatch, tmp_path, runner):

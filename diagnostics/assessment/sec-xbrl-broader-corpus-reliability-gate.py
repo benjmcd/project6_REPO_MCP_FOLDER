@@ -55,6 +55,7 @@ def build_report(
     product_proof = dict(product_path.get("proof") or {})
     product_redaction = dict(product_path.get("redaction") or {})
     product_non_admissions = dict(product_path.get("non_admissions") or {})
+    product_authority = dict(product_path.get("authority_model") or {})
 
     forms = set((gate_summary.get("forms") or {}).keys())
     product_forms = set(product_corpus.get("forms") or [])
@@ -84,9 +85,13 @@ def build_report(
             "focused_product_chain_smoke_proof",
             product_path.get("status") == "focused_runtime_proof_passed"
             and _int(product_proof.get("supported_records")) > 0
+            and _int(product_proof.get("supported_records")) == _int(product_corpus.get("filing_count"))
             and product_proof.get("operator_inspection_ready") is True
             and product_proof.get("operator_product_surface_ready") is True
             and product_proof.get("durable_delivery_archive_ready") is True
+            and product_authority.get("selected_fact_authority") == "arelle_resolved_fact_authority_sidecar_receipt"
+            and product_authority.get("dataset_version_reused") is True
+            and product_authority.get("new_layer3_source_shape_created") is False
             and REQUIRED_FORMS.issubset(product_forms),
             {
                 "source_report": _repo_display_path(product_path_report_path),
@@ -94,6 +99,9 @@ def build_report(
                 "filing_count": product_corpus.get("filing_count"),
                 "forms": sorted(product_forms),
                 "supported_records": product_proof.get("supported_records"),
+                "selected_fact_authority": product_authority.get("selected_fact_authority"),
+                "dataset_version_reused": product_authority.get("dataset_version_reused"),
+                "new_layer3_source_shape_created": product_authority.get("new_layer3_source_shape_created"),
                 "operator_inspection_ready": product_proof.get("operator_inspection_ready"),
                 "operator_product_surface_ready": product_proof.get("operator_product_surface_ready"),
                 "durable_delivery_archive_ready": product_proof.get("durable_delivery_archive_ready"),
@@ -103,7 +111,10 @@ def build_report(
         _criterion(
             "broader_real_product_path_corpus_proof",
             product_corpus.get("fake_sec_client_used") is False
-            and product_corpus.get("live_sec_network_used") is True
+            and (
+                product_corpus.get("live_sec_network_used") is True
+                or product_corpus.get("retained_real_corpus_source_bytes_used") is True
+            )
             and _int(product_corpus.get("filing_count")) >= MIN_REAL_FILINGS
             and REQUIRED_FORMS.issubset(product_forms),
             {
@@ -112,6 +123,9 @@ def build_report(
                 "observed_product_path_filing_count": product_corpus.get("filing_count"),
                 "fake_sec_client_used": product_corpus.get("fake_sec_client_used"),
                 "live_sec_network_used": product_corpus.get("live_sec_network_used"),
+                "retained_real_corpus_source_bytes_used": product_corpus.get(
+                    "retained_real_corpus_source_bytes_used"
+                ),
                 "forms": sorted(product_forms),
                 "required_forms": sorted(REQUIRED_FORMS),
                 "evidence_grade": (
@@ -126,16 +140,25 @@ def build_report(
             "product_path_redaction_and_non_admissions",
             product_redaction.get("effective_values_exposed_in_validation_delivery_operator_surface_archive") is False
             and product_redaction.get("raw_sec_urls_exposed") is False
+            and product_redaction.get("raw_company_names_exposed") is False
+            and product_corpus.get("real_identity_values_redacted_in_outputs") is True
             and product_redaction.get("local_storage_roots_exposed") is False
+            and product_proof.get("operator_surface_values_exposed") is False
             and product_non_admissions.get("final_financial_statement_semantics_claimed") is False
             and product_non_admissions.get("cross_company_comparability_admitted") is False
-            and product_non_admissions.get("candidate_b_sec_routing_performed") is False,
+            and product_non_admissions.get("candidate_b_sec_routing_performed") is False
+            and product_non_admissions.get("rag_model_provider_auth_added") is False,
             {
                 "effective_values_exposed": product_redaction.get(
                     "effective_values_exposed_in_validation_delivery_operator_surface_archive"
                 ),
                 "raw_sec_urls_exposed": product_redaction.get("raw_sec_urls_exposed"),
+                "raw_company_names_exposed": product_redaction.get("raw_company_names_exposed"),
+                "real_identity_values_redacted_in_outputs": product_corpus.get(
+                    "real_identity_values_redacted_in_outputs"
+                ),
                 "local_storage_roots_exposed": product_redaction.get("local_storage_roots_exposed"),
+                "operator_surface_values_exposed": product_proof.get("operator_surface_values_exposed"),
                 "final_financial_statement_semantics_claimed": product_non_admissions.get(
                     "final_financial_statement_semantics_claimed"
                 ),
@@ -145,6 +168,7 @@ def build_report(
                 "candidate_b_sec_routing_performed": product_non_admissions.get(
                     "candidate_b_sec_routing_performed"
                 ),
+                "rag_model_provider_auth_added": product_non_admissions.get("rag_model_provider_auth_added"),
             },
             "broader_reliability_redaction_or_non_admission_regressed",
         ),

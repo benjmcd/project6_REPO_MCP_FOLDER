@@ -12,6 +12,10 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.models import DatasetSourceProvenance
 from app.services import layer3_sec_edgar_authority_envelope
+from app.services.layer3_sec_edgar_ref_safety import (
+    contains_forbidden_ref_tree,
+    find_forbidden_ref_paths,
+)
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -102,8 +106,6 @@ FORBIDDEN_REQUEST_FIELDS = {
 ACCESSION_KEYS = ("accession_or_submission_id", "accession_number", "submission_id")
 CIK_KEYS = ("cik_or_filer_ref", "filer_or_cik", "cik")
 CONTENT_LENGTH_KEYS = ("content_length", "content_length_bytes", "byte_length", "size_bytes")
-_RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 _RECEIPT_ID_RE = re.compile(r"^sec-edgar-text-table-source-acquisition-[a-f0-9]{24}$")
 
 
@@ -405,6 +407,14 @@ def _load_source_artifact_authority(
     cik_values = _unique_reference_text(references, CIK_KEYS)
     form_types = _unique_reference_text(references, ("form_type",))
     filing_dates = _unique_reference_text(references, ("filing_date",))
+    if not _all_references_have_text(references, ACCESSION_KEYS):
+        blocked.append("accession_or_submission_id_hash")
+    if not _all_references_have_text(references, CIK_KEYS):
+        blocked.append("cik_or_filer_ref_hash")
+    if not _all_references_have_text(references, ("form_type",)):
+        blocked.append("form_type")
+    if not _all_references_have_text(references, ("filing_date",)):
+        blocked.append("filing_date")
     if len(content_lengths) != 1 or content_lengths[0] <= 0:
         blocked.append("content_length")
     if len(accession_values) != 1:
@@ -615,29 +625,41 @@ def _source_artifact_mismatches(request: Mapping[str, Any], source_artifact: Map
         "dataset_version_hash",
         "authority_envelope_hash",
     )
-    mismatches = [field for field in fields if str(request.get(field) or "") != str(source_artifact.get(field) or "")]
+    hash_fields = {
+        "source_artifact_receipt_hash",
+        "source_artifact_ref_hash",
+        "accession_or_submission_id_hash",
+        "cik_or_filer_ref_hash",
+        "content_sha256",
+        "materialization_receipt_hash",
+        "dataset_version_hash",
+        "authority_envelope_hash",
+    }
+    mismatches = [
+        field
+        for field in fields
+        if _normalise_compare_value(request.get(field), hash_like=field in hash_fields)
+        != _normalise_compare_value(source_artifact.get(field), hash_like=field in hash_fields)
+    ]
     if int(request.get("content_length") or 0) != int(source_artifact.get("content_length") or 0):
         mismatches.append("content_length")
     return mismatches
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            key_text = str(key)
-            child_path = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text.lower() in FORBIDDEN_REQUEST_FIELDS:
-                found.append(child_path)
-            found.extend(_find_forbidden_nested_fields(nested, child_path))
-    elif isinstance(value, list):
-        for index, nested in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str):
-        text = value.strip()
-        if _RAW_URL_RE.search(text) or _LOCAL_PATH_RE.search(text):
-            found.append(prefix or "request_body")
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
+
+
+def _all_references_have_text(references: list[Mapping[str, Any]], keys: tuple[str, ...]) -> bool:
+    for reference in references:
+        if not any(str(reference.get(key) or "").strip() for key in keys):
+            return False
+    return True
+
+
+def _normalise_compare_value(value: Any, *, hash_like: bool) -> str:
+    text = str(value or "").strip()
+    return text.lower() if hash_like else text
 
 
 def _unique_reference_text(references: list[Mapping[str, Any]], keys: tuple[str, ...]) -> list[str]:
@@ -747,14 +769,7 @@ def _server_time() -> str:
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return any(_contains_forbidden_output_ref(item) for item in value.values())
-    if isinstance(value, list):
-        return any(_contains_forbidden_output_ref(item) for item in value)
-    if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith("http://") or text.startswith("https://"))
-    return False
+    return contains_forbidden_ref_tree(value)
 
 
 def _negative_invariants() -> dict[str, bool]:

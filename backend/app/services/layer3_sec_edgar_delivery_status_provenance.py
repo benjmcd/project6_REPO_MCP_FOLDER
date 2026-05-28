@@ -4,13 +4,13 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-import re
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.services import layer3_sec_edgar_real_company_corpus_validation
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -116,9 +116,6 @@ PROVENANCE_HASH_KEYS = (
     "handoff_export_prepare_receipt_hash",
     "record_hash",
 )
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
-
-
 def inspect_sec_edgar_real_company_delivery_status_provenance(
     fields: Mapping[str, Any],
     db: Session,
@@ -555,15 +552,29 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
             "SEC EDGAR delivery/status/provenance receipt is invalid or mismatched.",
             http_status=409,
         )
-    if receipt.get("delivery_status_provenance_receipt_hash") != suffix + receipt.get(
-        "delivery_status_provenance_receipt_hash", ""
-    )[24:]:
+    receipt_hash = str(receipt.get("delivery_status_provenance_receipt_hash") or "")
+    if receipt_hash[:24] != suffix or receipt_hash != _delivery_status_provenance_receipt_hash(receipt):
         _blocked(
             "sec_edgar_delivery_status_provenance_receipt_hash_mismatch",
             "SEC EDGAR delivery/status/provenance receipt hash is stale or mismatched.",
             http_status=409,
         )
     return receipt
+
+
+def _delivery_status_provenance_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    records = [record for record in receipt.get("delivery_status_records") or [] if isinstance(record, Mapping)]
+    return stable_hash(
+        {
+            "schema_id": SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "status_mode": STATUS_MODE,
+            "validation_receipt_hash": receipt.get("validation_receipt_hash"),
+            "record_hashes": [record.get("delivery_status_record_hash") for record in records],
+            "provenance_hash_matrix_hash": stable_hash(receipt.get("provenance_hash_matrix") or {}),
+            "diagnostics_hash": stable_hash(receipt.get("diagnostics") or {}),
+        }
+    )
 
 
 def _write_receipt(receipt: Mapping[str, Any]) -> None:
@@ -637,22 +648,7 @@ def _negative_invariants() -> dict[str, bool]:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text in FORBIDDEN_REQUEST_FIELDS:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(item, child))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(item, f"{prefix}[{index}]"))
-    elif isinstance(value, str):
-        text = value.strip()
-        if _is_forbidden_ref(text):
-            found.append(prefix or "request_body")
-    return sorted(set(found))
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -668,10 +664,9 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
 def _is_forbidden_ref(value: str) -> bool:
     text = value.strip().lower()
     return (
-        text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/"))
+        contains_forbidden_ref(value)
         or "aps-target-artifacts/" in text
         or "storage://" in text
-        or bool(_LOCAL_PATH_RE.match(value.strip()))
     )
 
 

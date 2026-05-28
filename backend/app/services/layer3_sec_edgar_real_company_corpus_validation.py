@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
-import re
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
@@ -23,6 +22,7 @@ from app.services import (
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_xbrl_sidecar,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -92,9 +92,6 @@ FORBIDDEN_REQUEST_FIELDS = {
     "fact_value",
     "raw_fact_value",
 }
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
-
-
 def validate_sec_edgar_real_company_corpus_product_path(
     fields: Mapping[str, Any],
     db: Session,
@@ -1067,7 +1064,12 @@ def _quality_not_evaluated(
 
 def _extension_fact_count(facts: list[Mapping[str, Any]]) -> int:
     standard_prefixes = {"dei", "ifrs-full", "us-gaap"}
-    return sum(1 for fact in facts if str(fact.get("namespace_prefix") or "").lower() not in standard_prefixes)
+    return sum(
+        1
+        for fact in facts
+        if (prefix := str(fact.get("namespace_prefix") or "").strip().lower())
+        and prefix not in standard_prefixes
+    )
 
 
 def _diagnostics(connector: Mapping[str, Any], records: list[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1252,13 +1254,31 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
             "SEC EDGAR real-company validation receipt is invalid or mismatched.",
             http_status=409,
         )
-    if receipt.get("validation_receipt_hash") != suffix + receipt.get("validation_receipt_hash", "")[24:]:
+    receipt_hash = str(receipt.get("validation_receipt_hash") or "")
+    if receipt_hash[:24] != suffix or receipt_hash != _validation_receipt_hash(receipt):
         _blocked(
             "sec_edgar_real_company_corpus_validation_receipt_hash_mismatch",
             "SEC EDGAR real-company validation receipt hash is stale or mismatched.",
             http_status=409,
         )
     return receipt
+
+
+def _validation_receipt_hash(receipt: Mapping[str, Any]) -> str:
+    records = [record for record in receipt.get("filing_validation_records") or [] if isinstance(record, Mapping)]
+    return stable_hash(
+        {
+            "schema_id": SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "validation_mode": VALIDATION_MODE,
+            "connector_receipt_hash": receipt.get("connector_receipt_hash"),
+            "company_matrix": list(receipt.get("company_matrix") or []),
+            "record_hashes": [record.get("record_hash") for record in records],
+            "matrix_hash": stable_hash(receipt.get("product_utility_matrix") or {}),
+            "quality_matrix_hash": stable_hash(receipt.get("product_quality_matrix") or {}),
+            "diagnostics_hash": stable_hash(receipt.get("diagnostics") or {}),
+        }
+    )
 
 
 def _write_receipt(receipt: Mapping[str, Any]) -> None:
@@ -1328,22 +1348,7 @@ def _negative_invariants() -> dict[str, bool]:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text in FORBIDDEN_REQUEST_FIELDS:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(item, child))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(item, f"{prefix}[{index}]"))
-    elif isinstance(value, str):
-        text = value.strip()
-        if text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/")) or _LOCAL_PATH_RE.match(text):
-            found.append(prefix or "request_body")
-    return sorted(set(found))
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -1352,10 +1357,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/")) or bool(
-            _LOCAL_PATH_RE.match(text)
-        )
+        return contains_forbidden_ref(value)
     return False
 
 
