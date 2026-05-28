@@ -58,6 +58,12 @@ Audit receipt projections and committed artifacts contain hashes and counts only
 
 The operator product surface remains the redacted inspection surface. Legacy in-surface `value_reveal_*` requests fail closed and direct operators to the sibling reveal endpoint. This prevents values from becoming a mode of the default product surface.
 
+## Architecture boundary note
+
+Live main implements reveal as a sibling endpoint/service, not as a value-returning mode of `operator_product_surface.py`. The operator product surface contains only a legacy compatibility detector for `value_reveal_*` request fields, and that path now checks `layer3_sec_edgar_arelle_value_reveal_enabled` first before failing closed to the sibling endpoint.
+
+The standalone service `backend/app/services/layer3_sec_edgar_arelle_value_reveal.py` owns the persisted audit receipt, idempotent replay, lineage verification, and redacted status projection. Keeping reveal out of the default surface limits the blast radius if product-surface projection logic changes. The trade-off is that operators must use a separate explicit reveal call and correlate the audit receipt back to the redacted product surface. That is an intentional governance choice, not a defect. It can be revisited later if defense-in-depth or operator workflow evidence points to a better sibling-vs-surface boundary.
+
 ## Non-admissions preserved
 
 - no default-on reveal
@@ -89,8 +95,8 @@ The operator product surface remains the redacted inspection surface. Legacy in-
 1. `sec_edgar_arelle_value_reveal_operator_exercise_v1`
    Validate the reveal workflow with operators against real persisted sidecar and dataset receipts before any deployment-wide reveal-flag enablement.
 
-2. `sec_edgar_arelle_default_on_matrix_coverage_remediation_v1`
-   Address the broader-corpus gate issues that rolled the Arelle cutover default back to off: oracle coverage, matrix readiness, and corpus-policy evidence.
+2. `sec_edgar_arelle_governance_remediation_followups_v1`
+   Re-run the default-on decision only after the remediation evidence is reviewed: sidecar selection, product-path readiness, completeness aggregation, and CompanyFacts oracle coverage must be explicit and current.
 
 3. `sec_edgar_arelle_value_reveal_default_enablement_gate_v1`
    Consider enabling the reveal flag only after audit-receipt review, redaction proof, operator utility evidence, and rollback posture are proven.
