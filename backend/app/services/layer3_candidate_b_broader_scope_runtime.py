@@ -115,7 +115,11 @@ def select_candidate_b_broader_scope_runtime(payload: Mapping[str, Any]) -> dict
         expected_audit_hash,
     )
     blocked.extend(persisted_audit_blocks)
-    blocked.extend(_validate_inline_readiness_audit_binding(readiness_audit, expected_audit_id, expected_audit_hash))
+    inline_audit_binding_blocks = _validate_inline_readiness_audit_binding(
+        readiness_audit,
+        expected_audit_id,
+        expected_audit_hash,
+    )
 
     audit_summary = _validate_readiness_audit(
         persisted_audit,
@@ -182,6 +186,8 @@ def select_candidate_b_broader_scope_runtime(payload: Mapping[str, Any]) -> dict
             "readiness_audit_id": expected_audit_id,
             "readiness_audit_hash": expected_audit_hash,
             "server_issued_receipt_required": True,
+            "inline_readiness_audit_required": False,
+            "inline_readiness_audit_binding_blocks": inline_audit_binding_blocks,
             "binding_verified": not audit_summary["blocked_reasons"] and not persisted_audit_blocks,
         },
         "selected_scope_classes": selected_scope_classes,
@@ -260,8 +266,10 @@ def _validate_inline_readiness_audit_binding(
     expected_audit_id: str,
     expected_audit_hash: str,
 ) -> list[dict[str, Any]]:
+    if not value:
+        return []
     if not isinstance(value, Mapping):
-        return [_reason("candidate_b_broader_scope_runtime_ready_audit_missing")]
+        return [_reason("candidate_b_broader_scope_runtime_ready_audit_inline_invalid")]
     blocked: list[dict[str, Any]] = []
     for field, expected in (("audit_id", expected_audit_id), ("audit_hash", expected_audit_hash)):
         if value.get(field) != expected:

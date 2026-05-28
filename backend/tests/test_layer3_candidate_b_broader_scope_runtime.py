@@ -132,6 +132,22 @@ def test_candidate_b_broader_scope_runtime_records_redacted_selection_receipt(cl
     assert receipt["raw_url_exposed"] is False
 
 
+def test_candidate_b_broader_scope_runtime_uses_persisted_audit_without_inline_body(client: TestClient) -> None:
+    readiness_audit = _ready_audit(client)
+    payload = _runtime_payload(readiness_audit)
+    del payload["readiness_audit"]
+
+    response = client.post(RUNTIME_ENDPOINT, json=payload)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["status"] == "selected"
+    assert body["readiness_audit_binding"]["server_issued_receipt_required"] is True
+    assert body["readiness_audit_binding"]["inline_readiness_audit_required"] is False
+    assert body["readiness_audit_binding"]["inline_readiness_audit_binding_blocks"] == []
+    assert body["readiness_audit_binding"]["binding_verified"] is True
+
+
 def test_candidate_b_broader_scope_runtime_fails_closed_without_ready_audit(client: TestClient) -> None:
     response = client.post(
         RUNTIME_ENDPOINT,
@@ -157,7 +173,7 @@ def test_candidate_b_broader_scope_runtime_fails_closed_without_ready_audit(clie
     assert body["default_scope_expansion_enabled"] is False
     assert body["selector_mutation_performed"] is False
     codes = {item["code"] for item in body["blocked_reasons"]}
-    assert "candidate_b_broader_scope_runtime_ready_audit_field_mismatch" in codes
+    assert "candidate_b_broader_scope_runtime_ready_audit_missing" in codes
     assert "candidate_b_broader_scope_runtime_server_ready_audit_receipt_unavailable" in codes
 
 
@@ -240,8 +256,12 @@ def test_candidate_b_broader_scope_runtime_rejects_stale_hash_and_unproposed_cla
     assert body["default_scope_expansion_enabled"] is False
     codes = {item["code"] for item in body["blocked_reasons"]}
     assert "candidate_b_broader_scope_runtime_server_ready_audit_receipt_unavailable" in codes
-    assert "candidate_b_broader_scope_runtime_ready_audit_field_mismatch" in codes
-    assert "candidate_b_broader_scope_runtime_stale_audit_hash" in codes
+    assert "candidate_b_broader_scope_runtime_ready_audit_missing" in codes
+    inline_codes = {
+        item["code"] for item in body["readiness_audit_binding"]["inline_readiness_audit_binding_blocks"]
+    }
+    assert "candidate_b_broader_scope_runtime_ready_audit_field_mismatch" in inline_codes
+    assert "candidate_b_broader_scope_runtime_stale_audit_hash" in inline_codes
 
 
 def test_candidate_b_broader_scope_runtime_rejects_unproposed_class_from_server_audit(client: TestClient) -> None:
