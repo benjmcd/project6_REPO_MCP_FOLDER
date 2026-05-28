@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-import re
 from typing import Any, Mapping
 
 from sqlalchemy.orm import Session
@@ -12,6 +11,7 @@ from app.services import (
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_source_acquisition,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -91,9 +91,6 @@ PROOF_HASH_KEYS = (
     "negative_invariants_hash",
     "operator_confirmation",
 )
-
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
-
 
 def record_sec_edgar_text_table_live_source_artifact_downstream_layer3_proof(
     fields: Mapping[str, Any],
@@ -570,18 +567,7 @@ def _require_exact(fields: Mapping[str, Any], key: str, expected: str) -> None:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text in FORBIDDEN_REQUEST_FIELDS and item is not None:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(item, child))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(item, f"{prefix}[{index}]"))
-    return sorted(set(found))
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _negative_invariants() -> dict[str, bool]:
@@ -626,9 +612,8 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
 def _is_forbidden_ref(value: str) -> bool:
     text = value.strip().lower()
     return (
-        text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/"))
+        contains_forbidden_ref(value)
         or "aps-target-artifacts/" in text
-        or bool(_LOCAL_PATH_RE.match(value.strip()))
     )
 
 

@@ -13,6 +13,7 @@ from app.services import (
     layer3_sec_edgar_live_source_artifact,
     layer3_sec_edgar_real_filing_acquisition_connector,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -103,7 +104,6 @@ _TEXT_RE = re.compile(r"<TEXT>(?P<text>.*?)</TEXT>", re.IGNORECASE | re.DOTALL)
 _TAG_RE = re.compile(r"<([A-Z0-9-]+)>\s*([^\r\n<]*)", re.IGNORECASE)
 _TABLE_RE = re.compile(r"<table\b(?P<body>.*?)</table>", re.IGNORECASE | re.DOTALL)
 _IX_RE = re.compile(r"<\s*(ix:[A-Za-z0-9_.:-]+)\b[^>]*>", re.IGNORECASE)
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 
 
 def parse_sec_edgar_html_inline_xbrl_source_family(fields: Mapping[str, Any]) -> dict[str, Any]:
@@ -334,6 +334,7 @@ def _parse_complete_submission_text(text: str, *, connector_example: Mapping[str
             "text_length": len(doc_text),
             "source_start": match.start(),
             "source_end": match.end(),
+            "source_end_semantics": "exclusive",
             "source_order_preserved": True,
             "document_family": family,
             "primary_document_match": filename_hash == primary_document_hash,
@@ -437,6 +438,7 @@ def _table_inventory(text: str, *, primary_document_index: int) -> list[dict[str
                 "table_candidate_hash": _sha256_text(table_text),
                 "source_start": match.start(),
                 "source_end": match.end(),
+                "source_end_semantics": "exclusive",
                 "source_order_preserved": True,
                 "dataset_version_materialized": False,
             }
@@ -455,6 +457,7 @@ def _inline_xbrl_marker_inventory(text: str, *, primary_document_index: int) -> 
                 "marker_hash": _sha256_text(match.group(0)),
                 "source_start": match.start(),
                 "source_end": match.end(),
+                "source_end_semantics": "exclusive",
                 "source_order_preserved": True,
                 "xbrl_fact_authority_created": False,
             }
@@ -679,11 +682,26 @@ def _read_verified_receipt(receipt_id: str) -> dict[str, Any]:
 def _write_receipt(receipt: Mapping[str, Any]) -> None:
     target = _receipts_dir() / f"{receipt['parser_receipt_id']}.json"
     if target.exists():
-        _read_verified_receipt(target.stem)
+        existing = _read_verified_receipt(target.stem)
+        if existing.get("parser_receipt_hash") != receipt.get("parser_receipt_hash"):
+            _blocked(
+                "sec_edgar_html_inline_xbrl_parser_receipt_write_race_conflict",
+                "Concurrent SEC EDGAR HTML/iXBRL parser receipt write produced a conflicting authority.",
+                http_status=409,
+            )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_verified_receipt(target.stem)
+        if existing.get("parser_receipt_hash") != receipt.get("parser_receipt_hash"):
+            _blocked(
+                "sec_edgar_html_inline_xbrl_parser_receipt_write_race_conflict",
+                "Concurrent SEC EDGAR HTML/iXBRL parser receipt write produced a conflicting authority.",
+                http_status=409,
+            )
 
 
 def _read_request_binding(request_id: str) -> dict[str, Any] | None:
@@ -713,7 +731,7 @@ def _write_request_binding(request_id: str, parser_basis_hash: str, receipt_id: 
     }
     if target.exists():
         existing = _read_request_binding(request_id) or {}
-        if existing.get("parser_basis_hash") != parser_basis_hash:
+        if existing.get("parser_basis_hash") != parser_basis_hash or existing.get("parser_receipt_id") != receipt_id:
             _blocked(
                 "sec_edgar_html_inline_xbrl_parser_request_binding_conflict",
                 "SEC EDGAR HTML/iXBRL parser request binding conflicts with existing authority.",
@@ -721,8 +739,17 @@ def _write_request_binding(request_id: str, parser_basis_hash: str, receipt_id: 
             )
         return
     target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    try:
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_request_binding(request_id) or {}
+        if existing.get("parser_basis_hash") != parser_basis_hash or existing.get("parser_receipt_id") != receipt_id:
+            _blocked(
+                "sec_edgar_html_inline_xbrl_parser_request_binding_write_race_conflict",
+                "Concurrent SEC EDGAR HTML/iXBRL parser request binding write produced a conflicting authority.",
+                http_status=409,
+            )
 
 
 def _source_artifact(receipt: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -758,22 +785,7 @@ def _decode_content(content: bytes) -> tuple[str, str]:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text in FORBIDDEN_REQUEST_FIELDS and item is not None:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(item, child))
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(item, f"{prefix}[{index}]"))
-    elif isinstance(value, str):
-        text = value.strip()
-        if text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/")) or _LOCAL_PATH_RE.match(text):
-            found.append(prefix or "request_body")
-    return sorted(set(found))
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _negative_invariants() -> dict[str, bool]:
@@ -811,10 +823,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return text.startswith(("http://", "https://", "file://", "\\\\", "/tmp/", "/var/", "/home/")) or bool(
-            _LOCAL_PATH_RE.match(text)
-        )
+        return contains_forbidden_ref(value)
     return False
 
 

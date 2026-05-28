@@ -13,6 +13,7 @@ from app.services import (
     layer3_sec_edgar_html_inline_xbrl_fact_material_bridge,
     layer3_sec_xbrl_sidecar,
 )
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -109,10 +110,6 @@ _FORBIDDEN_INPUT_KEYS = {
     "frontend_authority",
     "full_mockup",
 }
-_RAW_URL_RE = re.compile(r"\b(?:https?|file)://", re.IGNORECASE)
-_LOCAL_PATH_RE = re.compile(r"(?:[A-Za-z]:\\|\\\\|/tmp/|/var/|/home/)", re.IGNORECASE)
-
-
 def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
     fields: Mapping[str, Any],
 ) -> dict[str, Any]:
@@ -149,7 +146,12 @@ def classify_sec_edgar_html_inline_xbrl_facts_to_statement_candidates(
             http_status=409,
             blocked_fields=["fact_inventory_hash"],
         )
-    if stable_hash(facts) != str(fact_receipt.get("fact_inventory_hash") or ""):
+    expected_fact_inventory_projection_hash = str(
+        fact_receipt.get("statement_classification_fact_inventory_hash")
+        or fact_receipt.get("fact_inventory_hash")
+        or ""
+    )
+    if stable_hash(facts) != expected_fact_inventory_projection_hash:
         _blocked(
             "sec_edgar_html_inline_xbrl_fact_statement_classification_fact_inventory_hash_mismatch",
             "SEC EDGAR HTML/iXBRL fact statement classification requires fact inventory hash parity.",
@@ -642,15 +644,18 @@ def _semantic_profile(
         taxonomy_class = "unknown_taxonomy"
     concept_family = _concept_family(local_name, role)
     standard_taxonomy = taxonomy_class.startswith("standard_")
+    comparability_scope = "standard_taxonomy_profile" if standard_taxonomy else "issuer_extension_unmapped"
+    comparability_key = f"{taxonomy_class}:{role}:{concept_family}" if standard_taxonomy else "company_extension_unmapped"
+    if taxonomy_class == "unknown_taxonomy":
+        comparability_scope = "unknown_taxonomy_unmapped"
+        comparability_key = "unknown_taxonomy_unmapped"
     return {
         "semantic_profile_version": SEMANTIC_PROFILE_VERSION,
         "taxonomy_class": taxonomy_class,
         "concept_family": concept_family,
         "statement_candidate_role": role,
-        "comparability_scope": "standard_taxonomy_profile" if standard_taxonomy else "issuer_extension_unmapped",
-        "comparability_key": (
-            f"{taxonomy_class}:{role}:{concept_family}" if standard_taxonomy else "company_extension_unmapped"
-        ),
+        "comparability_scope": comparability_scope,
+        "comparability_key": comparability_key,
         "period_unit_context_dimension_profile": _period_unit_context_dimension_profile(fact),
         "statement_role_quality_profile": _statement_role_quality_profile(role, basis=basis, confidence=confidence),
         "extension_taxonomy_retention_profile": _extension_taxonomy_retention_profile(
@@ -982,6 +987,12 @@ def _period_unit_context_dimension_profile(fact: Mapping[str, Any]) -> dict[str,
     unit_ref_hash_present = bool(fact.get("unit_ref_hash"))
     decimals_or_precision_present = bool(str(fact.get("decimals_or_precision") or "").strip())
     scale_or_format_present = bool(str(fact.get("scale_or_format") or "").strip())
+    period = fact.get("period") if isinstance(fact.get("period"), Mapping) else {}
+    unit = fact.get("unit") if isinstance(fact.get("unit"), Mapping) else {}
+    dimensions = fact.get("dimensions") if isinstance(fact.get("dimensions"), Mapping) else {}
+    period_resolved = period.get("resolved") is True
+    unit_resolved = unit.get("resolved") is True
+    dimension_member_resolved = dimensions.get("resolved") is True
     return {
         "period_unit_context_dimension_profile_version": PERIOD_UNIT_CONTEXT_DIMENSION_PROFILE_VERSION,
         "context_ref_hash_present": context_ref_hash_present,
@@ -989,14 +1000,20 @@ def _period_unit_context_dimension_profile(fact: Mapping[str, Any]) -> dict[str,
         "decimals_or_precision_present": decimals_or_precision_present,
         "scale_or_format_present": scale_or_format_present,
         "period_profile_scope": (
-            "context_ref_hash_bound_period_not_resolved" if context_ref_hash_present else "context_ref_missing"
+            "arelle_resolved_period" if period_resolved else (
+                "context_ref_hash_bound_period_not_resolved" if context_ref_hash_present else "context_ref_missing"
+            )
         ),
         "context_profile_scope": "context_ref_hash_bound" if context_ref_hash_present else "context_ref_missing",
-        "unit_profile_scope": "unit_ref_hash_bound" if unit_ref_hash_present else "unit_ref_missing_or_not_required",
-        "dimension_profile_scope": "dimension_members_not_resolved",
-        "context_period_resolution_performed": False,
-        "dimension_member_resolution_performed": False,
-        "unit_normalization_performed": False,
+        "unit_profile_scope": "arelle_resolved_unit" if unit_resolved else (
+            "unit_ref_hash_bound" if unit_ref_hash_present else "unit_ref_missing_or_not_required"
+        ),
+        "dimension_profile_scope": (
+            "arelle_resolved_dimensions" if dimension_member_resolved else "dimension_members_not_resolved"
+        ),
+        "context_period_resolution_performed": period_resolved,
+        "dimension_member_resolution_performed": dimension_member_resolved,
+        "unit_normalization_performed": unit_resolved,
         "final_period_unit_context_dimension_semantics_claimed": False,
     }
 
@@ -1010,6 +1027,11 @@ def _concept_family(local_name: str, role: str) -> str:
     if role == "unknown_or_unclassified":
         return "unknown"
     family_rules = (
+        ("operating_cash_flow", ("operatingactivities", "providedbyusedinoperating")),
+        ("investing_cash_flow", ("investingactivities", "providedbyusedininvesting")),
+        ("financing_cash_flow", ("financingactivities", "providedbyusedinfinancing")),
+        ("net_cash_flow", ("netcash", "cashflow")),
+        ("comprehensive_income", ("comprehensiveincome", "othercomprehensive")),
         ("cash", ("cashandcashequivalents", "cash")),
         ("assets", ("asset",)),
         ("liabilities", ("liabilit", "payable")),
@@ -1018,11 +1040,6 @@ def _concept_family(local_name: str, role: str) -> str:
         ("revenue", ("revenue", "sales")),
         ("expense_or_cost", ("expense", "costof", "cost")),
         ("income_or_loss", ("income", "loss", "earnings", "profit")),
-        ("operating_cash_flow", ("operatingactivities", "providedbyusedinoperating")),
-        ("investing_cash_flow", ("investingactivities", "providedbyusedininvesting")),
-        ("financing_cash_flow", ("financingactivities", "providedbyusedinfinancing")),
-        ("net_cash_flow", ("netcash", "cashflow")),
-        ("comprehensive_income", ("comprehensiveincome", "othercomprehensive")),
         ("retained_earnings", ("retainedearnings",)),
     )
     for family, tokens in family_rules:
@@ -1501,20 +1518,7 @@ def _write_request_binding(request_id: str, basis_hash: str, receipt_id: str) ->
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            key_text = str(key)
-            child = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text.lower() in _FORBIDDEN_INPUT_KEYS:
-                found.append(child)
-            found.extend(_find_forbidden_nested_fields(nested, child))
-    elif isinstance(value, list):
-        for index, nested in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str) and (_RAW_URL_RE.search(value) or _LOCAL_PATH_RE.search(value)):
-        found.append(prefix or "request_body")
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=_FORBIDDEN_INPUT_KEYS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -1523,8 +1527,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith(("http://", "https://", "file://", "\\\\")))
+        return contains_forbidden_ref(value)
     return False
 
 

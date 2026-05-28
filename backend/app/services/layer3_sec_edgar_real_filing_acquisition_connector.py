@@ -9,6 +9,7 @@ from typing import Any, Mapping
 
 from app.core.config import settings
 from app.services import layer3_sec_edgar_live_source_artifact
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref, find_forbidden_ref_paths
 from app.services.layer3_utils import stable_hash
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
@@ -137,8 +138,6 @@ FORBIDDEN_REQUEST_FIELDS = {
     "runtime_db_write",
     "storage_dir",
 }
-_RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
 _CIK_RE = re.compile(r"^\d{1,10}$")
 _FORM_TYPE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./-]{0,31}$")
 _RECEIPT_ID_RE = re.compile(r"^sec-edgar-real-filing-acquisition-connector-[a-f0-9]{24}-[a-f0-9]{24}$")
@@ -883,6 +882,13 @@ def _write_receipt(receipt: Mapping[str, Any]) -> None:
         with target.open("x", encoding="utf-8") as handle:
             handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
     except FileExistsError:
+        existing = _read_verified_receipt(str(receipt["connector_receipt_id"]))
+        if existing.get("connector_receipt_hash") != receipt.get("connector_receipt_hash"):
+            _blocked(
+                "sec_edgar_real_filing_acquisition_connector_receipt_write_race_conflict",
+                "Concurrent SEC EDGAR real-filing acquisition connector receipt write produced a conflicting authority.",
+                http_status=409,
+            )
         return
     except OSError as exc:
         _blocked(
@@ -932,6 +938,13 @@ def _write_request_binding(request_id: str, example_set_hash: str, receipt_id: s
         with target.open("x", encoding="utf-8") as handle:
             handle.write(json.dumps(binding, sort_keys=True, indent=2) + "\n")
     except FileExistsError:
+        existing = _read_request_binding(request_id) or {}
+        if existing.get("example_set_hash") != example_set_hash or existing.get("connector_receipt_id") != receipt_id:
+            _blocked(
+                "sec_edgar_real_filing_acquisition_connector_request_binding_write_race_conflict",
+                "Concurrent SEC EDGAR real-filing acquisition connector request binding write produced a conflicting authority.",
+                http_status=409,
+            )
         return
 
 
@@ -961,22 +974,7 @@ def _request_bindings_dir() -> Path:
 
 
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
-    found: list[str] = []
-    if isinstance(value, Mapping):
-        for key, nested in value.items():
-            key_text = str(key)
-            child_path = f"{prefix}.{key_text}" if prefix else key_text
-            if key_text.lower() in FORBIDDEN_REQUEST_FIELDS:
-                found.append(child_path)
-            found.extend(_find_forbidden_nested_fields(nested, child_path))
-    elif isinstance(value, list):
-        for index, nested in enumerate(value):
-            found.extend(_find_forbidden_nested_fields(nested, f"{prefix}[{index}]"))
-    elif isinstance(value, str):
-        text = value.strip()
-        if _RAW_URL_RE.search(text) or _LOCAL_PATH_RE.search(text):
-            found.append(prefix or "request_body")
-    return found
+    return find_forbidden_ref_paths(value, forbidden_keys=FORBIDDEN_REQUEST_FIELDS, prefix=prefix)
 
 
 def _contains_forbidden_output_ref(value: Any) -> bool:
@@ -985,8 +983,7 @@ def _contains_forbidden_output_ref(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_forbidden_output_ref(item) for item in value)
     if isinstance(value, str):
-        text = value.strip()
-        return bool(_LOCAL_PATH_RE.search(text) or text.startswith("http://") or text.startswith("https://"))
+        return contains_forbidden_ref(value)
     return False
 
 

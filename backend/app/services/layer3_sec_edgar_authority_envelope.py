@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
@@ -16,6 +15,7 @@ from app.models.models import (
     uuid_str,
 )
 from app.services.layer3_aps_source_family import source_family_for_parser
+from app.services.layer3_sec_edgar_ref_safety import contains_forbidden_ref
 from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 SCHEMA_ID = "layer3.sec_edgar_text_table_authority_envelope_validation.v1"
@@ -44,10 +44,6 @@ _FORBIDDEN_INPUT_KEYS = {
     "connector_credentials",
     "browser_storage",
 }
-_RAW_URL_RE = re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://")
-_LOCAL_PATH_RE = re.compile(r"^[a-zA-Z]:[\\/]")
-
-
 def validate_sec_edgar_text_table_authority_envelope(
     fields: Mapping[str, Any],
     db: Session,
@@ -401,7 +397,7 @@ def _reject_forbidden_input_authority(value: Any, path: str = "") -> None:
     elif isinstance(value, list):
         for index, nested in enumerate(value):
             _reject_forbidden_input_authority(nested, f"{path}[{index}]")
-    elif isinstance(value, str) and (_RAW_URL_RE.search(value) or _LOCAL_PATH_RE.search(value)):
+    elif isinstance(value, str) and contains_forbidden_ref(value):
         raise Layer3WorkbenchError(
             "sec_edgar_text_table_authority_forbidden_input_ref",
             "SEC EDGAR text-table authority envelope validation rejects caller-supplied raw paths and URLs.",
@@ -431,6 +427,6 @@ def _scan_raw_authority(value: Any) -> bool:
         return any(_scan_raw_authority(nested) for nested in value)
     elif isinstance(value, str):
         text = value.strip()
-        if _RAW_URL_RE.search(text) or _LOCAL_PATH_RE.search(text):
+        if contains_forbidden_ref(text):
             return True
     return False
