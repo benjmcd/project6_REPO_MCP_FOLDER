@@ -6,11 +6,11 @@
 
 ## Decision Boundary
 
-This slice made the already-admitted Arelle resolved-fact authority path the default SEC HTML/iXBRL fact-material bridge input. The broader real-corpus gate in `1266-sec-xbrl-real-product-runner.md` has since rolled that default back to `false` after a live 32-filing gate failure. The sidecar path remains available behind the explicit flag.
+This slice makes the already-admitted Arelle resolved-fact authority path the default SEC HTML/iXBRL fact-material bridge input. The broader real-corpus gate in `1266-sec-xbrl-real-product-runner.md` first rolled that default back to `false` after a live 32-filing gate failure, then restored it to `true` only after the same broader gate passed with corrected gate mechanics and redacted CompanyFacts evidence. The regex path remains available as an explicit rollback flag.
 
 The change is deliberately narrow:
 
-- `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` now defaults to `false` after the broader gate rollback.
+- `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED` now defaults to `true` after the broader gate pass.
 - With the flag explicitly enabled, the bridge requires an explicit persisted Arelle sidecar receipt id and hash.
 - The bridge still never invokes Arelle synchronously.
 - Missing, stale, blocked, or lineage-mismatched sidecars fail closed.
@@ -23,14 +23,19 @@ Report:
 
 `diagnostics/assessment/sec-xbrl-default-on-runtime-report.json`
 
-Decision: `default_on_runtime_blocked`.
+Decision: `default_on_runtime_enabled`.
 
-Rollback reason:
+Broader gate evidence:
 
 - broader live gate target: `sec_edgar_real_corpus_product_path_runner_v1`
 - live gate corpus: 32 filings, 16 issuer hashes, required forms present, including `10-K/A`
-- live gate failure: 30 rows blocked with `arelle_nonzero_exit`; 2 rows diagnosed as no-inline-marker rows
-- resulting default decision: `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED=false`
+- live gate decision: `real_corpus_default_on_validated`
+- Arelle resolved facts: `52,558`
+- independent raw-inline facts: `52,558`
+- completeness guard failures: `0`
+- CompanyFacts effective-value correctness: `9,040/9,131`, match rate `0.99`
+- no unexpected blocked/degraded records; 2 no-inline-marker filings are explicitly diagnosed
+- resulting default decision: `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED=true`
 
 Inherited real-corpus gate evidence remains:
 
@@ -44,7 +49,7 @@ Inherited real-corpus gate evidence remains:
 
 Focused runtime proof retained behind the explicit flag:
 
-- local deployment defaults no longer admit the Arelle cutover default after the broader gate rollback.
+- local deployment defaults admit the Arelle cutover only after the broader gate pass.
 - legacy regex bridge behavior remains available with the flag explicitly disabled.
 - default-on bridge still blocks without a persisted sidecar and performs no regex fallback.
 - sidecar lineage mismatch still blocks.
@@ -71,11 +76,11 @@ Rollback restores the regex fact-authority bridge path without deleting the Arel
 
 ## Next Slice
 
-`sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1`
+`sec_edgar_operator_surface_gated_value_reveal_v1`
 
 Scope:
 
-- diagnose and remediate the `arelle_nonzero_exit` path on the retained broader corpus;
-- keep the default off until the broader gate passes;
-- rerun the same gate and only restore default-on on a real PASS;
-- preserve operator value reveal as explicitly gated.
+- add the explicit governed operator-surface value reveal path;
+- keep values hidden from status/default surfaces;
+- preserve audit/redaction and rollback boundaries;
+- preserve no final financial-statement semantics and no cross-company comparability claims.

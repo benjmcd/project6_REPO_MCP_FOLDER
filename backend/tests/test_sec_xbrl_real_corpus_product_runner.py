@@ -91,6 +91,9 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
                 "companyfacts_effective_value_match_count": 99,
                 "companyfacts_effective_value_compared_count": 100,
                 "companyfacts_effective_value_mismatch_count": 1,
+                "taxonomy_package_count": 7,
+                "taxonomy_package_invalid_count": 6,
+                "taxonomy_package_invalid_hashes": ["1" * 64],
             }
             for index in range(count)
         ]
@@ -196,6 +199,8 @@ def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_
     assert report["summary"]["required_forms_present"] is True
     assert report["summary"]["records_with_arelle_sidecar_output"] == 32
     assert report["summary"]["companyfacts_value_match_rate"] == 0.99
+    assert report["summary"]["filings_with_invalid_taxonomy_package_entries"] == 32
+    assert report["summary"]["taxonomy_package_invalid_count"] == 192
     assert report["runtime_default_decision"]["resulting_default_enabled"] is True
     assert report["next_slice"] == "sec_edgar_operator_surface_gated_value_reveal_v1"
 
@@ -263,3 +268,99 @@ def test_sec_xbrl_real_corpus_product_runner_rolls_default_decision_false_on_fai
     assert report["runtime_default_decision"]["resulting_default_enabled"] is False
     reasons = {item["reason"] for item in report["blocking_reasons"]}
     assert "companyfacts_effective_value_correctness_not_proven_on_broader_corpus" in reasons
+
+
+def test_sec_xbrl_real_corpus_product_runner_reads_independent_tally_from_sidecar_diagnostics(monkeypatch) -> None:
+    module = _runner_module()
+    observed_identity = {}
+    monkeypatch.setattr(module, "_connector_receipt", lambda _validation: {})
+    monkeypatch.setattr(
+        module,
+        "_source_identities_for_validation",
+        lambda *_args, **_kwargs: {
+            "example-1": {"cik_or_filer_ref": "123456", "accession_or_submission_id": "0000123456-26-000001"}
+        },
+    )
+
+    def companyfacts_count(**kwargs):
+        observed_identity.update(kwargs)
+        return {"oracle_used": True, "confidence": "primary_companyfacts_us_gaap_dei_accession_scope", "fact_count": 2}
+
+    monkeypatch.setattr(module, "_companyfacts_count", companyfacts_count)
+    monkeypatch.setattr(module, "_companyfacts_value_match", lambda **_kwargs: {"match_count": None, "compared_count": 0, "match_rate": None})
+    monkeypatch.setattr(
+        module,
+        "_sidecar_receipt_by_hash",
+        lambda _hash: {
+            "resolved_fact_count": 12,
+            "coverage": {"resolved_fact_count": 12},
+            "diagnostics": {
+                "independent_inline_fact_count": 12,
+                "independent_inline_fact_count_reconciled": True,
+                "independent_inline_fact_document_count": 2,
+                "independent_inline_fact_scanned_document_count": 3,
+                "independent_inline_fact_document_tally": [
+                    {"document_index": 1, "inline_fact_count": 5},
+                    {"document_index": 2, "inline_fact_count": 7},
+                ],
+                "taxonomy_package_count": 7,
+                "taxonomy_package_invalid_count": 6,
+                "taxonomy_package_invalid_hashes": ["1" * 64],
+            },
+        },
+    )
+    validation = {
+        "filing_validation_records": [
+            {
+                "example_id": "example-1",
+                "record_hash": "a" * 64,
+                "form_type": "10-K",
+                "cik_hash": "b" * 64,
+                "supported_degraded_blocked": "supported",
+                "quality_evidence": {
+                    "quality_metrics": {
+                        "arelle_sidecar_receipt_hash": "c" * 64,
+                        "resolved_fact_count": 12,
+                    }
+                },
+            }
+        ]
+    }
+
+    row = module._per_filing_projection(validation, user_agent="Layer3 diagnostics contact@example.com")[0]
+
+    assert row["independent_inline_fact_count"] == 12
+    assert row["completeness_guard"] == "passed"
+    assert row["multi_document_inline_document_count"] == 2
+    assert row["multi_document_scanned_document_count"] == 3
+    assert row["taxonomy_package_invalid_count"] == 6
+    assert row["companyfacts_oracle_used"] is True
+    assert observed_identity["cik"] == "123456"
+    assert observed_identity["accession"] == "0000123456-26-000001"
+
+
+def test_sec_xbrl_real_corpus_product_runner_allows_delivery_block_for_no_inline_records() -> None:
+    module = _runner_module()
+
+    assert module._delivery_block_allowed_for_no_inline_records(
+        {
+            "supported_unblocked_or_no_inline_count": 8,
+            "filing_count": 8,
+            "records_with_handoff_export_prepare": 6,
+            "supported_count": 6,
+            "blocked_or_degraded_count": 2,
+            "failure_reasons": {
+                "sec_edgar_html_inline_xbrl_fact_authority_no_inline_xbrl_markers": 2,
+            },
+        },
+        ["sec_edgar_delivery_status_provenance_missing_handoff_export_prepare_output"],
+    )
+
+
+def test_sec_xbrl_real_corpus_product_runner_default_action_reflects_gate_effect() -> None:
+    module = _runner_module()
+
+    assert module._runtime_default_action(pass_gate=True, current_default=False) == "set_default_true"
+    assert module._runtime_default_action(pass_gate=True, current_default=True) == "keep_default_true"
+    assert module._runtime_default_action(pass_gate=False, current_default=True) == "roll_back_default_false"
+    assert module._runtime_default_action(pass_gate=False, current_default=False) == "keep_default_false"
