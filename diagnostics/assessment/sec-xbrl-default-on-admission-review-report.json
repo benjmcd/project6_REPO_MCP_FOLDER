@@ -1,5 +1,18 @@
 {
-  "blocking_reasons": [],
+  "blocking_reasons": [
+    {
+      "criterion": "post_1966_governance_followups_restate_default_on_evidence",
+      "evidence": {
+        "config_default_off": true,
+        "governance_doc": "next_milestone_plans/Layer3_planning_docs/1261-sec-xbrl-arelle-governance-remediation.md",
+        "requires_companyfacts_restatement": true,
+        "requires_completeness_restatement": true,
+        "requires_product_path_readiness_restatement": true,
+        "requires_sidecar_selection_restatement": true
+      },
+      "reason": "admission_review_post_1966_governance_followup_required"
+    }
+  ],
   "criteria": [
     {
       "blocked_reason": null,
@@ -27,6 +40,19 @@
         }
       },
       "state": "passed"
+    },
+    {
+      "blocked_reason": "admission_review_post_1966_governance_followup_required",
+      "criterion": "post_1966_governance_followups_restate_default_on_evidence",
+      "evidence": {
+        "config_default_off": true,
+        "governance_doc": "next_milestone_plans/Layer3_planning_docs/1261-sec-xbrl-arelle-governance-remediation.md",
+        "requires_companyfacts_restatement": true,
+        "requires_completeness_restatement": true,
+        "requires_product_path_readiness_restatement": true,
+        "requires_sidecar_selection_restatement": true
+      },
+      "state": "blocked"
     },
     {
       "blocked_reason": null,
@@ -123,9 +149,9 @@
       "state": "passed"
     }
   ],
-  "decision": "admission_review_passed",
-  "headline": "Default-on Arelle cutover passed admission review as a candidate for the runtime-default slice.",
-  "next_slice": "sec_edgar_arelle_fact_authority_default_on_runtime_v1",
+  "decision": "admission_review_requires_post_1966_governance_followup",
+  "headline": "Default-on Arelle admission review is blocked: admission_review_post_1966_governance_followup_required.",
+  "next_slice": "sec_edgar_arelle_governance_remediation_followups_v1",
   "non_goals_preserved": {
     "bridge_gate_b_product_package_ui_mutated": false,
     "candidate_b_sec_routing_performed": false,
@@ -134,9 +160,10 @@
     "operator_value_reveal_default_enabled": false,
     "rag_vector_model_provider_auth_behavior_added": false,
     "runtime_default_changed_by_admission_review": false,
-    "runtime_default_enabled_by_follow_on_runtime_slice": false
+    "runtime_default_enabled_by_follow_on_runtime_slice": false,
+    "runtime_default_on_currently_admitted": false
   },
-  "ready_for_default_on_runtime_slice": true,
+  "ready_for_default_on_runtime_slice": false,
   "rollback_criteria": [
     "missing or stale Arelle sidecar receipt blocks; no regex fallback while cutover is enabled",
     "sidecar, parser, source artifact, and regex authority lineage mismatch blocks",

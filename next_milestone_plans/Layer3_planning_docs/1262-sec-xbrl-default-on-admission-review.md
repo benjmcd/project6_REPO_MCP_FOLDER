@@ -31,16 +31,17 @@ The Arelle fact-authority path is now admitted as a default-on candidate by the 
 
 `diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json`
 
-Decision on the admission-review slice: `admission_review_passed`.
+Decision on the admission-review slice after PR #1966 governance remediation:
+`admission_review_requires_post_1966_governance_followup`.
 
-The runtime default remains off in this slice. The report verifies the default-on candidate gate, default-off configuration, fail-closed rollback signals, focused fail-closed tests, operator value reveal gating, and standing non-admissions.
+The runtime default remains off. The report retains the Arelle candidate evidence, but it no longer marks the default-on runtime slice ready while `1261-sec-xbrl-arelle-governance-remediation.md` requires another default-on attempt to first restate the sidecar selection, product-path readiness, completeness aggregation, CompanyFacts oracle coverage and mismatch framing, no-silent-regex-fallback, and redaction evidence.
 
-On the later default-on runtime branch, regenerating the same report records `admission_review_superseded_by_default_on_runtime` instead of replaying a stale pre-cutover PASS packet. That regenerated posture records `flag_default_true: true` and points forward to the runtime/value-reveal path while preserving the admission evidence.
+The Arelle path remains implemented and available behind explicit flag admission. The admission evidence is retained as candidate evidence only; it is not current runtime default-on admission.
 
 ## Next slice
 
-If the admission review passes:
+If the operator wants to attempt default-on again:
 
-`sec_edgar_arelle_fact_authority_default_on_runtime_v1`
+`sec_edgar_arelle_governance_remediation_followups_v1`
 
-That future slice may change the default only with the review evidence attached and with immediate rollback proof.
+That follow-up must refresh the governance evidence before any future `sec_edgar_arelle_fact_authority_default_on_runtime_v1` slice can be selected again.

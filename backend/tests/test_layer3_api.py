@@ -4874,6 +4874,7 @@ def test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_siblin
     assert status["schema_id"] == "layer3.sec_edgar_arelle_value_reveal_status.v1"
     assert status["revealed_fact_count"] == 0
     assert status["revealed_facts"] == []
+    assert status["receipt_hash_basis"] == "post_1966_value_reveal_receipt_hash_basis_v2"
     assert expected_values["effective"] not in status_response.text
     assert TEST_OPERATOR_ACTOR_HASHED_INPUT not in status_response.text
 
@@ -4935,6 +4936,87 @@ def test_layer3_api_redacts_identity_like_sec_edgar_arelle_value_reveals(
         "sec_edgar_arelle_value_reveal_raw_identity_value_redacted"
     )
     assert identity_fact["value_hash"]
+
+
+def _write_legacy_sec_edgar_arelle_value_reveal_receipt(
+    reveal: Mapping[str, object],
+) -> tuple[dict[str, object], Path]:
+    receipt_path = layer3_sec_edgar_arelle_value_reveal._receipt_path(str(reveal["reveal_receipt_id"]))
+    legacy = json.loads(receipt_path.read_text(encoding="utf-8"))
+    legacy["actor_hash"] = layer3_sec_edgar_arelle_value_reveal.stable_hash(
+        {"actor": TEST_OPERATOR_ACTOR_HASHED_INPUT}
+    )
+    for key in ("idempotency_key_hash", "value_reveal_policy_id", "value_reveal_scope"):
+        legacy.pop(key, None)
+    legacy_hash = layer3_sec_edgar_arelle_value_reveal.stable_hash(
+        {
+            "schema_id": legacy["schema_id"],
+            "schema_version": legacy["schema_version"],
+            "client_request_id_hash": legacy["client_request_id_hash"],
+            "sidecar_receipt_hash": legacy["sidecar_receipt_hash"],
+            "dataset_version_hash": legacy["dataset_version_hash"],
+            "actor_hash": legacy["actor_hash"],
+            "fact_count": legacy["fact_count"],
+            "fact_inventory_hash": legacy["fact_inventory_hash"],
+            "value_inventory_hash": legacy["value_inventory_hash"],
+            "redaction_policy_id": legacy["redaction_policy_id"],
+        }
+    )
+    legacy["reveal_receipt_hash"] = legacy_hash
+    legacy["reveal_receipt_id"] = f"{layer3_sec_edgar_arelle_value_reveal.RECEIPT_PREFIX}-{legacy_hash[:24]}"
+    legacy["reveal_receipt_ref"] = f"{layer3_sec_edgar_arelle_value_reveal.RECEIPT_PREFIX}:{legacy_hash[:24]}"
+    legacy_path = layer3_sec_edgar_arelle_value_reveal._receipt_path(legacy["reveal_receipt_id"])
+    legacy_path.write_text(json.dumps(legacy, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    return legacy, legacy_path
+
+
+def test_layer3_api_reads_legacy_sec_edgar_arelle_value_reveal_audit_receipt(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    fixture = _prepare_sec_edgar_arelle_value_reveal_fixture(client, tmp_path, monkeypatch)
+    expected_values = _sec_edgar_arelle_value_reveal_expected_values(fixture)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
+    reveal_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(
+            fixture,
+            client_request_id="sec-edgar-arelle-value-reveal-legacy-receipt",
+        ),
+    )
+    assert reveal_response.status_code == 200, reveal_response.text
+    legacy_receipt, legacy_path = _write_legacy_sec_edgar_arelle_value_reveal_receipt(
+        reveal_response.json()
+    )
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal/status/"
+        f"{legacy_receipt['reveal_receipt_id']}"
+    )
+
+    assert status_response.status_code == 200, status_response.text
+    status = status_response.json()
+    assert status["schema_id"] == "layer3.sec_edgar_arelle_value_reveal_status.v1"
+    assert status["receipt_hash_basis"] == "pre_1966_value_reveal_receipt_hash_basis_v1"
+    assert status["value_reveal_policy_id"] == "legacy_pre_1966_policy_not_recorded"
+    assert status["value_reveal_scope"] == "legacy_pre_1966_scope_not_recorded"
+    assert status["revealed_fact_count"] == 0
+    assert status["revealed_facts"] == []
+    assert expected_values["effective"] not in status_response.text
+    assert expected_values["lexical"] not in status_response.text
+    assert TEST_OPERATOR_ACTOR_HASHED_INPUT not in status_response.text
+    assert str(tmp_path) not in status_response.text
+
+    tampered = dict(legacy_receipt)
+    tampered["fact_count"] = int(tampered["fact_count"]) + 1
+    legacy_path.write_text(json.dumps(tampered, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    tampered_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal/status/"
+        f"{legacy_receipt['reveal_receipt_id']}"
+    )
+    assert tampered_response.status_code == 409, tampered_response.text
+    assert tampered_response.json()["error_code"] == "sec_edgar_arelle_value_reveal_receipt_hash_mismatch"
 
 
 def test_layer3_api_rejects_corrupted_sec_edgar_arelle_value_reveal_audit_receipt(

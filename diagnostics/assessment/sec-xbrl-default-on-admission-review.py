@@ -97,16 +97,44 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
         )
         or _contains_any(sources, '"cross_company_comparability_enabled": False'),
     }
+    gate_candidate_passed = (
+        gate.get("decision") == "default_on_admitted_candidate" and gate.get("ready_for_default_on") is True
+    )
     criteria = [
         _criterion(
             "default_on_candidate_gate_passed",
-            gate.get("decision") == "default_on_admitted_candidate" and gate.get("ready_for_default_on") is True,
+            gate_candidate_passed,
             {
                 "gate_report": _repo_display_path(gate_report_path),
                 "decision": gate.get("decision"),
                 "summary": gate.get("summary"),
             },
             "admission_review_gate_not_admitted",
+        ),
+        _criterion(
+            "post_1966_governance_followups_restate_default_on_evidence",
+            (not gate_candidate_passed) or not _post_1966_governance_followup_required(sources),
+            {
+                "governance_doc": "next_milestone_plans/Layer3_planning_docs/1261-sec-xbrl-arelle-governance-remediation.md",
+                "config_default_off": default_off,
+                "requires_sidecar_selection_restatement": _contains(
+                    sources["governance_remediation"],
+                    "sidecar selected for every supported record",
+                ),
+                "requires_product_path_readiness_restatement": _contains(
+                    sources["governance_remediation"],
+                    "product-path readiness across all validation chunks",
+                ),
+                "requires_completeness_restatement": _contains(
+                    sources["governance_remediation"],
+                    "completeness aggregate and unexpected zero-inline handling",
+                ),
+                "requires_companyfacts_restatement": _contains(
+                    sources["governance_remediation"],
+                    "CompanyFacts oracle coverage and mismatch framing",
+                ),
+            },
+            "admission_review_post_1966_governance_followup_required",
         ),
         _criterion(
             "runtime_default_posture_recorded",
@@ -155,12 +183,19 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
     ]
     admitted = not blockers and not runtime_default_already_enabled
     superseded = not blockers and runtime_default_already_enabled
+    governance_followup = any(
+        item["blocked_reason"] == "admission_review_post_1966_governance_followup_required"
+        for item in criteria
+    )
     return {
         "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
         "target": "sec_edgar_arelle_default_off_to_default_on_admission_review_v1",
         "decision": (
             "admission_review_superseded_by_default_on_runtime"
             if superseded
+            else
+            "admission_review_requires_post_1966_governance_followup"
+            if governance_followup
             else "admission_review_passed" if admitted else "admission_review_blocked"
         ),
         "ready_for_default_on_runtime_slice": admitted,
@@ -178,6 +213,7 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
         "non_goals_preserved": {
             "runtime_default_changed_by_admission_review": False,
             "runtime_default_enabled_by_follow_on_runtime_slice": runtime_default_already_enabled,
+            "runtime_default_on_currently_admitted": admitted or superseded,
             "bridge_gate_b_product_package_ui_mutated": False,
             "candidate_b_sec_routing_performed": False,
             "final_financial_statement_semantics_claimed": False,
@@ -191,6 +227,9 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
             else
             "sec_edgar_arelle_fact_authority_default_on_runtime_v1"
             if admitted
+            else
+            "sec_edgar_arelle_governance_remediation_followups_v1"
+            if governance_followup
             else "sec_edgar_arelle_default_off_to_default_on_admission_review_v1"
         ),
     }
@@ -213,6 +252,12 @@ def _source_text(source_root: Path) -> dict[str, str]:
         "operator_surface": source_root / "backend" / "app" / "services" / "layer3_sec_edgar_operator_product_surface.py",
         "api_tests": source_root / "backend" / "tests" / "test_layer3_api.py",
         "sidecar_tests": source_root / "backend" / "tests" / "test_sec_xbrl_sidecar.py",
+        "governance_remediation": (
+            source_root
+            / "next_milestone_plans"
+            / "Layer3_planning_docs"
+            / "1261-sec-xbrl-arelle-governance-remediation.md"
+        ),
     }
     return {name: path.read_text(encoding="utf-8") for name, path in files.items()}
 
@@ -223,6 +268,18 @@ def _contains_any(sources: Mapping[str, str], text: str) -> bool:
 
 def _contains(source: str, text: str) -> bool:
     return text.replace("\r\n", "\n") in source.replace("\r\n", "\n")
+
+
+def _post_1966_governance_followup_required(sources: Mapping[str, str]) -> bool:
+    return (
+        _contains(
+            sources["config"],
+            'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,',
+        )
+        and _contains(sources["governance_remediation"], "Gates Before Another Default-On Attempt")
+        and _contains(sources["governance_remediation"], "sidecar selected for every supported record")
+        and _contains(sources["governance_remediation"], "CompanyFacts oracle coverage and mismatch framing")
+    )
 
 
 def _headline(*, admitted: bool, superseded: bool, blockers: list[dict[str, Any]]) -> str:
