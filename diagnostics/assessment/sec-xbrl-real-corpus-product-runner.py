@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from decimal import Decimal, InvalidOperation
+import http.client
 import json
 import os
 from pathlib import Path
 import sys
 import time
 from typing import Any, Callable, Mapping
+import urllib.error
+import urllib.request
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -30,18 +34,24 @@ from app.services import (
     layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_operator_product_surface,
     layer3_sec_edgar_real_company_corpus_validation,
+    layer3_sec_edgar_real_filing_acquisition_connector,
+    layer3_sec_xbrl_sidecar,
 )
 from app.services.layer3_utils import stable_hash
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json")
 DEFAULT_LIVE_STORAGE = Path("backend/app/storage_test_runtime/sec-real-product-runner")
 REQUIRED_FORMS = ("10-K", "10-Q", "20-F", "40-F", "6-K", "8-K")
-REQUIRED_REAL_FILING_COUNT = 12
+REQUIRED_REAL_FILING_COUNT = 30
+REQUIRED_ISSUER_HASH_COUNT = 15
+MIN_COMPANYFACTS_MATCH_RATE = 0.98
 MATRIX_CHUNKS = (
     ("core", ("MSFT", "STLD", "SONY", "CCJ")),
     ("breadth", ("JPM", "MET", "PLD", "FIZZ")),
     ("expansion", ("XOM", "PFE", "UAL", "T")),
+    ("large-cap-extension", ("AAPL", "NVDA", "AMZN", "TSLA")),
 )
 REQUIRED_ARELLE_ENV = (
     "SEC_XBRL_ARELLE_PYTHON",
@@ -68,6 +78,11 @@ def main() -> int:
         default=os.environ.get("SEC_XBRL_ARELLE_INTERNET_CONNECTIVITY", "offline"),
         choices=("online", "offline"),
     )
+    parser.add_argument(
+        "--apply-default-decision",
+        action="store_true",
+        help="Apply the gate verdict to the committed Arelle cutover config default.",
+    )
     args = parser.parse_args()
 
     report = build_report(
@@ -78,6 +93,9 @@ def main() -> int:
         taxonomy_internet_connectivity=str(args.taxonomy_internet_connectivity or "offline"),
     )
     output = _repo_path(Path(args.output))
+    if args.apply_default_decision:
+        applied = _apply_runtime_default_decision(report)
+        report["runtime_default_decision"]["applied_to_config"] = applied
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"wrote {output.relative_to(ROOT)}")
@@ -119,11 +137,14 @@ def build_report(
         for item in criteria
         if item["state"] != "passed"
     ]
-    decision = "real_corpus_product_path_ready" if not blockers else "real_corpus_product_path_blocked"
+    decision = "real_corpus_default_on_validated" if not blockers else "real_corpus_default_on_blocked"
+    pass_gate = not blockers
+    current_default = _config_cutover_default_enabled()
     return {
         "schema_id": "diagnostics.sec_xbrl_real_corpus_product_runner.v1",
         "target": "sec_edgar_real_corpus_product_path_runner_v1",
         "decision": decision,
+        "gate_verdict": "PASS" if pass_gate else "FAIL_OR_INCONCLUSIVE",
         "headline": _headline(decision, blockers, summary),
         "live_sec_network_used": bool(live and preflight["state"] == "passed"),
         "fake_sec_client_used": False,
@@ -136,6 +157,14 @@ def build_report(
         "blocking_reasons": blockers,
         "summary": summary,
         "per_matrix": rows,
+        "per_filing": _per_filing_from_rows(rows),
+        "runtime_default_decision": {
+            "current_default_enabled": current_default,
+            "resulting_default_enabled": bool(pass_gate),
+            "action": "keep_default_true" if pass_gate else "roll_back_default_false",
+            "applied_to_config": False,
+            "gate_has_teeth": True,
+        },
         "redaction": {
             "raw_tickers_committed": False,
             "raw_accessions_committed": False,
@@ -145,7 +174,7 @@ def build_report(
             "identity_hash_only": True,
         },
         "non_goals_preserved": {
-            "runtime_default_changed": False,
+            "runtime_network_default_changed": False,
             "operator_value_reveal_enabled": False,
             "gate_b_product_package_ui_redesign_performed": False,
             "candidate_b_sec_routing_performed": False,
@@ -154,11 +183,7 @@ def build_report(
             "rag_vector_model_provider_auth_behavior_added": False,
             "new_layer3_source_shape_created": False,
         },
-        "next_slice": (
-            "sec_edgar_operator_surface_gated_value_reveal_v1"
-            if decision == "real_corpus_product_path_ready"
-            else "sec_edgar_real_corpus_product_path_runner_live_execution_v1"
-        ),
+        "next_slice": _next_slice(pass_gate=pass_gate, blockers=blockers),
     }
 
 
@@ -190,7 +215,7 @@ def _run_live_product_path(
     db = _memory_db_session()
     try:
         rows = [
-            _run_matrix_chunk(label, matrix, db=db, request_namespace=request_namespace)
+            _run_matrix_chunk(label, matrix, db=db, request_namespace=request_namespace, user_agent=user_agent)
             for label, matrix in MATRIX_CHUNKS
         ]
     finally:
@@ -215,6 +240,7 @@ def _run_matrix_chunk(
     *,
     db: Any,
     request_namespace: str,
+    user_agent: str,
 ) -> dict[str, Any]:
     matrix_hash = stable_hash({"matrix": list(matrix)})[:24]
     row: dict[str, Any] = {
@@ -243,7 +269,7 @@ def _run_matrix_chunk(
             "blocked_stage": "validation",
             "blocked_reasons": [_safe_reason(exc)],
         }
-    row.update(_validation_projection(validation))
+    row.update(_validation_projection(validation, user_agent=user_agent))
     if validation.get("validation_state") != layer3_sec_edgar_real_company_corpus_validation.READY_STATE:
         return {
             **row,
@@ -251,6 +277,19 @@ def _run_matrix_chunk(
             "blocked_stage": "validation",
             "blocked_reasons": _blocked_reasons(validation),
         }
+    if not _delivery_archive_matrix_admitted(matrix):
+        row["delivery_status"] = "not_required_for_broader_extraction_gate"
+        row["operator_inspection_status"] = "not_required_for_broader_extraction_gate"
+        row["operator_product_surface_status"] = "not_required_for_broader_extraction_gate"
+        row["durable_delivery_archive_status"] = "not_required_for_broader_extraction_gate"
+        row["pipeline_state"] = (
+            "ready"
+            if row.get("supported_unblocked_or_no_inline_count") == row.get("filing_count")
+            else "blocked"
+        )
+        row["blocked_stage"] = None if row["pipeline_state"] == "ready" else "validation_records"
+        row["blocked_reasons"] = [] if row["pipeline_state"] == "ready" else ["unexpected_blocked_or_degraded_records"]
+        return row
     delivery = _delivery(validation, label=label, db=db, request_namespace=request_namespace)
     row["delivery_status"] = _state(delivery, "delivery_status_provenance_state")
     if delivery.get("delivery_status_provenance_state") != layer3_sec_edgar_delivery_status_provenance.READY_STATE:
@@ -332,11 +371,12 @@ def _archive(surface: Mapping[str, Any], *, label: str, db: Any, request_namespa
     )
 
 
-def _validation_projection(validation: Mapping[str, Any]) -> dict[str, Any]:
+def _validation_projection(validation: Mapping[str, Any], *, user_agent: str) -> dict[str, Any]:
     records = [record for record in validation.get("filing_validation_records") or [] if isinstance(record, Mapping)]
     forms = Counter(str(record.get("form_type") or "unknown") for record in records)
     quality = [record.get("quality_evidence") or {} for record in records]
     metrics = [item.get("quality_metrics") or {} for item in quality if isinstance(item, Mapping)]
+    per_filing = _per_filing_projection(validation, user_agent=user_agent)
     return {
         "validation_state": _state(validation, "validation_state"),
         "validation_receipt_hash": validation.get("validation_receipt_hash"),
@@ -348,31 +388,408 @@ def _validation_projection(validation: Mapping[str, Any]) -> dict[str, Any]:
         "blocked_or_degraded_count": sum(
             1 for record in records if record.get("supported_degraded_blocked") != "supported"
         ),
+        "supported_unblocked_or_no_inline_count": sum(
+            1
+            for item in per_filing
+            if item.get("record_state") == "supported"
+            or item.get("zero_fact_status") == "allowed_no_inline_xbrl"
+        ),
         "records_with_arelle_sidecar_output": sum(
             1 for record in records if "arelle_resolved_fact_authority_sidecar" in list(record.get("outputs_produced") or [])
         ),
         "records_with_selected_fact_authority_equal_to_sidecar": sum(
             1
             for record in records
-            if (record.get("authority_hashes") or {}).get("fact_authority_receipt_hash")
+            if (record.get("authority_hashes") or {}).get("arelle_sidecar_receipt_hash")
+            and (record.get("authority_hashes") or {}).get("fact_authority_receipt_hash")
             == (record.get("authority_hashes") or {}).get("arelle_sidecar_receipt_hash")
         ),
         "records_with_handoff_export_prepare": sum(
             1 for record in records if "handoff_export_prepare" in list(record.get("outputs_produced") or [])
         ),
         "resolved_fact_count": sum(int(item.get("resolved_fact_count") or 0) for item in metrics),
+        "independent_inline_fact_count": sum(int(item.get("independent_inline_fact_count") or 0) for item in per_filing),
+        "completeness_guard_failed_count": sum(1 for item in per_filing if item.get("completeness_guard") != "passed" and item.get("record_state") == "supported"),
+        "companyfacts_value_match_count": sum(int(item.get("companyfacts_effective_value_match_count") or 0) for item in per_filing),
+        "companyfacts_value_compared_count": sum(int(item.get("companyfacts_effective_value_compared_count") or 0) for item in per_filing),
+        "companyfacts_value_mismatch_count": sum(int(item.get("companyfacts_effective_value_mismatch_count") or 0) for item in per_filing),
+        "companyfacts_oracle_unavailable_count": sum(
+            1 for item in per_filing if item.get("companyfacts_oracle_used") is False and item.get("record_state") == "supported"
+        ),
+        "failure_reasons": dict(
+            sorted(
+                Counter(
+                    reason
+                    for item in per_filing
+                    for reason in (item.get("gaps_found") or [])
+                ).items()
+            )
+        ),
         "operator_surface_values_exposed": any(
             bool(item.get("operator_surface_values_exposed")) for item in metrics
         ),
         "final_financial_statement_semantics_claimed": False,
         "cross_company_comparability_claimed": False,
+        "per_filing": per_filing,
     }
+
+
+def _per_filing_projection(validation: Mapping[str, Any], *, user_agent: str) -> list[dict[str, Any]]:
+    records = [record for record in validation.get("filing_validation_records") or [] if isinstance(record, Mapping)]
+    connector = _connector_receipt(validation)
+    acquisitions_by_example_id = {
+        str(item.get("example_id") or ""): item
+        for item in (connector.get("acquisition_receipts") or [])
+        if isinstance(item, Mapping)
+    }
+    companyfacts_cache: dict[str, dict[str, Any]] = {}
+    rows: list[dict[str, Any]] = []
+    for record in records:
+        quality = record.get("quality_evidence") if isinstance(record.get("quality_evidence"), Mapping) else {}
+        metrics = quality.get("quality_metrics") if isinstance(quality.get("quality_metrics"), Mapping) else {}
+        sidecar_hash = str(metrics.get("arelle_sidecar_receipt_hash") or "")
+        sidecar = _sidecar_receipt_by_hash(sidecar_hash) if sidecar_hash else None
+        coverage = dict(sidecar.get("coverage") or {}) if isinstance(sidecar, Mapping) else {}
+        record_state = str(record.get("supported_degraded_blocked") or "")
+        acquisition = acquisitions_by_example_id.get(str(record.get("example_id") or ""), {})
+        source_identity = _source_identity_for_acquisition(acquisition)
+        companyfacts = (
+            _companyfacts_count(
+                cik=str(source_identity.get("cik_or_filer_ref") or ""),
+                accession=str(source_identity.get("accession_or_submission_id") or ""),
+                user_agent=user_agent,
+                cache=companyfacts_cache,
+            )
+            if record_state == "supported" and sidecar is not None
+            else {"oracle_used": False, "confidence": "not_applicable", "fact_count": None}
+        )
+        value_match = (
+            _companyfacts_value_match(sidecar=sidecar, companyfacts=companyfacts)
+            if sidecar is not None
+            else {"match_count": None, "compared_count": 0, "match_rate": None}
+        )
+        arelle_count = int(metrics.get("resolved_fact_count") or sidecar.get("resolved_fact_count") or 0) if sidecar else 0
+        independent_count = int(coverage.get("independent_inline_fact_count") or 0)
+        compared = int(value_match.get("compared_count") or 0)
+        matched = int(value_match.get("match_count") or 0)
+        rows.append(
+            {
+                "fixture_hash": str(record.get("record_hash") or "")[:24],
+                "form": str(record.get("form_type") or ""),
+                "issuer_by_hash": str(record.get("cik_hash") or "")[:24],
+                "record_state": "supported" if record_state == "supported" else "blocked_or_degraded",
+                "failure_classification": str(record.get("failure_classification") or ""),
+                "gaps_found": [str(item) for item in record.get("gaps_found") or []],
+                "zero_fact_status": _zero_fact_status(record, arelle_count=arelle_count),
+                "production_factauthority_fact_count": int(metrics.get("fact_count") or 0),
+                "arelle_resolved_fact_count": arelle_count,
+                "independent_inline_fact_count": independent_count,
+                "completeness_guard": (
+                    "passed"
+                    if record_state == "supported"
+                    and sidecar is not None
+                    and independent_count <= arelle_count
+                    and bool(coverage.get("independent_inline_fact_count_reconciled"))
+                    else "not_applicable"
+                    if record_state != "supported"
+                    else "failed"
+                ),
+                "multi_document_inline_document_count": int(coverage.get("independent_inline_fact_document_count") or 0),
+                "multi_document_scanned_document_count": int(
+                    coverage.get("independent_inline_fact_scanned_document_count") or 0
+                ),
+                "per_document_fact_tally": _document_tally_projection(
+                    coverage.get("independent_inline_fact_document_tally") or []
+                ),
+                "period_resolved_count": int(metrics.get("period_resolved_count") or 0),
+                "unit_resolved_count": int(metrics.get("unit_resolved_count") or 0),
+                "explicit_dimension_fact_count": int(metrics.get("explicit_dimension_fact_count") or 0),
+                "typed_dimension_fact_count": int(metrics.get("typed_dimension_fact_count") or 0),
+                "concept_resolved_from_dts_count": int(metrics.get("concept_resolved_from_dts_count") or 0),
+                "standard_concept_count": int(metrics.get("standard_concept_count") or 0),
+                "extension_concept_count": int(metrics.get("extension_concept_count") or 0),
+                "companyfacts_oracle_used": bool(companyfacts.get("oracle_used")),
+                "companyfacts_confidence": companyfacts.get("confidence"),
+                "companyfacts_standard_fact_count": companyfacts.get("fact_count"),
+                "companyfacts_effective_value_match_count": matched,
+                "companyfacts_effective_value_compared_count": compared,
+                "companyfacts_effective_value_mismatch_count": max(compared - matched, 0),
+                "companyfacts_effective_value_match_rate": value_match.get("match_rate"),
+                "companyfacts_mismatch_diagnostics": (
+                    "none" if compared and matched == compared else "mismatch_count_reported_values_redacted"
+                    if compared
+                    else "no_standard_numeric_intersection"
+                ),
+                "values_redacted_in_report": True,
+                "raw_identity_redacted": True,
+                "raw_urls_paths_storage_roots_redacted": True,
+            }
+        )
+        if record_state == "supported":
+            time.sleep(1.05)
+    return rows
+
+
+def _connector_receipt(validation: Mapping[str, Any]) -> dict[str, Any]:
+    try:
+        return layer3_sec_edgar_real_filing_acquisition_connector.read_sec_edgar_real_filing_acquisition_connector_receipt(
+            str(validation.get("connector_receipt_id") or ""),
+            expected_connector_receipt_hash=str(validation.get("connector_receipt_hash") or ""),
+        )
+    except Layer3WorkbenchError:
+        return {}
+
+
+def _source_identity_for_acquisition(acquisition: Mapping[str, Any]) -> dict[str, Any]:
+    try:
+        receipt = layer3_sec_edgar_live_source_artifact.read_sec_edgar_text_table_live_source_artifact_receipt(
+            str(acquisition.get("live_source_artifact_receipt_id") or ""),
+            expected_live_source_artifact_receipt_hash=str(acquisition.get("live_source_artifact_receipt_hash") or ""),
+        )
+    except Layer3WorkbenchError:
+        return {}
+    identity = receipt.get("source_identity") if isinstance(receipt.get("source_identity"), Mapping) else {}
+    return dict(identity)
+
+
+def _sidecar_receipt_by_hash(sidecar_hash: str) -> dict[str, Any] | None:
+    if not sidecar_hash:
+        return None
+    root = Path(settings.storage_dir).resolve() / layer3_sec_xbrl_sidecar.RECEIPT_DIR / "receipts"
+    for path in root.glob("*.json"):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+            continue
+        if isinstance(payload, dict) and payload.get("sidecar_receipt_hash") == sidecar_hash:
+            return payload
+    return None
+
+
+def _document_tally_projection(value: Any) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for item in value if isinstance(value, list) else []:
+        if not isinstance(item, Mapping):
+            continue
+        rows.append(
+            {
+                "document_index": item.get("document_index"),
+                "document_type": item.get("document_type"),
+                "primary_document": bool(item.get("primary_document")),
+                "inline_fact_count": int(item.get("inline_fact_count") or 0),
+                "document_filename_hash": str(item.get("document_filename_hash") or "")[:24],
+                "document_text_hash": str(item.get("document_text_hash") or "")[:24],
+            }
+        )
+    return rows
+
+
+def _zero_fact_status(record: Mapping[str, Any], *, arelle_count: int) -> str:
+    if arelle_count:
+        return "not_zero"
+    gaps = set(str(item) for item in record.get("gaps_found") or [])
+    if "sec_edgar_html_inline_xbrl_fact_authority_no_inline_xbrl_markers" in gaps:
+        return "allowed_no_inline_xbrl"
+    roles = set(str(item) for item in record.get("source_family_roles") or [])
+    if "html_inline_xbrl_classified_not_parsed" not in roles:
+        return "allowed_no_inline_xbrl"
+    return "unexpected_zero_inline_xbrl"
+
+
+def _per_filing_from_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    per_filing: list[dict[str, Any]] = []
+    for row in rows:
+        for item in row.get("per_filing") or []:
+            if isinstance(item, dict):
+                per_filing.append(item)
+    return per_filing
+
+
+def _companyfacts_count(
+    *,
+    cik: str,
+    accession: str,
+    user_agent: str,
+    cache: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    if not cik or not accession:
+        return {"oracle_used": False, "confidence": "unavailable_missing_identity", "fact_count": None}
+    cache_key = str(cik).zfill(10)
+    if cache_key not in cache:
+        url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cache_key}.json"
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": user_agent,
+                "Accept": "application/json",
+                "Accept-Encoding": "identity",
+            },
+        )
+        try:
+            layer3_sec_edgar_live_source_artifact._enforce_rate_limit()
+            with urllib.request.urlopen(request, timeout=20) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (
+            OSError,
+            TimeoutError,
+            urllib.error.URLError,
+            json.JSONDecodeError,
+            UnicodeDecodeError,
+            http.client.HTTPException,
+        ) as exc:
+            cache[cache_key] = {
+                "oracle_used": False,
+                "confidence": "unavailable_fetch_failed",
+                "error_hash": stable_hash({"error_type": type(exc).__name__})[:16],
+                "_payload": None,
+            }
+        else:
+            cache[cache_key] = {
+                "oracle_used": True,
+                "confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+                "_payload": payload if isinstance(payload, dict) else None,
+            }
+    cached = dict(cache.get(cache_key) or {})
+    payload = cached.get("_payload")
+    if not isinstance(payload, dict):
+        return {key: value for key, value in cached.items() if key != "_payload"} | {"fact_count": None}
+    count = 0
+    value_keys: list[tuple[str, str, str]] = []
+    taxonomies = payload.get("facts") if isinstance(payload, dict) else {}
+    if not isinstance(taxonomies, dict):
+        return {"oracle_used": False, "confidence": "unavailable_invalid_payload", "fact_count": None}
+    for taxonomy_name in ("us-gaap", "dei"):
+        concepts = taxonomies.get(taxonomy_name) or {}
+        if not isinstance(concepts, dict):
+            continue
+        for concept_name, concept in concepts.items():
+            units = concept.get("units") if isinstance(concept, dict) else {}
+            if not isinstance(units, dict):
+                continue
+            for unit_name, facts in units.items():
+                if not isinstance(facts, list):
+                    continue
+                for fact in facts:
+                    if not isinstance(fact, dict) or fact.get("accn") != accession:
+                        continue
+                    count += 1
+                    value_key = _numeric_value_key(concept_name, unit_name, fact.get("val"))
+                    if value_key is not None:
+                        value_keys.append(value_key)
+    return {
+        "oracle_used": True,
+        "confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+        "fact_count": count,
+        "_value_keys": value_keys,
+    }
+
+
+def _companyfacts_value_match(*, sidecar: Mapping[str, Any], companyfacts: Mapping[str, Any]) -> dict[str, Any]:
+    value_keys = companyfacts.get("_value_keys")
+    if not isinstance(value_keys, list) or not value_keys:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    try:
+        store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(sidecar)
+    except Layer3WorkbenchError:
+        return {"match_count": None, "compared_count": 0, "match_rate": None}
+    values_by_id = {
+        str(item.get("resolved_fact_id") or ""): item
+        for item in store.get("value_records") or []
+        if isinstance(item, Mapping)
+    }
+    companyfacts_by_concept_unit: dict[tuple[str, str], list[Decimal]] = {}
+    for item in value_keys:
+        if not isinstance(item, (list, tuple)) or len(item) != 3:
+            continue
+        concept_name, unit_name, value_text = item
+        try:
+            value_decimal = Decimal(str(value_text))
+        except (InvalidOperation, ValueError):
+            continue
+        companyfacts_by_concept_unit.setdefault((str(concept_name), str(unit_name)), []).append(value_decimal)
+    compared = 0
+    matched = 0
+    for record in sidecar.get("resolved_fact_records") or []:
+        if not isinstance(record, Mapping):
+            continue
+        concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
+        namespace = str(concept.get("namespace") or "")
+        if not concept.get("standard") or not ("fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace):
+            continue
+        value_record = values_by_id.get(str(record.get("resolved_fact_id") or ""))
+        if not isinstance(value_record, Mapping):
+            continue
+        unit = record.get("unit") if isinstance(record.get("unit"), Mapping) else {}
+        dimensions = record.get("dimensions") if isinstance(record.get("dimensions"), Mapping) else {}
+        if list(dimensions.get("explicit") or []) or list(dimensions.get("typed") or []):
+            continue
+        concept_unit = (str(concept.get("local_name") or ""), _companyfacts_unit_name(unit))
+        candidates = companyfacts_by_concept_unit.get(concept_unit)
+        if not candidates:
+            continue
+        try:
+            effective_value = Decimal(str(value_record.get("effective_value")))
+        except (InvalidOperation, ValueError):
+            continue
+        tolerance = _decimals_tolerance(record.get("decimals"))
+        compared += 1
+        match_index = _matching_decimal_index(candidates, effective_value, tolerance)
+        if match_index is not None:
+            matched += 1
+            candidates.pop(match_index)
+    return {
+        "match_count": matched,
+        "compared_count": compared,
+        "match_rate": round(matched / compared, 4) if compared else None,
+    }
+
+
+def _numeric_value_key(concept_name: Any, unit_name: Any, value: Any) -> tuple[str, str, str] | None:
+    try:
+        numeric = Decimal(str(value))
+    except (InvalidOperation, ValueError):
+        return None
+    return (str(concept_name or ""), str(unit_name or ""), format(numeric.normalize(), "f"))
+
+
+def _decimals_tolerance(decimals: Any) -> Decimal:
+    if decimals is None or decimals == "":
+        return Decimal("0")
+    text = str(decimals).strip()
+    if text.upper() in {"INF", "INFINITY"}:
+        return Decimal("0")
+    try:
+        return Decimal(1).scaleb(-int(text))
+    except (ValueError, InvalidOperation):
+        return Decimal("0")
+
+
+def _matching_decimal_index(candidates: list[Decimal], effective_value: Decimal, tolerance: Decimal) -> int | None:
+    for index, candidate in enumerate(candidates):
+        if abs(candidate - effective_value) <= tolerance:
+            return index
+    return None
+
+
+def _companyfacts_unit_name(unit: Mapping[str, Any]) -> str:
+    currency = str(unit.get("currency") or "")
+    if currency.startswith("iso4217:"):
+        return currency.split(":", 1)[1]
+    measures = list(unit.get("measures") or [])
+    if measures:
+        measure = str(measures[0])
+        return measure.split(":", 1)[1] if ":" in measure else measure
+    return ""
 
 
 def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     forms: Counter[str] = Counter()
+    per_filing = _per_filing_from_rows(rows)
     for row in rows:
         forms.update(row.get("forms") or {})
+    compared = sum(int(item.get("companyfacts_effective_value_compared_count") or 0) for item in per_filing)
+    matched = sum(int(item.get("companyfacts_effective_value_match_count") or 0) for item in per_filing)
+    issuer_hashes = {str(item.get("issuer_by_hash") or "") for item in per_filing if item.get("issuer_by_hash")}
     return {
         "matrix_chunk_count": len(rows),
         "ready_matrix_chunk_count": sum(1 for row in rows if row.get("pipeline_state") == "ready"),
@@ -383,8 +800,36 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "forms": dict(sorted(forms.items())),
         "required_forms": list(REQUIRED_FORMS),
         "required_forms_present": all(form in forms for form in REQUIRED_FORMS),
-        "issuer_hash_count_sum": sum(int(row.get("issuer_hash_count") or 0) for row in rows),
+        "issuer_hash_count": len(issuer_hashes),
+        "required_issuer_hash_count": REQUIRED_ISSUER_HASH_COUNT,
         "resolved_fact_count": sum(int(row.get("resolved_fact_count") or 0) for row in rows),
+        "independent_inline_fact_count": sum(int(row.get("independent_inline_fact_count") or 0) for row in rows),
+        "completeness_guard_failed_count": sum(int(row.get("completeness_guard_failed_count") or 0) for row in rows),
+        "unexpected_zero_inline_xbrl_count": sum(
+            1 for item in per_filing if item.get("zero_fact_status") == "unexpected_zero_inline_xbrl"
+        ),
+        "unexpected_blocked_or_degraded_count": sum(
+            1
+            for item in per_filing
+            if item.get("record_state") != "supported"
+            and item.get("zero_fact_status") != "allowed_no_inline_xbrl"
+        ),
+        "companyfacts_value_match_count": matched,
+        "companyfacts_value_compared_count": compared,
+        "companyfacts_value_mismatch_count": max(compared - matched, 0),
+        "companyfacts_value_match_rate": round(matched / compared, 4) if compared else None,
+        "minimum_companyfacts_value_match_rate": MIN_COMPANYFACTS_MATCH_RATE,
+        "companyfacts_oracle_unavailable_count": sum(int(row.get("companyfacts_oracle_unavailable_count") or 0) for row in rows),
+        "failure_reasons": dict(
+            sorted(
+                Counter(
+                    reason
+                    for row in rows
+                    for reason, count in dict(row.get("failure_reasons") or {}).items()
+                    for _ in range(int(count or 0))
+                ).items()
+            )
+        ),
         "records_with_arelle_sidecar_output": sum(int(row.get("records_with_arelle_sidecar_output") or 0) for row in rows),
         "records_with_selected_fact_authority_equal_to_sidecar": sum(
             int(row.get("records_with_selected_fact_authority_equal_to_sidecar") or 0) for row in rows
@@ -416,10 +861,14 @@ def _criteria(preflight: Mapping[str, Any], summary: Mapping[str, Any]) -> list[
         ),
         _criterion(
             "broader_real_product_path_corpus",
-            summary["real_filing_count"] >= REQUIRED_REAL_FILING_COUNT and summary["required_forms_present"],
+            summary["real_filing_count"] >= REQUIRED_REAL_FILING_COUNT
+            and summary["issuer_hash_count"] >= REQUIRED_ISSUER_HASH_COUNT
+            and summary["required_forms_present"],
             {
                 "real_filing_count": summary["real_filing_count"],
                 "required_real_filing_count": REQUIRED_REAL_FILING_COUNT,
+                "issuer_hash_count": summary["issuer_hash_count"],
+                "required_issuer_hash_count": REQUIRED_ISSUER_HASH_COUNT,
                 "forms": summary["forms"],
                 "required_forms": list(REQUIRED_FORMS),
             },
@@ -440,26 +889,49 @@ def _criteria(preflight: Mapping[str, Any], summary: Mapping[str, Any]) -> list[
             "arelle_sidecar_not_proven_as_selected_authority_for_all_supported_records",
         ),
         _criterion(
-            "product_path_readiness",
+            "product_path_validation_readiness",
             summary["matrix_chunk_count"] > 0
             and summary["ready_matrix_chunk_count"] == summary["matrix_chunk_count"]
-            and summary["delivery_ready_matrix_chunk_count"] == summary["matrix_chunk_count"]
-            and summary["operator_inspection_ready_matrix_chunk_count"] == summary["matrix_chunk_count"]
-            and summary["operator_product_surface_ready_matrix_chunk_count"] == summary["matrix_chunk_count"]
-            and summary["durable_delivery_archive_ready_matrix_chunk_count"] == summary["matrix_chunk_count"],
+            and summary["records_with_handoff_export_prepare"] == summary["supported_record_count"]
+            and summary["unexpected_blocked_or_degraded_count"] == 0,
             {
                 "matrix_chunk_count": summary["matrix_chunk_count"],
                 "ready_matrix_chunk_count": summary["ready_matrix_chunk_count"],
-                "delivery_ready_matrix_chunk_count": summary["delivery_ready_matrix_chunk_count"],
-                "operator_inspection_ready_matrix_chunk_count": summary["operator_inspection_ready_matrix_chunk_count"],
-                "operator_product_surface_ready_matrix_chunk_count": summary[
-                    "operator_product_surface_ready_matrix_chunk_count"
-                ],
-                "durable_delivery_archive_ready_matrix_chunk_count": summary[
-                    "durable_delivery_archive_ready_matrix_chunk_count"
-                ],
+                "supported_record_count": summary["supported_record_count"],
+                "records_with_handoff_export_prepare": summary["records_with_handoff_export_prepare"],
+                "unexpected_blocked_or_degraded_count": summary["unexpected_blocked_or_degraded_count"],
             },
-            "real_corpus_product_path_not_ready_across_all_matrix_chunks",
+            "real_corpus_product_path_validation_not_ready_across_matrix_chunks",
+        ),
+        _criterion(
+            "completeness_guard",
+            summary["supported_record_count"] > 0
+            and summary["completeness_guard_failed_count"] == 0
+            and summary["unexpected_zero_inline_xbrl_count"] == 0
+            and summary["resolved_fact_count"] >= summary["independent_inline_fact_count"],
+            {
+                "resolved_fact_count": summary["resolved_fact_count"],
+                "independent_inline_fact_count": summary["independent_inline_fact_count"],
+                "completeness_guard_failed_count": summary["completeness_guard_failed_count"],
+                "unexpected_zero_inline_xbrl_count": summary["unexpected_zero_inline_xbrl_count"],
+            },
+            "arelle_completeness_guard_failed_or_truncation_possible",
+        ),
+        _criterion(
+            "companyfacts_effective_value_correctness",
+            bool(summary["companyfacts_value_compared_count"])
+            and float(summary["companyfacts_value_match_rate"] or 0.0) >= MIN_COMPANYFACTS_MATCH_RATE
+            and summary["companyfacts_oracle_unavailable_count"] == 0,
+            {
+                "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
+                "match_count": summary["companyfacts_value_match_count"],
+                "compared_count": summary["companyfacts_value_compared_count"],
+                "mismatch_count": summary["companyfacts_value_mismatch_count"],
+                "match_rate": summary["companyfacts_value_match_rate"],
+                "minimum_match_rate": MIN_COMPANYFACTS_MATCH_RATE,
+                "companyfacts_oracle_unavailable_count": summary["companyfacts_oracle_unavailable_count"],
+            },
+            "companyfacts_effective_value_correctness_not_proven_on_broader_corpus",
         ),
         _criterion(
             "redaction_and_non_admissions",
@@ -506,7 +978,7 @@ def _live_preflight(*, live: bool, user_agent: str) -> dict[str, Any]:
         "arelle_cache": cache,
         "sec_rate_limit_per_second": 1,
         "live_network_default_changed": False,
-        "arelle_cutover_default_changed": False,
+        "arelle_cutover_current_default_enabled": _config_cutover_default_enabled(),
         "blocked_reasons": [
             *([] if live else ["live_execution_not_requested"]),
             *([] if user_agent.strip() else ["sec_user_agent_not_configured"]),
@@ -515,6 +987,13 @@ def _live_preflight(*, live: bool, user_agent: str) -> dict[str, Any]:
             *([] if taxonomy["configured"] else ["taxonomy_package_files_unavailable"]),
             *([] if cache["configured"] else ["arelle_cache_dir_unavailable"]),
         ],
+    }
+
+
+def _delivery_archive_matrix_admitted(matrix: tuple[str, ...]) -> bool:
+    return tuple(matrix) in {
+        tuple(layer3_sec_edgar_delivery_status_provenance.EXPECTED_COMPANY_MATRIX),
+        tuple(layer3_sec_edgar_delivery_status_provenance.DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_MATRIX),
     }
 
 
@@ -586,13 +1065,23 @@ def _matrix_chunk_projection() -> list[dict[str, Any]]:
 
 
 def _headline(decision: str, blockers: list[Mapping[str, Any]], summary: Mapping[str, Any]) -> str:
-    if decision == "real_corpus_product_path_ready":
+    if decision == "real_corpus_default_on_validated":
         return (
-            "Broader real-corpus SEC product path is ready: "
-            f"{summary['real_filing_count']} filings across required forms reached archive readiness."
+            "PASS: broader real-corpus SEC default-on path is validated: "
+            f"{summary['real_filing_count']} filings across {summary['issuer_hash_count']} issuers "
+            f"met completeness and CompanyFacts value-correctness gates."
         )
     reasons = ", ".join(str(item["reason"]) for item in blockers[:3]) or "unknown"
-    return f"Broader real-corpus SEC product path remains blocked: {reasons}."
+    return f"FAIL/INCONCLUSIVE: broader real-corpus SEC default-on path is blocked: {reasons}."
+
+
+def _next_slice(*, pass_gate: bool, blockers: list[Mapping[str, Any]]) -> str:
+    if pass_gate:
+        return "sec_edgar_operator_surface_gated_value_reveal_v1"
+    reasons = {str(item.get("reason") or "") for item in blockers}
+    if "real_corpus_product_path_live_preflight_not_satisfied" in reasons:
+        return "sec_edgar_real_corpus_product_path_runner_live_execution_v1"
+    return "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1"
 
 
 def _memory_db_session() -> Any:
@@ -634,6 +1123,37 @@ def _repo_path(path: Path) -> Path:
 
 def _storage_marker(path: Path) -> str:
     return stable_hash({"storage_dir_name": path.name, "parent_name": path.parent.name})[:24]
+
+
+def _config_cutover_default_enabled() -> bool:
+    text = (ROOT / "backend/app/core/config.py").read_text(encoding="utf-8")
+    return (
+        "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n"
+        "        default=True,"
+    ) in text
+
+
+def _apply_runtime_default_decision(report: Mapping[str, Any]) -> bool:
+    decision = report.get("runtime_default_decision") if isinstance(report.get("runtime_default_decision"), Mapping) else {}
+    desired = bool(decision.get("resulting_default_enabled"))
+    config_path = ROOT / "backend/app/core/config.py"
+    text = config_path.read_text(encoding="utf-8")
+    old = (
+        "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n"
+        "        default=False,"
+    )
+    new = (
+        "layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n"
+        "        default=True,"
+    )
+    desired_text = new if desired else old
+    current_text = old if desired else new
+    if desired_text in text:
+        return False
+    if current_text not in text:
+        raise RuntimeError("sec_xbrl_arelle_cutover_default_pattern_not_found")
+    config_path.write_text(text.replace(current_text, desired_text, 1), encoding="utf-8")
+    return True
 
 
 def _state(response: Mapping[str, Any], key: str) -> str:

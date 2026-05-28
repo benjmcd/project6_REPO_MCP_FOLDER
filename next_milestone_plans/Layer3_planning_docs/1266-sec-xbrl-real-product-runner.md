@@ -8,7 +8,7 @@
 
 This is a diagnostic runner and gate report for the real-corpus product path. It does not change runtime defaults, product/package/UI behavior, Gate B logic, operator value exposure, source shapes, or SEC routing.
 
-The runner uses the existing governed SEC acquisition/source-artifact/receipt spine and the existing Arelle sidecar, bridge, statement classification, statement product, package/review, handoff/export, delivery/status/provenance, operator inspection, operator product surface, and durable archive services.
+The runner uses the existing governed SEC acquisition/source-artifact/receipt spine and the existing Arelle sidecar, bridge, statement classification, statement product, package/review, and handoff/export services for every supported filing. For matrices already admitted by the delivery/operator/archive services it also drives delivery/status/provenance, operator inspection, operator product surface, and durable archive. Broader extraction-gate matrices are not allowed to fail the default-on gate merely because the later archive surface admits a narrower matrix.
 
 It fails closed unless a live run is explicitly requested with:
 
@@ -26,9 +26,9 @@ Report:
 
 Current decision:
 
-`real_corpus_product_path_blocked`
+`real_corpus_default_on_blocked`
 
-The committed report is a preflight-safe blocked report. It records that a live run was requested with a configured SEC user agent and Arelle Python, but the taxonomy env pointed at a directory and the cache env pointed inside the repo. Both are rejected by the sidecar containment contract. It therefore made no network call, records zero real product-path filings, and does not admit broader real-corpus product reliability.
+The committed report now records a live broader-corpus gate run. Breadth passed: 32 filings, 16 issuer hashes, all required forms present, and one `10-K/A` amended form observed. The reliability gate failed before sidecar authority output: 30 rows blocked with `arelle_nonzero_exit`; 2 rows were diagnosed as no-inline-marker rows. Because the gate failed/inconclusive, the runtime cutover default was rolled back to `false`.
 
 This preserves the prior gate result instead of upgrading fake-client product-chain evidence into a real-corpus claim.
 
@@ -44,8 +44,10 @@ When run with `--live`, the runner:
 - enables SEC live network only inside the diagnostic process;
 - applies a one-request-per-second SEC access posture;
 - enables the Arelle resolved-fact authority cutover only inside the diagnostic process;
-- runs the existing validation/product path over three admitted four-issuer matrix chunks;
-- records only redacted matrix hashes, form counts, filing counts, receipt hashes, readiness states, and non-admission evidence;
+- runs the existing validation/product path over four four-issuer matrix chunks, targeting at least 30 filings across at least 15 distinct issuer hashes;
+- records only redacted matrix hashes, form counts, filing counts, issuer hashes, per-filing completeness counts, CompanyFacts value match rates, receipt hashes, readiness states, and non-admission evidence;
+- computes CompanyFacts effective-value correctness over the standardized us-gaap/dei non-dimensional numeric intersection without committing raw values;
+- applies the gate verdict to the Arelle cutover config default when invoked with `--apply-default-decision`: PASS keeps default-on, while FAIL or INCONCLUSIVE rolls the default back to false;
 - keeps operator value reveal disabled;
 - restores settings after the diagnostic run.
 
@@ -54,16 +56,20 @@ When run with `--live`, the runner:
 The report admits only if all criteria pass:
 
 - live preflight satisfied;
-- at least 12 real filings observed;
+- at least 30 real filings observed;
+- at least 15 issuer hashes observed;
 - required forms observed: `10-K`, `10-Q`, `20-F`, `40-F`, `6-K`, and `8-K`;
 - every supported record uses the Arelle sidecar as the selected fact authority;
-- validation, delivery/status/provenance, operator inspection, operator product surface, and durable archive are ready for every matrix chunk;
+- every supported record reaches handoff/export through the Arelle-selected bridge path;
+- completeness holds per supported filing: Arelle resolved fact count is greater than or equal to the independent raw inline fact count, with zero silent truncations;
+- CompanyFacts effective-value match rate is at least `0.98` across the broader corpus, with mismatches diagnosed by count and raw values redacted;
+- no unexpected blocked rows exist; genuine no-iXBRL filings may be zero-fact and diagnosed;
 - operator values remain unexposed;
 - final financial-statement semantics and cross-company comparability remain non-admitted.
 
 ## Non-Goals Preserved
 
-- no runtime default change;
+- no runtime network default change;
 - no operator value reveal;
 - no Candidate-B routing for SEC semantics;
 - no final financial-statement semantics claim;
@@ -75,10 +81,13 @@ The report admits only if all criteria pass:
 
 ## Next Action
 
-Run the same diagnostic with the provisioned SEC/Arelle environment and a descriptive SEC user agent. If the live report admits, the next slice is:
+Next slice:
 
-The taxonomy package env must be an `os.pathsep`-separated list of package zip files. The cache env must point outside the repo and outside OneDrive. The runner preflight now mirrors this sidecar contract so invalid Arelle setup blocks before SEC acquisition.
+`sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1`
 
-`sec_edgar_operator_surface_gated_value_reveal_v1`
+Scope:
 
-If the live report blocks, keep the next slice on the exact blocked stage reported by the runner.
+- diagnose the retained broader-corpus `arelle_nonzero_exit` failures without committing raw filing bytes, paths, URLs, values, or identities;
+- preserve the default-off rollback until the same gate passes;
+- rerun the same broader gate after remediation;
+- proceed to `sec_edgar_operator_surface_gated_value_reveal_v1` only after a real PASS.
