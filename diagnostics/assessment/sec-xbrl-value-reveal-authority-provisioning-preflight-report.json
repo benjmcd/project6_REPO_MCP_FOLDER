@@ -1,0 +1,108 @@
+{
+  "arelle_environment_preflight": {
+    "cache_dir_marker": null,
+    "cache_dir_present": false,
+    "internet_connectivity_mode": "offline",
+    "python_marker": null,
+    "python_present": false,
+    "taxonomy_package_count": 0,
+    "taxonomy_package_markers": [],
+    "taxonomy_packages_present": false
+  },
+  "blocking_reasons": [
+    {
+      "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
+      "criterion": "arelle_environment_available_for_future_granted_run",
+      "evidence": {
+        "cache_dir_marker": null,
+        "cache_dir_present": false,
+        "internet_connectivity_mode": "offline",
+        "python_marker": null,
+        "python_present": false,
+        "taxonomy_package_count": 0,
+        "taxonomy_package_markers": [],
+        "taxonomy_packages_present": false
+      },
+      "state": "blocked"
+    }
+  ],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "operator_exercise_currently_missing_authority",
+      "evidence": {
+        "ready_to_run_operator_exercise": false,
+        "run_report": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json",
+        "run_report_decision": "value_reveal_operator_exercise_blocked_missing_authority"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "live_network_not_enabled_by_committed_default",
+      "evidence": {
+        "committed_default_off": true,
+        "runtime_env_enabled_for_this_preflight": false,
+        "user_agent_env_present": false
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
+      "criterion": "arelle_environment_available_for_future_granted_run",
+      "evidence": {
+        "cache_dir_marker": null,
+        "cache_dir_present": false,
+        "internet_connectivity_mode": "offline",
+        "python_marker": null,
+        "python_present": false,
+        "taxonomy_package_count": 0,
+        "taxonomy_package_markers": [],
+        "taxonomy_packages_present": false
+      },
+      "state": "blocked"
+    }
+  ],
+  "decision": "authority_provisioning_preflight_requires_explicit_grant_or_environment",
+  "headline": "Authority provisioning can proceed only in a separately granted live run with network, user-agent, and Arelle environment enabled.",
+  "live_network_preflight": {
+    "committed_default_off": true,
+    "runtime_env_enabled_for_this_preflight": false,
+    "user_agent_env_present": false
+  },
+  "next_slice": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
+  "non_goals_preserved": {
+    "arelle_subprocess_invoked": false,
+    "audit_receipt_created": false,
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "cutover_default_enabled": false,
+    "dataset_version_created": false,
+    "final_financial_statement_semantics_claimed": false,
+    "raw_identity_committed": false,
+    "raw_values_committed": false,
+    "raw_values_returned": false,
+    "sec_network_fetch_performed": false,
+    "sidecar_receipt_created": false,
+    "value_reveal_default_enabled": false
+  },
+  "operator_exercise_run_report_summary": {
+    "decision": "value_reveal_operator_exercise_blocked_missing_authority",
+    "ready_to_run_operator_exercise": false,
+    "redacted_inventory": {
+      "bridge_receipt_count": 0,
+      "bridge_receipt_with_dataset_hash_count": 0,
+      "internal_value_store_file_count": 0,
+      "ready_sidecar_count": 0,
+      "ready_sidecar_with_internal_value_store_count": 0,
+      "sidecar_receipt_count": 0,
+      "storage_exists": true,
+      "storage_file_count": 0,
+      "storage_marker": "1024374bbd830e65",
+      "value_reveal_receipt_count": 0
+    }
+  },
+  "required_next_action": "obtain_explicit_operator_grant_and_arelle_network_environment_then_rerun_preflight",
+  "schema_id": "diagnostics.sec_xbrl_value_reveal_authority_provisioning_preflight.v1",
+  "target": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1"
+}
