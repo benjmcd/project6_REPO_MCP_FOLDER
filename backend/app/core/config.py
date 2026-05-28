@@ -91,7 +91,7 @@ class Settings(BaseSettings):
     layer3_sec_edgar_max_bytes: int = Field(default=25_000_000, alias="LAYER3_SEC_EDGAR_MAX_BYTES")
     layer3_sec_edgar_timeout_seconds: int = Field(default=20, alias="LAYER3_SEC_EDGAR_TIMEOUT_SECONDS")
     layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(
-        default=True,
+        default=False,
         alias="LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED",
     )
     allowed_origins: str = Field(default="*", alias="ALLOWED_ORIGINS")
