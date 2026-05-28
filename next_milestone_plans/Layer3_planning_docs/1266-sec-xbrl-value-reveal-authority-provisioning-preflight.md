@@ -10,6 +10,8 @@ Doc `1265` proves the operator exercise cannot run from current configured stora
 
 The preflight does not fetch SEC data, run Arelle, create sidecars, create datasets, create audit receipts, reveal values, or enable defaults. It only checks whether the environment is ready for a separately granted authority-provisioning run.
 
+The Arelle environment check is path-backed, not just variable-backed: `SEC_XBRL_ARELLE_PYTHON` / `ARELLE_PYTHON` must point to an existing executable file, every `SEC_XBRL_ARELLE_TAXONOMY_PACKAGES` entry must point to an existing package file, and `SEC_XBRL_ARELLE_CACHE_DIR` must point to an existing directory. The report records only redacted markers and counts, never raw off-workspace paths.
+
 ## Diagnostic
 
 Script:
@@ -33,6 +35,8 @@ The actual provisioning run requires an explicit operator grant for:
 - Arelle subprocess extraction with pinned/off-workspace environment
 - taxonomy package and cache paths outside the repo and synced workspace
 - isolated storage/runtime state for retained source bytes, sidecar receipts, internal value stores, bridge receipts, and dataset rows
+
+The preflight can report `authority_provisioning_preflight_ready_for_explicit_granted_run` only when all of the above environment references exist and the live-network/User-Agent environment is explicitly enabled for that process. That decision is still not permission to proceed by itself; the live run remains a separate operator-granted action.
 
 No committed default may be flipped. `LAYER3_SEC_EDGAR_LIVE_NETWORK_ENABLED`, `LAYER3_SEC_EDGAR_ARELLE_FACT_AUTHORITY_CUTOVER_ENABLED`, and `LAYER3_SEC_EDGAR_ARELLE_VALUE_REVEAL_ENABLED` remain default-off in source.
 
