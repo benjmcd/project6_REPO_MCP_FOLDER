@@ -4,6 +4,7 @@
 
 This document is a historical earlier audit artifact.
 Its command and evidence summaries should be read as point-in-time audit evidence, not as the current post-PR50 baseline-validation front door.
+The T8 green results below depended on workspace-local imported runtime bytes; a clean committed-tree checkout cannot reproduce those results unless that runtime corpus is separately restored.
 
 ## Resolution update
 
