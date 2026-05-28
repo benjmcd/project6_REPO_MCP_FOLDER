@@ -77,7 +77,7 @@
   "decision": "default_on_runtime_disabled_by_governance_remediation",
   "headline": "Default-on Arelle runtime is disabled by governance remediation; the Arelle bridge remains flag-gated and reversible.",
   "inherited_real_corpus_evidence": {
-    "admission_review_decision": "admission_review_passed",
+    "admission_review_decision": "admission_review_requires_post_1966_governance_followup",
     "arelle_resolved_fact_count": 18156,
     "bridge_fact_count": 18156,
     "broader_companyfacts_value_compared_count": 9131,

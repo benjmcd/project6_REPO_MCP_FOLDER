@@ -32,6 +32,10 @@ REDACTION_POLICY_ID = "sec_edgar_arelle_value_reveal_redaction_v1"
 VALUE_SEMANTICS_ID = "arelle_effective_canonical_value_v1"
 VALUE_REVEAL_POLICY_ID = "sec_edgar_arelle_governed_value_reveal_v1"
 VALUE_REVEAL_SCOPE = "resolved_fact_authority_bound_filing_values_with_identity_redaction"
+CURRENT_RECEIPT_HASH_BASIS = "post_1966_value_reveal_receipt_hash_basis_v2"
+LEGACY_RECEIPT_HASH_BASIS = "pre_1966_value_reveal_receipt_hash_basis_v1"
+LEGACY_VALUE_REVEAL_POLICY_ID = "legacy_pre_1966_policy_not_recorded"
+LEGACY_VALUE_REVEAL_SCOPE = "legacy_pre_1966_scope_not_recorded"
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -624,10 +628,14 @@ def _ready_response(
 
 
 def _receipt_projection(receipt: Mapping[str, Any]) -> dict[str, Any]:
+    receipt_hash_basis = _receipt_hash_basis_id(receipt)
+    value_reveal_policy_id = str(receipt.get("value_reveal_policy_id") or LEGACY_VALUE_REVEAL_POLICY_ID)
+    value_reveal_scope = str(receipt.get("value_reveal_scope") or LEGACY_VALUE_REVEAL_SCOPE)
     return {
         "reveal_receipt_id": receipt["reveal_receipt_id"],
         "reveal_receipt_ref": receipt["reveal_receipt_ref"],
         "reveal_receipt_hash": receipt["reveal_receipt_hash"],
+        "receipt_hash_basis": receipt_hash_basis,
         "actor_hash": receipt["actor_hash"],
         "audit_server_time": receipt["server_time"],
         "sidecar_receipt_id": receipt["sidecar_receipt_id"],
@@ -638,21 +646,22 @@ def _receipt_projection(receipt: Mapping[str, Any]) -> dict[str, Any]:
         "fact_count": receipt["fact_count"],
         "fact_inventory_hash": receipt["fact_inventory_hash"],
         "value_inventory_hash": receipt["value_inventory_hash"],
-        "value_reveal_policy_id": receipt["value_reveal_policy_id"],
-        "value_reveal_scope": receipt["value_reveal_scope"],
+        "value_reveal_policy_id": value_reveal_policy_id,
+        "value_reveal_scope": value_reveal_scope,
         "value_semantics": receipt["value_semantics"],
         "audit_receipt": {
             "schema_id": receipt["schema_id"],
             "reveal_receipt_id": receipt["reveal_receipt_id"],
             "reveal_receipt_hash": receipt["reveal_receipt_hash"],
+            "receipt_hash_basis": receipt_hash_basis,
             "actor_hash": receipt["actor_hash"],
             "server_time": receipt["server_time"],
             "lineage_hashes": dict(receipt["lineage_hashes"]),
             "fact_count": receipt["fact_count"],
             "fact_inventory_hash": receipt["fact_inventory_hash"],
             "value_inventory_hash": receipt["value_inventory_hash"],
-            "value_reveal_policy_id": receipt["value_reveal_policy_id"],
-            "value_reveal_scope": receipt["value_reveal_scope"],
+            "value_reveal_policy_id": value_reveal_policy_id,
+            "value_reveal_scope": value_reveal_scope,
             "redaction_policy_id": receipt["redaction_policy_id"],
             "raw_values_persisted": False,
             "raw_identity_persisted": False,
@@ -751,6 +760,20 @@ def _validate_receipt_hash_binding(receipt_id: str, receipt: Mapping[str, Any]) 
 
 
 def _receipt_hash_basis(receipt: Mapping[str, Any]) -> str:
+    if _receipt_hash_basis_id(receipt) == LEGACY_RECEIPT_HASH_BASIS:
+        return _legacy_receipt_hash_basis(receipt)
+    return _current_receipt_hash_basis(receipt)
+
+
+def _receipt_hash_basis_id(receipt: Mapping[str, Any]) -> str:
+    legacy_only_fields_missing = all(
+        not receipt.get(key)
+        for key in ("idempotency_key_hash", "value_reveal_policy_id", "value_reveal_scope")
+    )
+    return LEGACY_RECEIPT_HASH_BASIS if legacy_only_fields_missing else CURRENT_RECEIPT_HASH_BASIS
+
+
+def _current_receipt_hash_basis(receipt: Mapping[str, Any]) -> str:
     return stable_hash(
         {
             "schema_id": SCHEMA_ID,
@@ -766,6 +789,23 @@ def _receipt_hash_basis(receipt: Mapping[str, Any]) -> str:
             "value_reveal_policy_id": receipt.get("value_reveal_policy_id"),
             "value_reveal_scope": receipt.get("value_reveal_scope"),
             "value_semantics": receipt.get("value_semantics"),
+            "redaction_policy_id": receipt.get("redaction_policy_id"),
+        }
+    )
+
+
+def _legacy_receipt_hash_basis(receipt: Mapping[str, Any]) -> str:
+    return stable_hash(
+        {
+            "schema_id": SCHEMA_ID,
+            "schema_version": SCHEMA_VERSION,
+            "client_request_id_hash": receipt.get("client_request_id_hash"),
+            "sidecar_receipt_hash": receipt.get("sidecar_receipt_hash"),
+            "dataset_version_hash": receipt.get("dataset_version_hash"),
+            "actor_hash": receipt.get("actor_hash"),
+            "fact_count": receipt.get("fact_count"),
+            "fact_inventory_hash": receipt.get("fact_inventory_hash"),
+            "value_inventory_hash": receipt.get("value_inventory_hash"),
             "redaction_policy_id": receipt.get("redaction_policy_id"),
         }
     )

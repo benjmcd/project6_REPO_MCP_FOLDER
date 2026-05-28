@@ -39,15 +39,21 @@ def _gate_report(tmp_path: Path, *, admitted: bool) -> Path:
     return path
 
 
-def test_sec_xbrl_default_on_admission_review_passes_when_default_stays_off(tmp_path: Path) -> None:
+def test_sec_xbrl_default_on_admission_review_requires_post_1966_governance_followup(
+    tmp_path: Path,
+) -> None:
     module = _review_module()
 
     report = module.build_report(gate_report_path=_gate_report(tmp_path, admitted=True), source_root=ROOT)
 
-    assert report["decision"] == "admission_review_passed"
-    assert report["ready_for_default_on_runtime_slice"] is True
-    assert report["blocking_reasons"] == []
+    assert report["decision"] == "admission_review_requires_post_1966_governance_followup"
+    assert report["ready_for_default_on_runtime_slice"] is False
+    assert report["next_slice"] == "sec_edgar_arelle_governance_remediation_followups_v1"
+    assert report["blocking_reasons"][0]["reason"] == (
+        "admission_review_post_1966_governance_followup_required"
+    )
     assert report["non_goals_preserved"]["runtime_default_enabled_by_follow_on_runtime_slice"] is False
+    assert report["non_goals_preserved"]["runtime_default_on_currently_admitted"] is False
 
 
 def test_sec_xbrl_default_on_admission_review_blocks_when_gate_is_not_admitted(tmp_path: Path) -> None:
