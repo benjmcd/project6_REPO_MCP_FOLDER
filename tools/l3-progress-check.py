@@ -9029,6 +9029,36 @@ def _check_raw_mixed_bridge_freeze(errors: list[str]) -> None:
                 errors.append(f"{_rel(path)} missing raw mixed bridge proof term: {term}")
 
 
+def _check_post_695_reference_plan_tracking(errors: list[str]) -> None:
+    required_terms = {
+        PHASE1A_README: (
+            "Current post-PR #695 execution-handoff references:",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+        ),
+        BOARD: (
+            "Raw mixed bridge E2E/UI closeout through rendered plan approval",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+            "PR `#692` through PR `#700`",
+        ),
+        MANIFEST: (
+            "post_695_reference_plan_progress_tracking",
+            "progress_tracking_surface",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+            "ddf41deaed0b41d5be9018747e7db541d0d06a2a",
+        ),
+        PROOF_MANIFEST: (
+            "raw_mixed_bridge_e2e_ui_closeout_proof",
+            "08_L3_POST_695_REFERENCE_PLAN.md",
+            '"#696": "ddf41deaed0b41d5be9018747e7db541d0d06a2a"',
+        ),
+    }
+    for path, terms in required_terms.items():
+        text = _read_required_text(path, errors)
+        for term in terms:
+            if term not in text:
+                errors.append(f"{_rel(path)} missing post-695 reference plan tracking term: {term}")
+
+
 def _check_source_breadth_freeze(errors: list[str]) -> None:
     doc_text = _read_required_text(SOURCE_BREADTH_FREEZE, errors)
     for term in (
@@ -118781,6 +118811,7 @@ def main() -> int:
     _check_qualitative_aps_rendered_ui_freeze(errors)
     _check_source_boundary_contract(errors)
     _check_raw_mixed_bridge_freeze(errors)
+    _check_post_695_reference_plan_tracking(errors)
     _check_source_breadth_freeze(errors)
     _check_raw_ingestion_materialization_freeze(errors)
     _check_raw_mixed_rendered_ui_freeze(errors)
