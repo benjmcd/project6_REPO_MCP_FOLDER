@@ -107,7 +107,7 @@ function Ensure-ClientEnv {
     $lines = Set-EnvValue -Lines $lines -Key 'CSB_API_KEY' -Value 'local-dev-placeholder'
     $lines = Set-EnvValue -Lines $lines -Key 'NEXT_PUBLIC_SITE_URL' -Value 'http://127.0.0.1:3000'
     $lines = Set-EnvValue -Lines $lines -Key 'NEXT_PUBLIC_FEATURE_COLLABORATION' -Value 'false'
-    Set-Content -Path $envPath -Value $lines
+    Set-Content -Path $envPath -Value $lines -Encoding UTF8
 
     Write-Host "Bootstrapped client env: $envPath"
     Write-Warning 'Client env uses local demo Supabase values and placeholder OpenRouter/Codesandbox keys. Replace CSB_API_KEY before importing new projects or creating sandboxes.'
@@ -133,7 +133,7 @@ function Ensure-DbEnv {
     $lines = Set-EnvValue -Lines $lines -Key 'SUPABASE_URL' -Value $localDevDefaults.SupabaseUrl
     $lines = Set-EnvValue -Lines $lines -Key 'SUPABASE_SERVICE_ROLE_KEY' -Value $localDevDefaults.ServiceRoleKey
     $lines = Set-EnvValue -Lines $lines -Key 'SUPABASE_DATABASE_URL' -Value $localDevDefaults.DatabaseUrl
-    Set-Content -Path $envPath -Value $lines
+    Set-Content -Path $envPath -Value $lines -Encoding UTF8
 
     Write-Host "Bootstrapped db env: $envPath"
 }
