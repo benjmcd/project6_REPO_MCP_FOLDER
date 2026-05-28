@@ -9317,3 +9317,53 @@ Raw local path exposed: `false`.
 Raw URL exposed: `false`.
 
 Next exact posture: `candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_rendered_status_v1`.
+
+## SEC XBRL Value-Reveal Operator Exercise Readiness
+
+Milestone: `sec_edgar_arelle_value_reveal_operator_exercise_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1264-sec-xbrl-value-reveal-operator-exercise.md`.
+
+Authority doc: `next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md`.
+
+Runner: `diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py`.
+
+Report: `diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json`.
+
+Status: readiness packet exists; operator exercise not performed; current runner blocks until a coherent selected authority bundle exists.
+
+Readiness now requires one mutually-bound bundle: READY Arelle sidecar receipt, verified internal value store, matching bridge receipt with dataset version id/hash, matching runtime `DatasetVersion`, and matching dataset source provenance. Independent counts are insufficient.
+
+Defaults remain off: Arelle cutover `false`; value reveal `false`.
+
+No live network, Arelle subprocess, sidecar creation, dataset creation, audit receipt creation, value reveal request, UI change, parser expansion, Candidate B SEC routing, final financial-statement semantics claim, or cross-company comparability claim is admitted by this tracking entry.
+
+Next exact posture: `sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1` after post-1968/1969 review debt is closed.
+
+## SEC XBRL Value-Reveal Authority Provisioning Preflight
+
+Milestone: `sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1`.
+
+Planning docs: `next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md` and `next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md`.
+
+Status: provisioning preflight exists; live/Arelle run not granted or performed; committed defaults remain off.
+
+The next live/Arelle provisioning run still requires an explicit operator grant. This board entry does not grant network access, run Arelle, create sidecars, create datasets, or submit any reveal.
+
+Next exact posture: `await_explicit_live_arelle_authority_grant_after_review_debt_closeout`.
+
+## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
+
+Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
+
+Branch: `codex/post-1968-1969-sec-value-reveal-preflight-review-debt`.
+
+Base main: `4291fcde489e7b8eec05c4067543d824fe728667`.
+
+Scope: close PR #1968 progress/proof registration debt and PR #1969 false-positive readiness debt before any live authority provisioning.
+
+The pass hardens the operator-exercise runner so it cannot report ready from unrelated sidecar, bridge, value-store, and database evidence. It also records docs 1264/1265/1266 in progress/proof surfaces.
+
+Non-goals preserved: no live network, no Arelle subprocess, no sidecar creation, no dataset creation, no audit receipt creation, no value reveal request, no default enablement, no parser/corpus/CompanyFacts expansion, no UI expansion, no Candidate B routing for SEC semantics, no RAG/model/provider/auth behavior, no final financial-statement semantics claim, and no cross-company comparability claim.
+
+Next exact posture after merge: `sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1_after_review_debt_merge`.

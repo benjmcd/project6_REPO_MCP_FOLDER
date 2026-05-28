@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Doc `1265` proves the operator exercise cannot run from current configured storage because the required persisted Arelle sidecar and bridge/dataset authorities are absent. This packet adds a validate-only preflight for the next pass.
+Doc `1265` proves the operator exercise cannot run from current configured storage because the required coherent Arelle sidecar/value-store/bridge/dataset/provenance authority bundle is absent. This packet adds a validate-only preflight for the next pass.
 
 The preflight does not fetch SEC data, run Arelle, create sidecars, create datasets, create audit receipts, reveal values, or enable defaults. It only checks whether the environment is ready for a separately granted authority-provisioning run.
 
@@ -38,6 +38,8 @@ The actual provisioning run requires an explicit operator grant for:
 
 The preflight can report `authority_provisioning_preflight_ready_for_explicit_granted_run` only when all of the above environment references exist and the live-network/User-Agent runtime settings are explicitly enabled for that process. The runtime settings check follows the same `settings` path as SEC acquisition, including the supported `backend/.env` source; focused tests use an explicit environment override only for deterministic coverage. That decision is still not permission to proceed by itself; the live run remains a separate operator-granted action.
 
+Provisioning may not proceed from loose operator-exercise readiness. Before any reveal request, the operator-exercise runner must rerun and select one mutually-bound authority bundle: READY sidecar, verified internal value store, bridge receipt with dataset version id/hash, matching runtime dataset row, and matching source provenance. Independent inventory counts are explicitly not readiness evidence.
+
 The report exposes missing live-network and User-Agent runtime settings as separate blocking criteria:
 
 - `authority_provisioning_preflight_live_network_setting_missing`
@@ -54,6 +56,7 @@ The provisioning run must stop before reveal if any required authority is missin
 - no persisted internal value store
 - no bridge receipt with matching `dataset_version_id` and `dataset_version_hash`
 - no runtime database row for the dataset version
+- no runtime source provenance row with the matching dataset hash/source reference
 - lineage mismatch between sidecar, source artifact, bridge, and dataset
 - redaction scan failure
 

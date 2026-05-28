@@ -42224,5 +42224,68 @@
     "raw_local_path_exposed": false,
     "raw_url_exposed": false,
     "next_posture": "candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_rendered_status_v1"
+  },
+  "sec_edgar_arelle_value_reveal_operator_exercise_tracking": {
+    "status": "operator_exercise_readiness_packet_recorded_blocked_until_coherent_authority_bundle",
+    "milestone": "sec_edgar_arelle_value_reveal_operator_exercise_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1264-sec-xbrl-value-reveal-operator-exercise.md",
+    "authority_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md",
+    "preflight_doc": "next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md",
+    "runner": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-runner.py",
+    "report": "diagnostics/assessment/sec-xbrl-value-reveal-operator-exercise-run-report.json",
+    "readiness_packet_exists": true,
+    "operator_exercise_performed": false,
+    "ready_to_run_operator_exercise": false,
+    "blocked_until_authority_exists": true,
+    "authority_bundle_required": [
+      "ready_arelle_sidecar_receipt",
+      "verified_internal_value_store",
+      "matching_bridge_receipt",
+      "dataset_version_id_and_hash",
+      "runtime_dataset_version_row",
+      "runtime_dataset_source_provenance"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_network_performed": false,
+    "arelle_subprocess_invoked": false,
+    "sidecar_created": false,
+    "dataset_created": false,
+    "audit_receipt_created": false,
+    "cutover_default_enabled": false,
+    "value_reveal_default_enabled": false,
+    "next_posture": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1"
+  },
+  "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_tracking": {
+    "status": "authority_provisioning_preflight_recorded_live_arelle_run_not_granted_or_performed",
+    "milestone": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md",
+    "preflight_doc": "next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md",
+    "preflight_report": "diagnostics/assessment/sec-xbrl-value-reveal-authority-provisioning-preflight-report.json",
+    "provisioning_preflight_exists": true,
+    "live_arelle_run_granted": false,
+    "live_arelle_run_performed": false,
+    "defaults_remain_off": true,
+    "live_behavior_change_introduced_by_tracking": false,
+    "next_posture": "await_explicit_live_arelle_authority_grant_after_review_debt_closeout"
+  },
+  "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
+    "status": "branch_local_review_debt_closure_in_progress",
+    "milestone": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1",
+    "branch": "codex/post-1968-1969-sec-value-reveal-preflight-review-debt",
+    "base_main": "4291fcde489e7b8eec05c4067543d824fe728667",
+    "review_debt_closed": [
+      "pr_1968_progress_proof_alignment",
+      "pr_1969_dataset_hash_readiness",
+      "pr_1969_internal_value_store_verification",
+      "pr_1969_sidecar_bridge_lineage_matching",
+      "pr_1969_runtime_dataset_row_and_provenance_matching"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_network_performed": false,
+    "arelle_subprocess_invoked": false,
+    "sidecar_created": false,
+    "dataset_created": false,
+    "audit_receipt_created": false,
+    "next_posture": "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1_after_review_debt_merge"
   }
 }

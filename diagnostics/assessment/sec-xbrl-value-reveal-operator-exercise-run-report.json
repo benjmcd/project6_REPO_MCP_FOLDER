@@ -1,54 +1,70 @@
 {
   "blocking_reasons": [
     {
-      "blocked_reason": "value_reveal_operator_exercise_ready_sidecar_authority_missing",
-      "criterion": "ready_sidecar_with_internal_value_store_available",
+      "blocked_reason": "value_reveal_operator_exercise_storage_unavailable",
+      "criterion": "configured_storage_available",
       "evidence": {
+        "storage_exists": false,
+        "storage_file_count": 0,
+        "storage_marker": "fc8ad9da4354cbf9"
+      },
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "value_reveal_operator_exercise_coherent_authority_bundle_missing",
+      "criterion": "coherent_value_reveal_authority_bundle_available",
+      "evidence": {
+        "blocked_reason_codes": [
+          "value_reveal_operator_exercise_ready_sidecar_authority_missing",
+          "value_reveal_operator_exercise_no_coherent_authority_bundle"
+        ],
+        "bridge_receipt_count": 0,
+        "bridge_receipt_with_dataset_hash_count": 0,
+        "bridge_receipt_with_dataset_id_count": 0,
+        "coherent_bundle_count": 0,
         "internal_value_store_file_count": 0,
         "ready_sidecar_count": 0,
-        "ready_sidecar_with_internal_value_store_count": 0,
+        "selected_bundle_present": false,
         "sidecar_receipt_count": 0
       },
       "state": "blocked"
     },
     {
-      "blocked_reason": "value_reveal_operator_exercise_bridge_dataset_authority_missing",
-      "criterion": "bridge_dataset_authority_available",
-      "evidence": {
-        "bridge_receipt_count": 0,
-        "bridge_receipt_with_dataset_hash_count": 0
-      },
+      "blocked_reason": "value_reveal_operator_exercise_ready_sidecar_authority_missing",
+      "state": "blocked"
+    },
+    {
+      "blocked_reason": "value_reveal_operator_exercise_no_coherent_authority_bundle",
       "state": "blocked"
     }
   ],
   "criteria": [
     {
-      "blocked_reason": null,
+      "blocked_reason": "value_reveal_operator_exercise_storage_unavailable",
       "criterion": "configured_storage_available",
       "evidence": {
-        "storage_exists": true,
+        "storage_exists": false,
         "storage_file_count": 0,
-        "storage_marker": "1024374bbd830e65"
-      },
-      "state": "passed"
-    },
-    {
-      "blocked_reason": "value_reveal_operator_exercise_ready_sidecar_authority_missing",
-      "criterion": "ready_sidecar_with_internal_value_store_available",
-      "evidence": {
-        "internal_value_store_file_count": 0,
-        "ready_sidecar_count": 0,
-        "ready_sidecar_with_internal_value_store_count": 0,
-        "sidecar_receipt_count": 0
+        "storage_marker": "fc8ad9da4354cbf9"
       },
       "state": "blocked"
     },
     {
-      "blocked_reason": "value_reveal_operator_exercise_bridge_dataset_authority_missing",
-      "criterion": "bridge_dataset_authority_available",
+      "blocked_reason": "value_reveal_operator_exercise_coherent_authority_bundle_missing",
+      "criterion": "coherent_value_reveal_authority_bundle_available",
       "evidence": {
+        "blocked_reason_codes": [
+          "value_reveal_operator_exercise_ready_sidecar_authority_missing",
+          "value_reveal_operator_exercise_no_coherent_authority_bundle"
+        ],
         "bridge_receipt_count": 0,
-        "bridge_receipt_with_dataset_hash_count": 0
+        "bridge_receipt_with_dataset_hash_count": 0,
+        "bridge_receipt_with_dataset_id_count": 0,
+        "coherent_bundle_count": 0,
+        "internal_value_store_file_count": 0,
+        "ready_sidecar_count": 0,
+        "selected_bundle_present": false,
+        "sidecar_receipt_count": 0
       },
       "state": "blocked"
     }
@@ -76,16 +92,18 @@
   "redacted_inventory": {
     "bridge_receipt_count": 0,
     "bridge_receipt_with_dataset_hash_count": 0,
+    "bridge_receipt_with_dataset_id_count": 0,
     "internal_value_store_file_count": 0,
     "ready_sidecar_count": 0,
     "ready_sidecar_with_internal_value_store_count": 0,
     "sidecar_receipt_count": 0,
-    "storage_exists": true,
+    "storage_exists": false,
     "storage_file_count": 0,
-    "storage_marker": "1024374bbd830e65",
+    "storage_marker": "fc8ad9da4354cbf9",
     "value_reveal_receipt_count": 0
   },
   "required_next_action": "provision_or_point_to_existing_real_filing_sidecar_and_dataset_authorities_then_rerun",
   "schema_id": "diagnostics.sec_xbrl_value_reveal_operator_exercise_run.v1",
+  "selected_authority_bundle": null,
   "target": "sec_edgar_arelle_value_reveal_operator_exercise_v1"
 }

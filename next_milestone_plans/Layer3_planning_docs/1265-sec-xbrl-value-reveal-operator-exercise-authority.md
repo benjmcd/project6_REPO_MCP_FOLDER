@@ -20,18 +20,21 @@ Current report decision:
 
 `value_reveal_operator_exercise_blocked_missing_authority`
 
+The runner now selects a single coherent authority bundle rather than adding independent counts. A READY sidecar somewhere, a bridge receipt somewhere, a dataset hash somewhere, and a runtime row somewhere are not enough. The selected bundle must bind all of those authorities to the same sidecar/source lineage before readiness can pass.
+
 ## Current Evidence
 
-The current configured storage inventory is redacted by marker only. It records:
+The current configured storage inventory is redacted by marker only. In this checkout it records:
 
-- configured storage exists
+- configured storage is unavailable at the configured marker for this diagnostics run
 - storage file count is `0`
 - Arelle sidecar receipt count is `0`
 - READY sidecar with internal value store count is `0`
 - bridge receipt with dataset hash count is `0`
+- coherent authority bundle count is `0`
 - value-reveal receipt count is `0`
 
-No raw storage root, local path, SEC URL, accession, ticker, actor text, or value is committed.
+No raw storage root, local path, network locator, raw filing identity, actor text, or value is committed.
 
 ## Meaning
 
@@ -47,9 +50,11 @@ The operator exercise must not fabricate sidecars, use synthetic fixtures as pro
 The next pass must provide, by hash only:
 
 - one or more READY Arelle resolved-fact sidecar receipt ids/hashes
-- persisted internal value stores tied to those sidecar receipts
+- persisted internal value stores tied to those sidecar receipts, with value-store hashes verified
 - matching bridge receipts carrying `dataset_version_id` and `dataset_version_hash`
-- a runtime database containing those dataset_version rows
+- bridge/source/parser/source-artifact lineage that matches the selected sidecar
+- a runtime database containing the matching dataset version rows
+- dataset source provenance containing the matching dataset version hash/source reference
 - confirmation that both committed defaults remain off
 
 Only after that evidence exists should `sec_edgar_arelle_value_reveal_operator_exercise_v1` submit a reveal request.
