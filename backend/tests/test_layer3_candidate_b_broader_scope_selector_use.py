@@ -601,6 +601,84 @@ def test_candidate_b_broader_scope_selector_use_fails_closed_without_runtime_rec
     assert "candidate_b_broader_scope_selector_use_runtime_receipt_missing" in codes
 
 
+def test_candidate_b_broader_scope_selector_use_rejects_runtime_receipt_path_traversal(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    payload = _selector_use_payload(runtime_selection)
+    payload["runtime_selection_receipt_id"] = "../cb-broader-scope-runtime-escape"
+
+    response = client.post(SELECTOR_USE_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_selector_use.SCHEMA_ID
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_broader_scope_selector_use_storage_id_invalid"
+    assert body["error"]["details"]["field"] == "runtime_selection_receipt_id"
+
+
+def test_candidate_b_broader_scope_selector_use_status_rejects_runtime_receipt_path_traversal(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+
+    response = client.post(
+        SELECTOR_USE_STATUS_ENDPOINT,
+        json={
+            "client_request_id": "cb-broader-scope-selector-use-status-traversal",
+            "status_mode": layer3_candidate_b_broader_scope_selector_use.STATUS_MODE,
+            "operator_decision": layer3_candidate_b_broader_scope_selector_use.STATUS_OPERATOR_DECISION,
+            "selector_use_receipt_id": selector_use["selector_use_receipt_id"],
+            "selector_use_receipt_hash": selector_use["selector_use_receipt_hash"],
+            "runtime_selection_receipt_id": "..\\cb-broader-scope-runtime-escape",
+            "runtime_selection_receipt_hash": runtime_selection["selection_receipt_hash"],
+        },
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_selector_use.STATUS_SCHEMA_ID
+    assert body["status"] == "blocked"
+    assert body["mode"] == layer3_candidate_b_broader_scope_selector_use.STATUS_MODE
+    assert body["error"]["code"] == "candidate_b_broader_scope_selector_use_storage_id_invalid"
+    assert body["error"]["details"]["field"] == "runtime_selection_receipt_id"
+
+
+def test_candidate_b_broader_scope_selector_use_status_uses_status_error_for_unreadable_runtime_receipt(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    runtime_receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-runtime"
+        / f"{runtime_selection['selection_receipt_id']}.json"
+    )
+    runtime_receipt_path.write_text("{", encoding="utf-8")
+
+    response = client.post(
+        SELECTOR_USE_STATUS_ENDPOINT,
+        json={
+            "client_request_id": "cb-broader-scope-selector-use-status-unreadable-runtime",
+            "status_mode": layer3_candidate_b_broader_scope_selector_use.STATUS_MODE,
+            "operator_decision": layer3_candidate_b_broader_scope_selector_use.STATUS_OPERATOR_DECISION,
+            "selector_use_receipt_id": selector_use["selector_use_receipt_id"],
+            "selector_use_receipt_hash": selector_use["selector_use_receipt_hash"],
+            "runtime_selection_receipt_id": runtime_selection["selection_receipt_id"],
+            "runtime_selection_receipt_hash": runtime_selection["selection_receipt_hash"],
+        },
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_selector_use.STATUS_SCHEMA_ID
+    assert body["status"] == "blocked"
+    assert body["mode"] == layer3_candidate_b_broader_scope_selector_use.STATUS_MODE
+    assert body["error"]["code"] == "candidate_b_broader_scope_selector_use_receipt_unreadable"
+
+
 def test_candidate_b_broader_scope_selector_use_rejects_stale_hash_and_unselected_class(
     client: TestClient,
 ) -> None:
@@ -911,6 +989,34 @@ def test_candidate_b_broader_scope_activation_consumption_fails_closed_on_unsele
     assert "candidate_b_broader_scope_activation_consumption_unselected_scope_class" in codes
 
 
+def test_candidate_b_broader_scope_activation_consumption_uses_consumption_error_for_unreadable_existing_receipt(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    selector_activation = _selector_activation(client, selector_use_status)
+    payload = _activation_consumption_payload(selector_use_status, selector_activation)
+    first_response = client.post(ACTIVATION_CONSUMPTION_ENDPOINT, json=payload)
+    assert first_response.status_code == 200, first_response.text
+    first_body = first_response.json()
+    receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-activation-consumption"
+        / f"{first_body['consumption_receipt_id']}.json"
+    )
+    receipt_path.write_text("{", encoding="utf-8")
+
+    response = client.post(ACTIVATION_CONSUMPTION_ENDPOINT, json=payload)
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_SCHEMA_ID
+    assert body["status"] == "blocked"
+    assert body["mode"] == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_MODE
+    assert body["error"]["code"] == "candidate_b_broader_scope_selector_use_receipt_unreadable"
+
+
 def test_candidate_b_broader_scope_consumption_receipt_use_records_redacted_receipt(client: TestClient) -> None:
     runtime_selection = _runtime_selection(client)
     selector_use = _selector_use(client, runtime_selection)
@@ -973,6 +1079,34 @@ def test_candidate_b_broader_scope_consumption_receipt_use_records_redacted_rece
     assert receipt["selected_scope_classes"] == [SELECTED_CLASS]
     assert receipt["raw_local_path_exposed"] is False
     assert receipt["raw_url_exposed"] is False
+
+
+def test_candidate_b_broader_scope_consumption_receipt_use_uses_use_error_for_unreadable_activation_receipt(
+    client: TestClient,
+) -> None:
+    runtime_selection = _runtime_selection(client)
+    selector_use = _selector_use(client, runtime_selection)
+    selector_use_status = _selector_use_status(client, runtime_selection, selector_use)
+    selector_activation = _selector_activation(client, selector_use_status)
+    activation_consumption = _activation_consumption(client, selector_use_status, selector_activation)
+    activation_receipt_path = (
+        Path(settings.layer3_candidate_b_runtime_bridge_dir)
+        / "broader-scope-selector-activation"
+        / f"{selector_activation['activation_receipt_id']}.json"
+    )
+    activation_receipt_path.write_text("{", encoding="utf-8")
+
+    response = client.post(
+        CONSUMPTION_RECEIPT_USE_ENDPOINT,
+        json=_consumption_receipt_use_payload(selector_use_status, activation_consumption),
+    )
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["schema_id"] == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_SCHEMA_ID
+    assert body["status"] == "blocked"
+    assert body["mode"] == layer3_candidate_b_broader_scope_selector_use.CONSUMPTION_USE_MODE
+    assert body["error"]["code"] == "candidate_b_broader_scope_selector_use_receipt_unreadable"
 
 
 def test_candidate_b_broader_scope_consumption_receipt_use_status_revalidates_redacted_receipt(

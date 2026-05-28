@@ -9281,3 +9281,39 @@ Runtime behavior introduced by this audit doc: `false`. Rendered behavior introd
 Frontend-only durable authority enabled by this audit doc: `false`. Full mockup program activation selected now: `false`.
 
 Next exact posture: `decide_source_directory_redacted_delivery_use_bridge_or_accept_same_origin_delivery_rail_before_full_mockup_activation`.
+
+## Candidate B Activation Receipt Consumption Runtime Tracking
+
+Source PR: `#1790`.
+
+Source branch: `codex/cb-activation-consumption-runtime`.
+
+Merge commit: `8b852aff55f55cd295fe0c09ccc231b85fd8603f`.
+
+Milestone: `candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1087-cb-broader-eligible-corpus-default-scope-activation-receipt-consumption-runtime.md`.
+
+Implemented endpoint: `/api/v1/layer3/source/ingestion/candidate-b/broader-eligible-corpus/default-scope/activation-receipt/consume`.
+
+Implemented schema: `layer3.candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption.v1`.
+
+Implemented runtime mode: `candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_runtime_v1`.
+
+Progress/proof sync status: current-main runtime is now tracked in `layer3_progress_manifest.json`, `layer3_workbench_proof_manifest.json`, and this board after review-thread audit.
+
+Tracking behavior change introduced by this sync: `false`.
+
+Runtime behavior admitted by source PR: `true`.
+
+Selector mutation performed by this sync: `false`.
+
+Default scope mutation performed by this sync: `false`.
+
+Source expansion admitted by this sync: `false`.
+
+Raw local path exposed: `false`.
+
+Raw URL exposed: `false`.
+
+Next exact posture: `candidate_b_broader_eligible_corpus_default_scope_activation_receipt_consumption_rendered_status_v1`.
