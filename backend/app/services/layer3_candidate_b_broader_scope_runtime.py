@@ -99,7 +99,7 @@ def select_candidate_b_broader_scope_runtime(payload: Mapping[str, Any]) -> dict
 
     readiness_audit = fields.get("readiness_audit")
     selected_scope_classes = _string_list(fields.get("selected_scope_classes"))
-    expected_audit_id = _required_str(fields, "readiness_audit_id")
+    expected_audit_id = _required_storage_id(fields, "readiness_audit_id")
     expected_audit_hash = _required_str(fields, "readiness_audit_hash")
 
     blocked: list[dict[str, Any]] = []
@@ -110,8 +110,15 @@ def select_candidate_b_broader_scope_runtime(payload: Mapping[str, Any]) -> dict
     if not selected_scope_classes:
         blocked.append(_reason("candidate_b_broader_scope_runtime_no_selected_scope_class"))
 
+    persisted_audit, persisted_audit_blocks = _load_persisted_readiness_audit(
+        expected_audit_id,
+        expected_audit_hash,
+    )
+    blocked.extend(persisted_audit_blocks)
+    blocked.extend(_validate_inline_readiness_audit_binding(readiness_audit, expected_audit_id, expected_audit_hash))
+
     audit_summary = _validate_readiness_audit(
-        readiness_audit,
+        persisted_audit,
         selected_scope_classes=selected_scope_classes,
         expected_audit_id=expected_audit_id,
         expected_audit_hash=expected_audit_hash,
@@ -174,7 +181,8 @@ def select_candidate_b_broader_scope_runtime(payload: Mapping[str, Any]) -> dict
             "required_state": READY_STATE,
             "readiness_audit_id": expected_audit_id,
             "readiness_audit_hash": expected_audit_hash,
-            "binding_verified": not audit_summary["blocked_reasons"],
+            "server_issued_receipt_required": True,
+            "binding_verified": not audit_summary["blocked_reasons"] and not persisted_audit_blocks,
         },
         "selected_scope_classes": selected_scope_classes,
         "selected_scope_classes_source": SELECTED_SCOPE_CLASSES_SOURCE,
@@ -201,6 +209,7 @@ def select_candidate_b_broader_scope_runtime(payload: Mapping[str, Any]) -> dict
         },
         "fail_closed_behavior": {
             "missing_ready_audit_blocks_selection": True,
+            "missing_server_issued_ready_audit_receipt_blocks_selection": True,
             "stale_audit_hash_blocks_selection": True,
             "unready_scope_class_blocks_selection": True,
             "unproposed_scope_class_blocks_selection": True,
@@ -228,6 +237,52 @@ def select_candidate_b_broader_scope_runtime(payload: Mapping[str, Any]) -> dict
             else ["repair or bind a ready broader-scope audit receipt before selecting runtime scope"]
         ),
     }
+
+
+def _load_persisted_readiness_audit(audit_id: str, audit_hash: str) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+    try:
+        audit = layer3_candidate_b_broader_scope_readiness.read_candidate_b_broader_scope_readiness_audit_receipt(
+            audit_id,
+            expected_audit_hash=audit_hash,
+        )
+    except layer3_candidate_b_broader_scope_readiness.CandidateBBroaderScopeReadinessError as exc:
+        return None, [
+            _reason(
+                "candidate_b_broader_scope_runtime_server_ready_audit_receipt_unavailable",
+                readiness_error_code=exc.code,
+            )
+        ]
+    return audit, []
+
+
+def _validate_inline_readiness_audit_binding(
+    value: Any,
+    expected_audit_id: str,
+    expected_audit_hash: str,
+) -> list[dict[str, Any]]:
+    if not isinstance(value, Mapping):
+        return [_reason("candidate_b_broader_scope_runtime_ready_audit_missing")]
+    blocked: list[dict[str, Any]] = []
+    for field, expected in (("audit_id", expected_audit_id), ("audit_hash", expected_audit_hash)):
+        if value.get(field) != expected:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_runtime_ready_audit_field_mismatch",
+                    field=field,
+                    expected=expected,
+                    received=value.get(field),
+                )
+            )
+    recomputed_hash = _readiness_audit_hash(value)
+    if recomputed_hash != expected_audit_hash:
+        blocked.append(
+            _reason(
+                "candidate_b_broader_scope_runtime_stale_audit_hash",
+                expected=recomputed_hash,
+                received=expected_audit_hash,
+            )
+        )
+    return blocked
 
 
 def _validate_readiness_audit(
@@ -273,6 +328,7 @@ def _validate_readiness_audit(
                 received=expected_audit_hash,
             )
         )
+    _validate_readiness_semantic_authority(audit, blocked)
 
     proposed_scope_classes = _string_list(audit.get("proposed_default_scope_classes"))
     if selected_scope_classes != proposed_scope_classes:
@@ -351,8 +407,60 @@ def _readiness_audit_hash(audit: Mapping[str, Any]) -> str:
                 isinstance(audit.get("baseline_rollback"), Mapping)
                 and audit["baseline_rollback"].get("available") is True
             ),
+            "candidate_a_semantics": {
+                "visual_lane_mode": _mapping_value(audit.get("candidate_a_semantics"), "visual_lane_mode"),
+                "preserved": _mapping_value(audit.get("candidate_a_semantics"), "preserved"),
+            },
+            "candidate_b_scope_authority": {
+                "document_processing_engine": _mapping_value(
+                    audit.get("candidate_b_scope_authority"),
+                    "document_processing_engine",
+                ),
+                "visual_lane_mode": _mapping_value(audit.get("candidate_b_scope_authority"), "visual_lane_mode"),
+                "bundle_and_runtime_authority_remain_distinct": _mapping_value(
+                    audit.get("candidate_b_scope_authority"),
+                    "bundle_and_runtime_authority_remain_distinct",
+                ),
+            },
         }
     )
+
+
+def _validate_readiness_semantic_authority(audit: Mapping[str, Any], blocked: list[dict[str, Any]]) -> None:
+    expected = (
+        ("candidate_a_semantics", "visual_lane_mode", "candidate_a_page_evidence_v1"),
+        ("candidate_a_semantics", "preserved", True),
+        (
+            "candidate_b_scope_authority",
+            "document_processing_engine",
+            layer3_candidate_b_broader_scope_readiness.CANDIDATE_B_ENGINE_SCOPE,
+        ),
+        (
+            "candidate_b_scope_authority",
+            "visual_lane_mode",
+            layer3_candidate_b_broader_scope_readiness.CANDIDATE_B_VISUAL_LANE_SCOPE,
+        ),
+        ("candidate_b_scope_authority", "bundle_and_runtime_authority_remain_distinct", True),
+    )
+    for section, field, expected_value in expected:
+        section_value = audit.get(section)
+        received = _mapping_value(section_value, field)
+        if received != expected_value:
+            blocked.append(
+                _reason(
+                    "candidate_b_broader_scope_runtime_ready_audit_semantic_authority_drift",
+                    section=section,
+                    field=field,
+                    expected=expected_value,
+                    received=received,
+                )
+            )
+
+
+def _mapping_value(value: Any, field: str) -> Any:
+    if not isinstance(value, Mapping):
+        return None
+    return value.get(field)
 
 
 def _write_selection_receipt(
@@ -494,6 +602,17 @@ def _required_str(fields: Mapping[str, Any], key: str) -> str:
         raise CandidateBBroaderScopeRuntimeError(
             "candidate_b_broader_scope_runtime_required_field_missing",
             "A required Candidate B broader-scope runtime field is missing or empty.",
+            details={"field": key},
+        )
+    return value
+
+
+def _required_storage_id(fields: Mapping[str, Any], key: str) -> str:
+    value = _required_str(fields, key)
+    if not all(ch.isascii() and (ch.isalnum() or ch in {"-", "_"}) for ch in value):
+        raise CandidateBBroaderScopeRuntimeError(
+            "candidate_b_broader_scope_runtime_receipt_id_invalid",
+            "Candidate B broader-scope runtime receipt ids must be server-owned storage identifiers.",
             details={"field": key},
         )
     return value
