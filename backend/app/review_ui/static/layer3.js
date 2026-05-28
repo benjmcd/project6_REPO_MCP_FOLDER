@@ -356,6 +356,8 @@ const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE = 'rendered_sec_edgar_ope
 const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_MODE = 'sec_edgar_operator_product_surface_runtime_v1';
 const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_OPERATOR_DECISION = 'render_sec_edgar_operator_product_surface';
 const SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_ENDPOINT = '/source/sec-edgar/real-company-corpus/operator-product-surface';
+const SEC_EDGAR_ARELLE_VALUE_REVEAL_REQUEST_SCHEMA_ID = 'layer3.sec_edgar_arelle_value_reveal_request.v1';
+const SEC_EDGAR_ARELLE_VALUE_REVEAL_ENDPOINT = '/source/sec-edgar/real-company-corpus/operator-value-reveal';
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_RENDERED_MODE = 'rendered_sec_edgar_durable_delivery_archive_status_control';
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_SURFACE_MODE = 'sec_edgar_durable_delivery_archive_status_surface_v1';
 const SEC_EDGAR_DURABLE_DELIVERY_ARCHIVE_STATUS_ENDPOINT_PREFIX = '/source/sec-edgar/real-company-corpus/durable-delivery/archive/status';
@@ -763,10 +765,19 @@ const State = {
     secEdgarOperatorProductSurface: null,
     secEdgarOperatorProductSurfaceError: null,
     secEdgarOperatorProductSurfacePending: false,
+    secEdgarArelleValueReveal: null,
+    secEdgarArelleValueRevealError: null,
+    secEdgarArelleValueRevealPending: false,
     secEdgarOperatorProductSurfaceInput: {
         operatorInspectionReceiptId: '',
         operatorInspectionReceiptHash: '',
         operatorConfirmation: false,
+        valueRevealSidecarReceiptId: '',
+        valueRevealSidecarReceiptHash: '',
+        valueRevealDatasetVersionId: '',
+        valueRevealDatasetVersionHash: '',
+        valueRevealActor: '',
+        valueRevealConfirmation: false,
     },
     secEdgarDurableDeliveryArchiveStatus: null,
     secEdgarDurableDeliveryArchiveStatusError: null,
@@ -8842,21 +8853,30 @@ function secEdgarOperatorProductSurfaceInputValues() {
     const receiptInput = document.getElementById('sec-edgar-operator-product-surface-inspection-receipt-id');
     const hashInput = document.getElementById('sec-edgar-operator-product-surface-inspection-receipt-hash');
     const confirmationInput = document.getElementById('sec-edgar-operator-product-surface-operator-confirmation');
+    const revealSidecarIdInput = document.getElementById('sec-edgar-arelle-value-reveal-sidecar-receipt-id');
+    const revealSidecarHashInput = document.getElementById('sec-edgar-arelle-value-reveal-sidecar-receipt-hash');
+    const revealDatasetIdInput = document.getElementById('sec-edgar-arelle-value-reveal-dataset-version-id');
+    const revealDatasetHashInput = document.getElementById('sec-edgar-arelle-value-reveal-dataset-version-hash');
+    const revealActorInput = document.getElementById('sec-edgar-arelle-value-reveal-actor');
+    const revealConfirmationInput = document.getElementById('sec-edgar-arelle-value-reveal-confirmation');
     const stored = State.secEdgarOperatorProductSurfaceInput;
+    const textValue = (input, fallback) => (
+        input ? input.value : (fallback || '')
+    ).trim();
     return {
-        operatorInspectionReceiptId: (
-            receiptInput?.value
-            || stored.operatorInspectionReceiptId
-            || ''
-        ).trim(),
-        operatorInspectionReceiptHash: (
-            hashInput?.value
-            || stored.operatorInspectionReceiptHash
-            || ''
-        ).trim(),
+        operatorInspectionReceiptId: textValue(receiptInput, stored.operatorInspectionReceiptId),
+        operatorInspectionReceiptHash: textValue(hashInput, stored.operatorInspectionReceiptHash),
         operatorConfirmation: confirmationInput
             ? Boolean(confirmationInput.checked)
             : Boolean(stored.operatorConfirmation),
+        valueRevealSidecarReceiptId: textValue(revealSidecarIdInput, stored.valueRevealSidecarReceiptId),
+        valueRevealSidecarReceiptHash: textValue(revealSidecarHashInput, stored.valueRevealSidecarReceiptHash),
+        valueRevealDatasetVersionId: textValue(revealDatasetIdInput, stored.valueRevealDatasetVersionId),
+        valueRevealDatasetVersionHash: textValue(revealDatasetHashInput, stored.valueRevealDatasetVersionHash),
+        valueRevealActor: textValue(revealActorInput, stored.valueRevealActor),
+        valueRevealConfirmation: revealConfirmationInput
+            ? Boolean(revealConfirmationInput.checked)
+            : Boolean(stored.valueRevealConfirmation),
     };
 }
 
@@ -10148,6 +10168,39 @@ function secEdgarOperatorProductSurfacePayload() {
     };
 }
 
+function secEdgarArelleValueRevealPayload() {
+    const values = secEdgarOperatorProductSurfaceInputValues();
+    State.secEdgarOperatorProductSurfaceInput = values;
+    if (!values.valueRevealActor) {
+        throw new Error('sec_edgar_arelle_value_reveal_actor_required');
+    }
+    if (!values.valueRevealConfirmation) {
+        throw new Error('sec_edgar_arelle_value_reveal_operator_confirmation_required');
+    }
+    if (!values.valueRevealSidecarReceiptId) {
+        throw new Error('sec_edgar_arelle_value_reveal_sidecar_receipt_id_required');
+    }
+    if (!/^[0-9a-fA-F]{64}$/.test(values.valueRevealSidecarReceiptHash)) {
+        throw new Error('sec_edgar_arelle_value_reveal_sidecar_receipt_hash_must_be_sha256');
+    }
+    if (!values.valueRevealDatasetVersionId) {
+        throw new Error('sec_edgar_arelle_value_reveal_dataset_version_id_required');
+    }
+    if (!/^[0-9a-fA-F]{64}$/.test(values.valueRevealDatasetVersionHash)) {
+        throw new Error('sec_edgar_arelle_value_reveal_dataset_version_hash_must_be_sha256');
+    }
+    return {
+        schema_id: SEC_EDGAR_ARELLE_VALUE_REVEAL_REQUEST_SCHEMA_ID,
+        client_request_id: requestId(),
+        actor: values.valueRevealActor,
+        operator_reveal_confirmation: values.valueRevealConfirmation,
+        sidecar_receipt_id: values.valueRevealSidecarReceiptId,
+        sidecar_receipt_hash: values.valueRevealSidecarReceiptHash,
+        dataset_version_id: values.valueRevealDatasetVersionId,
+        dataset_version_hash: values.valueRevealDatasetVersionHash,
+    };
+}
+
 function secEdgarDurableDeliveryArchiveStatusPath() {
     const values = secEdgarDurableDeliveryArchiveStatusInputValues();
     State.secEdgarDurableDeliveryArchiveStatusInput = values;
@@ -10692,6 +10745,19 @@ function canRenderSecEdgarOperatorProductSurface() {
         && /^[0-9a-fA-F]{64}$/.test(values.operatorInspectionReceiptHash)
         && values.operatorConfirmation
         && !State.secEdgarOperatorProductSurfacePending
+    );
+}
+
+function canRevealSecEdgarArelleValues() {
+    const values = secEdgarOperatorProductSurfaceInputValues();
+    return Boolean(
+        values.valueRevealActor
+        && values.valueRevealSidecarReceiptId
+        && /^[0-9a-fA-F]{64}$/.test(values.valueRevealSidecarReceiptHash)
+        && values.valueRevealDatasetVersionId
+        && /^[0-9a-fA-F]{64}$/.test(values.valueRevealDatasetVersionHash)
+        && values.valueRevealConfirmation
+        && !State.secEdgarArelleValueRevealPending
     );
 }
 
@@ -13152,6 +13218,49 @@ function secEdgarOperatorProductSurfaceRows(surface) {
     `;
 }
 
+function secEdgarArelleValueRevealRows(reveal) {
+    if (!reveal) return '';
+    const facts = Array.isArray(reveal.revealed_facts) ? reveal.revealed_facts : [];
+    const blockedReasons = Array.isArray(reveal.blocked_reasons) ? reveal.blocked_reasons : [];
+    return `
+        <div class="candidate-b-final-proof-status-grid">
+            <section class="result-review-card">
+                <strong>SEC EDGAR Governed Value Reveal</strong>
+                <ul>
+                    ${fieldItem('reveal state', reveal.reveal_state, { code: true })}
+                    ${fieldItem('audit receipt id', reveal.reveal_receipt_id, { code: true })}
+                    ${fieldItem('audit receipt hash', reveal.reveal_receipt_hash, { code: true })}
+                    ${fieldItem('server timestamp', reveal.audit_server_time, { code: true })}
+                    ${fieldItem('actor hash', reveal.actor_hash, { code: true })}
+                    ${fieldItem('fact count', reveal.revealed_fact_count)}
+                    ${fieldItem('value inventory hash', reveal.value_inventory_hash, { code: true })}
+                    ${fieldItem('blocked reasons', blockedReasons.map((reason) => reason.reason || reason.message).join(', '), { code: true })}
+                </ul>
+            </section>
+            ${facts.map((fact) => `
+                <section class="result-review-card">
+                    <strong>${escapeHtml(fact.concept?.qname || fact.fact_identity_hash || 'revealed fact')}</strong>
+                    <ul>
+                        ${fieldItem('effective value', fact.effective_value, { code: true })}
+                        ${fieldItem('lexical value', fact.lexical_value, { code: true })}
+                        ${fieldItem('value semantics', fact.value_semantics, { code: true })}
+                        ${fieldItem('period', [fact.period?.type, fact.period?.start, fact.period?.end, fact.period?.instant].filter(Boolean).join(' / '), { code: true })}
+                        ${fieldItem('unit currency', fact.unit?.currency, { code: true })}
+                        ${fieldItem('unit measures', Array.isArray(fact.unit?.measures) ? fact.unit.measures.join(', ') : '', { code: true })}
+                        ${fieldItem('explicit dimensions', Array.isArray(fact.dimensions?.explicit) ? fact.dimensions.explicit.length : 0)}
+                        ${fieldItem('typed dimensions', Array.isArray(fact.dimensions?.typed) ? fact.dimensions.typed.length : 0)}
+                        ${fieldItem('concept local name', fact.concept?.local_name, { code: true })}
+                        ${fieldItem('concept standard', fact.concept?.standard)}
+                        ${fieldItem('concept extension', fact.concept?.extension)}
+                        ${fieldItem('source order', fact.source_order)}
+                        ${fieldItem('fact identity hash', fact.fact_identity_hash, { code: true })}
+                    </ul>
+                </section>
+            `).join('')}
+        </div>
+    `;
+}
+
 function secEdgarDurableDeliveryArchiveStatusRows(status) {
     if (!status) return '';
     const surface = status.archive_status_surface || {};
@@ -15294,6 +15403,24 @@ function secEdgarOperatorProductSurfaceError() {
     `;
 }
 
+function secEdgarArelleValueRevealError() {
+    const error = State.secEdgarArelleValueRevealError;
+    if (!error) return '';
+    const detail = error.payload?.error || error.payload?.detail || {};
+    const code = (
+        detail.code
+        || error.payload?.error_code
+        || 'sec_edgar_arelle_value_reveal_error'
+    );
+    const message = detail.message || error.payload?.message || error.message;
+    return `
+        <div class="error-panel">
+            <strong>${escapeHtml(code)}</strong>
+            <p>${escapeHtml(message)}</p>
+        </div>
+    `;
+}
+
 function secEdgarDurableDeliveryArchiveStatusError() {
     const error = State.secEdgarDurableDeliveryArchiveStatusError;
     if (!error) return '';
@@ -16779,6 +16906,42 @@ function renderSecEdgarOperatorProductSurfacePanel() {
                 ${secEdgarOperatorProductSurfaceRows(State.secEdgarOperatorProductSurface)}
                 ${secEdgarOperatorProductSurfaceError()}
             </section>
+            <section class="result-review-card sec-edgar-operator-product-surface-card">
+                <strong>SEC EDGAR Governed Value Reveal</strong>
+                <form id="sec-edgar-arelle-value-reveal-form" class="candidate-b-final-proof-status-form" data-rendered-mode="${escapeHtml(SEC_EDGAR_OPERATOR_PRODUCT_SURFACE_RENDERED_MODE)}" data-frontend-durable-authority="false">
+                    <label>
+                        <span>sidecar receipt id</span>
+                        <input id="sec-edgar-arelle-value-reveal-sidecar-receipt-id" type="text" value="${escapeHtml(inputs.valueRevealSidecarReceiptId)}" autocomplete="off" spellcheck="false" placeholder="sec-edgar-arelle-sidecar-..." />
+                    </label>
+                    <label>
+                        <span>sidecar receipt hash</span>
+                        <input id="sec-edgar-arelle-value-reveal-sidecar-receipt-hash" type="text" value="${escapeHtml(inputs.valueRevealSidecarReceiptHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>dataset version id</span>
+                        <input id="sec-edgar-arelle-value-reveal-dataset-version-id" type="text" value="${escapeHtml(inputs.valueRevealDatasetVersionId)}" autocomplete="off" spellcheck="false" placeholder="dv-sec-ixbrl-facts-..." />
+                    </label>
+                    <label>
+                        <span>dataset version hash</span>
+                        <input id="sec-edgar-arelle-value-reveal-dataset-version-hash" type="text" value="${escapeHtml(inputs.valueRevealDatasetVersionHash)}" autocomplete="off" spellcheck="false" placeholder="sha256" />
+                    </label>
+                    <label>
+                        <span>actor self-attestation</span>
+                        <input id="sec-edgar-arelle-value-reveal-actor" type="text" value="${escapeHtml(inputs.valueRevealActor)}" autocomplete="off" spellcheck="false" placeholder="operator attestation" />
+                    </label>
+                    <label class="checkbox-row">
+                        <input id="sec-edgar-arelle-value-reveal-confirmation" type="checkbox" ${inputs.valueRevealConfirmation ? 'checked' : ''} />
+                        <span>confirm audited value reveal</span>
+                    </label>
+                    <button id="sec-edgar-arelle-value-reveal-submit" type="submit" ${canRevealSecEdgarArelleValues() ? '' : 'disabled'}>Reveal Values</button>
+                </form>
+                <div class="result-review-status">
+                    <span class="status-pill preview">explicit audited action</span>
+                    <span class="rail-label">Values are requested only through the sibling reveal endpoint. The default product surface remains redacted; successful reveals return effective values with a server audit receipt and do not persist raw values in the audit projection.</span>
+                </div>
+                ${secEdgarArelleValueRevealRows(State.secEdgarArelleValueReveal)}
+                ${secEdgarArelleValueRevealError()}
+            </section>
         </div>
     `;
 }
@@ -16787,6 +16950,10 @@ function updateSecEdgarOperatorProductSurfaceControls() {
     const submit = document.getElementById('sec-edgar-operator-product-surface-submit');
     if (submit) {
         submit.disabled = !canRenderSecEdgarOperatorProductSurface();
+    }
+    const revealSubmit = document.getElementById('sec-edgar-arelle-value-reveal-submit');
+    if (revealSubmit) {
+        revealSubmit.disabled = !canRevealSecEdgarArelleValues();
     }
 }
 
@@ -18426,6 +18593,48 @@ async function renderSecEdgarOperatorProductSurface(event) {
         addEvent(`SEC EDGAR operator product surface blocked: ${error.message}`);
     } finally {
         State.secEdgarOperatorProductSurfacePending = false;
+        renderAll();
+    }
+}
+
+async function revealSecEdgarArelleValues(event) {
+    event.preventDefault();
+    if (!canRevealSecEdgarArelleValues()) {
+        State.secEdgarArelleValueReveal = null;
+        State.secEdgarArelleValueRevealError = new Error(
+            'SEC EDGAR value reveal requires actor self-attestation, sidecar receipt id/hash, dataset version id/hash, and explicit confirmation.',
+        );
+        renderSecEdgarOperatorProductSurfacePanel();
+        return;
+    }
+    if (!window.confirm('Reveal SEC EDGAR resolved fact values and write an audit receipt?')) {
+        return;
+    }
+    let payload;
+    try {
+        payload = secEdgarArelleValueRevealPayload();
+    } catch (error) {
+        State.secEdgarArelleValueReveal = null;
+        State.secEdgarArelleValueRevealError = error;
+        renderSecEdgarOperatorProductSurfacePanel();
+        return;
+    }
+    State.secEdgarArelleValueRevealPending = true;
+    State.secEdgarArelleValueRevealError = null;
+    renderSecEdgarOperatorProductSurfacePanel();
+    try {
+        State.secEdgarArelleValueReveal = await postJson(
+            SEC_EDGAR_ARELLE_VALUE_REVEAL_ENDPOINT,
+            payload,
+        );
+        State.secEdgarArelleValueRevealError = null;
+        addEvent('SEC EDGAR Arelle values revealed with server audit receipt.');
+    } catch (error) {
+        State.secEdgarArelleValueReveal = null;
+        State.secEdgarArelleValueRevealError = error;
+        addEvent(`SEC EDGAR value reveal blocked: ${error.message}`);
+    } finally {
+        State.secEdgarArelleValueRevealPending = false;
         renderAll();
     }
 }
@@ -26295,12 +26504,19 @@ elements.secEdgarOperatorProductSurfacePanel.addEventListener('submit', (event) 
     if (event.target?.id === 'sec-edgar-operator-product-surface-form') {
         renderSecEdgarOperatorProductSurface(event);
     }
+    if (event.target?.id === 'sec-edgar-arelle-value-reveal-form') {
+        revealSecEdgarArelleValues(event);
+    }
 });
 elements.secEdgarOperatorProductSurfacePanel.addEventListener('input', (event) => {
-    if (event.target?.id?.startsWith('sec-edgar-operator-product-surface-')) {
-        const hadError = Boolean(State.secEdgarOperatorProductSurfaceError);
+    if (
+        event.target?.id?.startsWith('sec-edgar-operator-product-surface-')
+        || event.target?.id?.startsWith('sec-edgar-arelle-value-reveal-')
+    ) {
+        const hadError = Boolean(State.secEdgarOperatorProductSurfaceError || State.secEdgarArelleValueRevealError);
         State.secEdgarOperatorProductSurfaceInput = secEdgarOperatorProductSurfaceInputValues();
         State.secEdgarOperatorProductSurfaceError = null;
+        State.secEdgarArelleValueRevealError = null;
         if (hadError) {
             renderSecEdgarOperatorProductSurfacePanel();
         } else {
@@ -26309,10 +26525,14 @@ elements.secEdgarOperatorProductSurfacePanel.addEventListener('input', (event) =
     }
 });
 elements.secEdgarOperatorProductSurfacePanel.addEventListener('change', (event) => {
-    if (event.target?.id?.startsWith('sec-edgar-operator-product-surface-')) {
-        const hadError = Boolean(State.secEdgarOperatorProductSurfaceError);
+    if (
+        event.target?.id?.startsWith('sec-edgar-operator-product-surface-')
+        || event.target?.id?.startsWith('sec-edgar-arelle-value-reveal-')
+    ) {
+        const hadError = Boolean(State.secEdgarOperatorProductSurfaceError || State.secEdgarArelleValueRevealError);
         State.secEdgarOperatorProductSurfaceInput = secEdgarOperatorProductSurfaceInputValues();
         State.secEdgarOperatorProductSurfaceError = null;
+        State.secEdgarArelleValueRevealError = null;
         if (hadError) {
             renderSecEdgarOperatorProductSurfacePanel();
         } else {

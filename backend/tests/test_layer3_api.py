@@ -8,6 +8,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Mapping
 
 import pytest
 from fastapi.testclient import TestClient
@@ -95,6 +96,7 @@ from app.services import (
     layer3_sec_edgar_delivery_status_provenance,
     layer3_sec_edgar_operator_inspection,
     layer3_sec_edgar_operator_product_surface,
+    layer3_sec_edgar_arelle_value_reveal,
     layer3_sec_edgar_real_filing_acquisition_connector,
     layer3_sec_edgar_live_repeatability_trial,
     layer3_sec_edgar_live_source_artifact,
@@ -4274,6 +4276,57 @@ def _standard_numeric_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.Com
     return subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps(payload), stderr="")
 
 
+def _identity_redaction_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProcess[str]:
+    payload = json.loads(_standard_numeric_arelle_sidecar_runner().stdout)
+    identity_value = " ".join(("identity", "value", "sentinel"))
+    payload["fact_count"] = 2
+    payload["facts"].append(
+        {
+            "source_order": 2,
+            "entry_document_index": 1,
+            "concept": {
+                "qname": "dei:EntityRegistrantName",
+                "namespace": "http://xbrl.sec.gov/dei/2024",
+                "local_name": "EntityRegistrantName",
+                "standard": True,
+                "extension": False,
+                "resolved_from_dts": True,
+            },
+            "context_id": "ctx-annual",
+            "unit_id": "",
+            "period": {
+                "type": "duration",
+                "start": "2024-01-01",
+                "end": "2024-12-31",
+                "instant": None,
+                "forever": False,
+                "resolved": True,
+            },
+            "unit": {
+                "measures": [],
+                "currency": "",
+                "numerator": [],
+                "denominator": [],
+                "resolved": False,
+            },
+            "dimensions": {"explicit": [], "typed": []},
+            "decimals": None,
+            "precision": None,
+            "scale": None,
+            "sign": None,
+            "format": None,
+            "hidden": False,
+            "continued": False,
+            "continued_at": None,
+            "footnote_count": 0,
+            "value": identity_value,
+            "effective_value": identity_value,
+            "lexical_value": identity_value,
+        }
+    )
+    return subprocess.CompletedProcess(args=[], returncode=0, stdout=json.dumps(payload), stderr="")
+
+
 def _prepare_sec_edgar_arelle_sidecar_authority(
     tmp_path,
     monkeypatch,
@@ -4613,28 +4666,31 @@ def test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cuto
     assert classification["classification_diagnostics"]["cross_company_comparability_admitted"] is False
 
 
-def test_layer3_api_reveals_sec_edgar_operator_surface_values_only_when_gated(
+def _prepare_sec_edgar_arelle_value_reveal_fixture(
     client: TestClient,
     tmp_path,
     monkeypatch,
-) -> None:
-    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="operator-value-reveal")
+    *,
+    runner=_standard_numeric_arelle_sidecar_runner,
+    expected_resolved_fact_count: int = 1,
+) -> dict[str, object]:
+    prepared = _prepare_sec_edgar_html_inline_xbrl_fact_authority(client, monkeypatch, label="governed-value-reveal")
     parser = prepared["parser"]
     fact_authority = prepared["fact_authority"]
     sidecar = _prepare_sec_edgar_arelle_sidecar_authority(
         tmp_path,
         monkeypatch,
         prepared,
-        label="operator-value-reveal",
-        runner=_standard_numeric_arelle_sidecar_runner,
-        expected_resolved_fact_count=1,
+        label="governed-value-reveal",
+        runner=runner,
+        expected_resolved_fact_count=expected_resolved_fact_count,
     )
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_fact_authority_cutover_enabled", True)
 
     response = client.post(
         "/api/v1/layer3/source/sec-edgar/html-inline-xbrl/fact-authority/material-bridge",
         json={
-            "client_request_id": "sec-edgar-html-inline-xbrl-operator-value-reveal-bridge",
+            "client_request_id": "sec-edgar-html-inline-xbrl-governed-value-reveal-bridge",
             "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
             "operator_decision": "bridge_sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority",
             "fact_authority_receipt_id": fact_authority["fact_authority_receipt_id"],
@@ -4659,16 +4715,81 @@ def test_layer3_api_reveals_sec_edgar_operator_surface_values_only_when_gated(
         },
     )
     assert response.status_code == 200, response.text
-    bridge = response.json()
+    return {**prepared, "sidecar": sidecar, "bridge": response.json()}
 
-    disabled = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
+
+def _sec_edgar_arelle_value_reveal_payload(
+    fixture: Mapping[str, object],
+    *,
+    client_request_id: str = "sec-edgar-arelle-value-reveal-001",
+    actor: str = "operator-self-attestation",
+    operator_reveal_confirmation: bool | None = True,
+    sidecar_receipt_id: str | None = None,
+    sidecar_receipt_hash: str | None = None,
+    dataset_version_id: str | None = None,
+    dataset_version_hash: str | None = None,
+) -> dict[str, object]:
+    sidecar = fixture["sidecar"]
+    bridge = fixture["bridge"]
+    assert isinstance(sidecar, Mapping)
+    assert isinstance(bridge, Mapping)
+    payload: dict[str, object] = {
+        "schema_id": "layer3.sec_edgar_arelle_value_reveal_request.v1",
+        "client_request_id": client_request_id,
+        "actor": actor,
+        "sidecar_receipt_id": sidecar_receipt_id or sidecar["sidecar_receipt_id"],
+        "sidecar_receipt_hash": sidecar_receipt_hash or sidecar["sidecar_receipt_hash"],
+        "dataset_version_id": dataset_version_id or bridge["dataset_version_id"],
+        "dataset_version_hash": dataset_version_hash or bridge["dataset_version_hash"],
+    }
+    if operator_reveal_confirmation is not None:
+        payload["operator_reveal_confirmation"] = operator_reveal_confirmation
+    return payload
+
+
+def _sec_edgar_arelle_value_reveal_expected_values(fixture: Mapping[str, object]) -> dict[str, str]:
+    sidecar = fixture["sidecar"]
+    assert isinstance(sidecar, Mapping)
+    value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(
+        sidecar
+    )
+    value_records = value_store["value_records"]
+    assert isinstance(value_records, list)
+    value_record = value_records[0]
+    assert isinstance(value_record, Mapping)
+    return {
+        "effective": str(value_record["effective_value"]),
+        "lexical": str(value_record["lexical_value"]),
+    }
+
+
+def test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_sibling_endpoint(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    fixture = _prepare_sec_edgar_arelle_value_reveal_fixture(client, tmp_path, monkeypatch)
+    expected_values = _sec_edgar_arelle_value_reveal_expected_values(fixture)
+    bridge = fixture["bridge"]
+    assert isinstance(bridge, Mapping)
+
+    disabled_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(fixture, client_request_id="sec-edgar-arelle-value-reveal-disabled"),
+    )
+    assert disabled_response.status_code == 200, disabled_response.text
+    assert disabled_response.json()["reveal_state"] == "sec_edgar_arelle_value_reveal_blocked"
+    assert disabled_response.json()["blocked_reasons"][0]["reason"] == "sec_edgar_arelle_value_reveal_feature_flag_disabled"
+    assert expected_values["effective"] not in disabled_response.text
+
+    default_surface = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
         {},
         {"filing_validation_records": [{"record_index": 1, "authority_hashes": {"fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"]}}]},
     )
-    assert disabled["value_reveal_state"] == "not_requested"
-    assert "987654321000000" not in json.dumps(disabled)
+    assert default_surface["value_reveal_state"] == "not_requested"
+    assert expected_values["effective"] not in json.dumps(default_surface)
 
-    reveal = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
+    legacy_surface_reveal = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
         {
             "value_reveal_policy": "sec_edgar_operator_surface_gated_value_reveal_v1",
             "value_reveal_confirmation": True,
@@ -4676,18 +4797,255 @@ def test_layer3_api_reveals_sec_edgar_operator_surface_values_only_when_gated(
         },
         {"filing_validation_records": [{"record_index": 1, "authority_hashes": {"fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"]}}]},
     )
-    assert reveal["value_reveal_state"] == "ready"
-    assert reveal["value_reveal_scope"] == "standard_numeric_non_dimensional_facts_only"
-    assert reveal["revealed_value_count"] == 1
-    value = reveal["revealed_values"][0]
-    assert value["effective_value"] == "987654321000000"
+    assert legacy_surface_reveal["value_reveal_state"] == "blocked"
+    assert legacy_surface_reveal["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_operator_product_surface_value_reveal_requires_sibling_endpoint"
+    )
+    assert expected_values["effective"] not in json.dumps(legacy_surface_reveal)
+
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
+    reveal_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(fixture),
+    )
+    assert reveal_response.status_code == 200, reveal_response.text
+    reveal = reveal_response.json()
+    assert reveal["reveal_state"] == "sec_edgar_arelle_value_reveal_ready"
+    assert reveal["revealed_fact_count"] == 1
+    assert reveal["audit_receipt"]["raw_values_persisted"] is False
+    assert reveal["audit_receipt"]["raw_identity_persisted"] is False
+    value = reveal["revealed_facts"][0]
+    assert value["effective_value"] == expected_values["effective"]
+    assert value["lexical_value"] == expected_values["lexical"]
     assert value["value_semantics"] == "arelle_effective_canonical_value_v1"
-    assert value["taxonomy_family"] == "us-gaap"
-    assert value["concept_namespace_hash"]
-    reveal_text = json.dumps(reveal)
-    assert "http://fasb.org" not in reveal_text
-    assert '"lexical_value"' not in reveal_text
-    assert str(tmp_path) not in reveal_text
+    assert value["transform_inputs"]["scale"] == "6"
+    assert value["period"]["start"] == "2024-01-01"
+    assert value["unit"]["currency"] == "iso4217:USD"
+    assert value["concept"]["standard"] is True
+    assert value["concept"]["extension"] is False
+    assert reveal["actor_hash"]
+    assert "operator-self-attestation" not in reveal_response.text
+    assert str(tmp_path) not in reveal_response.text
+
+    replay_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(fixture),
+    )
+    assert replay_response.status_code == 200, replay_response.text
+    assert replay_response.json()["reveal_receipt_id"] == reveal["reveal_receipt_id"]
+    assert replay_response.json()["idempotent_replay"] is True
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal/status/"
+        f"{reveal['reveal_receipt_id']}"
+    )
+    assert status_response.status_code == 200, status_response.text
+    status = status_response.json()
+    assert status["schema_id"] == "layer3.sec_edgar_arelle_value_reveal_status.v1"
+    assert status["revealed_fact_count"] == 0
+    assert status["revealed_facts"] == []
+    assert expected_values["effective"] not in status_response.text
+    assert "operator-self-attestation" not in status_response.text
+
+
+def test_layer3_api_redacts_identity_like_sec_edgar_arelle_value_reveals(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    fixture = _prepare_sec_edgar_arelle_value_reveal_fixture(
+        client,
+        tmp_path,
+        monkeypatch,
+        runner=_identity_redaction_arelle_sidecar_runner,
+        expected_resolved_fact_count=2,
+    )
+    value_store = layer3_sec_xbrl_sidecar.read_sec_edgar_arelle_resolved_fact_authority_internal_value_store(
+        fixture["sidecar"]
+    )
+    identity_value = next(
+        str(record["effective_value"])
+        for record in value_store["value_records"]
+        if str(record.get("source_order") or "") == "2"
+    )
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
+
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(
+            fixture,
+            client_request_id="sec-edgar-arelle-value-reveal-identity-redaction",
+        ),
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["revealed_fact_count"] == 2
+    assert identity_value not in response.text
+    identity_fact = next(
+        fact
+        for fact in response.json()["revealed_facts"]
+        if fact["concept"]["local_name"] == "EntityRegistrantName"
+    )
+    assert identity_fact["effective_value"] == ""
+    assert identity_fact["lexical_value"] == ""
+    assert identity_fact["value_redacted"] is True
+    assert identity_fact["value_redaction_reason"] == (
+        "sec_edgar_arelle_value_reveal_raw_identity_value_redacted"
+    )
+    assert identity_fact["value_hash"]
+
+
+def test_layer3_api_rejects_corrupted_sec_edgar_arelle_value_reveal_audit_receipt(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    fixture = _prepare_sec_edgar_arelle_value_reveal_fixture(client, tmp_path, monkeypatch)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
+    reveal_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(
+            fixture,
+            client_request_id="sec-edgar-arelle-value-reveal-corrupted-receipt",
+        ),
+    )
+    assert reveal_response.status_code == 200, reveal_response.text
+    reveal = reveal_response.json()
+    receipt_path = layer3_sec_edgar_arelle_value_reveal._receipt_path(reveal["reveal_receipt_id"])
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["fact_count"] = int(receipt["fact_count"]) + 1
+    receipt_path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal/status/"
+        f"{reveal['reveal_receipt_id']}"
+    )
+
+    assert status_response.status_code == 409, status_response.text
+    assert status_response.json()["error_code"] == "sec_edgar_arelle_value_reveal_receipt_hash_mismatch"
+
+
+@pytest.mark.parametrize(
+    ("label", "overrides", "expected_status", "expected_reason"),
+    [
+        (
+            "missing-confirmation",
+            {"operator_reveal_confirmation": False},
+            200,
+            "sec_edgar_arelle_value_reveal_operator_confirmation_required",
+        ),
+        (
+            "missing-actor",
+            {"actor": ""},
+            400,
+            "sec_edgar_arelle_value_reveal_actor_required",
+        ),
+        (
+            "invalid-sidecar-hash",
+            {"sidecar_receipt_hash": "bad"},
+            400,
+            "sec_edgar_arelle_value_reveal_sidecar_receipt_hash_invalid",
+        ),
+        (
+            "missing-sidecar",
+            {
+                "sidecar_receipt_id": "sec-edgar-arelle-resolved-fact-authority-111111111111111111111111",
+                "sidecar_receipt_hash": "1" * 64,
+            },
+            200,
+            "sec_edgar_arelle_sidecar_receipt_missing",
+        ),
+        (
+            "invalid-dataset-hash",
+            {"dataset_version_hash": "bad"},
+            400,
+            "sec_edgar_arelle_value_reveal_dataset_version_hash_invalid",
+        ),
+        (
+            "missing-dataset",
+            {"dataset_version_id": "dv-sec-ixbrl-facts-missing", "dataset_version_hash": "2" * 64},
+            200,
+            "sec_edgar_arelle_value_reveal_dataset_version_missing",
+        ),
+    ],
+)
+def test_layer3_api_blocks_sec_edgar_arelle_value_reveal_fail_closed_inputs(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+    label: str,
+    overrides: dict[str, object],
+    expected_status: int,
+    expected_reason: str,
+) -> None:
+    fixture = _prepare_sec_edgar_arelle_value_reveal_fixture(client, tmp_path, monkeypatch)
+    expected_values = _sec_edgar_arelle_value_reveal_expected_values(fixture)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
+
+    payload = _sec_edgar_arelle_value_reveal_payload(
+        fixture,
+        client_request_id=f"sec-edgar-arelle-value-reveal-{label}",
+        **overrides,
+    )
+    response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=payload,
+    )
+    assert response.status_code == expected_status, response.text
+    body = response.json()
+    if expected_status == 200:
+        assert body["reveal_state"] == "sec_edgar_arelle_value_reveal_blocked"
+        assert body["blocked_reasons"][0]["reason"] == expected_reason
+        assert expected_values["effective"] not in response.text
+    else:
+        assert body["error_code"] == expected_reason
+
+
+def test_layer3_api_blocks_sec_edgar_arelle_value_reveal_lineage_and_redaction_guards(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    fixture = _prepare_sec_edgar_arelle_value_reveal_fixture(client, tmp_path, monkeypatch)
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
+
+    monkeypatch.setattr(layer3_sec_edgar_arelle_value_reveal, "_lineage_mismatches", lambda *_args, **_kwargs: ["primary_document_hash"])
+    lineage_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(
+            fixture,
+            client_request_id="sec-edgar-arelle-value-reveal-lineage-mismatch",
+        ),
+    )
+    assert lineage_response.status_code == 200, lineage_response.text
+    assert lineage_response.json()["blocked_reasons"][0]["reason"] == "sec_edgar_arelle_value_reveal_lineage_mismatch"
+
+    monkeypatch.setattr(layer3_sec_edgar_arelle_value_reveal, "_lineage_mismatches", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(layer3_sec_edgar_arelle_value_reveal, "_projection_has_redaction_violation", lambda _response: True)
+    redaction_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(
+            fixture,
+            client_request_id="sec-edgar-arelle-value-reveal-redaction-block",
+        ),
+    )
+    assert redaction_response.status_code == 200, redaction_response.text
+    assert redaction_response.json()["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_arelle_value_reveal_response_redaction_violation"
+    )
+
+    forbidden_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json={
+            **_sec_edgar_arelle_value_reveal_payload(
+                fixture,
+                client_request_id="sec-edgar-arelle-value-reveal-forbidden-field",
+            ),
+            "raw_url": "blocked",
+        },
+    )
+    assert forbidden_response.status_code == 400, forbidden_response.text
+    assert forbidden_response.json()["error_code"] == "sec_edgar_arelle_value_reveal_forbidden_request_fields"
 
 
 def test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar(

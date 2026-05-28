@@ -730,77 +730,15 @@ def _diagnostics_loss_report(
 def _value_reveal_surface(request: Mapping[str, Any], validation: Mapping[str, Any]) -> dict[str, Any]:
     if not any(key in request for key in ("value_reveal_policy", "value_reveal_confirmation", "value_reveal_max_records")):
         return _value_reveal_disabled()
-    if str(request.get("value_reveal_policy") or "") != VALUE_REVEAL_POLICY_ID:
-        return _value_reveal_blocked("sec_edgar_operator_product_surface_value_reveal_policy_not_admitted")
-    if request.get("value_reveal_confirmation") is not True:
-        return _value_reveal_blocked("sec_edgar_operator_product_surface_value_reveal_confirmation_missing")
-    max_records = _value_reveal_max_records(request.get("value_reveal_max_records"))
-    revealed: list[dict[str, Any]] = []
-    diagnostics: list[dict[str, Any]] = []
-    eligible_count = 0
-    inspected_bridge_count = 0
-    for validation_record in validation.get("filing_validation_records") or []:
-        if not isinstance(validation_record, Mapping):
-            continue
-        record_index = int(validation_record.get("record_index") or 0)
-        authority_hashes = dict(validation_record.get("authority_hashes") or {})
-        bridge_hash = str(authority_hashes.get("fact_material_bridge_receipt_hash") or "")
-        if not _is_sha256(bridge_hash):
-            diagnostics.append({"record_index": record_index, "reason": "fact_material_bridge_hash_missing"})
-            continue
-        try:
-            bridge_receipt = layer3_sec_edgar_html_inline_xbrl_fact_material_bridge._read_verified_receipt(
-                f"{layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.RECEIPT_PREFIX}-{bridge_hash[:24]}"
-            )
-        except Layer3WorkbenchError as exc:
-            diagnostics.append({"record_index": record_index, "reason": exc.error_code})
-            continue
-        bridge_response = dict(bridge_receipt.get("response") or {})
-        if bridge_response.get("fact_authority_input_mode") != (
-            layer3_sec_edgar_html_inline_xbrl_fact_material_bridge.ARELLE_FACT_AUTHORITY_INPUT_MODE
-        ):
-            diagnostics.append({"record_index": record_index, "reason": "arelle_fact_authority_input_not_active"})
-            continue
-        inspected_bridge_count += 1
-        rows, row_diagnostics = _bridge_value_rows(bridge_response, record_index=record_index)
-        diagnostics.extend(row_diagnostics)
-        for row in rows:
-            if not _row_is_standard_numeric_non_dimensional(row):
-                continue
-            eligible_count += 1
-            if len(revealed) < max_records:
-                revealed.append(_revealed_value_record(row, record_index=record_index, bridge_hash=bridge_hash))
-    if not revealed:
-        return _value_reveal_blocked(
-            "sec_edgar_operator_product_surface_value_reveal_no_arelle_values",
-            diagnostics=diagnostics,
-        )
-    return {
-        "schema_id": "layer3.sec_edgar_operator_surface_value_reveal.v1",
-        "value_reveal_policy": VALUE_REVEAL_POLICY_ID,
-        "value_reveal_requested": True,
-        "value_reveal_state": "ready",
-        "value_reveal_scope": "standard_numeric_non_dimensional_facts_only",
-        "value_semantics": "arelle_effective_canonical_value_v1",
-        "governed_operator_fact_values_revealed": True,
-        "raw_identity_revealed": False,
-        "raw_urls_paths_storage_roots_revealed": False,
-        "final_financial_statement_semantics_claimed": False,
-        "cross_company_comparability_claimed": False,
-        "bridge_receipt_count": inspected_bridge_count,
-        "eligible_value_count": eligible_count,
-        "revealed_value_count": len(revealed),
-        "max_revealed_value_count": max_records,
-        "redacted_or_deferred_value_categories": [
-            "extension_concept_values",
-            "dimensional_fact_values",
-            "non_numeric_fact_values",
-            "lexical_raw_values",
+    return _value_reveal_blocked(
+        "sec_edgar_operator_product_surface_value_reveal_requires_sibling_endpoint",
+        diagnostics=[
+            {
+                "sibling_endpoint": "/source/sec-edgar/real-company-corpus/operator-value-reveal",
+                "default_operator_product_surface_remains_redacted": True,
+            }
         ],
-        "revealed_values": revealed,
-        "diagnostics": diagnostics,
-        "value_reveal_hash": stable_hash(revealed),
-    }
+    )
 
 
 def _value_reveal_disabled() -> dict[str, Any]:
