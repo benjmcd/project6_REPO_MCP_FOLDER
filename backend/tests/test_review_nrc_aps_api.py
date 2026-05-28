@@ -17,12 +17,16 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.api.deps import get_db
 from app.services.review_nrc_aps_runtime_roots import candidate_review_runtime_roots
 from main import app
-from review_nrc_aps_runtime_fixture import discover_passed_runtimes, latest_passed_runtime
+from review_nrc_aps_runtime_fixture import (
+    discover_baseline_visible_passed_runtimes,
+    latest_baseline_visible_passed_runtime,
+    runtime_is_baseline_visible,
+)
 
 
-RUNTIME = latest_passed_runtime()
+RUNTIME = latest_baseline_visible_passed_runtime()
 RUN_ID = RUNTIME.run_id
-MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_passed_runtimes()[:3]}
+MULTI_RUNTIME_RUN_IDS = {runtime.run_id for runtime in discover_baseline_visible_passed_runtimes()[:3]}
 
 
 def override_get_db():
@@ -34,6 +38,11 @@ def override_get_db():
 
 
 client = TestClient(app)
+
+
+def test_review_api_suite_anchor_runtime_is_baseline_visible():
+    assert runtime_is_baseline_visible(RUNTIME) is True
+    assert RUN_ID in MULTI_RUNTIME_RUN_IDS
 
 
 @pytest.fixture(autouse=True)
