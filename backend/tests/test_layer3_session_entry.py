@@ -36,6 +36,7 @@ from app.services.layer3_session_entry import (
     SESSION_STATUS_FAILED,
     SESSION_STATUS_VALUES,
     TERMINAL_SESSION_STATUS_VALUES,
+    Layer3SessionEntryError,
     SessionEntryRequest,
     SnapshotMaterial,
     commit_selection,
@@ -199,6 +200,9 @@ def test_layer3_session_entry_happy_path(tmp_path):
     assert stored_session.summary_json["loaded_snapshot_count"] == 2
     assert stored_session.summary_json["source_planes"] == ["plane_a", "plane_b"]
     assert stored_session.summary_json["warning_reasons"] == []
+    assert stored_session.summary_json["retrieved_descriptor_count"] == 2
+    assert stored_session.summary_json["unresolved_descriptor_count"] == 0
+    assert stored_session.summary_json["descriptor_coverage_status"] == "complete"
 
     assert [descriptor.status for descriptor in stored_descriptors] == ["resolved_loaded", "resolved_loaded"]
     assert {descriptor.source_plane for descriptor in stored_descriptors} == {"plane_a", "plane_b"}
@@ -293,6 +297,9 @@ def test_layer3_session_entry_partial_feed_preserves_explicit_failure_lineage(tm
     assert stored_session.summary_json["loaded_snapshot_count"] == 1
     assert stored_session.summary_json["warning_reasons"] == ["no_match"]
     assert stored_session.summary_json["source_planes"] == ["plane_a", "plane_b"]
+    assert stored_session.summary_json["retrieved_descriptor_count"] == 2
+    assert stored_session.summary_json["unresolved_descriptor_count"] == 0
+    assert stored_session.summary_json["descriptor_coverage_status"] == "complete"
 
     assert [descriptor.status for descriptor in stored_descriptors] == ["resolved_loaded", "resolved_empty"]
     assert {descriptor.source_plane for descriptor in stored_descriptors} == {"plane_a", "plane_b"}
@@ -315,3 +322,123 @@ def test_layer3_session_entry_partial_feed_preserves_explicit_failure_lineage(tm
     assert payload_path.exists()
     stored_payload = json.loads(payload_path.read_text(encoding="utf-8"))
     assert stored_payload == {"rows": [{"region": "central", "value": 7}]}
+
+
+def test_layer3_session_retrieval_rejects_cross_session_descriptor(tmp_path):
+    db = _make_session()
+    request_a = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": "dv-a"},
+                "selection_basis": {"selection_id": "sel-a"},
+                "expansion_reason": "committed_selection",
+            }
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"]},
+        commit_reason="phase1a-cross-session-a",
+        entry_route_context={"entrypoint": "test_harness"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "gate_b"},
+    )
+    request_b = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_b",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": "dv-b"},
+                "selection_basis": {"selection_id": "sel-b"},
+                "expansion_reason": "committed_selection",
+            }
+        ],
+        source_plane_hints={"plane_b": ["dataset_version"]},
+        commit_reason="phase1a-cross-session-b",
+        entry_route_context={"entrypoint": "test_harness"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "gate_b"},
+    )
+
+    session_a, manifest_a = commit_selection(db, request_a)
+    session_b, manifest_b = commit_selection(db, request_b)
+    expand_descriptors(db, session=session_a, manifest=manifest_a)
+    descriptors_b = expand_descriptors(db, session=session_b, manifest=manifest_b)
+
+    with pytest.raises(Layer3SessionEntryError, match="descriptor does not belong to session"):
+        record_retrieval_event(
+            db,
+            session=session_a,
+            descriptor=descriptors_b[0],
+            outcome="loaded",
+            reason_code="loaded",
+            loaded_materials=[
+                SnapshotMaterial(
+                    source_shape="dataset_version",
+                    source_identity={"dataset_version_id": "dv-b"},
+                    source_provenance={"dataset_id": "ds-b"},
+                    payload={"rows": [{"region": "west", "value": 5}]},
+                    load_summary={"loaded_records": 1, "failed_records": 0},
+                )
+            ],
+            storage_root=tmp_path,
+        )
+
+    assert db.query(L3RetrievalEvent).count() == 0
+    assert db.query(L3MaterialSnapshot).count() == 0
+
+
+def test_layer3_session_finalize_requires_retrieval_for_every_descriptor(tmp_path):
+    db = _make_session()
+    request = SessionEntryRequest(
+        manifest_items=[
+            {
+                "source_plane": "plane_a",
+                "descriptor_type": "dataset_version",
+                "selector_payload": {"dataset_version_id": "dv-coverage-a"},
+                "selection_basis": {"selection_id": "sel-coverage-a"},
+                "expansion_reason": "committed_selection",
+            },
+            {
+                "source_plane": "plane_b",
+                "descriptor_type": "aps_content_document",
+                "selector_payload": {"run_id": "run-coverage", "target_id": "target-coverage", "content_id": "cid-missing"},
+                "selection_basis": {"selection_id": "sel-coverage-b"},
+                "expansion_reason": "committed_selection",
+            },
+        ],
+        source_plane_hints={"plane_a": ["dataset_version"], "plane_b": ["aps_content_document"]},
+        commit_reason="phase1a-proof-coverage",
+        entry_route_context={"entrypoint": "test_harness"},
+        operator_context={"operator": "pytest"},
+        summary={"phase": "gate_b"},
+    )
+
+    session, manifest = commit_selection(db, request)
+    descriptors = expand_descriptors(db, session=session, manifest=manifest)
+    record_retrieval_event(
+        db,
+        session=session,
+        descriptor=descriptors[0],
+        outcome="loaded",
+        reason_code="loaded",
+        loaded_materials=[
+            SnapshotMaterial(
+                source_shape="dataset_version",
+                source_identity={"dataset_version_id": "dv-coverage-a"},
+                source_provenance={"dataset_id": "ds-coverage-a"},
+                payload={"rows": [{"region": "north", "value": 3}]},
+                load_summary={"loaded_records": 1, "failed_records": 0},
+            )
+        ],
+        storage_root=tmp_path,
+    )
+
+    finalize_session(db, session=session)
+    db.commit()
+
+    stored_session = db.query(L3Session).one()
+
+    assert stored_session.status == SESSION_STATUS_COMPLETED_WITH_WARNINGS
+    assert stored_session.summary_json["retrieved_descriptor_count"] == 1
+    assert stored_session.summary_json["unresolved_descriptor_count"] == 1
+    assert stored_session.summary_json["descriptor_coverage_status"] == "incomplete"
