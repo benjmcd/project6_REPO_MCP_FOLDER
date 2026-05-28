@@ -549,7 +549,7 @@ def test_sec_edgar_text_table_downstream_proof_rejects_raw_url_evidence_ref(db_s
     with pytest.raises(Layer3WorkbenchError) as exc:
         layer3_sec_edgar_downstream_proof.record_sec_edgar_text_table_downstream_layer3_proof(payload, db_session)
 
-    assert exc.value.error_code == "sec_edgar_text_table_downstream_proof_coverage_exposes_forbidden_reference"
+    assert exc.value.error_code == "sec_edgar_text_table_downstream_proof_forbidden_request_fields"
 
 
 def test_sec_edgar_text_table_downstream_operator_status_renders_not_recorded(db_session) -> None:
@@ -707,22 +707,20 @@ def test_sec_edgar_text_table_downstream_operator_status_blocks_raw_url_proof(db
     )
     proof_payload["coverage_evidence"]["gate_b_commit"]["evidence_ref"] = "https://example.test/raw-proof"
 
-    result = layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
-        {
-            "client_request_id": "sec-edgar-downstream-status-raw-url",
-            "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
-            "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
-            "downstream_proof_request": proof_payload,
-            "expected_proof_hash": "c" * 64,
-        },
-        db_session,
-    )
+    with pytest.raises(Layer3WorkbenchError) as exc:
+        layer3_sec_edgar_downstream_status.inspect_sec_edgar_text_table_downstream_layer3_operator_status(
+            {
+                "client_request_id": "sec-edgar-downstream-status-raw-url",
+                "status_mode": "sec_edgar_text_table_downstream_layer3_operator_status_v1",
+                "operator_decision": "inspect_sec_edgar_text_table_downstream_layer3_operator_status",
+                "downstream_proof_request": proof_payload,
+                "expected_proof_hash": "c" * 64,
+            },
+            db_session,
+        )
 
-    assert result["operator_status_state"] == "blocked"
-    assert result["blocked_reasons"][0]["reason"] == (
-        "sec_edgar_text_table_downstream_proof_coverage_exposes_forbidden_reference"
-    )
-    assert "https://example.test/raw-proof" not in str(result)
+    assert exc.value.error_code == "sec_edgar_text_table_downstream_operator_status_forbidden_request_fields"
+    assert "https://example.test/raw-proof" not in str(exc.value)
 
 
 def _ready_sec_edgar_downstream_status(
