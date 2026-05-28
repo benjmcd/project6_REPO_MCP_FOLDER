@@ -1,12 +1,16 @@
 {
   "arelle_environment_preflight": {
+    "cache_dir_exists": false,
     "cache_dir_marker": null,
     "cache_dir_present": false,
     "internet_connectivity_mode": "offline",
+    "python_exists": false,
     "python_marker": null,
     "python_present": false,
     "taxonomy_package_count": 0,
+    "taxonomy_package_existing_count": 0,
     "taxonomy_package_markers": [],
+    "taxonomy_packages_all_exist": false,
     "taxonomy_packages_present": false
   },
   "blocking_reasons": [
@@ -14,13 +18,17 @@
       "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
       "criterion": "arelle_environment_available_for_future_granted_run",
       "evidence": {
+        "cache_dir_exists": false,
         "cache_dir_marker": null,
         "cache_dir_present": false,
         "internet_connectivity_mode": "offline",
+        "python_exists": false,
         "python_marker": null,
         "python_present": false,
         "taxonomy_package_count": 0,
+        "taxonomy_package_existing_count": 0,
         "taxonomy_package_markers": [],
+        "taxonomy_packages_all_exist": false,
         "taxonomy_packages_present": false
       },
       "state": "blocked"
@@ -51,13 +59,17 @@
       "blocked_reason": "authority_provisioning_preflight_arelle_environment_missing",
       "criterion": "arelle_environment_available_for_future_granted_run",
       "evidence": {
+        "cache_dir_exists": false,
         "cache_dir_marker": null,
         "cache_dir_present": false,
         "internet_connectivity_mode": "offline",
+        "python_exists": false,
         "python_marker": null,
         "python_present": false,
         "taxonomy_package_count": 0,
+        "taxonomy_package_existing_count": 0,
         "taxonomy_package_markers": [],
+        "taxonomy_packages_all_exist": false,
         "taxonomy_packages_present": false
       },
       "state": "blocked"
