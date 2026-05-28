@@ -78,7 +78,7 @@ def build_report() -> dict[str, Any]:
             all(
                 test_name in sources["api_tests"]
                 for test_name in (
-                    "test_layer3_deployment_profile_local_defaults_preserve_proof_posture",
+                    "test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover",
                     "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on",
                     "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
                     "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",
@@ -86,7 +86,7 @@ def build_report() -> dict[str, Any]:
             ),
             {
                 "focused_tests": [
-                    "test_layer3_deployment_profile_local_defaults_preserve_proof_posture",
+                    "test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover",
                     "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on",
                     "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
                     "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",

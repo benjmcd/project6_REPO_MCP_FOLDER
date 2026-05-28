@@ -55,6 +55,11 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
         sources["config"],
         'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=False,',
     )
+    default_on = _contains(
+        sources["config"],
+        'layer3_sec_edgar_arelle_fact_authority_cutover_enabled: bool = Field(\n        default=True,',
+    )
+    runtime_default_already_enabled = default_on and not default_off
     rollback = {
         name: {
             "signal": signal,
@@ -107,10 +112,19 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
             "admission_review_gate_not_admitted",
         ),
         _criterion(
-            "runtime_default_still_off",
-            default_off,
-            {"config_file": "backend/app/core/config.py", "flag_default_false": default_off},
-            "admission_review_runtime_default_already_changed",
+            "runtime_default_posture_recorded",
+            default_off or runtime_default_already_enabled,
+            {
+                "config_file": "backend/app/core/config.py",
+                "flag_default_false": default_off,
+                "flag_default_true": runtime_default_already_enabled,
+                "posture": (
+                    "default_on_runtime_enabled_by_follow_on_slice"
+                    if runtime_default_already_enabled
+                    else "default_off_admission_candidate"
+                ),
+            },
+            "admission_review_runtime_default_posture_unrecognized",
         ),
         _criterion(
             "rollback_fail_closed_signals_present",
@@ -142,13 +156,18 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
         for item in criteria
         if item["state"] != "passed"
     ]
-    admitted = not blockers
+    admitted = not blockers and not runtime_default_already_enabled
+    superseded = not blockers and runtime_default_already_enabled
     return {
         "schema_id": "diagnostics.sec_xbrl_default_on_admission_review.v1",
         "target": "sec_edgar_arelle_default_off_to_default_on_admission_review_v1",
-        "decision": "admission_review_passed" if admitted else "admission_review_blocked",
+        "decision": (
+            "admission_review_superseded_by_default_on_runtime"
+            if superseded
+            else "admission_review_passed" if admitted else "admission_review_blocked"
+        ),
         "ready_for_default_on_runtime_slice": admitted,
-        "headline": _headline(admitted=admitted, blockers=blockers),
+        "headline": _headline(admitted=admitted, superseded=superseded, blockers=blockers),
         "source_reports": {"default_on_gate": _repo_display_path(gate_report_path)},
         "criteria": criteria,
         "blocking_reasons": blockers,
@@ -160,7 +179,8 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
             "redaction violation blocks response/report projection",
         ],
         "non_goals_preserved": {
-            "runtime_default_changed": False,
+            "runtime_default_changed_by_admission_review": False,
+            "runtime_default_enabled_by_follow_on_runtime_slice": runtime_default_already_enabled,
             "bridge_gate_b_product_package_ui_mutated": False,
             "candidate_b_sec_routing_performed": False,
             "final_financial_statement_semantics_claimed": False,
@@ -169,6 +189,9 @@ def build_report(*, gate_report_path: Path, source_root: Path) -> dict[str, Any]
             "rag_vector_model_provider_auth_behavior_added": False,
         },
         "next_slice": (
+            "sec_edgar_operator_surface_gated_value_reveal_v1"
+            if superseded
+            else
             "sec_edgar_arelle_fact_authority_default_on_runtime_v1"
             if admitted
             else "sec_edgar_arelle_default_off_to_default_on_admission_review_v1"
@@ -205,7 +228,12 @@ def _contains(source: str, text: str) -> bool:
     return text.replace("\r\n", "\n") in source.replace("\r\n", "\n")
 
 
-def _headline(*, admitted: bool, blockers: list[dict[str, Any]]) -> str:
+def _headline(*, admitted: bool, superseded: bool, blockers: list[dict[str, Any]]) -> str:
+    if superseded:
+        return (
+            "Default-on admission evidence is recorded, and the runtime default has already been enabled by the "
+            "follow-on runtime slice; this report is no longer a pre-cutover PASS packet."
+        )
     if admitted:
         return "Default-on Arelle cutover passed admission review as a candidate for the runtime-default slice."
     reasons = ", ".join(reason["reason"] for reason in blockers)
