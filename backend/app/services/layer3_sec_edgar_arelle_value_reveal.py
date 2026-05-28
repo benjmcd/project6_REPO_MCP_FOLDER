@@ -30,6 +30,8 @@ RECEIPT_PREFIX = "sec-edgar-arelle-value-reveal"
 RECEIPT_DIR = "layer3-sec-edgar-arelle-value-reveal"
 REDACTION_POLICY_ID = "sec_edgar_arelle_value_reveal_redaction_v1"
 VALUE_SEMANTICS_ID = "arelle_effective_canonical_value_v1"
+VALUE_REVEAL_POLICY_ID = "sec_edgar_arelle_governed_value_reveal_v1"
+VALUE_REVEAL_SCOPE = "resolved_fact_authority_bound_filing_values_with_identity_redaction"
 
 ALLOWED_FIELDS = {
     "schema_id",
@@ -227,7 +229,13 @@ def reveal_sec_edgar_arelle_values(fields: Mapping[str, Any], db: Session) -> di
             request_id=request_id,
             reasons=[_reason("sec_edgar_arelle_value_reveal_response_redaction_violation")],
         )
-    persisted = _write_receipt(audit_receipt)
+    try:
+        persisted = _write_receipt(audit_receipt)
+    except Layer3WorkbenchError as exc:
+        return _blocked_response(
+            request_id=request_id,
+            reasons=[_reason(exc.error_code, message=exc.message, blocked_fields=list(exc.blocked_fields))],
+        )
     response = _ready_response(
         request_id=request_id,
         receipt=persisted["receipt"],
@@ -243,6 +251,11 @@ def reveal_sec_edgar_arelle_values(fields: Mapping[str, Any], db: Session) -> di
 
 
 def inspect_sec_edgar_arelle_value_reveal_status(reveal_receipt_id: str) -> dict[str, Any]:
+    if not settings.layer3_sec_edgar_arelle_value_reveal_enabled:
+        return _blocked_response(
+            request_id=f"sec-edgar-arelle-value-reveal-status-{_sha256_text(reveal_receipt_id)[:12]}",
+            reasons=[_reason("sec_edgar_arelle_value_reveal_feature_flag_disabled")],
+        )
     receipt = _read_verified_receipt(reveal_receipt_id)
     return {
         **base_response(
@@ -510,18 +523,31 @@ def _audit_receipt(
     value_hashes = [str(record.get("value_hash") or "") for record in reveal_records]
     fact_inventory_hash = stable_hash(fact_identity_hashes)
     value_inventory_hash = stable_hash(value_hashes)
-    actor_hash = stable_hash({"actor": actor})
+    client_request_id_hash = _sha256_text(request_id)
+    actor_hash = _sha256_text(actor)
+    idempotency_key_hash = stable_hash(
+        {
+            "client_request_id_hash": client_request_id_hash,
+            "sidecar_receipt_hash": sidecar["sidecar_receipt_hash"],
+            "dataset_version_hash": dataset_version_hash,
+            "actor_hash": actor_hash,
+        }
+    )
     receipt_hash = stable_hash(
         {
             "schema_id": SCHEMA_ID,
             "schema_version": SCHEMA_VERSION,
-            "client_request_id_hash": _sha256_text(request_id),
+            "client_request_id_hash": client_request_id_hash,
+            "idempotency_key_hash": idempotency_key_hash,
             "sidecar_receipt_hash": sidecar["sidecar_receipt_hash"],
             "dataset_version_hash": dataset_version_hash,
             "actor_hash": actor_hash,
             "fact_count": len(reveal_records),
             "fact_inventory_hash": fact_inventory_hash,
             "value_inventory_hash": value_inventory_hash,
+            "value_reveal_policy_id": VALUE_REVEAL_POLICY_ID,
+            "value_reveal_scope": VALUE_REVEAL_SCOPE,
+            "value_semantics": VALUE_SEMANTICS_ID,
             "redaction_policy_id": REDACTION_POLICY_ID,
         }
     )
@@ -534,7 +560,8 @@ def _audit_receipt(
         "reveal_receipt_id": f"{RECEIPT_PREFIX}-{receipt_hash[:24]}",
         "reveal_receipt_ref": f"{RECEIPT_PREFIX}:{receipt_hash[:24]}",
         "reveal_receipt_hash": receipt_hash,
-        "client_request_id_hash": _sha256_text(request_id),
+        "client_request_id_hash": client_request_id_hash,
+        "idempotency_key_hash": idempotency_key_hash,
         "actor_hash": actor_hash,
         "server_time": _server_time(),
         "sidecar_receipt_id": sidecar["sidecar_receipt_id"],
@@ -556,6 +583,8 @@ def _audit_receipt(
         "fact_count": len(reveal_records),
         "fact_inventory_hash": fact_inventory_hash,
         "value_inventory_hash": value_inventory_hash,
+        "value_reveal_policy_id": VALUE_REVEAL_POLICY_ID,
+        "value_reveal_scope": VALUE_REVEAL_SCOPE,
         "value_semantics": VALUE_SEMANTICS_ID,
         "redaction_policy_id": REDACTION_POLICY_ID,
         "negative_invariants": _negative_invariants(),
@@ -609,6 +638,8 @@ def _receipt_projection(receipt: Mapping[str, Any]) -> dict[str, Any]:
         "fact_count": receipt["fact_count"],
         "fact_inventory_hash": receipt["fact_inventory_hash"],
         "value_inventory_hash": receipt["value_inventory_hash"],
+        "value_reveal_policy_id": receipt["value_reveal_policy_id"],
+        "value_reveal_scope": receipt["value_reveal_scope"],
         "value_semantics": receipt["value_semantics"],
         "audit_receipt": {
             "schema_id": receipt["schema_id"],
@@ -620,6 +651,8 @@ def _receipt_projection(receipt: Mapping[str, Any]) -> dict[str, Any]:
             "fact_count": receipt["fact_count"],
             "fact_inventory_hash": receipt["fact_inventory_hash"],
             "value_inventory_hash": receipt["value_inventory_hash"],
+            "value_reveal_policy_id": receipt["value_reveal_policy_id"],
+            "value_reveal_scope": receipt["value_reveal_scope"],
             "redaction_policy_id": receipt["redaction_policy_id"],
             "raw_values_persisted": False,
             "raw_identity_persisted": False,
@@ -639,9 +672,20 @@ def _write_receipt(receipt: Mapping[str, Any]) -> dict[str, Any]:
                 blocked_fields=["reveal_receipt_hash"],
             )
         return {"receipt": existing, "idempotent_replay": True}
-    target.parent.mkdir(parents=True, exist_ok=True)
-    with target.open("x", encoding="utf-8") as handle:
-        handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("x", encoding="utf-8") as handle:
+            handle.write(json.dumps(dict(receipt), sort_keys=True, indent=2) + "\n")
+    except FileExistsError:
+        existing = _read_verified_receipt(str(receipt["reveal_receipt_id"]))
+        return {"receipt": existing, "idempotent_replay": True}
+    except OSError as exc:
+        _blocked(
+            "sec_edgar_arelle_value_reveal_receipt_write_failed",
+            "SEC EDGAR Arelle value reveal receipt could not be recorded.",
+            http_status=409,
+            blocked_fields=[exc.__class__.__name__],
+        )
     return {"receipt": dict(receipt), "idempotent_replay": False}
 
 
@@ -712,12 +756,16 @@ def _receipt_hash_basis(receipt: Mapping[str, Any]) -> str:
             "schema_id": SCHEMA_ID,
             "schema_version": SCHEMA_VERSION,
             "client_request_id_hash": receipt.get("client_request_id_hash"),
+            "idempotency_key_hash": receipt.get("idempotency_key_hash"),
             "sidecar_receipt_hash": receipt.get("sidecar_receipt_hash"),
             "dataset_version_hash": receipt.get("dataset_version_hash"),
             "actor_hash": receipt.get("actor_hash"),
             "fact_count": receipt.get("fact_count"),
             "fact_inventory_hash": receipt.get("fact_inventory_hash"),
             "value_inventory_hash": receipt.get("value_inventory_hash"),
+            "value_reveal_policy_id": receipt.get("value_reveal_policy_id"),
+            "value_reveal_scope": receipt.get("value_reveal_scope"),
+            "value_semantics": receipt.get("value_semantics"),
             "redaction_policy_id": receipt.get("redaction_policy_id"),
         }
     )
@@ -823,10 +871,14 @@ def _negative_invariants() -> dict[str, bool]:
         "raw_storage_root_exposed": False,
         "raw_issuer_identity_exposed": False,
         "raw_actor_exposed": False,
+        "raw_values_committed": False,
+        "raw_actor_committed": False,
+        "raw_identity_committed": False,
         "raw_values_persisted_in_audit_receipt": False,
         "default_operator_product_surface_mutated": False,
         "candidate_b_routing_used_for_sec": False,
         "final_financial_statement_semantics_claimed": False,
+        "cross_company_comparability_admitted": False,
         "cross_company_comparability_claimed": False,
         "rag_vector_model_provider_auth_behavior_added": False,
         "frontend_durable_authority_enabled": False,

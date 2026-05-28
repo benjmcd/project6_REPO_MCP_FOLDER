@@ -38,10 +38,12 @@ def build_report() -> dict[str, Any]:
             default_enabled,
             {
                 "config_file": "backend/app/core/config.py",
+                "config_default_enabled": default_enabled,
+                "governance_remediation_default_off": not default_enabled,
                 "real_corpus_gate_decision": sources["real_corpus_gate"].get("decision"),
                 "real_corpus_gate_verdict": sources["real_corpus_gate"].get("gate_verdict"),
             },
-            "default_on_runtime_rolled_back_by_real_corpus_gate",
+            "default_on_runtime_disabled_by_governance_remediation",
         ),
         _criterion(
             "persisted_sidecar_required_without_regex_fallback",
@@ -78,16 +80,16 @@ def build_report() -> dict[str, Any]:
             all(
                 test_name in sources["api_tests"]
                 for test_name in (
-                    "test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover",
-                    "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on",
+                    "test_layer3_deployment_profile_local_defaults_keep_arelle_cutover_off",
+                    "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_flag_enabled",
                     "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
                     "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",
                 )
             ),
             {
                 "focused_tests": [
-                    "test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover",
-                    "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on",
+                    "test_layer3_deployment_profile_local_defaults_keep_arelle_cutover_off",
+                    "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_flag_enabled",
                     "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
                     "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch",
                 ]
@@ -115,12 +117,16 @@ def build_report() -> dict[str, Any]:
     return {
         "schema_id": "diagnostics.sec_xbrl_default_on_runtime.v1",
         "target": "sec_edgar_arelle_fact_authority_default_on_runtime_v1",
-        "decision": "default_on_runtime_enabled" if not blockers else "default_on_runtime_blocked",
+        "decision": (
+            "default_on_runtime_enabled"
+            if default_enabled and not blockers
+            else "default_on_runtime_disabled_by_governance_remediation"
+        ),
         "headline": (
             "Arelle resolved-fact authority is now the default bridge input, with explicit persisted sidecar "
             "requirements and a reversible regex rollback flag."
-            if not blockers
-            else "Default-on runtime is blocked by missing source/test evidence."
+            if default_enabled and not blockers
+            else "Default-on Arelle runtime is disabled by governance remediation; the Arelle bridge remains flag-gated and reversible."
         ),
         "criteria": criteria,
         "blocking_reasons": blockers,
@@ -165,7 +171,7 @@ def build_report() -> dict[str, Any]:
         "next_slice": (
             "sec_edgar_operator_surface_gated_value_reveal_v1"
             if default_enabled
-            else "sec_edgar_arelle_extraction_coverage_remediation_then_gate_rerun_v1"
+            else "sec_edgar_arelle_governance_remediation_followups_v1"
         ),
     }
 

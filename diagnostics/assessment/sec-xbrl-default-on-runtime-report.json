@@ -1,15 +1,30 @@
 {
-  "blocking_reasons": [],
-  "criteria": [
+  "blocking_reasons": [
     {
-      "blocked_reason": null,
+      "blocked_reason": "default_on_runtime_disabled_by_governance_remediation",
       "criterion": "runtime_default_on",
       "evidence": {
+        "config_default_enabled": false,
         "config_file": "backend/app/core/config.py",
+        "governance_remediation_default_off": true,
         "real_corpus_gate_decision": "real_corpus_default_on_validated",
         "real_corpus_gate_verdict": "PASS"
       },
-      "state": "passed"
+      "state": "blocked"
+    }
+  ],
+  "criteria": [
+    {
+      "blocked_reason": "default_on_runtime_disabled_by_governance_remediation",
+      "criterion": "runtime_default_on",
+      "evidence": {
+        "config_default_enabled": false,
+        "config_file": "backend/app/core/config.py",
+        "governance_remediation_default_off": true,
+        "real_corpus_gate_decision": "real_corpus_default_on_validated",
+        "real_corpus_gate_verdict": "PASS"
+      },
+      "state": "blocked"
     },
     {
       "blocked_reason": null,
@@ -41,8 +56,8 @@
       "criterion": "focused_default_on_tests_present",
       "evidence": {
         "focused_tests": [
-          "test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover",
-          "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on",
+          "test_layer3_deployment_profile_local_defaults_keep_arelle_cutover_off",
+          "test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_flag_enabled",
           "test_layer3_api_blocks_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_without_sidecar",
           "test_layer3_api_rejects_sec_edgar_html_inline_xbrl_fact_material_arelle_cutover_lineage_mismatch"
         ]
@@ -59,10 +74,10 @@
       "state": "passed"
     }
   ],
-  "decision": "default_on_runtime_enabled",
-  "headline": "Arelle resolved-fact authority is now the default bridge input, with explicit persisted sidecar requirements and a reversible regex rollback flag.",
+  "decision": "default_on_runtime_disabled_by_governance_remediation",
+  "headline": "Default-on Arelle runtime is disabled by governance remediation; the Arelle bridge remains flag-gated and reversible.",
   "inherited_real_corpus_evidence": {
-    "admission_review_decision": "admission_review_superseded_by_default_on_runtime",
+    "admission_review_decision": "admission_review_passed",
     "arelle_resolved_fact_count": 18156,
     "bridge_fact_count": 18156,
     "broader_companyfacts_value_compared_count": 9131,
@@ -93,7 +108,7 @@
     "real_filing_count": 12,
     "value_bridge_fact_count": 23102
   },
-  "next_slice": "sec_edgar_operator_surface_gated_value_reveal_v1",
+  "next_slice": "sec_edgar_arelle_governance_remediation_followups_v1",
   "non_goals_preserved": {
     "candidate_b_sec_routing_performed": false,
     "cross_company_comparability_claimed": false,
@@ -102,10 +117,10 @@
     "rag_vector_model_provider_auth_behavior_added": false
   },
   "runtime_posture": {
-    "default_cutover_enabled": true,
+    "default_cutover_enabled": false,
     "operator_value_reveal_default_enabled": false,
     "persisted_sidecar_required": true,
-    "regex_fallback_while_default_on": false,
+    "regex_fallback_while_default_on": null,
     "regex_rollback_env_supported": true,
     "synchronous_arelle_in_bridge": false
   },

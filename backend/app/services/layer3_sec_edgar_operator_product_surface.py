@@ -729,6 +729,10 @@ def _diagnostics_loss_report(
 def _value_reveal_surface(request: Mapping[str, Any], validation: Mapping[str, Any]) -> dict[str, Any]:
     if not any(key in request for key in ("value_reveal_policy", "value_reveal_confirmation", "value_reveal_max_records")):
         return _value_reveal_disabled()
+    if not settings.layer3_sec_edgar_arelle_value_reveal_enabled:
+        return _value_reveal_blocked(
+            "sec_edgar_operator_product_surface_value_reveal_flag_disabled",
+        )
     return _value_reveal_blocked(
         "sec_edgar_operator_product_surface_value_reveal_requires_sibling_endpoint",
         diagnostics=[
