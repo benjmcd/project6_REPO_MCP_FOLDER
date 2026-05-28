@@ -109,6 +109,7 @@ from app.services.layer3_aps_handoff import (
 )
 from app.services.layer3_package_entry import Layer3PackageEntryError, PACKAGE_SCHEMA_IDS
 from app.services.layer3_pass_entry import Layer3PassEntryError
+from app.services.layer3_workbench_error import Layer3WorkbenchError
 from app.services.layer3_session_entry import (
     SessionEntryRequest,
     SnapshotMaterial,
@@ -189,14 +190,15 @@ def client(tmp_path, monkeypatch):
         app.dependency_overrides.pop(get_db, None)
 
 
-def test_layer3_deployment_profile_local_defaults_admit_validated_arelle_cutover() -> None:
+def test_layer3_deployment_profile_local_defaults_keep_arelle_cutover_off() -> None:
     profile = _settings_for_test()
 
     assert profile.deployment_mode == "local"
     assert profile.allowed_origin_list == ["*"]
     assert profile.cors_allow_credentials_enabled is True
     assert profile.storage_mount_enabled is True
-    assert profile.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is True
+    assert profile.layer3_sec_edgar_arelle_fact_authority_cutover_enabled is False
+    assert profile.layer3_sec_edgar_arelle_value_reveal_enabled is False
 
     cors_middleware = next(middleware for middleware in app.user_middleware if middleware.cls.__name__ == "CORSMiddleware")
     assert cors_middleware.kwargs["allow_origins"] == ["*"]
@@ -4579,7 +4581,7 @@ def test_layer3_api_bridges_sec_edgar_html_inline_xbrl_fact_material_from_arelle
     assert "arelle_effective_canonical_value_v1" in csv_text
 
 
-def test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_defaults_on(
+def test_layer3_api_classifies_sec_edgar_arelle_sidecar_fact_authority_when_cutover_flag_enabled(
     client: TestClient,
     tmp_path,
     monkeypatch,
@@ -4719,11 +4721,14 @@ def _prepare_sec_edgar_arelle_value_reveal_fixture(
     return {**prepared, "sidecar": sidecar, "bridge": response.json()}
 
 
+TEST_OPERATOR_ACTOR_HASHED_INPUT = "a" * 64
+
+
 def _sec_edgar_arelle_value_reveal_payload(
     fixture: Mapping[str, object],
     *,
     client_request_id: str = "sec-edgar-arelle-value-reveal-001",
-    actor: str = "operator-self-attestation",
+    actor: str = TEST_OPERATOR_ACTOR_HASHED_INPUT,
     operator_reveal_confirmation: bool | None = True,
     sidecar_receipt_id: str | None = None,
     sidecar_receipt_hash: str | None = None,
@@ -4790,6 +4795,21 @@ def test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_siblin
     assert default_surface["value_reveal_state"] == "not_requested"
     assert expected_values["effective"] not in json.dumps(default_surface)
 
+    flag_disabled_surface_reveal = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
+        {
+            "value_reveal_policy": "sec_edgar_operator_surface_gated_value_reveal_v1",
+            "value_reveal_confirmation": True,
+            "value_reveal_max_records": 1,
+        },
+        {"filing_validation_records": [{"record_index": 1, "authority_hashes": {"fact_material_bridge_receipt_hash": bridge["fact_material_bridge_receipt_hash"]}}]},
+    )
+    assert flag_disabled_surface_reveal["value_reveal_state"] == "blocked"
+    assert flag_disabled_surface_reveal["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_operator_product_surface_value_reveal_flag_disabled"
+    )
+    assert expected_values["effective"] not in json.dumps(flag_disabled_surface_reveal)
+
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
     legacy_surface_reveal = layer3_sec_edgar_operator_product_surface._value_reveal_surface(
         {
             "value_reveal_policy": "sec_edgar_operator_surface_gated_value_reveal_v1",
@@ -4804,7 +4824,6 @@ def test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_siblin
     )
     assert expected_values["effective"] not in json.dumps(legacy_surface_reveal)
 
-    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
     reveal_response = client.post(
         "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
         json=_sec_edgar_arelle_value_reveal_payload(fixture),
@@ -4825,9 +4844,18 @@ def test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_siblin
     assert value["concept"]["standard"] is True
     assert value["concept"]["extension"] is False
     assert reveal["actor_hash"]
-    assert "operator-self-attestation" not in reveal_response.text
+    assert reveal["actor_hash"] == hashlib.sha256(TEST_OPERATOR_ACTOR_HASHED_INPUT.encode("utf-8")).hexdigest()
+    assert TEST_OPERATOR_ACTOR_HASHED_INPUT not in reveal_response.text
     assert str(tmp_path) not in reveal_response.text
+    receipt_path = layer3_sec_edgar_arelle_value_reveal._receipt_path(reveal["reveal_receipt_id"])
+    receipt_text = receipt_path.read_text(encoding="utf-8")
+    assert expected_values["effective"] not in receipt_text
+    assert expected_values["lexical"] not in receipt_text
+    assert TEST_OPERATOR_ACTOR_HASHED_INPUT not in receipt_text
+    assert reveal["value_reveal_policy_id"] == "sec_edgar_arelle_governed_value_reveal_v1"
+    assert reveal["value_reveal_scope"] == "resolved_fact_authority_bound_filing_values_with_identity_redaction"
 
+    receipt_count = len(list(receipt_path.parent.glob("sec-edgar-arelle-value-reveal-*.json")))
     replay_response = client.post(
         "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
         json=_sec_edgar_arelle_value_reveal_payload(fixture),
@@ -4835,6 +4863,7 @@ def test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_siblin
     assert replay_response.status_code == 200, replay_response.text
     assert replay_response.json()["reveal_receipt_id"] == reveal["reveal_receipt_id"]
     assert replay_response.json()["idempotent_replay"] is True
+    assert len(list(receipt_path.parent.glob("sec-edgar-arelle-value-reveal-*.json"))) == receipt_count
 
     status_response = client.get(
         "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal/status/"
@@ -4846,7 +4875,19 @@ def test_layer3_api_reveals_sec_edgar_arelle_values_only_through_governed_siblin
     assert status["revealed_fact_count"] == 0
     assert status["revealed_facts"] == []
     assert expected_values["effective"] not in status_response.text
-    assert "operator-self-attestation" not in status_response.text
+    assert TEST_OPERATOR_ACTOR_HASHED_INPUT not in status_response.text
+
+    monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", False)
+    disabled_status_response = client.get(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal/status/"
+        f"{reveal['reveal_receipt_id']}"
+    )
+    assert disabled_status_response.status_code == 200, disabled_status_response.text
+    assert disabled_status_response.json()["reveal_state"] == "sec_edgar_arelle_value_reveal_blocked"
+    assert disabled_status_response.json()["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_arelle_value_reveal_feature_flag_disabled"
+    )
+    assert expected_values["effective"] not in disabled_status_response.text
 
 
 def test_layer3_api_redacts_identity_like_sec_edgar_arelle_value_reveals(
@@ -5008,6 +5049,7 @@ def test_layer3_api_blocks_sec_edgar_arelle_value_reveal_lineage_and_redaction_g
     monkeypatch,
 ) -> None:
     fixture = _prepare_sec_edgar_arelle_value_reveal_fixture(client, tmp_path, monkeypatch)
+    expected_values = _sec_edgar_arelle_value_reveal_expected_values(fixture)
     monkeypatch.setattr(settings, "layer3_sec_edgar_arelle_value_reveal_enabled", True)
 
     monkeypatch.setattr(layer3_sec_edgar_arelle_value_reveal, "_lineage_mismatches", lambda *_args, **_kwargs: ["primary_document_hash"])
@@ -5034,6 +5076,30 @@ def test_layer3_api_blocks_sec_edgar_arelle_value_reveal_lineage_and_redaction_g
     assert redaction_response.json()["blocked_reasons"][0]["reason"] == (
         "sec_edgar_arelle_value_reveal_response_redaction_violation"
     )
+
+    monkeypatch.setattr(layer3_sec_edgar_arelle_value_reveal, "_projection_has_redaction_violation", lambda _response: False)
+
+    def _write_failure(_receipt):
+        raise Layer3WorkbenchError(
+            "sec_edgar_arelle_value_reveal_receipt_write_failed",
+            "forced test write failure",
+            status="blocked",
+            http_status=409,
+        )
+
+    monkeypatch.setattr(layer3_sec_edgar_arelle_value_reveal, "_write_receipt", _write_failure)
+    write_failure_response = client.post(
+        "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
+        json=_sec_edgar_arelle_value_reveal_payload(
+            fixture,
+            client_request_id="sec-edgar-arelle-value-reveal-write-failure",
+        ),
+    )
+    assert write_failure_response.status_code == 200, write_failure_response.text
+    assert write_failure_response.json()["blocked_reasons"][0]["reason"] == (
+        "sec_edgar_arelle_value_reveal_receipt_write_failed"
+    )
+    assert expected_values["effective"] not in write_failure_response.text
 
     forbidden_response = client.post(
         "/api/v1/layer3/source/sec-edgar/real-company-corpus/operator-value-reveal",
