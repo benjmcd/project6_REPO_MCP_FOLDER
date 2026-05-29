@@ -43,10 +43,22 @@ from app.services.layer3_workbench_error import Layer3WorkbenchError
 
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json")
 DEFAULT_LIVE_STORAGE = Path("backend/app/storage_test_runtime/sec-real-product-runner")
+MATRIX_PLAN_SCHEMA_ID = "diagnostics.sec_xbrl_stratified_real_filing_validation_matrix_plan.v1"
+MATRIX_PLAN_MODE = "sec_edgar_stratified_real_filing_validation_matrix_v1"
 REQUIRED_FORMS = ("10-K", "10-Q", "20-F", "40-F", "6-K", "8-K")
 REQUIRED_REAL_FILING_COUNT = 30
 REQUIRED_ISSUER_HASH_COUNT = 15
 MIN_COMPANYFACTS_MATCH_RATE = 0.98
+REQUIRED_STRATA = (
+    "large_domestic_us_gaap",
+    "small_mid_domestic_us_gaap",
+    "foreign_private_ifrs_20f",
+    "canadian_40f",
+    "current_report_8k_sparse",
+    "foreign_6k_sparse",
+    "amendment_restatement",
+    "no_inline_or_zero_fact_diagnostic",
+)
 MATRIX_CHUNKS = (
     ("core", ("MSFT", "STLD", "SONY", "CCJ")),
     ("breadth", ("JPM", "MET", "PLD", "FIZZ")),
@@ -71,6 +83,14 @@ def main() -> int:
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--live", action="store_true")
     parser.add_argument("--storage-dir", default="")
+    parser.add_argument(
+        "--matrix-plan",
+        default=os.environ.get("SEC_XBRL_STRATIFIED_MATRIX_PLAN", ""),
+        help=(
+            "Optional off-repo stratified matrix plan JSON. The plan is read only to select "
+            "bounded chunks; reports keep issuer identities redacted."
+        ),
+    )
     parser.add_argument("--user-agent", default=os.environ.get("LAYER3_SEC_EDGAR_USER_AGENT", ""))
     parser.add_argument("--request-namespace", default="sec-xbrl-real-corpus-product-runner-v1")
     parser.add_argument(
@@ -88,6 +108,7 @@ def main() -> int:
     report = build_report(
         live=bool(args.live),
         storage_dir=Path(args.storage_dir) if args.storage_dir else None,
+        matrix_plan_path=Path(args.matrix_plan) if args.matrix_plan else None,
         user_agent=str(args.user_agent or ""),
         request_namespace=str(args.request_namespace or ""),
         taxonomy_internet_connectivity=str(args.taxonomy_internet_connectivity or "offline"),
@@ -107,27 +128,41 @@ def build_report(
     *,
     live: bool,
     storage_dir: Path | None = None,
+    matrix_plan_path: Path | None = None,
+    matrix_plan: Mapping[str, Any] | None = None,
     user_agent: str = "",
     request_namespace: str = "sec-xbrl-real-corpus-product-runner-v1",
     taxonomy_internet_connectivity: str = "offline",
     runner: Callable[[Path, str, str, str], list[dict[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     preflight = _live_preflight(live=live, user_agent=user_agent)
+    matrix_plan_readiness = _matrix_plan_readiness(matrix_plan_path=matrix_plan_path, matrix_plan=matrix_plan)
+    public_matrix_plan_readiness = _public_matrix_plan_readiness(matrix_plan_readiness)
+    matrix_chunks = _matrix_chunks_from_readiness(matrix_plan_readiness)
     rows: list[dict[str, Any]] = []
     storage_marker = None
-    if preflight["state"] == "passed":
+    if preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed":
         live_storage = _live_storage_dir(storage_dir)
         storage_marker = _storage_marker(live_storage)
         run = runner or _run_live_product_path
-        rows = run(
-            live_storage,
-            user_agent.strip(),
-            request_namespace.strip() or "sec-xbrl-real-corpus-product-runner-v1",
-            taxonomy_internet_connectivity,
-        )
+        if runner is None:
+            rows = run(
+                live_storage,
+                user_agent.strip(),
+                request_namespace.strip() or "sec-xbrl-real-corpus-product-runner-v1",
+                taxonomy_internet_connectivity,
+                matrix_chunks,
+            )
+        else:
+            rows = run(
+                live_storage,
+                user_agent.strip(),
+                request_namespace.strip() or "sec-xbrl-real-corpus-product-runner-v1",
+                taxonomy_internet_connectivity,
+            )
 
     summary = _summary(rows)
-    criteria = _criteria(preflight, summary)
+    criteria = _criteria(preflight, summary, public_matrix_plan_readiness)
     blockers = [
         {
             "criterion": item["criterion"],
@@ -146,12 +181,15 @@ def build_report(
         "decision": decision,
         "gate_verdict": "PASS" if pass_gate else "FAIL_OR_INCONCLUSIVE",
         "headline": _headline(decision, blockers, summary),
-        "live_sec_network_used": bool(live and preflight["state"] == "passed"),
+        "live_sec_network_used": bool(
+            live and preflight["state"] == "passed" and matrix_plan_readiness["state"] == "passed"
+        ),
         "fake_sec_client_used": False,
         "storage_dir_marker": storage_marker,
         "storage_dir_paths_redacted": True,
         "diagnostic_request_namespace_hash": stable_hash({"request_namespace": request_namespace})[:24],
-        "matrix_chunks": _matrix_chunk_projection(),
+        "matrix_execution_plan": public_matrix_plan_readiness,
+        "matrix_chunks": _matrix_chunk_projection(matrix_chunks),
         "preflight": preflight,
         "criteria": criteria,
         "blocking_reasons": blockers,
@@ -192,7 +230,9 @@ def _run_live_product_path(
     user_agent: str,
     request_namespace: str,
     taxonomy_internet_connectivity: str,
+    matrix_chunks: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] | None = None,
 ) -> list[dict[str, Any]]:
+    selected_chunks = matrix_chunks or _default_matrix_chunks()
     previous = {
         "storage_dir": settings.storage_dir,
         "live_enabled": settings.layer3_sec_edgar_live_network_enabled,
@@ -215,8 +255,15 @@ def _run_live_product_path(
     db = _memory_db_session()
     try:
         rows = [
-            _run_matrix_chunk(label, matrix, db=db, request_namespace=request_namespace, user_agent=user_agent)
-            for label, matrix in MATRIX_CHUNKS
+            _run_matrix_chunk(
+                label,
+                matrix,
+                strata=strata,
+                db=db,
+                request_namespace=request_namespace,
+                user_agent=user_agent,
+            )
+            for label, matrix, strata in selected_chunks
         ]
     finally:
         db.close()
@@ -238,6 +285,7 @@ def _run_matrix_chunk(
     label: str,
     matrix: tuple[str, ...],
     *,
+    strata: tuple[str, ...] = (),
     db: Any,
     request_namespace: str,
     user_agent: str,
@@ -250,6 +298,7 @@ def _run_matrix_chunk(
         "storage_path_redacted": True,
         "live_sec_network_used": True,
         "fake_sec_client_used": False,
+        "strata": list(strata),
     }
     try:
         validation = layer3_sec_edgar_real_company_corpus_validation.validate_sec_edgar_real_company_corpus_product_path(
@@ -949,13 +998,23 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _criteria(preflight: Mapping[str, Any], summary: Mapping[str, Any]) -> list[dict[str, Any]]:
+def _criteria(
+    preflight: Mapping[str, Any],
+    summary: Mapping[str, Any],
+    matrix_plan_readiness: Mapping[str, Any],
+) -> list[dict[str, Any]]:
     return [
         _criterion(
             "live_preflight",
             preflight["state"] == "passed",
             preflight,
             "real_corpus_product_path_live_preflight_not_satisfied",
+        ),
+        _criterion(
+            "matrix_execution_plan",
+            matrix_plan_readiness["state"] == "passed",
+            matrix_plan_readiness,
+            "real_corpus_product_path_matrix_plan_not_satisfied",
         ),
         _criterion(
             "broader_real_product_path_corpus",
@@ -1088,11 +1147,138 @@ def _live_preflight(*, live: bool, user_agent: str) -> dict[str, Any]:
     }
 
 
+def _matrix_plan_readiness(
+    *,
+    matrix_plan_path: Path | None,
+    matrix_plan: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if matrix_plan_path is None and matrix_plan is None:
+        return {
+            "state": "passed",
+            "mode": "built_in_broader_corpus_matrix",
+            "external_plan_used": False,
+            "plan_path_marker": None,
+            "paths_redacted": True,
+            "chunk_count": len(_default_matrix_chunks()),
+            "chunks": _matrix_chunk_projection(_default_matrix_chunks()),
+            "blocked_reasons": [],
+        }
+    path = matrix_plan_path.resolve(strict=False) if matrix_plan_path is not None else None
+    plan = dict(matrix_plan or {})
+    blocked_reasons: list[str] = []
+    if path is not None:
+        if not path.exists() or not path.is_file():
+            blocked_reasons.append("matrix_plan_file_unavailable")
+        elif _path_inside_repo_or_onedrive(path):
+            blocked_reasons.append("matrix_plan_file_inside_repo_or_onedrive")
+        else:
+            try:
+                plan = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                blocked_reasons.append("matrix_plan_file_unreadable")
+    if plan.get("schema_id") != MATRIX_PLAN_SCHEMA_ID:
+        blocked_reasons.append("matrix_plan_schema_not_admitted")
+    if plan.get("matrix_mode") != MATRIX_PLAN_MODE:
+        blocked_reasons.append("matrix_plan_mode_not_admitted")
+    chunks, chunk_reasons = _matrix_chunks_from_external_plan(plan)
+    blocked_reasons.extend(chunk_reasons)
+    projection = _matrix_chunk_projection(chunks)
+    covered = {
+        stratum
+        for item in projection
+        for stratum in item.get("strata", [])
+    }
+    missing_strata = sorted(set(REQUIRED_STRATA) - covered)
+    if missing_strata:
+        blocked_reasons.append("matrix_plan_required_strata_missing")
+    state = "passed" if not blocked_reasons else "blocked"
+    return {
+        "state": state,
+        "mode": "external_stratified_matrix_plan",
+        "external_plan_used": True,
+        "plan_path_marker": stable_hash({"plan_path": str(path)})[:24] if path is not None else None,
+        "paths_redacted": True,
+        "chunk_count": len(chunks),
+        "chunks": projection,
+        "_chunks": chunks,
+        "required_strata": list(REQUIRED_STRATA),
+        "covered_strata": sorted(covered),
+        "missing_required_strata": missing_strata,
+        "blocked_reasons": list(dict.fromkeys(blocked_reasons)),
+    }
+
+
+def _matrix_chunks_from_external_plan(
+    plan: Mapping[str, Any],
+) -> tuple[tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...], list[str]]:
+    reasons: list[str] = []
+    raw_chunks = plan.get("chunks")
+    if not isinstance(raw_chunks, list) or not raw_chunks:
+        return (), ["matrix_plan_chunks_missing"]
+    chunks: list[tuple[str, tuple[str, ...], tuple[str, ...]]] = []
+    seen_labels: set[str] = set()
+    for index, raw in enumerate(raw_chunks):
+        if not isinstance(raw, Mapping):
+            reasons.append("matrix_plan_chunk_invalid")
+            continue
+        label = str(raw.get("matrix_label") or "").strip()
+        if not label or label in seen_labels:
+            reasons.append("matrix_plan_chunk_label_invalid")
+            continue
+        seen_labels.add(label)
+        matrix = _external_company_matrix(raw.get("company_matrix"))
+        strata = _external_strata(raw.get("strata"))
+        if not matrix:
+            reasons.append("matrix_plan_chunk_company_matrix_invalid")
+        if not strata:
+            reasons.append("matrix_plan_chunk_strata_invalid")
+        if not matrix or not strata:
+            continue
+        chunks.append((label, matrix, strata))
+        if index >= 23:
+            reasons.append("matrix_plan_chunk_count_exceeds_limit")
+            break
+    return tuple(chunks), reasons
+
+
+def _external_company_matrix(value: Any) -> tuple[str, ...]:
+    values = tuple(dict.fromkeys(str(item or "").strip().upper() for item in _as_list(value)))
+    if not values or len(values) > len(layer3_sec_edgar_real_filing_acquisition_connector.DEFAULT_REAL_COMPANY_MATRIX):
+        return ()
+    admitted = set(layer3_sec_edgar_real_filing_acquisition_connector.REAL_COMPANY_CIK_REFS)
+    if any(item not in admitted for item in values):
+        return ()
+    return values
+
+
+def _external_strata(value: Any) -> tuple[str, ...]:
+    values = tuple(dict.fromkeys(str(item or "").strip() for item in _as_list(value) if str(item or "").strip()))
+    if not values or any(item not in REQUIRED_STRATA for item in values):
+        return ()
+    return values
+
+
+def _matrix_chunks_from_readiness(
+    readiness: Mapping[str, Any],
+) -> tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]:
+    if readiness.get("mode") != "external_stratified_matrix_plan" or readiness.get("state") != "passed":
+        return _default_matrix_chunks()
+    return tuple(readiness.get("_chunks") or ())
+
+
+def _public_matrix_plan_readiness(readiness: Mapping[str, Any]) -> dict[str, Any]:
+    return {str(key): value for key, value in readiness.items() if not str(key).startswith("_")}
+
+
 def _delivery_archive_matrix_admitted(matrix: tuple[str, ...]) -> bool:
     return tuple(matrix) in {
         tuple(layer3_sec_edgar_delivery_status_provenance.EXPECTED_COMPANY_MATRIX),
         tuple(layer3_sec_edgar_delivery_status_provenance.DELIVERY_STATUS_PROVENANCE_BREADTH_SELECTED_MATRIX),
     }
+
+
+def _default_matrix_chunks() -> tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...]:
+    return tuple((label, matrix, ()) for label, matrix in MATRIX_CHUNKS)
 
 
 def _arelle_python_preflight() -> dict[str, Any]:
@@ -1150,15 +1336,19 @@ def _path_inside_repo_or_onedrive(path: Path) -> bool:
         return any(part.lower() == "onedrive" for part in resolved.parts)
 
 
-def _matrix_chunk_projection() -> list[dict[str, Any]]:
+def _matrix_chunk_projection(
+    matrix_chunks: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...],
+) -> list[dict[str, Any]]:
     return [
         {
             "matrix_label": label,
             "matrix_ref_hash": stable_hash({"matrix": list(matrix)})[:24],
             "issuer_count": len(matrix),
+            "strata": list(strata),
+            "strata_hash": stable_hash({"strata": list(strata)})[:24] if strata else None,
             "raw_identity_redacted": True,
         }
-        for label, matrix in MATRIX_CHUNKS
+        for label, matrix, strata in matrix_chunks
     ]
 
 
@@ -1227,6 +1417,16 @@ def _repo_path(path: Path) -> Path:
 
 def _storage_marker(path: Path) -> str:
     return stable_hash({"storage_dir_name": path.name, "parent_name": path.parent.name})[:24]
+
+
+def _as_list(value: Any) -> list[Any]:
+    if value in (None, ""):
+        return []
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    return [value]
 
 
 def _config_cutover_default_enabled() -> bool:

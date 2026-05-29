@@ -9418,6 +9418,20 @@ This preflight does not fetch SEC data, invoke Arelle, acquire sources, create s
 
 Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
 
+## SEC XBRL Stratified Matrix External Plan Harness
+
+Milestone: `sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1272-sec-xbrl-stratified-matrix-external-plan-harness.md`.
+
+Runner: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py`.
+
+Status: harness ready. The real-corpus product runner can now accept an off-repo stratified matrix plan through `--matrix-plan` or `SEC_XBRL_STRATIFIED_MATRIX_PLAN`, reject incomplete or in-repo plans, and report only redacted chunk hashes, issuer counts, strata, and readiness evidence.
+
+This harness adds no live network run, Arelle invocation, source acquisition, sidecar, dataset, audit receipt, value reveal, runtime default change, raw issuer-list commitment, production-readiness claim, final financial-statement semantics claim, or cross-company comparability claim.
+
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.

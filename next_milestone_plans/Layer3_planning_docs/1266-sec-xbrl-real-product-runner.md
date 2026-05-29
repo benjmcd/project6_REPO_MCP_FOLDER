@@ -52,6 +52,7 @@ When run with `--live`, the runner:
 - applies a one-request-per-second SEC access posture;
 - enables the Arelle resolved-fact authority cutover only inside the diagnostic process;
 - runs the existing validation/product path over four four-issuer matrix chunks, targeting at least 30 filings across at least 15 distinct issuer hashes;
+- can optionally use an off-repo `--matrix-plan` / `SEC_XBRL_STRATIFIED_MATRIX_PLAN` JSON file for the stratified real-filing matrix, while committed reports record only chunk hashes, issuer counts, strata, and readiness evidence;
 - records only redacted matrix hashes, form counts, filing counts, issuer hashes, per-filing completeness counts, CompanyFacts value match rates, receipt hashes, readiness states, and non-admission evidence;
 - computes CompanyFacts effective-value correctness over the standardized `us-gaap`, `dei`, and `ifrs-full` non-dimensional numeric intersection without committing raw values;
 - records the gate verdict and, when explicitly invoked with `--apply-default-decision`, may apply that verdict in the diagnostic lane; later governance/current-main runtime authority can supersede that default decision;
