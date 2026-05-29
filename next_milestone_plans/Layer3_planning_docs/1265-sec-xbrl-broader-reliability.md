@@ -18,7 +18,7 @@ Report:
 
 Decision:
 
-`broader_corpus_reliability_blocked`
+`broader_corpus_reliability_admitted`
 
 The inherited real-corpus extraction/value gate remains strong:
 
@@ -30,7 +30,7 @@ The inherited real-corpus extraction/value gate remains strong:
 - 23,102 value-bridge facts
 - CompanyFacts effective-value match rate `0.9923`
 
-The focused product-chain smoke proof also remains valid:
+The focused product-chain smoke proof also remains valid as a continuity check:
 
 - 8 fake-client corpus records
 - forms `10-K`, `10-Q`, `8-K`, `20-F`, `40-F`, and `6-K`
@@ -38,35 +38,39 @@ The focused product-chain smoke proof also remains valid:
 - delivery/status, operator inspection, product surface, and durable archive ready
 - operator value exposure still disabled
 
-But broader real product-path reliability is not admitted, because the product-chain proof currently uses fake SEC client evidence and not a retained/live real-filing corpus product-chain run.
+Broader real product-path reliability is now admitted because the gate also reads the current committed live real-product runner report:
 
-## Why This Blocks
+- 32 real filings
+- 16 issuer hashes
+- forms `10-K`, `10-K/A`, `10-Q`, `20-F`, `40-F`, `6-K`, and `8-K`
+- 30 supported inline-XBRL filings reached sidecar authority, selected that sidecar as fact authority, and reached handoff/export
+- 2 genuine no-inline-marker filings were diagnosed as zero-fact records rather than silently treated as product failures
+- Arelle resolved facts matched the independent inline lower bound: `52,558/52,558`
+- CompanyFacts effective-value correctness was `9,040/9,131`, match rate `0.99`, above the `0.98` gate
+- operator value exposure remained disabled
+- raw identities, accessions, URLs, values, and local storage roots remain uncommitted
 
-The long-term SEC product objective requires operator-useful reliability over real heterogeneous filings. The current evidence proves:
+## Why This Is Admitted
+
+The long-term SEC product objective requires operator-useful reliability over real heterogeneous filings. The current evidence now proves both:
 
 - real extraction, completeness, bridge parity, and value correctness on a real corpus;
-- product-chain continuity on a fake-client corpus.
-
-It does not yet prove:
-
-- product-chain readiness over a broader retained real corpus;
-- operator inspection/product/archive readiness on those real retained filing receipts;
+- focused product-chain continuity on a fake-client corpus;
+- broader product-path readiness over a retained/live real-filing corpus;
 - redaction and non-admissions under that broader real product-chain run.
 
-The gate therefore blocks instead of converting fake-client product smoke proof into a broader real-corpus claim.
+The gate does not convert fake-client evidence into a real-corpus claim. It admits broader reliability only because the current real-product runner report independently proves live-network, non-fake-client product-path evidence with supported-record, fact-count, CompanyFacts, and redaction floors.
 
 ## Next Slice
 
-`sec_edgar_real_corpus_product_path_runner_v1`
+`sec_edgar_arelle_default_posture_decision_v1`
 
 Scope:
 
-- acquire or reuse retained real SEC filing source bytes through the governed connector/source-artifact path;
-- run the default-on Arelle sidecar product path over at least the 12-filing real corpus shape already admitted by the extraction/value gate;
-- require forms `10-K`, `10-Q`, `20-F`, `40-F`, `6-K`, and `8-K`;
-- prove validation, bridge, statement classification, statement product, package/review, handoff/export, delivery/status/provenance, operator inspection, operator product surface, and durable archive readiness;
-- record a redacted per-filing product-path report by hash only;
-- keep operator value reveal disabled;
+- reconcile the admitted broader real-product reliability with the post-governance default-off runtime posture;
+- decide whether the correct next posture is explicit-operator-only, a new default-on admission gate, or a narrower staged default-on experiment;
+- preserve current committed defaults unless and until a separate reviewed runtime-default decision is made;
+- keep value reveal gated and default-off;
 - preserve no final financial-statement semantics and no cross-company comparability admissions.
 
 ## Non-Goals Preserved
