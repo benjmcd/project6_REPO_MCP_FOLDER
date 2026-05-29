@@ -1336,11 +1336,11 @@ LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_
 )
 LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_E2E_GOVERNANCE_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC = (
     PLANNING_DOCS
-    / "559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md"
+    / "559-req-selection-sync.md"
 )
 LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_E2E_GOVERNANCE_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC = (
     PLANNING_DOCS
-    / "560_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md"
+    / "560-req-selection-main-sync.md"
 )
 LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_E2E_GOVERNANCE_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SELECTION_SYNC = (
     PLANNING_DOCS
@@ -47827,7 +47827,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
     )
     for term in (
         "Status: planning/control freeze for `await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync`.",
-        "559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+        "559-req-selection-sync.md",
         "558_LAYER3_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUTHORITY_AUDIT_AFTER_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_CURRENT_MAIN_SYNC.md",
         "d1100b64b907e04dc07ce1893e5aa133fd0dfe07",
         "select_next_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
@@ -47847,7 +47847,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
     for path, terms in {
         BOARD: (
             "## Layer 3 Product Use-Case Requirement Selection Freeze After End-to-End Governance Lifecycle Behavior Audit Connector/Destination Audit Handoff/Export Package-Lifecycle Source Intake Provider-Private E2E Connector Sync",
-            "559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+            "559-req-selection-sync.md",
             "select_next_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
             "operator_selects_next_layer3_product_use_case_requirement_after_read_only_end_to_end_governance_lifecycle_behavior_authority_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_without_runtime_expansion",
             "layer3_product_use_case_requirement_selection_freeze",
@@ -47859,7 +47859,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_sync",
             "planning_control_freeze",
             "codex/l3-requirement-selection-after-e2e-governance-connector-destination-handoff-e2e",
-            "559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+            "559-req-selection-sync.md",
             "d1100b64b907e04dc07ce1893e5aa133fd0dfe07",
             '"selected_freeze_mode": "layer3_product_use_case_requirement_selection_freeze"',
             '"entry_decision": "freeze_only"',
@@ -47872,7 +47872,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_sync_proof",
             "planning_control_freeze",
             "codex/l3-requirement-selection-after-e2e-governance-connector-destination-handoff-e2e",
-            "559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+            "559-req-selection-sync.md",
             "d1100b64b907e04dc07ce1893e5aa133fd0dfe07",
             "layer3_product_use_case_requirement_selection_freeze",
             "freeze_only",
@@ -47900,8 +47900,8 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
     )
     for term in (
         "Status: current-main proof/control sync for `layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_sync`.",
-        "560_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md",
-        "559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+        "560-req-selection-main-sync.md",
+        "559-req-selection-sync.md",
         "#1155",
         "081b9def5575619984b0ca1bb104dfd349a04367",
         "`backend-layer3-api`: `SUCCESS`",
@@ -47930,8 +47930,8 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
     for path, terms in {
         BOARD: (
             "## Layer 3 Product Use-Case Requirement Selection Freeze After End-to-End Governance Lifecycle Behavior Audit Connector/Destination Audit Handoff/Export Package-Lifecycle Source Intake Provider-Private E2E Connector Current-Main Sync",
-            "PR `#1155` merged `559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md`",
-            "560_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md",
+            "PR `#1155` merged `559-req-selection-sync.md`",
+            "560-req-selection-main-sync.md",
             "081b9def5575619984b0ca1bb104dfd349a04367",
             "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
             "select_next_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
@@ -47942,7 +47942,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync",
             "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
             "codex/l3-requirement-selection-current-main-sync-after-e2e-governance-connector-destination-handoff-e2e",
-            "560_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md",
+            "560-req-selection-main-sync.md",
             "#1155",
             "081b9def5575619984b0ca1bb104dfd349a04367",
             '"backend-layer3-api": "SUCCESS"',
@@ -47961,7 +47961,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
             "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync_proof",
             "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
             "codex/l3-requirement-selection-current-main-sync-after-e2e-governance-connector-destination-handoff-e2e",
-            "560_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md",
+            "560-req-selection-main-sync.md",
             "#1155",
             "081b9def5575619984b0ca1bb104dfd349a04367",
             "backend-layer3-api SUCCESS",
@@ -47992,7 +47992,7 @@ def _check_source_intake_provider_private_signed_url_post_924_sync(errors: list[
     for term in (
         "Status: planning/control freeze for `await_next_exact_named_layer3_product_use_case_behavior_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync`.",
         "561_LAYER3_PRODUCT_USE_CASE_BEHAVIOR_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_REQUIREMENT_SELECTION_SYNC.md",
-        "560_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md",
+        "560-req-selection-main-sync.md",
         "0d52839cee6e3e013d6139af51b73ca2302d3ab1",
         "freeze_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_behavior_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_sync",
         "operator_reviews_layer3_source_intake_to_provider_private_signed_reference_delivery_boundary_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_selection_without_mutation_or_dispatch",
