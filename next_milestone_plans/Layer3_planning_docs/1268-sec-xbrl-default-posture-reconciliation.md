@@ -20,7 +20,7 @@ Current posture:
 
 `explicit_operator_only_default_off`
 
-The project has enough evidence to proceed to a default-posture decision. It does not yet have a reviewed decision to make either the Arelle fact-authority cutover or value reveal default-on.
+The project has enough evidence to proceed to a default-posture decision. That decision is recorded in follow-up packet `1269-sec-xbrl-default-posture-decision.md`, which selects the explicit-operator-only default-off posture.
 
 ## Evidence Now Available
 
@@ -31,13 +31,16 @@ The project has enough evidence to proceed to a default-posture decision. It doe
 
 ## Next Pass
 
-Run an explicit default-posture decision pass. It should choose one of:
+The explicit default-posture decision pass is now complete in `1269-sec-xbrl-default-posture-decision.md`. It chose:
 
-- keep `explicit_operator_only_default_off` as the governed product posture;
+- keep `explicit_operator_only_default_off` as the governed product posture.
+
+It did not choose:
+
 - design a new default-on admission gate with rollback, CI/local/Arelle-absent behavior, and operator-surface boundaries;
 - design a staged default-on experiment with a narrow corpus, bounded operators, and a separate rollback plan.
 
-The decision pass must not silently treat the broader reliability admission as a runtime default change.
+The decision pass did not silently treat the broader reliability admission as a runtime default change.
 
 ## Required Checks Before Any Runtime Default Change
 

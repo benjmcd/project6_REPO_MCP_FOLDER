@@ -82,6 +82,6 @@ Satisfied by:
 
 Current next posture:
 
-`sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1`
+`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
 
-The next pass should reconcile older blocked report artifacts and default-posture planning against the redacted live proof without changing committed defaults or admitting production/default-on behavior.
+Default-posture reconciliation and decision are now recorded in `1268-sec-xbrl-default-posture-reconciliation.md` and `1269-sec-xbrl-default-posture-decision.md`. The next pass should prepare the operator runbook and stratified matrix selection without changing committed defaults or admitting production/default-on behavior.
