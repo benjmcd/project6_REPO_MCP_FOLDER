@@ -42396,6 +42396,24 @@
     "raw_identity_committed": false,
     "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
   },
+  "sec_edgar_stratified_real_filing_validation_matrix_run_readiness_hardening_tracking": {
+    "status": "stratified_matrix_run_readiness_hardened",
+    "milestone": "sec_edgar_stratified_real_filing_validation_matrix_run_readiness_hardening_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1273-sec-xbrl-stratified-matrix-run-readiness-hardening.md",
+    "runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py",
+    "external_plan_rejects_duplicate_issuers_across_chunks": true,
+    "external_run_reports_strata_readiness": true,
+    "external_run_blocks_until_required_strata_ready": true,
+    "runtime_default_changed_by_hardening": false,
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_network_performed_by_hardening": false,
+    "arelle_subprocess_invoked_by_hardening": false,
+    "source_acquisition_performed_by_hardening": false,
+    "value_reveal_request_performed_by_hardening": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_live_execution_v1"
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
     "status": "branch_local_review_debt_closure_in_progress",
     "milestone": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1",
