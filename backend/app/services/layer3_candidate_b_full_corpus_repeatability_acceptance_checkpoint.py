@@ -127,7 +127,6 @@ def record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
         "rerun_candidate_b_run_id": trial["rerun_candidate_b_run_id"],
         "compare_target_set_hash": trial["compare_target_set_hash"],
         "material_relative_name": trial["material_relative_name"],
-        "workflow_receipt_owner_binding": workflow_receipt_owner_binding,
         "acceptance_disposition": acceptance_disposition,
         "operator_acceptance_decision": _required(fields, "operator_acceptance_decision"),
         "operator_runbook_repeatability_steps": runbook_steps,
@@ -162,6 +161,7 @@ def record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
         checkpoint_hash=checkpoint_hash,
         checkpoint_authority=checkpoint_authority,
         checkpoint_authority_hash=checkpoint_authority_hash,
+        workflow_receipt_owner_binding=workflow_receipt_owner_binding,
         idempotency_key_hash=idempotency_key_hash,
     )
     receipt_hash = _validate_acceptance_checkpoint_receipt(
@@ -448,7 +448,7 @@ def _authorize_acceptance_workflow_rows(
             workflow_access_policy.owner_binding_from_workflow_authority(row)
             or workflow_access_policy.owner_binding_from_policy(decision)
         )
-    if owner_bindings[0] != owner_bindings[1]:
+    if not workflow_access_policy.owner_bindings_share_identity(owner_bindings[0], owner_bindings[1]):
         raise CandidateBFullCorpusRepeatabilityAcceptanceCheckpointError(
             "candidate_b_full_corpus_repeatability_acceptance_checkpoint_owner_binding_mismatch",
             "Acceptance checkpoint policy requires original and rerun workflow rows to share owner binding.",
@@ -466,6 +466,7 @@ def _load_or_write_acceptance_checkpoint_receipt(
     checkpoint_hash: str,
     checkpoint_authority: Mapping[str, Any],
     checkpoint_authority_hash: str,
+    workflow_receipt_owner_binding: Mapping[str, Any],
     idempotency_key_hash: str,
 ) -> tuple[dict[str, Any], bool]:
     root = _workflow_receipt_root()
@@ -496,7 +497,7 @@ def _load_or_write_acceptance_checkpoint_receipt(
         "repeatability_acceptance_checkpoint_hash": checkpoint_hash,
         "repeatability_acceptance_checkpoint_authority": dict(checkpoint_authority),
         "repeatability_acceptance_checkpoint_authority_hash": checkpoint_authority_hash,
-        "workflow_receipt_owner_binding": dict(checkpoint["workflow_receipt_owner_binding"]),
+        "workflow_receipt_owner_binding": dict(workflow_receipt_owner_binding),
         "idempotency_key_hash": idempotency_key_hash,
         "append_only_repeatability_acceptance_checkpoint_receipt": True,
         "exclusive_repeatability_acceptance_checkpoint_per_authority": True,
@@ -576,12 +577,6 @@ def _validate_acceptance_checkpoint_receipt(
     checkpoint_authority_hash: str,
     idempotency_key_hash: str,
 ) -> str:
-    checkpoint_body = receipt.get("repeatability_acceptance_checkpoint")
-    checkpoint_owner_binding = (
-        checkpoint_body.get("workflow_receipt_owner_binding")
-        if isinstance(checkpoint_body, Mapping)
-        else None
-    )
     expected = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -593,7 +588,6 @@ def _validate_acceptance_checkpoint_receipt(
         "repeatability_acceptance_checkpoint_receipt_id": receipt_id,
         "repeatability_acceptance_checkpoint_hash": checkpoint_hash,
         "repeatability_acceptance_checkpoint_authority_hash": checkpoint_authority_hash,
-        "workflow_receipt_owner_binding": checkpoint_owner_binding,
         "idempotency_key_hash": idempotency_key_hash,
         "append_only_repeatability_acceptance_checkpoint_receipt": True,
         "exclusive_repeatability_acceptance_checkpoint_per_authority": True,
@@ -623,6 +617,8 @@ def _validate_acceptance_checkpoint_receipt(
         "artifact_bytes_exposed": False,
         "selector_mutation_performed": False,
     }
+    if "workflow_receipt_owner_binding" in receipt:
+        expected["workflow_receipt_owner_binding"] = receipt["workflow_receipt_owner_binding"]
     mismatches = [
         {"field": field, "expected": expected_value, "received": receipt.get(field)}
         for field, expected_value in expected.items()

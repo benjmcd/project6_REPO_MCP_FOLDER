@@ -203,7 +203,6 @@ def record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
         "rerun_candidate_b_run_id": checkpoint["rerun_candidate_b_run_id"],
         "compare_target_set_hash": checkpoint["compare_target_set_hash"],
         "material_relative_name": checkpoint["material_relative_name"],
-        "workflow_receipt_owner_binding": workflow_receipt_owner_binding,
         "acceptance_disposition": acceptance_disposition,
         "rendered_acceptance_control_proof": rendered_proof,
         "operator_runbook_closeout_steps": runbook_steps,
@@ -239,6 +238,7 @@ def record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
         closeout_hash=closeout_hash,
         closeout_authority=closeout_authority,
         closeout_authority_hash=closeout_authority_hash,
+        workflow_receipt_owner_binding=workflow_receipt_owner_binding,
         idempotency_key_hash=idempotency_key_hash,
         negative_invariants=negative_invariants,
     )
@@ -287,13 +287,11 @@ def candidate_b_full_corpus_repeatability_acceptance_closeout_status(
     if receipt_match is None:
         acceptance_receipt = _validated_acceptance_checkpoint_receipt(fields)
         projection = _closeout_not_recorded_projection(fields)
-        projection_owner_binding = workflow_access_policy.owner_binding_from_workflow_authority(
-            acceptance_receipt
-        )
+        projection_owner_binding = _owner_binding_from_acceptance_receipt(acceptance_receipt)
     else:
         receipt_id, receipt = receipt_match
         projection = _closeout_available_projection(receipt_id, receipt, fields)
-        projection_owner_binding = workflow_access_policy.owner_binding_from_workflow_authority(receipt)
+        projection_owner_binding = _owner_binding_from_closeout_receipt(receipt)
     ownership_access_policy = _authorize_closeout_status_projection(
         fields,
         projection,
@@ -930,10 +928,56 @@ def _authorize_closeout_workflow_rows(
             workflow_access_policy.owner_binding_from_workflow_authority(row)
             or workflow_access_policy.owner_binding_from_policy(decision)
         )
-    if owner_bindings[0] != owner_bindings[1]:
+    if not workflow_access_policy.owner_bindings_share_identity(owner_bindings[0], owner_bindings[1]):
         raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
             "candidate_b_full_corpus_repeatability_acceptance_closeout_owner_binding_mismatch",
             "Acceptance closeout policy requires original and rerun workflow rows to share owner binding.",
+            http_status=409,
+            details={"original_owner_binding": owner_bindings[0], "rerun_owner_binding": owner_bindings[1]},
+        )
+    return owner_bindings[0]
+
+
+def _owner_binding_from_acceptance_receipt(receipt: Mapping[str, Any]) -> dict[str, str] | None:
+    explicit_binding = workflow_access_policy.owner_binding_from_workflow_authority(receipt)
+    if explicit_binding:
+        return explicit_binding
+    return _owner_binding_from_repeatability_authority(_acceptance_checkpoint_body(receipt))
+
+
+def _owner_binding_from_closeout_receipt(receipt: Mapping[str, Any]) -> dict[str, str] | None:
+    explicit_binding = workflow_access_policy.owner_binding_from_workflow_authority(receipt)
+    if explicit_binding:
+        return explicit_binding
+    return _owner_binding_from_repeatability_authority(_closeout_body(receipt))
+
+
+def _owner_binding_from_repeatability_authority(authority: Mapping[str, Any]) -> dict[str, str] | None:
+    rerun_receipt = _validated_rerun_trial_receipt(authority)
+    trial = acceptance._rerun_trial_body(rerun_receipt)
+    original = _validated_workflow_projection("original", trial)
+    rerun = _validated_workflow_projection("rerun", trial)
+    return _shared_owner_binding_from_workflow_projections(original, rerun)
+
+
+def _shared_owner_binding_from_workflow_projections(
+    original: Mapping[str, Any],
+    rerun: Mapping[str, Any],
+) -> dict[str, str] | None:
+    owner_bindings: list[dict[str, str] | None] = []
+    for projection in (original, rerun):
+        row = projection.get("row")
+        owner_bindings.append(
+            workflow_access_policy.owner_binding_from_workflow_authority(row)
+            if isinstance(row, Mapping)
+            else None
+        )
+    if not owner_bindings[0] or not owner_bindings[1]:
+        return None
+    if not workflow_access_policy.owner_bindings_share_identity(owner_bindings[0], owner_bindings[1]):
+        raise CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError(
+            "candidate_b_full_corpus_repeatability_acceptance_closeout_owner_binding_mismatch",
+            "Acceptance closeout status policy requires original and rerun workflow rows to share owner binding.",
             http_status=409,
             details={"original_owner_binding": owner_bindings[0], "rerun_owner_binding": owner_bindings[1]},
         )
@@ -1042,6 +1086,7 @@ def _load_or_write_closeout_receipt(
     closeout_hash: str,
     closeout_authority: Mapping[str, Any],
     closeout_authority_hash: str,
+    workflow_receipt_owner_binding: Mapping[str, Any],
     idempotency_key_hash: str,
     negative_invariants: Mapping[str, bool],
 ) -> tuple[dict[str, Any], bool]:
@@ -1073,7 +1118,7 @@ def _load_or_write_closeout_receipt(
         "repeatability_acceptance_operator_closeout_hash": closeout_hash,
         "repeatability_acceptance_operator_closeout_authority": dict(closeout_authority),
         "repeatability_acceptance_operator_closeout_authority_hash": closeout_authority_hash,
-        "workflow_receipt_owner_binding": dict(closeout["workflow_receipt_owner_binding"]),
+        "workflow_receipt_owner_binding": dict(workflow_receipt_owner_binding),
         "idempotency_key_hash": idempotency_key_hash,
         "append_only_repeatability_acceptance_operator_closeout_receipt": True,
         "exclusive_repeatability_acceptance_operator_closeout_per_authority": True,
@@ -1130,12 +1175,6 @@ def _validate_closeout_receipt(
     closeout_authority_hash: str,
     idempotency_key_hash: str,
 ) -> str:
-    closeout_body = receipt.get("repeatability_acceptance_operator_closeout")
-    closeout_owner_binding = (
-        closeout_body.get("workflow_receipt_owner_binding")
-        if isinstance(closeout_body, Mapping)
-        else None
-    )
     expected = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -1147,7 +1186,6 @@ def _validate_closeout_receipt(
         "repeatability_acceptance_operator_closeout_receipt_id": receipt_id,
         "repeatability_acceptance_operator_closeout_hash": closeout_hash,
         "repeatability_acceptance_operator_closeout_authority_hash": closeout_authority_hash,
-        "workflow_receipt_owner_binding": closeout_owner_binding,
         "idempotency_key_hash": idempotency_key_hash,
         "append_only_repeatability_acceptance_operator_closeout_receipt": True,
         "exclusive_repeatability_acceptance_operator_closeout_per_authority": True,
@@ -1166,6 +1204,8 @@ def _validate_closeout_receipt(
         "negative_invariants": dict(REQUIRED_NEGATIVE_INVARIANTS),
         "selector_mutation_performed": False,
     }
+    if "workflow_receipt_owner_binding" in receipt:
+        expected["workflow_receipt_owner_binding"] = receipt["workflow_receipt_owner_binding"]
     mismatches = [
         {"field": field, "expected": expected_value, "received": receipt.get(field)}
         for field, expected_value in expected.items()
