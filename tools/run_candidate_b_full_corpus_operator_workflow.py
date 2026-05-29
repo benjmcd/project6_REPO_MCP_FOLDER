@@ -9,7 +9,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
-from typing import Any, Iterator
+from typing import Any, Iterator, Mapping
 
 import requests
 from fastapi.testclient import TestClient
@@ -512,6 +512,10 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         ],
     }
     if _is_live_http_mode(args):
+        existing_receipt = _existing_receipt_for_hash(receipt_dir, receipt_id, receipt_hash)
+        if existing_receipt is not None and _is_verified_live_http_receipt(existing_receipt):
+            existing_receipt.setdefault("receipt_file", _path_ref(checkout_root, receipt_dir / receipt_id / "receipt.json"))
+            return existing_receipt
         receipt["live_http_verification"] = _live_http_verification_state("pending")
         receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
         receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
@@ -1424,6 +1428,26 @@ def _live_http_verification_state(state: str, *, exc: Exception | None = None) -
     return payload
 
 
+def _existing_receipt_for_hash(receipt_dir: Path, receipt_id: str, receipt_hash: str) -> dict[str, Any] | None:
+    target = receipt_dir / receipt_id / "receipt.json"
+    if not target.is_file():
+        return None
+    existing = json.loads(target.read_text(encoding="utf-8"))
+    if existing.get("receipt_hash") != receipt_hash:
+        raise OperatorWorkflowError("operator_receipt_conflict", "Existing operator receipt has different contents.")
+    return existing
+
+
+def _is_verified_live_http_receipt(receipt: Mapping[str, Any]) -> bool:
+    verification = receipt.get("live_http_verification")
+    return (
+        receipt.get("status") == "proven"
+        and isinstance(verification, Mapping)
+        and verification.get("state") == "verified"
+        and verification.get("final_proven_receipt_admitted") is True
+    )
+
+
 def _write_receipt(receipt_dir: Path, receipt_id: str, receipt: dict[str, Any]) -> Path:
     target_dir = receipt_dir / receipt_id
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -1433,6 +1457,8 @@ def _write_receipt(receipt_dir: Path, receipt_id: str, receipt: dict[str, Any]) 
         existing = json.loads(target.read_text(encoding="utf-8"))
         if existing.get("receipt_hash") != receipt.get("receipt_hash"):
             raise OperatorWorkflowError("operator_receipt_conflict", "Existing operator receipt has different contents.")
+        if _is_verified_live_http_receipt(existing) and not _is_verified_live_http_receipt(receipt):
+            return target
         if json.dumps(existing, sort_keys=True, indent=2) + "\n" != body:
             target.write_text(body, encoding="utf-8")
         return target

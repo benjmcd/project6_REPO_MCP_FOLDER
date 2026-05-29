@@ -1123,6 +1123,122 @@ def test_live_http_operator_receipt_is_visible_before_endpoint_verification(
     assert persisted["receipt_hash"] == result["receipt_hash"]
 
 
+def test_live_http_verified_receipt_retry_returns_existing_proof(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    args, receipt_dir = _patch_live_http_workflow(tmp_path, monkeypatch)
+    calls = {"status": 0, "run": 0}
+
+    def _verified_status(_args: object, _receipt: dict[str, object]) -> dict[str, object]:
+        calls["status"] += 1
+        return {
+            "status_endpoint_verified": True,
+            "workflow_status": "proven",
+            "workflow_status_hash": "6" * 64,
+            "workflow_status_ref": "candidate-b-full-corpus-operator-workflow-status://proof",
+            "operator_projection": {"status": "proven"},
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+        }
+
+    def _verified_run(_args: object, receipt: dict[str, object]) -> dict[str, object]:
+        calls["run"] += 1
+        return {
+            "run_endpoint_verified": True,
+            "run_state": "proven",
+            "operator_workflow_receipt_id": "cb-full-corpus-operator-run-proof",
+            "operator_workflow_receipt_hash": "3" * 64,
+            "source_operator_workflow_receipt_id": receipt["receipt_id"],
+            "source_operator_workflow_receipt_hash": receipt["receipt_hash"],
+            "authority_basis_hash": "4" * 64,
+            "idempotency_key_hash": "5" * 64,
+            "status_endpoint_verified": True,
+            "workflow_status": "proven",
+            "workflow_status_hash": "6" * 64,
+            "workflow_status_ref": "candidate-b-full-corpus-operator-workflow-status://proof",
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "selector_mutation_performed": False,
+            "rendered_run_start_control_admitted": True,
+            "rendered_progress_control_admitted": True,
+        }
+
+    monkeypatch.setattr(workflow, "_verify_live_http_workflow_status", _verified_status)
+    monkeypatch.setattr(workflow, "_verify_live_http_workflow_run", _verified_run)
+
+    first = workflow.run_operator_workflow(args)
+    second = workflow.run_operator_workflow(args)
+
+    assert calls == {"status": 1, "run": 1}
+    assert second["receipt_id"] == first["receipt_id"]
+    assert second["receipt_hash"] == first["receipt_hash"]
+    assert second["live_http_verification"]["state"] == "verified"
+    persisted = json.loads(next(receipt_dir.glob("cb-full-corpus-operator-*/receipt.json")).read_text(encoding="utf-8"))
+    assert persisted["live_http_verification"]["state"] == "verified"
+    assert persisted["status"] == "proven"
+
+
+def test_live_http_verified_receipt_retry_failure_preserves_existing_proof(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    args, receipt_dir = _patch_live_http_workflow(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        workflow,
+        "_verify_live_http_workflow_status",
+        lambda *_args, **_kwargs: {
+            "status_endpoint_verified": True,
+            "workflow_status": "proven",
+            "workflow_status_hash": "6" * 64,
+            "workflow_status_ref": "candidate-b-full-corpus-operator-workflow-status://proof",
+            "operator_projection": {"status": "proven"},
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+        },
+    )
+    monkeypatch.setattr(
+        workflow,
+        "_verify_live_http_workflow_run",
+        lambda _args, receipt: {
+            "run_endpoint_verified": True,
+            "run_state": "proven",
+            "operator_workflow_receipt_id": "cb-full-corpus-operator-run-proof",
+            "operator_workflow_receipt_hash": "3" * 64,
+            "source_operator_workflow_receipt_id": receipt["receipt_id"],
+            "source_operator_workflow_receipt_hash": receipt["receipt_hash"],
+            "authority_basis_hash": "4" * 64,
+            "idempotency_key_hash": "5" * 64,
+            "status_endpoint_verified": True,
+            "workflow_status": "proven",
+            "workflow_status_hash": "6" * 64,
+            "workflow_status_ref": "candidate-b-full-corpus-operator-workflow-status://proof",
+            "raw_local_path_exposed": False,
+            "raw_url_exposed": False,
+            "selector_mutation_performed": False,
+            "rendered_run_start_control_admitted": True,
+            "rendered_progress_control_admitted": True,
+        },
+    )
+    first = workflow.run_operator_workflow(args)
+
+    def _fail_status_verification(_args: object, _receipt: dict[str, object]) -> dict[str, object]:
+        raise workflow.OperatorWorkflowError(
+            "live_http_status_verification_failed",
+            "live status verification failed",
+        )
+
+    monkeypatch.setattr(workflow, "_verify_live_http_workflow_status", _fail_status_verification)
+    second = workflow.run_operator_workflow(args)
+
+    assert second["receipt_id"] == first["receipt_id"]
+    assert second["live_http_verification"]["state"] == "verified"
+    persisted = json.loads(next(receipt_dir.glob("cb-full-corpus-operator-*/receipt.json")).read_text(encoding="utf-8"))
+    assert persisted["status"] == "proven"
+    assert persisted["live_http_verification"]["state"] == "verified"
+    assert persisted["receipt_hash"] == first["receipt_hash"]
+
+
 def test_live_http_operator_receipt_blocks_when_status_verification_fails(
     tmp_path: Path,
     monkeypatch,

@@ -3229,6 +3229,7 @@ def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_rejects
     assert status_response.json()["error"]["code"] == (
         "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_mismatch"
     )
+    assert not _retry_terminal_index_file(row["operator_workflow_receipt_id"]).is_file()
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_rejects_pre_index_ambiguous_matching_receipts(
@@ -3252,6 +3253,47 @@ def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_rejects
     assert status_response.json()["error"]["code"] == (
         "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous"
     )
+    assert not _retry_terminal_index_file(row["operator_workflow_receipt_id"]).is_file()
+
+    duplicate_file.rename(duplicate_file.with_name("receipt.json.hidden"))
+    retry_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert retry_response.status_code == 200
+    projection = retry_response.json()["retry_terminal_status_projection"]
+    assert projection["retry_terminal_projection_state"] == "completed"
+    assert projection["retry_completion_failure_receipt_id"] == terminal_body["retry_completion_failure_receipt_id"]
+    backfilled = json.loads(_retry_terminal_index_file(row["operator_workflow_receipt_id"]).read_text(encoding="utf-8"))
+    assert backfilled["retry_completion_failure_receipt_ids"] == [
+        terminal_body["retry_completion_failure_receipt_id"]
+    ]
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projects_when_legacy_backfill_fails(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    ).json()
+    _hide_retry_terminal_index(row["operator_workflow_receipt_id"])
+
+    def _fail_backfill(**_kwargs: object) -> None:
+        raise OSError(r"C:\sensitive\workflow-index")
+
+    monkeypatch.setattr(workflow_status, "_backfill_retry_terminal_index", _fail_backfill)
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 200
+    serialized = json.dumps(status_response.json(), sort_keys=True)
+    assert "sensitive" not in serialized
+    assert "workflow-index" not in serialized
+    projection = status_response.json()["retry_terminal_status_projection"]
+    assert projection["retry_terminal_projection_state"] == "completed"
+    assert projection["retry_completion_failure_receipt_id"] == terminal_body["retry_completion_failure_receipt_id"]
+    assert not _retry_terminal_index_file(row["operator_workflow_receipt_id"]).is_file()
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_reports_failed(
