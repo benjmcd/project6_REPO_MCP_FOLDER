@@ -35,7 +35,7 @@ The committed report now records a live broader-corpus gate rerun after remediat
 - Arelle resolved facts matched the independent raw-inline lower-bound count: `52,558/52,558`.
 - CompanyFacts effective-value correctness was `9,040/9,131`, match rate `0.99`, above the `0.98` gate.
 - Operator value exposure remained disabled.
-- The runtime cutover default was restored to `true` by the gate verdict.
+- The report records the diagnostic gate's default-decision artifact from that run. Current committed main remains default-off after the later governance remediation and live value-reveal proof; this report is not current runtime default-on admission by itself.
 
 The remediation fixed the gate mechanics rather than weakening criteria: mixed taxonomy zip directories now load valid Arelle packages while reporting invalid package hashes/counts, the runner reads independent raw-inline counts from sidecar diagnostics, allowed no-inline records do not fail the extraction gate, and CompanyFacts identity is reconstructed only inside the diagnostic process without committing raw identities.
 
@@ -54,7 +54,7 @@ When run with `--live`, the runner:
 - runs the existing validation/product path over four four-issuer matrix chunks, targeting at least 30 filings across at least 15 distinct issuer hashes;
 - records only redacted matrix hashes, form counts, filing counts, issuer hashes, per-filing completeness counts, CompanyFacts value match rates, receipt hashes, readiness states, and non-admission evidence;
 - computes CompanyFacts effective-value correctness over the standardized `us-gaap`, `dei`, and `ifrs-full` non-dimensional numeric intersection without committing raw values;
-- applies the gate verdict to the Arelle cutover config default when invoked with `--apply-default-decision`: PASS keeps default-on, while FAIL or INCONCLUSIVE rolls the default back to false;
+- records the gate verdict and, when explicitly invoked with `--apply-default-decision`, may apply that verdict in the diagnostic lane; later governance/current-main runtime authority can supersede that default decision;
 - keeps operator value reveal disabled;
 - restores settings after the diagnostic run.
 
@@ -90,11 +90,11 @@ The report admits only if all criteria pass:
 
 Next slice:
 
-`sec_edgar_operator_surface_gated_value_reveal_v1`
+`sec_edgar_arelle_default_posture_decision_v1`
 
 Scope:
 
-- add the explicit governed operator-surface value reveal path;
+- reconcile the real-product runner pass, the broader reliability gate, and the later live value-reveal proof against the current default-off governance posture;
+- decide whether to retain explicit-operator-only behavior, design a new reviewed default-on admission gate, or run a narrower staged default-on experiment;
 - preserve redaction and audit boundaries by default;
-- expose values only through a gated, reviewed operator action;
 - preserve no final financial-statement semantics and no cross-company comparability claims.

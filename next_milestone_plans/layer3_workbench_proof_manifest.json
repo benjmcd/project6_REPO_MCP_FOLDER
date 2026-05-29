@@ -40459,6 +40459,32 @@
     ],
     "live_behavior_change_introduced_by_tracking": false
   },
+  "sec_edgar_arelle_default_posture_reconciliation_proof": {
+    "proof_kind": "sec_edgar_arelle_default_posture_reconciliation_proof",
+    "status": "default_posture_reconciliation_ready_for_decision",
+    "milestone": "sec_edgar_arelle_default_posture_decision_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1268-sec-xbrl-default-posture-reconciliation.md",
+    "broader_reliability_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-broader-reliability.md",
+    "real_product_runner_doc": "next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-real-product-runner.md",
+    "live_proof_doc": "next_milestone_plans/Layer3_planning_docs/1267-sec-xbrl-value-reveal-live-proof.md",
+    "broader_reliability_report": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+    "real_product_runner_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+    "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json",
+    "runtime_default_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+    "proof_terms": [
+      "broader real-product reliability admitted by current gate",
+      "real-product runner provides live non-fake-client evidence",
+      "two bounded governed live value-reveal exercises proven",
+      "runtime default authority remains default-off",
+      "reconciliation introduces no runtime behavior",
+      "no raw values or identities committed",
+      "next decision is explicit default posture"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_default_changed_by_reconciliation": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
     "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
     "status": "branch_local_review_debt_closure_in_progress",

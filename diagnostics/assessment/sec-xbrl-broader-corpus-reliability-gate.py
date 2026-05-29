@@ -10,11 +10,15 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUTPUT = Path("diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json")
 DEFAULT_DEFAULT_ON_GATE_REPORT = Path("diagnostics/assessment/sec-xbrl-default-on-gate-report.json")
 DEFAULT_PRODUCT_PATH_REPORT = Path("diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json")
+DEFAULT_REAL_PRODUCT_RUNNER_REPORT = Path("diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json")
 
 REQUIRED_FORMS = {"10-K", "10-Q", "20-F", "40-F", "6-K", "8-K"}
 MIN_REAL_FILINGS = 12
 MIN_ISSUER_HASHES = 6
 MIN_COMPANYFACTS_MATCH_RATE = 0.99
+MIN_REAL_PRODUCT_FILINGS = 30
+MIN_REAL_PRODUCT_ISSUER_HASHES = 15
+MIN_REAL_PRODUCT_COMPANYFACTS_MATCH_RATE = 0.98
 
 
 def main() -> int:
@@ -27,12 +31,14 @@ def main() -> int:
     )
     parser.add_argument("--default-on-gate-report", default=str(DEFAULT_DEFAULT_ON_GATE_REPORT))
     parser.add_argument("--product-path-report", default=str(DEFAULT_PRODUCT_PATH_REPORT))
+    parser.add_argument("--real-product-runner-report", default=str(DEFAULT_REAL_PRODUCT_RUNNER_REPORT))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     args = parser.parse_args()
 
     report = build_report(
         default_on_gate_report_path=_resolve_path(args.default_on_gate_report),
         product_path_report_path=_resolve_path(args.product_path_report),
+        real_product_runner_report_path=_resolve_path(args.real_product_runner_report),
     )
     output = _resolve_path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -46,9 +52,11 @@ def build_report(
     *,
     default_on_gate_report_path: Path,
     product_path_report_path: Path,
+    real_product_runner_report_path: Path,
 ) -> dict[str, Any]:
     default_on_gate = _read_json(default_on_gate_report_path)
     product_path = _read_json(product_path_report_path)
+    real_product = _read_json(real_product_runner_report_path)
 
     gate_summary = dict(default_on_gate.get("summary") or {})
     product_corpus = dict(product_path.get("corpus") or {})
@@ -56,9 +64,13 @@ def build_report(
     product_redaction = dict(product_path.get("redaction") or {})
     product_non_admissions = dict(product_path.get("non_admissions") or {})
     product_authority = dict(product_path.get("authority_model") or {})
+    real_summary = dict(real_product.get("summary") or {})
+    real_redaction = dict(real_product.get("redaction") or {})
+    real_non_goals = dict(real_product.get("non_goals_preserved") or {})
 
     forms = set((gate_summary.get("forms") or {}).keys())
     product_forms = set(product_corpus.get("forms") or [])
+    real_forms = set((real_summary.get("forms") or {}).keys())
     criteria = [
         _criterion(
             "inherited_real_extraction_value_gate",
@@ -110,29 +122,64 @@ def build_report(
         ),
         _criterion(
             "broader_real_product_path_corpus_proof",
-            product_corpus.get("fake_sec_client_used") is False
-            and (
-                product_corpus.get("live_sec_network_used") is True
-                or product_corpus.get("retained_real_corpus_source_bytes_used") is True
+            real_product.get("decision") == "real_corpus_default_on_validated"
+            and real_product.get("gate_verdict") == "PASS"
+            and real_product.get("fake_sec_client_used") is False
+            and real_product.get("live_sec_network_used") is True
+            and _int(real_summary.get("real_filing_count")) >= MIN_REAL_PRODUCT_FILINGS
+            and _int(real_summary.get("issuer_hash_count")) >= MIN_REAL_PRODUCT_ISSUER_HASHES
+            and REQUIRED_FORMS.issubset(real_forms)
+            and _int(real_summary.get("supported_record_count")) >= MIN_REAL_PRODUCT_FILINGS
+            and _int(real_summary.get("records_with_arelle_sidecar_output")) == _int(
+                real_summary.get("supported_record_count")
             )
-            and _int(product_corpus.get("filing_count")) >= MIN_REAL_FILINGS
-            and REQUIRED_FORMS.issubset(product_forms),
+            and _int(real_summary.get("records_with_selected_fact_authority_equal_to_sidecar")) == _int(
+                real_summary.get("supported_record_count")
+            )
+            and _int(real_summary.get("records_with_handoff_export_prepare")) == _int(
+                real_summary.get("supported_record_count")
+            )
+            and _int(real_summary.get("matrix_chunk_count")) > 0
+            and _int(real_summary.get("ready_matrix_chunk_count")) == _int(real_summary.get("matrix_chunk_count"))
+            and _int(real_summary.get("independent_inline_fact_count")) > 0
+            and _int(real_summary.get("resolved_fact_count")) > 0
+            and _int(real_summary.get("resolved_fact_count")) >= _int(
+                real_summary.get("independent_inline_fact_count")
+            )
+            and _int(real_summary.get("completeness_guard_failed_count")) == 0
+            and _int(real_summary.get("unexpected_blocked_or_degraded_count")) == 0
+            and _int(real_summary.get("companyfacts_value_compared_count")) > 0
+            and float(real_summary.get("companyfacts_value_match_rate") or 0)
+            >= MIN_REAL_PRODUCT_COMPANYFACTS_MATCH_RATE
+            and real_summary.get("operator_surface_values_exposed") is False,
             {
-                "source_report": _repo_display_path(product_path_report_path),
-                "required_real_filing_count": MIN_REAL_FILINGS,
-                "observed_product_path_filing_count": product_corpus.get("filing_count"),
-                "fake_sec_client_used": product_corpus.get("fake_sec_client_used"),
-                "live_sec_network_used": product_corpus.get("live_sec_network_used"),
-                "retained_real_corpus_source_bytes_used": product_corpus.get(
-                    "retained_real_corpus_source_bytes_used"
-                ),
-                "forms": sorted(product_forms),
+                "source_report": _repo_display_path(real_product_runner_report_path),
+                "decision": real_product.get("decision"),
+                "gate_verdict": real_product.get("gate_verdict"),
+                "required_real_filing_count": MIN_REAL_PRODUCT_FILINGS,
+                "observed_real_filing_count": real_summary.get("real_filing_count"),
+                "required_issuer_hash_count": MIN_REAL_PRODUCT_ISSUER_HASHES,
+                "observed_issuer_hash_count": real_summary.get("issuer_hash_count"),
+                "fake_sec_client_used": real_product.get("fake_sec_client_used"),
+                "live_sec_network_used": real_product.get("live_sec_network_used"),
+                "forms": sorted(real_forms),
                 "required_forms": sorted(REQUIRED_FORMS),
-                "evidence_grade": (
-                    "current-main_test_proof_only"
-                    if product_corpus.get("fake_sec_client_used") is True
-                    else "current-main_runtime"
+                "required_supported_record_count": MIN_REAL_PRODUCT_FILINGS,
+                "supported_record_count": real_summary.get("supported_record_count"),
+                "records_with_arelle_sidecar_output": real_summary.get("records_with_arelle_sidecar_output"),
+                "records_with_selected_fact_authority_equal_to_sidecar": real_summary.get(
+                    "records_with_selected_fact_authority_equal_to_sidecar"
                 ),
+                "records_with_handoff_export_prepare": real_summary.get("records_with_handoff_export_prepare"),
+                "ready_matrix_chunk_count": real_summary.get("ready_matrix_chunk_count"),
+                "matrix_chunk_count": real_summary.get("matrix_chunk_count"),
+                "resolved_fact_count": real_summary.get("resolved_fact_count"),
+                "independent_inline_fact_count": real_summary.get("independent_inline_fact_count"),
+                "companyfacts_value_compared_count": real_summary.get("companyfacts_value_compared_count"),
+                "companyfacts_value_match_rate": real_summary.get("companyfacts_value_match_rate"),
+                "minimum_companyfacts_value_match_rate": MIN_REAL_PRODUCT_COMPANYFACTS_MATCH_RATE,
+                "unexpected_blocked_or_degraded_count": real_summary.get("unexpected_blocked_or_degraded_count"),
+                "evidence_grade": "current-main_live_real_product_runner",
             },
             "broader_reliability_real_product_path_corpus_absent",
         ),
@@ -147,7 +194,18 @@ def build_report(
             and product_non_admissions.get("final_financial_statement_semantics_claimed") is False
             and product_non_admissions.get("cross_company_comparability_admitted") is False
             and product_non_admissions.get("candidate_b_sec_routing_performed") is False
-            and product_non_admissions.get("rag_model_provider_auth_added") is False,
+            and product_non_admissions.get("rag_model_provider_auth_added") is False
+            and real_redaction.get("identity_hash_only") is True
+            and real_redaction.get("raw_accessions_committed") is False
+            and real_redaction.get("raw_sec_urls_committed") is False
+            and real_redaction.get("raw_tickers_committed") is False
+            and real_redaction.get("raw_values_committed") is False
+            and real_redaction.get("local_storage_roots_committed") is False
+            and real_non_goals.get("operator_value_reveal_enabled") is False
+            and real_non_goals.get("final_financial_statement_semantics_claimed") is False
+            and real_non_goals.get("cross_company_comparability_claimed") is False
+            and real_non_goals.get("candidate_b_sec_routing_performed") is False
+            and real_non_goals.get("rag_vector_model_provider_auth_behavior_added") is False,
             {
                 "effective_values_exposed": product_redaction.get(
                     "effective_values_exposed_in_validation_delivery_operator_surface_archive"
@@ -169,6 +227,25 @@ def build_report(
                     "candidate_b_sec_routing_performed"
                 ),
                 "rag_model_provider_auth_added": product_non_admissions.get("rag_model_provider_auth_added"),
+                "real_product_identity_hash_only": real_redaction.get("identity_hash_only"),
+                "real_product_raw_accessions_committed": real_redaction.get("raw_accessions_committed"),
+                "real_product_raw_sec_urls_committed": real_redaction.get("raw_sec_urls_committed"),
+                "real_product_raw_tickers_committed": real_redaction.get("raw_tickers_committed"),
+                "real_product_raw_values_committed": real_redaction.get("raw_values_committed"),
+                "real_product_local_storage_roots_committed": real_redaction.get("local_storage_roots_committed"),
+                "real_product_operator_value_reveal_enabled": real_non_goals.get("operator_value_reveal_enabled"),
+                "real_product_final_financial_statement_semantics_claimed": real_non_goals.get(
+                    "final_financial_statement_semantics_claimed"
+                ),
+                "real_product_cross_company_comparability_claimed": real_non_goals.get(
+                    "cross_company_comparability_claimed"
+                ),
+                "real_product_candidate_b_sec_routing_performed": real_non_goals.get(
+                    "candidate_b_sec_routing_performed"
+                ),
+                "real_product_rag_vector_model_provider_auth_behavior_added": real_non_goals.get(
+                    "rag_vector_model_provider_auth_behavior_added"
+                ),
             },
             "broader_reliability_redaction_or_non_admission_regressed",
         ),
@@ -189,6 +266,7 @@ def build_report(
         "source_reports": {
             "default_on_gate": _repo_display_path(default_on_gate_report_path),
             "product_path": _repo_display_path(product_path_report_path),
+            "real_product_runner": _repo_display_path(real_product_runner_report_path),
         },
         "summary": {
             "inherited_real_filing_count": gate_summary.get("real_filing_count"),
@@ -196,10 +274,17 @@ def build_report(
             "inherited_forms": gate_summary.get("forms"),
             "inherited_arelle_resolved_fact_count": gate_summary.get("arelle_resolved_fact_count"),
             "inherited_companyfacts_value_match_rate": gate_summary.get("companyfacts_value_match_rate"),
-            "product_path_filing_count": product_corpus.get("filing_count"),
-            "product_path_fake_sec_client_used": product_corpus.get("fake_sec_client_used"),
-            "product_path_live_sec_network_used": product_corpus.get("live_sec_network_used"),
+            "focused_product_path_filing_count": product_corpus.get("filing_count"),
+            "focused_product_path_fake_sec_client_used": product_corpus.get("fake_sec_client_used"),
+            "focused_product_path_live_sec_network_used": product_corpus.get("live_sec_network_used"),
             "product_path_operator_surface_ready": product_proof.get("operator_product_surface_ready"),
+            "real_product_path_filing_count": real_summary.get("real_filing_count"),
+            "real_product_path_issuer_hash_count": real_summary.get("issuer_hash_count"),
+            "real_product_path_forms": real_summary.get("forms"),
+            "real_product_path_supported_record_count": real_summary.get("supported_record_count"),
+            "real_product_path_companyfacts_value_match_rate": real_summary.get("companyfacts_value_match_rate"),
+            "real_product_path_live_sec_network_used": real_product.get("live_sec_network_used"),
+            "real_product_path_fake_sec_client_used": real_product.get("fake_sec_client_used"),
             "operator_value_reveal_default_enabled": False,
         },
         "non_goals_preserved": {
@@ -213,7 +298,7 @@ def build_report(
             "value_unredaction_performed": False,
         },
         "next_slice": (
-            "sec_edgar_operator_surface_gated_value_reveal_v1"
+            "sec_edgar_arelle_default_posture_decision_v1"
             if admitted
             else "sec_edgar_real_corpus_product_path_runner_v1"
         ),
