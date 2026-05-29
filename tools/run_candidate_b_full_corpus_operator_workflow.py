@@ -512,8 +512,20 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         ],
     }
     if _is_live_http_mode(args):
-        receipt["live_http_status_check"] = _verify_live_http_workflow_status(args, receipt)
-        receipt["live_http_server_run_check"] = _verify_live_http_workflow_run(args, receipt)
+        receipt["live_http_verification"] = _live_http_verification_state("pending")
+        receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
+        receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
+        try:
+            receipt["live_http_status_check"] = _verify_live_http_workflow_status(args, receipt)
+            receipt["live_http_server_run_check"] = _verify_live_http_workflow_run(args, receipt)
+        except Exception as exc:
+            receipt["status"] = "blocked"
+            receipt["live_http_verification"] = _live_http_verification_state("blocked", exc=exc)
+            _write_receipt(receipt_dir, receipt_id, receipt)
+            raise
+        receipt["live_http_verification"] = _live_http_verification_state("verified")
+        _write_receipt(receipt_dir, receipt_id, receipt)
+        return receipt
     receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
     receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
     return receipt
@@ -1391,6 +1403,27 @@ def _workflow_run_payload(receipt: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _live_http_verification_state(state: str, *, exc: Exception | None = None) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "state": state,
+        "provisional_receipt_visible_to_live_http_endpoints": state == "pending",
+        "final_proven_receipt_admitted": state == "verified",
+        "status_endpoint_verified": state == "verified",
+        "server_run_endpoint_verified": state == "verified",
+    }
+    if exc is not None:
+        payload.update(
+            {
+                "failure_code": exc.code if isinstance(exc, OperatorWorkflowError) else "unexpected_operator_workflow_error",
+                "failure_message": _redact_text(
+                    exc.message if isinstance(exc, OperatorWorkflowError) else str(exc),
+                    checkout_root=ROOT.resolve(),
+                ),
+            }
+        )
+    return payload
+
+
 def _write_receipt(receipt_dir: Path, receipt_id: str, receipt: dict[str, Any]) -> Path:
     target_dir = receipt_dir / receipt_id
     target_dir.mkdir(parents=True, exist_ok=True)
@@ -1400,6 +1433,8 @@ def _write_receipt(receipt_dir: Path, receipt_id: str, receipt: dict[str, Any]) 
         existing = json.loads(target.read_text(encoding="utf-8"))
         if existing.get("receipt_hash") != receipt.get("receipt_hash"):
             raise OperatorWorkflowError("operator_receipt_conflict", "Existing operator receipt has different contents.")
+        if json.dumps(existing, sort_keys=True, indent=2) + "\n" != body:
+            target.write_text(body, encoding="utf-8")
         return target
     target.write_text(body, encoding="utf-8")
     return target
