@@ -9402,6 +9402,22 @@ Selected matrix strata: large domestic US-GAAP, small/mid domestic US-GAAP, fore
 
 Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
 
+## SEC XBRL Stratified Real-Filing Validation Matrix Preflight
+
+Milestone: `sec_edgar_stratified_real_filing_validation_matrix_preflight_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1271-sec-xbrl-stratified-real-filing-validation-matrix-preflight.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-preflight-report.json`.
+
+Decision: `stratified_matrix_preflight_requires_authorization_or_environment`.
+
+Status: validate-only preflight recorded. It verifies the committed runbook-selected matrix, default-off posture, and real-product baseline reports remain admitted, and it deliberately blocks live execution until explicit matrix live authorization, SEC user agent, Arelle executable/taxonomy/cache, and off-repo runtime storage are present.
+
+This preflight does not fetch SEC data, invoke Arelle, acquire sources, create sidecars, create datasets, create audit receipts, reveal values, change defaults, or commit raw identities, paths, accessions, URLs, values, contact strings, or retained bytes.
+
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
