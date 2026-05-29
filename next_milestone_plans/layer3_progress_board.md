@@ -9464,6 +9464,22 @@ Committed defaults remain off, and this live matrix does not apply the diagnosti
 
 Next exact posture: `sec_edgar_stratified_matrix_result_reconciliation_and_default_off_operator_readiness_decision_v1`.
 
+## SEC XBRL Stratified Matrix Readiness Decision
+
+Milestone: `sec_edgar_stratified_matrix_result_reconciliation_and_default_off_operator_readiness_decision_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1275-sec-xbrl-stratified-matrix-readiness-decision.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-stratified-matrix-readiness-decision-report.json`.
+
+Decision: `explicit_operator_default_off_readiness_selected`.
+
+Status: the live stratified matrix result is reconciled with the selected explicit-operator-only default-off posture. The decision admits broader explicit-operator default-off use supported by the live matrix, bounded governed value-reveal proof, default-off config evidence, and redaction/non-admission checks.
+
+Default-on Arelle cutover, default-on value reveal, production readiness, final financial-statement semantics, cross-company comparability, Candidate B SEC routing, UI expansion, RAG/model/provider/auth behavior, and package behavior remain deferred.
+
+Next exact posture: `sec_edgar_explicit_operator_default_off_runbook_refresh_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.
