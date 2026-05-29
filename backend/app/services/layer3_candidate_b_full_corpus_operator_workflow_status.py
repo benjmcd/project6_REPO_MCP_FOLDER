@@ -861,7 +861,7 @@ def _retry_terminal_receipt_ids_for_workflow(
 ) -> list[str]:
     index_file = _retry_terminal_index_file(root, operator_workflow_receipt_id)
     if not index_file.is_file():
-        return []
+        return _legacy_retry_terminal_receipt_ids_for_workflow(root, operator_workflow_receipt_id)
     index = _read_json_receipt(
         index_file,
         code="candidate_b_full_corpus_operator_workflow_status_retry_terminal_index_unreadable",
@@ -910,6 +910,63 @@ def _retry_terminal_receipt_ids_for_workflow(
             details={"operator_workflow_receipt_id": operator_workflow_receipt_id, "mismatches": mismatches},
         )
     return receipt_ids
+
+
+def _legacy_retry_terminal_receipt_ids_for_workflow(
+    root: Path,
+    operator_workflow_receipt_id: str,
+) -> list[str]:
+    _validate_storage_id(operator_workflow_receipt_id, prefix=WORKFLOW_RECEIPT_PREFIX)
+    receipt_ids: list[str] = []
+    for receipt_file in sorted(root.glob(f"{RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-*/receipt.json")):
+        receipt_id = receipt_file.parent.name
+        try:
+            _validate_storage_id(receipt_id, prefix=RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX)
+            receipt = _read_json_receipt(
+                receipt_file,
+                code="candidate_b_full_corpus_operator_workflow_status_retry_terminal_legacy_receipt_unreadable",
+                message="A Candidate B legacy retry terminal receipt could not be read for compatibility projection.",
+            )
+        except CandidateBFullCorpusOperatorWorkflowStatusError:
+            continue
+        if receipt.get("operator_workflow_receipt_id") == operator_workflow_receipt_id:
+            receipt_ids.append(receipt_id)
+    if receipt_ids:
+        _backfill_retry_terminal_index(
+            root=root,
+            operator_workflow_receipt_id=operator_workflow_receipt_id,
+            receipt_ids=receipt_ids,
+        )
+    return receipt_ids
+
+
+def _backfill_retry_terminal_index(
+    *,
+    root: Path,
+    operator_workflow_receipt_id: str,
+    receipt_ids: list[str],
+) -> None:
+    index_file = _retry_terminal_index_file(root, operator_workflow_receipt_id)
+    index = {
+        "schema_id": RETRY_TERMINAL_INDEX_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "index_mode": RETRY_TERMINAL_INDEX_MODE,
+        "operator_workflow_receipt_id": operator_workflow_receipt_id,
+        "retry_completion_failure_receipt_ids": receipt_ids,
+        "append_only_retry_terminal_index": True,
+    }
+    index_file.parent.mkdir(parents=True, exist_ok=True)
+    tmp = index_file.with_name(f"{index_file.name}.tmp")
+    try:
+        tmp.write_text(json.dumps(index, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        tmp.replace(index_file)
+    except OSError as exc:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_retry_terminal_index_backfill_failed",
+            "The Candidate B retry terminal workflow index could not be backfilled for compatibility projection.",
+            http_status=409,
+            details={"operator_workflow_receipt_id": operator_workflow_receipt_id},
+        ) from exc
 
 
 def _retry_terminal_not_recorded_projection() -> dict[str, Any]:
