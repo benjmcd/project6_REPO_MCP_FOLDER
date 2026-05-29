@@ -216,6 +216,27 @@ def owner_binding_from_policy(policy_decision: Mapping[str, Any]) -> dict[str, s
     }
 
 
+def owner_identity_from_binding(owner_binding: Mapping[str, Any] | None) -> dict[str, str] | None:
+    if not isinstance(owner_binding, Mapping):
+        return None
+    identity = {
+        "actor_ref_hash": str(owner_binding.get("actor_ref_hash") or ""),
+        "tenant_or_workspace_ref_hash": str(owner_binding.get("tenant_or_workspace_ref_hash") or ""),
+    }
+    if not identity["actor_ref_hash"] or not identity["tenant_or_workspace_ref_hash"]:
+        return None
+    return identity
+
+
+def owner_bindings_share_identity(
+    first: Mapping[str, Any] | None,
+    second: Mapping[str, Any] | None,
+) -> bool:
+    first_identity = owner_identity_from_binding(first)
+    second_identity = owner_identity_from_binding(second)
+    return bool(first_identity and first_identity == second_identity)
+
+
 def owner_binding_from_workflow_authority(authority: Mapping[str, Any]) -> dict[str, str] | None:
     explicit_binding = authority.get("workflow_receipt_owner_binding")
     if isinstance(explicit_binding, Mapping):
