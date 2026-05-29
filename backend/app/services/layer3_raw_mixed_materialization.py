@@ -39,6 +39,7 @@ RAW_MIXED_CORPUS_MATERIALIZE_MANIFEST_SCHEMA_ID = "layer3.raw_mixed_corpus_mater
 RAW_MIXED_CORPUS_MATERIALIZE_MODE = "raw_mixed_existing_source_materialization_entry"
 RAW_MIXED_CORPUS_MATERIALIZE_STATE = "materialized"
 RAW_MIXED_CORPUS_MATERIALIZE_NEXT_ACTION = "run_layer3_preflight_with_materialized_source_ids"
+MAX_STORAGE_REF_COLUMN_LENGTH = 512
 RAW_MIXED_CORPUS_MATERIALIZE_ALLOWED_FIELDS = frozenset(
     {
         "schema_id",
@@ -728,6 +729,15 @@ def _entry_string(entry: Mapping[str, Any], key: str, field: str) -> str:
             f"{field} is required for raw mixed corpus materialization.",
             status="blocked",
             blocked_fields=[field],
+        )
+    if field.endswith("storage_ref") and len(value) > MAX_STORAGE_REF_COLUMN_LENGTH:
+        raise Layer3WorkbenchError(
+            "raw_mixed_materialize_storage_ref_too_long",
+            "Raw mixed materialization storage refs must fit the durable storage_ref column.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=[field],
+            next_allowed_actions=["submit_compact_server_owned_materialization_refs"],
         )
     return value
 

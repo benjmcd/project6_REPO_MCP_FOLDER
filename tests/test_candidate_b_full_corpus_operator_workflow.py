@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -10,8 +12,10 @@ sys.path.insert(1, str(REPO_ROOT))
 
 from app.services import (
     layer3_candidate_b_full_corpus_operator_workflow_completion_monitor as completion_monitor,
+    layer3_candidate_b_full_corpus_operator_workflow_status as workflow_status,
     layer3_candidate_b_full_corpus_operator_repeatability_checkpoint as repeatability_checkpoint,
 )
+from app.core.config import settings
 from app.api.layer3 import Layer3CandidateBFullCorpusOperatorRepeatabilityCheckpointResponse
 from tools import run_candidate_b_full_corpus_operator_workflow as workflow
 
@@ -26,6 +30,79 @@ def test_parser_defaults_to_operator_safe_local_ack_mode() -> None:
     assert args.bridge_dir == str(workflow.DEFAULT_BRIDGE_DIR)
     assert args.receipt_dir == str(workflow.DEFAULT_RECEIPT_DIR)
     assert args.runtime_root_lifecycle_dir == str(workflow.DEFAULT_RUNTIME_ROOT_LIFECYCLE_DIR)
+
+
+def test_runner_accepts_selected_process_execution_authority_envelope() -> None:
+    args = workflow.build_parser().parse_args(
+        [
+            "--selected-operator-workflow-receipt-id",
+            "cb-full-corpus-operator-abc123",
+            "--selected-operator-workflow-receipt-hash",
+            "1" * 64,
+            "--selected-execution-boundary-receipt-id",
+            "cb-full-corpus-operator-execution-boundary-abc123",
+            "--selected-execution-boundary-receipt-hash",
+            "2" * 64,
+            "--selected-execution-boundary-authority-hash",
+            "3" * 64,
+            "--selected-process-execution-receipt-id",
+            "cb-full-corpus-operator-process-execution-abc123",
+            "--selected-process-execution-authority-hash",
+            "4" * 64,
+            "--selected-process-invocation-hash",
+            "5" * 64,
+            "--selected-process-launch-intent-receipt-id",
+            "cb-full-corpus-operator-process-launch-intent-abc123",
+            "--selected-process-launch-intent-receipt-hash",
+            "6" * 64,
+        ]
+    )
+
+    authority = workflow._selected_process_execution_authority(args)
+
+    assert authority is not None
+    assert authority["selected_operator_workflow_receipt_id"] == "cb-full-corpus-operator-abc123"
+    envelope_input = {
+        key: value
+        for key, value in authority.items()
+        if key != "selected_process_authority_envelope_hash"
+    }
+    assert authority["selected_process_authority_envelope_hash"] == workflow._stable_hash(envelope_input)
+
+
+def test_runner_rejects_path_like_selected_process_execution_authority_ids() -> None:
+    args = workflow.build_parser().parse_args(
+        [
+            "--selected-operator-workflow-receipt-id",
+            "cb-full-corpus-operator-../escape",
+            "--selected-operator-workflow-receipt-hash",
+            "1" * 64,
+            "--selected-execution-boundary-receipt-id",
+            "cb-full-corpus-operator-execution-boundary-abc123",
+            "--selected-execution-boundary-receipt-hash",
+            "2" * 64,
+            "--selected-execution-boundary-authority-hash",
+            "3" * 64,
+            "--selected-process-execution-receipt-id",
+            "cb-full-corpus-operator-process-execution-abc123",
+            "--selected-process-execution-authority-hash",
+            "4" * 64,
+            "--selected-process-invocation-hash",
+            "5" * 64,
+            "--selected-process-launch-intent-receipt-id",
+            "cb-full-corpus-operator-process-launch-intent-abc123",
+            "--selected-process-launch-intent-receipt-hash",
+            "6" * 64,
+        ]
+    )
+
+    try:
+        workflow._selected_process_execution_authority(args)
+    except workflow.OperatorWorkflowError as exc:
+        assert exc.code == "selected_process_execution_authority_id_invalid"
+        assert exc.details["field"] == "selected_operator_workflow_receipt_id"
+    else:
+        raise AssertionError("runner accepted a path-like selected authority receipt id")
 
 
 def test_live_http_mode_requires_api_base_url_and_configured_webhook() -> None:
@@ -240,7 +317,8 @@ def test_live_http_workflow_run_verifies_returned_status_request(monkeypatch) ->
     assert result["selector_mutation_performed"] is False
 
 
-def test_completion_monitor_projects_downstream_proven_state(monkeypatch) -> None:
+def test_completion_monitor_projects_downstream_proven_state(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(settings, "layer3_candidate_b_full_corpus_operator_workflow_dir", str(tmp_path))
     row = _completion_monitor_history_row(
         process_execution_state="started",
         process_completion_state="completed",
@@ -266,7 +344,8 @@ def test_completion_monitor_projects_downstream_proven_state(monkeypatch) -> Non
     assert result["frontend_durable_authority_enabled"] is False
 
 
-def test_completion_monitor_projects_not_started_without_process_receipt(monkeypatch) -> None:
+def test_completion_monitor_projects_not_started_without_process_receipt(monkeypatch, tmp_path: Path) -> None:
+    monkeypatch.setattr(settings, "layer3_candidate_b_full_corpus_operator_workflow_dir", str(tmp_path))
     row = _completion_monitor_history_row(
         process_execution_state="not_started",
         process_completion_state="not_recorded",
@@ -320,6 +399,7 @@ def test_repeatability_checkpoint_records_append_only_receipt(
     status_projection = _repeatability_status_projection()
     monitor_projection = _repeatability_monitor_projection()
     monkeypatch.setattr(repeatability_checkpoint, "_current_history", lambda: history)
+    monkeypatch.setattr(settings, "layer3_candidate_b_full_corpus_operator_workflow_dir", str(tmp_path))
     monkeypatch.setattr(
         repeatability_checkpoint.workflow_status,
         "candidate_b_full_corpus_operator_workflow_status",
@@ -367,6 +447,7 @@ def test_repeatability_checkpoint_rejects_not_downstream_proven_monitor(
         "completion_monitor_state": "completed_without_downstream_proof",
     }
     monkeypatch.setattr(repeatability_checkpoint, "_current_history", lambda: history)
+    monkeypatch.setattr(settings, "layer3_candidate_b_full_corpus_operator_workflow_dir", str(tmp_path))
     monkeypatch.setattr(
         repeatability_checkpoint.workflow_status,
         "candidate_b_full_corpus_operator_workflow_status",
@@ -655,6 +736,55 @@ def test_operator_eligibility_summary_records_counts_and_rollback() -> None:
     }
 
 
+def test_operator_workflow_receipt_hash_binds_eligibility_and_rollback() -> None:
+    assert "corpus" in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS
+    assert "baseline_rollback" in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS
+    receipt_input = {
+        "schema_id": workflow.SCHEMA_ID,
+        "schema_version": workflow.SCHEMA_VERSION,
+        "workflow_mode": workflow.WORKFLOW_MODE,
+        "baseline_run_id": "baseline-run",
+        "candidate_a_run_id": "candidate-a-run",
+        "candidate_b_run_id": "candidate-b-run",
+        "compare_target_set_hash": "1" * 64,
+        "bridge_receipt_id": "cb-runtime-l3-aaaaaaaaaaaaaaaaaaaaaaaa",
+        "bridge_receipt_hash": "2" * 64,
+        "downstream_proof_id": "cb-runtime-downstream-proof-bbbbbbbbbbbbbbbbbbbbbbbb",
+        "downstream_proof_hash": "3" * 64,
+        "coverage_count": 17,
+        "corpus": {
+            "corpus_pdf_count": 69,
+            "eligible_file_count": 71,
+            "material_relative_name": "text/target-00001.md",
+            "target_status_counts": {"candidate_b": {"recommended": 69}},
+            "eligibility_summary": {"eligible_pdf_count": 69},
+        },
+        "baseline_rollback": workflow._baseline_rollback_summary(),
+        "runtime_root_lifecycle": {
+            "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-proof",
+            "lifecycle_receipt_hash": "5" * 64,
+        },
+    }
+    original_hash = workflow._stable_hash(receipt_input)
+    tampered_corpus = {
+        **receipt_input,
+        "corpus": {
+            **receipt_input["corpus"],
+            "eligibility_summary": {"eligible_pdf_count": 68},
+        },
+    }
+    tampered_rollback = {
+        **receipt_input,
+        "baseline_rollback": {
+            **receipt_input["baseline_rollback"],
+            "depends_on_candidate_b_artifacts": True,
+        },
+    }
+
+    assert workflow._stable_hash(tampered_corpus) != original_hash
+    assert workflow._stable_hash(tampered_rollback) != original_hash
+
+
 def test_prepare_package_uses_hybrid_authority_api_without_session_helper() -> None:
     client = _FakeLayer3Client()
 
@@ -845,15 +975,16 @@ def test_blocked_receipt_redacts_raw_paths_and_urls(tmp_path: Path) -> None:
     checkout_root.mkdir()
     raw_inside = checkout_root / "backend" / "storage_test_runtime" / "secret.json"
     raw_outside = Path("D:/operator/private/source.pdf")
+    raw_posix = "/var/tmp/operator/private/source.pdf"
     file_url = f"file:///{raw_inside.as_posix()}"
     raw_url = "https://provider.example/private/raw-token"
     error = workflow.OperatorWorkflowError(
         "blocked_for_test",
-        "Blocked without exposing artifact roots.",
+        f"Blocked while reading {raw_posix}.",
         details={
             "inside": str(raw_inside),
             "outside": str(raw_outside),
-            "body": f"failed at {raw_inside} using {raw_outside} via {file_url} and {raw_url}",
+            "body": f"failed at {raw_inside} using {raw_outside} and {raw_posix} via {file_url} and {raw_url}",
         },
     )
 
@@ -865,10 +996,74 @@ def test_blocked_receipt_redacts_raw_paths_and_urls(tmp_path: Path) -> None:
     assert str(checkout_root) not in serialized
     assert "D:/" not in serialized
     assert "D:\\" not in serialized
+    assert raw_posix not in serialized
     assert "file:///" not in serialized
     assert "https://" not in serialized
     assert "repo://" in serialized
     assert "redacted://" in serialized
+
+
+def test_blocked_receipt_persists_to_durable_redacted_storage(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    receipt_dir = checkout_root / "backend" / "app" / "storage_test_runtime" / "lc_e2e" / "operator"
+    checkout_root.mkdir(parents=True)
+    args = workflow.build_parser().parse_args(
+        [
+            "--checkout-root",
+            str(checkout_root),
+            "--receipt-dir",
+            str(receipt_dir),
+        ]
+    )
+    error = workflow.OperatorWorkflowError(
+        "blocked_for_test",
+        "Blocked while reading /var/tmp/operator/private/source.pdf.",
+    )
+    receipt = workflow._blocked_receipt(error, checkout_root=checkout_root)
+
+    persisted = workflow._persist_blocked_receipt(args, receipt, checkout_root=checkout_root)
+
+    assert persisted["status"] == "blocked"
+    assert persisted["receipt_persisted"] is True
+    assert persisted["receipt_id"].startswith(workflow.BLOCKED_RECEIPT_PREFIX)
+    assert not persisted["receipt_id"].startswith("cb-full-corpus-operator-")
+    receipt_path = receipt_dir / persisted["receipt_id"] / "receipt.json"
+    assert receipt_path.is_file()
+    serialized = receipt_path.read_text(encoding="utf-8")
+    assert "/var/tmp" not in serialized
+    assert "redacted://" in serialized
+
+
+def test_api_error_body_redaction_uses_effective_checkout_root(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    raw_secret = (checkout_root / "private" / "candidate-b" / "receipt.json").as_posix()
+
+    class _FailingPostClient:
+        _operator_workflow_checkout_root = checkout_root
+
+        def post(self, _path: str, json: dict[str, object]) -> _FakeResponse:
+            return _FakeResponse({"detail": f"failed to read {raw_secret}"}, status_code=500)
+
+    try:
+        workflow._post_json(_FailingPostClient(), "/api/v1/layer3/fail", {"client_request_id": "fail"})
+    except workflow.OperatorWorkflowError as exc:
+        body = str(exc.details["body"])
+    else:
+        raise AssertionError("failing API response was accepted")
+
+    assert str(checkout_root) not in body
+    assert "repo://" in body
+
+
+def test_import_does_not_override_existing_db_init_mode(monkeypatch) -> None:
+    monkeypatch.setenv("DB_INIT_MODE", "create_all")
+    spec = importlib.util.spec_from_file_location("workflow_import_probe", Path(workflow.__file__))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+
+    spec.loader.exec_module(module)
+
+    assert os.environ["DB_INIT_MODE"] == "create_all"
 
 
 class _FakeResponse:

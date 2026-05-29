@@ -7,7 +7,11 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from app.core.config import settings
-from app.services import layer3_candidate_b_runtime_bridge, layer3_candidate_b_visual_lane_status
+from app.services import (
+    layer3_candidate_b_runtime_bridge,
+    layer3_candidate_b_storage_id,
+    layer3_candidate_b_visual_lane_status,
+)
 
 
 SCHEMA_ID = "layer3.candidate_b_runtime_downstream_proof.v1"
@@ -33,6 +37,7 @@ _RUNTIME_HASH_KEYS = (
     "runtime_review_root_storage_authority_hash",
     "admitted_file_subset_hash",
     "governed_retained_artifact_family_hash",
+    "candidate_b_visual_lane_evidence",
     "redaction_policy_id",
 )
 _ADMITTED_RUNTIME_BRIDGE_MODES = (
@@ -140,6 +145,10 @@ _FORBIDDEN_NESTED_FIELDS = {
     "authorization",
     "credentials",
 }
+_ALLOWED_EVIDENCE_REF_PREFIXES = (
+    "candidate-b-downstream-proof://",
+    "candidate-b-runtime-downstream-proof://",
+)
 
 
 class CandidateBDownstreamProofError(Exception):
@@ -193,7 +202,12 @@ def candidate_b_runtime_downstream_proof(payload: Mapping[str, Any]) -> dict[str
         )
 
     candidate_b_run_id = _required(fields, "candidate_b_run_id")
-    receipt_id = _required(fields, "bridge_receipt_id")
+    receipt_id = _required_storage_id(
+        fields,
+        "bridge_receipt_id",
+        layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX,
+        code="candidate_b_downstream_proof_bridge_receipt_id_invalid",
+    )
     receipt = _read_receipt(receipt_id)
     _validate_receipt(candidate_b_run_id, receipt_id, receipt)
     visual_status_hash = _validate_visual_lane_status(
@@ -278,7 +292,28 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
     return value
 
 
+def _required_storage_id(fields: Mapping[str, Any], key: str, prefix: str, *, code: str) -> str:
+    value = _required(fields, key)
+    _validate_storage_id(value, prefix=prefix, code=code)
+    return value
+
+
+def _validate_storage_id(value: str, *, prefix: str, code: str) -> None:
+    if not layer3_candidate_b_storage_id.is_storage_id(value, prefix=prefix):
+        raise CandidateBDownstreamProofError(
+            code,
+            "Candidate B downstream proof identifiers must be server-owned storage identifiers.",
+            http_status=409,
+            details={"expected_prefix": prefix},
+        )
+
+
 def _read_receipt(receipt_id: str) -> dict[str, Any]:
+    _validate_storage_id(
+        receipt_id,
+        prefix=layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX,
+        code="candidate_b_downstream_proof_bridge_receipt_id_invalid",
+    )
     configured = settings.layer3_candidate_b_runtime_bridge_dir
     if not str(configured or "").strip():
         raise CandidateBDownstreamProofError(
@@ -428,7 +463,15 @@ def _validate_visual_lane_status(
             http_status=409,
         )
     for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
-        if int(visual_evidence.get(field) or 0) <= 0:
+        count = _strict_nonnegative_int(visual_evidence.get(field))
+        if count is None:
+            raise CandidateBDownstreamProofError(
+                "candidate_b_downstream_proof_visual_lane_status_evidence_count_invalid",
+                "Candidate B visual-lane status evidence has malformed retained visual/page evidence counts.",
+                http_status=409,
+                details={"field": field, "received": visual_evidence.get(field)},
+            )
+        if count <= 0:
             raise CandidateBDownstreamProofError(
                 "candidate_b_downstream_proof_visual_lane_status_evidence_count_missing",
                 "Candidate B visual-lane status evidence does not prove retained visual/page evidence.",
@@ -443,7 +486,15 @@ def _validate_visual_lane_status(
             http_status=409,
         )
     for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
-        if int(operator_projection.get(field) or 0) <= 0:
+        count = _strict_nonnegative_int(operator_projection.get(field))
+        if count is None:
+            raise CandidateBDownstreamProofError(
+                "candidate_b_downstream_proof_visual_lane_status_projection_count_invalid",
+                "Candidate B visual-lane status operator projection has malformed retained visual/page evidence counts.",
+                http_status=409,
+                details={"field": field, "received": operator_projection.get(field)},
+            )
+        if count <= 0:
             raise CandidateBDownstreamProofError(
                 "candidate_b_downstream_proof_visual_lane_status_projection_count_missing",
                 "Candidate B visual-lane status operator projection does not show retained visual/page evidence.",
@@ -515,11 +566,11 @@ def _validate_coverage_evidence(
                     http_status=409,
                     details={"coverage_step": step, "field": field},
                 )
-        evidence_ref = str(item.get("evidence_ref") or f"candidate-b-downstream-proof://{step}")
-        if evidence_ref.lower().startswith(("http://", "https://", "file://")):
+        evidence_ref = str(item.get("evidence_ref") or f"candidate-b-downstream-proof://{step}").strip()
+        if _evidence_ref_exposes_raw_authority(evidence_ref):
             raise CandidateBDownstreamProofError(
                 "candidate_b_downstream_proof_coverage_exposes_forbidden_reference",
-                "Candidate B downstream proof coverage cannot expose raw URL or file references.",
+                "Candidate B downstream proof coverage cannot expose raw URL, file, or local path references.",
                 http_status=409,
                 details={"coverage_step": step},
             )
@@ -562,6 +613,48 @@ def _validate_coverage_evidence(
     return coverage
 
 
+def _strict_nonnegative_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, str):
+        text = value.strip()
+        if text.isdecimal():
+            return int(text)
+    return None
+
+
+def _evidence_ref_exposes_raw_authority(evidence_ref: str) -> bool:
+    text = evidence_ref.strip()
+    lower = text.lower()
+    if not text:
+        return False
+    if any(token in lower for token in ("http://", "https://", "file://")):
+        return True
+    for prefix in _ALLOWED_EVIDENCE_REF_PREFIXES:
+        if lower.startswith(prefix):
+            suffix = text[len(prefix) :]
+            return _local_path_shaped_ref(suffix)
+    if "://" in text:
+        return True
+    return _local_path_shaped_ref(text)
+
+
+def _local_path_shaped_ref(value: str) -> bool:
+    text = value.strip()
+    normalised = text.replace("\\", "/")
+    if not text:
+        return True
+    if "\\" in text or "/" in text:
+        return True
+    if len(text) >= 2 and text[1] == ":" and text[0].isalpha():
+        return True
+    if normalised in {".", ".."}:
+        return True
+    return any(part == ".." for part in normalised.split("/"))
+
+
 def _find_forbidden_nested_fields(value: Any, prefix: str = "") -> list[str]:
     found: list[str] = []
     if isinstance(value, Mapping):
@@ -600,6 +693,16 @@ def _negative_invariants() -> dict[str, bool]:
 
 
 def _write_proof_receipt(*, receipt_id: str, proof_receipt_id: str, proof: Mapping[str, Any]) -> None:
+    _validate_storage_id(
+        receipt_id,
+        prefix=layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX,
+        code="candidate_b_downstream_proof_bridge_receipt_id_invalid",
+    )
+    _validate_storage_id(
+        proof_receipt_id,
+        prefix=PROOF_RECEIPT_PREFIX,
+        code="candidate_b_downstream_proof_receipt_id_invalid",
+    )
     root = Path(str(settings.layer3_candidate_b_runtime_bridge_dir)) / receipt_id / "downstream-proof"
     root.mkdir(parents=True, exist_ok=True)
     path = root / f"{proof_receipt_id}.json"

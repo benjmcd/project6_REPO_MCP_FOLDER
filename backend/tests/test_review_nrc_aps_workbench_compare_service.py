@@ -127,6 +127,15 @@ def _write_candidate_b_bundle(tmp_path: Path, *, fixture_id: str) -> tuple[Path,
 
     bundle_root = checkout_root / "archive" / "20260412-cb-proof" / "cb-proof-test"
     bundle_root.mkdir(parents=True, exist_ok=True)
+    raw_root = bundle_root / "raw"
+    raw_root.mkdir(parents=True, exist_ok=True)
+    raw_json_path = raw_root / f"{fixture_id}.json"
+    raw_markdown_path = raw_root / f"{fixture_id}.md"
+    annotated_pdf_path = raw_root / "annotated" / f"{fixture_id}.pdf"
+    annotated_pdf_path.parent.mkdir(parents=True, exist_ok=True)
+    raw_json_path.write_text(json.dumps({"fixture_id": fixture_id, "kids": []}, indent=2, sort_keys=True), encoding="utf-8")
+    raw_markdown_path.write_text("# Candidate B fixture\n", encoding="utf-8")
+    annotated_pdf_path.write_bytes(b"%PDF-1.4\n%candidate-b-annotated\n")
 
     (bundle_root / "baseline-summary.json").write_text(
         json.dumps({"documents": [{"fixture_id": fixture_id, "baseline": {"char_count": 1200}}]}, indent=2, sort_keys=True),
@@ -137,6 +146,7 @@ def _write_candidate_b_bundle(tmp_path: Path, *, fixture_id: str) -> tuple[Path,
             {
                 "generated_at_utc": "2026-04-12T08:00:00Z",
                 "run_id": "cb-run-001",
+                "raw_output_root": raw_root.relative_to(checkout_root).as_posix(),
                 "decision_recommendation": "workbench_useful_with_explicit_footer_limitation",
                 "interference_check_passed": True,
                 "derived_comparison_only": ["candidate_b_normalized_text"],
@@ -164,6 +174,10 @@ def _write_candidate_b_bundle(tmp_path: Path, *, fixture_id: str) -> tuple[Path,
                             "image_sources": [],
                             "limitation_flags": ["footer_page_numbers_detected"],
                             "warning_flags": ["footer_warning"],
+                            "raw_json_ref": raw_json_path.relative_to(checkout_root).as_posix(),
+                            "raw_markdown_ref": raw_markdown_path.relative_to(checkout_root).as_posix(),
+                            "annotated_pdf_ref": annotated_pdf_path.relative_to(checkout_root).as_posix(),
+                            "annotated_pdf_status": "present",
                         },
                         "expected_gain_claims": ["heading_count"],
                         "expected_non_equivalences": ["element_counts_by_type"],
@@ -191,7 +205,18 @@ def _write_candidate_b_bundle(tmp_path: Path, *, fixture_id: str) -> tuple[Path,
         encoding="utf-8",
     )
     (bundle_root / "retain.json").write_text(
-        json.dumps({"outputs_outside_approved_roots": []}, indent=2, sort_keys=True),
+        json.dumps(
+            {
+                "outputs_outside_approved_roots": [],
+                "raw_file_inventory": [
+                    {"path": raw_json_path.relative_to(checkout_root).as_posix()},
+                    {"path": raw_markdown_path.relative_to(checkout_root).as_posix()},
+                    {"path": annotated_pdf_path.relative_to(checkout_root).as_posix()},
+                ],
+            },
+            indent=2,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
 
@@ -429,6 +454,44 @@ def test_compose_workbench_compare_payloads_align_selected_fixture(compare_runti
     )
     assert text_tab.columns["candidate_b"].comparability_class == "derived_only"
     assert text_tab.columns["candidate_b"].data["text"] == "Candidate B text body"
+
+
+def test_candidate_b_bundle_trace_links_require_trace_ready_artifacts(
+    compare_runtime_fixture: dict[str, object],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    baseline_binding = compare_runtime_fixture["baseline_binding"]
+    candidate_a_binding = compare_runtime_fixture["candidate_a_binding"]
+    checkout_root = compare_runtime_fixture["checkout_root"]
+    bundle_id = compare_runtime_fixture["bundle_id"]
+    fixture_id = compare_runtime_fixture["fixture_id"]
+    selector = compare_runtime_fixture["selector"]
+    compare_path = checkout_root / bundle_id / "compare.json"
+    compare_payload = json.loads(compare_path.read_text(encoding="utf-8"))
+    compare_payload.pop("raw_output_root", None)
+    compare_path.write_text(json.dumps(compare_payload, indent=2, sort_keys=True), encoding="utf-8")
+
+    monkeypatch.setattr(compare_service, "discover_runtime_bindings", lambda: [baseline_binding, candidate_a_binding])
+    monkeypatch.setattr(compare_service, "discover_candidate_runs", lambda: selector)
+
+    manifest = compare_service.compose_workbench_compare_manifest(
+        baseline_run_id=baseline_binding.run_id,
+        candidate_a_run_id=candidate_a_binding.run_id,
+        candidate_b_bundle_id=bundle_id,
+        fixture_id=fixture_id,
+        checkout_root=checkout_root,
+    )
+    assert manifest.deep_links.candidate_b_trace is None
+
+    summary_tab = compare_service.compose_workbench_compare_tab(
+        baseline_run_id=baseline_binding.run_id,
+        candidate_a_run_id=candidate_a_binding.run_id,
+        candidate_b_bundle_id=bundle_id,
+        fixture_id=fixture_id,
+        tab_id="summary",
+        checkout_root=checkout_root,
+    )
+    assert summary_tab.columns["candidate_b"].deep_link is None
 
 
 def test_compose_workbench_compare_payloads_accept_candidate_b_runtime_source(

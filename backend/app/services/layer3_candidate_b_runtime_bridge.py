@@ -204,6 +204,7 @@ def prepare_candidate_b_runtime_material_bridge(
         }
     )
     governed_retained_artifact_family = _governed_retained_artifact_family(binding, curated_files)
+    candidate_b_visual_lane_evidence = _candidate_b_visual_lane_evidence(binding)
     receipt_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -218,6 +219,7 @@ def prepare_candidate_b_runtime_material_bridge(
         "runtime_review_root_storage_authority_hash": runtime_authority_hash,
         "admitted_file_subset_hash": admitted_file_subset_hash,
         "governed_retained_artifact_family_hash": governed_retained_artifact_family["artifact_family_hash"],
+        "candidate_b_visual_lane_evidence": candidate_b_visual_lane_evidence,
         "redaction_policy_id": REDACTION_POLICY_ID,
     }
     bridge_receipt_hash = _stable_hash(receipt_input)
@@ -230,7 +232,7 @@ def prepare_candidate_b_runtime_material_bridge(
         "bridge_receipt_id": bridge_receipt_id,
         "bridge_receipt_hash": bridge_receipt_hash,
         "candidate_b_runtime_validation": runtime_validation,
-        "candidate_b_visual_lane_evidence": _candidate_b_visual_lane_evidence(binding),
+        "candidate_b_visual_lane_evidence": candidate_b_visual_lane_evidence,
         "compare_target_set": compare_target_set,
         "admitted_artifact_subset": _admitted_subset_summary(curated_files),
         "excluded_artifact_subset": _excluded_artifact_summary(binding),
@@ -1066,6 +1068,7 @@ def _full_corpus_targets(binding: ReviewRuntimeBinding, *, label: str) -> list[d
             details={"run_id": binding.run_id},
         )
     targets: list[dict[str, Any]] = []
+    seen_ordinals: set[int] = set()
     for item in raw_targets:
         if not isinstance(item, dict):
             raise CandidateBRuntimeBridgeError(
@@ -1085,6 +1088,14 @@ def _full_corpus_targets(binding: ReviewRuntimeBinding, *, label: str) -> list[d
                 http_status=409,
                 details={"run_id": binding.run_id},
             )
+        if ordinal in seen_ordinals:
+            raise CandidateBRuntimeBridgeError(
+                f"candidate_b_full_corpus_bridge_{label}_target_duplicate_ordinal",
+                "A required full-corpus comparison summary has duplicate target ordinals.",
+                http_status=409,
+                details={"run_id": binding.run_id, "ordinal": ordinal},
+            )
+        seen_ordinals.add(ordinal)
         targets.append(
             {
                 "target_id": target_id,

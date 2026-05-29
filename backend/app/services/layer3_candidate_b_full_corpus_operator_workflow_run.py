@@ -161,6 +161,7 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
         "bridge_receipt_id": str(run_receipt["bridge_receipt_id"]),
         "downstream_proof_id": str(run_receipt["downstream_proof_id"]),
     }
+    run_hash = workflow_status._stable_hash(run_receipt["server_owned_workflow_run"])
     return {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -173,8 +174,8 @@ def candidate_b_full_corpus_operator_workflow_run(payload: Mapping[str, Any]) ->
         "operator_workflow_receipt_id": run_receipt_id,
         "operator_workflow_receipt_hash": run_receipt_hash,
         "run_receipt_id": run_receipt_id,
-        "run_receipt_hash": workflow_status._stable_hash(run_receipt["server_owned_workflow_run"]),
-        "run_receipt_ref": f"candidate-b-full-corpus-operator-workflow://{run_receipt_id}/{run_receipt_hash[:24]}",
+        "run_receipt_hash": run_hash,
+        "run_receipt_ref": f"candidate-b-full-corpus-operator-workflow://{run_receipt_id}/{run_hash[:24]}",
         "source_operator_workflow_receipt_id": source_receipt_id,
         "source_operator_workflow_receipt_hash": source_receipt_hash,
         "authority_basis_hash": authority_basis_hash,
@@ -312,6 +313,7 @@ def _load_or_write_run_receipt(
             request_id=request_id,
             authority_basis_hash=authority_basis_hash,
             idempotency_key_hash=idempotency_key_hash,
+            ownership_access_policy=ownership_access_policy,
         )
         return existing, True
 
@@ -404,6 +406,7 @@ def _validate_existing_run_receipt(
     request_id: str,
     authority_basis_hash: str,
     idempotency_key_hash: str,
+    ownership_access_policy: Mapping[str, Any],
 ) -> None:
     server_run = receipt.get("server_owned_workflow_run")
     if not isinstance(server_run, Mapping):
@@ -426,6 +429,19 @@ def _validate_existing_run_receipt(
         },
         {"field": "run_state", "expected": "proven", "received": server_run.get("run_state")},
     ]
+    if settings.auth_owner == "proxy":
+        expected_binding = workflow_access_policy.owner_binding_from_policy(ownership_access_policy)
+        existing_binding = workflow_access_policy.owner_binding_from_workflow_authority(server_run)
+        for field, expected_value in expected_binding.items():
+            received = existing_binding.get(field) if isinstance(existing_binding, Mapping) else None
+            if received != expected_value:
+                mismatches.append(
+                    {
+                        "field": f"workflow_receipt_owner_binding.{field}",
+                        "expected": expected_value,
+                        "received": received,
+                    }
+                )
     mismatches = [mismatch for mismatch in mismatches if mismatch["expected"] != mismatch["received"]]
     if mismatches:
         raise CandidateBFullCorpusOperatorWorkflowRunError(

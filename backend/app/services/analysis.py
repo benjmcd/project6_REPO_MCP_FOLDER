@@ -18,7 +18,7 @@ from statsmodels.tsa.seasonal import STL
 
 from app.core.config import settings
 from app.models import AnalysisArtifact, AnalysisRun, AnnotationWindow, AssumptionCheck, CaveatNote, Dataset, DatasetVersion, VariableDefinition, VariableProfile
-from app.services.data_utils import coerce_numeric_series
+from app.services.data_utils import classify_numeric_token, coerce_numeric_series
 from app.services.dataframe_io import load_version_dataframe
 from app.services.profiling import _detect_stationarity
 
@@ -539,7 +539,18 @@ def _top_values(series: pd.Series, limit: int = 5) -> list[dict[str, Any]]:
     return [{'value': value, 'count': int(count)} for value, count in ranked[:limit]]
 
 
+def _normalize_placeholder_nulls(series: pd.Series) -> pd.Series:
+    if not (series.dtype == object or pd.api.types.is_string_dtype(series)):
+        return series
+    return series.map(
+        lambda value: np.nan
+        if isinstance(value, str) and classify_numeric_token(value)["status"] == "placeholder_null"
+        else value
+    )
+
+
 def _descriptive_column_summary(series: pd.Series, *, is_time_column: bool) -> dict[str, Any]:
+    series = _normalize_placeholder_nulls(series)
     row_count = int(len(series))
     missing_count = int(series.isna().sum())
     non_null_count = row_count - missing_count

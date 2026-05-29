@@ -6,7 +6,7 @@ import sys
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import BigInteger, create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -26,6 +26,7 @@ from app.models.models import (
     L3SourceDirectoryIngestionBatch,
     L3SourceDirectoryIngestionFile,
 )
+from app.services import layer3_source_directory_ingestion
 from app.services.layer3_source_directory_text_index import (
     SourceDirectoryTextIndexError,
     source_directory_material_text_index,
@@ -71,6 +72,12 @@ def _scan_payload(client_request_id: str = "source-directory-scan-001") -> dict[
         "source_family": "server_configured_operator_directory_text_table_source_family",
         "ingestion_mode": "server_configured_operator_directory_text_table_ingestion",
     }
+
+
+def test_source_directory_ingestion_uses_64_bit_size_and_mtime_columns() -> None:
+    assert isinstance(L3SourceDirectoryIngestionBatch.__table__.c.total_size_bytes.type, BigInteger)
+    assert isinstance(L3SourceDirectoryIngestionFile.__table__.c.content_size_bytes.type, BigInteger)
+    assert isinstance(L3SourceDirectoryIngestionFile.__table__.c.mtime_ns.type, BigInteger)
 
 
 def _write_source_dir(root: Path) -> None:
@@ -206,6 +213,43 @@ def test_layer3_source_directory_ingestion_fails_closed_when_config_unset(client
     assert body["error"]["code"] == "source_directory_ingestion_dir_unset"
 
 
+def test_layer3_source_directory_ingestion_rejects_file_count_before_hashing(monkeypatch, tmp_path) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    source_dir.mkdir()
+    (source_dir / "alpha.txt").write_text("alpha\n", encoding="utf-8")
+    (source_dir / "bravo.txt").write_text("bravo\n", encoding="utf-8")
+    monkeypatch.setattr(layer3_source_directory_ingestion, "MAX_BATCH_FILES", 1)
+
+    def forbidden_observe(*_args, **_kwargs):
+        raise AssertionError("_observe_file must not run before file-count admission")
+
+    monkeypatch.setattr(layer3_source_directory_ingestion, "_observe_file", forbidden_observe)
+
+    with pytest.raises(layer3_source_directory_ingestion.SourceDirectoryIngestionError) as exc:
+        layer3_source_directory_ingestion._observe_recursive_files(source_dir)  # noqa: SLF001
+
+    assert exc.value.code == "source_directory_ingestion_batch_too_large"
+
+
+def test_layer3_source_directory_ingestion_reports_unreadable_files(monkeypatch, tmp_path) -> None:
+    source_file = tmp_path / "alpha.txt"
+    source_file.write_text("alpha\n", encoding="utf-8")
+    original_read_bytes = Path.read_bytes
+
+    def blocked_read_bytes(path: Path) -> bytes:
+        if path == source_file:
+            raise OSError("blocked for test")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", blocked_read_bytes)
+
+    with pytest.raises(layer3_source_directory_ingestion.SourceDirectoryIngestionError) as exc:
+        layer3_source_directory_ingestion._observe_file(source_file, "alpha.txt", ".txt")  # noqa: SLF001
+
+    assert exc.value.code == "source_directory_ingestion_file_unreadable"
+    assert exc.value.details["relative_name"] == "alpha.txt"
+
+
 def test_layer3_source_directory_ingestion_records_redacted_durable_authority(
     client: TestClient,
     tmp_path,
@@ -284,6 +328,44 @@ def test_layer3_source_directory_ingestion_records_redacted_durable_authority(
         assert db.query(ConnectorRun).count() == 0
         assert db.query(ConnectorRunTarget).count() == 0
         assert db.query(L3OutputPackage).count() == 0
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_ingestion_allows_unchanged_files_across_new_batches(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    first = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-unchanged-first"),
+    )
+    assert first.status_code == 201
+    (source_dir / "alpha.csv").write_text("name,value\nalpha,2\n", encoding="utf-8")
+
+    second = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-unchanged-second"),
+    )
+    assert second.status_code == 201
+    assert second.json()["source_ingestion_batch_id"] != first.json()["source_ingestion_batch_id"]
+
+    stale_request = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-unchanged-first"),
+    )
+    assert stale_request.status_code == 409
+    assert stale_request.json()["error"]["code"] == "source_directory_ingestion_idempotency_conflict"
+
+    db = client.layer3_session_factory()
+    try:
+        assert db.query(L3SourceDirectoryIngestionBatch).count() == 2
+        assert db.query(L3SourceDirectoryIngestionFile).count() == 8
     finally:
         db.close()
 
@@ -595,6 +677,34 @@ def test_layer3_source_directory_text_index_fails_closed_on_payload_hash_mismatc
             source_directory_material_text_index(db, _text_index_payload(snapshot_info))
         assert exc_info.value.code == "source_directory_text_index_stale_request_authority"
         assert exc_info.value.details["blocked_fields"] == ["payload_hash"]
+    finally:
+        db.close()
+
+
+def test_layer3_source_directory_text_index_requires_material_identity_fields(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    source_dir = tmp_path / "operator-source-dir"
+    _write_source_dir(source_dir)
+    monkeypatch.setattr(settings, "layer3_source_ingestion_dir", str(source_dir))
+
+    scan = client.post(
+        "/api/v1/layer3/source/ingestion/server-configured-directory/scan",
+        json=_scan_payload("source-directory-scan-text-index-missing-identity"),
+    )
+    assert scan.status_code == 201
+    snapshot_info = _approve_source_directory_file(client, scan.json(), "alpha.csv")
+    payload = _text_index_payload(snapshot_info)
+    payload.pop("file_identity_hash")
+
+    db = client.layer3_session_factory()
+    try:
+        with pytest.raises(SourceDirectoryTextIndexError) as exc_info:
+            source_directory_material_text_index(db, payload)
+        assert exc_info.value.code == "source_directory_text_index_stale_request_authority"
+        assert exc_info.value.details["missing_fields"] == ["file_identity_hash"]
     finally:
         db.close()
 

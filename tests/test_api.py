@@ -320,6 +320,15 @@ def test_year_column_and_placeholders_are_handled():
     assert payload['row_count'] == 3
 
 
+def test_descriptive_summary_classifies_numeric_after_placeholder_nulls():
+    summary = _descriptive_column_summary(pd.Series(["10", "W", "12"]), is_time_column=False)
+
+    assert summary["inferred_class"] == "numeric"
+    assert summary["missing_count"] == 1
+    assert summary["non_null_count"] == 2
+    assert summary["numeric_summary"]["non_null_count"] == 2
+
+
 def test_storage_ref_uses_parquet_and_stationarity_is_returned():
     csv_bytes = (
         b"year,a,b\n"

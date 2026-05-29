@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import hashlib
-from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -2854,6 +2853,7 @@ def _supporting_segments(items: list[Mapping[str, Any]]) -> list[dict[str, Any]]
                 },
                 "segment_hash": str(item["segment_hash"]),
                 "quote_excerpt": str(item.get("text_excerpt") or ""),
+                "query_term_frequencies": _query_term_frequencies(item),
                 "matched_unique_query_terms": int(item["matched_unique_query_terms"]),
                 "summed_term_frequency": int(item["summed_term_frequency"]),
                 "support_label": "primary_context_segment" if index == 0 else "supporting_context_segment",
@@ -2868,8 +2868,7 @@ def _salient_terms(query_tokens: list[Any], items: list[Mapping[str, Any]]) -> l
         matched_segments = 0
         summed_frequency = 0
         for item in items:
-            counts = Counter(normalize_query_tokens(str(item.get("text_excerpt") or "")))
-            frequency = int(counts.get(token, 0))
+            frequency = _query_term_frequency(item, token)
             if frequency > 0:
                 matched_segments += 1
                 summed_frequency += frequency
@@ -2881,6 +2880,42 @@ def _salient_terms(query_tokens: list[Any], items: list[Mapping[str, Any]]) -> l
             }
         )
     return terms
+
+
+def _query_term_frequencies(item: Mapping[str, Any]) -> dict[str, int]:
+    raw_frequencies = item.get("query_term_frequencies")
+    if not isinstance(raw_frequencies, Mapping):
+        raise SourceDirectoryQualitativeAnalysisError(
+            "source_directory_qualitative_analysis_query_term_frequencies_missing",
+            "The context-packet item is missing producer-owned query term frequencies.",
+            http_status=409,
+            details={"segment_id": item.get("segment_id")},
+        )
+    frequencies: dict[str, int] = {}
+    for raw_token, raw_count in raw_frequencies.items():
+        token = str(raw_token)
+        try:
+            count = int(raw_count)
+        except (TypeError, ValueError) as exc:
+            raise SourceDirectoryQualitativeAnalysisError(
+                "source_directory_qualitative_analysis_query_term_frequency_invalid",
+                "The context-packet item has an invalid query term frequency.",
+                http_status=409,
+                details={"segment_id": item.get("segment_id"), "term": token},
+            ) from exc
+        if isinstance(raw_count, bool) or count < 0:
+            raise SourceDirectoryQualitativeAnalysisError(
+                "source_directory_qualitative_analysis_query_term_frequency_invalid",
+                "The context-packet item has an invalid query term frequency.",
+                http_status=409,
+                details={"segment_id": item.get("segment_id"), "term": token},
+            )
+        frequencies[token] = count
+    return frequencies
+
+
+def _query_term_frequency(item: Mapping[str, Any], token: str) -> int:
+    return int(_query_term_frequencies(item).get(token, 0))
 
 
 def _evidence_summary(

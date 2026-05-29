@@ -398,6 +398,31 @@ def _authority_response(
     }
 
 
+def _record_replay_client_request_id(
+    db: Session,
+    *,
+    authority: L3ReplacementPackageSetAuthority,
+    request_id: str,
+) -> None:
+    if request_id == authority.client_request_id:
+        return
+    snapshot = json_clone(authority.authority_snapshot_json)
+    replay_request_ids = [
+        str(item)
+        for item in snapshot.get("same_basis_replay_client_request_ids", [])
+        if str(item)
+    ]
+    if request_id in replay_request_ids:
+        return
+    replay_request_ids.append(request_id)
+    snapshot["same_basis_replay_client_request_ids"] = replay_request_ids
+    snapshot["same_basis_replay_client_request_count"] = len(replay_request_ids)
+    authority.authority_snapshot_json = snapshot
+    authority.updated_at = utcnow()
+    db.commit()
+    db.refresh(authority)
+
+
 def _redacted_payload_refs(authority: L3ReplacementPackageSetAuthority) -> list[str]:
     return [
         f"artifact://replacement-package-set/{authority.replacement_package_set_authority_id}/{package_kind}"
@@ -1047,6 +1072,7 @@ def record_replacement_package_set_authority_from_source_directory_supersession_
         .one_or_none()
     )
     if existing_for_basis is not None:
+        _record_replay_client_request_id(db, authority=existing_for_basis, request_id=request_id)
         return _authority_response_from_source_directory(
             request_id=request_id,
             status="already_recorded",
@@ -1129,6 +1155,7 @@ def record_replacement_package_set_authority_from_source_directory_supersession_
             .one_or_none()
         )
         if existing is not None and existing.authority_basis_hash == computed_basis_hash:
+            _record_replay_client_request_id(db, authority=existing, request_id=request_id)
             return _authority_response_from_source_directory(
                 request_id=request_id,
                 status="already_recorded",
@@ -1385,6 +1412,7 @@ def record_replacement_package_set_authority(db: Session, payload: dict[str, Any
         .one_or_none()
     )
     if existing_for_basis is not None:
+        _record_replay_client_request_id(db, authority=existing_for_basis, request_id=request_id)
         return _authority_response(request_id=request_id, status="already_recorded", authority=existing_for_basis)
 
     now = utcnow()
@@ -1457,6 +1485,7 @@ def record_replacement_package_set_authority(db: Session, payload: dict[str, Any
                 .one_or_none()
             )
         if existing is not None and existing.authority_basis_hash == computed_basis_hash:
+            _record_replay_client_request_id(db, authority=existing, request_id=request_id)
             return _authority_response(request_id=request_id, status="already_recorded", authority=existing)
         raise layer3_workbench.Layer3WorkbenchError(
             "replacement_package_set_authority_in_progress",
@@ -1657,6 +1686,7 @@ def record_replacement_package_set_authority_from_corrected_artifact_set(
         .one_or_none()
     )
     if existing_for_basis is not None:
+        _record_replay_client_request_id(db, authority=existing_for_basis, request_id=request_id)
         return _authority_response_from_corrected_artifact_set(
             request_id=request_id,
             status="already_recorded",
@@ -1738,8 +1768,9 @@ def record_replacement_package_set_authority_from_corrected_artifact_set(
                 db.query(L3ReplacementPackageSetAuthority)
                 .filter(L3ReplacementPackageSetAuthority.authority_basis_hash == computed_basis_hash)
                 .one_or_none()
-            )
+        )
         if existing is not None and existing.authority_basis_hash == computed_basis_hash:
+            _record_replay_client_request_id(db, authority=existing, request_id=request_id)
             return _authority_response_from_corrected_artifact_set(
                 request_id=request_id,
                 status="already_recorded",

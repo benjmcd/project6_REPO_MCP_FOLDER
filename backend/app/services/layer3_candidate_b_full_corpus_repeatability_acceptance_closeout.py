@@ -332,6 +332,7 @@ def _selected_closeout_receipt(fields: Mapping[str, Any]) -> tuple[str, dict[str
                 ]
             },
         )
+    _validated_acceptance_checkpoint_receipt(fields)
     return _closeout_receipt_for_acceptance_checkpoint(acceptance_receipt_id, fields)
 
 
@@ -805,15 +806,22 @@ def _validate_acceptance_receipt_integrity(
     fields: Mapping[str, Any],
 ) -> str:
     try:
+        checkpoint_hash = str(
+            fields.get("repeatability_acceptance_checkpoint_hash")
+            or receipt.get("repeatability_acceptance_checkpoint_hash")
+            or ""
+        )
+        checkpoint_authority_hash = str(
+            fields.get("repeatability_acceptance_checkpoint_authority_hash")
+            or receipt.get("repeatability_acceptance_checkpoint_authority_hash")
+            or ""
+        )
         receipt_hash = acceptance._validate_acceptance_checkpoint_receipt(
             receipt,
             request_id=str(receipt.get("client_request_id") or ""),
             receipt_id=receipt_id,
-            checkpoint_hash=_required_hash(fields, "repeatability_acceptance_checkpoint_hash"),
-            checkpoint_authority_hash=_required_hash(
-                fields,
-                "repeatability_acceptance_checkpoint_authority_hash",
-            ),
+            checkpoint_hash=checkpoint_hash,
+            checkpoint_authority_hash=checkpoint_authority_hash,
             idempotency_key_hash=str(receipt.get("idempotency_key_hash") or ""),
         )
     except acceptance.CandidateBFullCorpusRepeatabilityAcceptanceCheckpointError as exc:

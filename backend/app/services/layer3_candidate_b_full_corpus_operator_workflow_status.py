@@ -61,6 +61,9 @@ WORKFLOW_RECEIPT_HASH_KEYS = (
     "downstream_proof_id",
     "downstream_proof_hash",
     "coverage_count",
+    "corpus",
+    "baseline_rollback",
+    "runtime_root_lifecycle",
 )
 RETRY_COMPLETION_FAILURE_SCHEMA_ID = (
     "layer3.candidate_b_full_corpus_operator_workflow_retry_completion_failure.v1"
@@ -254,7 +257,7 @@ def candidate_b_full_corpus_operator_workflow_status(payload: Mapping[str, Any])
         "bridge_receipt_hash": str(receipt["bridge_receipt_hash"]),
         "downstream_proof_id": str(receipt["downstream_proof_id"]),
         "downstream_proof_hash": str(receipt["downstream_proof_hash"]),
-        "coverage_count": int(receipt["coverage_count"]),
+        "coverage_count": _non_negative_int(receipt, "coverage_count"),
         "corpus": corpus,
         "eligibility_summary": eligibility_summary,
         "baseline_rollback": baseline_rollback,
@@ -528,11 +531,18 @@ def _workflow_corpus(receipt: Mapping[str, Any]) -> dict[str, Any]:
             "The selected workflow receipt is missing corpus status.",
             http_status=409,
         )
+    target_status_counts = corpus.get("target_status_counts")
+    if not isinstance(target_status_counts, Mapping):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_target_status_counts_missing",
+            "The selected workflow receipt is missing Candidate B target status counts.",
+            http_status=409,
+        )
     return {
         "corpus_pdf_count": _non_negative_int(corpus, "corpus_pdf_count"),
         "eligible_file_count": _non_negative_int(corpus, "eligible_file_count"),
         "material_relative_name": str(corpus.get("material_relative_name") or ""),
-        "target_status_counts": dict(corpus.get("target_status_counts") or {}),
+        "target_status_counts": dict(target_status_counts),
         "eligibility_summary": dict(corpus.get("eligibility_summary") or {}),
     }
 
@@ -604,15 +614,15 @@ def _workflow_eligibility_summary(corpus: Mapping[str, Any]) -> dict[str, Any]:
 
 def _candidate_b_target_status_counts(target_status_counts: Mapping[str, Any]) -> dict[str, int]:
     candidate_b = target_status_counts.get("candidate_b")
-    source = candidate_b if isinstance(candidate_b, Mapping) else target_status_counts
+    if not isinstance(candidate_b, Mapping):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_candidate_b_target_status_counts_missing",
+            "The selected workflow receipt is missing Candidate B-specific target status counts.",
+            http_status=409,
+        )
     counts: dict[str, int] = {}
-    for key, value in source.items():
-        try:
-            count = int(value)
-        except (TypeError, ValueError):
-            continue
-        if count >= 0:
-            counts[str(key)] = count
+    for key in candidate_b:
+        counts[str(key)] = _non_negative_int(candidate_b, key)
     return counts
 
 
@@ -626,19 +636,24 @@ def _workflow_baseline_rollback(receipt: Mapping[str, Any]) -> dict[str, Any]:
         "rollback_requires_selector_mutation": False,
     }
     supplied = receipt.get("baseline_rollback")
-    if isinstance(supplied, Mapping):
-        mismatches = [
-            {"field": key, "expected": value, "received": supplied.get(key)}
-            for key, value in expected.items()
-            if supplied.get(key) != value
-        ]
-        if mismatches:
-            raise CandidateBFullCorpusOperatorWorkflowStatusError(
-                "candidate_b_full_corpus_operator_workflow_baseline_rollback_mismatch",
-                "The selected workflow receipt has stale or contradictory baseline rollback evidence.",
-                http_status=409,
-                details={"mismatches": mismatches},
-            )
+    if not isinstance(supplied, Mapping):
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_baseline_rollback_missing",
+            "The selected workflow receipt is missing baseline rollback evidence.",
+            http_status=409,
+        )
+    mismatches = [
+        {"field": key, "expected": value, "received": supplied.get(key)}
+        for key, value in expected.items()
+        if supplied.get(key) != value
+    ]
+    if mismatches:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_baseline_rollback_mismatch",
+            "The selected workflow receipt has stale or contradictory baseline rollback evidence.",
+            http_status=409,
+            details={"mismatches": mismatches},
+        )
     return expected
 
 
@@ -1959,12 +1974,18 @@ def _find_raw_authority_exposure(value: Any, *, field: str = "$") -> str | None:
         return field
     if re.search(r"\b[A-Za-z]:[\\/]", text):
         return field
+    if re.search(
+        r"(?<![A-Za-z0-9+.-]:)(?<!/)/(?:tmp|var|home|users|mnt|etc|usr|opt|private|volumes)(?:/|$)",
+        text,
+        flags=re.IGNORECASE,
+    ):
+        return field
     return None
 
 
 def _non_negative_int(fields: Mapping[str, Any], key: str) -> int:
     value = fields.get(key)
-    if not isinstance(value, int) or value < 0:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
         raise CandidateBFullCorpusOperatorWorkflowStatusError(
             "candidate_b_full_corpus_operator_workflow_count_invalid",
             "The selected workflow receipt has an invalid non-negative count field.",
