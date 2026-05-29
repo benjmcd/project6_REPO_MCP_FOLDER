@@ -892,6 +892,13 @@ def _retry_terminal_index_file(operator_workflow_receipt_id: str) -> Path:
     )
 
 
+def _hide_retry_terminal_index(operator_workflow_receipt_id: str) -> Path:
+    index_file = _retry_terminal_index_file(operator_workflow_receipt_id)
+    hidden = index_file.with_name("index.json.legacy-hidden")
+    index_file.replace(hidden)
+    return hidden
+
+
 def _rewrite_workflow_receipt(receipt_id: str, receipt: dict[str, Any]) -> None:
     _workflow_receipt_file(receipt_id).write_text(
         json.dumps(receipt, sort_keys=True, indent=2) + "\n",
@@ -3119,6 +3126,68 @@ def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_uses_in
     assert projection["retry_completion_failure_receipt_id"] == terminal_body["retry_completion_failure_receipt_id"]
 
 
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_backfills_pre_index_completed_receipt(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    ).json()
+    _hide_retry_terminal_index(row["operator_workflow_receipt_id"])
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 200
+    projection = status_response.json()["retry_terminal_status_projection"]
+    assert projection["retry_terminal_projection_state"] == "completed"
+    assert projection["retry_completion_failure_receipt_id"] == terminal_body["retry_completion_failure_receipt_id"]
+    index_file = _retry_terminal_index_file(row["operator_workflow_receipt_id"])
+    backfilled = json.loads(index_file.read_text(encoding="utf-8"))
+    assert backfilled["retry_completion_failure_receipt_ids"] == [
+        terminal_body["retry_completion_failure_receipt_id"]
+    ]
+
+    original_glob = Path.glob
+
+    def _guard_retry_terminal_scan(path: Path, pattern: str):
+        if pattern.startswith(f"{workflow_status.RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-"):
+            raise AssertionError("backfilled retry terminal index was not used")
+        return original_glob(path, pattern)
+
+    monkeypatch.setattr(Path, "glob", _guard_retry_terminal_scan)
+    second_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+    assert second_response.status_code == 200
+    assert second_response.json()["retry_terminal_status_projection"]["retry_terminal_projection_state"] == "completed"
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_backfills_pre_index_failed_receipt(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(
+            history_body,
+            row,
+            retry_progress_checkpoint_body,
+            retry_terminal_outcome="failed",
+            terminal_failure_code="operator_safe_retry_failure",
+            terminal_failure_phase="analysis",
+        ),
+    ).json()
+    _hide_retry_terminal_index(row["operator_workflow_receipt_id"])
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 200
+    projection = status_response.json()["retry_terminal_status_projection"]
+    assert projection["retry_terminal_projection_state"] == "failed"
+    assert projection["retry_completion_failure_receipt_id"] == terminal_body["retry_completion_failure_receipt_id"]
+    assert projection["terminal_failure_code"] == "operator_safe_retry_failure"
+
+
 def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_skips_unindexed_unreadable_receipts(
     client: TestClient,
 ) -> None:
@@ -3127,6 +3196,7 @@ def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_skips_u
         RETRY_COMPLETION_FAILURE_ENDPOINT,
         json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
     ).json()
+    _hide_retry_terminal_index(row["operator_workflow_receipt_id"])
     unrelated_id = f"{workflow_status.RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-{'8' * 24}"
     unrelated_file = _workflow_receipt_file(unrelated_id)
     unrelated_file.parent.mkdir(parents=True, exist_ok=True)
@@ -3137,6 +3207,51 @@ def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_skips_u
     assert status_response.status_code == 200
     projection = status_response.json()["retry_terminal_status_projection"]
     assert projection["retry_completion_failure_receipt_id"] == terminal_body["retry_completion_failure_receipt_id"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_rejects_pre_index_stale_matching_receipt(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    ).json()
+    _hide_retry_terminal_index(row["operator_workflow_receipt_id"])
+    receipt_file = _workflow_receipt_file(terminal_body["retry_completion_failure_receipt_id"])
+    receipt = json.loads(receipt_file.read_text(encoding="utf-8"))
+    receipt["operator_workflow_receipt_hash"] = "6" * 64
+    receipt_file.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 409
+    assert status_response.json()["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_mismatch"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_rejects_pre_index_ambiguous_matching_receipts(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_progress_checkpoint_body = _retry_progress_checkpoint_chain(client)
+    terminal_body = client.post(
+        RETRY_COMPLETION_FAILURE_ENDPOINT,
+        json=_retry_completion_failure_request(history_body, row, retry_progress_checkpoint_body),
+    ).json()
+    _hide_retry_terminal_index(row["operator_workflow_receipt_id"])
+    receipt_file = _workflow_receipt_file(terminal_body["retry_completion_failure_receipt_id"])
+    duplicate_id = f"{workflow_status.RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-{'7' * 24}"
+    duplicate_file = _workflow_receipt_file(duplicate_id)
+    duplicate_file.parent.mkdir(parents=True, exist_ok=True)
+    duplicate_file.write_text(receipt_file.read_text(encoding="utf-8"), encoding="utf-8")
+
+    status_response = client.post(STATUS_ENDPOINT, json=row["status_request"])
+
+    assert status_response.status_code == 409
+    assert status_response.json()["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous"
+    )
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_terminal_status_projection_reports_failed(
