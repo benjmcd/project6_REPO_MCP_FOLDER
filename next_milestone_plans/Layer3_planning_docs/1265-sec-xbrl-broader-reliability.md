@@ -63,13 +63,13 @@ The gate does not convert fake-client evidence into a real-corpus claim. It admi
 
 ## Next Slice
 
-`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
+`sec_edgar_stratified_real_filing_validation_matrix_v1`
 
 Scope:
 
 - use the default-posture decision recorded in `1269-sec-xbrl-default-posture-decision.md`;
-- proceed with the selected explicit-operator-only default-off posture;
-- define operator runbook requirements and the next stratified validation matrix;
+- use the operator runbook and matrix selection recorded in `1270-sec-xbrl-operator-runbook-matrix-selection.md`;
+- execute or prepare the selected stratified validation matrix under the explicit-operator-only default-off posture;
 - preserve current committed defaults unless and until a separate reviewed runtime-default decision is made;
 - keep value reveal gated and default-off;
 - preserve no final financial-statement semantics and no cross-company comparability admissions.

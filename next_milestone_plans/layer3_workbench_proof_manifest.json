@@ -40501,13 +40501,36 @@
       "redaction and non-admissions preserved",
       "explicit operator-only posture selected",
       "no runtime default change by decision",
-      "next slice is operator runbook and stratified matrix selection"
+      "operator runbook and stratified matrix selection is recorded in doc 1270"
     ],
     "live_behavior_change_introduced_by_tracking": false,
     "runtime_default_changed_by_decision": false,
     "runtime_network_performed_by_decision": false,
     "arelle_subprocess_invoked_by_decision": false,
     "value_reveal_request_performed_by_decision": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false
+  },
+  "sec_edgar_operator_runbook_matrix_selection_proof": {
+    "proof_kind": "sec_edgar_operator_runbook_matrix_selection_proof",
+    "status": "operator_runbook_and_stratified_matrix_selection_ready",
+    "milestone": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1270-sec-xbrl-operator-runbook-matrix-selection.md",
+    "decision_report": "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json",
+    "proof_terms": [
+      "explicit operator-only default-off posture selected",
+      "current evidence supports operator runbook",
+      "runbook controls defined",
+      "selected stratified matrix covers required axes",
+      "raw issuer examples not committed",
+      "no runtime default change by selection",
+      "next slice is stratified real-filing validation matrix"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_default_changed_by_selection": false,
+    "runtime_network_performed_by_selection": false,
+    "arelle_subprocess_invoked_by_selection": false,
+    "value_reveal_request_performed_by_selection": false,
     "raw_values_committed": false,
     "raw_identity_committed": false
   },

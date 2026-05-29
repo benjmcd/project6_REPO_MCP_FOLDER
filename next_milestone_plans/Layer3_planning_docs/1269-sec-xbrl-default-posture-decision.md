@@ -47,14 +47,15 @@ The following remain deferred:
 
 ## Next Slice
 
-`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
+`sec_edgar_stratified_real_filing_validation_matrix_v1`
 
-Scope:
+The operator runbook and matrix-selection packet is recorded in `1270-sec-xbrl-operator-runbook-matrix-selection.md`.
 
-- write the operator runbook for the explicit-operator-only default-off posture;
-- define who may run live SEC/Arelle provisioning and governed reveal, what must be retained, what must be redacted, and what must be audited;
-- define the next stratified validation matrix before expanding corpus work;
-- include large domestic issuers only as one stratum, not as a substitute for foreign issuers, amendments, 20-F/40-F/6-K/8-K coverage, small/mid-size issuers, and diagnosed no-inline/unsupported filings;
+Scope for the next execution tranche:
+
+- execute or prepare the selected stratified matrix under the explicit-operator-only default-off posture;
+- retain raw inputs and runtime artifacts outside the repo;
+- commit only redacted hashes, counts, forms, reason codes, and readiness results;
 - keep live-network, Arelle cutover, and value reveal defaults off.
 
 ## Non-Goals Preserved

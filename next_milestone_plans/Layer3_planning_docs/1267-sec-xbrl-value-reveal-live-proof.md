@@ -74,6 +74,6 @@ This proof does not admit default-on runtime behavior by itself.
 
 ## Next Slice
 
-`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
+`sec_edgar_stratified_real_filing_validation_matrix_v1`
 
-The default-posture reconciliation and decision are now recorded in `1268-sec-xbrl-default-posture-reconciliation.md` and `1269-sec-xbrl-default-posture-decision.md`. The selected posture is explicit-operator-only and default-off. The next pass should prepare the operator runbook and the next stratified validation matrix without weakening the default-off governance boundary.
+The default-posture reconciliation, decision, and operator runbook/matrix selection are now recorded in `1268-sec-xbrl-default-posture-reconciliation.md`, `1269-sec-xbrl-default-posture-decision.md`, and `1270-sec-xbrl-operator-runbook-matrix-selection.md`. The selected posture is explicit-operator-only and default-off. The next pass should execute or prepare the selected stratified validation matrix without weakening the default-off governance boundary.
