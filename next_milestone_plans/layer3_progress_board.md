@@ -9432,6 +9432,20 @@ This harness adds no live network run, Arelle invocation, source acquisition, si
 
 Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
 
+## SEC XBRL Stratified Matrix Run-Readiness Hardening
+
+Milestone: `sec_edgar_stratified_real_filing_validation_matrix_run_readiness_hardening_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1273-sec-xbrl-stratified-matrix-run-readiness-hardening.md`.
+
+Runner: `diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py`.
+
+Status: run-readiness hardened before live execution. The external matrix plan now fails closed on repeated issuer use across chunks, and an external stratified run now reports `summary.strata_readiness` plus a `stratified_matrix_required_strata_readiness` gate so plan-level stratum coverage is not treated as post-run proof.
+
+This hardening adds no live network run, Arelle invocation, source acquisition, sidecar, dataset, audit receipt, value reveal, runtime default change, raw issuer-list commitment, production-readiness claim, final financial-statement semantics claim, or cross-company comparability claim.
+
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_live_execution_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.

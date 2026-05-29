@@ -926,6 +926,7 @@ def _companyfacts_unit_name(unit: Mapping[str, Any]) -> str:
 def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     forms: Counter[str] = Counter()
     per_filing = _per_filing_from_rows(rows)
+    strata_readiness = _strata_readiness(rows)
     for row in rows:
         forms.update(row.get("forms") or {})
     compared = sum(int(item.get("companyfacts_effective_value_compared_count") or 0) for item in per_filing)
@@ -935,6 +936,7 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "matrix_chunk_count": len(rows),
         "ready_matrix_chunk_count": sum(1 for row in rows if row.get("pipeline_state") == "ready"),
         "blocked_matrix_chunk_count": sum(1 for row in rows if row.get("pipeline_state") != "ready"),
+        "strata_readiness": strata_readiness,
         "real_filing_count": sum(int(row.get("filing_count") or 0) for row in rows),
         "supported_record_count": sum(int(row.get("supported_count") or 0) for row in rows),
         "blocked_or_degraded_record_count": sum(int(row.get("blocked_or_degraded_count") or 0) for row in rows),
@@ -998,6 +1000,72 @@ def _summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _strata_readiness(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    by_stratum = {
+        stratum: {
+            "matrix_chunk_count": 0,
+            "ready_matrix_chunk_count": 0,
+            "blocked_matrix_chunk_count": 0,
+            "matrix_ref_hashes": [],
+        }
+        for stratum in REQUIRED_STRATA
+    }
+    unknown: set[str] = set()
+    for row in rows:
+        row_strata = [str(item) for item in row.get("strata") or [] if str(item)]
+        if not row_strata:
+            continue
+        ready = row.get("pipeline_state") == "ready"
+        matrix_ref_hash = str(row.get("matrix_ref_hash") or "")
+        for stratum in row_strata:
+            if stratum not in by_stratum:
+                unknown.add(stratum)
+                continue
+            summary = by_stratum[stratum]
+            summary["matrix_chunk_count"] += 1
+            if ready:
+                summary["ready_matrix_chunk_count"] += 1
+            else:
+                summary["blocked_matrix_chunk_count"] += 1
+            if matrix_ref_hash:
+                summary["matrix_ref_hashes"].append(matrix_ref_hash)
+
+    for summary in by_stratum.values():
+        summary["matrix_ref_hashes"] = sorted(set(summary["matrix_ref_hashes"]))
+
+    missing = [
+        stratum
+        for stratum, summary in by_stratum.items()
+        if int(summary["matrix_chunk_count"] or 0) == 0
+    ]
+    not_ready = [
+        stratum
+        for stratum, summary in by_stratum.items()
+        if int(summary["ready_matrix_chunk_count"] or 0) == 0
+    ]
+    blocked = [
+        stratum
+        for stratum, summary in by_stratum.items()
+        if int(summary["blocked_matrix_chunk_count"] or 0) > 0
+    ]
+    ready_strata = [
+        stratum
+        for stratum, summary in by_stratum.items()
+        if int(summary["ready_matrix_chunk_count"] or 0) > 0
+        and int(summary["blocked_matrix_chunk_count"] or 0) == 0
+    ]
+    return {
+        "required_strata": list(REQUIRED_STRATA),
+        "ready_strata": ready_strata,
+        "missing_strata": missing,
+        "not_ready_strata": not_ready,
+        "blocked_strata": blocked,
+        "unknown_strata": sorted(unknown),
+        "all_required_strata_ready": not missing and not not_ready and not blocked and not unknown,
+        "by_stratum": by_stratum,
+    }
+
+
 def _criteria(
     preflight: Mapping[str, Any],
     summary: Mapping[str, Any],
@@ -1015,6 +1083,17 @@ def _criteria(
             matrix_plan_readiness["state"] == "passed",
             matrix_plan_readiness,
             "real_corpus_product_path_matrix_plan_not_satisfied",
+        ),
+        _criterion(
+            "stratified_matrix_required_strata_readiness",
+            matrix_plan_readiness.get("mode") != "external_stratified_matrix_plan"
+            or matrix_plan_readiness.get("state") != "passed"
+            or bool((summary.get("strata_readiness") or {}).get("all_required_strata_ready")),
+            {
+                "matrix_plan_mode": matrix_plan_readiness.get("mode"),
+                "strata_readiness": summary.get("strata_readiness"),
+            },
+            "stratified_matrix_required_strata_not_ready",
         ),
         _criterion(
             "broader_real_product_path_corpus",
@@ -1217,6 +1296,7 @@ def _matrix_chunks_from_external_plan(
         return (), ["matrix_plan_chunks_missing"]
     chunks: list[tuple[str, tuple[str, ...], tuple[str, ...]]] = []
     seen_labels: set[str] = set()
+    seen_company_refs: set[str] = set()
     for index, raw in enumerate(raw_chunks):
         if not isinstance(raw, Mapping):
             reasons.append("matrix_plan_chunk_invalid")
@@ -1234,6 +1314,10 @@ def _matrix_chunks_from_external_plan(
             reasons.append("matrix_plan_chunk_strata_invalid")
         if not matrix or not strata:
             continue
+        if seen_company_refs.intersection(matrix):
+            reasons.append("matrix_plan_duplicate_company_matrix_issuer")
+            continue
+        seen_company_refs.update(matrix)
         chunks.append((label, matrix, strata))
         if index >= 23:
             reasons.append("matrix_plan_chunk_count_exceeds_limit")

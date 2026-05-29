@@ -295,16 +295,16 @@ def test_sec_xbrl_real_corpus_product_runner_executes_external_stratified_plan_r
             "matrix_ref_hash": module.stable_hash({"matrix": list(matrix)})[:24],
             "strata": list(strata),
             "pipeline_state": "ready",
-            "filing_count": 4,
-            "supported_count": 4,
+            "filing_count": 5,
+            "supported_count": 5,
             "blocked_or_degraded_count": 0,
-            "forms": {forms[(len(observed) - 1) % len(forms)]: 4},
+            "forms": {forms[(len(observed) - 1) % len(forms)]: 5},
             "issuer_hash_count": 4,
-            "records_with_arelle_sidecar_output": 4,
-            "records_with_selected_fact_authority_equal_to_sidecar": 4,
-            "records_with_handoff_export_prepare": 4,
-            "resolved_fact_count": 400,
-            "independent_inline_fact_count": 400,
+            "records_with_arelle_sidecar_output": 5,
+            "records_with_selected_fact_authority_equal_to_sidecar": 5,
+            "records_with_handoff_export_prepare": 5,
+            "resolved_fact_count": 500,
+            "independent_inline_fact_count": 500,
             "per_filing": [
                 {
                     "fixture_hash": f"{start + index:024x}"[-24:],
@@ -320,7 +320,7 @@ def test_sec_xbrl_real_corpus_product_runner_executes_external_stratified_plan_r
                     "companyfacts_effective_value_compared_count": 100,
                     "companyfacts_effective_value_mismatch_count": 0,
                 }
-                for index in range(4)
+                for index in range(5)
             ],
             "delivery_status": "not_required_for_broader_extraction_gate",
             "operator_inspection_status": "not_required_for_broader_extraction_gate",
@@ -342,12 +342,13 @@ def test_sec_xbrl_real_corpus_product_runner_executes_external_stratified_plan_r
     assert report["decision"] == "real_corpus_default_on_validated"
     assert report["matrix_execution_plan"]["mode"] == "external_stratified_matrix_plan"
     assert report["matrix_execution_plan"]["missing_required_strata"] == []
-    assert report["matrix_execution_plan"]["chunk_count"] == 8
+    assert report["matrix_execution_plan"]["chunk_count"] == 6
     assert [label for label, _strata in observed] == [
         chunk["matrix_label"] for chunk in plan["chunks"]
     ]
     assert set(report["matrix_execution_plan"]["covered_strata"]) == set(module.REQUIRED_STRATA)
-    assert report["summary"]["real_filing_count"] == 32
+    assert report["summary"]["real_filing_count"] == 30
+    assert report["summary"]["strata_readiness"]["all_required_strata_ready"] is True
     assert report["summary"]["required_forms_present"] is True
     raw_plan_identities = {
         ticker
@@ -397,6 +398,99 @@ def test_sec_xbrl_real_corpus_product_runner_blocks_invalid_external_stratified_
         item["reason"] == "real_corpus_product_path_matrix_plan_not_satisfied"
         for item in report["blocking_reasons"]
     )
+
+
+def test_sec_xbrl_real_corpus_product_runner_blocks_duplicate_external_plan_issuers(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    arelle_python = tmp_path / "arelle-python.exe"
+    taxonomy_package = tmp_path / "taxonomy.zip"
+    cache_dir = tmp_path / "arelle-cache"
+    arelle_python.write_text("", encoding="utf-8")
+    taxonomy_package.write_text("", encoding="utf-8")
+    cache_dir.mkdir()
+    monkeypatch.setenv("SEC_XBRL_ARELLE_PYTHON", str(arelle_python))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", str(taxonomy_package))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_CACHE_DIR", str(cache_dir))
+
+    matrices = [
+        list(matrix)
+        for _label, matrix in module.MATRIX_CHUNKS
+    ]
+    plan = {
+        "schema_id": module.MATRIX_PLAN_SCHEMA_ID,
+        "matrix_mode": module.MATRIX_PLAN_MODE,
+        "chunks": [
+            _plan_chunk("first", matrices[0][:2], ["large_domestic_us_gaap"]),
+            _plan_chunk("second", matrices[0][1:2] + matrices[1][3:], ["small_mid_domestic_us_gaap"]),
+        ],
+    }
+
+    report = module.build_report(
+        live=True,
+        matrix_plan=plan,
+        user_agent="Layer3 diagnostics contact@example.com",
+    )
+
+    assert report["live_sec_network_used"] is False
+    assert report["matrix_execution_plan"]["state"] == "blocked"
+    assert "matrix_plan_duplicate_company_matrix_issuer" in report["matrix_execution_plan"]["blocked_reasons"]
+
+
+def test_sec_xbrl_real_corpus_product_runner_requires_ready_external_strata(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    module = _runner_module()
+    arelle_python = tmp_path / "arelle-python.exe"
+    taxonomy_package = tmp_path / "taxonomy.zip"
+    cache_dir = tmp_path / "arelle-cache"
+    arelle_python.write_text("", encoding="utf-8")
+    taxonomy_package.write_text("", encoding="utf-8")
+    cache_dir.mkdir()
+    monkeypatch.setenv("SEC_XBRL_ARELLE_PYTHON", str(arelle_python))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_TAXONOMY_PACKAGES", str(taxonomy_package))
+    monkeypatch.setenv("SEC_XBRL_ARELLE_CACHE_DIR", str(cache_dir))
+
+    plan = _stratified_plan()
+
+    def blocked_run_matrix_chunk(label, matrix, *, strata, db, request_namespace, user_agent):
+        del db, request_namespace, user_agent
+        ready = "no_inline_or_zero_fact_diagnostic" not in strata
+        return {
+            "matrix_label": label,
+            "matrix_ref_hash": module.stable_hash({"matrix": list(matrix)})[:24],
+            "strata": list(strata),
+            "pipeline_state": "ready" if ready else "blocked",
+            "filing_count": 5,
+            "supported_count": 5 if ready else 0,
+            "blocked_or_degraded_count": 0 if ready else 5,
+            "forms": {"10-K": 5},
+            "issuer_hash_count": 4,
+            "records_with_arelle_sidecar_output": 5 if ready else 0,
+            "records_with_selected_fact_authority_equal_to_sidecar": 5 if ready else 0,
+            "records_with_handoff_export_prepare": 5 if ready else 0,
+            "resolved_fact_count": 500 if ready else 0,
+            "independent_inline_fact_count": 500 if ready else 0,
+            "per_filing": [],
+            "operator_surface_values_exposed": False,
+            "blocked_reasons": [] if ready else ["synthetic_stratum_blocked"],
+        }
+
+    monkeypatch.setattr(module, "_run_matrix_chunk", blocked_run_matrix_chunk)
+
+    report = module.build_report(
+        live=True,
+        storage_dir=tmp_path,
+        matrix_plan=plan,
+        user_agent="Layer3 diagnostics contact@example.com",
+    )
+
+    reasons = {item["reason"] for item in report["blocking_reasons"]}
+    assert "stratified_matrix_required_strata_not_ready" in reasons
+    assert "no_inline_or_zero_fact_diagnostic" in report["summary"]["strata_readiness"]["blocked_strata"]
 
 
 def test_sec_xbrl_real_corpus_product_runner_rolls_default_decision_false_on_failed_gate(
@@ -569,12 +663,14 @@ def _stratified_plan() -> dict:
         "schema_id": "diagnostics.sec_xbrl_stratified_real_filing_validation_matrix_plan.v1",
         "matrix_mode": "sec_edgar_stratified_real_filing_validation_matrix_v1",
         "chunks": [
-            _plan_chunk("large-domestic", matrices[3][:3], ["large_domestic_us_gaap"]),
-            _plan_chunk("small-mid-domestic", matrices[1][2:], ["small_mid_domestic_us_gaap"]),
-            _plan_chunk("foreign-ifrs", matrices[0][2:3], ["foreign_private_ifrs_20f"]),
-            _plan_chunk("canadian", matrices[0][3:], ["canadian_40f"]),
-            _plan_chunk("sparse-8k", matrices[1][:3], ["current_report_8k_sparse"]),
-            _plan_chunk("sparse-6k", matrices[0][2:], ["foreign_6k_sparse"]),
+            _plan_chunk("large-domestic", matrices[3][:2], ["large_domestic_us_gaap"]),
+            _plan_chunk("small-mid-domestic", matrices[0][1:2] + matrices[1][3:], ["small_mid_domestic_us_gaap"]),
+            _plan_chunk(
+                "foreign-annual-current",
+                matrices[0][2:],
+                ["foreign_private_ifrs_20f", "canadian_40f", "foreign_6k_sparse"],
+            ),
+            _plan_chunk("sparse-8k", matrices[1][:2], ["current_report_8k_sparse"]),
             _plan_chunk("amendment", matrices[2][:2], ["amendment_restatement"]),
             _plan_chunk("no-inline", matrices[2][2:] + matrices[3][2:], ["no_inline_or_zero_fact_diagnostic"]),
         ],

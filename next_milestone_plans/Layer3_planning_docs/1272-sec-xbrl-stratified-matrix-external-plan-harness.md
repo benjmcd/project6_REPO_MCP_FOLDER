@@ -33,11 +33,11 @@ External plan mode:
 
 `sec_edgar_stratified_real_filing_validation_matrix_v1`
 
-Each chunk must include a bounded `matrix_label`, an admitted `company_matrix`, and one or more required strata. The plan is rejected if it is missing, unreadable, stored inside the repo/OneDrive, uses an unadmitted schema or mode, contains unadmitted issuer identifiers, has duplicate or missing labels, exceeds the chunk limit, or fails to cover every required stratum selected in `1270-sec-xbrl-operator-runbook-matrix-selection.md`.
+Each chunk must include a bounded `matrix_label`, an admitted `company_matrix`, and one or more required strata. The plan is rejected if it is missing, unreadable, stored inside the repo/OneDrive, uses an unadmitted schema or mode, contains unadmitted issuer identifiers, repeats an issuer across chunks, has duplicate or missing labels, exceeds the chunk limit, or fails to cover every required stratum selected in `1270-sec-xbrl-operator-runbook-matrix-selection.md`.
 
 ## Current Status
 
-The default runner path still supports the previous built-in broader-corpus matrix. The stratified path is opt-in and requires the external plan plus the existing live preflight requirements.
+The default runner path still supports the previous built-in broader-corpus matrix. The stratified path is opt-in and requires the external plan plus the existing live preflight requirements. When an external stratified plan is used, the runner also reports stratum-level post-run readiness and blocks the gate unless every required stratum has ready evidence and no required stratum has a blocked chunk.
 
 No raw issuer identities, accessions, SEC URLs, retained bytes, local paths, user-agent strings, actor text, or values are committed by this harness.
 
