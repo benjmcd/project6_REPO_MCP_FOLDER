@@ -9346,11 +9346,13 @@ Milestone: `sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioni
 
 Planning docs: `next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-value-reveal-operator-exercise-authority.md` and `next_milestone_plans/Layer3_planning_docs/1266-sec-xbrl-value-reveal-authority-provisioning-preflight.md`.
 
-Status: provisioning preflight exists; live/Arelle run not granted or performed; committed defaults remain off.
+Status: superseded by live proof packet `1267-sec-xbrl-value-reveal-live-proof.md`; committed defaults remain off.
 
-The next live/Arelle provisioning run still requires an explicit operator grant. This board entry does not grant network access, run Arelle, create sidecars, create datasets, or submit any reveal.
+The live/Arelle authority-provisioning and governed operator value-reveal exercise has now been performed from current `project6-origin/main` after PR `#1982` for two bounded filings: one FY2025 `10-K` and one FY2026 `10-Q`. The redacted proof report is `diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json`.
 
-Next exact posture: `await_explicit_live_arelle_authority_grant_after_review_debt_closeout`.
+The proof records coherent sidecar/value-store/bridge/dataset/provenance bundles, governed reveal receipts, idempotent replay, status redaction, flag-off blocking, and audit-receipt redaction. It does not commit raw source bytes, raw values, issuer identity, accessions, SEC URLs, local paths, operator contact, or actor text.
+
+Next exact posture: `sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
