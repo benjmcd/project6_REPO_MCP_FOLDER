@@ -4125,7 +4125,10 @@ def _ready_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.CompletedProce
         "taxonomy_package_hashes": ["d" * 64],
         "taxonomy_network_resolution_enabled": False,
         "document_set": {"input_document_count": 1, "fact_bearing_document_count": 1},
-        "diagnostics": {},
+        "diagnostics": {
+            "period_unresolved_with_context_ref_count": 0,
+            "unit_unresolved_with_unit_ref_count": 0,
+        },
         "fact_count": 2,
         "facts": [
             {
@@ -4229,7 +4232,10 @@ def _standard_numeric_arelle_sidecar_runner(*_args, **_kwargs) -> subprocess.Com
         "taxonomy_package_hashes": ["d" * 64],
         "taxonomy_network_resolution_enabled": False,
         "document_set": {"input_document_count": 1, "fact_bearing_document_count": 1},
-        "diagnostics": {},
+        "diagnostics": {
+            "period_unresolved_with_context_ref_count": 0,
+            "unit_unresolved_with_unit_ref_count": 0,
+        },
         "fact_count": 1,
         "facts": [
             {

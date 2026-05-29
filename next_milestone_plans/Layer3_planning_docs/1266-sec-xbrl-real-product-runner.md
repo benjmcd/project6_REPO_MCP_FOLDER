@@ -53,7 +53,7 @@ When run with `--live`, the runner:
 - enables the Arelle resolved-fact authority cutover only inside the diagnostic process;
 - runs the existing validation/product path over four four-issuer matrix chunks, targeting at least 30 filings across at least 15 distinct issuer hashes;
 - records only redacted matrix hashes, form counts, filing counts, issuer hashes, per-filing completeness counts, CompanyFacts value match rates, receipt hashes, readiness states, and non-admission evidence;
-- computes CompanyFacts effective-value correctness over the standardized us-gaap/dei non-dimensional numeric intersection without committing raw values;
+- computes CompanyFacts effective-value correctness over the standardized `us-gaap`, `dei`, and `ifrs-full` non-dimensional numeric intersection without committing raw values;
 - applies the gate verdict to the Arelle cutover config default when invoked with `--apply-default-decision`: PASS keeps default-on, while FAIL or INCONCLUSIVE rolls the default back to false;
 - keeps operator value reveal disabled;
 - restores settings after the diagnostic run.

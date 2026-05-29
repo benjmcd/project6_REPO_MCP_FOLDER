@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import hashlib
 import importlib.metadata
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any
@@ -47,6 +48,23 @@ def main() -> int:
     if args.cache_dir:
         cntlr.webCache.cacheDir = str(Path(args.cache_dir).resolve())
     cntlr.webCache.workOffline = args.internet_connectivity == "offline"
+    ixds_surrogate = ""
+    ixds_doc_separator = ""
+    if len(entries) > 1:
+        # Contexts and units may be defined in a sibling inline document and
+        # referenced by facts in another. Load multi-document filings as one
+        # IXDS model so those cross-document references resolve.
+        try:
+            from arelle import PluginManager  # type: ignore
+            from arelle.UrlUtil import IXDS_DOC_SEPARATOR, IXDS_SURROGATE  # type: ignore
+
+            PluginManager.addPluginModule("inlineXbrlDocumentSet")
+            ixds_surrogate = IXDS_SURROGATE
+            ixds_doc_separator = IXDS_DOC_SEPARATOR
+        except Exception as exc:
+            _emit_error("arelle_inline_document_set_plugin_unavailable", error_class=exc.__class__.__name__)
+            cntlr.close()
+            return 2
     try:
         package_status = _load_packages(cntlr, PackageManager, args.taxonomy_package)
     except Exception as exc:
@@ -55,31 +73,46 @@ def main() -> int:
         return 2
     package_hashes = package_status["loaded_hashes"]
     facts: list[dict[str, Any]] = []
-    loaded_document_counts: list[int] = []
     model_error_count = 0
+    model = None
     try:
-        for entry_index, entry in enumerate(entries, start=1):
-            try:
-                model = cntlr.modelManager.load(str(entry))
-            except Exception as exc:
-                _emit_error("arelle_model_load_failed", error_class=exc.__class__.__name__, entry_document_index=entry_index)
-                return 2
-            try:
-                raw_facts = list(getattr(model, "facts", []) or []) if model is not None else []
-                if len(facts) + len(raw_facts) > args.max_facts:
-                    _emit_error("fact_count_exceeds_limit", fact_count=len(facts) + len(raw_facts), max_facts=args.max_facts)
-                    return 2
-                concept_index = _concept_index(model)
-                source_order_base = len(facts)
-                facts.extend(
-                    _fact_payload(model, concept_index, fact, source_order_base + index, entry_index=entry_index)
-                    for index, fact in enumerate(raw_facts, start=1)
+        try:
+            model = cntlr.modelManager.load(
+                _entry_document_load_uri(
+                    entries,
+                    ixds_surrogate=ixds_surrogate,
+                    ixds_doc_separator=ixds_doc_separator,
                 )
-                loaded_document_counts.append(len(getattr(model, "urlDocs", {}) or {}) if model is not None else 0)
-                model_error_count += len(list(getattr(model, "errors", []) or [])) if model is not None else 0
-            finally:
-                if model is not None:
-                    model.close()
+            )
+        except Exception as exc:
+            _emit_error("arelle_model_load_failed", error_class=exc.__class__.__name__)
+            return 2
+        if model is None:
+            _emit_error("arelle_model_load_failed", error_class="model_not_loaded")
+            return 2
+        raw_facts = list(getattr(model, "facts", []) or [])
+        if len(raw_facts) > args.max_facts:
+            _emit_error("fact_count_exceeds_limit", fact_count=len(raw_facts), max_facts=args.max_facts)
+            return 2
+        concept_index = _concept_index(model)
+        entry_index_by_name = {entry.name: index for index, entry in enumerate(entries, start=1)}
+        for source_order, fact in enumerate(raw_facts, start=1):
+            fact_document = getattr(fact, "modelDocument", None)
+            fact_document_name = Path(str(getattr(fact_document, "uri", "") or "")).name
+            facts.append(
+                _fact_payload(
+                    model,
+                    concept_index,
+                    fact,
+                    source_order,
+                    entry_index=entry_index_by_name.get(fact_document_name, 1),
+                )
+            )
+        loaded_url_docs = getattr(model, "urlDocs", {}) or {}
+        loaded_document_count = len(loaded_url_docs)
+        loaded_basenames = {Path(str(uri)).name for uri in loaded_url_docs}
+        entry_documents_loaded = sum(1 for entry in entries if entry.name in loaded_basenames)
+        model_error_count = len(list(getattr(model, "errors", []) or []))
         diagnostics = _diagnostics(model_error_count=model_error_count, facts=facts)
         print(
             json.dumps(
@@ -96,12 +129,13 @@ def main() -> int:
                     "taxonomy_package_invalid_count": len(package_status["invalid_hashes"]),
                     "taxonomy_package_invalid_hashes": package_status["invalid_hashes"],
                     "taxonomy_network_resolution_enabled": args.internet_connectivity == "online",
+                    "inline_xbrl_document_set": len(entries) > 1,
                     "document_set": {
                         "entry_document_count": len(entries),
-                        "loaded_document_count": sum(loaded_document_counts),
-                        "max_loaded_document_count": max(loaded_document_counts or [0]),
-                        "entry_documents_loaded": len(loaded_document_counts),
-                        "entry_document_loaded": len(loaded_document_counts) == len(entries),
+                        "loaded_document_count": loaded_document_count,
+                        "max_loaded_document_count": loaded_document_count,
+                        "entry_documents_loaded": entry_documents_loaded,
+                        "entry_document_loaded": entry_documents_loaded == len(entries),
                     },
                 },
                 sort_keys=True,
@@ -110,7 +144,17 @@ def main() -> int:
         )
         return 0
     finally:
+        if model is not None:
+            model.close()
         cntlr.close()
+
+
+def _entry_document_load_uri(entries: list[Path], *, ixds_surrogate: str, ixds_doc_separator: str) -> str:
+    if len(entries) == 1:
+        return str(entries[0])
+    return os.path.join(str(entries[0].parent), ixds_surrogate) + ixds_doc_separator.join(
+        str(entry) for entry in entries
+    )
 
 
 def _load_packages(cntlr: Any, package_manager: Any, package_paths: list[str]) -> dict[str, list[str]]:
@@ -271,7 +315,13 @@ def _diagnostics(*, model_error_count: int, facts: list[dict[str, Any]]) -> dict
         "concept_resolved_from_dts_count": sum(1 for fact in facts if fact["concept"]["resolved_from_dts"]),
         "concept_dts_unresolved_count": sum(1 for fact in facts if not fact["concept"]["resolved_from_dts"]),
         "period_unresolved_count": sum(1 for fact in facts if not fact["period"]["resolved"]),
+        "period_unresolved_with_context_ref_count": sum(
+            1 for fact in facts if fact["context_id"] and not fact["period"]["resolved"]
+        ),
         "unit_unresolved_count": sum(1 for fact in facts if not fact["unit"]["resolved"]),
+        "unit_unresolved_with_unit_ref_count": sum(
+            1 for fact in facts if fact["unit_id"] and not fact["unit"]["resolved"]
+        ),
         "typed_dimension_fact_count": sum(1 for fact in facts if fact["dimensions"]["typed"]),
         "explicit_dimension_fact_count": sum(1 for fact in facts if fact["dimensions"]["explicit"]),
         "hidden_fact_count": sum(1 for fact in facts if fact["hidden"]),

@@ -245,7 +245,7 @@ def _companyfacts_effective_value_summary(rows: list[dict[str, Any]]) -> dict[st
     matched = sum(int(row.get("companyfacts_effective_value_match_count") or 0) for row in counted)
     return {
         "schema_id": "diagnostics.sec_xbrl_companyfacts_effective_value_correctness.v1",
-        "oracle": "primary_companyfacts_us_gaap_dei_accession_scope_non_dimensional_numeric_intersection",
+        "oracle": "primary_companyfacts_standard_taxonomy_accession_scope_non_dimensional_numeric_intersection",
         "match_count": matched,
         "compared_count": compared,
         "match_rate": round(matched / compared, 4) if compared else None,
@@ -970,7 +970,7 @@ def _primary_oracle_status(*, live_manifest: Mapping[str, Any] | None) -> dict[s
     used = [row for row in rows if row.get("companyfacts_oracle_used") is True]
     return {
         "oracle_used": bool(used),
-        "confidence": "primary_companyfacts_us_gaap_dei_accession_scope" if used else "unverified",
+        "confidence": "primary_companyfacts_standard_taxonomy_accession_scope" if used else "unverified",
         "filing_count_with_companyfacts": len(used),
         "reason": (
             "CompanyFacts was fetched for retained real filings and counted us-gaap/dei facts by accession."
@@ -1060,7 +1060,7 @@ def _companyfacts_count(*, cik: str, accession: str, user_agent: str) -> dict[st
     taxonomies = payload.get("facts") if isinstance(payload, dict) else {}
     if not isinstance(taxonomies, dict):
         return {"oracle_used": False, "confidence": "unavailable_invalid_payload", "fact_count": None}
-    for taxonomy_name in ("us-gaap", "dei"):
+    for taxonomy_name in ("us-gaap", "dei", "ifrs-full"):
         concepts = taxonomies.get(taxonomy_name) or {}
         if not isinstance(concepts, dict):
             continue
@@ -1080,7 +1080,7 @@ def _companyfacts_count(*, cik: str, accession: str, user_agent: str) -> dict[st
                         value_keys.append(value_key)
     return {
         "oracle_used": True,
-        "confidence": "primary_companyfacts_us_gaap_dei_accession_scope",
+        "confidence": "primary_companyfacts_standard_taxonomy_accession_scope",
         "fact_count": count,
         "_value_keys": value_keys,
     }
@@ -1122,7 +1122,9 @@ def _companyfacts_value_match(*, sidecar: Mapping[str, Any], companyfacts: Mappi
             continue
         concept = record.get("concept") if isinstance(record.get("concept"), Mapping) else {}
         namespace = str(concept.get("namespace") or "")
-        if not concept.get("standard") or not ("fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace):
+        if not concept.get("standard") or not (
+            "fasb.org/us-gaap" in namespace or "xbrl.sec.gov/dei" in namespace or "xbrl.ifrs.org" in namespace
+        ):
             continue
         value_record = values_by_id.get(str(record.get("resolved_fact_id") or ""))
         if not isinstance(value_record, Mapping):
