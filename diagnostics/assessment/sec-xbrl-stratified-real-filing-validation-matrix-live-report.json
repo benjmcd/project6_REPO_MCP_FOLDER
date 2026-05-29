@@ -1,0 +1,115 @@
+{
+  "decision": "stratified_matrix_live_execution_ready",
+  "live_main_sha": "5c58587b4da755ea69c639a3542b0ca1243b83a9",
+  "matrix_execution_plan": {
+    "chunk_count": 6,
+    "covered_strata": [
+      "amendment_restatement",
+      "canadian_40f",
+      "current_report_8k_sparse",
+      "foreign_6k_sparse",
+      "foreign_private_ifrs_20f",
+      "large_domestic_us_gaap",
+      "no_inline_or_zero_fact_diagnostic",
+      "small_mid_domestic_us_gaap"
+    ],
+    "missing_required_strata": [],
+    "mode": "external_stratified_matrix_plan",
+    "off_repo_plan_used": true,
+    "raw_identity_redacted": true,
+    "state": "passed"
+  },
+  "next_posture": "sec_edgar_stratified_matrix_result_reconciliation_and_default_off_operator_readiness_decision_v1",
+  "non_goals_preserved": {
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "default_on_arelle_cutover_enabled": false,
+    "default_on_value_reveal_enabled": false,
+    "final_financial_statement_semantics_claimed": false,
+    "production_readiness_claimed": false,
+    "raw_issuer_identity_committed": false,
+    "raw_values_committed": false,
+    "runtime_default_changed": false
+  },
+  "preflight": {
+    "blocking_reasons": [],
+    "decision": "stratified_matrix_preflight_ready_for_explicit_live_execution",
+    "report_sha256": "0ab82a16dcb103ace329e05bdacaefaf8961a489bd811e125ba5145bb0e85688",
+    "required_next_action": "execute_stratified_matrix_live_run_under_runbook_controls"
+  },
+  "product_runner": {
+    "blocking_reasons": [],
+    "decision": "real_corpus_default_on_validated",
+    "gate_verdict": "PASS",
+    "live_sec_network_used": true,
+    "source_report_byte_count": 159183,
+    "source_report_sha256": "705fad2572a52fa56e4dfefbf1df1af3442c89ce075f8162b59ef60a13263c6e"
+  },
+  "redaction": {
+    "identity_hash_only": true,
+    "local_paths_committed": false,
+    "local_storage_roots_committed": false,
+    "operator_contact_committed": false,
+    "raw_accessions_committed": false,
+    "raw_operator_plan_committed": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_sec_urls_committed": false,
+    "raw_tickers_committed": false,
+    "raw_values_committed": false,
+    "redaction_scan_passed": true
+  },
+  "runtime_default_posture": {
+    "committed_defaults_remain_off": true,
+    "default_on_not_claimed_or_applied_by_this_report": true,
+    "runner_default_decision_action": "set_default_true",
+    "runner_default_decision_applied_to_config": false,
+    "selected_operating_posture": "explicit_operator_only_default_off"
+  },
+  "schema_id": "diagnostics.sec_xbrl_stratified_real_filing_validation_matrix_live_report.v1",
+  "summary": {
+    "blocked_matrix_chunk_count": 0,
+    "companyfacts_oracle_unavailable_count": 0,
+    "companyfacts_value_compared_count": 10187,
+    "companyfacts_value_match_count": 10082,
+    "companyfacts_value_match_rate": 0.9897,
+    "companyfacts_value_mismatch_count": 105,
+    "completeness_guard_failed_count": 0,
+    "forms": {
+      "10-K": 13,
+      "10-K/A": 1,
+      "10-Q": 4,
+      "20-F": 1,
+      "40-F": 1,
+      "6-K": 2,
+      "8-K": 10
+    },
+    "issuer_hash_count": 16,
+    "matrix_chunk_count": 6,
+    "ready_matrix_chunk_count": 6,
+    "real_filing_count": 32,
+    "records_with_arelle_sidecar_output": 30,
+    "records_with_handoff_export_prepare": 30,
+    "records_with_selected_fact_authority_equal_to_sidecar": 30,
+    "required_forms_present": true,
+    "strata_readiness": {
+      "all_required_strata_ready": true,
+      "blocked_strata": [],
+      "missing_strata": [],
+      "ready_strata": [
+        "large_domestic_us_gaap",
+        "small_mid_domestic_us_gaap",
+        "foreign_private_ifrs_20f",
+        "canadian_40f",
+        "current_report_8k_sparse",
+        "foreign_6k_sparse",
+        "amendment_restatement",
+        "no_inline_or_zero_fact_diagnostic"
+      ],
+      "unknown_strata": []
+    },
+    "supported_record_count": 30,
+    "unexpected_blocked_or_degraded_count": 0,
+    "unexpected_zero_inline_xbrl_count": 0
+  },
+  "target": "sec_edgar_stratified_real_filing_validation_matrix_live_execution_v1"
+}

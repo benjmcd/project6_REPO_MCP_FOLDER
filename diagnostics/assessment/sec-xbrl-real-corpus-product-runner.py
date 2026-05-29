@@ -119,7 +119,7 @@ def main() -> int:
         report["runtime_default_decision"]["applied_to_config"] = applied
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(f"wrote {output.relative_to(ROOT)}")
+    print(f"wrote {_display_output_path(output)}")
     print(f"headline={report['headline']}")
     return 0
 
@@ -1497,6 +1497,14 @@ def _live_storage_dir(storage_dir: Path | None) -> Path:
 
 def _repo_path(path: Path) -> Path:
     return path if path.is_absolute() else ROOT / path
+
+
+def _display_output_path(path: Path) -> str:
+    resolved = path.resolve(strict=False)
+    try:
+        return str(resolved.relative_to(ROOT))
+    except ValueError:
+        return f"<external>/{resolved.name}"
 
 
 def _storage_marker(path: Path) -> str:

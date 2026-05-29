@@ -9446,6 +9446,24 @@ This hardening adds no live network run, Arelle invocation, source acquisition, 
 
 Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_live_execution_v1`.
 
+## SEC XBRL Stratified Matrix Live Execution
+
+Milestone: `sec_edgar_stratified_real_filing_validation_matrix_live_execution_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1274-sec-xbrl-stratified-matrix-live-execution.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-live-report.json`.
+
+Decision: `stratified_matrix_live_execution_ready`.
+
+Status: authorized live matrix execution passed the current product-runner gate using an off-repo duplicate-free external matrix plan. The committed proof records 32 real filings, 16 issuer hashes, all required forms, all required strata ready, zero unexpected blocked/degraded records, zero unexpected zero-inline records, and CompanyFacts value-correctness above threshold.
+
+The full runner output, matrix plan, raw SEC payloads, taxonomy/cache state, retained bytes, local runtime database, and local storage remain off-repo. The committed report stores only hashes, counts, forms, readiness states, redaction status, and non-admission evidence.
+
+Committed defaults remain off, and this live matrix does not apply the diagnostic runner's historical default-on gate action. No production-readiness, final financial-statement semantics, cross-company comparability, Candidate B SEC routing, UI, RAG, model, provider, connector, auth, or package behavior is admitted.
+
+Next exact posture: `sec_edgar_stratified_matrix_result_reconciliation_and_default_off_operator_readiness_decision_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.

@@ -40603,6 +40603,35 @@
     "raw_values_committed": false,
     "raw_identity_committed": false
   },
+  "sec_edgar_stratified_real_filing_validation_matrix_live_execution_proof": {
+    "proof_kind": "sec_edgar_stratified_real_filing_validation_matrix_live_execution_proof",
+    "status": "stratified_matrix_live_execution_ready",
+    "milestone": "sec_edgar_stratified_real_filing_validation_matrix_live_execution_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1274-sec-xbrl-stratified-matrix-live-execution.md",
+    "proof_report": "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-live-report.json",
+    "proof_terms": [
+      "authorized live SEC/Arelle matrix execution used current main",
+      "external duplicate-free matrix plan passed validation",
+      "all required forms are present",
+      "all required strata have ready post-run evidence",
+      "Arelle sidecar output is selected authority for supported records",
+      "completeness guard passed without unexpected zero-inline records",
+      "CompanyFacts value-correctness passed the configured threshold",
+      "committed evidence is hash/count/state only and redaction scan clean",
+      "runtime defaults remain off and diagnostic default-on action was not applied"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_default_changed_by_live_execution": false,
+    "diagnostic_default_on_action_applied": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "local_paths_committed": false,
+    "operator_contact_committed": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_claimed": false
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
     "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
     "status": "branch_local_review_debt_closure_in_progress",
