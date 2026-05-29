@@ -1,0 +1,234 @@
+{
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true,
+        "config_file": "backend/app/core/config.py",
+        "default_posture_decision": "explicit_operator_only_default_off_selected",
+        "default_posture_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+        "selected_posture": "explicit_operator_only_default_off"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "live_stratified_matrix_product_gate_passed",
+      "evidence": {
+        "companyfacts_value_match_rate": 0.9897,
+        "decision": "stratified_matrix_live_execution_ready",
+        "gate_verdict": "PASS",
+        "issuer_hash_count": 16,
+        "real_filing_count": 32,
+        "source_report": "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-live-report.json",
+        "supported_record_count": 30
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "required_forms_and_strata_ready",
+      "evidence": {
+        "covered_strata": [
+          "amendment_restatement",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "foreign_private_ifrs_20f",
+          "large_domestic_us_gaap",
+          "no_inline_or_zero_fact_diagnostic",
+          "small_mid_domestic_us_gaap"
+        ],
+        "forms": {
+          "10-K": 13,
+          "10-K/A": 1,
+          "10-Q": 4,
+          "20-F": 1,
+          "40-F": 1,
+          "6-K": 2,
+          "8-K": 10
+        },
+        "matrix_plan_mode": "external_stratified_matrix_plan",
+        "matrix_plan_state": "passed",
+        "required_forms": [
+          "10-K",
+          "10-Q",
+          "20-F",
+          "40-F",
+          "6-K",
+          "8-K"
+        ],
+        "strata_readiness": {
+          "all_required_strata_ready": true,
+          "blocked_strata": [],
+          "missing_strata": [],
+          "ready_strata": [
+            "large_domestic_us_gaap",
+            "small_mid_domestic_us_gaap",
+            "foreign_private_ifrs_20f",
+            "canadian_40f",
+            "current_report_8k_sparse",
+            "foreign_6k_sparse",
+            "amendment_restatement",
+            "no_inline_or_zero_fact_diagnostic"
+          ],
+          "unknown_strata": []
+        }
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "default_on_boundary_not_admitted",
+      "evidence": {
+        "diagnostic_runner_default_action": "set_default_true",
+        "diagnostic_runner_default_action_applied": false,
+        "runtime_default_posture": {
+          "committed_defaults_remain_off": true,
+          "default_on_not_claimed_or_applied_by_this_report": true,
+          "runner_default_decision_action": "set_default_true",
+          "runner_default_decision_applied_to_config": false,
+          "selected_operating_posture": "explicit_operator_only_default_off"
+        }
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "governed_value_reveal_still_proven",
+      "evidence": {
+        "attempt_count": 2,
+        "decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings",
+        "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_and_non_admissions_preserved",
+      "evidence": {
+        "matrix_non_goals": {
+          "candidate_b_sec_routing_performed": false,
+          "cross_company_comparability_claimed": false,
+          "default_on_arelle_cutover_enabled": false,
+          "default_on_value_reveal_enabled": false,
+          "final_financial_statement_semantics_claimed": false,
+          "production_readiness_claimed": false,
+          "raw_issuer_identity_committed": false,
+          "raw_values_committed": false,
+          "runtime_default_changed": false
+        },
+        "matrix_redaction": {
+          "identity_hash_only": true,
+          "local_paths_committed": false,
+          "local_storage_roots_committed": false,
+          "operator_contact_committed": false,
+          "raw_accessions_committed": false,
+          "raw_operator_plan_committed": false,
+          "raw_runtime_artifacts_committed": false,
+          "raw_sec_urls_committed": false,
+          "raw_tickers_committed": false,
+          "raw_values_committed": false,
+          "redaction_scan_passed": true
+        },
+        "value_reveal_non_admissions": {
+          "candidate_b_sec_routing_performed": false,
+          "cross_company_comparability_claimed": false,
+          "default_on_arelle_cutover_claimed": false,
+          "default_on_value_reveal_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "production_readiness_claimed": false,
+          "rag_vector_model_provider_auth_behavior_added": false
+        },
+        "value_reveal_redaction_scan": {
+          "raw_accession_found": false,
+          "raw_contact_found": false,
+          "raw_issuer_identity_found": false,
+          "raw_local_path_found": false,
+          "raw_sec_url_found": false,
+          "raw_value_record_collection_found": false,
+          "reportable_bundle_refs_and_reveal_receipts_scanned": true
+        }
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "explicit_operator_default_off_readiness_selected",
+  "headline": "Explicit-operator default-off readiness selected after live stratified matrix proof; default-on and production-readiness remain deferred.",
+  "matrix_summary": {
+    "all_required_strata_ready": true,
+    "blocked_matrix_chunk_count": 0,
+    "blocked_strata": [],
+    "companyfacts_value_match_rate": 0.9897,
+    "forms": {
+      "10-K": 13,
+      "10-K/A": 1,
+      "10-Q": 4,
+      "20-F": 1,
+      "40-F": 1,
+      "6-K": 2,
+      "8-K": 10
+    },
+    "issuer_hash_count": 16,
+    "matrix_chunk_count": 6,
+    "matrix_plan_mode": "external_stratified_matrix_plan",
+    "matrix_plan_state": "passed",
+    "missing_strata": [],
+    "ready_matrix_chunk_count": 6,
+    "ready_strata": [
+      "large_domestic_us_gaap",
+      "small_mid_domestic_us_gaap",
+      "foreign_private_ifrs_20f",
+      "canadian_40f",
+      "current_report_8k_sparse",
+      "foreign_6k_sparse",
+      "amendment_restatement",
+      "no_inline_or_zero_fact_diagnostic"
+    ],
+    "real_filing_count": 32,
+    "required_forms": [
+      "10-K",
+      "10-Q",
+      "20-F",
+      "40-F",
+      "6-K",
+      "8-K"
+    ],
+    "required_forms_present": true,
+    "supported_record_count": 30,
+    "unknown_strata": []
+  },
+  "next_slice": "sec_edgar_explicit_operator_default_off_runbook_refresh_v1",
+  "non_goals_preserved": {
+    "arelle_subprocess_invoked_by_decision": false,
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "live_sec_network_run_performed_by_decision": false,
+    "production_readiness_claimed": false,
+    "raw_identity_committed": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_values_committed": false,
+    "runtime_default_changed_by_decision": false,
+    "value_reveal_request_performed_by_decision": false
+  },
+  "schema_id": "diagnostics.sec_xbrl_stratified_matrix_readiness_decision.v1",
+  "selected_readiness": {
+    "cross_company_comparability_claimed": false,
+    "default_on_arelle_cutover_admitted": false,
+    "default_on_value_reveal_admitted": false,
+    "final_financial_statement_semantics_claimed": false,
+    "operator_value_reveal_available_only_by_explicit_gated_action": true,
+    "posture": "explicit_operator_default_off_broader_use",
+    "production_readiness_claimed": false,
+    "stratified_matrix_live_evidence_admitted": true
+  },
+  "source_reports": {
+    "default_posture": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+    "matrix_live": "diagnostics/assessment/sec-xbrl-stratified-real-filing-validation-matrix-live-report.json",
+    "value_reveal_live_proof": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+  },
+  "target": "sec_edgar_stratified_matrix_result_reconciliation_and_default_off_operator_readiness_decision_v1"
+}
