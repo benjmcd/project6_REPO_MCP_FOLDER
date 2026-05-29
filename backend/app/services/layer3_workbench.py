@@ -145,8 +145,10 @@ from app.services.layer3_external_export_response import (
     EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
     EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE,
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+    QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
     associated_cohort_delivery_ui_state as _associated_cohort_delivery_ui_state,
     associated_cohort_external_export_download as _is_associated_cohort_external_export_download,
+    aps_bundle_delivery_ui_state as _aps_bundle_delivery_ui_state,
     aps_bundle_identity_for_external_export_download as _aps_bundle_identity_for_external_export_download,
     cohort_readiness_identity as _cohort_readiness_identity,
     external_export_download_delivery_response as _external_export_download_delivery_response,
@@ -157,6 +159,7 @@ from app.services.layer3_external_export_response import (
     qualitative_aps_external_export_download_admitted as _qualitative_aps_external_export_download_admitted,
     qualitative_aps_external_export_download_deferred as _qualitative_aps_external_export_download_deferred,
     safe_download_token as _safe_download_token,
+    source_intake_delivery_ui_state as _source_intake_delivery_ui_state,
     source_intake_external_export_download_admitted as _source_intake_external_export_download_admitted,
 )
 from app.services.layer3_gate_b_state import (
@@ -12436,31 +12439,54 @@ def _connector_local_destination_receipt_summary(
     )
 
 
-def _external_export_download_state_with_session_record(
-    session: L3AnalysisSet,
-    external_export_download_state: dict[str, Any],
-) -> dict[str, Any]:
-    current = external_export_download_state if isinstance(external_export_download_state, dict) else {}
-    if (
-        current.get("external_export_download_state") == EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
-        and current.get("external_export_download_record_ref")
-    ):
-        return current
-    recorded = _json_clone((session.summary_json or {}).get("external_export_download_prepare") or {})
-    if not isinstance(recorded, dict):
-        return current
-    if recorded.get("schema_id") != EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID:
-        return current
-    if (
-        recorded.get("external_export_download_state") != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
-        or not recorded.get("external_export_download_record_ref")
-    ):
-        return current
-    return {
-        **recorded,
+def _external_export_download_projected_prepare_state(recorded: dict[str, Any]) -> dict[str, Any]:
+    summary_schema_id = (
+        QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        if _qualitative_aps_external_export_download_admitted(recorded)
+        else SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        if _source_intake_external_export_download_admitted(recorded)
+        else EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID
+    )
+    summary = {
+        "schema_id": summary_schema_id,
         "available": False,
         "state": recorded.get("external_export_download_state"),
         "blocked_reason": None,
+        "external_export_download_record_ref": recorded.get("external_export_download_record_ref"),
+        "export_download_descriptor_ref": recorded.get("export_download_descriptor_ref"),
+        "operator_decision": recorded.get("operator_decision"),
+        "decision_notes": recorded.get("decision_notes"),
+        "analysis_run_id": recorded.get("analysis_run_id"),
+        "result_review_record_ref": recorded.get("result_review_record_ref"),
+        "package_review_preview_hash": recorded.get("package_review_preview_hash"),
+        "reconciliation_record_id": recorded.get("reconciliation_record_id"),
+        "output_package_ids": list(recorded.get("output_package_ids") or []),
+        "package_kinds": list(recorded.get("package_kinds") or []),
+        "payload_refs": list(recorded.get("payload_refs") or []),
+        "payload_hashes": list(recorded.get("payload_hashes") or []),
+        "package_review_submit_record_ref": recorded.get("package_review_submit_record_ref"),
+        "package_review_state": recorded.get("package_review_state"),
+        "prepare_record_ref": recorded.get("prepare_record_ref"),
+        "handoff_export_state": recorded.get("handoff_export_state"),
+        "handoff_export_envelope_ref": recorded.get("handoff_export_envelope_ref"),
+        "handoff_target": recorded.get("handoff_target"),
+        "export_mode": recorded.get("export_mode"),
+        "aps_handoff_record_ref": recorded.get("aps_handoff_record_ref"),
+        "aps_handoff_state": recorded.get("aps_handoff_state"),
+        "aps_handoff_target": recorded.get("aps_handoff_target"),
+        "dispatch_mode": recorded.get("dispatch_mode"),
+        "aps_output_package_id": recorded.get("aps_output_package_id"),
+        "aps_output_package_kind": recorded.get("aps_output_package_kind"),
+        "aps_bundle_ref": recorded.get("aps_bundle_ref"),
+        "aps_bundle_id": recorded.get("aps_bundle_id"),
+        "aps_schema_id": recorded.get("aps_schema_id"),
+        "source_artifact_ref": recorded.get("source_artifact_ref"),
+        "source_artifact_schema_id": recorded.get("source_artifact_schema_id"),
+        "source_artifact_hash": recorded.get("source_artifact_hash"),
+        "source_artifact_size_bytes": recorded.get("source_artifact_size_bytes"),
+        **_cohort_readiness_identity(recorded),
+        "export_download_target": recorded.get("export_download_target"),
+        "download_mode": recorded.get("download_mode"),
         "external_export_download_prepare_enabled": False,
         "browser_download_enabled": False,
         "download_url_enabled": False,
@@ -12469,6 +12495,71 @@ def _external_export_download_state_with_session_record(
         "generic_downstream_dispatch_enabled": False,
         "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
     }
+    for key in (
+        "active_package_authority_applied",
+        "package_replacement_activation_id",
+        "source_output_package_ids",
+        "source_payload_hashes",
+        "active_replacement_output_package_ids",
+        "active_payload_refs",
+        "active_payload_hashes",
+        "replacement_activation_basis_hash",
+    ):
+        if key in recorded:
+            summary[key] = recorded.get(key)
+    if _is_associated_cohort_external_export_download(recorded):
+        summary["delivery_ui"] = recorded.get("delivery_ui") or _associated_cohort_delivery_ui_state(recorded)
+    elif _source_intake_external_export_download_admitted(recorded):
+        summary["delivery_ui"] = recorded.get("delivery_ui") or _source_intake_delivery_ui_state(recorded)
+    else:
+        delivery_ui = recorded.get("delivery_ui") or _aps_bundle_delivery_ui_state(recorded)
+        if isinstance(delivery_ui, dict) and delivery_ui.get("available"):
+            summary["delivery_ui"] = delivery_ui
+    return summary
+
+
+def _external_export_download_state_with_session_record(
+    db: Session,
+    session: L3AnalysisSet,
+    external_export_download_state: dict[str, Any],
+) -> dict[str, Any]:
+    current = external_export_download_state if isinstance(external_export_download_state, dict) else {}
+    recorded = _json_clone((session.summary_json or {}).get("external_export_download_prepare") or {})
+    if not isinstance(recorded, dict):
+        recorded = {}
+    reconciliation_record_id = str(
+        current.get("reconciliation_record_id") or recorded.get("reconciliation_record_id") or ""
+    ).strip()
+    if reconciliation_record_id:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(
+                L3ReconciliationRecord.session_id == session.session_id,
+                L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            )
+            .one_or_none()
+        )
+        recorded_from_reconciliation = _external_export_download_prepare_from_reconciliation(reconciliation)
+        if (
+            recorded_from_reconciliation is not None
+            and recorded_from_reconciliation.get("external_export_download_state")
+            == EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+            and recorded_from_reconciliation.get("external_export_download_record_ref")
+        ):
+            return _external_export_download_projected_prepare_state(recorded_from_reconciliation)
+    if (
+        current.get("external_export_download_state") == EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+        and current.get("external_export_download_record_ref")
+    ):
+        return current
+    if recorded.get("schema_id") != EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID:
+        return current
+    if (
+        recorded.get("external_export_download_state") != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+        or not recorded.get("external_export_download_record_ref")
+    ):
+        return current
+    return _external_export_download_projected_prepare_state(recorded)
 
 
 def _server_owned_local_outbox_target_history_item(
@@ -14788,6 +14879,7 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         aps_handoff_dispatch_state=aps_handoff_dispatch_state,
     )
     external_export_download_state = _external_export_download_state_with_session_record(
+        db,
         session,
         external_export_download_state,
     )
