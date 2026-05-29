@@ -15,6 +15,7 @@ BACKEND = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BACKEND))
 
 from app.core.config import settings
+from app.services import layer3_candidate_b_operator_workflow_access_policy as access_policy
 from app.services import layer3_candidate_b_full_corpus_repeatability_acceptance_checkpoint as acceptance
 from app.services import layer3_candidate_b_full_corpus_repeatability_acceptance_closeout as closeout
 from app.services import layer3_candidate_b_full_corpus_repeatability_rerun_trial as rerun_trial
@@ -86,6 +87,30 @@ def _status_request(**overrides: str) -> dict[str, str]:
     return payload
 
 
+def _stored_receipt_path(root: Path, receipt_id: str) -> Path:
+    return root / receipt_id / "receipt.json"
+
+
+def _strip_top_level_owner_binding(path: Path, receipt_hash_key: str) -> dict[str, Any]:
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    receipt.pop("workflow_receipt_owner_binding", None)
+    receipt[receipt_hash_key] = workflow_status._stable_hash(
+        {key: value for key, value in receipt.items() if key not in {receipt_hash_key, "server_time"}}
+    )
+    path.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    return receipt
+
+
+def _proxy_owner_binding(actor: str, tenant: str, policy_hash: str) -> dict[str, str]:
+    return {
+        "actor_ref_hash": access_policy._stable_hash({"auth_owner": "proxy", "actor_ref": actor}),
+        "tenant_or_workspace_ref_hash": access_policy._stable_hash(
+            {"auth_owner": "proxy", "tenant_or_workspace_ref": tenant}
+        ),
+        "policy_hash": policy_hash,
+    }
+
+
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_records_append_only(
     acceptance_authority: dict[str, Any],
 ) -> None:
@@ -112,15 +137,57 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_records_appen
     )
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     assert receipt["repeatability_acceptance_operator_closeout_receipt_hash"]
-    assert receipt["workflow_receipt_owner_binding"] == (
-        receipt["repeatability_acceptance_operator_closeout"]["workflow_receipt_owner_binding"]
-    )
+    assert receipt["workflow_receipt_owner_binding"]
+    assert "workflow_receipt_owner_binding" not in receipt["repeatability_acceptance_operator_closeout"]
     assert (
         receipt["repeatability_acceptance_operator_closeout"]["rendered_acceptance_control_proof"][
             "rendered_acceptance_control_proof_state"
         ]
         == closeout.RENDERED_PROOF_STATE
     )
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_ignores_policy_hash_for_same_owner(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    rows = acceptance_authority["rows"]
+    rows["cb-full-corpus-operator-original"]["ownership_access_policy"]["policy_hash"] = "1" * 64
+    rows["cb-full-corpus-operator-rerun"]["ownership_access_policy"]["policy_hash"] = "2" * 64
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+
+    response = closeout.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+        _closeout_request(acceptance_receipt)
+    )
+
+    assert response["repeatability_acceptance_operator_closeout_state"] == closeout.CLOSEOUT_STATE
+    assert response["workflow_receipt_owner_binding"]["policy_hash"] == "1" * 64
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_preserves_authority_identity(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+
+    response = closeout.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+        _closeout_request(acceptance_receipt)
+    )
+
+    closeout_body = response["repeatability_acceptance_operator_closeout"]
+    expected_closeout_hash = workflow_status._stable_hash(closeout_body)
+    expected_authority = {
+        **closeout_body,
+        "operator_decision": closeout.OPERATOR_DECISION,
+        "repeatability_acceptance_operator_closeout_hash": expected_closeout_hash,
+    }
+    assert "workflow_receipt_owner_binding" not in closeout_body
+    assert "workflow_receipt_owner_binding" not in response[
+        "repeatability_acceptance_operator_closeout_authority"
+    ]
+    assert response["repeatability_acceptance_operator_closeout_hash"] == expected_closeout_hash
+    assert response["repeatability_acceptance_operator_closeout_authority_hash"] == workflow_status._stable_hash(
+        expected_authority
+    )
+    assert response["workflow_receipt_owner_binding"]
 
 
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projects_not_recorded(
@@ -248,6 +315,94 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projec
         assert audit_receipt["route_family"] == route_family
         assert audit_receipt["raw_proxy_header_exposed"] is False
         assert audit_receipt["raw_url_exposed"] is False
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_reads_legacy_acceptance_under_proxy(
+    acceptance_authority: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+    legacy_acceptance_receipt = _strip_top_level_owner_binding(
+        _stored_receipt_path(
+            acceptance_authority["root"],
+            acceptance_receipt["repeatability_acceptance_checkpoint_receipt_id"],
+        ),
+        "repeatability_acceptance_checkpoint_receipt_hash",
+    )
+    rows = acceptance_authority["rows"]
+    rows["cb-full-corpus-operator-original"]["ownership_access_policy"] = _proxy_owner_binding(
+        "alice", "tenant-a", "1" * 64
+    )
+    rows["cb-full-corpus-operator-rerun"]["ownership_access_policy"] = _proxy_owner_binding(
+        "alice", "tenant-a", "2" * 64
+    )
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+
+    with access_policy.request_context(
+        {"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"}
+    ):
+        response = closeout.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+            _status_request(
+                operator_role="auditor",
+                repeatability_acceptance_checkpoint_receipt_id=legacy_acceptance_receipt[
+                    "repeatability_acceptance_checkpoint_receipt_id"
+                ],
+                repeatability_acceptance_checkpoint_receipt_hash=legacy_acceptance_receipt[
+                    "repeatability_acceptance_checkpoint_receipt_hash"
+                ],
+                repeatability_acceptance_checkpoint_authority_hash=legacy_acceptance_receipt[
+                    "repeatability_acceptance_checkpoint_authority_hash"
+                ],
+            )
+        )
+
+    assert response["closeout_status_projection_state"] == "not_recorded"
+    assert response["ownership_access_policy"]["closeout_status"]["decision"] == "allow"
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_reads_legacy_closeout_under_proxy(
+    acceptance_authority: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    acceptance_receipt = _acceptance_receipt(acceptance_authority["checkpoint_receipt"])
+    closeout_response = closeout.record_candidate_b_full_corpus_repeatability_acceptance_operator_closeout(
+        _closeout_request(acceptance_receipt)
+    )
+    legacy_closeout_receipt = _strip_top_level_owner_binding(
+        _stored_receipt_path(
+            acceptance_authority["root"],
+            closeout_response["repeatability_acceptance_operator_closeout_receipt_id"],
+        ),
+        "repeatability_acceptance_operator_closeout_receipt_hash",
+    )
+    rows = acceptance_authority["rows"]
+    rows["cb-full-corpus-operator-original"]["ownership_access_policy"] = _proxy_owner_binding(
+        "alice", "tenant-a", "1" * 64
+    )
+    rows["cb-full-corpus-operator-rerun"]["ownership_access_policy"] = _proxy_owner_binding(
+        "alice", "tenant-a", "2" * 64
+    )
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+
+    with access_policy.request_context(
+        {"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"}
+    ):
+        response = closeout.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+            _status_request(
+                operator_role="auditor",
+                repeatability_acceptance_operator_closeout_receipt_id=legacy_closeout_receipt[
+                    "repeatability_acceptance_operator_closeout_receipt_id"
+                ],
+                repeatability_acceptance_operator_closeout_receipt_hash=legacy_closeout_receipt[
+                    "repeatability_acceptance_operator_closeout_receipt_hash"
+                ],
+            )
+        )
+
+    assert response["closeout_status_projection_state"] == "available"
+    assert response["ownership_access_policy"]["closeout_status"]["decision"] == "allow"
 
 
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_api_accepts_closeout_mode(
