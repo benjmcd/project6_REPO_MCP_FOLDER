@@ -30,20 +30,29 @@ HASH_F = "f" * 64
 COMPARE_HASH = "1" * 64
 
 
-def _row(receipt_id: str, receipt_hash: str, row_hash: str, authority_hash: str) -> dict[str, Any]:
+def _row(
+    receipt_id: str,
+    receipt_hash: str,
+    row_hash: str,
+    authority_hash: str,
+    *,
+    actor_ref_hash: str | None = None,
+    tenant_or_workspace_ref_hash: str | None = None,
+    policy_hash: str = "0" * 64,
+) -> dict[str, Any]:
     return {
         "operator_workflow_receipt_id": receipt_id,
         "operator_workflow_receipt_hash": receipt_hash,
         "row_hash": row_hash,
         "authority_basis_hash": authority_hash,
         "ownership_access_policy": {
-            "actor_ref_hash": access_policy._stable_hash(
-                {"auth_owner": "none", "actor_ref": access_policy.LOCAL_ACTOR_REF}
-            ),
-            "tenant_or_workspace_ref_hash": access_policy._stable_hash(
+            "actor_ref_hash": actor_ref_hash
+            or access_policy._stable_hash({"auth_owner": "none", "actor_ref": access_policy.LOCAL_ACTOR_REF}),
+            "tenant_or_workspace_ref_hash": tenant_or_workspace_ref_hash
+            or access_policy._stable_hash(
                 {"auth_owner": "none", "tenant_or_workspace_ref": access_policy.LOCAL_TENANT_REF}
             ),
-            "policy_hash": "0" * 64,
+            "policy_hash": policy_hash,
         },
         "run_state": "proven",
         "status_request": {"operator_workflow_receipt_id": receipt_id},
@@ -211,6 +220,7 @@ def acceptance_authority(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> dic
     return {
         "checkpoint_receipt": checkpoint_receipt,
         "root": tmp_path,
+        "rows": rows,
     }
 
 
@@ -326,6 +336,53 @@ def test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_records_app
     assert json.loads(receipt_path.read_text(encoding="utf-8"))[
         "repeatability_acceptance_checkpoint_hash"
     ]
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_ignores_policy_hash_for_same_owner(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    rows = acceptance_authority["rows"]
+    rows["cb-full-corpus-operator-original"]["ownership_access_policy"]["policy_hash"] = "1" * 64
+    rows["cb-full-corpus-operator-rerun"]["ownership_access_policy"]["policy_hash"] = "2" * 64
+    checkpoint_receipt = acceptance_authority["checkpoint_receipt"]
+    rerun_receipt = rerun_trial.record_candidate_b_full_corpus_repeatability_rerun_trial(
+        _rerun_request(checkpoint_receipt)
+    )
+
+    response = acceptance.record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
+        _acceptance_request(checkpoint_receipt, rerun_receipt)
+    )
+
+    assert response["repeatability_acceptance_checkpoint_state"] == acceptance.ACCEPTANCE_CHECKPOINT_STATE
+    assert response["workflow_receipt_owner_binding"]["policy_hash"] == "1" * 64
+
+
+def test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_preserves_authority_identity(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    checkpoint_receipt = acceptance_authority["checkpoint_receipt"]
+    rerun_receipt = rerun_trial.record_candidate_b_full_corpus_repeatability_rerun_trial(
+        _rerun_request(checkpoint_receipt)
+    )
+
+    response = acceptance.record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
+        _acceptance_request(checkpoint_receipt, rerun_receipt)
+    )
+
+    checkpoint_body = response["repeatability_acceptance_checkpoint"]
+    expected_checkpoint_hash = workflow_status._stable_hash(checkpoint_body)
+    expected_authority = {
+        **checkpoint_body,
+        "operator_decision": acceptance.OPERATOR_DECISION,
+        "repeatability_acceptance_checkpoint_hash": expected_checkpoint_hash,
+    }
+    assert "workflow_receipt_owner_binding" not in checkpoint_body
+    assert "workflow_receipt_owner_binding" not in response["repeatability_acceptance_checkpoint_authority"]
+    assert response["repeatability_acceptance_checkpoint_hash"] == expected_checkpoint_hash
+    assert response["repeatability_acceptance_checkpoint_authority_hash"] == workflow_status._stable_hash(
+        expected_authority
+    )
+    assert response["workflow_receipt_owner_binding"]
 
 
 def test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_is_idempotent(
