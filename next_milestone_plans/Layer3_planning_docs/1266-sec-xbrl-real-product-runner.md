@@ -90,11 +90,12 @@ The report admits only if all criteria pass:
 
 Next slice:
 
-`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
+`sec_edgar_stratified_real_filing_validation_matrix_v1`
 
 Scope:
 
 - use the explicit-operator-only default-off posture selected by `1269-sec-xbrl-default-posture-decision.md`;
-- define operator runbook requirements and the next stratified validation matrix;
+- use the operator runbook and matrix selection recorded in `1270-sec-xbrl-operator-runbook-matrix-selection.md`;
+- execute or prepare the selected stratified validation matrix;
 - preserve redaction and audit boundaries by default;
 - preserve no final financial-statement semantics and no cross-company comparability claims.

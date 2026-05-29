@@ -134,5 +134,5 @@
     "candidate_b_sec_routing_performed": false,
     "rag_vector_model_provider_auth_behavior_added": false
   },
-  "next_slice": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"
+  "next_slice": "sec_edgar_stratified_real_filing_validation_matrix_v1"
 }

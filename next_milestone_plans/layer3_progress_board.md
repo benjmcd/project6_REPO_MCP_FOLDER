@@ -9352,7 +9352,7 @@ The live/Arelle authority-provisioning and governed operator value-reveal exerci
 
 The proof records coherent sidecar/value-store/bridge/dataset/provenance bundles, governed reveal receipts, idempotent replay, status redaction, flag-off blocking, and audit-receipt redaction. It does not commit raw source bytes, raw values, issuer identity, accessions, SEC URLs, local paths, operator contact, or actor text.
 
-Next exact posture: `sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`.
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
 
 ## SEC XBRL Default-Posture Reconciliation
 
@@ -9366,7 +9366,7 @@ Status: completed by decision packet `1269-sec-xbrl-default-posture-decision.md`
 
 This reconciliation corrects the stale broader-reliability blocked planning state without converting evidence admission into a runtime default change. It adds no live network run, Arelle invocation, source acquisition, dataset creation, audit receipt creation, value reveal request, UI change, Candidate B routing, final financial-statement semantics claim, or cross-company comparability claim.
 
-Next exact posture: `sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`.
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
 
 ## SEC XBRL Default-Posture Decision
 
@@ -9384,7 +9384,23 @@ This pass keeps SEC live network, Arelle fact-authority cutover, and Arelle valu
 
 Deferred postures: default-on Arelle cutover, default-on value reveal, and staged default-on experiment all require separate reviewed admission, operator policy, auth/retention/audit, bounded cohort, and rollback work before execution.
 
-Next exact posture: `sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`.
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
+
+## SEC XBRL Operator Runbook and Stratified Matrix Selection
+
+Milestone: `sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1270-sec-xbrl-operator-runbook-matrix-selection.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json`.
+
+Decision: `operator_runbook_and_stratified_matrix_selection_ready`.
+
+Selected posture: explicit-operator-only and default-off. The runbook requires clean current-main authority, explicit live SEC authorization, isolated off-repo Arelle runtime state, validate-only preflight, governed SEC source artifacts, coherent sidecar/value-store/bridge/dataset/provenance bundles, explicit operator confirmation for reveal, redaction scans, and hashes/counts/forms/reason-code-only committed reports.
+
+Selected matrix strata: large domestic US-GAAP, small/mid domestic US-GAAP, foreign-private IFRS 20-F, Canadian 40-F, sparse 8-K, sparse 6-K, amendment/restatement-like filings, and no-inline/zero-fact diagnostics. Large domestic issuer examples are useful only as one stratum, not as the matrix.
+
+Next exact posture: `sec_edgar_stratified_real_filing_validation_matrix_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 

@@ -82,6 +82,6 @@ The live/Arelle authority-provisioning and governed operator value-reveal exerci
 
 Next:
 
-`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
+`sec_edgar_stratified_real_filing_validation_matrix_v1`
 
-Default-posture reconciliation and decision are now recorded in `1268-sec-xbrl-default-posture-reconciliation.md` and `1269-sec-xbrl-default-posture-decision.md`. The next pass should prepare the operator runbook and stratified matrix selection while preserving default-off governance and all non-admissions.
+Default-posture reconciliation, decision, and operator runbook/matrix selection are now recorded in `1268-sec-xbrl-default-posture-reconciliation.md`, `1269-sec-xbrl-default-posture-decision.md`, and `1270-sec-xbrl-operator-runbook-matrix-selection.md`. The next pass should execute or prepare the selected stratified validation matrix while preserving default-off governance and all non-admissions.
