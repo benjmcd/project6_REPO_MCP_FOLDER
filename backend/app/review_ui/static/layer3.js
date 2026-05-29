@@ -3744,9 +3744,8 @@ function clearSourceDirectoryPackageSupersessionPreviewState() {
     nextSourceDirectoryPackageSupersessionPreviewRequestToken();
     State.sourceDirectoryPackageSupersessionPreview = null;
     State.sourceDirectoryPackageSupersessionPreviewError = null;
-    if (!State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken) {
-        State.sourceDirectoryPackageSupersessionPreviewPending = false;
-    }
+    State.sourceDirectoryPackageSupersessionPreviewPending = false;
+    State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken = null;
 }
 
 function safePackagePayloadRefForDisplay(value) {
@@ -4296,8 +4295,8 @@ function providerPrivateSignedUrlReceiptId() {
 
 function providerPrivateSignedUrlLatestState() {
     return State.providerPrivateSignedUrlRevoke?.provider_signed_url_state
-        || State.providerPrivateSignedUrlStatus?.provider_signed_url_state
         || State.providerPrivateSignedUrlUse?.provider_signed_url_state
+        || State.providerPrivateSignedUrlStatus?.provider_signed_url_state
         || State.providerPrivateSignedUrlPrepare?.provider_signed_url_state
         || State.providerPrivateSignedUrlReceiptRecovery?.provider_signed_url_state
         || null;
@@ -8564,6 +8563,7 @@ function candidateBRuntimeDownstreamProofPayload() {
         operator_decision: CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_OPERATOR_DECISION,
         candidate_b_run_id: values.candidateBRunId,
         bridge_receipt_id: values.bridgeReceiptId,
+        candidate_b_visual_lane_status_evidence: State.candidateBVisualLaneStatus,
         coverage_evidence: JSON.parse(values.coverageEvidenceJson),
         operator_confirmation: true,
     };
@@ -9276,7 +9276,7 @@ function candidateBBroaderScopeSelectorActivationDefaults(
     };
 }
 
-function candidateBBroaderScopeSelectorActivationInputValues() {
+function candidateBBroaderScopeSelectorActivationInputValues(options = {}) {
     const defaults = candidateBBroaderScopeSelectorActivationDefaults();
     const statusHashInput = document.getElementById('candidate-b-broader-scope-selector-activation-status-hash');
     const selectorUseReceiptInput = document.getElementById('candidate-b-broader-scope-selector-activation-selector-use-receipt-id');
@@ -9285,8 +9285,11 @@ function candidateBBroaderScopeSelectorActivationInputValues() {
     const runtimeHashInput = document.getElementById('candidate-b-broader-scope-selector-activation-runtime-receipt-hash');
     const selectedInput = document.getElementById('candidate-b-broader-scope-selector-activation-selected-classes');
     const stored = State.candidateBBroaderScopeSelectorActivationInput;
+    const preferStatusAuthority = options.preferStatusAuthority === true;
     const readValue = (input, storedValue, authorityValue) => (
-        authorityValue || input?.value || storedValue || ''
+        preferStatusAuthority
+            ? (authorityValue || input?.value || storedValue || '')
+            : (input?.value || storedValue || authorityValue || '')
     ).trim();
     return {
         selectorUseStatusHash: readValue(statusHashInput, stored.selectorUseStatusHash, defaults.selectorUseStatusHash),
@@ -19684,7 +19687,9 @@ async function inspectCandidateBBroaderScopeSelectorUseStatus(event) {
         State.candidateBBroaderScopeSelectorUseStatusError = null;
         State.candidateBBroaderScopeSelectorActivation = null;
         State.candidateBBroaderScopeSelectorActivationError = null;
-        State.candidateBBroaderScopeSelectorActivationInput = candidateBBroaderScopeSelectorActivationInputValues();
+        State.candidateBBroaderScopeSelectorActivationInput = candidateBBroaderScopeSelectorActivationInputValues({
+            preferStatusAuthority: true,
+        });
         State.candidateBBroaderScopeActivationConsumption = null;
         State.candidateBBroaderScopeActivationConsumptionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
@@ -22333,16 +22338,26 @@ function renderOperationDockSummary(activeStep, status) {
 
 function renderOperationsDock() {
     if (!elements.operationsDock || !elements.operationsDockNav) return;
-    const availableSteps = OPERATION_DOCK_STEPS.filter((step) => document.getElementById(step.id));
+    const availableSteps = OPERATION_DOCK_STEPS.filter((step) => {
+        if (!document.getElementById(step.id)) return false;
+        if (step.key !== 'source_directory') return true;
+        return operationDockStatus(step).state === 'live';
+    });
     if (!availableSteps.some((step) => step.id === State.activeOperationId)) {
         State.activeOperationId = availableSteps[0]?.id || '';
         State.operationDockManual = false;
     }
     if (!State.operationDockManual) {
+        const currentStep = availableSteps.find((step) => step.id === State.activeOperationId);
+        const currentStatus = currentStep ? operationDockStatus(currentStep) : null;
+        const shouldSuggestStep = !currentStatus || currentStatus.state === 'blocked';
         const suggestedStep = [...availableSteps]
             .reverse()
-            .find((step) => step.key !== 'source_intake' && operationDockStatus(step).state !== 'blocked');
-        if (suggestedStep) State.activeOperationId = suggestedStep.id;
+            .find((step) => step.key !== 'source_intake' && operationDockStatus(step).state === 'live')
+            || availableSteps.find((step) => step.key === 'source_intake')
+            || availableSteps.find((step) => step.key === 'intent')
+            || [...availableSteps].reverse().find((step) => operationDockStatus(step).state !== 'blocked');
+        if (shouldSuggestStep && suggestedStep) State.activeOperationId = suggestedStep.id;
     }
     elements.operationsDock.dataset.activeOperation = State.activeOperationId;
     const activeStep = availableSteps.find((step) => step.id === State.activeOperationId);
@@ -22441,7 +22456,8 @@ function providerPrivateSignedUrlPanelState() {
         return { label: stateName, pill: 'ready', message: 'Provider-private signed URL receipt has expired; a replacement can be prepared.' };
     }
     if (State.providerPrivateSignedUrlUse?.delivery_use_decision === 'allowed') {
-        return { label: 'provider_private_signed_url_use_allowed', pill: 'ready', message: 'Server recorded the redacted provider-private use decision; raw provider URL delivery remains blocked.' };
+        const usedState = stateName || 'provider_private_signed_url_used';
+        return { label: 'provider_private_signed_url_use_allowed', pill: 'ready', message: `${usedState}; server recorded the redacted provider-private use decision; raw provider URL delivery remains blocked.` };
     }
     if (stateName === 'provider_private_signed_url_prepared') {
         const message = providerPrivateSignedUrlUsePath()
@@ -25946,6 +25962,7 @@ async function runPreflightFlow(event) {
         State.planRevision = null;
         clearSessionRecoveryAnchor();
         clearResultReviewState();
+        if (!State.operationDockManual) State.activeOperationId = 'gate-b-band';
         addEvent('Material preview loaded.');
         renderAll();
     } catch (error) {
@@ -25981,6 +25998,7 @@ async function commitGateB() {
         clearResultReviewState();
         clearGateBDraftSnapshot();
         persistSessionRecoveryAnchor('gate_b_commit');
+        if (!State.operationDockManual) State.activeOperationId = 'gate-c-band';
         addEvent(`Gate B committed session ${State.gateB.session_id}.`);
         renderAll();
     } catch (error) {

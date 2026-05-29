@@ -148,6 +148,11 @@ _FORBIDDEN_NESTED_FIELDS = {
 _ALLOWED_EVIDENCE_REF_PREFIXES = (
     "candidate-b-downstream-proof://",
     "candidate-b-runtime-downstream-proof://",
+    "candidate-b-rendered-runtime-downstream-proof://",
+    "candidate-b-rendered-operator-status-runtime-proof://",
+    "candidate-b-rendered-closure-runtime-proof://",
+    "candidate-b-rendered-readiness-runtime-proof://",
+    "candidate-b-rendered-final-proof-runtime-proof://",
 )
 
 

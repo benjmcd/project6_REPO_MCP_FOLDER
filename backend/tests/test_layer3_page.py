@@ -1661,7 +1661,8 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     assert "function nextSourceDirectoryPackageSupersessionPreviewRequestToken" in js_text
     assert "function isCurrentSourceDirectoryPackageSupersessionPreviewRequest" in js_text
     assert "nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in clear_slice
-    assert "if (!State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken)" in clear_slice
+    assert "State.sourceDirectoryPackageSupersessionPreviewPending = false" in clear_slice
+    assert "State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken = null" in clear_slice
     assert "const requestToken = nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in source_submit_slice
     assert "State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken = requestToken" in source_submit_slice
     assert "if (!isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) return" in source_submit_slice
@@ -1909,7 +1910,7 @@ def test_layer3_package3_candidate_b_ui_payload_and_gating_contracts() -> None:
         "async function submitSourceDirectoryPackageSupersessionPreview",
     )
 
-    assert "candidate_b_visual_lane_status_evidence" not in runtime_payload
+    assert "candidate_b_visual_lane_status_evidence: State.candidateBVisualLaneStatus" in runtime_payload
     assert "coverage_evidence: JSON.parse(values.coverageEvidenceJson)" in runtime_payload
     assert "renderedInputValue(" in final_status_inputs
     assert "candidateBOperatorStatusEvidenceMatches(values)" in operator_status_gate
@@ -1920,7 +1921,8 @@ def test_layer3_package3_candidate_b_ui_payload_and_gating_contracts() -> None:
     assert "State.sessionSummary?.replacement_package_namespace" in namespace_slice
     assert "return rows.find((row) => row.package_kind && !recordedKinds.has(row.package_kind)) || null" in namespace_slice
     assert "candidateBBroaderScopeSelectorActivationDefaults" in selector_activation
-    assert "authorityValue || input?.value || storedValue" in selector_activation
+    assert "preferStatusAuthority" in selector_activation
+    assert "input?.value || storedValue || authorityValue" in selector_activation
     assert "State.candidateBBroaderScopeSelectorUseStatus = null" in selector_input_handler
     assert "State.candidateBBroaderScopeSelectorActivation = null" in selector_input_handler
     assert "State.packageSupersessionPreview = null" in package_preview_submit
