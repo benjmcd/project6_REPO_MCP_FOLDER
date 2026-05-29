@@ -6,6 +6,8 @@
 
 ## Result
 
+Superseded by follow-up packet `1267-sec-xbrl-value-reveal-live-proof.md`.
+
 The operator-exercise readiness packet in doc `1264` is valid, but the exercise cannot honestly run from the current configured storage authority yet.
 
 The committed fail-closed runner:
@@ -74,6 +76,12 @@ Only after that evidence exists should `sec_edgar_arelle_value_reveal_operator_e
 
 ## Next Slice
 
-`sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1`
+Satisfied by:
 
-That slice should either point the isolated exercise runtime at an existing retained real-filing authority set, or explicitly run the governed acquisition/sidecar/bridge authority provisioning with live network and Arelle permission. It should then stop and rerun the operator-exercise runner before any reveal request is submitted.
+`1267-sec-xbrl-value-reveal-live-proof.md`
+
+Current next posture:
+
+`sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1`
+
+The next pass should reconcile older blocked report artifacts and default-posture planning against the redacted live proof without changing committed defaults or admitting production/default-on behavior.
