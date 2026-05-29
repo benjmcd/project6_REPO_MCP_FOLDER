@@ -63,12 +63,13 @@ The gate does not convert fake-client evidence into a real-corpus claim. It admi
 
 ## Next Slice
 
-`sec_edgar_arelle_default_posture_decision_v1`
+`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
 
 Scope:
 
-- reconcile the admitted broader real-product reliability with the post-governance default-off runtime posture;
-- decide whether the correct next posture is explicit-operator-only, a new default-on admission gate, or a narrower staged default-on experiment;
+- use the default-posture decision recorded in `1269-sec-xbrl-default-posture-decision.md`;
+- proceed with the selected explicit-operator-only default-off posture;
+- define operator runbook requirements and the next stratified validation matrix;
 - preserve current committed defaults unless and until a separate reviewed runtime-default decision is made;
 - keep value reveal gated and default-off;
 - preserve no final financial-statement semantics and no cross-company comparability admissions.

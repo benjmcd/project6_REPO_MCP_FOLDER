@@ -1,0 +1,147 @@
+{
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "committed_defaults_remain_off",
+      "evidence": {
+        "config_defaults_off": true,
+        "config_file": "backend/app/core/config.py",
+        "live_proof_defaults_off": true,
+        "live_proof_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "broader_real_product_reliability_admitted",
+      "evidence": {
+        "blocking_reason_count": 0,
+        "decision": "broader_corpus_reliability_admitted",
+        "next_slice": "sec_edgar_arelle_default_posture_decision_v1",
+        "source_report": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "live_real_product_runner_proves_product_path",
+      "evidence": {
+        "companyfacts_value_match_rate": 0.99,
+        "decision": "real_corpus_default_on_validated",
+        "gate_verdict": "PASS",
+        "independent_inline_fact_count": 52558,
+        "issuer_hash_count": 16,
+        "operator_surface_values_exposed": false,
+        "real_filing_count": 32,
+        "resolved_fact_count": 52558,
+        "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+        "supported_record_count": 30
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "bounded_governed_value_reveal_proven",
+      "evidence": {
+        "attempt_count": 2,
+        "decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings",
+        "forms": [
+          "10-K",
+          "10-Q"
+        ],
+        "source_report": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "runtime_default_authority_remains_default_off",
+      "evidence": {
+        "decision": "default_on_runtime_disabled_by_governance_remediation",
+        "default_cutover_enabled": false,
+        "operator_value_reveal_default_enabled": false,
+        "source_report": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "default_on_not_currently_admitted",
+      "evidence": {
+        "admission_decision": "admission_review_requires_post_1966_governance_followup",
+        "ready_for_default_on_runtime_slice": false,
+        "source_report": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "redaction_and_non_admissions_preserved",
+      "evidence": {
+        "non_admissions": {
+          "cross_company_comparability_claimed": false,
+          "default_on_arelle_cutover_claimed": false,
+          "default_on_value_reveal_claimed": false,
+          "final_financial_statement_semantics_claimed": false,
+          "production_readiness_claimed": false
+        },
+        "real_product_redaction": {
+          "identity_hash_only": true,
+          "local_storage_roots_committed": false,
+          "raw_accessions_committed": false,
+          "raw_sec_urls_committed": false,
+          "raw_tickers_committed": false,
+          "raw_values_committed": false
+        },
+        "value_reveal_redaction_scan": {
+          "raw_accession_found": false,
+          "raw_contact_found": false,
+          "raw_issuer_identity_found": false,
+          "raw_local_path_found": false,
+          "raw_sec_url_found": false,
+          "raw_value_record_collection_found": false,
+          "reportable_bundle_refs_and_reveal_receipts_scanned": true
+        }
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "explicit_operator_only_default_off_selected",
+  "deferred_postures": {
+    "default_on_arelle_fact_authority_cutover": "requires separate reviewed admission gate and rollback",
+    "default_on_value_reveal": "requires separate operator policy, auth, retention, and audit review",
+    "staged_default_on_experiment": "requires bounded operator cohort and rollback plan before execution"
+  },
+  "headline": "Default posture selected: keep SEC/Arelle explicit-operator-only and default-off while moving to operator runbook and stratified matrix selection.",
+  "next_slice": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1",
+  "non_goals_preserved": {
+    "arelle_subprocess_invoked_by_decision": false,
+    "candidate_b_sec_routing_performed": false,
+    "cross_company_comparability_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "live_sec_network_run_performed_by_decision": false,
+    "production_readiness_claimed": false,
+    "raw_identity_committed": false,
+    "raw_values_committed": false,
+    "runtime_default_changed_by_decision": false,
+    "value_reveal_request_performed_by_decision": false
+  },
+  "schema_id": "diagnostics.sec_xbrl_default_posture_decision.v1",
+  "selected_posture": {
+    "arelle_fact_authority_cutover_default_enabled": false,
+    "arelle_value_reveal_default_enabled": false,
+    "broader_reliability_admission_converted_to_runtime_default": false,
+    "operator_value_reveal_available_only_by_explicit_gated_action": true,
+    "posture": "explicit_operator_only_default_off",
+    "sec_live_network_default_enabled": false
+  },
+  "source_reports": {
+    "admission_review": "diagnostics/assessment/sec-xbrl-default-on-admission-review-report.json",
+    "broader_reliability": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+    "runtime_default": "diagnostics/assessment/sec-xbrl-default-on-runtime-report.json",
+    "value_reveal_live_proof": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+  },
+  "target": "sec_edgar_arelle_default_posture_decision_v1"
+}

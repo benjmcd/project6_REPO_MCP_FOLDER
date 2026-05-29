@@ -40461,7 +40461,7 @@
   },
   "sec_edgar_arelle_default_posture_reconciliation_proof": {
     "proof_kind": "sec_edgar_arelle_default_posture_reconciliation_proof",
-    "status": "default_posture_reconciliation_ready_for_decision",
+    "status": "default_posture_reconciliation_completed_by_decision",
     "milestone": "sec_edgar_arelle_default_posture_decision_v1",
     "planning_doc": "next_milestone_plans/Layer3_planning_docs/1268-sec-xbrl-default-posture-reconciliation.md",
     "broader_reliability_doc": "next_milestone_plans/Layer3_planning_docs/1265-sec-xbrl-broader-reliability.md",
@@ -40478,10 +40478,36 @@
       "runtime default authority remains default-off",
       "reconciliation introduces no runtime behavior",
       "no raw values or identities committed",
-      "next decision is explicit default posture"
+      "explicit default posture decision is recorded in doc 1269"
     ],
     "live_behavior_change_introduced_by_tracking": false,
     "runtime_default_changed_by_reconciliation": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false
+  },
+  "sec_edgar_arelle_default_posture_decision_proof": {
+    "proof_kind": "sec_edgar_arelle_default_posture_decision_proof",
+    "status": "explicit_operator_only_default_off_selected",
+    "milestone": "sec_edgar_arelle_default_posture_decision_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1269-sec-xbrl-default-posture-decision.md",
+    "decision_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+    "proof_terms": [
+      "committed defaults remain off",
+      "broader real-product reliability admitted",
+      "live real-product runner proves product path",
+      "two bounded governed value-reveal attempts proven",
+      "runtime default authority remains default-off",
+      "default-on is not currently admitted",
+      "redaction and non-admissions preserved",
+      "explicit operator-only posture selected",
+      "no runtime default change by decision",
+      "next slice is operator runbook and stratified matrix selection"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_default_changed_by_decision": false,
+    "runtime_network_performed_by_decision": false,
+    "arelle_subprocess_invoked_by_decision": false,
+    "value_reveal_request_performed_by_decision": false,
     "raw_values_committed": false,
     "raw_identity_committed": false
   },

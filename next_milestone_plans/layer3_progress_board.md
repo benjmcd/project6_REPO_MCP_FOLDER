@@ -9352,7 +9352,7 @@ The live/Arelle authority-provisioning and governed operator value-reveal exerci
 
 The proof records coherent sidecar/value-store/bridge/dataset/provenance bundles, governed reveal receipts, idempotent replay, status redaction, flag-off blocking, and audit-receipt redaction. It does not commit raw source bytes, raw values, issuer identity, accessions, SEC URLs, local paths, operator contact, or actor text.
 
-Next exact posture: `sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1`.
+Next exact posture: `sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`.
 
 ## SEC XBRL Default-Posture Reconciliation
 
@@ -9362,11 +9362,29 @@ Planning doc: `next_milestone_plans/Layer3_planning_docs/1268-sec-xbrl-default-p
 
 Reports: `diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json`, `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json`, `diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json`, and `diagnostics/assessment/sec-xbrl-default-on-runtime-report.json`.
 
-Status: current-main evidence now admits broader real-product reliability and proves two bounded governed live value-reveal exercises, while the runtime default authority still keeps committed defaults off.
+Status: completed by decision packet `1269-sec-xbrl-default-posture-decision.md`. Current-main evidence admits broader real-product reliability and proves two bounded governed live value-reveal exercises, while the runtime default authority still keeps committed defaults off.
 
 This reconciliation corrects the stale broader-reliability blocked planning state without converting evidence admission into a runtime default change. It adds no live network run, Arelle invocation, source acquisition, dataset creation, audit receipt creation, value reveal request, UI change, Candidate B routing, final financial-statement semantics claim, or cross-company comparability claim.
 
-Next exact posture: `sec_edgar_arelle_default_posture_decision_v1`.
+Next exact posture: `sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`.
+
+## SEC XBRL Default-Posture Decision
+
+Milestone: `sec_edgar_arelle_default_posture_decision_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1269-sec-xbrl-default-posture-decision.md`.
+
+Report: `diagnostics/assessment/sec-xbrl-default-posture-decision-report.json`.
+
+Decision: `explicit_operator_only_default_off_selected`.
+
+Selected posture: `explicit_operator_only_default_off`.
+
+This pass keeps SEC live network, Arelle fact-authority cutover, and Arelle value reveal default-off while admitting explicit governed operator reveal as the usable posture. It does not convert broader reliability admission into a runtime default change.
+
+Deferred postures: default-on Arelle cutover, default-on value reveal, and staged default-on experiment all require separate reviewed admission, operator policy, auth/retention/audit, bounded cohort, and rollback work before execution.
+
+Next exact posture: `sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`.
 
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
