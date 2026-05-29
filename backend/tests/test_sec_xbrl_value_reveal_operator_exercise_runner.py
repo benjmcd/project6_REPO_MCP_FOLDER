@@ -78,13 +78,14 @@ def _authority_bundle(
     sidecar_id: str = "sec-edgar-arelle-resolved-fact-authority-aaaaaaaaaaaaaaaaaaaaaaaa",
     sidecar_hash: str = _hex("b"),
     bridge_id: str = "sec-edgar-html-inline-xbrl-fact-material-bridge-cccccccccccccccccccccccc",
-    bridge_hash: str = _hex("d"),
+    bridge_hash: str | None = None,
     dataset_version_id: str = "dataset-version-alpha",
     dataset_version_hash: str = _hex("e"),
     write_value_store: bool = True,
     value_store_records: list[dict[str, Any]] | None = None,
     sidecar_overrides: Mapping[str, Any] | None = None,
     bridge_overrides: Mapping[str, Any] | None = None,
+    basis_overrides: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     records = value_store_records if value_store_records is not None else [{"resolved_fact_id": "fact-alpha", "value_hash": _hex("f")}]
     value_store_hash = module._stable_hash(records)
@@ -116,7 +117,6 @@ def _authority_bundle(
         )
     bridge_response = {
         "fact_material_bridge_receipt_id": bridge_id,
-        "fact_material_bridge_receipt_hash": bridge_hash,
         "fact_authority_input_mode": module.ARELLE_FACT_AUTHORITY_INPUT_MODE,
         "arelle_sidecar_receipt_id": sidecar_id,
         "arelle_sidecar_receipt_hash": sidecar_hash,
@@ -126,7 +126,29 @@ def _authority_bundle(
         **lineage,
     }
     bridge_response.update(dict(bridge_overrides or {}))
-    _write_json(storage / module.BRIDGE_RECEIPT_DIR / "receipts" / f"{bridge_id}.json", {"response": bridge_response})
+    receipt_hash_basis = {
+        "hash_version": "sec_edgar_html_inline_xbrl_fact_material_bridge_hash_v1",
+        "bridge_mode": "sec_edgar_html_inline_xbrl_fact_authority_to_layer3_fact_material_authority_v1",
+        "fact_authority_receipt_hash": _hex("7"),
+        "parser_receipt_hash": str(bridge_response.get("parser_receipt_hash") or ""),
+        "dataset_version_hash": str(bridge_response.get("dataset_version_hash") or ""),
+        "materialization_receipt_hash": _hex("8"),
+        "material_preview_hash": _hex("9"),
+        "gate_b_decision_manifest_id": "sec-edgar-html-inline-xbrl-fact-material-bridge-gate-b-decision-aaaaaaaa",
+        "fact_authority_input_mode": str(bridge_response.get("fact_authority_input_mode") or ""),
+        "arelle_sidecar_receipt_hash": str(bridge_response.get("arelle_sidecar_receipt_hash") or ""),
+        "regex_fact_authority_receipt_hash": _hex("0"),
+        "resolved_fact_inventory_hash": _hex("1"),
+        "internal_value_store_hash": value_store_hash,
+    }
+    receipt_hash_basis.update(dict(basis_overrides or {}))
+    bridge_response["fact_material_bridge_receipt_hash"] = (
+        bridge_hash if bridge_hash is not None else module._stable_hash(receipt_hash_basis)
+    )
+    _write_json(
+        storage / module.BRIDGE_RECEIPT_DIR / "receipts" / f"{bridge_id}.json",
+        {"response": bridge_response, "receipt_hash_basis": receipt_hash_basis},
+    )
     return {
         "dataset_version_id": dataset_version_id,
         "dataset_version_hash": dataset_version_hash,
@@ -385,6 +407,102 @@ def test_sec_xbrl_value_reveal_operator_exercise_runner_rejects_echoed_non_sha_a
     _assert_redacted(report)
 
 
+def test_sec_xbrl_value_reveal_operator_exercise_runner_validates_coherent_bridge_wrapper_hash_basis(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path)
+
+    report = module.build_report(
+        source_root=ROOT,
+        storage_dir=tmp_path,
+        db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]),
+    )
+
+    assert report["decision"] == "value_reveal_operator_exercise_ready_to_run"
+    assert report["ready_to_run_operator_exercise"] is True
+    assert report["selected_authority_bundle"] is not None
+    assert report["blocking_reasons"] == []
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_missing_bridge_wrapper_basis(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path)
+    bridge_path = _bridge_path(module, tmp_path, "sec-edgar-html-inline-xbrl-fact-material-bridge-cccccccccccccccccccccccc")
+    payload = _load_json(bridge_path)
+    payload.pop("receipt_hash_basis", None)
+    _write_json(bridge_path, payload)
+
+    report = module.build_report(
+        source_root=ROOT,
+        storage_dir=tmp_path,
+        db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]),
+    )
+
+    assert "value_reveal_operator_exercise_bridge_wrapper_basis_missing" in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    assert report["selected_authority_bundle"] is None
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_tampered_bridge_wrapper_hash(tmp_path: Path) -> None:
+    module = _runner_module()
+    bundle = _authority_bundle(module, tmp_path)
+    bridge_path = _bridge_path(module, tmp_path, "sec-edgar-html-inline-xbrl-fact-material-bridge-cccccccccccccccccccccccc")
+    payload = _load_json(bridge_path)
+    # Tamper the stored receipt hash to a different valid sha; the persisted basis no longer
+    # recomputes to it, so the wrapper receipt hash must be rejected.
+    payload["response"]["fact_material_bridge_receipt_hash"] = _hex("0")
+    _write_json(bridge_path, payload)
+
+    report = module.build_report(
+        source_root=ROOT,
+        storage_dir=tmp_path,
+        db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]),
+    )
+
+    assert "value_reveal_operator_exercise_bridge_wrapper_hash_mismatch" in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    assert report["selected_authority_bundle"] is None
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_bridge_wrapper_value_store_binding_mismatch(tmp_path: Path) -> None:
+    module = _runner_module()
+    # The basis recomputes to the stored receipt hash (internally coherent wrapper), but its
+    # committed internal_value_store_hash does not match the independently recomputed value store,
+    # so a coherently re-hashed but tampered wrapper still fails.
+    bundle = _authority_bundle(module, tmp_path, basis_overrides={"internal_value_store_hash": _hex("9")})
+
+    report = module.build_report(
+        source_root=ROOT,
+        storage_dir=tmp_path,
+        db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]),
+    )
+
+    assert "value_reveal_operator_exercise_bridge_wrapper_value_store_binding_mismatch" in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    assert report["selected_authority_bundle"] is None
+    _assert_redacted(report)
+
+
+def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_bridge_wrapper_sidecar_binding_mismatch(tmp_path: Path) -> None:
+    module = _runner_module()
+    # The basis recomputes to the stored receipt hash, but its committed arelle_sidecar_receipt_hash
+    # does not match the independently read sidecar receipt hash.
+    bundle = _authority_bundle(module, tmp_path, basis_overrides={"arelle_sidecar_receipt_hash": _hex("0")})
+
+    report = module.build_report(
+        source_root=ROOT,
+        storage_dir=tmp_path,
+        db=_ready_db(bundle["dataset_version_id"], bundle["dataset_version_hash"]),
+    )
+
+    assert "value_reveal_operator_exercise_bridge_wrapper_sidecar_binding_mismatch" in _blocked_reasons(report)
+    assert report["ready_to_run_operator_exercise"] is False
+    assert report["selected_authority_bundle"] is None
+    _assert_redacted(report)
+
+
 def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_missing_dataset_version(tmp_path: Path) -> None:
     module = _runner_module()
     bundle = _authority_bundle(module, tmp_path)
@@ -445,7 +563,6 @@ def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_multiple_unrelate
         sidecar_id="sec-edgar-arelle-resolved-fact-authority-bbbbbbbbbbbbbbbbbbbbbbbb",
         sidecar_hash=_hex("c"),
         bridge_id="sec-edgar-html-inline-xbrl-fact-material-bridge-222222222222222222222222",
-        bridge_hash=_hex("3"),
         dataset_version_id="dataset-version-beta",
         dataset_version_hash=_hex("4"),
         bridge_overrides={"arelle_sidecar_receipt_hash": _hex("5")},
@@ -476,7 +593,6 @@ def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_multiple_coherent
         sidecar_id="sec-edgar-arelle-resolved-fact-authority-aaaaaaaaaaaaaaaaaaaaaaaa",
         sidecar_hash=_hex("b"),
         bridge_id="sec-edgar-html-inline-xbrl-fact-material-bridge-111111111111111111111111",
-        bridge_hash=_hex("1"),
     )
     second = _authority_bundle(
         module,
@@ -484,7 +600,6 @@ def test_sec_xbrl_value_reveal_operator_exercise_runner_blocks_multiple_coherent
         sidecar_id="sec-edgar-arelle-resolved-fact-authority-bbbbbbbbbbbbbbbbbbbbbbbb",
         sidecar_hash=_hex("c"),
         bridge_id="sec-edgar-html-inline-xbrl-fact-material-bridge-222222222222222222222222",
-        bridge_hash=_hex("2"),
         dataset_version_id="dataset-version-beta",
         dataset_version_hash=_hex("4"),
     )

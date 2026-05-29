@@ -201,6 +201,10 @@ def _select_authority_bundle(storage: Path, db: Any | None) -> dict[str, Any]:
             blockers.append(_blocked("value_reveal_operator_exercise_sidecar_bridge_lineage_mismatch"))
             continue
         for bridge in candidate_matches:
+            binding_blocker = _bridge_wrapper_binding_blocker(bridge, sidecar, store_result["value_store_hash"])
+            if binding_blocker is not None:
+                blockers.append(binding_blocker)
+                continue
             dataset_result = _dataset_context(db, bridge["response"])
             if dataset_result["blocked_reason"] is not None:
                 blockers.append(dataset_result["blocked_reason"])
@@ -320,11 +324,19 @@ def _bridge_responses(storage: Path) -> tuple[list[dict[str, Any]], list[dict[st
             if count_blocker is not None:
                 blockers.append(count_blocker)
                 continue
+        basis = payload.get("receipt_hash_basis")
+        if not isinstance(basis, Mapping):
+            blockers.append(_blocked("value_reveal_operator_exercise_bridge_wrapper_basis_missing"))
+            continue
+        if _stable_hash(basis) != bridge_receipt_hash:
+            blockers.append(_blocked("value_reveal_operator_exercise_bridge_wrapper_hash_mismatch"))
+            continue
         bridges.append(
             {
                 "receipt_id": bridge_receipt_id,
                 "receipt_hash": bridge_receipt_hash,
                 "response": dict(response),
+                "receipt_hash_basis": dict(basis),
             }
         )
     return bridges, blockers
@@ -368,6 +380,26 @@ def _verified_value_store(storage: Path, sidecar: Mapping[str, Any]) -> dict[str
 
 def _bridge_matches_sidecar(bridge: Mapping[str, Any], sidecar: Mapping[str, Any]) -> bool:
     return not _lineage_mismatches(sidecar, bridge["response"])
+
+
+def _bridge_wrapper_binding_blocker(
+    bridge: Mapping[str, Any],
+    sidecar: Mapping[str, Any],
+    value_store_hash: str,
+) -> dict[str, Any] | None:
+    """Bind the producer-owned bridge wrapper receipt-hash basis to independently
+    sourced authorities. The basis is already recomputed against the persisted bridge
+    receipt hash in ``_bridge_responses``; here its committed component hashes are tied
+    to the independently read sidecar receipt hash and the independently recomputed
+    internal value-store hash, so a coherently re-hashed but tampered wrapper still fails.
+    """
+    basis = bridge.get("receipt_hash_basis")
+    basis = basis if isinstance(basis, Mapping) else {}
+    if str(basis.get("arelle_sidecar_receipt_hash") or "") != str(sidecar.get("sidecar_receipt_hash") or ""):
+        return _blocked("value_reveal_operator_exercise_bridge_wrapper_sidecar_binding_mismatch")
+    if str(basis.get("internal_value_store_hash") or "") != str(value_store_hash or ""):
+        return _blocked("value_reveal_operator_exercise_bridge_wrapper_value_store_binding_mismatch")
+    return None
 
 
 def _lineage_mismatches(sidecar: Mapping[str, Any], response: Mapping[str, Any]) -> list[str]:

@@ -346,19 +346,18 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
             http_status=409,
             blocked_fields=["expected_gate_b_decision_manifest_id"],
         )
-    bridge_hash = stable_hash(
-        _bridge_hash_basis(
-            fact_authority_input_mode=fact_authority_input_mode,
-            fact_authority_receipt_hash=str(fact_receipt["fact_authority_receipt_hash"]),
-            regex_fact_authority_receipt_hash=fact_receipt_hash,
-            sidecar_receipt=sidecar_receipt,
-            parser_receipt_hash=parser_receipt_hash,
-            dataset_version_hash=dataset_version_hash,
-            materialization_hash=materialization_hash,
-            bridged_preview_hash=bridged_preview_hash,
-            gate_b_manifest_id=gate_b_manifest_id,
-        )
+    bridge_hash_basis = _bridge_hash_basis(
+        fact_authority_input_mode=fact_authority_input_mode,
+        fact_authority_receipt_hash=str(fact_receipt["fact_authority_receipt_hash"]),
+        regex_fact_authority_receipt_hash=fact_receipt_hash,
+        sidecar_receipt=sidecar_receipt,
+        parser_receipt_hash=parser_receipt_hash,
+        dataset_version_hash=dataset_version_hash,
+        materialization_hash=materialization_hash,
+        bridged_preview_hash=bridged_preview_hash,
+        gate_b_manifest_id=gate_b_manifest_id,
     )
+    bridge_hash = stable_hash(bridge_hash_basis)
     binding = _read_request_binding(request_id)
     if binding and binding.get("fact_material_bridge_basis_hash") != bridge_hash:
         _blocked(
@@ -464,7 +463,7 @@ def prepare_sec_edgar_html_inline_xbrl_fact_material_bridge(fields: Mapping[str,
     if _contains_forbidden_output_ref(response):
         return _blocked_response(request_id=request_id, fact_authority_receipt_hash=str(fact_receipt["fact_authority_receipt_hash"]), parser_receipt_hash=parser_receipt_hash, reasons=[_reason("raw_path_or_url_authority")])
     db.commit()
-    idempotent_replay = _write_receipt(response)
+    idempotent_replay = _write_receipt(response, bridge_hash_basis)
     _write_request_binding(request_id, bridge_hash, bridge_receipt_id)
     response["idempotent_replay"] = idempotent_replay
     return response
@@ -1528,21 +1527,13 @@ def _expected_or_authority(request: Mapping[str, Any], request_key: str, authori
     return value
 
 
-def _write_receipt(response: Mapping[str, Any]) -> bool:
+def _write_receipt(response: Mapping[str, Any], receipt_hash_basis: Mapping[str, Any]) -> bool:
     receipt = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "fact_material_bridge_receipt_id": response["fact_material_bridge_receipt_id"],
         "fact_material_bridge_receipt_hash": response["fact_material_bridge_receipt_hash"],
-        "receipt_hash_basis": {
-            "fact_material_bridge_receipt_hash": response["fact_material_bridge_receipt_hash"],
-            "fact_authority_receipt_hash": response["fact_authority_receipt_hash"],
-            "parser_receipt_hash": response["parser_receipt_hash"],
-            "dataset_version_hash": response["dataset_version_hash"],
-            "materialization_receipt_hash": response["materialization_receipt_hash"],
-            "material_preview_hash": response["material_preview_hash"],
-            "gate_b_decision_manifest_id": response["gate_b_decision_manifest_id"],
-        },
+        "receipt_hash_basis": dict(receipt_hash_basis),
         "response": dict(response),
         "recorded_at": _server_time(),
     }
