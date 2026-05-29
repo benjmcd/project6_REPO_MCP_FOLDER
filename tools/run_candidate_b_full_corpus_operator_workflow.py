@@ -511,11 +511,11 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             "inspect this receipt through the Candidate B full-corpus operator workflow status surface",
         ],
     }
-    receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
-    receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
     if _is_live_http_mode(args):
         receipt["live_http_status_check"] = _verify_live_http_workflow_status(args, receipt)
         receipt["live_http_server_run_check"] = _verify_live_http_workflow_run(args, receipt)
+    receipt_path = _write_receipt(receipt_dir, receipt_id, receipt)
+    receipt["receipt_file"] = _path_ref(checkout_root, receipt_path)
     return receipt
 
 

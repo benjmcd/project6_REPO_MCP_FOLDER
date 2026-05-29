@@ -420,6 +420,11 @@ def _load_or_write_retry_completion_failure_receipt(
             retry_completion_failure_authority_hash=retry_completion_failure_authority_hash,
             idempotency_key_hash=idempotency_key_hash,
         )
+        _write_retry_terminal_workflow_index(
+            root=root,
+            operator_workflow_receipt_id=str(row["operator_workflow_receipt_id"]),
+            retry_completion_failure_receipt_id=retry_completion_failure_receipt_id,
+        )
         return existing, True
 
     _validate_no_existing_retry_terminal_receipt(
@@ -574,7 +579,51 @@ def _load_or_write_retry_completion_failure_receipt(
         "server_time": workflow_status._server_time(),
     }
     target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    _write_retry_terminal_workflow_index(
+        root=root,
+        operator_workflow_receipt_id=str(row["operator_workflow_receipt_id"]),
+        retry_completion_failure_receipt_id=retry_completion_failure_receipt_id,
+    )
     return receipt, False
+
+
+def _write_retry_terminal_workflow_index(
+    *,
+    root: Path,
+    operator_workflow_receipt_id: str,
+    retry_completion_failure_receipt_id: str,
+) -> None:
+    index_file = workflow_status._retry_terminal_index_file(root, operator_workflow_receipt_id)
+    index = {
+        "schema_id": workflow_status.RETRY_TERMINAL_INDEX_SCHEMA_ID,
+        "schema_version": workflow_status.SCHEMA_VERSION,
+        "index_mode": workflow_status.RETRY_TERMINAL_INDEX_MODE,
+        "operator_workflow_receipt_id": operator_workflow_receipt_id,
+        "retry_completion_failure_receipt_ids": [retry_completion_failure_receipt_id],
+        "append_only_retry_terminal_index": True,
+    }
+    if index_file.is_file():
+        existing = _read_json_receipt(index_file)
+        if existing == index:
+            return
+        raise CandidateBFullCorpusOperatorWorkflowRetryCompletionFailureError(
+            "candidate_b_full_corpus_operator_workflow_retry_completion_failure_workflow_index_conflict",
+            "The selected Candidate B workflow run already has a retry terminal receipt index.",
+            http_status=409,
+            details={"operator_workflow_receipt_id": operator_workflow_receipt_id},
+        )
+    index_file.parent.mkdir(parents=True, exist_ok=True)
+    tmp = index_file.with_name(f"{index_file.name}.tmp")
+    try:
+        tmp.write_text(json.dumps(index, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        tmp.replace(index_file)
+    except OSError as exc:
+        raise CandidateBFullCorpusOperatorWorkflowRetryCompletionFailureError(
+            "candidate_b_full_corpus_operator_workflow_retry_completion_failure_workflow_index_write_failed",
+            "The Candidate B workflow retry terminal index could not be written atomically.",
+            http_status=409,
+            details={"operator_workflow_receipt_id": operator_workflow_receipt_id},
+        ) from exc
 
 
 def _validate_latest_retry_progress_checkpoint(receipt: Mapping[str, Any]) -> None:
