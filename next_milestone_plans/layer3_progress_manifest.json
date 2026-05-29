@@ -42376,6 +42376,26 @@
     "raw_identity_committed": false,
     "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
   },
+  "sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_tracking": {
+    "status": "external_stratified_matrix_plan_harness_ready",
+    "milestone": "sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1272-sec-xbrl-stratified-matrix-external-plan-harness.md",
+    "runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py",
+    "external_plan_schema": "diagnostics.sec_xbrl_stratified_real_filing_validation_matrix_plan.v1",
+    "external_plan_mode": "sec_edgar_stratified_real_filing_validation_matrix_v1",
+    "external_plan_must_be_off_repo": true,
+    "runner_rejects_incomplete_or_in_repo_plan": true,
+    "reports_raw_identity": false,
+    "runtime_default_changed_by_harness": false,
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_network_performed_by_harness": false,
+    "arelle_subprocess_invoked_by_harness": false,
+    "source_acquisition_performed_by_harness": false,
+    "value_reveal_request_performed_by_harness": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
     "status": "branch_local_review_debt_closure_in_progress",
     "milestone": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1",

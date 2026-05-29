@@ -40558,6 +40558,29 @@
     "raw_values_committed": false,
     "raw_identity_committed": false
   },
+  "sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_proof": {
+    "proof_kind": "sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_proof",
+    "status": "external_stratified_matrix_plan_harness_ready",
+    "milestone": "sec_edgar_stratified_real_filing_validation_matrix_external_plan_harness_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1272-sec-xbrl-stratified-matrix-external-plan-harness.md",
+    "runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner.py",
+    "proof_terms": [
+      "runner accepts optional off-repo stratified matrix plan",
+      "external plan schema and mode are validated",
+      "plan labels, admitted issuer identifiers, and required strata are fail-closed",
+      "reports expose chunk hashes, issuer counts, strata, and markers rather than raw issuer identities",
+      "missing, unreadable, in-repo, unknown-issuer, or incomplete plans block execution",
+      "no live network, Arelle invocation, source acquisition, sidecar, dataset, audit receipt, or value reveal is performed by this harness pass"
+    ],
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_default_changed_by_harness": false,
+    "runtime_network_performed_by_harness": false,
+    "arelle_subprocess_invoked_by_harness": false,
+    "source_acquisition_performed_by_harness": false,
+    "value_reveal_request_performed_by_harness": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
     "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
     "status": "branch_local_review_debt_closure_in_progress",
