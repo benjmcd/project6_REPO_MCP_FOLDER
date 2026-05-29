@@ -48,6 +48,8 @@ The diagnostic verifies:
 
 The next live pass should use the existing governed SEC connector/source-artifact path and the existing Arelle subprocess isolation. It should run the selected strata in bounded chunks, retain raw SEC payloads and runtime artifacts outside the repo, and commit only redacted hashes, counts, forms, reason codes, readiness states, and non-admission evidence.
 
+The real-corpus product runner now accepts an optional off-repo external plan through `--matrix-plan` or `SEC_XBRL_STRATIFIED_MATRIX_PLAN`. That plan must use schema `diagnostics.sec_xbrl_stratified_real_filing_validation_matrix_plan.v1`, mode `sec_edgar_stratified_real_filing_validation_matrix_v1`, and bounded chunks with admitted company identifiers plus required strata. The runner rejects missing, unreadable, in-repo, or incomplete plans and keeps issuer identities out of committed reports.
+
 Large domestic companies such as major technology or semiconductor issuers may be useful inside the large-domestic stratum, but they are not sufficient by themselves. The matrix must also keep foreign, Canadian, sparse-report, amendment/restatement-like, small/mid-size, and no-inline diagnostic coverage.
 
 ## Stop Conditions
@@ -58,6 +60,7 @@ Stop before live execution if:
 - the SEC user agent is absent;
 - Arelle executable, taxonomy packages, or cache are missing;
 - runtime storage is absent or inside the repo;
+- an external matrix plan is missing, unreadable, inside the repo, has an unadmitted schema/mode, contains unadmitted issuer identifiers, or fails to cover every required stratum;
 - committed defaults are no longer off;
 - the selected matrix loses a required stratum;
 - any report would expose raw issuer identity, accession, SEC URL, local path, retained bytes, raw values, operator contact, or actor text.
