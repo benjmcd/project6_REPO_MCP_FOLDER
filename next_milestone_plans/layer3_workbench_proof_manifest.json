@@ -40632,6 +40632,35 @@
     "final_financial_statement_semantics_claimed": false,
     "cross_company_comparability_claimed": false
   },
+  "sec_edgar_stratified_matrix_readiness_decision_proof": {
+    "proof_kind": "sec_edgar_stratified_matrix_readiness_decision_proof",
+    "status": "explicit_operator_default_off_readiness_selected",
+    "decision": "explicit_operator_default_off_readiness_selected",
+    "milestone": "sec_edgar_stratified_matrix_result_reconciliation_and_default_off_operator_readiness_decision_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1275-sec-xbrl-stratified-matrix-readiness-decision.md",
+    "report": "diagnostics/assessment/sec-xbrl-stratified-matrix-readiness-decision-report.json",
+    "proof_terms": [
+      "committed SEC/Arelle defaults remain off",
+      "live stratified matrix product gate passed",
+      "all required forms and strata are ready",
+      "diagnostic default-on action was not applied",
+      "governed value reveal remains proven through explicit gated action",
+      "redaction and non-admissions are preserved",
+      "default-on, production-readiness, final-statement semantics, and cross-company comparability remain deferred"
+    ],
+    "runtime_default_changed_by_decision": false,
+    "live_sec_network_run_performed_by_decision": false,
+    "arelle_subprocess_invoked_by_decision": false,
+    "value_reveal_request_performed_by_decision": false,
+    "raw_runtime_artifacts_committed": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "local_paths_committed": false,
+    "operator_contact_committed": false,
+    "production_readiness_claimed": false,
+    "final_financial_statement_semantics_claimed": false,
+    "cross_company_comparability_claimed": false
+  },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof": {
     "proof_kind": "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_proof",
     "status": "branch_local_review_debt_closure_in_progress",
