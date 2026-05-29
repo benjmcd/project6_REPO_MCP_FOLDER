@@ -90,11 +90,11 @@ The report admits only if all criteria pass:
 
 Next slice:
 
-`sec_edgar_arelle_default_posture_decision_v1`
+`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
 
 Scope:
 
-- reconcile the real-product runner pass, the broader reliability gate, and the later live value-reveal proof against the current default-off governance posture;
-- decide whether to retain explicit-operator-only behavior, design a new reviewed default-on admission gate, or run a narrower staged default-on experiment;
+- use the explicit-operator-only default-off posture selected by `1269-sec-xbrl-default-posture-decision.md`;
+- define operator runbook requirements and the next stratified validation matrix;
 - preserve redaction and audit boundaries by default;
 - preserve no final financial-statement semantics and no cross-company comparability claims.

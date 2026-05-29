@@ -82,6 +82,6 @@ The live/Arelle authority-provisioning and governed operator value-reveal exerci
 
 Next:
 
-`sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1`
+`sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1`
 
-The next pass should reconcile older blocked planning/report artifacts against the live proof while preserving default-off governance and all non-admissions.
+Default-posture reconciliation and decision are now recorded in `1268-sec-xbrl-default-posture-reconciliation.md` and `1269-sec-xbrl-default-posture-decision.md`. The next pass should prepare the operator runbook and stratified matrix selection while preserving default-off governance and all non-admissions.
