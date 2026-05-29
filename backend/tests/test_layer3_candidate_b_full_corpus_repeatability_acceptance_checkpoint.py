@@ -346,6 +346,36 @@ def test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_is_idempote
     ]
 
 
+def test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_validates_before_persisting(
+    acceptance_authority: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    checkpoint_receipt = acceptance_authority["checkpoint_receipt"]
+    rerun_receipt = rerun_trial.record_candidate_b_full_corpus_repeatability_rerun_trial(
+        _rerun_request(checkpoint_receipt)
+    )
+
+    def reject_generated_receipt(*_args: Any, **_kwargs: Any) -> str:
+        raise acceptance.CandidateBFullCorpusRepeatabilityAcceptanceCheckpointError(
+            "candidate_b_full_corpus_repeatability_acceptance_checkpoint_forced_validation_failure",
+            "forced validation failure",
+            http_status=409,
+        )
+
+    monkeypatch.setattr(acceptance, "_validate_acceptance_checkpoint_receipt", reject_generated_receipt)
+
+    with pytest.raises(acceptance.CandidateBFullCorpusRepeatabilityAcceptanceCheckpointError):
+        acceptance.record_candidate_b_full_corpus_repeatability_acceptance_checkpoint(
+            _acceptance_request(checkpoint_receipt, rerun_receipt)
+        )
+
+    assert not list(
+        acceptance_authority["root"].glob(
+            f"{acceptance.ACCEPTANCE_CHECKPOINT_RECEIPT_PREFIX}-*/receipt.json"
+        )
+    )
+
+
 def test_candidate_b_full_corpus_repeatability_acceptance_checkpoint_blocks_regression(
     acceptance_authority: dict[str, Any],
 ) -> None:

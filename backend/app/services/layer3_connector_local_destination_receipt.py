@@ -255,13 +255,18 @@ def _validate_existing_delivery_authority(
             http_status=409,
             blocked_fields=[field],
         )
-    validation_body = layer3_workbench.external_export_download_prepare(
-        db,
-        layer3_workbench._external_export_download_prepare_payload_for_delivery(  # noqa: SLF001
-            delivery_payload,
-            readiness_state=readiness_state,
-        ),
-        validate_source_artifact=False,
+    validation_body = layer3_workbench._external_export_download_recorded_prepare_response(  # noqa: SLF001
+        request_id=str(readiness_state.get("client_request_id") or "").strip(),
+        status="already_prepared",
+        session_id=delivery_request.session_id,
+        analysis_plan_id=str(delivery_payload.get("analysis_plan_id") or "").strip(),
+        pass_run_id=str(delivery_payload.get("pass_run_id") or "").strip(),
+        preview_id=str(delivery_payload.get("preview_id") or "").strip(),
+        preview_hash=str(delivery_payload.get("preview_hash") or "").strip(),
+        result_review_record_ref=str(delivery_payload.get("result_review_record_ref") or "").strip(),
+        package_review_preview_hash=str(delivery_payload.get("package_review_preview_hash") or "").strip(),
+        reconciliation_record_id=str(delivery_payload.get("reconciliation_record_id") or "").strip(),
+        readiness_state=readiness_state,
     )
     if validation_body.get("external_export_download_record_ref") != delivery_request.supplied_readiness_ref:
         raise layer3_workbench.Layer3WorkbenchError(

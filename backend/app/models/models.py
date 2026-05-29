@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -1538,7 +1539,7 @@ class L3SourceDirectoryIngestionBatch(Base):
     directory_fingerprint_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     eligible_file_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    total_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    total_size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
     authority_snapshot_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     summary_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     status: Mapped[str] = mapped_column(String(64), nullable=False, default="recorded")
@@ -1569,8 +1570,8 @@ class L3SourceDirectoryIngestionFile(Base):
     relative_name: Mapped[str] = mapped_column(String(255), nullable=False)
     extension: Mapped[str] = mapped_column(String(16), nullable=False)
     media_type: Mapped[str] = mapped_column(String(128), nullable=False)
-    content_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
-    mtime_ns: Mapped[int] = mapped_column(Integer, nullable=False)
+    content_size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    mtime_ns: Mapped[int] = mapped_column(BigInteger, nullable=False)
     content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     file_identity_hash: Mapped[str] = mapped_column(String(64), nullable=False)
     authority_basis_hash: Mapped[str] = mapped_column(String(64), nullable=False)

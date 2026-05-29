@@ -53,6 +53,46 @@ def _stable_hash(value: Any) -> str:
 
 
 def _write_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, Any]]:
+    runtime_root_lifecycle = {
+        "schema_id": "candidate_b.full_corpus_runtime_root_lifecycle.v1",
+        "lifecycle_mode": "candidate_b_full_corpus_runtime_root_lifecycle_v1",
+        "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-cccccccccccccccccccccccc",
+        "lifecycle_receipt_hash": "5" * 64,
+        "runtime_parent_ref": "redacted://sha256/runtime-parent",
+        "root_count": 3,
+        "receipt_file": "repo://backend/app/storage_test_runtime/lifecycle/receipt.json",
+        "validate_only_triplet": True,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+    }
+    corpus = {
+        "corpus_pdf_count": 69,
+        "eligible_file_count": 71,
+        "material_relative_name": "text/target-00001.md",
+        "target_status_counts": {
+            "baseline": {"recommended": 69},
+            "candidate_a": {"recommended": 69},
+            "candidate_b": {"recommended": 69},
+        },
+        "eligibility_summary": {
+            "corpus_pdf_count": 69,
+            "eligible_pdf_count": 69,
+            "skipped_pdf_count": 0,
+            "failed_pdf_count": 0,
+            "source_directory_eligible_file_count": 71,
+            "source_directory_extra_material_file_count": 2,
+            "all_eligible_pdfs_processed": True,
+            "candidate_b_target_status_counts": {"recommended": 69},
+        },
+    }
+    baseline_rollback = {
+        "available": True,
+        "selector": "baseline",
+        "explicit_document_processing_engine": "baseline",
+        "depends_on_candidate_b_artifacts": False,
+        "candidate_a_visual_lane_preserved": True,
+        "rollback_requires_selector_mutation": False,
+    }
     receipt_input = {
         "schema_id": workflow_status.WORKFLOW_SCHEMA_ID,
         "schema_version": workflow_status.SCHEMA_VERSION,
@@ -66,6 +106,9 @@ def _write_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, 
         "downstream_proof_id": DOWNSTREAM_PROOF_ID,
         "downstream_proof_hash": DOWNSTREAM_PROOF_HASH,
         "coverage_count": 17,
+        "corpus": corpus,
+        "baseline_rollback": baseline_rollback,
+        "runtime_root_lifecycle": runtime_root_lifecycle,
     }
     receipt_hash = _stable_hash(receipt_input)
     receipt_id = f"{workflow_status.WORKFLOW_RECEIPT_PREFIX}-{receipt_hash[:24]}"
@@ -77,34 +120,8 @@ def _write_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, 
         "server_time": "2026-05-23T00:00:00Z",
         "validate_only_triplet": True,
         "artifacts_seeded_or_generated_by_triplet_validator": False,
-        "corpus": {
-            "corpus_pdf_count": 69,
-            "eligible_file_count": 71,
-            "material_relative_name": "text/target-00001.md",
-            "target_status_counts": {
-                "baseline": {"recommended": 69},
-                "candidate_a": {"recommended": 69},
-                "candidate_b": {"recommended": 69},
-            },
-            "eligibility_summary": {
-                "corpus_pdf_count": 69,
-                "eligible_pdf_count": 69,
-                "skipped_pdf_count": 0,
-                "failed_pdf_count": 0,
-                "source_directory_eligible_file_count": 71,
-                "source_directory_extra_material_file_count": 2,
-                "all_eligible_pdfs_processed": True,
-                "candidate_b_target_status_counts": {"recommended": 69},
-            },
-        },
-        "baseline_rollback": {
-            "available": True,
-            "selector": "baseline",
-            "explicit_document_processing_engine": "baseline",
-            "depends_on_candidate_b_artifacts": False,
-            "candidate_a_visual_lane_preserved": True,
-            "rollback_requires_selector_mutation": False,
-        },
+        "corpus": corpus,
+        "baseline_rollback": baseline_rollback,
         "refs": {
             "baseline_runtime_root": "repo://artifacts/baseline",
             "candidate_a_runtime_root": "repo://artifacts/candidate-a",
@@ -138,18 +155,7 @@ def _write_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, 
             "curated_file_count": 71,
             "text_file_count": 71,
         },
-        "runtime_root_lifecycle": {
-            "schema_id": "candidate_b.full_corpus_runtime_root_lifecycle.v1",
-            "lifecycle_mode": "candidate_b_full_corpus_runtime_root_lifecycle_v1",
-            "lifecycle_receipt_id": "cb-full-corpus-runtime-roots-cccccccccccccccccccccccc",
-            "lifecycle_receipt_hash": "5" * 64,
-            "runtime_parent_ref": "redacted://sha256/runtime-parent",
-            "root_count": 3,
-            "receipt_file": "repo://backend/app/storage_test_runtime/lifecycle/receipt.json",
-            "validate_only_triplet": True,
-            "raw_local_path_exposed": False,
-            "raw_url_exposed": False,
-        },
+        "runtime_root_lifecycle": runtime_root_lifecycle,
         "negative_invariants": {
             "baseline_default_changed": False,
             "candidate_a_semantics_changed": False,
@@ -166,11 +172,23 @@ def _write_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, 
     }
     if extra:
         receipt.update(extra)
+        receipt["receipt_hash"] = _stable_hash(
+            {key: receipt[key] for key in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS}
+        )
     root = Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
     target = root / receipt_id / "receipt.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return receipt_id, receipt
+
+
+def _rewrite_receipt(receipt_id: str, receipt: dict[str, Any]) -> None:
+    target = Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir) / receipt_id / "receipt.json"
+    target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+
+def _recompute_receipt_hash(receipt: dict[str, Any]) -> None:
+    receipt["receipt_hash"] = _stable_hash({key: receipt[key] for key in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS})
 
 
 def _request(receipt_id: str, **overrides: str) -> dict[str, str]:
@@ -411,6 +429,74 @@ def test_candidate_b_full_corpus_operator_workflow_status_rejects_incomplete_eli
     assert body["error"]["details"]["eligibility_summary"]["failed_pdf_count"] == 1
 
 
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_malformed_coverage_count(
+    client: TestClient,
+) -> None:
+    receipt_id, receipt = _write_receipt()
+    receipt["coverage_count"] = "17"
+    _recompute_receipt_hash(receipt)
+    _rewrite_receipt(receipt_id, receipt)
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_count_invalid"
+    assert body["error"]["details"]["field"] == "coverage_count"
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_malformed_target_status_counts(
+    client: TestClient,
+) -> None:
+    receipt_id, receipt = _write_receipt()
+    receipt["corpus"]["target_status_counts"] = ["candidate_b"]
+    _recompute_receipt_hash(receipt)
+    _rewrite_receipt(receipt_id, receipt)
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_target_status_counts_missing"
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_requires_candidate_b_target_counts(
+    client: TestClient,
+) -> None:
+    receipt_id, receipt = _write_receipt()
+    receipt["corpus"]["target_status_counts"] = {"recommended": 69}
+    _recompute_receipt_hash(receipt)
+    _rewrite_receipt(receipt_id, receipt)
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_candidate_b_target_status_counts_missing"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_non_integer_candidate_b_counts(
+    client: TestClient,
+) -> None:
+    receipt_id, receipt = _write_receipt()
+    receipt["corpus"]["target_status_counts"]["candidate_b"]["recommended"] = "69"
+    _recompute_receipt_hash(receipt)
+    _rewrite_receipt(receipt_id, receipt)
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_count_invalid"
+    assert body["error"]["details"]["field"] == "recommended"
+
+
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_rollback(
     client: TestClient,
 ) -> None:
@@ -435,6 +521,24 @@ def test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_rollback
     assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_baseline_rollback_mismatch"
 
 
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_missing_rollback(
+    client: TestClient,
+) -> None:
+    receipt_id, receipt = _write_receipt()
+    receipt.pop("baseline_rollback")
+    receipt["receipt_hash"] = _stable_hash(
+        {key: receipt[key] for key in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS if key in receipt}
+    )
+    _rewrite_receipt(receipt_id, receipt)
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_receipt_authority_field_missing"
+
+
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_binding(client: TestClient) -> None:
     receipt_id, _receipt = _write_receipt()
 
@@ -444,6 +548,21 @@ def test_candidate_b_full_corpus_operator_workflow_status_rejects_stale_binding(
     body = response.json()
     assert body["status"] == "blocked"
     assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_receipt_mismatch"
+
+
+def test_candidate_b_full_corpus_operator_workflow_status_hash_binds_runtime_lifecycle(
+    client: TestClient,
+) -> None:
+    receipt_id, receipt = _write_receipt()
+    receipt["runtime_root_lifecycle"]["lifecycle_receipt_hash"] = "6" * 64
+    _rewrite_receipt(receipt_id, receipt)
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_receipt_hash_mismatch"
 
 
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_raw_authority_leak(client: TestClient) -> None:
@@ -465,10 +584,29 @@ def test_candidate_b_full_corpus_operator_workflow_status_rejects_raw_authority_
     assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_receipt_exposes_raw_authority"
 
 
+def test_candidate_b_full_corpus_operator_workflow_status_rejects_posix_raw_authority_leak(client: TestClient) -> None:
+    receipt_id, _receipt = _write_receipt(
+        {
+            "refs": {
+                "baseline_runtime_root": "repo://artifacts/baseline",
+                "candidate_a_runtime_root": "repo://artifacts/candidate-a",
+                "candidate_b_runtime_root": "/tmp/operator/private/candidate-b",
+            }
+        }
+    )
+
+    response = client.post(ENDPOINT, json=_request(receipt_id))
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["status"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_receipt_exposes_raw_authority"
+
+
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_invalid_runtime_root_lifecycle(
     client: TestClient,
 ) -> None:
-    receipt_id, _receipt = _write_receipt(
+    receipt_id, receipt = _write_receipt(
         {
             "runtime_root_lifecycle": {
                 "schema_id": "candidate_b.full_corpus_runtime_root_lifecycle.v1",
@@ -483,6 +621,8 @@ def test_candidate_b_full_corpus_operator_workflow_status_rejects_invalid_runtim
             }
         }
     )
+    receipt["receipt_hash"] = _stable_hash({key: receipt[key] for key in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS})
+    _rewrite_receipt(receipt_id, receipt)
 
     response = client.post(ENDPOINT, json=_request(receipt_id))
 

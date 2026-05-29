@@ -30,7 +30,7 @@ A later runtime pass may implement exactly one source-authority slice:
 - owner service: `backend/app/services/layer3_corrected_package_artifact_set.py`;
 - durable model: `L3CorrectedPackageArtifactSet`;
 - durable table: `l3_corrected_package_artifact_set`;
-- migration owner: `backend/alembic/versions/0031_layer3_corrected_package_artifact_set.py`;
+- migration owner: `backend/alembic/versions/0033_layer3_corrected_package_artifact_set.py`;
 - targeted tests: `backend/tests/test_layer3_corrected_package_artifact_set.py`;
 - API response schema id: `layer3.corrected_package_artifact_set.v1`;
 - request mode: `operator_review_corrections_server_owned_corrected_package_artifact_set`;

@@ -326,6 +326,107 @@ def test_zip_pdf_member_remains_baseline_without_explicit_candidate_b(monkeypatc
     assert baseline_calls[0]["document_processing_engine_explicit"] is True
 
 
+def test_zip_pdf_member_preserves_explicit_candidate_b_selector(monkeypatch: pytest.MonkeyPatch) -> None:
+    candidate_b_calls: list[dict[str, Any]] = []
+
+    def fake_candidate_b(*, content: bytes, detection: dict[str, Any], config: dict[str, Any], deadline: float | None):
+        candidate_b_calls.append(dict(config))
+        return _fake_pdf_result(
+            detection=detection,
+            config=config,
+            extractor_family="pdf_candidate_b_opendataloader",
+        )
+
+    def forbidden_baseline(*, content: bytes, detection: dict[str, Any], config: dict[str, Any], deadline: float | None):
+        raise AssertionError("explicit Candidate B ZIP PDF members must not be forced through baseline")
+
+    archive = io.BytesIO()
+    with zipfile.ZipFile(archive, mode="w") as zf:
+        zf.writestr("inner.pdf", PDF_BYTES)
+
+    monkeypatch.setattr(processing, "_process_pdf_candidate_b", fake_candidate_b)
+    monkeypatch.setattr(processing, "_process_pdf", forbidden_baseline)
+
+    result = processing.process_document(
+        content=archive.getvalue(),
+        declared_content_type="application/zip",
+        config={"document_processing_engine": processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B},
+    )
+
+    assert result["parser_family"] == "archive_bundle"
+    assert result["member_summaries"][0]["status"] == "success"
+    assert candidate_b_calls[0]["document_processing_engine"] == processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+    assert candidate_b_calls[0]["document_processing_engine_explicit"] is True
+
+
+def test_candidate_b_pdf_page_count_respects_configured_parse_limit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_convert(*, output_dir: str, **_: Any) -> None:
+        Path(output_dir, "input.json").write_text(
+            json.dumps({"number of pages": 3, "kids": []}),
+            encoding="utf-8",
+        )
+
+    module = types.ModuleType("opendataloader_pdf")
+    module.convert = fake_convert
+    monkeypatch.setitem(sys.modules, "opendataloader_pdf", module)
+    monkeypatch.setattr(
+        processing.importlib.metadata,
+        "version",
+        lambda package_name: processing.APS_ODL_PDF_EXPECTED_VERSION,
+    )
+
+    with pytest.raises(ValueError, match="candidate_b_pdf_page_limit_exceeded"):
+        processing.process_document(
+            content=PDF_BYTES,
+            declared_content_type="application/pdf",
+            config={
+                "artifact_storage_dir": str(tmp_path),
+                "content_parse_max_pages": 2,
+                "document_processing_engine": processing.APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B,
+            },
+        )
+
+
+def test_candidate_b_pdf_timeout_is_checked_after_convert(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_convert(*, output_dir: str, **_: Any) -> None:
+        Path(output_dir, "input.json").write_text(
+            json.dumps({"number of pages": 1, "kids": []}),
+            encoding="utf-8",
+        )
+
+    module = types.ModuleType("opendataloader_pdf")
+    module.convert = fake_convert
+    monkeypatch.setitem(sys.modules, "opendataloader_pdf", module)
+    monkeypatch.setattr(
+        processing.importlib.metadata,
+        "version",
+        lambda package_name: processing.APS_ODL_PDF_EXPECTED_VERSION,
+    )
+    deadline_checks = 0
+
+    def fake_deadline_check(deadline: float | None) -> None:
+        nonlocal deadline_checks
+        deadline_checks += 1
+        if deadline_checks == 2:
+            raise ValueError("content_parse_timeout_exceeded")
+
+    monkeypatch.setattr(processing, "_raise_if_deadline_exceeded", fake_deadline_check)
+
+    with pytest.raises(ValueError, match="content_parse_timeout_exceeded"):
+        processing._process_pdf_candidate_b(
+            content=PDF_BYTES,
+            detection={"effective_content_type": "application/pdf"},
+            config=processing.default_processing_config({"artifact_storage_dir": str(tmp_path)}),
+            deadline=1.0,
+        )
+
+
 def test_candidate_b_visual_lane_emits_retained_page_evidence_refs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

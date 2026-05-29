@@ -264,13 +264,20 @@ def _scan_observed_directory(
             "negative_invariants": _negative_invariants(),
             "source_root_ref": source_root_ref,
             "source_authority": dict(source_authority),
-            "files": [_file_summary(item) for item in observations],
+            "files": [],
         },
         status=STATUS_RECORDED,
     )
     db.add(batch)
     db.flush()
+    file_summaries: list[dict[str, Any]] = []
     for item in observations:
+        file_authority_basis_hash = _file_authority_basis_hash(
+            item,
+            source_ingestion_batch_id=batch.source_ingestion_batch_id,
+        )
+        file_summary = _file_summary(item, authority_basis_hash=file_authority_basis_hash)
+        file_summaries.append(file_summary)
         db.add(
             L3SourceDirectoryIngestionFile(
                 source_ingestion_batch_id=batch.source_ingestion_batch_id,
@@ -281,11 +288,12 @@ def _scan_observed_directory(
                 mtime_ns=item.mtime_ns,
                 content_sha256=item.content_sha256,
                 file_identity_hash=item.file_identity_hash,
-                authority_basis_hash=item.authority_basis_hash,
-                summary_json=_file_summary(item),
+                authority_basis_hash=file_authority_basis_hash,
+                summary_json=file_summary,
                 status=STATUS_RECORDED,
             )
         )
+    batch.summary_json = {**(batch.summary_json or {}), "files": file_summaries}
     try:
         db.commit()
     except IntegrityError as exc:
@@ -393,14 +401,22 @@ def _validate_server_owned_root(root: Path, *, config_authority: str) -> Path:
 
 
 def _observe_direct_child_files(root: Path) -> list[_FileObservation]:
-    children = sorted(root.iterdir(), key=lambda item: item.name.lower())
+    try:
+        children = sorted(root.iterdir(), key=lambda item: item.name.lower())
+    except OSError as exc:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_directory_unreadable",
+            "The configured source ingestion directory could not be enumerated.",
+            http_status=409,
+            details={"relative_name": "."},
+        ) from exc
     if not children:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_empty_directory",
             "The configured source ingestion directory has no eligible direct child files.",
         )
     seen_names: set[str] = set()
-    observations: list[_FileObservation] = []
+    candidates: list[tuple[Path, str, str]] = []
     for child in children:
         relative_name = child.name
         normalized_name = relative_name.lower()
@@ -430,18 +446,19 @@ def _observe_direct_child_files(root: Path) -> list[_FileObservation]:
                 "Only CSV, JSON, TXT, and MD files are admitted.",
                 details={"relative_name": relative_name, "extension": extension},
             )
-        observations.append(_observe_file(child, relative_name, extension))
-    if not observations:
+        candidates.append((child, relative_name, extension))
+    if not candidates:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_empty_eligible_directory",
             "The configured source ingestion directory has no eligible direct child files.",
         )
-    if len(observations) > MAX_BATCH_FILES:
+    if len(candidates) > MAX_BATCH_FILES:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_batch_too_large",
             "The configured source ingestion directory exceeds the maximum admitted file count.",
-            details={"max_batch_files": MAX_BATCH_FILES, "received_file_count": len(observations)},
+            details={"max_batch_files": MAX_BATCH_FILES, "received_file_count": len(candidates)},
         )
+    observations = [_observe_file(child, relative_name, extension) for child, relative_name, extension in candidates]
     max_batch_bytes = _max_file_bytes() * MAX_BATCH_FILES
     total_size = sum(item.content_size_bytes for item in observations)
     if total_size > max_batch_bytes:
@@ -454,7 +471,7 @@ def _observe_direct_child_files(root: Path) -> list[_FileObservation]:
 
 
 def _observe_recursive_files(root: Path) -> list[_FileObservation]:
-    observations: list[_FileObservation] = []
+    candidates: list[tuple[Path, str, str]] = []
     seen_names: set[str] = set()
     stack = [root]
     root_children_seen = False
@@ -519,25 +536,26 @@ def _observe_recursive_files(root: Path) -> list[_FileObservation]:
                     "Only CSV, JSON, TXT, and MD files are admitted.",
                     details={"relative_name": relative_name, "extension": extension},
                 )
-            observations.append(_observe_file(child, relative_name, extension))
+            candidates.append((child, relative_name, extension))
 
     if not root_children_seen:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_empty_directory",
             "The configured source ingestion directory has no eligible files under the recursive policy.",
         )
-    if not observations:
+    if not candidates:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_empty_eligible_directory",
             "The configured source ingestion directory has no eligible files under the recursive policy.",
         )
-    observations.sort(key=lambda item: item.relative_name.lower())
-    if len(observations) > MAX_BATCH_FILES:
+    if len(candidates) > MAX_BATCH_FILES:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_batch_too_large",
             "The configured source ingestion directory exceeds the maximum admitted file count.",
-            details={"max_batch_files": MAX_BATCH_FILES, "received_file_count": len(observations)},
+            details={"max_batch_files": MAX_BATCH_FILES, "received_file_count": len(candidates)},
         )
+    observations = [_observe_file(child, relative_name, extension) for child, relative_name, extension in candidates]
+    observations.sort(key=lambda item: item.relative_name.lower())
     max_batch_bytes = _max_file_bytes() * MAX_BATCH_FILES
     total_size = sum(item.content_size_bytes for item in observations)
     if total_size > max_batch_bytes:
@@ -550,7 +568,15 @@ def _observe_recursive_files(root: Path) -> list[_FileObservation]:
 
 
 def _observe_file(path: Path, relative_name: str, extension: str) -> _FileObservation:
-    before = path.stat()
+    try:
+        before = path.stat()
+    except OSError as exc:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_file_unreadable",
+            "A source directory file could not be read for durable authority hashing.",
+            http_status=409,
+            details={"relative_name": relative_name},
+        ) from exc
     if before.st_size <= 0:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_empty_file",
@@ -564,8 +590,16 @@ def _observe_file(path: Path, relative_name: str, extension: str) -> _FileObserv
             "A source directory file exceeds the configured maximum file size.",
             details={"relative_name": relative_name, "max_file_bytes": max_file_bytes, "received_bytes": before.st_size},
         )
-    data = path.read_bytes()
-    after = path.stat()
+    try:
+        data = path.read_bytes()
+        after = path.stat()
+    except OSError as exc:
+        raise SourceDirectoryIngestionError(
+            "source_directory_ingestion_file_unreadable",
+            "A source directory file could not be read for durable authority hashing.",
+            http_status=409,
+            details={"relative_name": relative_name},
+        ) from exc
     if before.st_size != after.st_size or before.st_mtime_ns != after.st_mtime_ns:
         raise SourceDirectoryIngestionError(
             "source_directory_ingestion_stale_file_identity",
@@ -695,12 +729,16 @@ def _existing_batch(
     client_request_id: str,
     authority_basis_hash: str,
 ) -> L3SourceDirectoryIngestionBatch | None:
+    existing_for_request = (
+        db.query(L3SourceDirectoryIngestionBatch)
+        .filter(L3SourceDirectoryIngestionBatch.client_request_id == client_request_id)
+        .one_or_none()
+    )
+    if existing_for_request is not None:
+        return existing_for_request
     return (
         db.query(L3SourceDirectoryIngestionBatch)
-        .filter(
-            (L3SourceDirectoryIngestionBatch.client_request_id == client_request_id)
-            | (L3SourceDirectoryIngestionBatch.authority_basis_hash == authority_basis_hash)
-        )
+        .filter(L3SourceDirectoryIngestionBatch.authority_basis_hash == authority_basis_hash)
         .one_or_none()
     )
 
@@ -769,7 +807,22 @@ def _stored_file_response(file_record: L3SourceDirectoryIngestionFile) -> dict[s
     }
 
 
-def _file_summary(item: _FileObservation) -> dict[str, Any]:
+def _file_authority_basis_hash(item: _FileObservation, *, source_ingestion_batch_id: str) -> str:
+    return _stable_hash(
+        {
+            "schema_id": "layer3.source_directory_ingestion_file_authority.v1",
+            "source_ingestion_batch_id": source_ingestion_batch_id,
+            "relative_name": item.relative_name,
+            "extension": item.extension,
+            "content_size_bytes": item.content_size_bytes,
+            "mtime_ns": item.mtime_ns,
+            "content_sha256": item.content_sha256,
+            "file_identity_hash": item.file_identity_hash,
+        }
+    )
+
+
+def _file_summary(item: _FileObservation, *, authority_basis_hash: str | None = None) -> dict[str, Any]:
     return {
         "relative_name": item.relative_name,
         "extension": item.extension,
@@ -777,6 +830,7 @@ def _file_summary(item: _FileObservation) -> dict[str, Any]:
         "content_size_bytes": item.content_size_bytes,
         "content_sha256": item.content_sha256,
         "file_identity_hash": item.file_identity_hash,
+        "authority_basis_hash": authority_basis_hash or item.authority_basis_hash,
         "absolute_path_exposed": False,
     }
 

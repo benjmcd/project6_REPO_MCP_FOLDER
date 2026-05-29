@@ -145,17 +145,21 @@ from app.services.layer3_external_export_response import (
     EXTERNAL_EXPORT_DOWNLOAD_DELIVERY_OPERATOR_DECISION,
     EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE,
     EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+    QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
     associated_cohort_delivery_ui_state as _associated_cohort_delivery_ui_state,
     associated_cohort_external_export_download as _is_associated_cohort_external_export_download,
+    aps_bundle_delivery_ui_state as _aps_bundle_delivery_ui_state,
     aps_bundle_identity_for_external_export_download as _aps_bundle_identity_for_external_export_download,
     cohort_readiness_identity as _cohort_readiness_identity,
     external_export_download_delivery_response as _external_export_download_delivery_response,
     external_export_download_prepare_payload_for_delivery as _external_export_download_prepare_payload_for_delivery,
+    external_export_download_recorded_prepare_response as _external_export_download_recorded_prepare_response,
     external_export_download_prepare_response as _external_export_download_prepare_response,
     external_export_download_prepare_summary as _external_export_download_prepare_summary,
     qualitative_aps_external_export_download_admitted as _qualitative_aps_external_export_download_admitted,
     qualitative_aps_external_export_download_deferred as _qualitative_aps_external_export_download_deferred,
     safe_download_token as _safe_download_token,
+    source_intake_delivery_ui_state as _source_intake_delivery_ui_state,
     source_intake_external_export_download_admitted as _source_intake_external_export_download_admitted,
 )
 from app.services.layer3_gate_b_state import (
@@ -10865,10 +10869,63 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
             blocked_fields=[field],
         )
 
-    validation_body = external_export_download_prepare(
-        db,
-        _external_export_download_prepare_payload_for_delivery(payload, readiness_state=readiness_state),
-        validate_source_artifact=False,
+    delivery_sequence_comparisons = (
+        ("output_package_ids", delivery_request.raw_output_package_ids, readiness_state.get("output_package_ids")),
+        ("package_kinds", delivery_request.raw_package_kinds, readiness_state.get("package_kinds")),
+        ("payload_refs", delivery_request.raw_payload_refs, readiness_state.get("payload_refs")),
+        ("payload_hashes", delivery_request.raw_payload_hashes, readiness_state.get("payload_hashes")),
+    )
+    for field, supplied, expected in delivery_sequence_comparisons:
+        supplied_values = [str(item or "").strip() for item in supplied] if isinstance(supplied, list) else []
+        expected_values = [str(item or "").strip() for item in expected] if isinstance(expected, list) else []
+        if supplied_values != expected_values:
+            if field == "payload_hashes":
+                error_code = "external_export_download_prepare_payload_hashes_mismatch"
+            elif field == "payload_refs":
+                error_code = "external_export_download_prepare_payload_refs_mismatch"
+            else:
+                error_code = f"external_export_download_delivery_{field}_mismatch"
+            raise Layer3WorkbenchError(
+                error_code,
+                f"Supplied {field} do not match recorded external export/download readiness.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=[field],
+            )
+
+    recorded_dispatch = _aps_handoff_dispatch_from_reconciliation(reconciliation)
+    if _is_associated_cohort_external_export_download(readiness_state):
+        cohort_dispatch_mismatches: list[str] = []
+        if not isinstance(recorded_dispatch, dict) or not _associated_cohort_aps_dispatch_prepare_state_admitted(
+            recorded_dispatch
+        ):
+            cohort_dispatch_mismatches.append("aps_handoff_record_ref")
+        elif list(recorded_dispatch.get("source_dataset_version_ids") or []) != list(
+            readiness_state.get("source_dataset_version_ids") or []
+        ):
+            cohort_dispatch_mismatches.append("source_dataset_version_ids")
+        if cohort_dispatch_mismatches:
+            raise Layer3WorkbenchError(
+                "associated_cohort_external_export_download_prepare_not_admitted",
+                "Associated-cohort external export/download delivery requires current cohort APS handoff dispatch authority.",
+                status="blocked",
+                http_status=409,
+                blocked_fields=sorted(set(cohort_dispatch_mismatches)),
+                next_allowed_actions=["inspect_aps_handoff_dispatch_state"],
+            )
+
+    validation_body = _external_export_download_recorded_prepare_response(
+        request_id=str(readiness_state.get("client_request_id") or "").strip(),
+        status="already_prepared",
+        session_id=session_id,
+        analysis_plan_id=str(payload.get("analysis_plan_id") or "").strip(),
+        pass_run_id=str(payload.get("pass_run_id") or "").strip(),
+        preview_id=str(payload.get("preview_id") or "").strip(),
+        preview_hash=str(payload.get("preview_hash") or "").strip(),
+        result_review_record_ref=str(payload.get("result_review_record_ref") or "").strip(),
+        package_review_preview_hash=str(payload.get("package_review_preview_hash") or "").strip(),
+        reconciliation_record_id=reconciliation_record_id,
+        readiness_state=readiness_state,
     )
     if validation_body.get("external_export_download_record_ref") != supplied_readiness_ref:
         raise Layer3WorkbenchError(
@@ -10904,7 +10961,6 @@ def external_export_download_deliver(db: Session, payload: dict[str, Any]) -> Ex
         expected_artifact_size = -1
 
     db.rollback()
-
     return _external_export_download_delivery_response(
         session_id=session_id,
         supplied_aps_bundle_id=supplied_aps_bundle_id,
@@ -12383,6 +12439,129 @@ def _connector_local_destination_receipt_summary(
     )
 
 
+def _external_export_download_projected_prepare_state(recorded: dict[str, Any]) -> dict[str, Any]:
+    summary_schema_id = (
+        QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        if _qualitative_aps_external_export_download_admitted(recorded)
+        else SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+        if _source_intake_external_export_download_admitted(recorded)
+        else EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID
+    )
+    summary = {
+        "schema_id": summary_schema_id,
+        "available": False,
+        "state": recorded.get("external_export_download_state"),
+        "blocked_reason": None,
+        "external_export_download_record_ref": recorded.get("external_export_download_record_ref"),
+        "export_download_descriptor_ref": recorded.get("export_download_descriptor_ref"),
+        "operator_decision": recorded.get("operator_decision"),
+        "decision_notes": recorded.get("decision_notes"),
+        "analysis_run_id": recorded.get("analysis_run_id"),
+        "result_review_record_ref": recorded.get("result_review_record_ref"),
+        "package_review_preview_hash": recorded.get("package_review_preview_hash"),
+        "reconciliation_record_id": recorded.get("reconciliation_record_id"),
+        "output_package_ids": list(recorded.get("output_package_ids") or []),
+        "package_kinds": list(recorded.get("package_kinds") or []),
+        "payload_refs": list(recorded.get("payload_refs") or []),
+        "payload_hashes": list(recorded.get("payload_hashes") or []),
+        "package_review_submit_record_ref": recorded.get("package_review_submit_record_ref"),
+        "package_review_state": recorded.get("package_review_state"),
+        "prepare_record_ref": recorded.get("prepare_record_ref"),
+        "handoff_export_state": recorded.get("handoff_export_state"),
+        "handoff_export_envelope_ref": recorded.get("handoff_export_envelope_ref"),
+        "handoff_target": recorded.get("handoff_target"),
+        "export_mode": recorded.get("export_mode"),
+        "aps_handoff_record_ref": recorded.get("aps_handoff_record_ref"),
+        "aps_handoff_state": recorded.get("aps_handoff_state"),
+        "aps_handoff_target": recorded.get("aps_handoff_target"),
+        "dispatch_mode": recorded.get("dispatch_mode"),
+        "aps_output_package_id": recorded.get("aps_output_package_id"),
+        "aps_output_package_kind": recorded.get("aps_output_package_kind"),
+        "aps_bundle_ref": recorded.get("aps_bundle_ref"),
+        "aps_bundle_id": recorded.get("aps_bundle_id"),
+        "aps_schema_id": recorded.get("aps_schema_id"),
+        "source_artifact_ref": recorded.get("source_artifact_ref"),
+        "source_artifact_schema_id": recorded.get("source_artifact_schema_id"),
+        "source_artifact_hash": recorded.get("source_artifact_hash"),
+        "source_artifact_size_bytes": recorded.get("source_artifact_size_bytes"),
+        **_cohort_readiness_identity(recorded),
+        "export_download_target": recorded.get("export_download_target"),
+        "download_mode": recorded.get("download_mode"),
+        "external_export_download_prepare_enabled": False,
+        "browser_download_enabled": False,
+        "download_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+    }
+    for key in (
+        "active_package_authority_applied",
+        "package_replacement_activation_id",
+        "source_output_package_ids",
+        "source_payload_hashes",
+        "active_replacement_output_package_ids",
+        "active_payload_refs",
+        "active_payload_hashes",
+        "replacement_activation_basis_hash",
+    ):
+        if key in recorded:
+            summary[key] = recorded.get(key)
+    if _is_associated_cohort_external_export_download(recorded):
+        summary["delivery_ui"] = recorded.get("delivery_ui") or _associated_cohort_delivery_ui_state(recorded)
+    elif _source_intake_external_export_download_admitted(recorded):
+        summary["delivery_ui"] = recorded.get("delivery_ui") or _source_intake_delivery_ui_state(recorded)
+    else:
+        delivery_ui = recorded.get("delivery_ui") or _aps_bundle_delivery_ui_state(recorded)
+        if isinstance(delivery_ui, dict) and delivery_ui.get("available"):
+            summary["delivery_ui"] = delivery_ui
+    return summary
+
+
+def _external_export_download_state_with_session_record(
+    db: Session,
+    session: L3AnalysisSet,
+    external_export_download_state: dict[str, Any],
+) -> dict[str, Any]:
+    current = external_export_download_state if isinstance(external_export_download_state, dict) else {}
+    recorded = _json_clone((session.summary_json or {}).get("external_export_download_prepare") or {})
+    if not isinstance(recorded, dict):
+        recorded = {}
+    reconciliation_record_id = str(
+        current.get("reconciliation_record_id") or recorded.get("reconciliation_record_id") or ""
+    ).strip()
+    if reconciliation_record_id:
+        reconciliation = (
+            db.query(L3ReconciliationRecord)
+            .filter(
+                L3ReconciliationRecord.session_id == session.session_id,
+                L3ReconciliationRecord.reconciliation_record_id == reconciliation_record_id,
+            )
+            .one_or_none()
+        )
+        recorded_from_reconciliation = _external_export_download_prepare_from_reconciliation(reconciliation)
+        if (
+            recorded_from_reconciliation is not None
+            and recorded_from_reconciliation.get("external_export_download_state")
+            == EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+            and recorded_from_reconciliation.get("external_export_download_record_ref")
+        ):
+            return _external_export_download_projected_prepare_state(recorded_from_reconciliation)
+    if (
+        current.get("external_export_download_state") == EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+        and current.get("external_export_download_record_ref")
+    ):
+        return current
+    if recorded.get("schema_id") != EXTERNAL_EXPORT_DOWNLOAD_PREPARE_STATE_SCHEMA_ID:
+        return current
+    if (
+        recorded.get("external_export_download_state") != EXTERNAL_EXPORT_DOWNLOAD_PREPARED_STATE
+        or not recorded.get("external_export_download_record_ref")
+    ):
+        return current
+    return _external_export_download_projected_prepare_state(recorded)
+
+
 def _server_owned_local_outbox_target_history_item(
     row: L3ServerOwnedLocalOutboxTargetReceipt,
 ) -> dict[str, Any]:
@@ -13197,8 +13376,8 @@ def _local_outbox_provider_private_handoff_failure_projection(
         },
         {
             "case": "same_basis_different_client_request_id",
-            "operator_status": "conflict",
-            "projected_error_code": "local_outbox_provider_private_handoff_already_prepared",
+            "operator_status": "already_recorded",
+            "projected_error_code": None,
             "active": False,
         },
         {
@@ -13265,7 +13444,7 @@ def _with_local_outbox_provider_private_handoff_lifecycle(
             "same_key_different_payload_conflict": (
                 "local_outbox_provider_private_handoff_client_request_conflict"
             ),
-            "same_basis_different_client_request_id": "local_outbox_provider_private_handoff_already_prepared",
+            "same_basis_different_client_request_id": "already_recorded",
         },
         "retry_policy": {
             "retry_fields_admitted": False,
@@ -14170,6 +14349,71 @@ def _internal_webhook_dispatch_summary(
         and write_receipt_id
     )
     if write_recorded:
+        internal_webhook_configured = bool(str(settings.layer3_internal_webhook_url or "").strip())
+        if not internal_webhook_configured:
+            return _with_internal_webhook_lifecycle(
+                {
+                    "schema_id": INTERNAL_WEBHOOK_STATUS_SCHEMA_ID,
+                    "available": False,
+                    "state": INTERNAL_WEBHOOK_NOT_READY_STATE,
+                    "blocked_reason": "internal_webhook_destination_not_configured",
+                    "reconciliation_record_id": server_owned_local_outbox_write_state.get("reconciliation_record_id"),
+                    "server_owned_local_outbox_write_receipt_id": write_receipt_id,
+                    "server_owned_local_outbox_target_receipt_id": server_owned_local_outbox_write_state.get(
+                        "server_owned_local_outbox_target_receipt_id"
+                    ),
+                    "server_owned_local_outbox_write_state": server_owned_local_outbox_write_state.get("state"),
+                    "connector_local_destination_receipt_id": server_owned_local_outbox_write_state.get(
+                        "connector_local_destination_receipt_id"
+                    ),
+                    "connector_dispatch_record_ref": server_owned_local_outbox_write_state.get(
+                        "connector_dispatch_record_ref"
+                    ),
+                    "external_export_download_record_ref": server_owned_local_outbox_write_state.get(
+                        "external_export_download_record_ref"
+                    ),
+                    "package_artifact_hash": server_owned_local_outbox_write_state.get("outbox_artifact_hash"),
+                    "package_artifact_size_bytes": server_owned_local_outbox_write_state.get(
+                        "outbox_artifact_size_bytes"
+                    ),
+                    "target_identity": INTERNAL_WEBHOOK_TARGET_IDENTITY,
+                    "target_class": INTERNAL_WEBHOOK_TARGET_CLASS,
+                    "dispatch_mode": INTERNAL_WEBHOOK_DISPATCH_MODE,
+                    "redacted_destination_display_name": "server_configured_internal_webhook_destination",
+                    "server_configured_internal_webhook_enabled": False,
+                    "internal_webhook_post_performed": False,
+                    "real_connector_invocation_enabled": False,
+                    "server_configured_allowlisted_url_enabled": False,
+                    "operator_destination_url_enabled": False,
+                    "raw_target_url_exposed": False,
+                    "raw_token_exposed": False,
+                    "raw_headers_exposed": False,
+                    "raw_local_path_exposed": False,
+                    "raw_package_payload_exposed": False,
+                    "raw_package_bytes_exposed": False,
+                    "connector_run_created": False,
+                    "connector_run_target_created": False,
+                    "credentials_enabled": False,
+                    "provider_public_url_enabled": False,
+                    "provider_private_signed_url_enabled": False,
+                    "cloud_object_store_write_enabled": False,
+                    "package_mutation_enabled": False,
+                    "source_expansion_enabled": False,
+                    "rag_vector_enabled": False,
+                    "optional_tool_runtime_enabled": False,
+                    "auth_security_implementation_enabled": False,
+                    "rendered_write_submit_control_enabled": False,
+                    "status_surface_mode": "read_only_server_session_summary_projection",
+                    "response_authority": "durable_server_owned_local_outbox_write_receipt_authority",
+                    "downstream_unavailable": list(INTERNAL_WEBHOOK_DOWNSTREAM_UNAVAILABLE),
+                    "next_allowed_actions": ["configure_server_internal_webhook_destination"],
+                    "next_state": INTERNAL_WEBHOOK_NOT_READY_STATE,
+                },
+                history_rows=history_rows,
+                audit_rows=audit_rows,
+                current_state=INTERNAL_WEBHOOK_NOT_READY_STATE,
+                blocked_reason="internal_webhook_destination_not_configured",
+            )
         return _with_internal_webhook_lifecycle(
             {
                 "schema_id": INTERNAL_WEBHOOK_STATUS_SCHEMA_ID,
@@ -14633,6 +14877,11 @@ def session_summary(db: Session, session_id: str) -> dict[str, Any]:
         db,
         session_id=session_id,
         aps_handoff_dispatch_state=aps_handoff_dispatch_state,
+    )
+    external_export_download_state = _external_export_download_state_with_session_record(
+        db,
+        session,
+        external_export_download_state,
     )
     connector_local_destination_receipt_state = _connector_local_destination_receipt_summary(
         db,

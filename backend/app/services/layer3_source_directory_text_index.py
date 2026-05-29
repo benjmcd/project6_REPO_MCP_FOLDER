@@ -522,10 +522,22 @@ def _identity_value(identity: Mapping[str, Any], field: str) -> str:
 
 
 def _assert_expected_fields(fields: Mapping[str, Any], *, expected: Mapping[str, Any], code: str) -> None:
+    missing = [
+        field
+        for field in expected
+        if not str(fields.get(field) or "").strip()
+    ]
+    if missing:
+        raise SourceDirectoryTextIndexError(
+            code,
+            "The deterministic text index authority request is missing current source-directory identity.",
+            http_status=409,
+            details={"blocked_fields": missing, "missing_fields": missing},
+        )
     mismatches = [
         field
         for field, expected_value in expected.items()
-        if field in fields and str(fields.get(field) or "").strip() != str(expected_value)
+        if str(fields.get(field) or "").strip() != str(expected_value)
     ]
     if mismatches:
         raise SourceDirectoryTextIndexError(

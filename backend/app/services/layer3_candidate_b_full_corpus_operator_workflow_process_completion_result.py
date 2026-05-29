@@ -391,6 +391,10 @@ def _validate_result_matches_row(receipt: Mapping[str, Any], row: Mapping[str, A
         "candidate_a_run_id": row["candidate_a_run_id"],
         "candidate_b_run_id": row["candidate_b_run_id"],
         "compare_target_set_hash": row["compare_target_set_hash"],
+        "bridge_receipt_id": row["bridge_receipt_id"],
+        "bridge_receipt_hash": row["bridge_receipt_hash"],
+        "downstream_proof_id": row["downstream_proof_id"],
+        "downstream_proof_hash": row["downstream_proof_hash"],
         "material_relative_name": row["material_relative_name"],
     }
     received = {
@@ -398,6 +402,10 @@ def _validate_result_matches_row(receipt: Mapping[str, Any], row: Mapping[str, A
         "candidate_a_run_id": receipt.get("candidate_a_run_id"),
         "candidate_b_run_id": receipt.get("candidate_b_run_id"),
         "compare_target_set_hash": receipt.get("compare_target_set_hash"),
+        "bridge_receipt_id": receipt.get("bridge_receipt_id"),
+        "bridge_receipt_hash": receipt.get("bridge_receipt_hash"),
+        "downstream_proof_id": receipt.get("downstream_proof_id"),
+        "downstream_proof_hash": receipt.get("downstream_proof_hash"),
         "material_relative_name": material_name,
     }
     mismatches = [

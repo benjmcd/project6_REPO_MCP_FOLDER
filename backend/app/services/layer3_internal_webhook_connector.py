@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import hashlib
 import ipaddress
 import json
+from pathlib import Path
+import socket
 import urllib.error
 import urllib.request
 from typing import Any, Callable
 from urllib.parse import urlparse
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -202,6 +206,14 @@ def _configured_destination_url() -> str:
             http_status=409,
             blocked_fields=["LAYER3_INTERNAL_WEBHOOK_URL"],
         )
+    if parsed.username or parsed.password or "@" in parsed.netloc.rsplit("]", 1)[-1]:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "internal_webhook_destination_credentials_not_admitted",
+            "Server-configured internal webhook URL must not include embedded credentials.",
+            status="blocked",
+            http_status=409,
+            blocked_fields=["LAYER3_INTERNAL_WEBHOOK_URL"],
+        )
     host = parsed.hostname.lower()
     admitted = host in {"localhost", "127.0.0.1", "::1"}
     if not admitted:
@@ -251,6 +263,22 @@ def _urllib_transport(
             http_status=409,
             blocked_fields=["server_configured_internal_webhook_destination"],
         ) from exc
+    except urllib.error.URLError as exc:
+        if _is_timeout_error(exc):
+            raise layer3_workbench.Layer3WorkbenchError(
+                "internal_webhook_dispatch_timeout",
+                "Internal webhook dispatch timed out.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["server_configured_internal_webhook_destination"],
+            ) from exc
+        raise layer3_workbench.Layer3WorkbenchError(
+            "internal_webhook_dispatch_failed",
+            "Internal webhook dispatch failed before a complete accepted response.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["server_configured_internal_webhook_destination"],
+        ) from exc
     except OSError as exc:
         raise layer3_workbench.Layer3WorkbenchError(
             "internal_webhook_dispatch_failed",
@@ -262,6 +290,21 @@ def _urllib_transport(
 
 
 INTERNAL_WEBHOOK_TRANSPORT: WebhookTransport = _urllib_transport
+
+
+def _is_timeout_error(exc: BaseException) -> bool:
+    if isinstance(exc, (TimeoutError, socket.timeout)):
+        return True
+    reason = getattr(exc, "reason", None)
+    return isinstance(reason, (TimeoutError, socket.timeout)) or "timed out" in str(reason).lower()
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _latest_audit(
@@ -416,7 +459,6 @@ def _authority_basis(
         "target_identity": INTERNAL_WEBHOOK_TARGET_IDENTITY,
         "target_class": INTERNAL_WEBHOOK_TARGET_CLASS,
         "dispatch_mode": INTERNAL_WEBHOOK_DISPATCH_MODE,
-        "redacted_destination_display_name": _destination_display_name(),
         "destination_url_hash": stable_hash({"schema_id": "layer3.internal_webhook.url_hash.v1", "url": destination_url}),
         "package_kind": INTERNAL_WEBHOOK_PACKAGE_KIND,
         "package_artifact_hash": write_row.outbox_artifact_hash,
@@ -624,6 +666,7 @@ def _validate_authority(
             http_status=409,
             blocked_fields=["server_owned_local_outbox_write_receipt_id"],
         )
+    _validate_outbox_artifact_bytes(write_row)
     return (
         reconciliation,
         write_row,
@@ -633,6 +676,45 @@ def _validate_authority(
         handoff_export_prepare_state,
         external_export_download_state,
     )
+
+
+def _validate_outbox_artifact_bytes(write_row: L3ServerOwnedLocalOutboxWriteReceipt) -> None:
+    storage_root = Path(settings.storage_dir).resolve(strict=False)
+    outbox_root = Path(settings.layer3_local_outbox_dir).resolve(strict=False)
+    artifact_path = (storage_root / write_row.outbox_artifact_ref).resolve(strict=False)
+    try:
+        artifact_path.relative_to(outbox_root)
+    except ValueError as exc:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "internal_webhook_outbox_path_escape",
+            "Internal webhook dispatch may read only derived server-owned local outbox refs.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["server_owned_local_outbox_write_receipt_id"],
+        ) from exc
+    try:
+        actual_size = artifact_path.stat().st_size if artifact_path.is_file() else None
+        actual_hash = _file_sha256(artifact_path) if actual_size is not None else None
+    except OSError as exc:
+        raise layer3_workbench.Layer3WorkbenchError(
+            "internal_webhook_outbox_artifact_unreadable",
+            "Internal webhook dispatch could not read the persisted local outbox artifact authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["server_owned_local_outbox_write_receipt_id"],
+        ) from exc
+    if (
+        actual_hash != write_row.outbox_artifact_hash
+        or int(actual_size or -1) != int(write_row.outbox_artifact_size_bytes)
+    ):
+        raise layer3_workbench.Layer3WorkbenchError(
+            "internal_webhook_stale_outbox_artifact",
+            "Recorded local outbox artifact bytes no longer match durable write receipt authority.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["server_owned_local_outbox_write_receipt_id"],
+            next_allowed_actions=["refresh_server_owned_local_outbox_write"],
+        )
 
 
 def _delivery_envelope(
@@ -696,6 +778,81 @@ def _record_audit(
     )
     db.add(audit)
     return audit
+
+
+def _replay_dispatch_after_integrity_error(
+    *,
+    db: Session,
+    request_id: str,
+    request_basis_hash: str,
+    authority_basis_hash: str,
+) -> dict[str, Any]:
+    existing_by_client = (
+        db.query(L3InternalWebhookDispatchReceipt)
+        .filter(L3InternalWebhookDispatchReceipt.client_request_id == request_id)
+        .one_or_none()
+    )
+    if existing_by_client is not None:
+        if existing_by_client.request_basis_hash != request_basis_hash:
+            raise layer3_workbench.Layer3WorkbenchError(
+                "internal_webhook_client_request_conflict",
+                "client_request_id already belongs to a different internal webhook authority basis.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["client_request_id"],
+            )
+        audit = _record_audit(
+            db=db,
+            row=existing_by_client,
+            event_type="dispatch",
+            event_status="accepted",
+            reason_code="idempotent_dispatch_reused_after_integrity_race",
+            request_id=request_id,
+        )
+        db.commit()
+        db.refresh(existing_by_client)
+        db.refresh(audit)
+        return _response(
+            schema_id=INTERNAL_WEBHOOK_DISPATCH_SCHEMA_ID,
+            request_id=request_id,
+            status="already_recorded",
+            operation_state=INTERNAL_WEBHOOK_REPLAY_STATE,
+            row=existing_by_client,
+            audit=audit,
+        )
+    existing_by_basis = (
+        db.query(L3InternalWebhookDispatchReceipt)
+        .filter(L3InternalWebhookDispatchReceipt.authority_basis_hash == authority_basis_hash)
+        .one_or_none()
+    )
+    if existing_by_basis is not None:
+        audit = _record_audit(
+            db=db,
+            row=existing_by_basis,
+            event_type="dispatch",
+            event_status="accepted",
+            reason_code="same_package_basis_dispatch_reused_after_integrity_race",
+            request_id=request_id,
+            payload={"new_client_request_id": request_id},
+        )
+        db.commit()
+        db.refresh(existing_by_basis)
+        db.refresh(audit)
+        return _response(
+            schema_id=INTERNAL_WEBHOOK_DISPATCH_SCHEMA_ID,
+            request_id=request_id,
+            status="already_recorded",
+            operation_state=INTERNAL_WEBHOOK_REPLAY_STATE,
+            row=existing_by_basis,
+            audit=audit,
+        )
+    raise layer3_workbench.Layer3WorkbenchError(
+        "internal_webhook_dispatch_integrity_conflict",
+        "Internal webhook dispatch collided with an existing receipt but no matching authority could be replayed.",
+        status="conflict",
+        http_status=409,
+        blocked_fields=["client_request_id", "authority_basis_hash"],
+    )
 
 
 def dispatch_internal_webhook(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
@@ -871,7 +1028,16 @@ def dispatch_internal_webhook(db: Session, payload: dict[str, Any]) -> dict[str,
             reason_code=exc.error_code,
             payload={"redacted_destination_display_name": row.redacted_destination_display_name},
         )
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return _replay_dispatch_after_integrity_error(
+                db=db,
+                request_id=request_id,
+                request_basis_hash=request_basis_hash,
+                authority_basis_hash=authority_basis_hash,
+            )
         db.refresh(row)
         db.refresh(audit)
         raise
@@ -889,12 +1055,55 @@ def dispatch_internal_webhook(db: Session, payload: dict[str, Any]) -> dict[str,
             reason_code=row.failure_code,
             payload=row.redacted_response_summary_json,
         )
-        db.commit()
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return _replay_dispatch_after_integrity_error(
+                db=db,
+                request_id=request_id,
+                request_basis_hash=request_basis_hash,
+                authority_basis_hash=authority_basis_hash,
+            )
         db.refresh(row)
         db.refresh(audit)
         raise layer3_workbench.Layer3WorkbenchError(
             "internal_webhook_non_success_response",
             "Internal webhook dispatch did not return an accepted 2xx response.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=["server_configured_internal_webhook_destination"],
+        )
+
+    if not (isinstance(response_body, dict) and response_body.get("accepted") is True):
+        row.dispatch_status = INTERNAL_WEBHOOK_FAILED_STATE
+        row.response_status_code = status_code
+        row.failure_code = "internal_webhook_ambiguous_success_response"
+        row.redacted_response_summary_json = _redacted_response_summary(status_code, response_body)
+        row.updated_at = utcnow()
+        audit = _record_audit(
+            db=db,
+            row=row,
+            event_type="dispatch",
+            event_status="failed",
+            reason_code=row.failure_code,
+            payload=row.redacted_response_summary_json,
+        )
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            return _replay_dispatch_after_integrity_error(
+                db=db,
+                request_id=request_id,
+                request_basis_hash=request_basis_hash,
+                authority_basis_hash=authority_basis_hash,
+            )
+        db.refresh(row)
+        db.refresh(audit)
+        raise layer3_workbench.Layer3WorkbenchError(
+            "internal_webhook_ambiguous_success_response",
+            "Internal webhook dispatch returned 2xx without an explicit accepted acknowledgement.",
             status="conflict",
             http_status=409,
             blocked_fields=["server_configured_internal_webhook_destination"],
@@ -951,7 +1160,16 @@ def dispatch_internal_webhook(db: Session, payload: dict[str, Any]) -> dict[str,
             "optional_tool_runtime_enabled": False,
         },
     }
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return _replay_dispatch_after_integrity_error(
+            db=db,
+            request_id=request_id,
+            request_basis_hash=request_basis_hash,
+            authority_basis_hash=authority_basis_hash,
+        )
     db.refresh(row)
     db.refresh(audit)
     return _response(

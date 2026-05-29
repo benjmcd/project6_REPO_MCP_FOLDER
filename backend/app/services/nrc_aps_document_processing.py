@@ -430,12 +430,16 @@ def process_document(
         raise ValueError(f"unsupported_content_type:{effective_type or 'unknown'}")
     if not content:
         raise ValueError("empty_content")
+    requested_processing_engine = _normalize_document_processing_engine(config.get("document_processing_engine"))
+    requested_processing_engine_explicit = _document_processing_engine_supplied(config)
     processing_engine = _resolve_document_processing_engine(config, effective_content_type=effective_type)
-    processing_engine_explicit = _document_processing_engine_supplied(config)
+    processing_engine_explicit = requested_processing_engine_explicit
     config = {
         **config,
         "document_processing_engine": processing_engine,
         "document_processing_engine_explicit": processing_engine_explicit,
+        "_requested_document_processing_engine": requested_processing_engine,
+        "_requested_document_processing_engine_explicit": requested_processing_engine_explicit,
     }
     parser_entry = nrc_aps_parser_registry.resolve_parser(
         effective_content_type=effective_type,
@@ -1057,13 +1061,28 @@ def _process_zip(
                         degradation_codes.append("zip_total_size_limit_exceeded")
                         break
 
+                    requested_engine = _normalize_document_processing_engine(
+                        config.get("_requested_document_processing_engine", config.get("document_processing_engine"))
+                    )
+                    requested_engine_explicit = _coerce_document_processing_engine_explicit(
+                        config.get(
+                            "_requested_document_processing_engine_explicit",
+                            config.get("document_processing_engine_explicit"),
+                        )
+                    )
                     member_result = process_document(
                         content=member_content,
                         declared_content_type=inner_declared,
                         config={
                             **config,
                             "source_filename": member.filename,
-                            "document_processing_engine": APS_DOCUMENT_PROCESSING_ENGINE_BASELINE,
+                            "document_processing_engine": (
+                                APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+                                if inner_declared == "application/pdf"
+                                and requested_engine_explicit
+                                and requested_engine == APS_DOCUMENT_PROCESSING_ENGINE_CANDIDATE_B
+                                else APS_DOCUMENT_PROCESSING_ENGINE_BASELINE
+                            ),
                             "document_processing_engine_explicit": True,
                         },
                     )
@@ -1547,6 +1566,7 @@ def _process_pdf_candidate_b(
         )
     except Exception as exc:  # noqa: BLE001
         raise ValueError("candidate_b_processing_failed") from exc
+    _raise_if_deadline_exceeded(deadline)
     if not json_output_path.exists():
         raise ValueError("candidate_b_output_missing")
 
@@ -1556,7 +1576,15 @@ def _process_pdf_candidate_b(
         raise ValueError("candidate_b_output_invalid")
 
     typed_nodes = _candidate_b_typed_nodes(candidate_b_json)
-    page_count = int(candidate_b_json.get("number of pages") or 0)
+    try:
+        page_count = int(candidate_b_json.get("number of pages") or 0)
+        max_pages = int(config.get("content_parse_max_pages", 500))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("candidate_b_output_invalid") from exc
+    if page_count < 0:
+        raise ValueError("candidate_b_output_invalid")
+    if page_count > max_pages:
+        raise ValueError("candidate_b_pdf_page_limit_exceeded")
     page_text_parts: dict[int, list[str]] = defaultdict(list)
     image_count_by_page: dict[int, int] = defaultdict(int)
     node_type_counts: Counter[str] = Counter()

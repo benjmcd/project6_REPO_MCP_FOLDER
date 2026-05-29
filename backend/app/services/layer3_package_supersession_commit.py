@@ -701,7 +701,10 @@ def _latest_provider_private_audit(
     return (
         db.query(L3ProviderPrivateSignedUrlAuditEvent)
         .filter(L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_receipt_id == receipt_id)
-        .order_by(L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_audit_event_id.desc())
+        .order_by(
+            L3ProviderPrivateSignedUrlAuditEvent.created_at.desc(),
+            L3ProviderPrivateSignedUrlAuditEvent.provider_private_signed_url_audit_event_id.desc(),
+        )
         .first()
     )
 

@@ -314,16 +314,19 @@ def git_head() -> str | None:
 
 
 def git_protected_diff() -> list[str]:
-    completed = subprocess.run(
-        ["git", "diff", "--name-only", "--", *PROTECTED_DIFF_PATHS],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-    )
-    if completed.returncode != 0:
-        raise RuntimeError("protected_diff_check_failed")
-    return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
+    changed: set[str] = set()
+    for args in ([], ["--cached"]):
+        completed = subprocess.run(
+            ["git", "diff", "--name-only", *args, "--", *PROTECTED_DIFF_PATHS],
+            cwd=str(ROOT),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+        )
+        if completed.returncode != 0:
+            raise RuntimeError("protected_diff_check_failed")
+        changed.update(line.strip() for line in completed.stdout.splitlines() if line.strip())
+    return sorted(changed)
 
 
 def build_protected_diff_inventory(changed_paths: list[str] | None = None) -> dict[str, Any]:

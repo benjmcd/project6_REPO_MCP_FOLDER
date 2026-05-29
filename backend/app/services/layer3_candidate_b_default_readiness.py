@@ -14,6 +14,7 @@ from app.services import (
     layer3_candidate_b_operator_status,
     layer3_candidate_b_promotion_closure,
     layer3_candidate_b_runtime_bridge,
+    layer3_candidate_b_storage_id,
     layer3_candidate_b_visual_lane_status,
 )
 
@@ -59,6 +60,7 @@ _RUNTIME_HASH_KEYS = (
     "runtime_review_root_storage_authority_hash",
     "admitted_file_subset_hash",
     "governed_retained_artifact_family_hash",
+    "candidate_b_visual_lane_evidence",
     "redaction_policy_id",
 )
 _REQUIRED_COVERAGE = frozenset(
@@ -253,6 +255,12 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
     )
     blocked.extend(bundle_receipt["blocked_reasons"])
     blocked.extend(runtime_receipt["blocked_reasons"])
+    blocked.extend(
+        _validate_compare_target_set_consistency(
+            bundle_target_set=bundle_receipt["compare_target_authority"],
+            runtime_target_set=runtime_receipt["compare_target_authority"],
+        )
+    )
     blocked.extend(bundle_proof["blocked_reasons"])
     blocked.extend(runtime_proof["blocked_reasons"])
     blocked.extend(visual_lane_status["blocked_reasons"])
@@ -262,6 +270,26 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
         bundle_receipt["governed_retained_artifact_family"],
         runtime_receipt["governed_retained_artifact_family"],
     )
+    blocked.extend(
+        _final_operator_artifact_count_reasons(
+            kind="bundle",
+            artifact_family=bundle_receipt["governed_retained_artifact_family"],
+        )
+    )
+    blocked.extend(
+        _final_operator_artifact_count_reasons(
+            kind="runtime",
+            artifact_family=runtime_receipt["governed_retained_artifact_family"],
+        )
+    )
+    if final_operator_inspection.get("status") != "available":
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_final_operator_inspection_blocked",
+                bundle_available=final_operator_inspection.get("bundle", {}).get("available") is True,
+                runtime_available=final_operator_inspection.get("runtime", {}).get("available") is True,
+            )
+        )
 
     audit_hash = _stable_hash(
         {
@@ -276,7 +304,9 @@ def evaluate_candidate_b_default_promotion_readiness(payload: Mapping[str, Any])
             "runtime_bridge_receipt_id": runtime_receipt_id,
             "runtime_bridge_receipt_hash": runtime_receipt["authority_hashes"].get("bridge_receipt_hash"),
             "bundle_downstream_proof_hash": bundle_proof["proof_hash"],
+            "bundle_downstream_proof_receipt_id": bundle_proof["summary"].get("proof_receipt_id"),
             "runtime_downstream_proof_hash": runtime_proof["proof_hash"],
+            "runtime_downstream_proof_receipt_id": runtime_proof["summary"].get("proof_receipt_id"),
             "candidate_b_visual_lane_status_hash": visual_lane_status["status_hash"],
             "eligible_corpus_scope": fields.get("eligible_corpus_scope"),
             "regression_disposition": fields.get("regression_disposition"),
@@ -445,8 +475,7 @@ def _validate_receipt(*, kind: str, receipt_id: str, expected: Mapping[str, str]
     if validation.get("status") != "passed":
         blocked.append(_reason(f"candidate_b_default_readiness_{kind}_validation_not_passed", received=validation.get("status")))
     target_set = receipt.get("compare_target_set") if isinstance(receipt.get("compare_target_set"), dict) else {}
-    if not target_set.get("fixture_ids") or int(target_set.get("target_count") or 0) <= 0:
-        blocked.append(_reason(f"candidate_b_default_readiness_{kind}_compare_target_set_empty"))
+    _validate_compare_target_set(kind=kind, receipt=receipt, target_set=target_set, blocked=blocked)
     _validate_receipt_invariants(kind=kind, receipt=receipt, blocked=blocked)
     artifact_family = _validate_governed_artifact_family(kind=kind, receipt=receipt, blocked=blocked)
     if kind == "runtime":
@@ -464,6 +493,19 @@ def _validate_receipt(*, kind: str, receipt_id: str, expected: Mapping[str, str]
 
 def _read_receipt(*, kind: str, receipt_id: str, blocked: list[dict[str, Any]]) -> dict[str, Any] | None:
     configured = settings.layer3_candidate_b_bundle_bridge_dir if kind == "bundle" else settings.layer3_candidate_b_runtime_bridge_dir
+    prefix = (
+        layer3_candidate_b_bundle_bridge.BRIDGE_RECEIPT_PREFIX
+        if kind == "bundle"
+        else layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX
+    )
+    if not layer3_candidate_b_storage_id.is_storage_id(receipt_id, prefix=prefix):
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_bridge_receipt_id_invalid",
+                expected_prefix=prefix,
+            )
+        )
+        return None
     if not str(configured or "").strip():
         blocked.append(_reason(f"candidate_b_default_readiness_{kind}_bridge_dir_unset"))
         return None
@@ -478,7 +520,12 @@ def _read_receipt(*, kind: str, receipt_id: str, blocked: list[dict[str, Any]]) 
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
-        blocked.append(_reason(f"candidate_b_default_readiness_{kind}_bridge_receipt_unreadable", reason=str(exc)))
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_bridge_receipt_unreadable",
+                reason=exc.__class__.__name__,
+            )
+        )
         return None
     if not isinstance(payload, dict):
         blocked.append(_reason(f"candidate_b_default_readiness_{kind}_bridge_receipt_invalid"))
@@ -499,6 +546,193 @@ def _receipt_equals(blocked: list[dict[str, Any]], kind: str, receipt: Mapping[s
         )
 
 
+def _validate_compare_target_set(
+    *,
+    kind: str,
+    receipt: Mapping[str, Any],
+    target_set: Mapping[str, Any],
+    blocked: list[dict[str, Any]],
+) -> None:
+    targets = _normalised_compare_targets(target_set)
+    target_count = _safe_int(target_set.get("target_count"))
+    if not targets or target_count <= 0:
+        blocked.append(_reason(f"candidate_b_default_readiness_{kind}_compare_target_set_empty"))
+    if target_count != len(targets):
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_compare_target_count_mismatch",
+                expected=len(targets),
+                received=target_set.get("target_count"),
+            )
+        )
+    fixture_ids = [str(item).strip() for item in target_set.get("fixture_ids") or [] if str(item).strip()]
+    target_fixture_ids = _target_fixture_ids(target_set)
+    if target_fixture_ids and fixture_ids != target_fixture_ids:
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_compare_target_fixture_ids_mismatch",
+                expected=target_fixture_ids,
+                received=fixture_ids,
+            )
+        )
+    receipt_hash = str(receipt.get("compare_target_set_hash") or "").strip()
+    embedded_hash = str(target_set.get("compare_target_set_hash") or "").strip()
+    if len(receipt_hash) != 64 or len(embedded_hash) != 64 or receipt_hash != embedded_hash:
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_compare_target_set_hash_mismatch",
+                expected=receipt_hash or None,
+                received=embedded_hash or None,
+            )
+        )
+    expected_payload_hash = _expected_compare_target_set_hash(kind=kind, target_set=target_set)
+    if expected_payload_hash is None:
+        if targets and target_count > 0:
+            blocked.append(_reason(f"candidate_b_default_readiness_{kind}_compare_target_set_payload_invalid"))
+    elif embedded_hash != expected_payload_hash:
+        blocked.append(
+            _reason(
+                f"candidate_b_default_readiness_{kind}_compare_target_set_payload_hash_mismatch",
+                expected=expected_payload_hash,
+                received=embedded_hash or None,
+            )
+        )
+
+
+def _validate_compare_target_set_consistency(
+    *,
+    bundle_target_set: Mapping[str, Any],
+    runtime_target_set: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    blocked: list[dict[str, Any]] = []
+    bundle_targets = _normalised_compare_targets(bundle_target_set)
+    runtime_targets = _normalised_compare_targets(runtime_target_set)
+    if not bundle_targets or not runtime_targets:
+        return blocked
+    bundle_count = _safe_int(bundle_target_set.get("target_count"))
+    runtime_count = _safe_int(runtime_target_set.get("target_count"))
+    if bundle_count != runtime_count:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_compare_target_count_mismatch",
+                bundle_target_count=bundle_target_set.get("target_count"),
+                runtime_target_count=runtime_target_set.get("target_count"),
+            )
+        )
+    bundle_fixture_ids = [str(item).strip() for item in bundle_target_set.get("fixture_ids") or [] if str(item).strip()]
+    runtime_fixture_ids = [str(item).strip() for item in runtime_target_set.get("fixture_ids") or [] if str(item).strip()]
+    if bundle_fixture_ids and runtime_fixture_ids and bundle_fixture_ids != runtime_fixture_ids:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_compare_target_fixture_ids_mismatch",
+                bundle_fixture_ids=bundle_fixture_ids,
+                runtime_fixture_ids=runtime_fixture_ids,
+            )
+        )
+    if bundle_targets != runtime_targets:
+        blocked.append(
+            _reason(
+                "candidate_b_default_readiness_compare_target_set_mismatch",
+                bundle_targets=bundle_targets,
+                runtime_targets=runtime_targets,
+            )
+        )
+    return blocked
+
+
+def _expected_compare_target_set_hash(*, kind: str, target_set: Mapping[str, Any]) -> str | None:
+    compact_targets = _compact_compare_targets_for_hash(kind=kind, target_set=target_set)
+    if not compact_targets:
+        return None
+    if kind == "bundle":
+        return _stable_hash(compact_targets)
+    candidate_b_run_id = str(target_set.get("candidate_b_run_id") or "").strip()
+    if not candidate_b_run_id:
+        return None
+    return _stable_hash({"targets": compact_targets, "candidate_b_run_id": candidate_b_run_id})
+
+
+def _compact_compare_targets_for_hash(*, kind: str, target_set: Mapping[str, Any]) -> list[dict[str, str]]:
+    targets = target_set.get("targets")
+    if not isinstance(targets, list):
+        return []
+    compact = []
+    for item in targets:
+        if not isinstance(item, Mapping):
+            continue
+        record = {
+            "fixture_id": str(item.get("fixture_id") or "").strip(),
+            "baseline_target_id": str(item.get("baseline_target_id") or "").strip(),
+            "candidate_a_target_id": str(item.get("candidate_a_target_id") or "").strip(),
+            "candidate_b_target_id": str(item.get("candidate_b_target_id") or "").strip(),
+            "comparability_state": str(item.get("comparability_state") or "").strip(),
+        }
+        required_values = (
+            record["fixture_id"],
+            record["baseline_target_id"],
+            record["candidate_a_target_id"],
+            record["comparability_state"],
+        )
+        if all(required_values) and (kind == "bundle" or record["candidate_b_target_id"]):
+            compact.append(record)
+    compact.sort(key=lambda item: item["fixture_id"])
+    return compact
+
+
+def _normalised_compare_targets(target_set: Mapping[str, Any]) -> list[dict[str, Any]]:
+    targets = target_set.get("targets")
+    if not isinstance(targets, list):
+        return []
+    normalised = []
+    for item in targets:
+        if not isinstance(item, Mapping):
+            continue
+        identity = {
+            "fixture_id": str(item.get("fixture_id") or item.get("target_key") or item.get("ordinal") or "").strip(),
+            "baseline_target_id": str(item.get("baseline_target_id") or "").strip(),
+            "candidate_a_target_id": str(item.get("candidate_a_target_id") or "").strip(),
+            "comparability_state": str(item.get("comparability_state") or "").strip(),
+        }
+        if all(identity.values()):
+            normalised.append(identity)
+    normalised.sort(key=lambda item: item["fixture_id"])
+    return normalised
+
+
+def _target_fixture_ids(target_set: Mapping[str, Any]) -> list[str]:
+    targets = target_set.get("targets")
+    if not isinstance(targets, list):
+        return []
+    fixture_ids = [
+        str(item.get("fixture_id") or "").strip()
+        for item in targets
+        if isinstance(item, Mapping) and str(item.get("fixture_id") or "").strip()
+    ]
+    return sorted(fixture_ids)
+
+
+def _safe_int(value: Any) -> int:
+    parsed = _strict_nonnegative_int(value)
+    return parsed if parsed is not None else 0
+
+
+def _strict_nonnegative_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, str):
+        text = value.strip()
+        if text.isdecimal():
+            return int(text)
+    return None
+
+
+def _project_nonnegative_int(value: Any) -> int:
+    parsed = _strict_nonnegative_int(value)
+    return parsed if parsed is not None else 0
+
+
 def _validate_receipt_invariants(*, kind: str, receipt: Mapping[str, Any], blocked: list[dict[str, Any]]) -> None:
     invariants = receipt.get("negative_invariants")
     if not isinstance(invariants, dict):
@@ -511,6 +745,7 @@ def _validate_receipt_invariants(*, kind: str, receipt: Mapping[str, Any], block
         "candidate_b_default_promotion_enabled",
         "pdf_ingestion_enabled",
         "image_ingestion_enabled",
+        "caller_supplied_local_paths_enabled",
         "provider_object_writes_enabled",
         "connector_dispatch_enabled",
         "rag_vector_model_runtime_enabled",
@@ -518,7 +753,25 @@ def _validate_receipt_invariants(*, kind: str, receipt: Mapping[str, Any], block
         "frontend_durable_authority_enabled",
         "full_mockup_activation_enabled",
     }
+    expected_values = {"candidate_b_visual_lane_mode_enabled": kind == "runtime"}
+    if kind == "bundle":
+        required_false.update(
+            {
+                "candidate_b_runtime_db_rows_enabled",
+                "candidate_b_runtime_storage_rows_enabled",
+                "broad_raw_root_ingestion_enabled",
+            }
+        )
+    else:
+        required_false.update(
+            {
+                "candidate_b_bundle_bridge_weakened",
+                "broad_runtime_db_ingestion_enabled",
+                "broad_runtime_storage_ingestion_enabled",
+            }
+        )
     failed = sorted(key for key in required_false if invariants.get(key) is not False)
+    failed.extend(sorted(key for key, expected in expected_values.items() if invariants.get(key) is not expected))
     if failed:
         blocked.append(_reason(f"candidate_b_default_readiness_{kind}_negative_invariant_failed", fields=failed))
 
@@ -567,6 +820,7 @@ def _receipt_result(
             )
             if key in target_set
         },
+        "compare_target_authority": dict(target_set),
         "authority_hashes": _authority_hashes(kind=kind, receipt=receipt),
         "governed_retained_artifact_family": _artifact_family_summary(artifact_family),
     }
@@ -583,9 +837,9 @@ def _runtime_visual_lane_summary(*, kind: str, receipt: Mapping[str, Any]) -> di
         "candidate_b_visual_lane_evidence": {
             "visual_lane_mode": evidence.get("visual_lane_mode"),
             "candidate_b_visual_lane_selected": evidence.get("candidate_b_visual_lane_selected") is True,
-            "candidate_b_visual_ref_total": int(evidence.get("candidate_b_visual_ref_total") or 0),
-            "candidate_b_retained_source_pdf_ref_count": int(
-                evidence.get("candidate_b_retained_source_pdf_ref_count") or 0
+            "candidate_b_visual_ref_total": _project_nonnegative_int(evidence.get("candidate_b_visual_ref_total")),
+            "candidate_b_retained_source_pdf_ref_count": _project_nonnegative_int(
+                evidence.get("candidate_b_retained_source_pdf_ref_count")
             ),
             "source_pdf_material_text_payload_enabled": evidence.get("source_pdf_material_text_payload_enabled") is True,
             "image_material_text_payload_enabled": evidence.get("image_material_text_payload_enabled") is True,
@@ -612,6 +866,23 @@ def _validate_runtime_visual_lane_evidence(
         )
     if evidence.get("candidate_b_visual_lane_selected") is not True:
         blocked.append(_reason("candidate_b_default_readiness_runtime_visual_lane_not_selected"))
+    for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
+        count = _strict_nonnegative_int(evidence.get(field))
+        if count is None:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_runtime_visual_lane_evidence_count_invalid",
+                    field=field,
+                    received=evidence.get(field),
+                )
+            )
+        elif count <= 0:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_runtime_visual_lane_evidence_count_missing",
+                    field=field,
+                )
+            )
     for field in ("source_pdf_material_text_payload_enabled", "image_material_text_payload_enabled"):
         if evidence.get(field) is not False:
             blocked.append(_reason(f"candidate_b_default_readiness_runtime_visual_lane_{field}_not_false", field=field))
@@ -707,6 +978,54 @@ def _artifact_family_summary(artifact_family: Mapping[str, Any] | None) -> dict[
     }
 
 
+def _final_operator_artifact_count_reasons(
+    *,
+    kind: str,
+    artifact_family: Mapping[str, Any] | None,
+) -> list[dict[str, Any]]:
+    if not isinstance(artifact_family, Mapping):
+        return []
+    role_counts = artifact_family.get("role_counts")
+    if not isinstance(role_counts, Mapping):
+        return [_reason(f"candidate_b_default_readiness_{kind}_final_operator_role_counts_missing")]
+    reasons: list[dict[str, Any]] = []
+    roles = artifact_family.get("roles")
+    role_previews = artifact_family.get("role_previews")
+    if isinstance(roles, Mapping):
+        role_entries = roles
+    elif isinstance(role_previews, Mapping):
+        role_entries = role_previews
+    else:
+        reasons.append(_reason(f"candidate_b_default_readiness_{kind}_final_operator_roles_missing"))
+        role_entries = {}
+    for role in ("visual_page_evidence", "product_inspection_artifacts", "delivery_artifacts"):
+        if not isinstance(role_entries.get(role), list):
+            reasons.append(
+                _reason(
+                    f"candidate_b_default_readiness_{kind}_final_operator_role_entries_invalid",
+                    field=role,
+                    received_type=type(role_entries.get(role)).__name__,
+                )
+            )
+        count = _strict_nonnegative_int(role_counts.get(role))
+        if count is None:
+            reasons.append(
+                _reason(
+                    f"candidate_b_default_readiness_{kind}_final_operator_artifact_count_invalid",
+                    field=role,
+                    received=role_counts.get(role),
+                )
+            )
+        elif count <= 0:
+            reasons.append(
+                _reason(
+                    f"candidate_b_default_readiness_{kind}_final_operator_artifact_count_missing",
+                    field=role,
+                )
+            )
+    return reasons
+
+
 def _final_operator_inspection_evidence(
     bundle_artifact_family: Mapping[str, Any] | None,
     runtime_artifact_family: Mapping[str, Any] | None,
@@ -741,9 +1060,9 @@ def _final_operator_artifact_available(summary: Mapping[str, Any]) -> bool:
     preview_roles = ("visual_page_evidence", "product_inspection_artifacts", "delivery_artifacts")
     return (
         summary.get("available") is True
-        and int(summary.get("visual_page_evidence_count") or 0) > 0
-        and int(summary.get("product_inspection_artifact_count") or 0) > 0
-        and int(summary.get("delivery_artifact_count") or 0) > 0
+        and _project_nonnegative_int(summary.get("visual_page_evidence_count")) > 0
+        and _project_nonnegative_int(summary.get("product_inspection_artifact_count")) > 0
+        and _project_nonnegative_int(summary.get("delivery_artifact_count")) > 0
         and all(isinstance(role_previews.get(role), list) and role_previews[role] for role in preview_roles)
         and summary.get("pdf_material_text_payload_enabled") is False
         and summary.get("image_material_text_payload_enabled") is False
@@ -777,9 +1096,9 @@ def _final_operator_artifact_summary(kind: str, artifact_family: Mapping[str, An
         "artifact_family_hash": artifact_family.get("artifact_family_hash"),
         "role_counts": role_counts,
         "role_previews": role_previews,
-        "visual_page_evidence_count": int(role_counts.get("visual_page_evidence") or 0),
-        "product_inspection_artifact_count": int(role_counts.get("product_inspection_artifacts") or 0),
-        "delivery_artifact_count": int(role_counts.get("delivery_artifacts") or 0),
+        "visual_page_evidence_count": _project_nonnegative_int(role_counts.get("visual_page_evidence")),
+        "product_inspection_artifact_count": _project_nonnegative_int(role_counts.get("product_inspection_artifacts")),
+        "delivery_artifact_count": _project_nonnegative_int(role_counts.get("delivery_artifacts")),
         "pdf_material_text_payload_enabled": artifact_family.get("pdf_material_text_payload_enabled") is True,
         "image_material_text_payload_enabled": artifact_family.get("image_material_text_payload_enabled") is True,
         "raw_url_exposure_enabled": artifact_family.get("raw_url_exposure_enabled") is True,
@@ -902,6 +1221,7 @@ def _validate_downstream_proof(
     if source_kind == "bundle":
         for field, expected in {
             "schema_id": layer3_candidate_b_bundle_downstream_proof.SCHEMA_ID,
+            "schema_version": layer3_candidate_b_bundle_downstream_proof.SCHEMA_VERSION,
             "mode": layer3_candidate_b_bundle_downstream_proof.PROOF_MODE,
             "status": "proven",
             "candidate_b_bundle_id": candidate_b_bundle_id,
@@ -947,6 +1267,7 @@ def _validate_downstream_proof(
     if source_kind == "runtime":
         for field, expected in {
             "schema_id": layer3_candidate_b_downstream_proof.SCHEMA_ID,
+            "schema_version": layer3_candidate_b_downstream_proof.SCHEMA_VERSION,
             "mode": layer3_candidate_b_downstream_proof.PROOF_MODE,
             "status": "proven",
             "candidate_b_run_id": candidate_b_run_id,
@@ -1024,6 +1345,8 @@ def _validate_downstream_proof(
             "bridge_receipt_id": proof.get("bridge_receipt_id"),
             "proof_state": proof.get("proof_state"),
             "proof_hash": proof_hash,
+            "proof_receipt_id": proof.get("proof_receipt_id"),
+            "proof_receipt_ref": proof.get("proof_receipt_ref"),
             "coverage": sorted(coverage),
             "missing_coverage": missing,
             "raw_local_path_exposed": proof.get("raw_local_path_exposed") is True,
@@ -1041,54 +1364,17 @@ def _validate_runtime_downstream_proof_receipt(
     expected_hash: str,
     blocked: list[dict[str, Any]],
 ) -> None:
-    proof_receipt_id = str(proof.get("proof_receipt_id") or "").strip()
-    if not proof_receipt_id:
-        blocked.append(_reason("candidate_b_default_readiness_runtime_downstream_proof_receipt_id_missing"))
-        return
-    configured = settings.layer3_candidate_b_runtime_bridge_dir
-    if not str(configured or "").strip():
-        blocked.append(_reason("candidate_b_default_readiness_runtime_downstream_proof_bridge_dir_unset"))
-        return
-    root = Path(str(configured))
-    if not root.is_absolute():
-        blocked.append(_reason("candidate_b_default_readiness_runtime_downstream_proof_bridge_dir_not_absolute"))
-        return
-    proof_path = root / bridge_receipt_id / "downstream-proof" / f"{proof_receipt_id}.json"
-    if not proof_path.is_file():
-        blocked.append(
-            _reason(
-                "candidate_b_default_readiness_runtime_downstream_proof_receipt_missing",
-                proof_receipt_id=proof_receipt_id,
-            )
-        )
-        return
-    try:
-        stored = json.loads(proof_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        blocked.append(
-            _reason(
-                "candidate_b_default_readiness_runtime_downstream_proof_receipt_unreadable",
-                proof_receipt_id=proof_receipt_id,
-                reason=str(exc),
-            )
-        )
-        return
-    if not isinstance(stored, dict):
-        blocked.append(
-            _reason(
-                "candidate_b_default_readiness_runtime_downstream_proof_receipt_invalid",
-                proof_receipt_id=proof_receipt_id,
-            )
-        )
-        return
-    if stored.get("proof_hash") != expected_hash:
-        blocked.append(
-            _reason(
-                "candidate_b_default_readiness_runtime_downstream_proof_receipt_hash_mismatch",
-                expected=expected_hash,
-                received=stored.get("proof_hash"),
-            )
-        )
+    _validate_persisted_downstream_proof_receipt(
+        proof=proof,
+        bridge_receipt_id=bridge_receipt_id,
+        expected_hash=expected_hash,
+        proof_receipt_prefix=layer3_candidate_b_downstream_proof.PROOF_RECEIPT_PREFIX,
+        bridge_receipt_prefix=layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX,
+        configured_root=settings.layer3_candidate_b_runtime_bridge_dir,
+        hash_keys=layer3_candidate_b_downstream_proof.PROOF_HASH_KEYS,
+        code_prefix="candidate_b_default_readiness_runtime_downstream_proof",
+        blocked=blocked,
+    )
 
 
 def _validate_bundle_downstream_proof_receipt(
@@ -1098,32 +1384,69 @@ def _validate_bundle_downstream_proof_receipt(
     expected_hash: str,
     blocked: list[dict[str, Any]],
 ) -> None:
+    _validate_persisted_downstream_proof_receipt(
+        proof=proof,
+        bridge_receipt_id=bridge_receipt_id,
+        expected_hash=expected_hash,
+        proof_receipt_prefix=layer3_candidate_b_bundle_downstream_proof.PROOF_RECEIPT_PREFIX,
+        bridge_receipt_prefix=layer3_candidate_b_bundle_bridge.BRIDGE_RECEIPT_PREFIX,
+        configured_root=settings.layer3_candidate_b_bundle_bridge_dir,
+        hash_keys=layer3_candidate_b_bundle_downstream_proof.PROOF_HASH_KEYS,
+        code_prefix="candidate_b_default_readiness_bundle_downstream_proof",
+        blocked=blocked,
+    )
+
+
+def _validate_persisted_downstream_proof_receipt(
+    *,
+    proof: Mapping[str, Any],
+    bridge_receipt_id: str,
+    expected_hash: str,
+    proof_receipt_prefix: str,
+    bridge_receipt_prefix: str,
+    configured_root: str | None,
+    hash_keys: tuple[str, ...],
+    code_prefix: str,
+    blocked: list[dict[str, Any]],
+) -> None:
     proof_receipt_id = str(proof.get("proof_receipt_id") or "").strip()
     if not proof_receipt_id:
-        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_receipt_id_missing"))
+        blocked.append(_reason(f"{code_prefix}_receipt_id_missing"))
         return
-    if (
-        not proof_receipt_id.startswith(f"{layer3_candidate_b_bundle_downstream_proof.PROOF_RECEIPT_PREFIX}-")
-        or "/" in proof_receipt_id
-        or "\\" in proof_receipt_id
-        or ".." in proof_receipt_id
-        or proof_receipt_id in {".", ".."}
+    if not layer3_candidate_b_storage_id.is_storage_id(
+        proof_receipt_id,
+        prefix=proof_receipt_prefix,
     ):
-        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_receipt_id_invalid"))
+        blocked.append(_reason(f"{code_prefix}_receipt_id_invalid"))
         return
-    configured = settings.layer3_candidate_b_bundle_bridge_dir
-    if not str(configured or "").strip():
-        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_bridge_dir_unset"))
+    expected_receipt_id = f"{proof_receipt_prefix}-{expected_hash[:24]}"
+    if proof_receipt_id != expected_receipt_id:
+        blocked.append(
+            _reason(
+                f"{code_prefix}_receipt_id_mismatch",
+                expected=expected_receipt_id,
+                received=proof_receipt_id,
+            )
+        )
         return
-    root = Path(str(configured))
+    if not layer3_candidate_b_storage_id.is_storage_id(
+        bridge_receipt_id,
+        prefix=bridge_receipt_prefix,
+    ):
+        blocked.append(_reason(f"{code_prefix}_bridge_receipt_id_invalid"))
+        return
+    if not str(configured_root or "").strip():
+        blocked.append(_reason(f"{code_prefix}_bridge_dir_unset"))
+        return
+    root = Path(str(configured_root))
     if not root.is_absolute():
-        blocked.append(_reason("candidate_b_default_readiness_bundle_downstream_proof_bridge_dir_not_absolute"))
+        blocked.append(_reason(f"{code_prefix}_bridge_dir_not_absolute"))
         return
     proof_path = root / bridge_receipt_id / "downstream-proof" / f"{proof_receipt_id}.json"
     if not proof_path.is_file():
         blocked.append(
             _reason(
-                "candidate_b_default_readiness_bundle_downstream_proof_receipt_missing",
+                f"{code_prefix}_receipt_missing",
                 proof_receipt_id=proof_receipt_id,
             )
         )
@@ -1133,7 +1456,7 @@ def _validate_bundle_downstream_proof_receipt(
     except (OSError, json.JSONDecodeError) as exc:
         blocked.append(
             _reason(
-                "candidate_b_default_readiness_bundle_downstream_proof_receipt_unreadable",
+                f"{code_prefix}_receipt_unreadable",
                 proof_receipt_id=proof_receipt_id,
                 reason=str(exc),
             )
@@ -1142,17 +1465,39 @@ def _validate_bundle_downstream_proof_receipt(
     if not isinstance(stored, dict):
         blocked.append(
             _reason(
-                "candidate_b_default_readiness_bundle_downstream_proof_receipt_invalid",
+                f"{code_prefix}_receipt_invalid",
                 proof_receipt_id=proof_receipt_id,
             )
         )
         return
-    if stored.get("proof_hash") != expected_hash:
+    mismatches = [
+        {"field": field, "expected": expected, "received": stored.get(field)}
+        for field, expected in {
+            "proof_receipt_id": proof_receipt_id,
+            "bridge_receipt_id": bridge_receipt_id,
+        }.items()
+        if str(stored.get(field) or "").strip() != str(expected or "").strip()
+    ]
+    if mismatches:
+        blocked.append(_reason(f"{code_prefix}_receipt_mismatch", mismatches=mismatches))
+        return
+    missing_hash_fields = [key for key in hash_keys if key not in stored]
+    if missing_hash_fields:
         blocked.append(
             _reason(
-                "candidate_b_default_readiness_bundle_downstream_proof_receipt_hash_mismatch",
+                f"{code_prefix}_receipt_authority_field_missing",
+                missing_fields=missing_hash_fields,
+            )
+        )
+        return
+    recomputed_hash = _stable_hash({key: stored[key] for key in hash_keys})
+    if stored.get("proof_hash") != expected_hash or recomputed_hash != expected_hash:
+        blocked.append(
+            _reason(
+                f"{code_prefix}_receipt_hash_mismatch",
                 expected=expected_hash,
                 received=stored.get("proof_hash"),
+                recomputed=recomputed_hash,
             )
         )
 
@@ -1481,14 +1826,17 @@ def _validate_closure_receipt(
     if not receipt_id:
         blocked.append(_reason("candidate_b_default_readiness_closure_receipt_id_missing"))
         return
-    if (
-        not receipt_id.startswith(f"{layer3_candidate_b_promotion_closure.CLOSURE_RECEIPT_PREFIX}-")
-        or "/" in receipt_id
-        or "\\" in receipt_id
-        or ".." in receipt_id
-        or receipt_id in {".", ".."}
+    if not layer3_candidate_b_storage_id.is_storage_id(
+        receipt_id,
+        prefix=layer3_candidate_b_promotion_closure.CLOSURE_RECEIPT_PREFIX,
     ):
         blocked.append(_reason("candidate_b_default_readiness_closure_receipt_id_invalid"))
+        return
+    if not layer3_candidate_b_storage_id.is_storage_id(
+        runtime_receipt_id,
+        prefix=layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX,
+    ):
+        blocked.append(_reason("candidate_b_default_readiness_closure_runtime_receipt_id_invalid"))
         return
     configured = settings.layer3_candidate_b_runtime_bridge_dir
     if not str(configured or "").strip():
@@ -1528,14 +1876,17 @@ def _validate_operator_status_receipt(
     if not receipt_id:
         blocked.append(_reason("candidate_b_default_readiness_operator_status_receipt_id_missing"))
         return
-    if (
-        not receipt_id.startswith(f"{layer3_candidate_b_operator_status.STATUS_RECEIPT_PREFIX}-")
-        or "/" in receipt_id
-        or "\\" in receipt_id
-        or ".." in receipt_id
-        or receipt_id in {".", ".."}
+    if not layer3_candidate_b_storage_id.is_storage_id(
+        receipt_id,
+        prefix=layer3_candidate_b_operator_status.STATUS_RECEIPT_PREFIX,
     ):
         blocked.append(_reason("candidate_b_default_readiness_operator_status_receipt_id_invalid"))
+        return
+    if not layer3_candidate_b_storage_id.is_storage_id(
+        runtime_receipt_id,
+        prefix=layer3_candidate_b_runtime_bridge.BRIDGE_RECEIPT_PREFIX,
+    ):
+        blocked.append(_reason("candidate_b_default_readiness_operator_status_runtime_receipt_id_invalid"))
         return
     configured = settings.layer3_candidate_b_runtime_bridge_dir
     if not str(configured or "").strip():
@@ -1615,7 +1966,16 @@ def _validate_visual_lane_status_evidence(
     if visual_evidence.get("candidate_b_visual_lane_selected") is not True:
         blocked.append(_reason("candidate_b_default_readiness_visual_lane_status_not_selected"))
     for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
-        if int(visual_evidence.get(field) or 0) <= 0:
+        count = _strict_nonnegative_int(visual_evidence.get(field))
+        if count is None:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_visual_lane_status_evidence_count_invalid",
+                    field=field,
+                    received=visual_evidence.get(field),
+                )
+            )
+        elif count <= 0:
             blocked.append(
                 _reason(
                     "candidate_b_default_readiness_visual_lane_status_evidence_count_missing",
@@ -1633,8 +1993,19 @@ def _validate_visual_lane_status_evidence(
     for field in ("candidate_b_visual_lane_status_projection_visible", "candidate_b_visual_lane_selected"):
         if operator_projection.get(field) is not True:
             blocked.append(_reason(f"candidate_b_default_readiness_visual_lane_status_{field}_not_true", field=field))
+    operator_projection_counts: dict[str, int] = {}
     for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
-        if int(operator_projection.get(field) or 0) <= 0:
+        count = _strict_nonnegative_int(operator_projection.get(field))
+        operator_projection_counts[field] = count if count is not None else 0
+        if count is None:
+            blocked.append(
+                _reason(
+                    "candidate_b_default_readiness_visual_lane_status_projection_count_invalid",
+                    field=field,
+                    received=operator_projection.get(field),
+                )
+            )
+        elif count <= 0:
             blocked.append(
                 _reason(
                     "candidate_b_default_readiness_visual_lane_status_projection_count_missing",
@@ -1691,10 +2062,11 @@ def _validate_visual_lane_status_evidence(
             "candidate_b_visual_lane_status_projection_visible": (
                 operator_projection.get("candidate_b_visual_lane_status_projection_visible") is True
             ),
-            "visual_ref_total": int(operator_projection.get("visual_ref_total") or 0),
-            "candidate_b_visual_ref_total": int(operator_projection.get("candidate_b_visual_ref_total") or 0),
-            "candidate_b_retained_source_pdf_ref_count": int(
-                operator_projection.get("candidate_b_retained_source_pdf_ref_count") or 0
+            "visual_ref_total": operator_projection_counts.get("visual_ref_total", 0),
+            "candidate_b_visual_ref_total": operator_projection_counts.get("candidate_b_visual_ref_total", 0),
+            "candidate_b_retained_source_pdf_ref_count": operator_projection_counts.get(
+                "candidate_b_retained_source_pdf_ref_count",
+                0,
             ),
             "raw_local_path_exposed": operator_projection.get("raw_local_path_exposed") is True,
             "raw_url_exposed": operator_projection.get("raw_url_exposed") is True,

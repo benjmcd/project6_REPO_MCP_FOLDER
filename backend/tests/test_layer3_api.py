@@ -15174,9 +15174,12 @@ def test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted(
     assert len(calls) == 1
 
     monkeypatch.setattr(settings, "layer3_internal_webhook_display_name", "changed-internal-webhook")
-    conflicting_replay = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
-    assert conflicting_replay.status_code == 409
-    assert conflicting_replay.json()["error_code"] == "internal_webhook_client_request_conflict"
+    display_name_replay = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
+    assert display_name_replay.status_code == 200, display_name_replay.json()
+    assert display_name_replay.json()["status"] == "already_recorded"
+    assert display_name_replay.json()["internal_webhook_dispatch_receipt_id"] == body[
+        "internal_webhook_dispatch_receipt_id"
+    ]
     assert len(calls) == 1
 
     forbidden_payload = {**new_key_payload, "client_request_id": "api-internal-webhook-forbidden-url"}
@@ -15190,7 +15193,7 @@ def test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted(
     db = client.layer3_session_factory()
     try:
         assert db.query(L3InternalWebhookDispatchReceipt).count() == 1
-        assert db.query(L3InternalWebhookDispatchAuditEvent).count() == 4
+        assert db.query(L3InternalWebhookDispatchAuditEvent).count() == 5
         assert db.query(ConnectorRun).count() == connector_runs_before
         assert db.query(ConnectorRunTarget).count() == connector_run_targets_before
         row = db.query(L3InternalWebhookDispatchReceipt).one()
@@ -15207,6 +15210,46 @@ def test_layer3_api_internal_webhook_dispatch_success_idempotent_and_redacted(
         assert "destination_url" not in json.dumps(state, sort_keys=True)
     finally:
         db.close()
+
+
+def test_layer3_api_internal_webhook_ready_requires_configured_destination(
+    client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        _approval_body,
+        _selection_body,
+        _start_body,
+        _review_body,
+        _commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        _readiness_body,
+        _connector_body,
+        _local_receipt_body,
+        _target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-internal-webhook-ready-config",
+    )
+    monkeypatch.setattr(settings, "layer3_internal_webhook_url", "")
+
+    summary = client.get(f"/api/v1/layer3/session/{session_id}")
+    assert summary.status_code == 200, summary.json()
+    ready_status = summary.json()["internal_webhook_dispatch"]
+    assert ready_status["state"] == "internal_webhook_dispatch_not_ready"
+    assert ready_status["available"] is False
+    assert ready_status["blocked_reason"] == "internal_webhook_destination_not_configured"
+    assert ready_status["server_configured_internal_webhook_enabled"] is False
+    assert ready_status["server_owned_local_outbox_write_receipt_id"] == (
+        write_body["server_owned_local_outbox_write_receipt_id"]
+    )
 
 
 def test_layer3_api_internal_webhook_dispatch_fails_closed_on_stale_authority_and_target(
@@ -15268,6 +15311,25 @@ def test_layer3_api_internal_webhook_dispatch_fails_closed_on_stale_authority_an
 
     db = client.layer3_session_factory()
     try:
+        write_row = (
+            db.query(L3ServerOwnedLocalOutboxWriteReceipt)
+            .filter(
+                L3ServerOwnedLocalOutboxWriteReceipt.server_owned_local_outbox_write_receipt_id
+                == write_body["server_owned_local_outbox_write_receipt_id"]
+            )
+            .one()
+        )
+        artifact_path = Path(settings.storage_dir) / write_row.outbox_artifact_ref
+    finally:
+        db.close()
+    artifact_path.write_text("tampered outbox artifact", encoding="utf-8")
+    stale_artifact = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
+    assert stale_artifact.status_code == 409
+    assert stale_artifact.json()["error_code"] == "internal_webhook_stale_outbox_artifact"
+    assert calls == []
+
+    db = client.layer3_session_factory()
+    try:
         reconciliation = db.query(L3ReconciliationRecord).filter(
             L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
         ).one()
@@ -15286,6 +15348,67 @@ def test_layer3_api_internal_webhook_dispatch_fails_closed_on_stale_authority_an
         assert db.query(L3InternalWebhookDispatchReceipt).count() == 0
         assert db.query(ConnectorRun).count() == connector_runs_before
         assert db.query(ConnectorRunTarget).count() == connector_run_targets_before
+    finally:
+        db.close()
+
+
+def test_layer3_api_internal_webhook_dispatch_requires_explicit_accepted_ack(
+    client: TestClient,
+    monkeypatch,
+    tmp_path,
+) -> None:
+    (
+        session_id,
+        approval_body,
+        selection_body,
+        _start_body,
+        _review_body,
+        commit_body,
+        _submit_body,
+        _prepare_body,
+        _dispatch_body,
+        readiness_body,
+        connector_body,
+        local_receipt_body,
+        target_body,
+        write_body,
+    ) = _prepare_server_owned_local_outbox_write(
+        client,
+        tmp_path,
+        monkeypatch,
+        request_id="api-internal-webhook-ambiguous-success",
+    )
+    calls: list[dict] = []
+
+    def fake_transport(url, envelope, headers, timeout_seconds):
+        calls.append({"url": url, "envelope": envelope})
+        return 204, {}
+
+    monkeypatch.setattr(layer3_internal_webhook_connector, "INTERNAL_WEBHOOK_TRANSPORT", fake_transport)
+    payload = _internal_webhook_payload(
+        request_id="api-internal-webhook-ambiguous",
+        session_id=session_id,
+        approval_body=approval_body,
+        selection_body=selection_body,
+        commit_body=commit_body,
+        connector_body=connector_body,
+        local_receipt_body=local_receipt_body,
+        target_body=target_body,
+        write_body=write_body,
+        readiness_body=readiness_body,
+    )
+
+    response = client.post("/api/v1/layer3/handoff/export/internal-webhook/dispatch", json=payload)
+    assert response.status_code == 409
+    assert response.json()["error_code"] == "internal_webhook_ambiguous_success_response"
+    assert len(calls) == 1
+
+    db = client.layer3_session_factory()
+    try:
+        row = db.query(L3InternalWebhookDispatchReceipt).one()
+        assert row.dispatch_status == "internal_webhook_failed"
+        assert row.response_status_code == 204
+        assert row.failure_code == "internal_webhook_ambiguous_success_response"
     finally:
         db.close()
 
@@ -29334,7 +29457,7 @@ def test_layer3_api_local_outbox_provider_private_handoff_prepare_status_and_ide
         "same_key_different_payload_conflict": (
             "local_outbox_provider_private_handoff_client_request_conflict"
         ),
-        "same_basis_different_client_request_id": "local_outbox_provider_private_handoff_already_prepared",
+        "same_basis_different_client_request_id": "already_recorded",
     }
     assert handoff_status["retry_policy"]["retry_fields_admitted"] is False
     assert handoff_status["retry_policy"]["raw_token_replay_admitted"] is False
@@ -29421,9 +29544,10 @@ def test_layer3_api_local_outbox_provider_private_handoff_prepare_status_and_ide
         "/api/v1/layer3/handoff/connector/local-outbox/provider-private/prepare",
         json={**payload, "client_request_id": "api-local-outbox-provider-private-new-request"},
     )
-    assert same_basis_new_request.status_code == 409, same_basis_new_request.json()
-    assert same_basis_new_request.json()["error_code"] == (
-        "local_outbox_provider_private_handoff_already_prepared"
+    assert same_basis_new_request.status_code == 200, same_basis_new_request.json()
+    assert same_basis_new_request.json()["status"] == "already_recorded"
+    assert same_basis_new_request.json()["provider_private_handoff_receipt_id"] == (
+        body["provider_private_handoff_receipt_id"]
     )
 
     db = client.layer3_session_factory()
@@ -29432,7 +29556,7 @@ def test_layer3_api_local_outbox_provider_private_handoff_prepare_status_and_ide
             counts_before["handoff_receipts"] + 1
         )
         assert db.query(L3LocalOutboxProviderPrivateHandoffAuditEvent).count() == (
-            counts_before["handoff_audit_events"] + 2
+            counts_before["handoff_audit_events"] + 3
         )
         row = db.query(L3LocalOutboxProviderPrivateHandoffReceipt).one()
         row.provider_private_expires_at = datetime.fromtimestamp(0, timezone.utc)
@@ -30426,6 +30550,15 @@ def test_layer3_api_connector_local_destination_receipt_revalidates_delivery_aut
         commit_body=commit_body,
         connector_body=connector.json(),
         readiness_body=readiness_body,
+    )
+
+    def _unexpected_prepare_reentry(*_args, **_kwargs):
+        raise AssertionError("connector receipt validation must use recorded readiness without re-entering prepare")
+
+    monkeypatch.setattr(
+        layer3_connector_local_destination_receipt.layer3_workbench,
+        "external_export_download_prepare",
+        _unexpected_prepare_reentry,
     )
 
     db = client.layer3_session_factory()

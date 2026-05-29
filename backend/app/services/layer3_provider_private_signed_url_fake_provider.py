@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping
 
 
@@ -57,6 +57,7 @@ class ProviderPrivateSignedUrlError(Exception):
             "message": self.message,
             "blocked_fields": list(self.blocked_fields),
             "next_allowed_actions": list(self.next_allowed_actions),
+            "denial_audit_receipt": _denial_audit_receipt(self),
         }
 
 
@@ -99,7 +100,7 @@ class ProviderPrivateSignedUrlReceipt:
     next_state: str
     use_count: int = 0
     revoked_reason_hash: str | None = None
-    _token_for_test: str = ""
+    _token_for_test: str = field(default="", repr=False)
     _idempotency_identity_hash: str = ""
 
     @property
@@ -285,6 +286,14 @@ class ProviderPrivateSignedUrlFakeProvider:
                 blocked_fields=("provider_signed_url_receipt_id",),
                 next_allowed_actions=("prepare_new_provider_private_signed_url",),
             )
+        if receipt.provider_signed_url_state == PROVIDER_PRIVATE_SIGNED_URL_EXPIRED_STATE:
+            raise ProviderPrivateSignedUrlError(
+                "provider_private_signed_url_expired",
+                "Provider private signed URL receipt has expired.",
+                PROVIDER_PRIVATE_SIGNED_URL_BLOCKED_STATE,
+                blocked_fields=("provider_signed_url_receipt_id",),
+                next_allowed_actions=("prepare_new_provider_private_signed_url",),
+            )
         if now_epoch >= receipt.provider_url_expires_at_epoch:
             expired = replace(receipt, provider_signed_url_state=PROVIDER_PRIVATE_SIGNED_URL_EXPIRED_STATE)
             self._store_receipt(expired)
@@ -331,6 +340,8 @@ class ProviderPrivateSignedUrlFakeProvider:
                 next_allowed_actions=("submit_revocation_reason",),
             )
         receipt = self._receipt(provider_signed_url_receipt_id)
+        if receipt.provider_signed_url_state == PROVIDER_PRIVATE_SIGNED_URL_REVOKED_STATE:
+            return receipt
         revoked = replace(
             receipt,
             provider_signed_url_state=PROVIDER_PRIVATE_SIGNED_URL_REVOKED_STATE,
@@ -359,6 +370,9 @@ class ProviderPrivateSignedUrlFakeProvider:
 
     def _store_receipt(self, receipt: ProviderPrivateSignedUrlReceipt) -> None:
         self._receipts_by_id[receipt.provider_signed_url_receipt_id] = receipt
+        for client_request_id, existing in list(self._receipts_by_client_request_id.items()):
+            if existing.provider_signed_url_receipt_id == receipt.provider_signed_url_receipt_id:
+                self._receipts_by_client_request_id[client_request_id] = receipt
 
     def _fail_if_requested(self, operation: str) -> None:
         error_code = self._fail_operations.get(operation)
@@ -431,6 +445,27 @@ def _authority_identity(authority: ProviderArtifactAuthority) -> dict[str, Any]:
         "source_artifact_size_bytes": authority.source_artifact_size_bytes,
         "external_export_download_record_ref": authority.external_export_download_record_ref.strip(),
         "export_download_descriptor_ref": authority.export_download_descriptor_ref.strip(),
+    }
+
+
+def _denial_audit_receipt(error: ProviderPrivateSignedUrlError) -> dict[str, Any]:
+    return {
+        "provider_authority": PROVIDER_PRIVATE_SIGNED_URL_FAKE_PROVIDER_AUTHORITY,
+        "event_status": "denied",
+        "error_code": error.error_code,
+        "status": error.status,
+        "authority_hash": _digest(
+            {
+                "error_code": error.error_code,
+                "status": error.status,
+                "blocked_fields": list(error.blocked_fields),
+                "next_allowed_actions": list(error.next_allowed_actions),
+            }
+        ),
+        "provider_network_enabled": False,
+        "provider_object_write_enabled": False,
+        "raw_provider_url_exposed": False,
+        "raw_provider_private_signed_url_token_exposed": False,
     }
 
 

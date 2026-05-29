@@ -531,6 +531,10 @@ def _looks_like_forbidden_value(value: str) -> bool:
         "://" in candidate
         or candidate.startswith(("\\\\", "/"))
         or (len(candidate) >= 3 and candidate[1] == ":" and candidate[2] in {"\\", "/"})
+        or candidate in {".", ".."}
+        or candidate.startswith(("../", "..\\", "./", ".\\"))
+        or "/" in candidate
+        or "\\" in candidate
         or "begin private key" in lowered
         or "password=" in lowered
         or "secret=" in lowered
