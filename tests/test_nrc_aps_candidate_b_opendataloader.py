@@ -113,6 +113,33 @@ def test_build_odl_cli_capability_snapshot_requires_pdf_support(monkeypatch: pyt
         build_odl_cli_capability_snapshot()
 
 
+def test_git_protected_diff_includes_staged_and_unstaged_changes(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(command, **kwargs):
+        calls.append(list(command))
+        if "--cached" in command:
+            return types.SimpleNamespace(
+                returncode=0,
+                stdout="backend/app/services/nrc_aps_document_processing.py\n",
+                stderr="",
+            )
+        return types.SimpleNamespace(
+            returncode=0,
+            stdout="tests/support_nrc_aps_candidate_b_opendataloader.py\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(support.subprocess, "run", fake_run)
+
+    assert support.git_protected_diff() == [
+        "backend/app/services/nrc_aps_document_processing.py",
+        "tests/support_nrc_aps_candidate_b_opendataloader.py",
+    ]
+    assert ["git", "diff", "--name-only", "--", *support.PROTECTED_DIFF_PATHS] in calls
+    assert ["git", "diff", "--name-only", "--cached", "--", *support.PROTECTED_DIFF_PATHS] in calls
+
+
 def test_run_candidate_b_cli_uses_direct_convert_and_canonicalizes_output(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

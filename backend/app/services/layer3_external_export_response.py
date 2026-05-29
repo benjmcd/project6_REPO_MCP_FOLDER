@@ -966,6 +966,154 @@ def external_export_download_prepare_response(
     return body
 
 
+def external_export_download_recorded_prepare_response(
+    *,
+    request_id: str,
+    status: str,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    preview_id: str,
+    preview_hash: str,
+    result_review_record_ref: str,
+    package_review_preview_hash: str,
+    reconciliation_record_id: str,
+    readiness_state: dict[str, Any],
+) -> dict[str, Any]:
+    required_fields = (
+        "external_export_download_record_ref",
+        "export_download_descriptor_ref",
+        "package_review_submit_record_ref",
+        "package_review_state",
+        "prepare_record_ref",
+        "handoff_export_state",
+        "handoff_export_envelope_ref",
+        "handoff_target",
+        "export_mode",
+        "aps_handoff_record_ref",
+        "aps_handoff_state",
+        "aps_handoff_target",
+        "dispatch_mode",
+        "aps_output_package_id",
+        "aps_output_package_kind",
+        "aps_bundle_ref",
+        "aps_bundle_id",
+        "aps_schema_id",
+        "export_download_target",
+        "download_mode",
+        "operator_decision",
+        "external_export_download_state",
+        "source_artifact_ref",
+        "source_artifact_schema_id",
+        "source_artifact_hash",
+        "source_artifact_size_bytes",
+    )
+    missing_fields = [
+        field
+        for field in required_fields
+        if readiness_state.get(field) is None or str(readiness_state.get(field) or "").strip() == ""
+    ]
+    if missing_fields:
+        raise Layer3WorkbenchError(
+            "external_export_download_recorded_readiness_malformed",
+            "Recorded external export/download readiness is missing required delivery authority fields.",
+            status="conflict",
+            http_status=409,
+            blocked_fields=missing_fields,
+        )
+
+    body = {
+        **base_response(
+            QUAL_APS_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+            if qualitative_aps_external_export_download_admitted(readiness_state)
+            else SOURCE_INTAKE_EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID
+            if source_intake_external_export_download_admitted(readiness_state)
+            else EXTERNAL_EXPORT_DOWNLOAD_PREPARE_SCHEMA_ID,
+            request_id=request_id,
+            status=status,
+        ),
+        "session_id": session_id,
+        "analysis_plan_id": analysis_plan_id,
+        "pass_run_id": pass_run_id,
+        "preview_identity": preview_identity(preview_id=preview_id, preview_hash=preview_hash),
+        "analysis_run_id": readiness_state.get("analysis_run_id"),
+        "result_review_record_ref": result_review_record_ref,
+        "package_review_preview_hash": package_review_preview_hash,
+        "reconciliation_record_id": reconciliation_record_id,
+        "output_package_ids": list(readiness_state.get("output_package_ids") or []),
+        "package_kinds": list(readiness_state.get("package_kinds") or []),
+        "payload_refs": list(readiness_state.get("payload_refs") or []),
+        "payload_hashes": list(readiness_state.get("payload_hashes") or []),
+        "package_review_submit_record_ref": readiness_state["package_review_submit_record_ref"],
+        "package_review_state": readiness_state["package_review_state"],
+        "prepare_record_ref": readiness_state["prepare_record_ref"],
+        "handoff_export_state": readiness_state["handoff_export_state"],
+        "handoff_export_envelope_ref": readiness_state["handoff_export_envelope_ref"],
+        "handoff_target": readiness_state["handoff_target"],
+        "export_mode": readiness_state["export_mode"],
+        "aps_handoff_record_ref": readiness_state["aps_handoff_record_ref"],
+        "aps_handoff_state": readiness_state["aps_handoff_state"],
+        "aps_handoff_target": readiness_state["aps_handoff_target"],
+        "dispatch_mode": readiness_state["dispatch_mode"],
+        "aps_output_package_id": readiness_state["aps_output_package_id"],
+        "aps_output_package_kind": readiness_state["aps_output_package_kind"],
+        "aps_bundle_ref": readiness_state["aps_bundle_ref"],
+        "aps_bundle_id": readiness_state["aps_bundle_id"],
+        "aps_schema_id": readiness_state["aps_schema_id"],
+        "export_download_target": readiness_state["export_download_target"],
+        "download_mode": readiness_state["download_mode"],
+        "operator_decision": readiness_state["operator_decision"],
+        "decision_notes": readiness_state.get("decision_notes"),
+        "external_export_download_state": readiness_state["external_export_download_state"],
+        "external_export_download_record_ref": readiness_state["external_export_download_record_ref"],
+        "export_download_descriptor_ref": readiness_state["export_download_descriptor_ref"],
+        "source_artifact_ref": readiness_state["source_artifact_ref"],
+        "source_artifact_schema_id": readiness_state["source_artifact_schema_id"],
+        "source_artifact_hash": readiness_state["source_artifact_hash"],
+        "source_artifact_size_bytes": readiness_state["source_artifact_size_bytes"],
+        "browser_download_enabled": False,
+        "download_url_enabled": False,
+        "connector_dispatch_enabled": False,
+        "destination_selection_enabled": False,
+        "generic_downstream_dispatch_enabled": False,
+        "downstream_unavailable": list(EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE),
+        "next_state": readiness_state["external_export_download_state"],
+        "authority_rail": authority_rail(
+            session_id=session_id,
+            current_gate="package",
+            persistence_mode="durable_external_export_download_prepare",
+            downstream_unavailable=EXTERNAL_EXPORT_DOWNLOAD_DOWNSTREAM_UNAVAILABLE,
+            execution_enabled=False,
+            package_review_enabled=False,
+        ),
+    }
+    for key in (
+        "active_package_authority_applied",
+        "package_replacement_activation_id",
+        "source_output_package_ids",
+        "source_payload_hashes",
+        "active_replacement_output_package_ids",
+        "active_payload_refs",
+        "active_payload_hashes",
+        "replacement_activation_basis_hash",
+    ):
+        if key in readiness_state:
+            body[key] = readiness_state.get(key)
+    body.update(cohort_readiness_identity(readiness_state))
+    if associated_cohort_external_export_download(readiness_state):
+        body["delivery_ui"] = associated_cohort_delivery_ui_state(readiness_state)
+    elif source_intake_external_export_download_admitted(readiness_state):
+        body["delivery_ui"] = source_intake_delivery_ui_state(readiness_state)
+    else:
+        delivery_ui = aps_bundle_delivery_ui_state(readiness_state)
+        if delivery_ui["available"]:
+            body["delivery_ui"] = delivery_ui
+    descriptor = readiness_state.get("external_export_download_descriptor")
+    if isinstance(descriptor, dict):
+        body["external_export_download_descriptor"] = descriptor
+    return body
+
+
 def safe_download_token(value: str, *, fallback: str) -> str:
     token = "".join(ch if ch.isalnum() or ch in {"-", "_", "."} else "-" for ch in str(value or "").strip())
     token = token.strip(".-")

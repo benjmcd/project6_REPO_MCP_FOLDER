@@ -107,7 +107,6 @@ prepare_request_optional_fields:
   - provider_policy_ref
 use_request_required_fields:
   - provider_signed_url_receipt_id
-  - provider_private_signed_url_token
 revoke_request_required_fields:
   - provider_signed_url_receipt_id
   - operator_decision
@@ -116,7 +115,9 @@ status_request_required_fields:
   - provider_signed_url_receipt_id
 ```
 
-Forbidden request fields include provider credentials, provider bucket/container/key, raw local filesystem path, destination id, destination URL, connector payload, connector secret, source upload, local directory, web connector, package mutation payload, RAG/vector settings, prompt/model/provider settings, auth/security overrides, browser durable authority, public URL, public proxy URL, same-origin download URL, and same-origin signed-reference token.
+The future `use` route is receipt/state validation only. A caller-supplied bearer URL, provider-private signed URL token, provider credential, or raw provider URL is not request authority for this contract-only freeze.
+
+Forbidden request fields include provider credentials, provider bucket/container/key, raw local filesystem path, destination id, destination URL, connector payload, connector secret, source upload, local directory, web connector, package mutation payload, RAG/vector settings, prompt/model/provider settings, auth/security overrides, browser durable authority, public URL, public proxy URL, same-origin download URL, provider-private signed URL token, raw provider URL, and same-origin signed-reference token.
 
 ## Candidate Response DTOs
 
@@ -147,6 +148,72 @@ prepare_response_required_fields:
   - audit_receipt
   - next_allowed_actions
   - next_state
+use_response_required_fields:
+  - schema_id
+  - schema_version
+  - request_id
+  - status
+  - provider_signed_url_receipt_id
+  - provider_signed_url_state
+  - provider_url_redacted
+  - provider_url_use_count
+  - raw_provider_private_signed_url_token_exposed
+  - raw_provider_url_exposed
+  - audit_receipt
+  - next_allowed_actions
+  - next_state
+revoke_response_required_fields:
+  - schema_id
+  - schema_version
+  - request_id
+  - status
+  - provider_signed_url_receipt_id
+  - provider_signed_url_state
+  - provider_url_revoked
+  - raw_provider_private_signed_url_token_exposed
+  - audit_receipt
+  - next_allowed_actions
+  - next_state
+status_response_required_fields:
+  - schema_id
+  - schema_version
+  - status
+  - provider_signed_url_receipt_id
+  - provider_signed_url_state
+  - provider_url_redacted
+  - provider_url_expires_at
+  - provider_url_expires_in_seconds
+  - raw_provider_private_signed_url_token_exposed
+  - raw_provider_url_exposed
+  - audit_receipt
+  - next_allowed_actions
+  - next_state
+admitted_status_codes:
+  prepare:
+    success: 201
+    replay: 200
+    blocked_or_conflict: 409
+    malformed_request: 422
+  use:
+    success: 200
+    blocked_or_conflict: 409
+    missing_receipt: 404
+    malformed_request: 422
+  revoke:
+    success: 200
+    blocked_or_conflict: 409
+    missing_receipt: 404
+    malformed_request: 422
+  status:
+    success: 200
+    missing_receipt: 404
+    malformed_request: 422
+error_response_required_fields:
+  - schema_id
+  - status
+  - error_code
+  - message
+  - blocked_fields
 response_forbidden_fields:
   - provider_credentials
   - provider_secret

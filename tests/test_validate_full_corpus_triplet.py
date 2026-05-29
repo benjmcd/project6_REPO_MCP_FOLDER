@@ -87,6 +87,7 @@ def _write_summary(
     visual_lane_mode: str,
     explicit_engine: bool = True,
     target_outcomes: list[dict[str, object]] | None = None,
+    generated_at_utc: str = "2026-05-23T01:00:00Z",
 ) -> None:
     runtime_root.mkdir(parents=True, exist_ok=True)
     database_path = runtime_root / "lc.db"
@@ -100,7 +101,7 @@ def _write_summary(
     summary = {
         "schema_id": triplet.LOCAL_CORPUS_SUMMARY_SCHEMA_ID,
         "schema_version": 1,
-        "generated_at_utc": "2026-05-23T01:00:00Z",
+        "generated_at_utc": generated_at_utc,
         "passed": True,
         "runtime_root": str(runtime_root),
         "database_path": str(database_path),
@@ -147,6 +148,13 @@ def _seed_triplet(checkout_root: Path) -> dict[str, Path]:
     return roots
 
 
+def _rewrite_summary(runtime_root: Path, **updates: object) -> None:
+    summary_path = runtime_root / "local_corpus_e2e_summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary.update(updates)
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+
+
 def test_validate_triplet_accepts_same_checkout_full_corpus_receipts(tmp_path: Path) -> None:
     checkout_root = tmp_path / "checkout"
     roots = _seed_triplet(checkout_root)
@@ -173,6 +181,75 @@ def test_validate_triplet_accepts_same_checkout_full_corpus_receipts(tmp_path: P
     )
 
 
+def test_validate_triplet_rejects_absolute_database_path_outside_runtime_root(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    roots = _seed_triplet(checkout_root)
+    outside_db = tmp_path / "outside" / "lc.db"
+    _write_db(
+        outside_db,
+        run_id="baseline-run",
+        document_processing_engine=triplet.BASELINE_ENGINE,
+        visual_lane_mode=triplet.BASELINE_ENGINE,
+    )
+    _rewrite_summary(roots["baseline"], database_path=str(outside_db))
+
+    with pytest.raises(triplet.ValidationError) as exc_info:
+        triplet.validate_triplet(
+            checkout_root=checkout_root,
+            baseline_run_root=roots["baseline"],
+            candidate_a_run_root=roots["candidate_a"],
+            candidate_b_run_root=roots["candidate_b"],
+        )
+
+    assert exc_info.value.code == "baseline_database_outside_runtime_root"
+
+
+def test_validate_triplet_rejects_relative_database_path_escape(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    roots = _seed_triplet(checkout_root)
+    escaped_db = roots["baseline"].parent / "escaped.db"
+    _write_db(
+        escaped_db,
+        run_id="baseline-run",
+        document_processing_engine=triplet.BASELINE_ENGINE,
+        visual_lane_mode=triplet.BASELINE_ENGINE,
+    )
+    _rewrite_summary(roots["baseline"], database_path="../escaped.db")
+
+    with pytest.raises(triplet.ValidationError) as exc_info:
+        triplet.validate_triplet(
+            checkout_root=checkout_root,
+            baseline_run_root=roots["baseline"],
+            candidate_a_run_root=roots["candidate_a"],
+            candidate_b_run_root=roots["candidate_b"],
+        )
+
+    assert exc_info.value.code == "baseline_database_outside_runtime_root"
+
+
+def test_run_root_rejects_explicit_runtime_root_outside_admitted_parent(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    checkout_root.mkdir()
+    external_root = tmp_path / "other-checkout" / "backend" / "app" / "storage_test_runtime" / "lc_e2e" / "baseline"
+    _write_summary(
+        external_root,
+        run_id="baseline-run",
+        document_processing_engine=triplet.BASELINE_ENGINE,
+        visual_lane_mode=triplet.BASELINE_ENGINE,
+    )
+
+    with pytest.raises(triplet.ValidationError) as exc_info:
+        triplet._run_root(
+            str(external_root),
+            checkout_root=checkout_root,
+            label="baseline",
+            engine=triplet.BASELINE_ENGINE,
+            visual_lane=triplet.BASELINE_ENGINE,
+        )
+
+    assert exc_info.value.code == "baseline_runtime_root_outside_admitted_parent"
+
+
 def test_main_discovers_latest_triplet_without_generating_artifacts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -189,6 +266,32 @@ def test_main_discovers_latest_triplet_without_generating_artifacts(
     assert payload["passed"] is True
     assert payload["validate_only"] is True
     assert payload["artifacts_seeded_or_generated"] is False
+
+
+def test_main_discovery_ignores_newer_variant_receipt_without_full_corpus_targets(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    checkout_root = tmp_path / "checkout"
+    _seed_triplet(checkout_root)
+    parent = checkout_root / "backend" / "app" / "storage_test_runtime" / "lc_e2e"
+    _write_summary(
+        parent / "baseline-newer-incomplete",
+        run_id="baseline-newer-incomplete-run",
+        document_processing_engine=triplet.BASELINE_ENGINE,
+        visual_lane_mode=triplet.BASELINE_ENGINE,
+        target_outcomes=_target_outcomes()[:-1],
+        generated_at_utc="2026-05-24T01:00:00Z",
+    )
+    monkeypatch.setattr(triplet, "ROOT", checkout_root)
+
+    exit_code = triplet.main([])
+
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["selected_runs"]["baseline"]["run_id"] == "baseline-run"
+    assert payload["compare_target_set"]["target_count"] == triplet.EXPECTED_CORPUS_PDF_COUNT
 
 
 def test_validate_triplet_fails_closed_on_implicit_baseline_engine(tmp_path: Path) -> None:
@@ -231,3 +334,25 @@ def test_validate_triplet_fails_closed_on_target_set_mismatch(tmp_path: Path) ->
             candidate_a_run_root=roots["candidate_a"],
             candidate_b_run_root=roots["candidate_b"],
         )
+
+
+def test_validate_triplet_rejects_duplicate_run_ids(tmp_path: Path) -> None:
+    checkout_root = tmp_path / "checkout"
+    roots = _seed_triplet(checkout_root)
+    _write_summary(
+        roots["candidate_a"],
+        run_id="baseline-run",
+        document_processing_engine=triplet.BASELINE_ENGINE,
+        visual_lane_mode=triplet.CANDIDATE_A_VISUAL_LANE,
+    )
+
+    with pytest.raises(triplet.ValidationError) as exc_info:
+        triplet.validate_triplet(
+            checkout_root=checkout_root,
+            baseline_run_root=roots["baseline"],
+            candidate_a_run_root=roots["candidate_a"],
+            candidate_b_run_root=roots["candidate_b"],
+        )
+
+    assert exc_info.value.code == "triplet_run_ids_not_distinct"
+    assert exc_info.value.context["duplicates"] == {"baseline-run": ["baseline", "candidate_a"]}

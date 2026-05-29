@@ -7,7 +7,7 @@ import sqlite3
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -93,6 +93,14 @@ def _repo_rel(checkout_root: Path, path: Path) -> str:
         return str(resolved)
 
 
+def _is_within(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve().relative_to(parent.resolve())
+    except (OSError, RuntimeError, ValueError):
+        return False
+    return True
+
+
 def _load_json(path: Path) -> dict[str, Any]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -109,13 +117,20 @@ def _summary_path(runtime_root: Path) -> Path:
     return runtime_root / "local_corpus_e2e_summary.json"
 
 
-def _resolve_explicit_runtime_root(raw_value: str, *, checkout_root: Path) -> Path | None:
+def _resolve_explicit_runtime_root(raw_value: str, *, checkout_root: Path, label: str) -> Path | None:
     if not str(raw_value).strip():
         return None
     candidate = Path(raw_value)
     if not candidate.is_absolute():
         candidate = checkout_root / candidate
     candidate = candidate.resolve()
+    runtime_parent = _runtime_parent(checkout_root)
+    if not _is_within(candidate, runtime_parent):
+        raise ValidationError(
+            f"{label}_runtime_root_outside_admitted_parent",
+            f"Explicit {label} runtime root is outside the same-checkout full-corpus runtime parent.",
+            context={"runtime_root": str(candidate), "admitted_runtime_parent": str(runtime_parent.resolve())},
+        )
     if not _summary_path(candidate).is_file():
         raise ValidationError(
             "explicit_summary_missing",
@@ -143,6 +158,15 @@ def _summary_matches_variant(summary: dict[str, Any], *, engine: str, visual_lan
     return str(summary.get("visual_lane_mode") or BASELINE_ENGINE) == visual_lane
 
 
+def _summary_matches_full_corpus_targets(summary: dict[str, Any], *, label: str) -> bool:
+    try:
+        _require_int(summary, "corpus_pdf_count", expected=EXPECTED_CORPUS_PDF_COUNT, label=label)
+        _target_identity(summary, label=label)
+    except ValidationError:
+        return False
+    return True
+
+
 def _discover_latest_runtime_root(
     checkout_root: Path,
     *,
@@ -160,6 +184,13 @@ def _discover_latest_runtime_root(
     for candidate in parent.iterdir():
         if not candidate.is_dir():
             continue
+        resolved_candidate = candidate.resolve()
+        if not _is_within(resolved_candidate, parent):
+            raise ValidationError(
+                f"{label}_runtime_root_outside_admitted_parent",
+                f"Discovered {label} runtime root is outside the same-checkout full-corpus runtime parent.",
+                context={"runtime_root": str(resolved_candidate), "admitted_runtime_parent": str(parent.resolve())},
+            )
         summary_file = _summary_path(candidate)
         if not summary_file.is_file():
             continue
@@ -167,7 +198,11 @@ def _discover_latest_runtime_root(
             summary = _load_json(summary_file)
         except ValidationError:
             continue
-        if _summary_matches_variant(summary, engine=engine, visual_lane=visual_lane):
+        if _summary_matches_variant(
+            summary,
+            engine=engine,
+            visual_lane=visual_lane,
+        ) and _summary_matches_full_corpus_targets(summary, label=label):
             matches.append((_summary_sort_key(summary, candidate), candidate.resolve()))
     if not matches:
         raise ValidationError(
@@ -186,7 +221,7 @@ def _run_root(
     engine: str,
     visual_lane: str,
 ) -> Path:
-    explicit = _resolve_explicit_runtime_root(explicit_root, checkout_root=checkout_root)
+    explicit = _resolve_explicit_runtime_root(explicit_root, checkout_root=checkout_root, label=label)
     if explicit is not None:
         summary = _load_json(_summary_path(explicit))
         if not _summary_matches_variant(summary, engine=engine, visual_lane=visual_lane):
@@ -286,10 +321,23 @@ def _validate_gate_results(summary: dict[str, Any], *, label: str) -> dict[str, 
     return status
 
 
-def _read_request_config(summary: dict[str, Any], *, runtime_root: Path, label: str) -> dict[str, Any]:
-    database_path = Path(str(summary.get("database_path") or runtime_root / "lc.db"))
+def _database_path(summary: dict[str, Any], *, runtime_root: Path, label: str) -> Path:
+    raw_database_path = str(summary.get("database_path") or "").strip()
+    database_path = Path(raw_database_path) if raw_database_path else runtime_root / "lc.db"
     if not database_path.is_absolute():
         database_path = runtime_root / database_path
+    database_path = database_path.resolve()
+    if not _is_within(database_path, runtime_root):
+        raise ValidationError(
+            f"{label}_database_outside_runtime_root",
+            f"{label} summary database_path is outside the selected same-checkout runtime root.",
+            context={"database_path": str(database_path), "runtime_root": str(runtime_root.resolve())},
+        )
+    return database_path
+
+
+def _read_request_config(summary: dict[str, Any], *, runtime_root: Path, label: str) -> dict[str, Any]:
+    database_path = _database_path(summary, runtime_root=runtime_root, label=label)
     run_id = str(summary.get("run_id") or "").strip()
     if not run_id:
         raise ValidationError(f"{label}_run_id_missing", f"{label} summary has no run_id.")
@@ -481,6 +529,13 @@ def validate_triplet(
         visual_lane=CANDIDATE_B_VISUAL_LANE,
         require_explicit_engine=True,
     )
+    _validate_distinct_run_ids(
+        {
+            "baseline": baseline["run_id"],
+            "candidate_a": candidate_a["run_id"],
+            "candidate_b": candidate_b["run_id"],
+        }
+    )
 
     baseline_hash = baseline["target_set_hash"]
     mismatched = [
@@ -565,6 +620,24 @@ def validate_triplet(
             "runtime_artifacts_seeded_by_validator": False,
         },
     }
+
+
+def _validate_distinct_run_ids(run_ids: Mapping[str, str]) -> None:
+    by_run_id: dict[str, list[str]] = {}
+    for label, run_id in run_ids.items():
+        normalized = str(run_id or "").strip()
+        by_run_id.setdefault(normalized, []).append(label)
+    duplicates = {
+        run_id: labels
+        for run_id, labels in by_run_id.items()
+        if run_id and len(labels) > 1
+    }
+    if duplicates:
+        raise ValidationError(
+            "triplet_run_ids_not_distinct",
+            "Baseline, Candidate A, and Candidate B summaries must use distinct run IDs.",
+            context={"duplicates": duplicates},
+        )
 
 
 def main(argv: list[str] | None = None) -> int:

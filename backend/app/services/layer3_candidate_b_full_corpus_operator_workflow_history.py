@@ -140,10 +140,19 @@ def candidate_b_full_corpus_operator_workflow_history() -> dict[str, Any]:
 
 def _history_rows() -> list[dict[str, Any]]:
     root = _workflow_receipt_root()
+    retry_terminal_cache = _retry_terminal_receipt_cache(root)
     rows: list[dict[str, Any]] = []
     for receipt_file in sorted(root.glob(f"{RUN_RECEIPT_PREFIX}-*/receipt.json")):
         receipt_id = receipt_file.parent.name
-        workflow_status._validate_storage_id(receipt_id, prefix=RUN_RECEIPT_PREFIX)
+        try:
+            workflow_status._validate_storage_id(receipt_id, prefix=RUN_RECEIPT_PREFIX)
+        except workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
+            raise CandidateBFullCorpusOperatorWorkflowHistoryError(
+                f"candidate_b_full_corpus_operator_workflow_history_{exc.code}",
+                exc.message,
+                http_status=exc.http_status,
+                details=exc.details,
+            ) from exc
         receipt = _read_json_receipt(receipt_file)
         if "server_owned_workflow_run" not in receipt:
             schema_id = str(receipt.get("schema_id") or "")
@@ -155,7 +164,7 @@ def _history_rows() -> list[dict[str, Any]]:
                 http_status=409,
                 details={"operator_workflow_receipt_id": receipt_id},
             )
-        rows.append(_history_row(receipt_id, receipt))
+        rows.append(_history_row(receipt_id, receipt, retry_terminal_cache=retry_terminal_cache))
     rows.sort(
         key=lambda row: (
             str(row.get("server_time") or ""),
@@ -166,7 +175,12 @@ def _history_rows() -> list[dict[str, Any]]:
     return rows
 
 
-def _history_row(receipt_id: str, receipt: Mapping[str, Any]) -> dict[str, Any]:
+def _history_row(
+    receipt_id: str,
+    receipt: Mapping[str, Any],
+    *,
+    retry_terminal_cache: Mapping[str, list[tuple[str, dict[str, Any]]]],
+) -> dict[str, Any]:
     server_run = receipt.get("server_owned_workflow_run")
     if not isinstance(server_run, Mapping):
         raise CandidateBFullCorpusOperatorWorkflowHistoryError(
@@ -232,7 +246,9 @@ def _history_row(receipt_id: str, receipt: Mapping[str, Any]) -> dict[str, Any]:
         "candidate_b_run_id": str(receipt["candidate_b_run_id"]),
         "compare_target_set_hash": str(receipt["compare_target_set_hash"]),
         "bridge_receipt_id": str(receipt["bridge_receipt_id"]),
+        "bridge_receipt_hash": str(receipt["bridge_receipt_hash"]),
         "downstream_proof_id": str(receipt["downstream_proof_id"]),
+        "downstream_proof_hash": str(receipt["downstream_proof_hash"]),
         "material_relative_name": str(authority_basis["material_relative_name"]),
         "run_state": str(server_run["run_state"]),
         "state_machine": list(server_run["state_machine"]),
@@ -250,7 +266,11 @@ def _history_row(receipt_id: str, receipt: Mapping[str, Any]) -> dict[str, Any]:
     return {
         **row,
         "row_hash": row_hash,
-        "retry_terminal_status_projection": _retry_terminal_status_projection(receipt_id, receipt_hash),
+        "retry_terminal_status_projection": _retry_terminal_status_projection(
+            receipt_id,
+            receipt_hash,
+            retry_terminal_cache=retry_terminal_cache,
+        ),
         "execution_boundary_projection": _execution_boundary_projection(receipt_id, receipt_hash),
         "process_execution_projection": _process_execution_projection(receipt_id, receipt_hash),
         "process_completion_result_projection": _process_completion_result_projection(receipt_id, receipt_hash),
@@ -275,9 +295,60 @@ def _history_hash_row(row: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _retry_terminal_status_projection(receipt_id: str, receipt_hash: str) -> dict[str, Any]:
+def _retry_terminal_receipt_cache(root: Path) -> dict[str, list[tuple[str, dict[str, Any]]]]:
+    cache: dict[str, list[tuple[str, dict[str, Any]]]] = {}
+    for receipt_file in sorted(
+        root.glob(f"{workflow_status.RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-*/receipt.json")
+    ):
+        receipt_id = receipt_file.parent.name
+        try:
+            workflow_status._validate_storage_id(
+                receipt_id,
+                prefix=workflow_status.RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX,
+            )
+        except workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
+            raise CandidateBFullCorpusOperatorWorkflowHistoryError(
+                f"candidate_b_full_corpus_operator_workflow_history_{exc.code}",
+                exc.message,
+                http_status=exc.http_status,
+                details=exc.details,
+            ) from exc
+        receipt = _read_json_receipt(receipt_file)
+        operator_workflow_receipt_id = str(receipt.get("operator_workflow_receipt_id") or "")
+        if operator_workflow_receipt_id:
+            cache.setdefault(operator_workflow_receipt_id, []).append((receipt_id, receipt))
+    return cache
+
+
+def _retry_terminal_status_projection(
+    receipt_id: str,
+    receipt_hash: str,
+    *,
+    retry_terminal_cache: Mapping[str, list[tuple[str, dict[str, Any]]]],
+) -> dict[str, Any]:
     try:
-        return workflow_status._retry_terminal_status_projection(receipt_id, receipt_hash)
+        matches = retry_terminal_cache.get(receipt_id, [])
+        if not matches:
+            return workflow_status._retry_terminal_not_recorded_projection()
+        if len(matches) > 1:
+            raise workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError(
+                "candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_ambiguous",
+                "Candidate B workflow status found multiple retry terminal receipts for the selected workflow run.",
+                http_status=409,
+                details={
+                    "operator_workflow_receipt_id": receipt_id,
+                    "retry_completion_failure_receipt_ids": [
+                        matched_receipt_id for matched_receipt_id, _receipt in matches
+                    ],
+                },
+            )
+        retry_terminal_receipt_id, retry_terminal_receipt = matches[0]
+        return workflow_status._validated_retry_terminal_projection(
+            retry_terminal_receipt_id,
+            retry_terminal_receipt,
+            operator_workflow_receipt_id=receipt_id,
+            operator_workflow_receipt_hash=receipt_hash,
+        )
     except workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
         raise CandidateBFullCorpusOperatorWorkflowHistoryError(
             f"candidate_b_full_corpus_operator_workflow_history_{exc.code}",
@@ -400,9 +471,28 @@ def _validate_server_run(
                 "received": source_receipt_id,
             }
         )
+    else:
+        try:
+            workflow_status._validate_storage_id(source_receipt_id, prefix=workflow_status.WORKFLOW_RECEIPT_PREFIX)
+        except workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
+            mismatches.append(
+                {
+                    "field": "source_operator_workflow_receipt_id",
+                    "expected": "server-owned workflow receipt storage identifier",
+                    "received": source_receipt_id,
+                    "upstream_error": exc.code,
+                }
+            )
     if receipt_hash != str(receipt.get("receipt_hash")):
         mismatches.append(
             {"field": "receipt_hash", "expected": receipt_hash, "received": receipt.get("receipt_hash")}
+        )
+    if mismatches:
+        raise CandidateBFullCorpusOperatorWorkflowHistoryError(
+            "candidate_b_full_corpus_operator_workflow_history_authority_mismatch",
+            "Workflow-run history receipt has stale or contradictory server-owned authority.",
+            http_status=409,
+            details={"operator_workflow_receipt_id": receipt_id, "mismatches": mismatches},
         )
     source_receipt = _source_receipt(source_receipt_id)
     if source_receipt.get("receipt_hash") != source_receipt_hash:
@@ -413,6 +503,7 @@ def _validate_server_run(
                 "received": source_receipt_hash,
             }
         )
+    mismatches.extend(_source_receipt_authority_mismatches(source_receipt, authority_basis))
     if mismatches:
         raise CandidateBFullCorpusOperatorWorkflowHistoryError(
             "candidate_b_full_corpus_operator_workflow_history_authority_mismatch",
@@ -456,6 +547,29 @@ def _source_receipt(receipt_id: str) -> dict[str, Any]:
             http_status=exc.http_status,
             details=exc.details,
         ) from exc
+
+
+def _source_receipt_authority_mismatches(
+    source_receipt: Mapping[str, Any],
+    authority_basis: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    authority_fields = {
+        "baseline_run_id": str(source_receipt.get("baseline_run_id") or ""),
+        "candidate_a_run_id": str(source_receipt.get("candidate_a_run_id") or ""),
+        "candidate_b_run_id": str(source_receipt.get("candidate_b_run_id") or ""),
+        "compare_target_set_hash": str(source_receipt.get("compare_target_set_hash") or ""),
+        "runtime_root_lifecycle_receipt_id": _runtime_root_lifecycle_receipt_id(source_receipt),
+        "material_relative_name": _material_relative_name(source_receipt),
+    }
+    return [
+        {
+            "field": f"source_receipt.{field}",
+            "expected": expected_value,
+            "received": authority_basis.get(field),
+        }
+        for field, expected_value in authority_fields.items()
+        if authority_basis.get(field) != expected_value
+    ]
 
 
 def _read_json_receipt(path: Path) -> dict[str, Any]:

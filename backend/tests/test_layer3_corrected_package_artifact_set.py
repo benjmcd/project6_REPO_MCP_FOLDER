@@ -286,7 +286,7 @@ def _record_payload(seed: dict, request_id: str = "req-corrected-set") -> dict:
     }
 
 
-def test_corrected_package_artifact_set_records_redacted_authority_and_idempotency(tmp_path) -> None:
+def test_corrected_package_artifact_set_records_redacted_authority_and_idempotency(tmp_path, monkeypatch) -> None:
     engine = create_engine(f"sqlite:///{tmp_path / 'corrected-set.sqlite'}", future=True)
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine, future=True)
@@ -318,6 +318,11 @@ def test_corrected_package_artifact_set_records_redacted_authority_and_idempoten
             for package in db.query(L3OutputPackage).order_by(L3OutputPackage.package_kind).all()
         ]
         assert source_packages_after == source_packages_before
+
+        def _unexpected_artifact_reverify(*_args, **_kwargs):
+            raise AssertionError("idempotent corrected artifact-set replay must use persisted authority")
+
+        monkeypatch.setattr(corrected_service, "_verify_materialized_artifacts", _unexpected_artifact_reverify)
 
         replay = corrected_service.record_corrected_package_artifact_set(db, payload)
         assert replay["status"] == "already_recorded"

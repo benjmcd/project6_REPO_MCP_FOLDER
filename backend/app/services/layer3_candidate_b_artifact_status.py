@@ -15,6 +15,39 @@ SCHEMA_VERSION = 1
 STATUS_MODE = "candidate_b_retained_artifact_family_status_v1"
 OPERATOR_DECISION = "inspect_candidate_b_governed_retained_artifact_family_status"
 _SOURCE_KINDS = frozenset({"bundle", "runtime"})
+_BUNDLE_HASH_KEYS = (
+    "schema_id",
+    "schema_version",
+    "bridge_mode",
+    "candidate_b_bundle_id",
+    "baseline_run_id",
+    "candidate_a_run_id",
+    "candidate_b_source_kind",
+    "compare_target_set_hash",
+    "bundle_file_manifest_hash",
+    "bundle_raw_file_manifest_hash",
+    "admitted_file_subset_source_hash",
+    "admitted_file_subset_hash",
+    "governed_retained_artifact_family_hash",
+    "redaction_policy_id",
+)
+_RUNTIME_HASH_KEYS = (
+    "schema_id",
+    "schema_version",
+    "bridge_mode",
+    "candidate_b_run_id",
+    "baseline_run_id",
+    "candidate_a_run_id",
+    "candidate_b_source_kind",
+    "document_processing_engine",
+    "visual_lane_mode",
+    "compare_target_set_hash",
+    "runtime_review_root_storage_authority_hash",
+    "admitted_file_subset_hash",
+    "governed_retained_artifact_family_hash",
+    "candidate_b_visual_lane_evidence",
+    "redaction_policy_id",
+)
 
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
@@ -247,6 +280,7 @@ def _validate_receipt(source_kind: str, receipt_id: str, receipt: Mapping[str, A
             http_status=409,
             details={"mismatches": mismatches},
         )
+    _validate_bridge_receipt_hash(source_kind, receipt)
     artifact_family = receipt.get("governed_retained_artifact_family")
     if not isinstance(artifact_family, dict):
         raise CandidateBArtifactStatusError(
@@ -279,6 +313,71 @@ def _validate_receipt(source_kind: str, receipt_id: str, receipt: Mapping[str, A
                 http_status=409,
                 details={"field": field},
             )
+    _validate_required_role_groups(artifact_family)
+
+
+def _validate_bridge_receipt_hash(source_kind: str, receipt: Mapping[str, Any]) -> None:
+    hash_keys = _bridge_hash_keys(source_kind)
+    missing_hash_fields = [key for key in hash_keys if key not in receipt]
+    if missing_hash_fields:
+        raise CandidateBArtifactStatusError(
+            "candidate_b_artifact_status_bridge_receipt_authority_field_missing",
+            "The selected Candidate B bridge receipt is missing authority hash fields.",
+            http_status=409,
+            details={"candidate_b_source_kind": source_kind, "missing_fields": missing_hash_fields},
+        )
+    expected_hash = str(receipt.get("bridge_receipt_hash") or "").strip()
+    if len(expected_hash) != 64:
+        raise CandidateBArtifactStatusError(
+            "candidate_b_artifact_status_bridge_receipt_hash_invalid",
+            "The selected Candidate B bridge receipt does not carry a valid authority hash.",
+            http_status=409,
+            details={"candidate_b_source_kind": source_kind, "received": expected_hash or None},
+        )
+    recomputed_hash = _stable_hash({key: receipt[key] for key in hash_keys})
+    if recomputed_hash != expected_hash:
+        raise CandidateBArtifactStatusError(
+            "candidate_b_artifact_status_bridge_receipt_hash_mismatch",
+            "The selected Candidate B bridge receipt authority hash is stale.",
+            http_status=409,
+            details={
+                "candidate_b_source_kind": source_kind,
+                "expected": expected_hash,
+                "recomputed": recomputed_hash,
+            },
+        )
+
+
+def _bridge_hash_keys(source_kind: str) -> tuple[str, ...]:
+    if source_kind == "bundle":
+        return _BUNDLE_HASH_KEYS
+    return _RUNTIME_HASH_KEYS
+
+
+def _validate_required_role_groups(artifact_family: Mapping[str, Any]) -> None:
+    required_roles = {
+        "material_analysis_payloads",
+        "visual_page_evidence",
+        "provenance_audit_artifacts",
+        "product_inspection_artifacts",
+        "delivery_artifacts",
+    }
+    roles = artifact_family.get("roles")
+    if not isinstance(roles, Mapping):
+        raise CandidateBArtifactStatusError(
+            "candidate_b_artifact_status_governed_artifact_roles_missing",
+            "The governed artifact family is missing required retained artifact role groups.",
+            http_status=409,
+        )
+    missing_roles = sorted(role for role in required_roles if role not in roles)
+    invalid_roles = sorted(role for role in required_roles if role in roles and not isinstance(roles.get(role), list))
+    if missing_roles or invalid_roles:
+        raise CandidateBArtifactStatusError(
+            "candidate_b_artifact_status_governed_artifact_roles_incomplete",
+            "The governed artifact family is missing required retained artifact role groups.",
+            http_status=409,
+            details={"missing_roles": missing_roles, "invalid_roles": invalid_roles},
+        )
 
 
 def _artifact_family_projection(artifact_family: Mapping[str, Any]) -> dict[str, Any]:
@@ -331,7 +430,7 @@ def _validate_redacted_role_previews(role_previews: Mapping[str, Any]) -> None:
                     details={"role": role, "index": index},
                 )
             display_ref = str(preview.get("display_ref") or "").strip()
-            if not display_ref or "/" in display_ref or "\\" in display_ref or ".." in display_ref:
+            if not display_ref or "/" in display_ref or "\\" in display_ref or display_ref in {".", ".."}:
                 raise CandidateBArtifactStatusError(
                     "candidate_b_artifact_status_role_preview_not_redacted",
                     "Candidate B artifact-family status previews must use redacted display refs only.",

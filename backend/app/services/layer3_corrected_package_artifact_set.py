@@ -413,7 +413,16 @@ def _verify_materialized_artifacts(
                 http_status=409,
                 blocked_fields=["replacement_artifact_materialization_id"],
             )
-        artifact_bytes = artifact_path.read_bytes()
+        try:
+            artifact_bytes = artifact_path.read_bytes()
+        except OSError as exc:
+            raise layer3_workbench.Layer3WorkbenchError(
+                "corrected_package_artifact_set_artifact_unreadable",
+                "Materialized corrected artifact candidate could not be read.",
+                status="blocked",
+                http_status=409,
+                blocked_fields=["replacement_artifact_materialization_id"],
+            ) from exc
         actual_hash = hashlib.sha256(artifact_bytes).hexdigest()
         if actual_hash != expected_hash:
             _raise_mismatch(
@@ -502,6 +511,59 @@ def _record_response(
             "connector_dispatch_enabled": False,
         },
     }
+
+
+def _existing_record_mismatches_request(
+    record: L3CorrectedPackageArtifactSet,
+    *,
+    session_id: str,
+    analysis_plan_id: str,
+    pass_run_id: str,
+    reconciliation_record_id: str,
+    materialization_id: str,
+    materialization_basis_hash: str,
+    source_package_set_hash: str,
+    source_output_package_ids: list[str],
+    source_package_kinds: list[str],
+    source_payload_refs: list[str],
+    source_payload_hashes: list[str],
+    result_review_record_ref: str,
+    reviewed_items_hash: str,
+    package_review_preview_hash: str,
+    corrected_package_set_id: str,
+    corrected_package_kinds: list[str],
+    corrected_artifact_refs: list[str],
+    corrected_artifact_hashes: list[str],
+) -> list[str]:
+    mismatches = [
+        field
+        for field, expected in {
+            "session_id": session_id,
+            "analysis_plan_id": analysis_plan_id,
+            "pass_run_id": pass_run_id,
+            "reconciliation_record_id": reconciliation_record_id,
+            "replacement_artifact_materialization_id": materialization_id,
+            "materialization_basis_hash": materialization_basis_hash,
+            "source_package_set_hash": source_package_set_hash,
+            "result_review_record_ref": result_review_record_ref,
+            "reviewed_output_items_hash": reviewed_items_hash,
+            "package_review_preview_hash": package_review_preview_hash,
+            "corrected_package_set_id": corrected_package_set_id,
+        }.items()
+        if str(getattr(record, field) or "") != str(expected or "")
+    ]
+    for field, supplied, recorded in (
+        ("source_output_package_ids", source_output_package_ids, record.source_output_package_ids_json),
+        ("source_package_kinds", source_package_kinds, record.source_package_kinds_json),
+        ("source_payload_refs", source_payload_refs, record.source_payload_refs_json),
+        ("source_payload_hashes", source_payload_hashes, record.source_payload_hashes_json),
+        ("corrected_package_kinds", corrected_package_kinds, record.corrected_package_kinds_json),
+        ("corrected_artifact_refs", corrected_artifact_refs, record.corrected_artifact_refs_json),
+        ("corrected_artifact_hashes", corrected_artifact_hashes, record.corrected_artifact_hashes_json),
+    ):
+        if list(recorded or []) != list(supplied):
+            mismatches.append(field)
+    return sorted(set(mismatches))
 
 
 def record_corrected_package_artifact_set(db: Session, payload: dict[str, Any]) -> dict[str, Any]:
@@ -700,9 +762,6 @@ def record_corrected_package_artifact_set(db: Session, payload: dict[str, Any]) 
             "replacement_artifact_materialization_id",
             "Materialization package kinds must match source package authority.",
         )
-    corrected_artifact_refs, corrected_artifact_hashes, corrected_artifact_byte_sizes = _verify_materialized_artifacts(
-        materialization
-    )
     corrected_package_set_id = stable_id(
         "corrset",
         {
@@ -712,6 +771,87 @@ def record_corrected_package_artifact_set(db: Session, payload: dict[str, Any]) 
             "materialization_id": materialization_id,
             "materialization_basis_hash": materialization_basis_hash,
         },
+    )
+    materialized_refs = [str(ref) for ref in list(materialization.replacement_payload_refs_json or [])]
+    materialized_hashes = [str(value) for value in list(materialization.replacement_payload_hashes_json or [])]
+
+    existing_for_request = (
+        db.query(L3CorrectedPackageArtifactSet)
+        .filter(L3CorrectedPackageArtifactSet.client_request_id == request_id)
+        .one_or_none()
+    )
+    if existing_for_request is not None:
+        mismatches = _existing_record_mismatches_request(
+            existing_for_request,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            reconciliation_record_id=reconciliation_record_id,
+            materialization_id=materialization_id,
+            materialization_basis_hash=materialization_basis_hash,
+            source_package_set_hash=source_package_set_hash,
+            source_output_package_ids=source_output_package_ids,
+            source_package_kinds=source_package_kinds,
+            source_payload_refs=source_payload_refs,
+            source_payload_hashes=source_payload_hashes,
+            result_review_record_ref=_string(payload.get("result_review_record_ref")),
+            reviewed_items_hash=reviewed_items_hash,
+            package_review_preview_hash=expected_package_preview_hash,
+            corrected_package_set_id=corrected_package_set_id,
+            corrected_package_kinds=corrected_package_kinds,
+            corrected_artifact_refs=materialized_refs,
+            corrected_artifact_hashes=materialized_hashes,
+        )
+        if mismatches:
+            _raise_mismatch(
+                "corrected_package_artifact_set_client_request_conflict",
+                "client_request_id",
+                "client_request_id already recorded a different corrected artifact basis.",
+            )
+        return _record_response(request_id=request_id, status="already_recorded", record=existing_for_request)
+
+    existing_for_materialization = (
+        db.query(L3CorrectedPackageArtifactSet)
+        .filter(
+            L3CorrectedPackageArtifactSet.session_id == session_id,
+            L3CorrectedPackageArtifactSet.reconciliation_record_id == reconciliation_record_id,
+            L3CorrectedPackageArtifactSet.replacement_artifact_materialization_id == materialization_id,
+            L3CorrectedPackageArtifactSet.materialization_basis_hash == materialization_basis_hash,
+            L3CorrectedPackageArtifactSet.corrected_package_set_id == corrected_package_set_id,
+        )
+        .one_or_none()
+    )
+    if existing_for_materialization is not None:
+        mismatches = _existing_record_mismatches_request(
+            existing_for_materialization,
+            session_id=session_id,
+            analysis_plan_id=analysis_plan_id,
+            pass_run_id=pass_run_id,
+            reconciliation_record_id=reconciliation_record_id,
+            materialization_id=materialization_id,
+            materialization_basis_hash=materialization_basis_hash,
+            source_package_set_hash=source_package_set_hash,
+            source_output_package_ids=source_output_package_ids,
+            source_package_kinds=source_package_kinds,
+            source_payload_refs=source_payload_refs,
+            source_payload_hashes=source_payload_hashes,
+            result_review_record_ref=_string(payload.get("result_review_record_ref")),
+            reviewed_items_hash=reviewed_items_hash,
+            package_review_preview_hash=expected_package_preview_hash,
+            corrected_package_set_id=corrected_package_set_id,
+            corrected_package_kinds=corrected_package_kinds,
+            corrected_artifact_refs=materialized_refs,
+            corrected_artifact_hashes=materialized_hashes,
+        )
+        if not mismatches:
+            return _record_response(
+                request_id=request_id,
+                status="already_recorded",
+                record=existing_for_materialization,
+            )
+
+    corrected_artifact_refs, corrected_artifact_hashes, corrected_artifact_byte_sizes = _verify_materialized_artifacts(
+        materialization
     )
     corrected_set_hash = corrected_package_set_hash(
         corrected_package_set_id=corrected_package_set_id,

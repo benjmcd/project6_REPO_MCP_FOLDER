@@ -367,6 +367,32 @@ def test_replacement_package_set_authority_concurrent_duplicate_request_records_
         engine.dispose()
 
 
+def test_replacement_package_set_authority_records_same_basis_replay_request_ids(tmp_path) -> None:
+    engine = create_engine(f"sqlite:///{tmp_path / 'replacement-authority-replay.sqlite'}", future=True)
+    Base.metadata.create_all(engine)
+    SessionLocal = sessionmaker(bind=engine, future=True)
+    db = SessionLocal()
+    try:
+        _seed_authority_source(db)
+        first = authority_service.record_replacement_package_set_authority(db, _authority_payload())
+        replay = authority_service.record_replacement_package_set_authority(
+            db,
+            _authority_payload(request_id="req-replacement-authority-same-basis-replay"),
+        )
+        assert replay["status"] == "already_recorded"
+        assert replay["replacement_package_set_authority_id"] == first["replacement_package_set_authority_id"]
+
+        authority = db.query(L3ReplacementPackageSetAuthority).one()
+        assert authority.client_request_id == "req-replacement-authority"
+        assert authority.authority_snapshot_json["same_basis_replay_client_request_ids"] == [
+            "req-replacement-authority-same-basis-replay"
+        ]
+        assert authority.authority_snapshot_json["same_basis_replay_client_request_count"] == 1
+    finally:
+        db.close()
+        engine.dispose()
+
+
 def test_replacement_package_set_authority_from_corrected_artifact_set_records_redacted_authority(
     tmp_path,
 ) -> None:

@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 import sys
-from typing import Any
+from typing import Any, Mapping
 
 from fastapi.testclient import TestClient
 import pytest
@@ -115,6 +115,46 @@ def _stable_hash(value: Any) -> str:
 
 
 def _write_source_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dict[str, Any]]:
+    runtime_root_lifecycle = {
+        "schema_id": workflow_status.RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID,
+        "lifecycle_mode": workflow_status.RUNTIME_ROOT_LIFECYCLE_MODE,
+        "lifecycle_receipt_id": RUNTIME_ROOT_LIFECYCLE_RECEIPT_ID,
+        "lifecycle_receipt_hash": "5" * 64,
+        "runtime_parent_ref": "redacted://sha256/runtime-parent",
+        "root_count": 3,
+        "receipt_file": "repo://backend/app/storage_test_runtime/lifecycle/receipt.json",
+        "validate_only_triplet": True,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+    }
+    corpus = {
+        "corpus_pdf_count": 69,
+        "eligible_file_count": 71,
+        "material_relative_name": "text/target-00001.md",
+        "target_status_counts": {
+            "baseline": {"recommended": 69},
+            "candidate_a": {"recommended": 69},
+            "candidate_b": {"recommended": 69},
+        },
+        "eligibility_summary": {
+            "corpus_pdf_count": 69,
+            "eligible_pdf_count": 69,
+            "skipped_pdf_count": 0,
+            "failed_pdf_count": 0,
+            "source_directory_eligible_file_count": 71,
+            "source_directory_extra_material_file_count": 2,
+            "all_eligible_pdfs_processed": True,
+            "candidate_b_target_status_counts": {"recommended": 69},
+        },
+    }
+    baseline_rollback = {
+        "available": True,
+        "selector": "baseline",
+        "explicit_document_processing_engine": "baseline",
+        "depends_on_candidate_b_artifacts": False,
+        "candidate_a_visual_lane_preserved": True,
+        "rollback_requires_selector_mutation": False,
+    }
     receipt_input = {
         "schema_id": workflow_status.WORKFLOW_SCHEMA_ID,
         "schema_version": workflow_status.SCHEMA_VERSION,
@@ -128,6 +168,9 @@ def _write_source_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dic
         "downstream_proof_id": DOWNSTREAM_PROOF_ID,
         "downstream_proof_hash": DOWNSTREAM_PROOF_HASH,
         "coverage_count": 17,
+        "corpus": corpus,
+        "baseline_rollback": baseline_rollback,
+        "runtime_root_lifecycle": runtime_root_lifecycle,
     }
     receipt_hash = _stable_hash(receipt_input)
     receipt_id = f"{workflow_status.WORKFLOW_RECEIPT_PREFIX}-{receipt_hash[:24]}"
@@ -139,34 +182,8 @@ def _write_source_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dic
         "server_time": "2026-05-23T00:00:00Z",
         "validate_only_triplet": True,
         "artifacts_seeded_or_generated_by_triplet_validator": False,
-        "corpus": {
-            "corpus_pdf_count": 69,
-            "eligible_file_count": 71,
-            "material_relative_name": "text/target-00001.md",
-            "target_status_counts": {
-                "baseline": {"recommended": 69},
-                "candidate_a": {"recommended": 69},
-                "candidate_b": {"recommended": 69},
-            },
-            "eligibility_summary": {
-                "corpus_pdf_count": 69,
-                "eligible_pdf_count": 69,
-                "skipped_pdf_count": 0,
-                "failed_pdf_count": 0,
-                "source_directory_eligible_file_count": 71,
-                "source_directory_extra_material_file_count": 2,
-                "all_eligible_pdfs_processed": True,
-                "candidate_b_target_status_counts": {"recommended": 69},
-            },
-        },
-        "baseline_rollback": {
-            "available": True,
-            "selector": "baseline",
-            "explicit_document_processing_engine": "baseline",
-            "depends_on_candidate_b_artifacts": False,
-            "candidate_a_visual_lane_preserved": True,
-            "rollback_requires_selector_mutation": False,
-        },
+        "corpus": corpus,
+        "baseline_rollback": baseline_rollback,
         "refs": {
             "baseline_runtime_root": "repo://artifacts/baseline",
             "candidate_a_runtime_root": "repo://artifacts/candidate-a",
@@ -200,18 +217,7 @@ def _write_source_receipt(extra: dict[str, Any] | None = None) -> tuple[str, dic
             "curated_file_count": 71,
             "text_file_count": 71,
         },
-        "runtime_root_lifecycle": {
-            "schema_id": workflow_status.RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID,
-            "lifecycle_mode": workflow_status.RUNTIME_ROOT_LIFECYCLE_MODE,
-            "lifecycle_receipt_id": RUNTIME_ROOT_LIFECYCLE_RECEIPT_ID,
-            "lifecycle_receipt_hash": "5" * 64,
-            "runtime_parent_ref": "redacted://sha256/runtime-parent",
-            "root_count": 3,
-            "receipt_file": "repo://backend/app/storage_test_runtime/lifecycle/receipt.json",
-            "validate_only_triplet": True,
-            "raw_local_path_exposed": False,
-            "raw_url_exposed": False,
-        },
+        "runtime_root_lifecycle": runtime_root_lifecycle,
         "negative_invariants": {
             "baseline_default_changed": False,
             "candidate_a_semantics_changed": False,
@@ -857,6 +863,7 @@ def _fake_process_launch(
     *,
     process_execution_receipt_id: str,
     process_invocation_hash: str,
+    selected_process_execution_authority: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     handle_hash = _stable_hash(
         {
@@ -878,6 +885,13 @@ def _workflow_receipt_file(receipt_id: str) -> Path:
     return Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir) / receipt_id / "receipt.json"
 
 
+def _rewrite_workflow_receipt(receipt_id: str, receipt: dict[str, Any]) -> None:
+    _workflow_receipt_file(receipt_id).write_text(
+        json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatible_receipt(
     client: TestClient,
 ) -> None:
@@ -893,6 +907,7 @@ def test_candidate_b_full_corpus_operator_workflow_run_persists_status_compatibl
     assert body["state_machine"] == list(workflow_run.STATE_MACHINE)
     assert body["source_operator_workflow_receipt_id"] == source_receipt_id
     assert body["source_operator_workflow_receipt_hash"] == source_receipt["receipt_hash"]
+    assert body["run_receipt_ref"].endswith(f"/{body['run_receipt_hash'][:24]}")
     assert body["runtime_root_lifecycle"]["lifecycle_receipt_id"] == RUNTIME_ROOT_LIFECYCLE_RECEIPT_ID
     assert body["compare_target_set_hash"] == COMPARE_TARGET_SET_HASH
     policy = body["ownership_access_policy"]
@@ -992,6 +1007,30 @@ def test_candidate_b_full_corpus_operator_workflow_run_proxy_owner_can_create_bo
     assert owner_binding["tenant_or_workspace_ref_hash"] == tenant_ref_hash
 
 
+def test_candidate_b_full_corpus_operator_workflow_run_proxy_rejects_cross_owner_replay(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_source_receipt()
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    alice_headers = {"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"}
+    bob_headers = {"X-Forwarded-User": "bob", "X-Forwarded-Groups": "tenant-a"}
+
+    first_response = client.post(RUN_ENDPOINT, json=_run_request(), headers=alice_headers)
+    replay_response = client.post(RUN_ENDPOINT, json=_run_request(), headers=bob_headers)
+
+    assert first_response.status_code == 200
+    assert replay_response.status_code == 409
+    body = replay_response.json()
+    assert body["run_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_run_idempotency_conflict"
+    assert any(
+        mismatch["field"].startswith("workflow_receipt_owner_binding.")
+        for mismatch in body["error"]["details"]["mismatches"]
+    )
+
+
 def test_candidate_b_full_corpus_operator_workflow_queue_route_uses_owner_policy_context(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -1054,6 +1093,7 @@ def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_ru
     assert body["cancel_runtime_admitted"] is False
     assert body["queue_state_authority_runtime_admitted"] is True
     assert body["queue_scheduler_runtime_admitted"] is True
+    assert body["retry_progress_checkpoint_runtime_admitted"] is True
     assert body["retry_terminal_status_projection_runtime_admitted"] is True
     assert body["worker_attempt_runtime_admitted"] is True
     assert body["background_process_runtime_admitted"] is False
@@ -1082,6 +1122,45 @@ def test_candidate_b_full_corpus_operator_workflow_history_lists_server_owned_ru
     assert "C:\\" not in serialized
     assert "file:///" not in serialized
     assert "https://" not in serialized
+
+
+def test_candidate_b_full_corpus_operator_workflow_history_uses_cached_retry_terminal_lookup(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request())
+
+    def _unexpected_status_scan(*_args: object, **_kwargs: object) -> dict[str, Any]:
+        raise AssertionError("history should use its per-request retry terminal cache")
+
+    monkeypatch.setattr(workflow_status, "_retry_terminal_status_projection", _unexpected_status_scan)
+
+    response = client.get(HISTORY_ENDPOINT)
+
+    assert response.status_code == 200
+    row = response.json()["history_rows"][0]
+    assert row["retry_terminal_status_projection"]["retry_terminal_projection_state"] == "not_recorded"
+
+
+def test_candidate_b_full_corpus_operator_workflow_history_wraps_invalid_receipt_id(
+    client: TestClient,
+) -> None:
+    root = Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+    bad_receipt_id = f"{workflow_run.RUN_RECEIPT_PREFIX}-bad..id"
+    bad_receipt_path = root / bad_receipt_id / "receipt.json"
+    bad_receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    bad_receipt_path.write_text("{}\n", encoding="utf-8")
+
+    response = client.get(HISTORY_ENDPOINT)
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["history_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_history_"
+        "candidate_b_full_corpus_operator_workflow_status_storage_id_invalid"
+    )
 
 
 def test_candidate_b_full_corpus_operator_workflow_lifecycle_expires_append_only(
@@ -1359,6 +1438,30 @@ def test_candidate_b_full_corpus_operator_workflow_scheduler_lease_rejects_compe
             client_request_id="candidate-b-full-corpus-workflow-scheduler-lease-second",
         ),
     )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["scheduler_lease_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_scheduler_lease_conflict"
+
+
+def test_candidate_b_full_corpus_operator_workflow_scheduler_lease_rejects_existing_atomic_claim(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    client.post(RUN_ENDPOINT, json=_run_request()).json()
+    history_body = client.get(HISTORY_ENDPOINT).json()
+    row = history_body["history_rows"][0]
+    queue_state_body = client.post(QUEUE_STATE_ENDPOINT, json=_queue_state_request(history_body, row)).json()
+    request = _scheduler_lease_request(history_body, row, queue_state_body)
+    workflow_scheduler_lease._acquire_scheduler_lease_index(
+        root=Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir),
+        scheduler_lease_receipt_id="cb-full-corpus-operator-scheduler-lease-inflight",
+        queue_state_receipt_id=queue_state_body["queue_state_receipt_id"],
+        queue_state_authority_hash=queue_state_body["queue_state_authority_hash"],
+    )
+
+    response = client.post(SCHEDULER_LEASE_ENDPOINT, json=request)
 
     assert response.status_code == 409
     body = response.json()
@@ -1752,6 +1855,28 @@ def test_candidate_b_full_corpus_operator_workflow_completion_failure_records_ap
     assert "https://" not in serialized
 
 
+def test_candidate_b_full_corpus_operator_workflow_completion_failure_atomic_writer_fails_closed(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "receipt.json"
+
+    def _fail_replace(self: Path, _target: Path) -> Path:
+        raise OSError("simulated non-atomic replace failure")
+
+    monkeypatch.setattr(Path, "replace", _fail_replace)
+
+    with pytest.raises(
+        workflow_completion_failure.CandidateBFullCorpusOperatorWorkflowCompletionFailureError
+    ) as exc_info:
+        workflow_completion_failure._write_receipt_atomically(target, {"receipt": "payload"})
+
+    assert exc_info.value.code == (
+        "candidate_b_full_corpus_operator_workflow_completion_failure_receipt_write_failed"
+    )
+    assert not target.exists()
+
+
 def test_candidate_b_full_corpus_operator_workflow_completion_failure_is_idempotent(
     client: TestClient,
 ) -> None:
@@ -1826,6 +1951,45 @@ def test_candidate_b_full_corpus_operator_workflow_completion_failure_rejects_st
     )
 
 
+def test_candidate_b_full_corpus_operator_workflow_completion_failure_revalidates_checkpoint_before_write(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    history_body, row, progress_checkpoint_body = _progress_checkpoint_chain(client)
+    original_validate_no_existing = workflow_completion_failure._validate_no_existing_terminal_receipt
+
+    def create_newer_checkpoint_before_write(**kwargs: Any) -> None:
+        original_validate_no_existing(**kwargs)
+        newer = dict(progress_checkpoint_body)
+        newer["progress_checkpoint_receipt_id"] = "cb-full-corpus-operator-progress-checkpoint-race"
+        newer["progress_checkpoint_sequence"] = int(progress_checkpoint_body["progress_checkpoint_sequence"]) + 1
+        receipt_file = (
+            Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+            / newer["progress_checkpoint_receipt_id"]
+            / "receipt.json"
+        )
+        receipt_file.parent.mkdir(parents=True, exist_ok=True)
+        receipt_file.write_text(json.dumps(newer, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        workflow_completion_failure,
+        "_validate_no_existing_terminal_receipt",
+        create_newer_checkpoint_before_write,
+    )
+
+    response = client.post(
+        COMPLETION_FAILURE_ENDPOINT,
+        json=_completion_failure_request(history_body, row, progress_checkpoint_body),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["completion_failure_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_completion_failure_progress_checkpoint_not_latest"
+    )
+
+
 def test_candidate_b_full_corpus_operator_workflow_completion_failure_rejects_terminal_conflict(
     client: TestClient,
 ) -> None:
@@ -1846,6 +2010,36 @@ def test_candidate_b_full_corpus_operator_workflow_completion_failure_rejects_te
             terminal_failure_code="operator_safe_failure",
             terminal_failure_phase="analysis",
         ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["completion_failure_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_completion_failure_terminal_conflict"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_completion_failure_rejects_atomic_terminal_index_conflict(
+    client: TestClient,
+) -> None:
+    history_body, row, progress_checkpoint_body = _progress_checkpoint_chain(client)
+    index_hash = workflow_status._stable_hash(
+        {
+            "worker_attempt_receipt_id": progress_checkpoint_body["worker_attempt_receipt_id"],
+            "worker_attempt_authority_hash": progress_checkpoint_body["worker_attempt_authority_hash"],
+            "exclusive_terminal_receipt_per_worker_attempt": True,
+        }
+    )
+    index_dir = (
+        Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+        / f"{workflow_completion_failure.COMPLETION_FAILURE_RECEIPT_PREFIX}-worker-attempt-index-{index_hash[:24]}"
+    )
+    index_dir.mkdir(parents=True)
+
+    response = client.post(
+        COMPLETION_FAILURE_ENDPOINT,
+        json=_completion_failure_request(history_body, row, progress_checkpoint_body),
     )
 
     assert response.status_code == 409
@@ -2295,6 +2489,61 @@ def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects
     )
 
 
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_atomic_index_conflict(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+    index_hash = workflow_status._stable_hash(
+        {
+            "retry_queue_state_receipt_id": retry_queue_state_body["retry_queue_state_receipt_id"],
+            "retry_queue_state_authority_hash": retry_queue_state_body["retry_queue_state_authority_hash"],
+            "exclusive_retry_queue_state_lease": True,
+        }
+    )
+    index_dir = (
+        Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+        / f"{workflow_retry_scheduler_lease.RETRY_SCHEDULER_LEASE_RECEIPT_PREFIX}-queue-state-index-{index_hash[:24]}"
+    )
+    index_dir.mkdir(parents=True)
+
+    response = client.post(
+        RETRY_SCHEDULER_LEASE_ENDPOINT,
+        json=_retry_scheduler_lease_request(history_body, row, retry_queue_state_body),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_scheduler_lease_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_queue_state_conflict"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_rejects_raw_request_id(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_queue_state_body = _retry_queue_state_chain(client)
+
+    response = client.post(
+        RETRY_SCHEDULER_LEASE_ENDPOINT,
+        json=_retry_scheduler_lease_request(
+            history_body,
+            row,
+            retry_queue_state_body,
+            client_request_id="C:\\operator\\private\\request",
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_scheduler_lease_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_request_id_invalid"
+    )
+    receipt_root = Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir)
+    assert not list(receipt_root.glob(f"{workflow_retry_scheduler_lease.RETRY_SCHEDULER_LEASE_RECEIPT_PREFIX}-*/receipt.json"))
+
+
 def test_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_service_rejects_raw_authority(
     client: TestClient,
 ) -> None:
@@ -2568,6 +2817,27 @@ def test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_app
     assert second["retry_progress_checkpoint_sequence"] == 2
     assert second["previous_retry_progress_checkpoint_sequence"] == 1
     assert second["previous_retry_progress_checkpoint_receipt_id"] == first["retry_progress_checkpoint_receipt_id"]
+
+
+def test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_rejects_existing_sequence_claim(
+    client: TestClient,
+) -> None:
+    history_body, row, retry_worker_attempt_body = _retry_worker_attempt_chain(client)
+    request = _retry_progress_checkpoint_request(history_body, row, retry_worker_attempt_body)
+    workflow_retry_progress_checkpoint._acquire_retry_progress_checkpoint_sequence_index(
+        root=Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir),
+        retry_progress_checkpoint_receipt_id="cb-full-corpus-operator-retry-progress-checkpoint-inflight",
+        retry_worker_attempt_receipt_id=retry_worker_attempt_body["retry_worker_attempt_receipt_id"],
+        retry_worker_attempt_authority_hash=retry_worker_attempt_body["retry_worker_attempt_authority_hash"],
+        retry_progress_checkpoint_sequence=1,
+    )
+
+    response = client.post(RETRY_PROGRESS_CHECKPOINT_ENDPOINT, json=request)
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["retry_progress_checkpoint_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_conflict"
 
 
 def test_candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_rejects_stale_retry_worker_attempt(
@@ -3065,11 +3335,34 @@ def test_candidate_b_full_corpus_operator_workflow_process_execution_records_red
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        workflow_process_execution,
-        "_launch_server_owned_process",
-        _fake_process_launch,
-    )
+    launch_authority: dict[str, Any] = {}
+
+    def fake_launch(
+        *,
+        process_execution_receipt_id: str,
+        process_invocation_hash: str,
+        selected_process_execution_authority: Mapping[str, Any],
+    ) -> dict[str, str]:
+        launch_authority.update(dict(selected_process_execution_authority))
+        assert selected_process_execution_authority["selected_process_execution_receipt_id"] == (
+            process_execution_receipt_id
+        )
+        assert selected_process_execution_authority["selected_process_invocation_hash"] == process_invocation_hash
+        assert _workflow_receipt_file(
+            str(selected_process_execution_authority["selected_process_launch_intent_receipt_id"])
+        ).is_file()
+        command = workflow_process_execution._server_owned_command(
+            selected_process_execution_authority=selected_process_execution_authority
+        )
+        assert "--selected-operator-workflow-receipt-id" in command
+        assert str(selected_process_execution_authority["selected_operator_workflow_receipt_id"]) in command
+        return _fake_process_launch(
+            process_execution_receipt_id=process_execution_receipt_id,
+            process_invocation_hash=process_invocation_hash,
+            selected_process_execution_authority=selected_process_execution_authority,
+        )
+
+    monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", fake_launch)
     history_body, row, execution_boundary_body = _execution_boundary_chain(client)
 
     response = client.post(
@@ -3117,6 +3410,26 @@ def test_candidate_b_full_corpus_operator_workflow_process_execution_records_red
     assert body["redacted_process_ref"].startswith(
         "candidate-b-full-corpus-operator-workflow-process://"
     )
+    assert body["process_launch_intent_receipt_id"].startswith(
+        workflow_process_execution.PROCESS_LAUNCH_INTENT_RECEIPT_PREFIX
+    )
+    assert len(body["process_launch_intent_receipt_hash"]) == 64
+    assert body["selected_process_execution_authority"] == launch_authority
+    assert (
+        body["selected_process_execution_authority"]["selected_operator_workflow_receipt_id"]
+        == row["operator_workflow_receipt_id"]
+    )
+    assert (
+        body["selected_process_execution_authority"]["selected_execution_boundary_receipt_id"]
+        == execution_boundary_body["execution_boundary_receipt_id"]
+    )
+    assert body["selected_process_execution_authority_hash"] == workflow_status._stable_hash(
+        {
+            key: value
+            for key, value in body["selected_process_execution_authority"].items()
+            if key != "selected_process_authority_envelope_hash"
+        }
+    )
     assert body["redacted_process_status_projection"]["process_execution_projection_state"] == "started"
     assert "C:\\" not in serialized
     assert "file:///" not in serialized
@@ -3151,11 +3464,13 @@ def test_candidate_b_full_corpus_operator_workflow_process_execution_is_idempote
         *,
         process_execution_receipt_id: str,
         process_invocation_hash: str,
+        selected_process_execution_authority: Mapping[str, Any],
     ) -> dict[str, str]:
         launch_calls.append(process_execution_receipt_id)
         return _fake_process_launch(
             process_execution_receipt_id=process_execution_receipt_id,
             process_invocation_hash=process_invocation_hash,
+            selected_process_execution_authority=selected_process_execution_authority,
         )
 
     monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", fake_launch)
@@ -3174,6 +3489,43 @@ def test_candidate_b_full_corpus_operator_workflow_process_execution_is_idempote
     assert launch_calls == [first["process_execution_receipt_id"]]
 
 
+def test_candidate_b_full_corpus_operator_workflow_process_execution_rejects_existing_atomic_claim(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    launch_calls: list[str] = []
+
+    def fake_launch(
+        *,
+        process_execution_receipt_id: str,
+        process_invocation_hash: str,
+        selected_process_execution_authority: Mapping[str, Any],
+    ) -> dict[str, str]:
+        launch_calls.append(process_execution_receipt_id)
+        return _fake_process_launch(
+            process_execution_receipt_id=process_execution_receipt_id,
+            process_invocation_hash=process_invocation_hash,
+            selected_process_execution_authority=selected_process_execution_authority,
+        )
+
+    monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", fake_launch)
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+    request = _process_execution_request(history_body, row, execution_boundary_body)
+    workflow_process_execution._acquire_process_execution_index(
+        process_execution_receipt_id="cb-full-corpus-operator-process-execution-inflight",
+        operator_workflow_receipt_id=row["operator_workflow_receipt_id"],
+        execution_boundary_authority_hash=execution_boundary_body["execution_boundary_authority_hash"],
+    )
+
+    response = client.post(PROCESS_EXECUTION_ENDPOINT, json=request)
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["process_execution_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_process_execution_conflict"
+    assert launch_calls == []
+
+
 def test_candidate_b_full_corpus_operator_workflow_process_execution_records_launch_failure_receipt(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
@@ -3184,6 +3536,7 @@ def test_candidate_b_full_corpus_operator_workflow_process_execution_records_lau
         *,
         process_execution_receipt_id: str,
         process_invocation_hash: str,
+        selected_process_execution_authority: Mapping[str, Any],
     ) -> dict[str, str]:
         launch_calls.append(process_execution_receipt_id)
         raise workflow_process_execution.CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
@@ -3249,6 +3602,7 @@ def test_candidate_b_full_corpus_operator_workflow_process_execution_records_tim
         *,
         process_execution_receipt_id: str,
         process_invocation_hash: str,
+        selected_process_execution_authority: Mapping[str, Any],
     ) -> dict[str, str]:
         raise workflow_process_execution.CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
             workflow_process_execution.PROCESS_LAUNCH_TIMEOUT_ERROR_CODE,
@@ -3534,6 +3888,55 @@ def test_candidate_b_full_corpus_operator_workflow_process_completion_result_rej
     body = response.json()
     assert body["error"]["code"] == (
         "candidate_b_full_corpus_operator_workflow_process_completion_result_stale_result_receipt"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_process_completion_result_rejects_unrelated_bridge_lineage(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(workflow_process_execution, "_launch_server_owned_process", _fake_process_launch)
+    history_body, row, execution_boundary_body = _execution_boundary_chain(client)
+    process_body = client.post(
+        PROCESS_EXECUTION_ENDPOINT,
+        json=_process_execution_request(history_body, row, execution_boundary_body),
+    ).json()
+    refreshed_history = client.get(HISTORY_ENDPOINT).json()
+    refreshed_row = refreshed_history["history_rows"][0]
+    source_receipt = json.loads(
+        _workflow_receipt_file(refreshed_row["source_operator_workflow_receipt_id"]).read_text(
+            encoding="utf-8"
+        )
+    )
+    source_receipt["bridge_receipt_id"] = "cb-runtime-l3-cccccccccccccccccccccccc"
+    source_receipt["bridge_receipt_hash"] = "9" * 64
+    source_receipt["receipt_hash"] = _stable_hash(
+        {key: source_receipt[key] for key in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS}
+    )
+    result_receipt_id = f"{workflow_status.WORKFLOW_RECEIPT_PREFIX}-{source_receipt['receipt_hash'][:24]}"
+    source_receipt["receipt_id"] = result_receipt_id
+    _workflow_receipt_file(result_receipt_id).parent.mkdir(parents=True, exist_ok=True)
+    _rewrite_workflow_receipt(result_receipt_id, source_receipt)
+
+    response = client.post(
+        PROCESS_COMPLETION_RESULT_ENDPOINT,
+        json=_process_completion_result_request(
+            refreshed_history,
+            refreshed_row,
+            process_body,
+            result_workflow_receipt_id=result_receipt_id,
+            result_workflow_receipt_hash=source_receipt["receipt_hash"],
+        ),
+    )
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_process_completion_result_unrelated_result_receipt"
+    )
+    assert any(
+        mismatch["field"] == "bridge_receipt_id"
+        for mismatch in body["error"]["details"]["mismatches"]
     )
 
 
@@ -3887,6 +4290,65 @@ def test_candidate_b_full_corpus_operator_workflow_history_fails_closed_for_stal
     assert body["history_state"] == "blocked"
     assert body["error"]["code"] == (
         "candidate_b_full_corpus_operator_workflow_history_authority_mismatch"
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_history_validates_source_receipt_run_authority(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    run_body = client.post(RUN_ENDPOINT, json=_run_request()).json()
+    run_receipt = json.loads(
+        _workflow_receipt_file(run_body["operator_workflow_receipt_id"]).read_text(encoding="utf-8")
+    )
+    run_receipt["baseline_run_id"] = "other-baseline-run"
+    run_receipt["server_owned_workflow_run"]["authority_basis"]["baseline_run_id"] = "other-baseline-run"
+    run_receipt["server_owned_workflow_run"]["authority_basis_hash"] = _stable_hash(
+        run_receipt["server_owned_workflow_run"]["authority_basis"]
+    )
+    run_receipt["receipt_hash"] = _stable_hash(
+        {key: run_receipt[key] for key in workflow_status.WORKFLOW_RECEIPT_HASH_KEYS}
+    )
+    _rewrite_workflow_receipt(run_body["operator_workflow_receipt_id"], run_receipt)
+
+    response = client.get(HISTORY_ENDPOINT)
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["history_state"] == "blocked"
+    assert body["error"]["code"] == (
+        "candidate_b_full_corpus_operator_workflow_history_authority_mismatch"
+    )
+    assert any(
+        mismatch["field"] == "source_receipt.baseline_run_id"
+        for mismatch in body["error"]["details"]["mismatches"]
+    )
+
+
+def test_candidate_b_full_corpus_operator_workflow_history_rejects_path_like_source_receipt_id(
+    client: TestClient,
+) -> None:
+    _write_source_receipt()
+    run_body = client.post(RUN_ENDPOINT, json=_run_request()).json()
+    run_receipt = json.loads(
+        _workflow_receipt_file(run_body["operator_workflow_receipt_id"]).read_text(encoding="utf-8")
+    )
+    server_run = run_receipt["server_owned_workflow_run"]
+    server_run["source_operator_workflow_receipt_id"] = "cb-full-corpus-operator-../escape"
+    server_run["authority_basis"]["source_operator_workflow_receipt_id"] = "cb-full-corpus-operator-../escape"
+    server_run["authority_basis_hash"] = _stable_hash(server_run["authority_basis"])
+    _rewrite_workflow_receipt(run_body["operator_workflow_receipt_id"], run_receipt)
+
+    response = client.get(HISTORY_ENDPOINT)
+
+    assert response.status_code == 409
+    body = response.json()
+    assert body["history_state"] == "blocked"
+    assert body["error"]["code"] == "candidate_b_full_corpus_operator_workflow_history_authority_mismatch"
+    assert any(
+        mismatch["field"] == "source_operator_workflow_receipt_id"
+        and mismatch["upstream_error"] == "candidate_b_full_corpus_operator_workflow_status_storage_id_invalid"
+        for mismatch in body["error"]["details"]["mismatches"]
     )
 
 

@@ -956,6 +956,31 @@ def test_execution_start_runs_source_intake_selected_pass_without_analysis_run(d
     assert source_intake_delivery.authority["source_artifact_hash"] == external_export["source_artifact_hash"]
     assert source_intake_delivery.authority["output_payload_hash"] == output_payload["output_hash"]
 
+    def _unexpected_prepare_reentry(*_args, **_kwargs):
+        raise AssertionError("delivery must use recorded readiness without re-entering prepare")
+
+    with monkeypatch.context() as delivery_context:
+        delivery_context.setattr(
+            layer3_workbench,
+            "external_export_download_prepare",
+            _unexpected_prepare_reentry,
+        )
+        recorded_readiness_delivery = layer3_workbench.external_export_download_deliver(
+            db_session,
+            {
+                **source_intake_delivery_payload,
+                "client_request_id": "source-intake-external-export-download-delivery-recorded-readiness",
+            },
+        )
+    assert (
+        recorded_readiness_delivery.headers["X-Layer3-External-Export-Download-Record-Ref"]
+        == external_export["external_export_download_record_ref"]
+    )
+    assert (
+        recorded_readiness_delivery.authority["schema_id"]
+        == "layer3.source_intake_external_export_download_prepare.v1"
+    )
+
     monkeypatch.setenv("LAYER3_SIGNED_REFERENCE_SECRET", "source-intake-signed-reference-secret")
     source_intake_signed_reference = layer3_workbench.external_export_download_generate_signed_reference(
         db_session,

@@ -127,6 +127,16 @@ def _checkout_root(raw_value: str) -> Path:
     return candidate
 
 
+def _expected_interpreter_for_checkout(checkout_root: Path) -> Path:
+    relative = Path(".venvs") / "phase7a-py311" / "Scripts" / "python.exe"
+    resolved_root = checkout_root.resolve()
+    for base in (resolved_root, *resolved_root.parents):
+        candidate = (base / relative).resolve()
+        if candidate.exists():
+            return candidate
+    return (resolved_root / relative).resolve()
+
+
 def _repo_rel(checkout_root: Path, path: Path | None) -> str | None:
     if path is None:
         return None
@@ -305,10 +315,13 @@ def _command_path(path: Path, *, checkout_root: Path) -> str:
 
 
 def _tool_command(checkout_root: Path, script_name: str, *args: str) -> dict[str, Any]:
+    command_args = list(args)
+    if script_name == "validate_wb_prep.py":
+        command_args = ["--checkout-root", _checkout_root_display(checkout_root), *command_args]
     return _command_spec(
-        _command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root),
+        _command_path(_expected_interpreter_for_checkout(checkout_root), checkout_root=checkout_root),
         f".\\tools\\{script_name}",
-        *args,
+        *command_args,
     )
 
 
@@ -348,8 +361,10 @@ def _canonical_prep_sequences(*, checkout_root: Path, candidate_b_run_id: str = 
                 _CANDIDATE_B_VISUAL_LANE_MODE,
             ),
             _command_spec(
-                _command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root),
+                _command_path(_expected_interpreter_for_checkout(checkout_root), checkout_root=checkout_root),
                 ".\\tools\\validate_wb_prep.py",
+                "--checkout-root",
+                _checkout_root_display(checkout_root),
                 "--candidate-b-source-kind",
                 _CANDIDATE_B_SOURCE_KIND_RUNTIME,
                 "--candidate-b-run-id",
@@ -371,7 +386,12 @@ def _selected_validation_command(
     candidate_b_run_id: str = "",
     fixture_id: str = "",
 ) -> dict[str, Any]:
-    command = [_command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root), ".\\tools\\validate_wb_prep.py"]
+    command = [
+        _command_path(_expected_interpreter_for_checkout(checkout_root), checkout_root=checkout_root),
+        ".\\tools\\validate_wb_prep.py",
+        "--checkout-root",
+        _checkout_root_display(checkout_root),
+    ]
     if baseline_run_id:
         command.extend(["--baseline-run-id", baseline_run_id])
     if candidate_a_run_id:
@@ -413,9 +433,12 @@ def _operator_handoff(
 
 def _attempted_validation_command(args: argparse.Namespace) -> dict[str, Any]:
     checkout_root = _checkout_root(args.checkout_root)
-    command = [_command_path(EXPECTED_INTERPRETER, checkout_root=checkout_root), ".\\tools\\validate_wb_prep.py"]
-    if str(args.checkout_root or "").strip():
-        command.extend(["--checkout-root", str(args.checkout_root).strip()])
+    command = [
+        _command_path(_expected_interpreter_for_checkout(checkout_root), checkout_root=checkout_root),
+        ".\\tools\\validate_wb_prep.py",
+        "--checkout-root",
+        _checkout_root_display(checkout_root),
+    ]
     if str(args.baseline_run_id or "").strip():
         command.extend(["--baseline-run-id", str(args.baseline_run_id).strip()])
     if str(args.candidate_a_run_id or "").strip():
