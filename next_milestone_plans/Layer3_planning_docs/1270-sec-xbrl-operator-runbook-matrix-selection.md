@@ -55,6 +55,8 @@ Named issuer examples may be used by an operator during live selection, but comm
 
 `sec_edgar_stratified_real_filing_validation_matrix_v1`
 
+The validate-only preflight for this slice is recorded in `1271-sec-xbrl-stratified-real-filing-validation-matrix-preflight.md`. The live matrix remains blocked until that preflight has explicit authorization and isolated runtime evidence.
+
 Scope:
 
 - run or prepare a bounded live matrix using the selected strata;
