@@ -9354,6 +9354,20 @@ The proof records coherent sidecar/value-store/bridge/dataset/provenance bundles
 
 Next exact posture: `sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1`.
 
+## SEC XBRL Default-Posture Reconciliation
+
+Milestone: `sec_edgar_arelle_default_posture_decision_v1`.
+
+Planning doc: `next_milestone_plans/Layer3_planning_docs/1268-sec-xbrl-default-posture-reconciliation.md`.
+
+Reports: `diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json`, `diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json`, `diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json`, and `diagnostics/assessment/sec-xbrl-default-on-runtime-report.json`.
+
+Status: current-main evidence now admits broader real-product reliability and proves two bounded governed live value-reveal exercises, while the runtime default authority still keeps committed defaults off.
+
+This reconciliation corrects the stale broader-reliability blocked planning state without converting evidence admission into a runtime default change. It adds no live network run, Arelle invocation, source acquisition, dataset creation, audit receipt creation, value reveal request, UI change, Candidate B routing, final financial-statement semantics claim, or cross-company comparability claim.
+
+Next exact posture: `sec_edgar_arelle_default_posture_decision_v1`.
+
 ## Post-1968/1969 SEC Value-Reveal Operator Preflight Review Debt
 
 Milestone: `post_1968_1969_sec_value_reveal_operator_preflight_review_debt_v1`.

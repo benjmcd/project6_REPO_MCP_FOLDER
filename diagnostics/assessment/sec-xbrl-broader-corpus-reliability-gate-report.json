@@ -1,34 +1,5 @@
 {
-  "blocking_reasons": [
-    {
-      "criterion": "broader_real_product_path_corpus_proof",
-      "evidence": {
-        "evidence_grade": "current-main_test_proof_only",
-        "fake_sec_client_used": true,
-        "forms": [
-          "10-K",
-          "10-Q",
-          "20-F",
-          "40-F",
-          "6-K",
-          "8-K"
-        ],
-        "live_sec_network_used": false,
-        "observed_product_path_filing_count": 8,
-        "required_forms": [
-          "10-K",
-          "10-Q",
-          "20-F",
-          "40-F",
-          "6-K",
-          "8-K"
-        ],
-        "required_real_filing_count": 12,
-        "source_report": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json"
-      },
-      "reason": "broader_reliability_real_product_path_corpus_absent"
-    }
-  ],
+  "blocking_reasons": [],
   "criteria": [
     {
       "blocked_reason": null,
@@ -65,6 +36,7 @@
       "blocked_reason": null,
       "criterion": "focused_product_chain_smoke_proof",
       "evidence": {
+        "dataset_version_reused": true,
         "durable_delivery_archive_ready": true,
         "filing_count": 8,
         "forms": [
@@ -75,8 +47,10 @@
           "6-K",
           "8-K"
         ],
+        "new_layer3_source_shape_created": false,
         "operator_inspection_ready": true,
         "operator_product_surface_ready": true,
+        "selected_fact_authority": "arelle_resolved_fact_authority_sidecar_receipt",
         "source_report": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json",
         "status": "focused_runtime_proof_passed",
         "supported_records": 8
@@ -84,21 +58,34 @@
       "state": "passed"
     },
     {
-      "blocked_reason": "broader_reliability_real_product_path_corpus_absent",
+      "blocked_reason": null,
       "criterion": "broader_real_product_path_corpus_proof",
       "evidence": {
-        "evidence_grade": "current-main_test_proof_only",
-        "fake_sec_client_used": true,
+        "companyfacts_value_compared_count": 9131,
+        "companyfacts_value_match_rate": 0.99,
+        "decision": "real_corpus_default_on_validated",
+        "evidence_grade": "current-main_live_real_product_runner",
+        "fake_sec_client_used": false,
         "forms": [
           "10-K",
+          "10-K/A",
           "10-Q",
           "20-F",
           "40-F",
           "6-K",
           "8-K"
         ],
-        "live_sec_network_used": false,
-        "observed_product_path_filing_count": 8,
+        "gate_verdict": "PASS",
+        "independent_inline_fact_count": 52558,
+        "live_sec_network_used": true,
+        "matrix_chunk_count": 4,
+        "minimum_companyfacts_value_match_rate": 0.98,
+        "observed_issuer_hash_count": 16,
+        "observed_real_filing_count": 32,
+        "ready_matrix_chunk_count": 4,
+        "records_with_arelle_sidecar_output": 30,
+        "records_with_handoff_export_prepare": 30,
+        "records_with_selected_fact_authority_equal_to_sidecar": 30,
         "required_forms": [
           "10-K",
           "10-Q",
@@ -107,10 +94,15 @@
           "6-K",
           "8-K"
         ],
-        "required_real_filing_count": 12,
-        "source_report": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json"
+        "required_issuer_hash_count": 15,
+        "required_real_filing_count": 30,
+        "required_supported_record_count": 30,
+        "resolved_fact_count": 52558,
+        "source_report": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+        "supported_record_count": 30,
+        "unexpected_blocked_or_degraded_count": 0
       },
-      "state": "blocked"
+      "state": "passed"
     },
     {
       "blocked_reason": null,
@@ -121,14 +113,29 @@
         "effective_values_exposed": false,
         "final_financial_statement_semantics_claimed": false,
         "local_storage_roots_exposed": false,
-        "raw_sec_urls_exposed": false
+        "operator_surface_values_exposed": false,
+        "rag_model_provider_auth_added": false,
+        "raw_company_names_exposed": false,
+        "raw_sec_urls_exposed": false,
+        "real_identity_values_redacted_in_outputs": true,
+        "real_product_candidate_b_sec_routing_performed": false,
+        "real_product_cross_company_comparability_claimed": false,
+        "real_product_final_financial_statement_semantics_claimed": false,
+        "real_product_identity_hash_only": true,
+        "real_product_local_storage_roots_committed": false,
+        "real_product_operator_value_reveal_enabled": false,
+        "real_product_rag_vector_model_provider_auth_behavior_added": false,
+        "real_product_raw_accessions_committed": false,
+        "real_product_raw_sec_urls_committed": false,
+        "real_product_raw_tickers_committed": false,
+        "real_product_raw_values_committed": false
       },
       "state": "passed"
     }
   ],
-  "decision": "broader_corpus_reliability_blocked",
-  "headline": "Broader real-corpus product-path reliability is blocked: broader_reliability_real_product_path_corpus_absent.",
-  "next_slice": "sec_edgar_real_corpus_product_path_runner_v1",
+  "decision": "broader_corpus_reliability_admitted",
+  "headline": "Broader real-corpus product-path reliability is admitted by current evidence.",
+  "next_slice": "sec_edgar_arelle_default_posture_decision_v1",
   "non_goals_preserved": {
     "bridge_gate_b_product_package_ui_redesign_performed": false,
     "candidate_b_sec_routing_performed": false,
@@ -142,9 +149,13 @@
   "schema_id": "diagnostics.sec_xbrl_broader_corpus_reliability_gate.v1",
   "source_reports": {
     "default_on_gate": "diagnostics/assessment/sec-xbrl-default-on-gate-report.json",
-    "product_path": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json"
+    "product_path": "diagnostics/assessment/sec-xbrl-product-path-corpus-validation-report.json",
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json"
   },
   "summary": {
+    "focused_product_path_fake_sec_client_used": true,
+    "focused_product_path_filing_count": 8,
+    "focused_product_path_live_sec_network_used": false,
     "inherited_arelle_resolved_fact_count": 18156,
     "inherited_companyfacts_value_match_rate": 0.9923,
     "inherited_forms": {
@@ -158,10 +169,22 @@
     "inherited_issuer_hash_count": 6,
     "inherited_real_filing_count": 12,
     "operator_value_reveal_default_enabled": false,
-    "product_path_fake_sec_client_used": true,
-    "product_path_filing_count": 8,
-    "product_path_live_sec_network_used": false,
-    "product_path_operator_surface_ready": true
+    "product_path_operator_surface_ready": true,
+    "real_product_path_companyfacts_value_match_rate": 0.99,
+    "real_product_path_fake_sec_client_used": false,
+    "real_product_path_filing_count": 32,
+    "real_product_path_forms": {
+      "10-K": 13,
+      "10-K/A": 1,
+      "10-Q": 4,
+      "20-F": 1,
+      "40-F": 1,
+      "6-K": 2,
+      "8-K": 10
+    },
+    "real_product_path_issuer_hash_count": 16,
+    "real_product_path_live_sec_network_used": true,
+    "real_product_path_supported_record_count": 30
   },
   "target": "sec_edgar_default_on_broader_corpus_reliability_gate_v1"
 }
