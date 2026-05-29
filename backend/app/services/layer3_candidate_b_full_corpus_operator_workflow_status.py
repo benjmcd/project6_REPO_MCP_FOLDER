@@ -74,6 +74,11 @@ RETRY_COMPLETION_FAILURE_MODE = (
 RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX = (
     f"{WORKFLOW_RECEIPT_PREFIX}-retry-completion-failure"
 )
+RETRY_TERMINAL_INDEX_SCHEMA_ID = (
+    "layer3.candidate_b_full_corpus_operator_workflow_retry_terminal_index.v1"
+)
+RETRY_TERMINAL_INDEX_MODE = "workflow_keyed_retry_terminal_status_projection_index_v1"
+RETRY_TERMINAL_INDEX_DIR_NAME = f"{RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-workflow-index"
 RETRY_TERMINAL_STATUS_PROJECTION_MODE = (
     "read_only_retry_terminal_receipt_projection_without_receipt_creation_or_lineage_mutation"
 )
@@ -816,16 +821,14 @@ def _retry_terminal_status_projection(
 ) -> dict[str, Any]:
     root = _workflow_receipt_root()
     matches: list[tuple[str, dict[str, Any]]] = []
-    for receipt_file in sorted(root.glob(f"{RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX}-*/receipt.json")):
-        receipt_id = receipt_file.parent.name
-        _validate_storage_id(receipt_id, prefix=RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX)
+    for receipt_id in _retry_terminal_receipt_ids_for_workflow(root, operator_workflow_receipt_id):
+        receipt_file = root / receipt_id / "receipt.json"
         receipt = _read_json_receipt(
             receipt_file,
             code="candidate_b_full_corpus_operator_workflow_status_retry_terminal_receipt_unreadable",
             message="A Candidate B retry terminal receipt could not be read for status projection.",
         )
-        if receipt.get("operator_workflow_receipt_id") == operator_workflow_receipt_id:
-            matches.append((receipt_id, receipt))
+        matches.append((receipt_id, receipt))
     if not matches:
         return _retry_terminal_not_recorded_projection()
     if len(matches) > 1:
@@ -845,6 +848,68 @@ def _retry_terminal_status_projection(
         operator_workflow_receipt_id=operator_workflow_receipt_id,
         operator_workflow_receipt_hash=operator_workflow_receipt_hash,
     )
+
+
+def _retry_terminal_index_file(root: Path, operator_workflow_receipt_id: str) -> Path:
+    _validate_storage_id(operator_workflow_receipt_id, prefix=WORKFLOW_RECEIPT_PREFIX)
+    return root / RETRY_TERMINAL_INDEX_DIR_NAME / operator_workflow_receipt_id / "index.json"
+
+
+def _retry_terminal_receipt_ids_for_workflow(
+    root: Path,
+    operator_workflow_receipt_id: str,
+) -> list[str]:
+    index_file = _retry_terminal_index_file(root, operator_workflow_receipt_id)
+    if not index_file.is_file():
+        return []
+    index = _read_json_receipt(
+        index_file,
+        code="candidate_b_full_corpus_operator_workflow_status_retry_terminal_index_unreadable",
+        message="The Candidate B retry terminal workflow index could not be read for status projection.",
+    )
+    expected = {
+        "schema_id": RETRY_TERMINAL_INDEX_SCHEMA_ID,
+        "schema_version": SCHEMA_VERSION,
+        "index_mode": RETRY_TERMINAL_INDEX_MODE,
+        "operator_workflow_receipt_id": operator_workflow_receipt_id,
+        "append_only_retry_terminal_index": True,
+    }
+    mismatches = [
+        {"field": field, "expected": expected_value, "received": index.get(field)}
+        for field, expected_value in expected.items()
+        if index.get(field) != expected_value
+    ]
+    raw_receipt_ids = index.get("retry_completion_failure_receipt_ids")
+    if not isinstance(raw_receipt_ids, list):
+        mismatches.append(
+            {
+                "field": "retry_completion_failure_receipt_ids",
+                "expected": "list",
+                "received": raw_receipt_ids,
+            }
+        )
+        raw_receipt_ids = []
+    receipt_ids: list[str] = []
+    for raw_receipt_id in raw_receipt_ids:
+        receipt_id = str(raw_receipt_id or "").strip()
+        _validate_storage_id(receipt_id, prefix=RETRY_COMPLETION_FAILURE_RECEIPT_PREFIX)
+        receipt_ids.append(receipt_id)
+    if len(set(receipt_ids)) != len(receipt_ids):
+        mismatches.append(
+            {
+                "field": "retry_completion_failure_receipt_ids",
+                "expected": "unique receipt ids",
+                "received": receipt_ids,
+            }
+        )
+    if mismatches:
+        raise CandidateBFullCorpusOperatorWorkflowStatusError(
+            "candidate_b_full_corpus_operator_workflow_status_retry_terminal_index_mismatch",
+            "The Candidate B retry terminal workflow index is stale or contradictory.",
+            http_status=409,
+            details={"operator_workflow_receipt_id": operator_workflow_receipt_id, "mismatches": mismatches},
+        )
+    return receipt_ids
 
 
 def _retry_terminal_not_recorded_projection() -> dict[str, Any]:
