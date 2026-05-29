@@ -23013,7 +23013,7 @@
     "proof_kind": "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_sync",
     "status": "planning_control_freeze",
     "branch": "codex/l3-requirement-selection-after-e2e-governance-connector-destination-handoff-e2e",
-    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/559_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_SYNC.md",
+    "freeze_doc": "next_milestone_plans/Layer3_planning_docs/559-req-selection-sync.md",
     "current_main_preflight_commit": "d1100b64b907e04dc07ce1893e5aa133fd0dfe07",
     "proof_terms": [
       "await_new_exact_named_layer3_product_use_case_requirement_after_end_to_end_governance_lifecycle_behavior_audit_after_connector_destination_audit_after_handoff_export_audit_after_package_lifecycle_audit_after_provider_public_audit_after_source_intake_provider_private_e2e_connector_requirement_sync",
@@ -23042,7 +23042,7 @@
     "proof_kind": "layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_current_main_sync",
     "status": "current_main_synced_layer3_product_use_case_requirement_selection_freeze_after_end_to_end_governance_lifecycle_behavior_audit_connector_destination_audit_handoff_export_package_lifecycle_source_intake_provider_private_e2e_connector_requirement",
     "branch": "codex/l3-requirement-selection-current-main-sync-after-e2e-governance-connector-destination-handoff-e2e",
-    "sync_doc": "next_milestone_plans/Layer3_planning_docs/560_LAYER3_PRODUCT_USE_CASE_REQUIREMENT_SELECTION_FREEZE_AFTER_END_TO_END_GOVERNANCE_LIFECYCLE_BEHAVIOR_AUDIT_CONNECTOR_DESTINATION_AUDIT_HANDOFF_EXPORT_PACKAGE_LIFECYCLE_SOURCE_INTAKE_PROVIDER_PRIVATE_E2E_CONNECTOR_CURRENT_MAIN_SYNC.md",
+    "sync_doc": "next_milestone_plans/Layer3_planning_docs/560-req-selection-main-sync.md",
     "freeze_pr": "#1155",
     "freeze_merge_commit": "081b9def5575619984b0ca1bb104dfd349a04367",
     "proof_terms": [

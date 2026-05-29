@@ -387,6 +387,61 @@ def test_candidate_b_full_corpus_operator_workflow_status_proxy_rejects_cross_ow
     assert body["error"]["code"] == "candidate_b_operator_workflow_access_policy_cross_owner_receipt"
 
 
+def test_candidate_b_operator_workflow_projection_policy_rejects_cross_owner_receipt(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    actor_ref_hash = access_policy._stable_hash({"auth_owner": "proxy", "actor_ref": "alice"})
+    tenant_ref_hash = access_policy._stable_hash(
+        {"auth_owner": "proxy", "tenant_or_workspace_ref": "tenant-a"}
+    )
+    owner_binding = {
+        "actor_ref_hash": actor_ref_hash,
+        "tenant_or_workspace_ref_hash": tenant_ref_hash,
+        "policy_hash": "8" * 64,
+    }
+    fields = {"client_request_id": "projection-policy", "operator_role": access_policy.AUDITOR_ROLE}
+    monkeypatch.setattr(settings, "auth_owner", "proxy")
+    monkeypatch.setattr(settings, "trusted_proxy_mode", True)
+    Path(settings.layer3_candidate_b_full_corpus_operator_workflow_dir).mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    with access_policy.request_context(
+        {"X-Forwarded-User": "alice", "X-Forwarded-Groups": "tenant-a"}
+    ):
+        policy = access_policy.authorize_projection_receipt_access(
+            fields=fields,
+            route_family="review_status_projection",
+            rendered_surface="acceptance_closeout_status_review",
+            projection_receipt_id="cb-full-corpus-operator-projection-aaaaaaaaaaaaaaaaaaaaaaaa",
+            projection_receipt_hash="1" * 64,
+            authority_basis_hash="2" * 64,
+            existing_owner_binding=owner_binding,
+        )
+
+    assert policy["decision"] == "allow"
+    assert policy["workflow_receipt_owner_binding_required"] is True
+
+    with access_policy.request_context(
+        {"X-Forwarded-User": "bob", "X-Forwarded-Groups": "tenant-a"}
+    ):
+        with pytest.raises(access_policy.CandidateBOperatorWorkflowAccessPolicyError) as exc_info:
+            access_policy.authorize_projection_receipt_access(
+                fields=fields,
+                route_family="review_status_projection",
+                rendered_surface="acceptance_closeout_status_review",
+                projection_receipt_id="cb-full-corpus-operator-projection-aaaaaaaaaaaaaaaaaaaaaaaa",
+                projection_receipt_hash="1" * 64,
+                authority_basis_hash="2" * 64,
+                existing_owner_binding=owner_binding,
+            )
+
+    assert exc_info.value.http_status == 403
+    assert exc_info.value.code == "candidate_b_operator_workflow_access_policy_cross_owner_receipt"
+
+
 def test_candidate_b_full_corpus_operator_workflow_status_rejects_storage_root_escape(
     client: TestClient,
 ) -> None:

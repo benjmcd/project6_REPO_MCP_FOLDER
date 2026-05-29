@@ -265,6 +265,7 @@ def authorize_projection_receipt_access(
     projection_receipt_id: str,
     projection_receipt_hash: str,
     authority_basis_hash: str,
+    existing_owner_binding: Mapping[str, Any] | None,
     requested_role: str = AUDITOR_ROLE,
 ) -> dict[str, Any]:
     return authorize_workflow_access(
@@ -275,8 +276,8 @@ def authorize_projection_receipt_access(
         workflow_receipt_hash=projection_receipt_hash,
         authority_basis_hash=authority_basis_hash,
         requested_role=str(fields.get("operator_role") or requested_role),
-        existing_owner_binding=None,
-        require_existing_owner_binding=False,
+        existing_owner_binding=existing_owner_binding,
+        require_existing_owner_binding=True,
     )
 
 
