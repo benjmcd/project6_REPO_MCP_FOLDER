@@ -1,0 +1,210 @@
+{
+  "blocking_reasons": [],
+  "criteria": [
+    {
+      "blocked_reason": null,
+      "criterion": "explicit_operator_only_default_off_posture_selected",
+      "evidence": {
+        "decision": "explicit_operator_only_default_off_selected",
+        "selected_posture": "explicit_operator_only_default_off",
+        "source_report": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "current_evidence_supports_operator_runbook",
+      "evidence": {
+        "broader_reliability_decision": "broader_corpus_reliability_admitted",
+        "real_product_decision": "real_corpus_default_on_validated",
+        "real_product_supported_record_count": 30,
+        "value_reveal_attempt_count": 2,
+        "value_reveal_live_proof_decision": "value_reveal_live_authority_and_operator_exercise_proven_for_two_bounded_filings"
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "runbook_controls_are_defined",
+      "evidence": {
+        "control_count": 14,
+        "controls": [
+          "start_from_clean_project6_origin_main_worktree",
+          "keep_committed_defaults_off",
+          "require_explicit_live_sec_authorization",
+          "use_isolated_off_repo_arelle_environment",
+          "run_validate_only_preflight_before_live_work",
+          "use_governed_sec_connector_and_source_artifacts",
+          "require_coherent_sidecar_value_store_bridge_dataset_provenance_bundle",
+          "use_explicit_operator_confirmation_for_value_reveal",
+          "preserve_status_and_default_surface_redaction",
+          "run_redaction_scan_before_reporting",
+          "record_hashes_counts_forms_and_reason_codes_only",
+          "stop_on_arelle_or_taxonomy_unavailability",
+          "stop_on_redaction_or_identity_leak",
+          "do_not_change_runtime_defaults"
+        ]
+      },
+      "state": "passed"
+    },
+    {
+      "blocked_reason": null,
+      "criterion": "stratified_matrix_covers_required_axes",
+      "evidence": {
+        "raw_issuer_examples_committed": false,
+        "required_strata": [
+          "amendment_restatement",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "foreign_private_ifrs_20f",
+          "large_domestic_us_gaap",
+          "no_inline_or_zero_fact_diagnostic",
+          "small_mid_domestic_us_gaap"
+        ],
+        "selected_strata": [
+          "large_domestic_us_gaap",
+          "small_mid_domestic_us_gaap",
+          "foreign_private_ifrs_20f",
+          "canadian_40f",
+          "current_report_8k_sparse",
+          "foreign_6k_sparse",
+          "amendment_restatement",
+          "no_inline_or_zero_fact_diagnostic"
+        ]
+      },
+      "state": "passed"
+    }
+  ],
+  "decision": "operator_runbook_and_stratified_matrix_selection_ready",
+  "headline": "Operator runbook controls and the next stratified SEC XBRL validation matrix are selected for the explicit-operator-only default-off posture.",
+  "next_slice": "sec_edgar_stratified_real_filing_validation_matrix_v1",
+  "non_goals_preserved": {
+    "arelle_subprocess_invoked": false,
+    "audit_receipt_created": false,
+    "cross_company_comparability_claimed": false,
+    "dataset_created": false,
+    "final_financial_statement_semantics_claimed": false,
+    "live_sec_network_run_performed": false,
+    "production_readiness_claimed": false,
+    "raw_identity_committed": false,
+    "raw_values_committed": false,
+    "runtime_default_changed": false,
+    "source_acquisition_performed": false,
+    "value_reveal_request_performed": false
+  },
+  "operator_policy": {
+    "committed_reports_use_hashes_counts_forms_and_reason_codes_only": true,
+    "live_network_requires_explicit_authorization": true,
+    "posture": "explicit_operator_only_default_off",
+    "raw_issuer_examples_committed": false,
+    "raw_values_committed": false,
+    "runtime_default_change_allowed": false,
+    "value_reveal_requires_explicit_operator_confirmation": true
+  },
+  "runbook_controls": [
+    "start_from_clean_project6_origin_main_worktree",
+    "keep_committed_defaults_off",
+    "require_explicit_live_sec_authorization",
+    "use_isolated_off_repo_arelle_environment",
+    "run_validate_only_preflight_before_live_work",
+    "use_governed_sec_connector_and_source_artifacts",
+    "require_coherent_sidecar_value_store_bridge_dataset_provenance_bundle",
+    "use_explicit_operator_confirmation_for_value_reveal",
+    "preserve_status_and_default_surface_redaction",
+    "run_redaction_scan_before_reporting",
+    "record_hashes_counts_forms_and_reason_codes_only",
+    "stop_on_arelle_or_taxonomy_unavailability",
+    "stop_on_redaction_or_identity_leak",
+    "do_not_change_runtime_defaults"
+  ],
+  "schema_id": "diagnostics.sec_xbrl_operator_runbook_matrix_selection.v1",
+  "selected_stratified_matrix": [
+    {
+      "forms": [
+        "10-K",
+        "10-Q"
+      ],
+      "minimum_issuer_hashes": 3,
+      "purpose": "stress high-volume current-taxonomy domestic filers without making them the whole corpus",
+      "raw_issuer_examples_committed": false,
+      "stratum": "large_domestic_us_gaap"
+    },
+    {
+      "forms": [
+        "10-K",
+        "10-Q"
+      ],
+      "minimum_issuer_hashes": 3,
+      "purpose": "catch scale and disclosure-shape variance outside mega-cap domestic filers",
+      "raw_issuer_examples_committed": false,
+      "stratum": "small_mid_domestic_us_gaap"
+    },
+    {
+      "forms": [
+        "20-F"
+      ],
+      "minimum_issuer_hashes": 2,
+      "purpose": "preserve IFRS and foreign-private-issuer coverage",
+      "raw_issuer_examples_committed": false,
+      "stratum": "foreign_private_ifrs_20f"
+    },
+    {
+      "forms": [
+        "40-F"
+      ],
+      "minimum_issuer_hashes": 1,
+      "purpose": "preserve Canadian 40-F handling and cross-border taxonomy variance",
+      "raw_issuer_examples_committed": false,
+      "stratum": "canadian_40f"
+    },
+    {
+      "forms": [
+        "8-K"
+      ],
+      "minimum_issuer_hashes": 3,
+      "purpose": "exercise sparse current-report fact and product-path behavior",
+      "raw_issuer_examples_committed": false,
+      "stratum": "current_report_8k_sparse"
+    },
+    {
+      "forms": [
+        "6-K"
+      ],
+      "minimum_issuer_hashes": 2,
+      "purpose": "exercise sparse foreign report behavior without treating 20-F as sufficient",
+      "raw_issuer_examples_committed": false,
+      "stratum": "foreign_6k_sparse"
+    },
+    {
+      "forms": [
+        "10-K/A",
+        "10-Q/A",
+        "20-F/A"
+      ],
+      "minimum_issuer_hashes": 2,
+      "purpose": "exercise amended filing lineage and restatement-like document shapes",
+      "raw_issuer_examples_committed": false,
+      "stratum": "amendment_restatement"
+    },
+    {
+      "forms": [
+        "10-K",
+        "10-Q",
+        "8-K",
+        "6-K"
+      ],
+      "minimum_issuer_hashes": 2,
+      "purpose": "keep genuine no-inline-marker diagnostics explicit and non-silent",
+      "raw_issuer_examples_committed": false,
+      "stratum": "no_inline_or_zero_fact_diagnostic"
+    }
+  ],
+  "source_reports": {
+    "broader_reliability": "diagnostics/assessment/sec-xbrl-broader-corpus-reliability-gate-report.json",
+    "default_posture": "diagnostics/assessment/sec-xbrl-default-posture-decision-report.json",
+    "real_product_runner": "diagnostics/assessment/sec-xbrl-real-corpus-product-runner-report.json",
+    "value_reveal_live_proof": "diagnostics/assessment/sec-xbrl-value-reveal-live-proof-report.json"
+  },
+  "target": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"
+}

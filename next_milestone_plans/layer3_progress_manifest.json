@@ -42257,7 +42257,7 @@
     "value_reveal_default_enabled": false,
     "raw_values_committed": false,
     "raw_identity_committed": false,
-    "next_posture": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"
+    "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
   },
   "sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_tracking": {
     "status": "authority_provisioning_live_arelle_run_performed_and_redacted",
@@ -42278,7 +42278,7 @@
     ],
     "raw_values_committed": false,
     "raw_identity_committed": false,
-    "next_posture": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"
+    "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
   },
   "sec_edgar_arelle_default_posture_reconciliation_tracking": {
     "status": "default_posture_reconciliation_completed_by_decision",
@@ -42301,7 +42301,7 @@
     "value_reveal_request_performed_by_reconciliation": false,
     "raw_values_committed": false,
     "raw_identity_committed": false,
-    "next_posture": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"
+    "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
   },
   "sec_edgar_arelle_default_posture_decision_tracking": {
     "status": "explicit_operator_only_default_off_selected",
@@ -42324,7 +42324,34 @@
     "value_reveal_request_performed_by_decision": false,
     "raw_values_committed": false,
     "raw_identity_committed": false,
-    "next_posture": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1"
+    "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
+  },
+  "sec_edgar_operator_runbook_matrix_selection_tracking": {
+    "status": "operator_runbook_and_stratified_matrix_selection_ready",
+    "milestone": "sec_edgar_operator_readiness_runbook_and_stratified_matrix_selection_v1",
+    "planning_doc": "next_milestone_plans/Layer3_planning_docs/1270-sec-xbrl-operator-runbook-matrix-selection.md",
+    "decision_report": "diagnostics/assessment/sec-xbrl-operator-runbook-matrix-selection-report.json",
+    "selected_posture": "explicit_operator_only_default_off",
+    "runbook_controls_defined": true,
+    "selected_strata": [
+      "large_domestic_us_gaap",
+      "small_mid_domestic_us_gaap",
+      "foreign_private_ifrs_20f",
+      "canadian_40f",
+      "current_report_8k_sparse",
+      "foreign_6k_sparse",
+      "amendment_restatement",
+      "no_inline_or_zero_fact_diagnostic"
+    ],
+    "raw_issuer_examples_committed": false,
+    "runtime_default_changed_by_selection": false,
+    "live_behavior_change_introduced_by_tracking": false,
+    "runtime_network_performed_by_selection": false,
+    "arelle_subprocess_invoked_by_selection": false,
+    "value_reveal_request_performed_by_selection": false,
+    "raw_values_committed": false,
+    "raw_identity_committed": false,
+    "next_posture": "sec_edgar_stratified_real_filing_validation_matrix_v1"
   },
   "post_1968_1969_sec_value_reveal_operator_preflight_review_debt_tracking": {
     "status": "branch_local_review_debt_closure_in_progress",
