@@ -74,8 +74,14 @@ The provisioning run must stop before reveal if any required authority is missin
 
 ## Next Slice
 
-Still:
+Satisfied by follow-up packet:
 
-`sec_edgar_arelle_value_reveal_operator_exercise_authority_provisioning_v1`
+`1267-sec-xbrl-value-reveal-live-proof.md`
 
-The next run must either receive explicit permission to perform the governed live/Arelle authority provisioning, or point the isolated runtime at an already-retained authority set and rerun the preflight plus operator-exercise runner.
+The live/Arelle authority-provisioning and governed operator value-reveal exercise has now been proven for two bounded filings from current `project6-origin/main` after PR `#1982`. The proof remains redacted and does not change committed defaults.
+
+Next:
+
+`sec_edgar_value_reveal_live_proof_planning_and_default_posture_reconciliation_v1`
+
+The next pass should reconcile older blocked planning/report artifacts against the live proof while preserving default-off governance and all non-admissions.
