@@ -61,6 +61,69 @@ def test_sec_xbrl_real_corpus_product_runner_blocks_without_live_preflight(monke
         assert forbidden not in serialized
 
 
+def test_sec_xbrl_real_corpus_product_runner_counts_ifrs_full_companyfacts() -> None:
+    module = _runner_module()
+    accession = "ACCESSION-TEST"
+    cache = {
+        "0000000123": {
+            "oracle_used": True,
+            "confidence": "primary_companyfacts_standard_taxonomy_accession_scope",
+            "_payload": {
+                "facts": {
+                    "ifrs-full": {
+                        "Revenue": {
+                            "units": {
+                                "CAD": [
+                                    {"accn": accession, "val": "123.45"},
+                                    {"accn": "OTHER-ACCESSION", "val": "999"},
+                                ]
+                            }
+                        }
+                    }
+                }
+            },
+        }
+    }
+
+    result = module._companyfacts_count(cik="123", accession=accession, user_agent="ua", cache=cache)
+
+    assert result["oracle_used"] is True
+    assert result["confidence"] == "primary_companyfacts_standard_taxonomy_accession_scope"
+    assert result["fact_count"] == 1
+    assert result["_value_keys"] == [("Revenue", "CAD", "123.45")]
+
+
+def test_sec_xbrl_real_corpus_product_runner_matches_ifrs_full_sidecar_values(monkeypatch) -> None:
+    module = _runner_module()
+    sidecar = {
+        "resolved_fact_records": [
+            {
+                "resolved_fact_id": "fact-1",
+                "concept": {
+                    "namespace": "https://xbrl.ifrs.org/taxonomy/2025-03-27/ifrs-full",
+                    "local_name": "Revenue",
+                    "standard": True,
+                },
+                "unit": {"currency": "iso4217:CAD", "measures": ["iso4217:CAD"]},
+                "dimensions": {"explicit": [], "typed": []},
+                "decimals": "0",
+            }
+        ]
+    }
+    monkeypatch.setattr(
+        module.layer3_sec_xbrl_sidecar,
+        "read_sec_edgar_arelle_resolved_fact_authority_internal_value_store",
+        lambda _sidecar: {"value_records": [{"resolved_fact_id": "fact-1", "effective_value": "123"}]},
+    )
+
+    result = module._companyfacts_value_match(
+        sidecar=sidecar,
+        companyfacts={"_value_keys": [("Revenue", "CAD", "123")]},
+    )
+
+    assert result == {"match_count": 1, "compared_count": 1, "match_rate": 1.0}
+
+
 def test_sec_xbrl_real_corpus_product_runner_admits_when_existing_chain_reaches_archive(
     monkeypatch,
     tmp_path: Path,
@@ -284,7 +347,7 @@ def test_sec_xbrl_real_corpus_product_runner_reads_independent_tally_from_sideca
 
     def companyfacts_count(**kwargs):
         observed_identity.update(kwargs)
-        return {"oracle_used": True, "confidence": "primary_companyfacts_us_gaap_dei_accession_scope", "fact_count": 2}
+        return {"oracle_used": True, "confidence": "primary_companyfacts_standard_taxonomy_accession_scope", "fact_count": 2}
 
     monkeypatch.setattr(module, "_companyfacts_count", companyfacts_count)
     monkeypatch.setattr(module, "_companyfacts_value_match", lambda **_kwargs: {"match_count": None, "compared_count": 0, "match_rate": None})

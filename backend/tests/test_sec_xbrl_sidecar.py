@@ -127,6 +127,18 @@ def test_sec_xbrl_sidecar_fails_closed_on_independent_fact_undercount(monkeypatc
     assert response["status_projection"]["blocked_reasons"][0]["arelle_fact_count"] == 2
 
 
+def test_sec_xbrl_sidecar_fails_closed_on_unresolved_arelle_semantic_references(monkeypatch, tmp_path):
+    _install_receipt_fakes(monkeypatch, tmp_path, _semantic_unresolved_arelle_runner)
+
+    response = layer3_sec_xbrl_sidecar.derive_sec_edgar_arelle_resolved_fact_authority_sidecar(
+        _request(companyfacts_count=1)
+    )
+
+    assert response["status"] == "blocked"
+    reasons = {item["reason"] for item in response["status_projection"]["blocked_reasons"]}
+    assert reasons == {"arelle_context_period_unresolved", "arelle_unit_ref_unresolved"}
+
+
 def test_sec_xbrl_sidecar_stages_submission_documents_for_dts_loading():
     primary = "<html><head></head><body>inline</body></html>"
     wrapped_schema = "\r\n<XBRL>\r\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<schema />\r\n</XBRL>\r\n"
@@ -282,7 +294,7 @@ def _request(*, companyfacts_count):
     }
     if companyfacts_count is not None:
         payload["companyfacts_standard_fact_count"] = companyfacts_count
-        payload["companyfacts_oracle_confidence"] = "primary_companyfacts_us_gaap_dei_accession_scope"
+        payload["companyfacts_oracle_confidence"] = "primary_companyfacts_standard_taxonomy_accession_scope"
     return payload
 
 
@@ -296,7 +308,13 @@ def _ready_arelle_runner(*_args, **_kwargs):
         "taxonomy_package_invalid_count": 1,
         "taxonomy_package_invalid_hashes": [_hash("invalid-taxonomy")],
         "fact_count": 2,
-        "diagnostics": {"model_error_count": 0, "concept_resolved_from_dts_count": 2, "concept_dts_unresolved_count": 0},
+        "diagnostics": {
+            "model_error_count": 0,
+            "concept_resolved_from_dts_count": 2,
+            "concept_dts_unresolved_count": 0,
+            "period_unresolved_with_context_ref_count": 0,
+            "unit_unresolved_with_unit_ref_count": 0,
+        },
         "document_set": {"loaded_document_count": 5, "entry_document_loaded": True},
         "facts": [
             {
@@ -341,6 +359,14 @@ def _ready_arelle_runner(*_args, **_kwargs):
             },
         ],
     }
+    return subprocess.CompletedProcess(args=["fake"], returncode=0, stdout=json.dumps(payload) + "\n", stderr="")
+
+
+def _semantic_unresolved_arelle_runner(*_args, **_kwargs):
+    completed = _ready_arelle_runner()
+    payload = json.loads(completed.stdout.strip())
+    payload["diagnostics"]["period_unresolved_with_context_ref_count"] = 1
+    payload["diagnostics"]["unit_unresolved_with_unit_ref_count"] = 1
     return subprocess.CompletedProcess(args=["fake"], returncode=0, stdout=json.dumps(payload) + "\n", stderr="")
 
 
