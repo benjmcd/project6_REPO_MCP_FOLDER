@@ -263,7 +263,6 @@ def _authority_basis(
         "connector_local_destination_receipt_authority_basis_hash": local_row.authority_basis_hash,
         "target_identity": LOCAL_OUTBOX_PROVIDER_PRIVATE_TARGET_IDENTITY,
         "dispatch_mode": LOCAL_OUTBOX_PROVIDER_PRIVATE_DISPATCH_MODE,
-        "recipient_scope": _string(payload.get("recipient_scope")),
         "source_artifact_hash": write_row.accepted_artifact_hash,
         "source_artifact_size_bytes": write_row.accepted_artifact_size_bytes,
         "outbox_artifact_hash": write_row.outbox_artifact_hash,
@@ -625,8 +624,8 @@ def _validate_authority(
             blocked_fields=["server_owned_local_outbox_write_receipt_id"],
         ) from exc
     if (
-        not artifact_path.exists()
-        or not manifest_path.exists()
+        not artifact_path.is_file()
+        or not manifest_path.is_file()
         or _file_sha256(artifact_path) != write_row.outbox_artifact_hash
         or int(artifact_path.stat().st_size) != int(write_row.outbox_artifact_size_bytes)
     ):
@@ -734,12 +733,29 @@ def prepare_local_outbox_provider_private_handoff(
         .one_or_none()
     )
     if existing_by_basis is not None:
-        raise layer3_workbench.Layer3WorkbenchError(
-            "local_outbox_provider_private_handoff_already_prepared",
-            "This local outbox write authority already has a provider-private handoff receipt.",
-            status="conflict",
-            http_status=409,
-            blocked_fields=["client_request_id", "server_owned_local_outbox_write_receipt_id"],
+        audit = L3LocalOutboxProviderPrivateHandoffAuditEvent(
+            provider_private_handoff_audit_event_id=uuid_str(),
+            provider_private_handoff_receipt_id=existing_by_basis.provider_private_handoff_receipt_id,
+            event_type="prepare",
+            event_status="accepted",
+            request_id=request_id,
+            authority_basis_hash=existing_by_basis.authority_basis_hash,
+            reason_code="same_local_outbox_authority_prepare_reused",
+            event_payload_json={"new_client_request_id": request_id},
+            created_at=utcnow(),
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(existing_by_basis)
+        db.refresh(audit)
+        return _response(
+            schema_id=LOCAL_OUTBOX_PROVIDER_PRIVATE_PREPARE_SCHEMA_ID,
+            request_id=request_id,
+            status="already_recorded",
+            operation_state=LOCAL_OUTBOX_PROVIDER_PRIVATE_REPLAY_STATE,
+            row=existing_by_basis,
+            audit=audit,
+            now_epoch=effective_now,
         )
 
     provider = fake_provider or ProviderPrivateSignedUrlFakeProvider()

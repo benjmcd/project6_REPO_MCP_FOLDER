@@ -18,7 +18,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 
-os.environ["DB_INIT_MODE"] = "none"
+os.environ.setdefault("DB_INIT_MODE", "none")
 
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND = ROOT / "backend"
@@ -40,6 +40,7 @@ SCHEMA_VERSION = 1
 RUNTIME_ROOT_LIFECYCLE_SCHEMA_ID = "candidate_b.full_corpus_runtime_root_lifecycle.v1"
 RUNTIME_ROOT_LIFECYCLE_MODE = "candidate_b_full_corpus_runtime_root_lifecycle_v1"
 WORKFLOW_MODE = "candidate_b_full_corpus_operator_workflow_v1"
+BLOCKED_RECEIPT_PREFIX = "cb-full-corpus-blocked-operator-workflow"
 LOCAL_TESTCLIENT_EXECUTION_MODE = "local-testclient"
 LIVE_HTTP_EXECUTION_MODE = "live-http"
 BRIDGE_MODE = "candidate_b_full_corpus_runtime_to_layer3_material_authority_v1"
@@ -102,6 +103,16 @@ def build_parser() -> argparse.ArgumentParser:
         default="local-ack",
         help="Use a local deterministic ack transport, or the configured transport.",
     )
+    parser.add_argument("--selected-operator-workflow-receipt-id", default="")
+    parser.add_argument("--selected-operator-workflow-receipt-hash", default="")
+    parser.add_argument("--selected-execution-boundary-receipt-id", default="")
+    parser.add_argument("--selected-execution-boundary-receipt-hash", default="")
+    parser.add_argument("--selected-execution-boundary-authority-hash", default="")
+    parser.add_argument("--selected-process-execution-receipt-id", default="")
+    parser.add_argument("--selected-process-execution-authority-hash", default="")
+    parser.add_argument("--selected-process-invocation-hash", default="")
+    parser.add_argument("--selected-process-launch-intent-receipt-id", default="")
+    parser.add_argument("--selected-process-launch-intent-receipt-hash", default="")
     return parser
 
 
@@ -133,6 +144,104 @@ def _validate_execution_contract(args: argparse.Namespace) -> None:
                 "Live HTTP execution cannot install the local in-process webhook ack transport.",
                 details={"required_internal_webhook_mode": "configured"},
             )
+
+
+def _selected_process_execution_authority(args: argparse.Namespace) -> dict[str, Any] | None:
+    fields = {
+        "selected_operator_workflow_receipt_id": str(
+            getattr(args, "selected_operator_workflow_receipt_id", "") or ""
+        ).strip(),
+        "selected_operator_workflow_receipt_hash": str(
+            getattr(args, "selected_operator_workflow_receipt_hash", "") or ""
+        ).strip(),
+        "selected_execution_boundary_receipt_id": str(
+            getattr(args, "selected_execution_boundary_receipt_id", "") or ""
+        ).strip(),
+        "selected_execution_boundary_receipt_hash": str(
+            getattr(args, "selected_execution_boundary_receipt_hash", "") or ""
+        ).strip(),
+        "selected_execution_boundary_authority_hash": str(
+            getattr(args, "selected_execution_boundary_authority_hash", "") or ""
+        ).strip(),
+        "selected_process_execution_receipt_id": str(
+            getattr(args, "selected_process_execution_receipt_id", "") or ""
+        ).strip(),
+        "selected_process_execution_authority_hash": str(
+            getattr(args, "selected_process_execution_authority_hash", "") or ""
+        ).strip(),
+        "selected_process_invocation_hash": str(getattr(args, "selected_process_invocation_hash", "") or "").strip(),
+        "selected_process_launch_intent_receipt_id": str(
+            getattr(args, "selected_process_launch_intent_receipt_id", "") or ""
+        ).strip(),
+        "selected_process_launch_intent_receipt_hash": str(
+            getattr(args, "selected_process_launch_intent_receipt_hash", "") or ""
+        ).strip(),
+    }
+    if not any(fields.values()):
+        return None
+    missing = sorted(field for field, value in fields.items() if not value)
+    if missing:
+        raise OperatorWorkflowError(
+            "selected_process_execution_authority_incomplete",
+            "Selected process-execution authority must be supplied as a complete server-owned envelope.",
+            details={"missing_fields": missing},
+        )
+    _require_selected_receipt_id(
+        fields["selected_operator_workflow_receipt_id"],
+        "cb-full-corpus-operator-",
+        "selected_operator_workflow_receipt_id",
+    )
+    _require_selected_receipt_id(
+        fields["selected_execution_boundary_receipt_id"],
+        "cb-full-corpus-operator-execution-boundary-",
+        "selected_execution_boundary_receipt_id",
+    )
+    _require_selected_receipt_id(
+        fields["selected_process_execution_receipt_id"],
+        "cb-full-corpus-operator-process-execution-",
+        "selected_process_execution_receipt_id",
+    )
+    _require_selected_receipt_id(
+        fields["selected_process_launch_intent_receipt_id"],
+        "cb-full-corpus-operator-process-launch-intent-",
+        "selected_process_launch_intent_receipt_id",
+    )
+    for field, value in fields.items():
+        if field.endswith("_hash"):
+            _require_selected_hash(value, field)
+    authority = {
+        "schema_id": "layer3.candidate_b_full_corpus_operator_workflow_selected_process_execution_authority.v1",
+        **fields,
+    }
+    authority["selected_process_authority_envelope_hash"] = _stable_hash(authority)
+    return authority
+
+
+def _require_selected_receipt_id(value: str, prefix: str, field: str) -> None:
+    if (
+        not value
+        or not value.startswith(prefix)
+        or "/" in value
+        or "\\" in value
+        or ":" in value
+        or value in {".", ".."}
+        or ".." in value
+        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,180}", value)
+    ):
+        raise OperatorWorkflowError(
+            "selected_process_execution_authority_id_invalid",
+            "Selected process-execution authority contains an invalid server-owned receipt id.",
+            details={"field": field, "expected_prefix": prefix},
+        )
+
+
+def _require_selected_hash(value: str, field: str) -> None:
+    if not re.fullmatch(r"[a-f0-9]{64}", value):
+        raise OperatorWorkflowError(
+            "selected_process_execution_authority_hash_invalid",
+            "Selected process-execution authority contains an invalid hash.",
+            details={"field": field},
+        )
 
 
 class LiveHttpLayer3Client:
@@ -175,6 +284,7 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
     )
     layer3_storage_dir = _resolve_dir(args.layer3_storage_dir, checkout_root=checkout_root, field="layer3_storage_dir")
     material_relative_name = _clean_relative_name(args.material_relative_name)
+    selected_process_execution_authority = _selected_process_execution_authority(args)
 
     triplet = _validate_triplet(
         checkout_root=checkout_root,
@@ -205,7 +315,12 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         runtime_root_lifecycle,
     )
 
-    with _operator_api_client(args, layer3_storage_dir=layer3_storage_dir, bridge_dir=bridge_dir) as client:
+    with _operator_api_client(
+        args,
+        layer3_storage_dir=layer3_storage_dir,
+        bridge_dir=bridge_dir,
+        checkout_root=checkout_root,
+    ) as client:
         _assert_operator_api_ready(args, client)
         if _is_live_http_mode(args):
             bridge = _post_json(
@@ -291,6 +406,25 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         target_status_counts=triplet["target_status_counts"],
     )
     baseline_rollback = _baseline_rollback_summary()
+    runtime_root_lifecycle_projection = {
+        "schema_id": runtime_root_lifecycle["schema_id"],
+        "lifecycle_mode": runtime_root_lifecycle["lifecycle_mode"],
+        "lifecycle_receipt_id": runtime_root_lifecycle["lifecycle_receipt_id"],
+        "lifecycle_receipt_hash": runtime_root_lifecycle["lifecycle_receipt_hash"],
+        "runtime_parent_ref": runtime_root_lifecycle["runtime_parent_ref"],
+        "root_count": runtime_root_lifecycle["root_count"],
+        "receipt_file": _path_ref(checkout_root, runtime_root_lifecycle_path),
+        "validate_only_triplet": runtime_root_lifecycle["validate_only_triplet"],
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+    }
+    corpus_summary = {
+        "corpus_pdf_count": triplet["corpus_pdf_count"],
+        "eligible_file_count": scan["eligible_file_count"],
+        "material_relative_name": material_relative_name,
+        "target_status_counts": triplet["target_status_counts"],
+        "eligibility_summary": eligibility_summary,
+    }
     receipt_input = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
@@ -304,7 +438,12 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         "downstream_proof_id": downstream_proof["proof_receipt_id"],
         "downstream_proof_hash": downstream_proof["proof_hash"],
         "coverage_count": len(downstream_proof["coverage"]),
+        "corpus": corpus_summary,
+        "baseline_rollback": baseline_rollback,
+        "runtime_root_lifecycle": runtime_root_lifecycle_projection,
     }
+    if selected_process_execution_authority is not None:
+        receipt_input["selected_process_execution_authority"] = selected_process_execution_authority
     receipt_hash = _stable_hash(receipt_input)
     receipt_id = f"cb-full-corpus-operator-{receipt_hash[:24]}"
     receipt = {
@@ -315,13 +454,7 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
         "server_time": _utc_iso(),
         "validate_only_triplet": triplet["validate_only"],
         "artifacts_seeded_or_generated_by_triplet_validator": triplet["artifacts_seeded_or_generated"],
-        "corpus": {
-            "corpus_pdf_count": triplet["corpus_pdf_count"],
-            "eligible_file_count": scan["eligible_file_count"],
-            "material_relative_name": material_relative_name,
-            "target_status_counts": triplet["target_status_counts"],
-            "eligibility_summary": eligibility_summary,
-        },
+        "corpus": corpus_summary,
         "baseline_rollback": baseline_rollback,
         "refs": {
             "baseline_runtime_root": _runtime_root_ref(checkout_root, runs["baseline"]["runtime_root"]),
@@ -331,18 +464,7 @@ def run_operator_workflow(args: argparse.Namespace) -> dict[str, Any]:
             "curated_root": f"candidate-b-runtime-bridge://{bridge_receipt_id}/curated",
             "receipt_dir": _path_ref(checkout_root, receipt_dir),
         },
-        "runtime_root_lifecycle": {
-            "schema_id": runtime_root_lifecycle["schema_id"],
-            "lifecycle_mode": runtime_root_lifecycle["lifecycle_mode"],
-            "lifecycle_receipt_id": runtime_root_lifecycle["lifecycle_receipt_id"],
-            "lifecycle_receipt_hash": runtime_root_lifecycle["lifecycle_receipt_hash"],
-            "runtime_parent_ref": runtime_root_lifecycle["runtime_parent_ref"],
-            "root_count": runtime_root_lifecycle["root_count"],
-            "receipt_file": _path_ref(checkout_root, runtime_root_lifecycle_path),
-            "validate_only_triplet": runtime_root_lifecycle["validate_only_triplet"],
-            "raw_local_path_exposed": False,
-            "raw_url_exposed": False,
-        },
+        "runtime_root_lifecycle": runtime_root_lifecycle_projection,
         "layer3": {
             "bridge_status": bridge["status"],
             "source_directory_scan_status": "available",
@@ -699,14 +821,18 @@ def _operator_api_client(
     *,
     layer3_storage_dir: Path,
     bridge_dir: Path,
+    checkout_root: Path,
 ) -> Iterator[Any]:
     if _is_live_http_mode(args):
-        yield LiveHttpLayer3Client(
+        client = LiveHttpLayer3Client(
             str(args.api_base_url),
             timeout_seconds=int(getattr(args, "http_timeout_seconds", 60) or 60),
         )
+        setattr(client, "_operator_workflow_checkout_root", checkout_root.resolve())
+        yield client
         return
     with _layer3_client(layer3_storage_dir=layer3_storage_dir, bridge_dir=bridge_dir) as client:
+        setattr(client, "_operator_workflow_checkout_root", checkout_root.resolve())
         yield client
 
 
@@ -1138,7 +1264,7 @@ def _post_json(client: TestClient, path: str, payload: dict[str, Any], *, expect
             details={
                 "path": path,
                 "status_code": response.status_code,
-                "body": _safe_response_body(response.text, checkout_root=ROOT.resolve()),
+                "body": _safe_response_body(response.text, checkout_root=_client_checkout_root(client)),
             },
         )
     body = response.json()
@@ -1156,7 +1282,7 @@ def _get_json(client: TestClient, path: str) -> dict[str, Any]:
             details={
                 "path": path,
                 "status_code": response.status_code,
-                "body": _safe_response_body(response.text, checkout_root=ROOT.resolve()),
+                "body": _safe_response_body(response.text, checkout_root=_client_checkout_root(client)),
             },
         )
     body = response.json()
@@ -1165,11 +1291,21 @@ def _get_json(client: TestClient, path: str) -> dict[str, Any]:
     return body
 
 
+def _client_checkout_root(client: Any) -> Path:
+    value = getattr(client, "_operator_workflow_checkout_root", None)
+    if isinstance(value, Path):
+        return value.resolve()
+    if value:
+        return Path(str(value)).resolve()
+    return ROOT.resolve()
+
+
 def _verify_live_http_workflow_status(args: argparse.Namespace, receipt: dict[str, Any]) -> dict[str, Any]:
     with _operator_api_client(
         args,
         layer3_storage_dir=Path("."),
         bridge_dir=Path("."),
+        checkout_root=_checkout_root(args.checkout_root),
     ) as client:
         status = _post_json(
             client,
@@ -1192,6 +1328,7 @@ def _verify_live_http_workflow_run(args: argparse.Namespace, receipt: dict[str, 
         args,
         layer3_storage_dir=Path("."),
         bridge_dir=Path("."),
+        checkout_root=_checkout_root(args.checkout_root),
     ) as client:
         run = _post_json(
             client,
@@ -1350,7 +1487,7 @@ def _redact_text(text: str, *, checkout_root: Path) -> str:
         path_text = match.group(0)
         return f"redacted://sha256/{hashlib.sha256(path_text.encode('utf-8')).hexdigest()[:24]}"
 
-    redacted = re.sub(r"[A-Za-z]:[\\/][^\s\"'<>|]+", replace_path, redacted)
+    redacted = re.sub(r"(?<![A-Za-z0-9+.-])[A-Za-z]:[\\/][^\s\"'<>|]+", replace_path, redacted)
     redacted = re.sub(
         r"file:///[^\s\"'<>|]+",
         lambda match: f"redacted://file/{hashlib.sha256(match.group(0).encode('utf-8')).hexdigest()[:24]}",
@@ -1361,6 +1498,7 @@ def _redact_text(text: str, *, checkout_root: Path) -> str:
         lambda match: f"redacted://url/{hashlib.sha256(match.group(0).encode('utf-8')).hexdigest()[:24]}",
         redacted,
     )
+    redacted = re.sub(r"(?<![A-Za-z0-9+.-]:)(?<!/)/(?:[^\s\"'<>|/]+/)+[^\s\"'<>|/]+", replace_path, redacted)
     return redacted
 
 
@@ -1373,6 +1511,7 @@ def _utc_iso() -> str:
 
 
 def _blocked_receipt(exc: Exception, *, checkout_root: Path | None = None) -> dict[str, Any]:
+    redaction_root = checkout_root or ROOT.resolve()
     if isinstance(exc, OperatorWorkflowError):
         code = exc.code
         message = exc.message
@@ -1381,14 +1520,15 @@ def _blocked_receipt(exc: Exception, *, checkout_root: Path | None = None) -> di
         code = "unexpected_operator_workflow_error"
         message = str(exc)
         details = {}
-    redacted_details = _redact_value(details, checkout_root=checkout_root or ROOT.resolve())
-    return {
+    redacted_message = _redact_text(message, checkout_root=redaction_root)
+    redacted_details = _redact_value(details, checkout_root=redaction_root)
+    receipt = {
         "schema_id": SCHEMA_ID,
         "schema_version": SCHEMA_VERSION,
         "workflow_mode": WORKFLOW_MODE,
         "status": "blocked",
         "server_time": _utc_iso(),
-        "error": {"code": code, "message": message, "details": redacted_details},
+        "error": {"code": code, "message": redacted_message, "details": redacted_details},
         "negative_invariants": {
             "artifacts_seeded_after_blocker": False,
             "raw_local_path_exposed": False,
@@ -1396,6 +1536,41 @@ def _blocked_receipt(exc: Exception, *, checkout_root: Path | None = None) -> di
             "connector_dispatch_enabled": False,
         },
     }
+    receipt_hash = _stable_hash({key: value for key, value in receipt.items() if key != "server_time"})
+    return {
+        **receipt,
+        "receipt_id": f"{BLOCKED_RECEIPT_PREFIX}-{receipt_hash[:24]}",
+        "receipt_hash": receipt_hash,
+        "receipt_persisted": False,
+    }
+
+
+def _persist_blocked_receipt(args: argparse.Namespace, receipt: dict[str, Any], *, checkout_root: Path) -> dict[str, Any]:
+    try:
+        receipt_dir = _resolve_dir(args.receipt_dir, checkout_root=checkout_root, field="receipt_dir")
+        receipt_id = str(receipt["receipt_id"])
+        target = receipt_dir / receipt_id / "receipt.json"
+        persisted = {
+            **receipt,
+            "receipt_persisted": True,
+            "receipt_file": _path_ref(checkout_root, target),
+        }
+        receipt_hash = _stable_hash(
+            {
+                key: value
+                for key, value in persisted.items()
+                if key not in {"server_time", "receipt_hash"}
+            }
+        )
+        persisted["receipt_hash"] = receipt_hash
+        _write_receipt(receipt_dir, receipt_id, persisted)
+        return persisted
+    except Exception as persist_exc:  # noqa: BLE001
+        return {
+            **receipt,
+            "receipt_persisted": False,
+            "receipt_persistence_error": _redact_text(str(persist_exc), checkout_root=checkout_root),
+        }
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1406,6 +1581,7 @@ def main(argv: list[str] | None = None) -> int:
         exit_code = 0
     except Exception as exc:  # noqa: BLE001
         receipt = _blocked_receipt(exc, checkout_root=checkout_root)
+        receipt = _persist_blocked_receipt(args, receipt, checkout_root=checkout_root)
         exit_code = 1
     print(json.dumps(receipt, sort_keys=True, indent=2))
     return exit_code

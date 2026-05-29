@@ -4071,7 +4071,6 @@ def _hybrid_qualitative_analysis_status_state(
             ),
             "",
         )
-        or commit_summary.get("authority_basis_hash")
         or ""
     )
     package_state = {
@@ -4096,6 +4095,14 @@ def _hybrid_qualitative_analysis_status_state(
         "downstream_unavailable": list(PACKAGE_REVIEW_SUBMIT_DOWNSTREAM_UNAVAILABLE),
         "next_allowed_actions": ["submit_package_review"],
     }
+    if not construction_basis_hash and commit_summary.get("authority_basis_hash"):
+        return {
+            **package_state,
+            "package_review_submit_enabled": False,
+            "downstream_unavailable": list(base["downstream_unavailable"]),
+            "status_defects": ["source_directory_hybrid_legacy_construction_basis_missing"],
+            "next_allowed_actions": [],
+        }
     submit_state = summary.get("package_review_submit")
     if not isinstance(submit_state, dict):
         return package_state
@@ -4221,6 +4228,7 @@ def _matching_hybrid_package_reconciliation(
         if not isinstance(source_authority, dict):
             source_authority = {}
         expected = {
+            "qualitative_analysis_hash": analysis["qualitative_analysis_hash"],
             "hybrid_context_packet_hash": analysis["hybrid_context_packet_hash"],
             "lexical_context_packet_hash": analysis["lexical_context_packet_hash"],
             "index_authority_hash": analysis["index_authority_hash"],
@@ -4249,7 +4257,11 @@ def _matching_hybrid_package_reconciliation(
             for field, value in expected.items()
             if actual_fields[field] and actual_fields[field] != str(value)
         }
-        required_matches = {"hybrid_context_packet_hash", "embedding_index_authority_hash"}
+        required_matches = {
+            "qualitative_analysis_hash",
+            "hybrid_context_packet_hash",
+            "embedding_index_authority_hash",
+        }
         if not mismatched_fields and required_matches <= matched_fields:
             return record
     return None

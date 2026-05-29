@@ -142,3 +142,32 @@ def test_analysis_environment_projection_derives_delivery_ready_state_without_mu
         "hybrid": "absent",
     }
     assert projection["sublayer_visualization_unchanged"] is True
+
+
+def test_analysis_environment_projection_requires_step_specific_recorded_authority() -> None:
+    reconciliation_only = _projection(
+        external_local_export={
+            "external_local_export_state": "external_local_export_ready",
+            "reconciliation_record_id": "recon-1",
+        },
+    )
+    assert reconciliation_only["projection_state"] == "structural"
+    assert reconciliation_only["package_authority"]["external_local_export"]["recorded"] is False
+
+    wrong_ref = _projection(
+        handoff_export_prepare={
+            "handoff_export_prepare_state": "handoff_export_prepare_ready",
+            "external_local_export_receipt_id": "export-1",
+        },
+    )
+    assert wrong_ref["projection_state"] == "structural"
+    assert wrong_ref["package_authority"]["handoff_export_prepare"]["recorded"] is False
+
+    correct_ref = _projection(
+        handoff_export_prepare={
+            "handoff_export_prepare_state": "handoff_export_prepared",
+            "prepare_record_ref": "prepare-1",
+        },
+    )
+    assert correct_ref["projection_state"] == "handoff_ready"
+    assert correct_ref["package_authority"]["handoff_export_prepare"]["recorded"] is True

@@ -79,6 +79,10 @@ DELIVERY_ARTIFACT_AUTHORITY_COVERAGE = frozenset(
         "internal_webhook_status",
     }
 )
+_ALLOWED_EVIDENCE_REF_PREFIXES = (
+    "candidate-b-downstream-proof://",
+    "candidate-b-bundle-downstream-proof://",
+)
 _FORBIDDEN_REQUEST_FIELDS = {
     "path",
     "paths",
@@ -400,14 +404,10 @@ def _validate_coverage_evidence(
                 "candidate_b_retained_artifact_family_hash": retained_artifact_family_hash,
                 "candidate_b_delivery_artifact_roles_bound": True,
             }
-        evidence_ref = str(entry.get("evidence_ref") or f"candidate-b-bundle-downstream-proof://{step}").strip()
-        if evidence_ref.lower().startswith(("http://", "https://", "file://")):
-            raise CandidateBBundleDownstreamProofError(
-                "candidate_b_bundle_downstream_proof_coverage_exposes_forbidden_reference",
-                "Candidate B bundle downstream proof coverage cannot expose raw URL or file references.",
-                http_status=409,
-                details={"coverage_step": step},
-            )
+        evidence_ref = str(entry.get("evidence_ref") or "").strip()
+        if not evidence_ref:
+            evidence_ref = f"candidate-b-bundle-downstream-proof://{step}"
+        _validate_evidence_ref(evidence_ref, coverage_step=step)
         coverage[step] = {
             "status": "proven",
             "evidence_ref": evidence_ref,
@@ -421,6 +421,46 @@ def _validate_coverage_evidence(
             details={"missing_coverage": missing},
         )
     return coverage
+
+
+def _validate_evidence_ref(evidence_ref: str, *, coverage_step: str) -> None:
+    if _evidence_ref_exposes_raw_authority(evidence_ref):
+        raise CandidateBBundleDownstreamProofError(
+            "candidate_b_bundle_downstream_proof_coverage_exposes_forbidden_reference",
+            "Candidate B bundle downstream proof coverage cannot expose raw URL, file, or local path references.",
+            http_status=409,
+            details={"coverage_step": coverage_step},
+        )
+
+
+def _evidence_ref_exposes_raw_authority(evidence_ref: str) -> bool:
+    text = evidence_ref.strip()
+    lower = text.lower()
+    if not text:
+        return False
+    if any(token in lower for token in ("http://", "https://", "file://")):
+        return True
+    for prefix in _ALLOWED_EVIDENCE_REF_PREFIXES:
+        if lower.startswith(prefix):
+            suffix = text[len(prefix) :]
+            return _local_path_shaped_ref(suffix)
+    if "://" in text:
+        return True
+    return _local_path_shaped_ref(text)
+
+
+def _local_path_shaped_ref(value: str) -> bool:
+    text = value.strip()
+    normalised = text.replace("\\", "/")
+    if not text:
+        return True
+    if "\\" in text or "/" in text:
+        return True
+    if len(text) >= 2 and text[1] == ":" and text[0].isalpha():
+        return True
+    if normalised in {".", ".."}:
+        return True
+    return any(part == ".." for part in normalised.split("/"))
 
 
 def _find_forbidden_nested_fields(value: Any, *, prefix: str = "") -> list[str]:

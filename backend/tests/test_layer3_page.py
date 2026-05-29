@@ -14,6 +14,14 @@ from main import app
 client = TestClient(app)
 
 
+def _js_slice(js_text: str, start_marker: str, end_marker: str) -> str:
+    start = js_text.find(start_marker)
+    end = js_text.find(end_marker, start + len(start_marker))
+    assert start != -1
+    assert end != -1
+    return js_text[start:end]
+
+
 def test_layer3_page_route_serves_workbench_shell() -> None:
     response = client.get("/review/layer3")
 
@@ -742,7 +750,7 @@ def test_layer3_static_assets_are_mounted() -> None:
     assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_RENDERED_MODE = 'rendered_source_directory_replacement_package_set_authority_control'" in js.text
     assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY = 'State.sourceDirectoryPackageSupersessionPreview'" in js.text
     assert "function replacementPackageSetAuthorityPreviewState" in js.text
-    assert "return sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null" in js.text
+    assert "return packagePreview || sourceDirectoryPreview || null" in js.text
     assert "function replacementPackageSetAuthoritySourcePackageSetHash" in js.text
     assert "replacementPackageArtifactMaterializationPayload()" in js.text
     assert "replacementPackageSetAuthorityPayload(materialization)" in js.text
@@ -1649,13 +1657,18 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     input_slice = js_text[input_start:input_end]
 
     assert "sourceDirectoryPackageSupersessionPreviewRequestToken: 0" in js_text
+    assert "sourceDirectoryPackageSupersessionPreviewPendingRequestToken: null" in js_text
     assert "function nextSourceDirectoryPackageSupersessionPreviewRequestToken" in js_text
     assert "function isCurrentSourceDirectoryPackageSupersessionPreviewRequest" in js_text
     assert "nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in clear_slice
+    assert "if (!State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken)" in clear_slice
     assert "const requestToken = nextSourceDirectoryPackageSupersessionPreviewRequestToken()" in source_submit_slice
+    assert "State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken = requestToken" in source_submit_slice
     assert "if (!isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) return" in source_submit_slice
+    assert "State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken === requestToken" in source_submit_slice
     assert "function isSourceDirectoryPackageSupersessionPreviewSelected" in state_slice
-    assert "sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null" in state_slice
+    assert "if (sourceDirectoryPreview && isSourceDirectoryQualitativePackageAuthoritySelected())" in state_slice
+    assert "return packagePreview || sourceDirectoryPreview || null" in state_slice
     assert "SOURCE_DIRECTORY_REPLACEMENT_PACKAGE_SET_AUTHORITY_SOURCE_AUTHORITY" in state_slice
     assert "preview?.source_package_set_hash || preview?.package_set_hash || null" in state_slice
     assert "const preview = replacementPackageSetAuthorityPreviewState() || {}" in gate_slice
@@ -1663,7 +1676,7 @@ def test_layer3_source_directory_replacement_package_set_authority_control_is_bo
     assert "sourceMode === 'source_directory_package_supersession_preview'" in gate_slice
     assert "preview.session_id" in gate_slice
     assert "&& sourcePackageSetHash" in gate_slice
-    assert "!State.sourceDirectoryPackageSupersessionPreviewPending" in gate_slice
+    assert "!packagePreviewSubmissionPending()" in gate_slice
     assert "dataset.renderedMode = renderedMode" in render_slice
     assert "dataset.sourceAuthority = sourceAuthority" in render_slice
     assert "dataset.sourceMode = sourceMode" in render_slice
@@ -1755,6 +1768,26 @@ def test_layer3_source_directory_package_supersession_provider_private_control_i
     provider_payload_slice = js_text[base_payload_end:provider_payload_end]
     inspect_slice = js_text[inspect_start:use_handler_start]
     controls_slice = js_text[controls_start:controls_end]
+    snapshot_slice = _js_slice(
+        js_text,
+        "function providerPrivateReceiptSnapshot",
+        "function persistProviderPrivateReceiptSnapshot",
+    )
+    authority_slice = _js_slice(
+        js_text,
+        "function providerPrivateSignedUrlAuthorityState",
+        "function providerPrivateSignedUrlSelectedArtifactFamily",
+    )
+    family_slice = _js_slice(
+        js_text,
+        "function providerPrivateSignedUrlActiveArtifactFamily",
+        "function providerPrivateSignedUrlUsesSourceDirectoryHybridFamily",
+    )
+    gate_slice = _js_slice(
+        js_text,
+        "function sourceDirectoryProviderPrivateSignedUrlAuthorityReady",
+        "function canInspectProviderPrivateSignedUrl",
+    )
     for required in (
         "/source/ingestion/server-configured-directory/qualitative-hybrid-analysis/package/supersession/provider-private-signed-url",
         "SOURCE_DIRECTORY_PACKAGE_SUPERSESSION_PROVIDER_PRIVATE_SIGNED_URL_PREPARE_PATH",
@@ -1794,6 +1827,24 @@ def test_layer3_source_directory_package_supersession_provider_private_control_i
         assert required in provider_payload_slice
     assert "providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()" in inspect_slice
     assert "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()" in controls_slice
+    assert "source_directory_hybrid_provider_private_signed_url_enabled" in snapshot_slice
+    assert "source_directory_package_supersession_provider_private_signed_url_enabled" in snapshot_slice
+    assert "source_directory_package_supersession_authority" in snapshot_slice
+    assert "State.providerPrivateSignedUrlStatus" in authority_slice
+    assert "State.providerPrivateSignedUrlUse" in authority_slice
+    assert authority_slice.find("State.providerPrivateSignedUrlStatus") < authority_slice.find("State.providerPrivateSignedUrlUse")
+    assert "State.providerPrivateSignedUrlReceiptRecovery" in authority_slice
+    assert family_slice.find("isSourceDirectoryHybridExternalExportDownloadPrepareState") < family_slice.find("isSourceDirectoryPackageSupersessionProviderPrivateState")
+    assert "sourceDirectoryHybridProviderPrivateSignedUrlReady()" in family_slice
+    assert "sourceDirectoryProviderPrivateSignedUrlAuthorityReady()" in js_text[
+        js_text.find("function canInspectProviderPrivateSignedUrl"):
+        js_text.find("function canUseProviderPrivateSignedUrl")
+    ]
+    assert "sourceDirectoryProviderPrivateSignedUrlAuthorityReady()" in js_text[
+        js_text.find("function canRevokeProviderPrivateSignedUrl"):
+        js_text.find("function providerPublicUrlReceiptId")
+    ]
+    assert "sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()" in gate_slice
     for forbidden in (
         "raw_provider_url",
         "provider_credentials",
@@ -1810,6 +1861,193 @@ def test_layer3_source_directory_package_supersession_provider_private_control_i
         "browser_state",
     ):
         assert forbidden not in base_payload_slice
+
+
+def test_layer3_package3_candidate_b_ui_payload_and_gating_contracts() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    assert js.status_code == 200
+    js_text = js.text.replace("\r\n", "\n")
+
+    runtime_payload = _js_slice(
+        js_text,
+        "function candidateBRuntimeDownstreamProofPayload",
+        "function canInspectCandidateBArtifactFamilyStatus",
+    )
+    final_status_inputs = _js_slice(
+        js_text,
+        "function candidateBDefaultPromotionFinalProofStatusInputValues",
+        "function candidateBOperatorStatusInputValues",
+    )
+    operator_status_gate = _js_slice(
+        js_text,
+        "function candidateBOperatorStatusEvidenceMatches",
+        "function canRecordSecEdgarSourceAcquisitionAuthority",
+    )
+    closeout_gate = _js_slice(
+        js_text,
+        "function canRecordCandidateBFullCorpusRepeatabilityAcceptanceCloseout",
+        "function canInspectCandidateBFullCorpusRepeatabilityAcceptanceCloseoutStatus",
+    )
+    namespace_slice = _js_slice(
+        js_text,
+        "function replacementPackageNamespaceRecordedKinds",
+        "function renderReplacementPackageRows",
+    )
+    selector_activation = _js_slice(
+        js_text,
+        "function candidateBBroaderScopeSelectorActivationDefaults",
+        "function candidateBBroaderScopeSelectorActivationPayload",
+    )
+    selector_input_handler = _js_slice(
+        js_text,
+        "target.id === 'candidate-b-broader-scope-selector-use-receipt-id'",
+        "target.id === 'candidate-b-broader-scope-selector-use-status-receipt-id'",
+    )
+    package_preview_submit = _js_slice(
+        js_text,
+        "async function submitPackageSupersessionPreview",
+        "async function submitSourceDirectoryPackageSupersessionPreview",
+    )
+
+    assert "candidate_b_visual_lane_status_evidence" not in runtime_payload
+    assert "coverage_evidence: JSON.parse(values.coverageEvidenceJson)" in runtime_payload
+    assert "renderedInputValue(" in final_status_inputs
+    assert "candidateBOperatorStatusEvidenceMatches(values)" in operator_status_gate
+    assert "visual.candidate_b_run_id === values.candidateBRunId" in operator_status_gate
+    assert "runtimeProof.proof_receipt_id" in operator_status_gate
+    assert "runtimeProof.proof_hash" in operator_status_gate
+    assert "!closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_id" in closeout_gate
+    assert "State.sessionSummary?.replacement_package_namespace" in namespace_slice
+    assert "return rows.find((row) => row.package_kind && !recordedKinds.has(row.package_kind)) || null" in namespace_slice
+    assert "candidateBBroaderScopeSelectorActivationDefaults" in selector_activation
+    assert "authorityValue || input?.value || storedValue" in selector_activation
+    assert "State.candidateBBroaderScopeSelectorUseStatus = null" in selector_input_handler
+    assert "State.candidateBBroaderScopeSelectorActivation = null" in selector_input_handler
+    assert "State.packageSupersessionPreview = null" in package_preview_submit
+
+
+def test_layer3_package3_remaining_ui_state_contracts() -> None:
+    response = client.get("/review/layer3")
+    js = client.get("/review/layer3/static/layer3.js")
+    assert response.status_code == 200
+    assert js.status_code == 200
+    html = response.text
+    js_text = js.text.replace("\r\n", "\n")
+
+    operation_steps = _js_slice(js_text, "const OPERATION_DOCK_STEPS", "function escapeHtml")
+    operation_status = _js_slice(js_text, "function operationDockStatus", "function renderOperationDockSummary")
+    supersession_payload = _js_slice(
+        js_text,
+        "function packageSupersessionPreviewPayload",
+        "function sourceDirectoryPackageSupersessionPreviewAuthorityPacket",
+    )
+    provider_use = _js_slice(
+        js_text,
+        "async function useProviderPublicUrlDecision",
+        "async function revokeProviderPublicUrl",
+    )
+    lifecycle_state = _js_slice(
+        js_text,
+        "function packageLifecycleDashboardState",
+        "function renderPackageLifecycleRows",
+    )
+    package_panel_state = _js_slice(
+        js_text,
+        "function packageReviewPanelState",
+        "function renderPackageReviewPreviewPanel",
+    )
+    final_proof_clear = _js_slice(
+        js_text,
+        "function clearCandidateBFinalProofInspectionState",
+        "function clearResultReviewState",
+    )
+    result_clear = _js_slice(
+        js_text,
+        "function clearResultReviewState",
+        "function selectedResultAuthority",
+    )
+    visual_lane_inspection = _js_slice(
+        js_text,
+        "async function inspectCandidateBVisualLaneStatus",
+        "async function recordCandidateBBundleDownstreamProof",
+    )
+    candidate_b_input_handler = _js_slice(
+        js_text,
+        "elements.candidateBDefaultPromotionStatusPanel.addEventListener('input'",
+        "elements.resultReviewDecision.addEventListener",
+    )
+
+    assert '<option value="claude">Claude</option>' in html
+    for target in ("quantitative", "qualitative", "hybrid-mixed"):
+        assert f'data-transfer-target="{target}"' in html
+    for object_index in range(1, 21):
+        assert f"Gate B Ingress Object #{object_index}" in html
+    assert 'id="run-preflight" class="primary-btn" type="submit"' in html
+    assert "preventRawMixedManifestEnterSubmit" in js_text
+
+    assert "source-directory-ingestion-rendered-controls" in operation_steps
+    assert "key: 'source_directory'" in operation_steps
+    assert "case 'source_directory':" in operation_status
+    assert "State.sourceDirectoryIngestionBatchStatus?.source_ingestion_batch_id" in operation_status
+
+    assert "State.sessionSummary?.connector_local_destination_receipt" in supersession_payload
+    assert supersession_payload.index("State.sessionSummary?.connector_local_destination_receipt") < supersession_payload.index("State.sessionSummary?.connector_dispatch_record")
+    assert provider_use.index("State.providerPublicUrlUse = await postJson") < provider_use.index("State.providerPublicUrlStatus = null")
+
+    assert "const hasLifecycleRows = packageLifecycleOutputRows().length > 0" in lifecycle_state
+    assert "package_lifecycle_rows_unavailable" in lifecycle_state
+    assert "submitState === 'package_review_approved' ? 'ok' : 'blocked'" in package_panel_state
+
+    assert "State.candidateBDefaultPromotionFinalProof = null" in final_proof_clear
+    assert "State.candidateBDefaultPromotionFinalProofStatus = null" in final_proof_clear
+    assert "clearCandidateBFinalProofInspectionState()" in result_clear
+    assert visual_lane_inspection.index("State.candidateBRuntimeDownstreamProof = null") < visual_lane_inspection.index("State.candidateBVisualLaneStatus = await postJson")
+
+    assert "function updateCandidateBDefaultPromotionStatusControls" in js_text
+    assert "updateCandidateBDefaultPromotionStatusControls()" in candidate_b_input_handler
+    assert "renderCandidateBDefaultPromotionStatusPanel()" not in candidate_b_input_handler
+
+
+def test_layer3_source_directory_routing_and_preview_state_contracts() -> None:
+    js = client.get("/review/layer3/static/layer3.js")
+    assert js.status_code == 200
+    js_text = js.text.replace("\r\n", "\n")
+
+    hybrid_prepare = _js_slice(
+        js_text,
+        "function sourceDirectoryHybridExternalExportDownloadPrepareState",
+        "function isSourceDirectoryHybridExternalExportDownloadPrepareState",
+    )
+    signed_reference_gate = _js_slice(
+        js_text,
+        "function canGenerateExternalExportDownloadSignedReference",
+        "function canUseExternalExportDownloadSignedReference",
+    )
+    gate_controls = _js_slice(
+        js_text,
+        "const externalExportDownloadSignedReferenceControlsEnabled",
+        "const providerPrivateSignedUrlControlsEnabled",
+    )
+    lifecycle_state = _js_slice(
+        js_text,
+        "State.sourceDirectoryHybridMiddleLifecycle = {",
+        "try {\n            State.sessionSummary",
+    )
+    downstream_gates = _js_slice(
+        js_text,
+        "function packagePreviewSubmissionPending",
+        "function isPackageActive",
+    )
+
+    assert "sourceSessionId && activeSessionId && sourceSessionId !== activeSessionId" in hybrid_prepare
+    assert "lifecycleSessionId && activeSessionId && lifecycleSessionId !== activeSessionId" in hybrid_prepare
+    assert "!isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external)" in signed_reference_gate
+    assert "!isSourceDirectoryHybridExternalExportDownloadPrepareState(external)" in signed_reference_gate
+    assert "!isSourceDirectoryQualitativeExternalExportDownloadPrepareState(externalPrepare)" in gate_controls
+    assert "!isSourceDirectoryHybridExternalExportDownloadPrepareState(externalPrepare)" in gate_controls
+    assert "session_id: currentSessionId()" in lifecycle_state
+    assert "function packagePreviewSubmissionPending" in downstream_gates
+    assert downstream_gates.count("!packagePreviewSubmissionPending()") >= 6
 
 
 def test_layer3_source_directory_hybrid_rendered_status_extension_is_bounded() -> None:

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from app.core.config import settings
-from app.services import layer3_candidate_b_runtime_bridge
+from app.services import layer3_candidate_b_runtime_bridge, layer3_candidate_b_storage_id
 
 
 SCHEMA_ID = "layer3.candidate_b_visual_lane_status.v1"
@@ -31,6 +31,7 @@ _RUNTIME_HASH_KEYS = (
     "runtime_review_root_storage_authority_hash",
     "admitted_file_subset_hash",
     "governed_retained_artifact_family_hash",
+    "candidate_b_visual_lane_evidence",
     "redaction_policy_id",
 )
 _ADMITTED_RUNTIME_BRIDGE_MODES = (
@@ -112,6 +113,7 @@ def candidate_b_visual_lane_status(payload: Mapping[str, Any]) -> dict[str, Any]
     receipt = _read_receipt(receipt_id)
     _validate_receipt(candidate_b_run_id, receipt_id, receipt)
     visual_evidence = receipt["candidate_b_visual_lane_evidence"]
+    visual_counts = _validated_visual_evidence_counts(visual_evidence)
 
     return {
         "schema_id": SCHEMA_ID,
@@ -132,11 +134,11 @@ def candidate_b_visual_lane_status(payload: Mapping[str, Any]) -> dict[str, Any]
         "operator_projection": {
             "candidate_b_visual_lane_status_projection_visible": True,
             "candidate_b_visual_lane_selected": True,
-            "visual_ref_total": int(visual_evidence.get("visual_ref_total") or 0),
-            "candidate_b_visual_ref_total": int(visual_evidence.get("candidate_b_visual_ref_total") or 0),
-            "candidate_b_retained_source_pdf_ref_count": int(
-                visual_evidence.get("candidate_b_retained_source_pdf_ref_count") or 0
-            ),
+            "visual_ref_total": visual_counts["visual_ref_total"],
+            "candidate_b_visual_ref_total": visual_counts["candidate_b_visual_ref_total"],
+            "candidate_b_retained_source_pdf_ref_count": visual_counts[
+                "candidate_b_retained_source_pdf_ref_count"
+            ],
             "raw_local_path_exposed": False,
             "raw_url_exposed": False,
             "artifact_bytes_exposed": False,
@@ -192,7 +194,7 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
 
 def _required_receipt_id(fields: Mapping[str, Any], key: str, prefix: str) -> str:
     value = _required(fields, key)
-    if not value.startswith(f"{prefix}-") or "/" in value or "\\" in value or ".." in value or value in {".", ".."}:
+    if not layer3_candidate_b_storage_id.is_storage_id(value, prefix=prefix):
         raise CandidateBVisualLaneStatusError(
             "candidate_b_visual_lane_status_bridge_receipt_id_invalid",
             "Candidate B visual-lane status requires a server-owned runtime bridge receipt identifier.",
@@ -225,12 +227,12 @@ def _read_receipt(receipt_id: str) -> dict[str, Any]:
         )
     try:
         receipt = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise CandidateBVisualLaneStatusError(
             "candidate_b_visual_lane_status_bridge_receipt_unreadable",
             "The selected Candidate B runtime bridge receipt could not be read.",
             http_status=409,
-            details={"reason": str(exc)},
+            details={"reason": exc.__class__.__name__},
         ) from exc
     if not isinstance(receipt, dict):
         raise CandidateBVisualLaneStatusError(
@@ -316,31 +318,57 @@ def _validate_receipt(candidate_b_run_id: str, receipt_id: str, receipt: Mapping
                 http_status=409,
                 details={"field": field},
             )
+    _validated_visual_evidence_counts(visual_evidence)
+
+
+def _visual_evidence_projection(visual_evidence: Mapping[str, Any]) -> dict[str, Any]:
+    counts = _validated_visual_evidence_counts(visual_evidence)
+    return {
+        "visual_lane_mode": visual_evidence.get("visual_lane_mode"),
+        "candidate_b_visual_lane_selected": visual_evidence.get("candidate_b_visual_lane_selected") is True,
+        "candidate_b_visual_lane_mode": visual_evidence.get("candidate_b_visual_lane_mode"),
+        "visual_ref_total": counts["visual_ref_total"],
+        "candidate_b_visual_ref_total": counts["candidate_b_visual_ref_total"],
+        "candidate_b_retained_source_pdf_ref_count": counts["candidate_b_retained_source_pdf_ref_count"],
+        "source_pdf_material_text_payload_enabled": visual_evidence.get("source_pdf_material_text_payload_enabled")
+        is True,
+        "image_material_text_payload_enabled": visual_evidence.get("image_material_text_payload_enabled") is True,
+        "evidence_source": visual_evidence.get("evidence_source"),
+    }
+
+
+def _validated_visual_evidence_counts(visual_evidence: Mapping[str, Any]) -> dict[str, int]:
+    counts: dict[str, int] = {}
     for field in ("visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"):
-        if int(visual_evidence.get(field) or 0) <= 0:
+        count = _strict_positive_int(visual_evidence.get(field))
+        if count is None:
+            raise CandidateBVisualLaneStatusError(
+                "candidate_b_visual_lane_status_evidence_count_invalid",
+                "The selected Candidate B runtime bridge receipt has malformed retained visual/page evidence counts.",
+                http_status=409,
+                details={"field": field, "received": visual_evidence.get(field)},
+            )
+        if count <= 0:
             raise CandidateBVisualLaneStatusError(
                 "candidate_b_visual_lane_status_evidence_count_missing",
                 "The selected Candidate B runtime bridge receipt has no retained visual/page evidence.",
                 http_status=409,
                 details={"field": field},
             )
+        counts[field] = count
+    return counts
 
 
-def _visual_evidence_projection(visual_evidence: Mapping[str, Any]) -> dict[str, Any]:
-    return {
-        "visual_lane_mode": visual_evidence.get("visual_lane_mode"),
-        "candidate_b_visual_lane_selected": visual_evidence.get("candidate_b_visual_lane_selected") is True,
-        "candidate_b_visual_lane_mode": visual_evidence.get("candidate_b_visual_lane_mode"),
-        "visual_ref_total": int(visual_evidence.get("visual_ref_total") or 0),
-        "candidate_b_visual_ref_total": int(visual_evidence.get("candidate_b_visual_ref_total") or 0),
-        "candidate_b_retained_source_pdf_ref_count": int(
-            visual_evidence.get("candidate_b_retained_source_pdf_ref_count") or 0
-        ),
-        "source_pdf_material_text_payload_enabled": visual_evidence.get("source_pdf_material_text_payload_enabled")
-        is True,
-        "image_material_text_payload_enabled": visual_evidence.get("image_material_text_payload_enabled") is True,
-        "evidence_source": visual_evidence.get("evidence_source"),
-    }
+def _strict_positive_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value >= 0 else None
+    if isinstance(value, str):
+        text = value.strip()
+        if text.isdecimal():
+            return int(text)
+    return None
 
 
 def _stable_hash(value: Any) -> str:

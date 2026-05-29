@@ -25,6 +25,7 @@ PROCESS_EXECUTION_STARTED_STATE = "started"
 PROCESS_EXECUTION_BLOCKED_STATE = "blocked"
 PROCESS_EXECUTION_STATE = PROCESS_EXECUTION_STARTED_STATE
 PROCESS_EXECUTION_RECEIPT_PREFIX = f"{workflow_status.WORKFLOW_RECEIPT_PREFIX}-process-execution"
+PROCESS_LAUNCH_INTENT_RECEIPT_PREFIX = f"{workflow_status.WORKFLOW_RECEIPT_PREFIX}-process-launch-intent"
 ALLOWLISTED_COMMAND_FAMILY = "tools/run_candidate_b_full_corpus_operator_workflow.py"
 PROCESS_EXECUTION_ENDPOINT = (
     "/api/v1/layer3/source/ingestion/candidate-b/full-corpus/operator-workflow/process/execution"
@@ -374,11 +375,40 @@ def _load_or_write_process_execution_receipt(
         operator_workflow_receipt_id=str(row["operator_workflow_receipt_id"]),
         execution_boundary_authority_hash=str(execution_boundary_projection["execution_boundary_authority_hash"]),
     )
+    _acquire_process_execution_index(
+        process_execution_receipt_id=process_execution_receipt_id,
+        operator_workflow_receipt_id=str(row["operator_workflow_receipt_id"]),
+        execution_boundary_authority_hash=str(execution_boundary_projection["execution_boundary_authority_hash"]),
+    )
+    launch_intent_receipt = _load_or_write_process_launch_intent_receipt(
+        process_execution_receipt_id=process_execution_receipt_id,
+        request_id=request_id,
+        row=row,
+        history=history,
+        execution_boundary_projection=execution_boundary_projection,
+        process_invocation=process_invocation,
+        process_invocation_hash=process_invocation_hash,
+        process_execution_authority=process_execution_authority,
+        process_execution_authority_hash=process_execution_authority_hash,
+        idempotency_key_hash=idempotency_key_hash,
+    )
+    launch_intent_receipt_id = str(launch_intent_receipt["process_launch_intent_receipt_id"])
+    launch_intent_receipt_hash = str(launch_intent_receipt["process_launch_intent_receipt_hash"])
+    selected_process_execution_authority = _selected_process_execution_authority(
+        row=row,
+        execution_boundary_projection=execution_boundary_projection,
+        process_execution_receipt_id=process_execution_receipt_id,
+        process_execution_authority_hash=process_execution_authority_hash,
+        process_invocation_hash=process_invocation_hash,
+        launch_intent_receipt_id=launch_intent_receipt_id,
+        launch_intent_receipt_hash=launch_intent_receipt_hash,
+    )
     launch_error: CandidateBFullCorpusOperatorWorkflowProcessExecutionError | None = None
     try:
         launch_result = _launch_server_owned_process(
             process_execution_receipt_id=process_execution_receipt_id,
             process_invocation_hash=process_invocation_hash,
+            selected_process_execution_authority=selected_process_execution_authority,
         )
     except CandidateBFullCorpusOperatorWorkflowProcessExecutionError as exc:
         if exc.code not in {PROCESS_LAUNCH_FAILED_ERROR_CODE, PROCESS_LAUNCH_TIMEOUT_ERROR_CODE}:
@@ -448,6 +478,16 @@ def _load_or_write_process_execution_receipt(
         "redacted_process_status_projection": redacted_process_status_projection,
         "redacted_process_ref": launch_result["redacted_process_ref"],
         "server_process_handle_hash": launch_result["server_process_handle_hash"],
+        "process_launch_intent_receipt_id": launch_intent_receipt_id,
+        "process_launch_intent_receipt_hash": launch_intent_receipt_hash,
+        "process_launch_intent_receipt_ref": (
+            "candidate-b-full-corpus-operator-workflow-process-launch-intent://"
+            f"{launch_intent_receipt_id}/{launch_intent_receipt_hash[:24]}"
+        ),
+        "selected_process_execution_authority": selected_process_execution_authority,
+        "selected_process_execution_authority_hash": selected_process_execution_authority[
+            "selected_process_authority_envelope_hash"
+        ],
         "append_only_process_execution_receipt": True,
         "process_started": process_started,
         "source_run_receipt_mutated": False,
@@ -516,6 +556,158 @@ def _load_or_write_process_execution_receipt(
     return receipt, False
 
 
+def _load_or_write_process_launch_intent_receipt(
+    *,
+    process_execution_receipt_id: str,
+    request_id: str,
+    row: Mapping[str, Any],
+    history: Mapping[str, Any],
+    execution_boundary_projection: Mapping[str, Any],
+    process_invocation: Mapping[str, Any],
+    process_invocation_hash: str,
+    process_execution_authority: Mapping[str, Any],
+    process_execution_authority_hash: str,
+    idempotency_key_hash: str,
+) -> dict[str, Any]:
+    receipt_input = {
+        "schema_id": "layer3.candidate_b_full_corpus_operator_workflow_process_launch_intent.v1",
+        "schema_version": SCHEMA_VERSION,
+        "mode": "server_owned_allowlisted_process_launch_intent_v1",
+        "operator_decision": OPERATOR_DECISION,
+        "client_request_id": request_id,
+        "status": "available",
+        "process_launch_intent_state": "recorded",
+        "process_execution_receipt_id": process_execution_receipt_id,
+        "operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "source_operator_workflow_receipt_id": row["source_operator_workflow_receipt_id"],
+        "source_operator_workflow_receipt_hash": row["source_operator_workflow_receipt_hash"],
+        "authority_basis_hash": row["authority_basis_hash"],
+        "row_hash": row["row_hash"],
+        "history_hash": history["history_hash"],
+        "execution_boundary_receipt_id": execution_boundary_projection["execution_boundary_receipt_id"],
+        "execution_boundary_receipt_hash": execution_boundary_projection["execution_boundary_receipt_hash"],
+        "execution_boundary_authority_hash": execution_boundary_projection["execution_boundary_authority_hash"],
+        "process_invocation": dict(process_invocation),
+        "process_invocation_hash": process_invocation_hash,
+        "process_execution_authority": dict(process_execution_authority),
+        "process_execution_authority_hash": process_execution_authority_hash,
+        "idempotency_key_hash": idempotency_key_hash,
+        "allowlisted_command_family": ALLOWLISTED_COMMAND_FAMILY,
+        "append_only_process_launch_intent_receipt": True,
+        "process_started": False,
+        "actual_subprocess_spawn_admitted_now": False,
+        "actual_corpus_processing_execution_admitted_now": False,
+        "operator_supplied_command_admitted": False,
+        "operator_supplied_local_path_admitted": False,
+        "operator_supplied_raw_url_admitted": False,
+        "raw_stdout_admitted": False,
+        "raw_stderr_admitted": False,
+        "raw_local_path_exposed": False,
+        "raw_url_exposed": False,
+        "artifact_bytes_exposed": False,
+    }
+    receipt_hash = workflow_status._stable_hash(receipt_input)
+    receipt_id = f"{PROCESS_LAUNCH_INTENT_RECEIPT_PREFIX}-{receipt_hash[:24]}"
+    target = _workflow_receipt_root() / receipt_id / "receipt.json"
+    if target.is_file():
+        existing = _read_json_receipt(target)
+        _validate_process_launch_intent_receipt(
+            existing,
+            expected_receipt_input=receipt_input,
+            receipt_id=receipt_id,
+            receipt_hash=receipt_hash,
+        )
+        return existing
+    receipt = {
+        **receipt_input,
+        "process_launch_intent_receipt_id": receipt_id,
+        "process_launch_intent_receipt_hash": receipt_hash,
+        "server_time": workflow_status._server_time(),
+    }
+    _validate_process_launch_intent_receipt(
+        receipt,
+        expected_receipt_input=receipt_input,
+        receipt_id=receipt_id,
+        receipt_hash=receipt_hash,
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    return receipt
+
+
+def _validate_process_launch_intent_receipt(
+    receipt: Mapping[str, Any],
+    *,
+    expected_receipt_input: Mapping[str, Any],
+    receipt_id: str,
+    receipt_hash: str,
+) -> None:
+    expected = {
+        **dict(expected_receipt_input),
+        "process_launch_intent_receipt_id": receipt_id,
+        "process_launch_intent_receipt_hash": receipt_hash,
+    }
+    mismatches = [
+        {"field": field, "expected": expected_value, "received": receipt.get(field)}
+        for field, expected_value in expected.items()
+        if receipt.get(field) != expected_value
+    ]
+    if receipt.get("process_launch_intent_receipt_hash") != receipt_hash:
+        mismatches.append(
+            {
+                "field": "process_launch_intent_receipt_hash",
+                "expected": receipt_hash,
+                "received": receipt.get("process_launch_intent_receipt_hash"),
+            }
+        )
+    try:
+        workflow_status._assert_no_raw_authority_exposure(receipt)
+    except workflow_status.CandidateBFullCorpusOperatorWorkflowStatusError as exc:
+        raise CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
+            f"candidate_b_full_corpus_operator_workflow_process_launch_intent_{exc.code}",
+            exc.message,
+            http_status=exc.http_status,
+            details=exc.details,
+        ) from exc
+    if mismatches:
+        raise CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
+            "candidate_b_full_corpus_operator_workflow_process_launch_intent_stale_receipt",
+            "The selected Candidate B process launch-intent receipt is stale or contradictory.",
+            http_status=409,
+            details={"mismatches": mismatches},
+        )
+
+
+def _selected_process_execution_authority(
+    *,
+    row: Mapping[str, Any],
+    execution_boundary_projection: Mapping[str, Any],
+    process_execution_receipt_id: str,
+    process_execution_authority_hash: str,
+    process_invocation_hash: str,
+    launch_intent_receipt_id: str,
+    launch_intent_receipt_hash: str,
+) -> dict[str, Any]:
+    authority = {
+        "schema_id": "layer3.candidate_b_full_corpus_operator_workflow_selected_process_execution_authority.v1",
+        "selected_operator_workflow_receipt_id": row["operator_workflow_receipt_id"],
+        "selected_operator_workflow_receipt_hash": row["operator_workflow_receipt_hash"],
+        "selected_execution_boundary_receipt_id": execution_boundary_projection["execution_boundary_receipt_id"],
+        "selected_execution_boundary_receipt_hash": execution_boundary_projection["execution_boundary_receipt_hash"],
+        "selected_execution_boundary_authority_hash": execution_boundary_projection[
+            "execution_boundary_authority_hash"
+        ],
+        "selected_process_execution_receipt_id": process_execution_receipt_id,
+        "selected_process_execution_authority_hash": process_execution_authority_hash,
+        "selected_process_invocation_hash": process_invocation_hash,
+        "selected_process_launch_intent_receipt_id": launch_intent_receipt_id,
+        "selected_process_launch_intent_receipt_hash": launch_intent_receipt_hash,
+    }
+    authority["selected_process_authority_envelope_hash"] = workflow_status._stable_hash(authority)
+    return authority
+
+
 def _reject_competing_process_execution(
     *,
     process_execution_receipt_id: str,
@@ -537,6 +729,36 @@ def _reject_competing_process_execution(
                 http_status=409,
                 details={"existing_process_execution_receipt_id": existing_id},
             )
+
+
+def _acquire_process_execution_index(
+    *,
+    process_execution_receipt_id: str,
+    operator_workflow_receipt_id: str,
+    execution_boundary_authority_hash: str,
+) -> None:
+    index_hash = workflow_status._stable_hash(
+        {
+            "operator_workflow_receipt_id": operator_workflow_receipt_id,
+            "execution_boundary_authority_hash": execution_boundary_authority_hash,
+            "exclusive_process_execution_per_execution_boundary": True,
+        }
+    )
+    index_dir = _workflow_receipt_root() / f"{PROCESS_EXECUTION_RECEIPT_PREFIX}-boundary-index-{index_hash[:24]}"
+    try:
+        index_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as exc:
+        _reject_competing_process_execution(
+            process_execution_receipt_id=process_execution_receipt_id,
+            operator_workflow_receipt_id=operator_workflow_receipt_id,
+            execution_boundary_authority_hash=execution_boundary_authority_hash,
+        )
+        raise CandidateBFullCorpusOperatorWorkflowProcessExecutionError(
+            "candidate_b_full_corpus_operator_workflow_process_execution_conflict",
+            "The selected Candidate B execution boundary already has a process-execution receipt.",
+            http_status=409,
+            details={"process_execution_index": index_dir.name},
+        ) from exc
 
 
 def _validate_process_execution_receipt(
@@ -601,6 +823,75 @@ def _validate_process_execution_receipt(
         if receipt.get(field) != expected_value
         ]
     )
+    launch_intent_id = str(receipt.get("process_launch_intent_receipt_id") or "")
+    launch_intent_hash = str(receipt.get("process_launch_intent_receipt_hash") or "")
+    if not launch_intent_id.startswith(f"{PROCESS_LAUNCH_INTENT_RECEIPT_PREFIX}-"):
+        mismatches.append(
+            {
+                "field": "process_launch_intent_receipt_id",
+                "expected": f"{PROCESS_LAUNCH_INTENT_RECEIPT_PREFIX}-*",
+                "received": receipt.get("process_launch_intent_receipt_id"),
+            }
+        )
+    if not _is_sha256_hex(launch_intent_hash):
+        mismatches.append(
+            {
+                "field": "process_launch_intent_receipt_hash",
+                "expected": "lowercase_sha256_hex",
+                "received": receipt.get("process_launch_intent_receipt_hash"),
+            }
+        )
+    selected_authority = receipt.get("selected_process_execution_authority")
+    if not isinstance(selected_authority, Mapping):
+        mismatches.append(
+            {
+                "field": "selected_process_execution_authority",
+                "expected": "object",
+                "received": type(selected_authority).__name__,
+            }
+        )
+    else:
+        selected_expected = {
+            "schema_id": "layer3.candidate_b_full_corpus_operator_workflow_selected_process_execution_authority.v1",
+            "selected_operator_workflow_receipt_id": receipt.get("operator_workflow_receipt_id"),
+            "selected_operator_workflow_receipt_hash": receipt.get("operator_workflow_receipt_hash"),
+            "selected_execution_boundary_receipt_id": receipt.get("execution_boundary_receipt_id"),
+            "selected_execution_boundary_receipt_hash": receipt.get("execution_boundary_receipt_hash"),
+            "selected_execution_boundary_authority_hash": receipt.get("execution_boundary_authority_hash"),
+            "selected_process_execution_receipt_id": process_execution_receipt_id,
+            "selected_process_execution_authority_hash": process_execution_authority_hash,
+            "selected_process_invocation_hash": process_invocation_hash,
+            "selected_process_launch_intent_receipt_id": launch_intent_id,
+            "selected_process_launch_intent_receipt_hash": launch_intent_hash,
+        }
+        mismatches.extend(
+            [
+                {
+                    "field": f"selected_process_execution_authority.{field}",
+                    "expected": expected_value,
+                    "received": selected_authority.get(field),
+                }
+                for field, expected_value in selected_expected.items()
+                if selected_authority.get(field) != expected_value
+            ]
+        )
+        selected_envelope_hash = workflow_status._stable_hash(selected_expected)
+        if selected_authority.get("selected_process_authority_envelope_hash") != selected_envelope_hash:
+            mismatches.append(
+                {
+                    "field": "selected_process_execution_authority.selected_process_authority_envelope_hash",
+                    "expected": selected_envelope_hash,
+                    "received": selected_authority.get("selected_process_authority_envelope_hash"),
+                }
+            )
+        if receipt.get("selected_process_execution_authority_hash") != selected_envelope_hash:
+            mismatches.append(
+                {
+                    "field": "selected_process_execution_authority_hash",
+                    "expected": selected_envelope_hash,
+                    "received": receipt.get("selected_process_execution_authority_hash"),
+                }
+            )
     failure_code = str(receipt.get("process_failure_code") or "")
     if process_execution_state == PROCESS_EXECUTION_BLOCKED_STATE:
         expected_timeout = failure_code == PROCESS_LAUNCH_TIMEOUT_ERROR_CODE
@@ -683,12 +974,17 @@ def _validate_process_execution_receipt(
     return str(receipt["process_execution_receipt_hash"])
 
 
+def _is_sha256_hex(value: str) -> bool:
+    return len(value) == 64 and all(char in "0123456789abcdef" for char in value)
+
+
 def _launch_server_owned_process(
     *,
     process_execution_receipt_id: str,
     process_invocation_hash: str,
+    selected_process_execution_authority: Mapping[str, Any],
 ) -> dict[str, Any]:
-    command = _server_owned_command()
+    command = _server_owned_command(selected_process_execution_authority=selected_process_execution_authority)
     creationflags = subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0
     try:
         process = subprocess.Popen(  # noqa: S603 - command is server-owned and allowlisted.
@@ -755,8 +1051,11 @@ def _blocked_launch_result(
     }
 
 
-def _server_owned_command() -> list[str]:
-    return [
+def _server_owned_command(
+    *,
+    selected_process_execution_authority: Mapping[str, Any] | None = None,
+) -> list[str]:
+    command = [
         sys.executable,
         str(_allowlisted_script()),
         "--execution-mode",
@@ -766,6 +1065,32 @@ def _server_owned_command() -> list[str]:
         "--receipt-dir",
         str(_workflow_receipt_root()),
     ]
+    if selected_process_execution_authority:
+        command.extend(
+            [
+                "--selected-operator-workflow-receipt-id",
+                str(selected_process_execution_authority["selected_operator_workflow_receipt_id"]),
+                "--selected-operator-workflow-receipt-hash",
+                str(selected_process_execution_authority["selected_operator_workflow_receipt_hash"]),
+                "--selected-execution-boundary-receipt-id",
+                str(selected_process_execution_authority["selected_execution_boundary_receipt_id"]),
+                "--selected-execution-boundary-receipt-hash",
+                str(selected_process_execution_authority["selected_execution_boundary_receipt_hash"]),
+                "--selected-execution-boundary-authority-hash",
+                str(selected_process_execution_authority["selected_execution_boundary_authority_hash"]),
+                "--selected-process-execution-receipt-id",
+                str(selected_process_execution_authority["selected_process_execution_receipt_id"]),
+                "--selected-process-execution-authority-hash",
+                str(selected_process_execution_authority["selected_process_execution_authority_hash"]),
+                "--selected-process-invocation-hash",
+                str(selected_process_execution_authority["selected_process_invocation_hash"]),
+                "--selected-process-launch-intent-receipt-id",
+                str(selected_process_execution_authority["selected_process_launch_intent_receipt_id"]),
+                "--selected-process-launch-intent-receipt-hash",
+                str(selected_process_execution_authority["selected_process_launch_intent_receipt_hash"]),
+            ]
+        )
+    return command
 
 
 def _allowlisted_script() -> Path:

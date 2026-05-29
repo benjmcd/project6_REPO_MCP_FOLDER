@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 from typing import Any, Mapping
 
 from app.core.config import settings
@@ -112,6 +113,7 @@ def record_candidate_b_full_corpus_operator_workflow_retry_scheduler_lease(
 ) -> dict[str, Any]:
     fields = _normalise_payload(payload)
     request_id = _required(fields, "client_request_id")
+    _validate_client_request_id(request_id)
     if _required(fields, "retry_scheduler_lease_mode") != RETRY_SCHEDULER_LEASE_MODE:
         raise CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseError(
             "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_mode_not_admitted",
@@ -390,6 +392,12 @@ def _load_or_write_retry_scheduler_lease_receipt(
         retry_queue_state_receipt_id=str(retry_queue_state_receipt["retry_queue_state_receipt_id"]),
         retry_queue_state_authority_hash=str(retry_queue_state_receipt["retry_queue_state_authority_hash"]),
     )
+    _acquire_retry_scheduler_lease_index(
+        root=root,
+        retry_scheduler_lease_receipt_id=retry_scheduler_lease_receipt_id,
+        retry_queue_state_receipt_id=str(retry_queue_state_receipt["retry_queue_state_receipt_id"]),
+        retry_queue_state_authority_hash=str(retry_queue_state_receipt["retry_queue_state_authority_hash"]),
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
     receipt_input = {
         "schema_id": SCHEMA_ID,
@@ -513,6 +521,38 @@ def _validate_no_existing_retry_scheduler_lease_receipt(
                 http_status=409,
                 details={"existing_retry_scheduler_lease_receipt_id": existing_id},
             )
+
+
+def _acquire_retry_scheduler_lease_index(
+    *,
+    root: Path,
+    retry_scheduler_lease_receipt_id: str,
+    retry_queue_state_receipt_id: str,
+    retry_queue_state_authority_hash: str,
+) -> None:
+    index_hash = workflow_status._stable_hash(
+        {
+            "retry_queue_state_receipt_id": retry_queue_state_receipt_id,
+            "retry_queue_state_authority_hash": retry_queue_state_authority_hash,
+            "exclusive_retry_queue_state_lease": True,
+        }
+    )
+    index_dir = root / f"{RETRY_SCHEDULER_LEASE_RECEIPT_PREFIX}-queue-state-index-{index_hash[:24]}"
+    try:
+        index_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as exc:
+        _validate_no_existing_retry_scheduler_lease_receipt(
+            root=root,
+            retry_scheduler_lease_receipt_id=retry_scheduler_lease_receipt_id,
+            retry_queue_state_receipt_id=retry_queue_state_receipt_id,
+            retry_queue_state_authority_hash=retry_queue_state_authority_hash,
+        )
+        raise CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseError(
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_queue_state_conflict",
+            "The selected Candidate B retry queue-state receipt already has a retry scheduler lease.",
+            http_status=409,
+            details={"retry_scheduler_lease_index": index_dir.name},
+        ) from exc
 
 
 def _validate_retry_scheduler_lease_receipt(
@@ -646,6 +686,23 @@ def _required(fields: Mapping[str, Any], key: str) -> str:
             details={"field": key},
         )
     return value
+
+
+def _validate_client_request_id(value: str) -> None:
+    if (
+        "/" in value
+        or "\\" in value
+        or ".." in value
+        or value in {".", ".."}
+        or re.search(r"\bhttps?://", value, flags=re.IGNORECASE)
+        or re.search(r"\bfile://", value, flags=re.IGNORECASE)
+        or re.search(r"\b[A-Za-z]:[\\/]", value)
+    ):
+        raise CandidateBFullCorpusOperatorWorkflowRetrySchedulerLeaseError(
+            "candidate_b_full_corpus_operator_workflow_retry_scheduler_lease_request_id_invalid",
+            "Workflow retry scheduler lease request IDs must not contain raw path or URL authority.",
+            http_status=409,
+        )
 
 
 def _required_hash(fields: Mapping[str, Any], key: str) -> str:

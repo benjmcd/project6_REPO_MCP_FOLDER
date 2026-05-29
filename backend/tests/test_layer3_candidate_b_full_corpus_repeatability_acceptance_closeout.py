@@ -165,6 +165,27 @@ def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projec
     assert response["ownership_access_policy"]["audit_projection"]["route_family"] == "audit_projection"
 
 
+def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_rejects_missing_checkpoint(
+    acceptance_authority: dict[str, Any],
+) -> None:
+    missing_receipt_id = f"{acceptance.ACCEPTANCE_CHECKPOINT_RECEIPT_PREFIX}-ffffffffffffffffffffffff"
+
+    with pytest.raises(closeout.CandidateBFullCorpusRepeatabilityAcceptanceCloseoutError) as exc_info:
+        closeout.candidate_b_full_corpus_repeatability_acceptance_closeout_status(
+            _status_request(
+                repeatability_acceptance_checkpoint_receipt_id=missing_receipt_id,
+                repeatability_acceptance_checkpoint_receipt_hash="1" * 64,
+                repeatability_acceptance_checkpoint_authority_hash="2" * 64,
+            )
+        )
+
+    assert exc_info.value.http_status == 404
+    assert exc_info.value.code == (
+        "candidate_b_full_corpus_repeatability_acceptance_closeout_acceptance_checkpoint_missing"
+    )
+    assert acceptance_authority["root"].is_dir()
+
+
 def test_candidate_b_full_corpus_repeatability_acceptance_closeout_status_projects_available(
     acceptance_authority: dict[str, Any],
 ) -> None:

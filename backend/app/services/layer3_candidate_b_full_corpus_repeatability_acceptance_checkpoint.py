@@ -521,6 +521,14 @@ def _load_or_write_acceptance_checkpoint_receipt(
         "repeatability_acceptance_checkpoint_receipt_hash": receipt_hash,
         "server_time": workflow_status._server_time(),
     }
+    _validate_acceptance_checkpoint_receipt(
+        receipt,
+        request_id=request_id,
+        receipt_id=receipt_id,
+        checkpoint_hash=checkpoint_hash,
+        checkpoint_authority_hash=checkpoint_authority_hash,
+        idempotency_key_hash=idempotency_key_hash,
+    )
     target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return receipt, False
 

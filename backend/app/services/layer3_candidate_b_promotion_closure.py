@@ -54,6 +54,7 @@ _RUNTIME_HASH_KEYS = (
     "runtime_review_root_storage_authority_hash",
     "admitted_file_subset_hash",
     "governed_retained_artifact_family_hash",
+    "candidate_b_visual_lane_evidence",
     "redaction_policy_id",
 )
 CLOSURE_HASH_KEYS = (

@@ -1126,9 +1126,9 @@ def _load_admitted_preview_basis(
     qualitative_admitted = [
         candidate for candidate in admitted if _is_single_aps_doc_qualitative_candidate(candidate)
     ]
-    if qualitative_admitted and (len(qualitative_admitted) != 1 or len(admitted) != 1 or len(analysis_sets) != 1):
+    if len(qualitative_admitted) > 1:
         raise Layer3PassEntryError(
-            "single_aps_doc_qualitative_pass admits exactly one qualitative APS document analysis set"
+            "single_aps_doc_qualitative_pass admits at most one qualitative APS document analysis set"
         )
     if not admitted:
         raise Layer3PassEntryError(

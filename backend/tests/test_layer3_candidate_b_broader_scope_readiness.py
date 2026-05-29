@@ -167,6 +167,28 @@ def test_candidate_b_broader_scope_readiness_rejects_raw_url_values_before_recei
     assert not list((tmp_path / "runtime-bridge").glob("**/*.json"))
 
 
+def test_candidate_b_broader_scope_readiness_rejects_relative_path_values_before_receipt(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", str(tmp_path / "runtime-bridge"))
+    payload = _payload()
+    scope_evidence = dict(payload["scope_evidence"])  # type: ignore[arg-type]
+    structured = dict(scope_evidence["structured_json_or_csv_or_xlsx"])
+    structured["current_parser_or_engine_authority"] = "../runtime-db.sqlite"
+    scope_evidence["structured_json_or_csv_or_xlsx"] = structured
+    payload["scope_evidence"] = scope_evidence
+
+    with TestClient(app) as client:
+        response = client.post(ENDPOINT, json=payload)
+
+    assert response.status_code == 400, response.text
+    body = response.json()
+    assert body["error"]["code"] == "candidate_b_broader_scope_readiness_forbidden_request_values"
+    assert (
+        "scope_evidence.structured_json_or_csv_or_xlsx.current_parser_or_engine_authority"
+        in body["error"]["details"]["blocked_values"]
+    )
+    assert not list((tmp_path / "runtime-bridge").glob("**/*.json"))
+
+
 def test_candidate_b_broader_scope_readiness_is_exposed_in_readiness_contract() -> None:
     with TestClient(app) as client:
         response = client.get("/api/v1/layer3/readiness")

@@ -3007,6 +3007,134 @@ def test_source_directory_hybrid_context_packet_qualitative_analysis_status_repo
         db.close()
 
 
+def test_source_directory_hybrid_status_requires_current_qualitative_authority(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    analysis_body, commit_body, _submit_body, submit_payload, _embedding_index_authority_hash = (
+        _hybrid_package_review_submit_authority(
+            client,
+            tmp_path,
+            monkeypatch,
+            client_request_id="source-directory-hybrid-status-qualitative-authority",
+        )
+    )
+    status_payload = {
+        key: value
+        for key, value in submit_payload.items()
+        if key
+        not in {
+            "qualitative_analysis_hash",
+            "source_directory_hybrid_package_review_preview_hash",
+            "construction_basis_hash",
+            "reconciliation_record_id",
+            "output_package_ids",
+            "package_kinds",
+            "payload_hashes",
+            "operator_decision",
+            "client_request_id",
+        }
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        commit_summary = dict(summary["source_directory_hybrid_context_qualitative_package_commit"])
+        commit_summary["qualitative_analysis_hash"] = "0" * 64
+        summary["source_directory_hybrid_context_qualitative_package_commit"] = commit_summary
+        reconciliation.summary_json = summary
+        db.commit()
+    finally:
+        db.close()
+
+    status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
+        ),
+        json=status_payload,
+    )
+    assert status.status_code == 200, status.text
+    body = status.json()
+    assert body["qualitative_analysis_hash"] == analysis_body["qualitative_analysis_hash"]
+    assert body["source_directory_hybrid_package_commit_available"] is False
+    assert body["package_review_submit_enabled"] is False
+    assert body["next_allowed_actions"] == [
+        "commit_source_directory_hybrid_context_packet_qualitative_analysis_package"
+    ]
+
+
+def test_source_directory_hybrid_status_does_not_advertise_submit_for_legacy_hash_records(
+    client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    _analysis_body, commit_body, _submit_body, submit_payload, _embedding_index_authority_hash = (
+        _hybrid_package_review_submit_authority(
+            client,
+            tmp_path,
+            monkeypatch,
+            client_request_id="source-directory-hybrid-status-legacy-construction-hash",
+        )
+    )
+    status_payload = {
+        key: value
+        for key, value in submit_payload.items()
+        if key
+        not in {
+            "qualitative_analysis_hash",
+            "source_directory_hybrid_package_review_preview_hash",
+            "construction_basis_hash",
+            "reconciliation_record_id",
+            "output_package_ids",
+            "package_kinds",
+            "payload_hashes",
+            "operator_decision",
+            "client_request_id",
+        }
+    }
+
+    db = client.layer3_session_factory()
+    try:
+        reconciliation = db.query(L3ReconciliationRecord).filter(
+            L3ReconciliationRecord.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ).one()
+        summary = dict(reconciliation.summary_json)
+        commit_summary = dict(summary["source_directory_hybrid_context_qualitative_package_commit"])
+        commit_summary.pop("construction_basis_hash", None)
+        commit_summary["authority_basis_hash"] = commit_body["construction_basis_hash"]
+        summary["source_directory_hybrid_context_qualitative_package_commit"] = commit_summary
+        reconciliation.summary_json = summary
+        for package in db.query(L3OutputPackage).filter(
+            L3OutputPackage.reconciliation_record_id == commit_body["reconciliation_record_id"]
+        ):
+            package_summary = dict(package.summary_json or {})
+            package_summary.pop("construction_basis_hash", None)
+            package.summary_json = package_summary
+        db.commit()
+    finally:
+        db.close()
+
+    status = client.post(
+        (
+            "/api/v1/layer3/source/ingestion/server-configured-directory/"
+            "hybrid-context-packet/qualitative-analysis/status"
+        ),
+        json=status_payload,
+    )
+    assert status.status_code == 200, status.text
+    body = status.json()
+    assert body["source_directory_hybrid_package_commit_available"] is True
+    assert body["construction_basis_hash"] == ""
+    assert body["package_review_submit_enabled"] is False
+    assert body["status_defects"] == ["source_directory_hybrid_legacy_construction_basis_missing"]
+    assert body["next_allowed_actions"] == []
+
+
 def test_source_directory_hybrid_context_packet_qualitative_analysis_handoff_export_prepare_requires_approved_submit(
     client: TestClient,
     tmp_path,

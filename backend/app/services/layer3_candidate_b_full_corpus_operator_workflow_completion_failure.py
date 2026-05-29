@@ -389,6 +389,13 @@ def _load_or_write_completion_failure_receipt(
         worker_attempt_receipt_id=str(progress_checkpoint_receipt["worker_attempt_receipt_id"]),
         worker_attempt_authority_hash=str(progress_checkpoint_receipt["worker_attempt_authority_hash"]),
     )
+    _acquire_terminal_receipt_index(
+        root=root,
+        completion_failure_receipt_id=completion_failure_receipt_id,
+        worker_attempt_receipt_id=str(progress_checkpoint_receipt["worker_attempt_receipt_id"]),
+        worker_attempt_authority_hash=str(progress_checkpoint_receipt["worker_attempt_authority_hash"]),
+    )
+    _validate_latest_progress_checkpoint(progress_checkpoint_receipt)
     target.parent.mkdir(parents=True, exist_ok=True)
     receipt_input = {
         "schema_id": SCHEMA_ID,
@@ -474,8 +481,55 @@ def _load_or_write_completion_failure_receipt(
     }
     receipt_hash = workflow_status._stable_hash(receipt_input)
     receipt = {**receipt_input, "completion_failure_receipt_hash": receipt_hash, "server_time": workflow_status._server_time()}
-    target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    _write_receipt_atomically(target, receipt)
     return receipt, False
+
+
+def _write_receipt_atomically(target: Path, receipt: Mapping[str, Any]) -> None:
+    tmp = target.with_name(f"{target.name}.tmp")
+    payload = json.dumps(receipt, sort_keys=True, indent=2) + "\n"
+    try:
+        tmp.write_text(payload, encoding="utf-8")
+        tmp.replace(target)
+    except OSError as exc:
+        raise CandidateBFullCorpusOperatorWorkflowCompletionFailureError(
+            "candidate_b_full_corpus_operator_workflow_completion_failure_receipt_write_failed",
+            "Candidate B completion/failure receipt could not be written atomically.",
+            http_status=409,
+            details={"completion_failure_receipt_id": target.parent.name},
+        ) from exc
+
+
+def _acquire_terminal_receipt_index(
+    *,
+    root: Path,
+    completion_failure_receipt_id: str,
+    worker_attempt_receipt_id: str,
+    worker_attempt_authority_hash: str,
+) -> None:
+    index_hash = workflow_status._stable_hash(
+        {
+            "worker_attempt_receipt_id": worker_attempt_receipt_id,
+            "worker_attempt_authority_hash": worker_attempt_authority_hash,
+            "exclusive_terminal_receipt_per_worker_attempt": True,
+        }
+    )
+    index_dir = root / f"{COMPLETION_FAILURE_RECEIPT_PREFIX}-worker-attempt-index-{index_hash[:24]}"
+    try:
+        index_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as exc:
+        _validate_no_existing_terminal_receipt(
+            root=root,
+            completion_failure_receipt_id=completion_failure_receipt_id,
+            worker_attempt_receipt_id=worker_attempt_receipt_id,
+            worker_attempt_authority_hash=worker_attempt_authority_hash,
+        )
+        raise CandidateBFullCorpusOperatorWorkflowCompletionFailureError(
+            "candidate_b_full_corpus_operator_workflow_completion_failure_terminal_conflict",
+            "The selected Candidate B worker attempt already has a terminal completion/failure receipt.",
+            http_status=409,
+            details={"terminal_receipt_index": index_dir.name},
+        ) from exc
 
 
 def _validate_latest_progress_checkpoint(receipt: Mapping[str, Any]) -> None:

@@ -403,6 +403,7 @@ def test_source_directory_qualitative_analysis_returns_deterministic_extract_wit
         assert body["supporting_segments"][0]["rank_position"] == 1
         assert body["supporting_segments"][0]["support_label"] == "primary_context_segment"
         assert "quote_excerpt" in body["supporting_segments"][0]
+        assert "query_term_frequencies" in body["supporting_segments"][0]
         assert "text" not in body["supporting_segments"][0]
         assert body["supporting_segments"][0]["summed_term_frequency"] > body["supporting_segments"][1]["summed_term_frequency"]
         assert body["source_index_rows_written"] is False
@@ -423,6 +424,33 @@ def test_source_directory_qualitative_analysis_returns_deterministic_extract_wit
         _assert_no_downstream_side_effects(db)
     finally:
         db.close()
+
+
+def test_source_directory_qualitative_analysis_uses_producer_term_frequencies() -> None:
+    items = [
+        {
+            "segment_id": "segment-with-truncated-excerpt",
+            "text_excerpt": "alpha excerpt without the second token",
+            "query_term_frequencies": {"alpha": 1, "beta": 4},
+        }
+    ]
+
+    terms = qual_service._salient_terms(["alpha", "beta"], items)
+
+    assert terms == [
+        {"term": "alpha", "matched_segments": 1, "summed_term_frequency": 1},
+        {"term": "beta", "matched_segments": 1, "summed_term_frequency": 4},
+    ]
+
+
+def test_source_directory_qualitative_analysis_rejects_missing_producer_term_frequencies() -> None:
+    with pytest.raises(SourceDirectoryQualitativeAnalysisError) as exc_info:
+        qual_service._salient_terms(
+            ["alpha"],
+            [{"segment_id": "segment-without-frequency-authority", "text_excerpt": "alpha"}],
+        )
+
+    assert exc_info.value.code == "source_directory_qualitative_analysis_query_term_frequencies_missing"
 
 
 def test_source_directory_qualitative_analysis_rejects_stale_authority_through_context_packet_path(

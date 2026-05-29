@@ -634,6 +634,15 @@ def _load_or_write_retry_progress_checkpoint_receipt(
         ),
         retry_progress_checkpoint_sequence=sequence,
     )
+    _acquire_retry_progress_checkpoint_sequence_index(
+        root=root,
+        retry_progress_checkpoint_receipt_id=retry_progress_checkpoint_receipt_id,
+        retry_worker_attempt_receipt_id=str(retry_worker_attempt_receipt["retry_worker_attempt_receipt_id"]),
+        retry_worker_attempt_authority_hash=str(
+            retry_worker_attempt_receipt["retry_worker_attempt_authority_hash"]
+        ),
+        retry_progress_checkpoint_sequence=sequence,
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
     receipt_input = {
         "schema_id": SCHEMA_ID,
@@ -747,3 +756,38 @@ def _load_or_write_retry_progress_checkpoint_receipt(
     }
     target.write_text(json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8")
     return receipt, False
+
+
+def _acquire_retry_progress_checkpoint_sequence_index(
+    *,
+    root: Path,
+    retry_progress_checkpoint_receipt_id: str,
+    retry_worker_attempt_receipt_id: str,
+    retry_worker_attempt_authority_hash: str,
+    retry_progress_checkpoint_sequence: int,
+) -> None:
+    index_hash = workflow_status._stable_hash(
+        {
+            "retry_worker_attempt_receipt_id": retry_worker_attempt_receipt_id,
+            "retry_worker_attempt_authority_hash": retry_worker_attempt_authority_hash,
+            "retry_progress_checkpoint_sequence": retry_progress_checkpoint_sequence,
+            "exclusive_retry_progress_checkpoint_sequence": True,
+        }
+    )
+    index_dir = root / f"{RETRY_PROGRESS_CHECKPOINT_RECEIPT_PREFIX}-sequence-index-{index_hash[:24]}"
+    try:
+        index_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as exc:
+        _validate_next_retry_progress_checkpoint_sequence(
+            root=root,
+            retry_progress_checkpoint_receipt_id=retry_progress_checkpoint_receipt_id,
+            retry_worker_attempt_receipt_id=retry_worker_attempt_receipt_id,
+            retry_worker_attempt_authority_hash=retry_worker_attempt_authority_hash,
+            retry_progress_checkpoint_sequence=retry_progress_checkpoint_sequence,
+        )
+        raise CandidateBFullCorpusOperatorWorkflowRetryProgressCheckpointError(
+            "candidate_b_full_corpus_operator_workflow_retry_progress_checkpoint_conflict",
+            "The selected Candidate B retry worker attempt already has a retry progress checkpoint for this sequence.",
+            http_status=409,
+            details={"retry_progress_checkpoint_sequence_index": index_dir.name},
+        ) from exc

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
@@ -11,6 +12,7 @@ from app.services.layer3_source_directory_text_retrieval import (
     RETRIEVAL_MODE,
     source_directory_material_text_retrieval,
 )
+from app.services.nrc_aps_content_index import normalize_query_tokens
 
 SCHEMA_ID = "layer3.source_directory_context_packet.v1"
 MODE = "source_directory_material_retrieval_augmented_context_packet_authority"
@@ -99,7 +101,11 @@ def source_directory_material_retrieval_augmented_context_packet(
     _assert_retrieval_authority(retrieval_response)
 
     offset = int(retrieval_response["offset"])
-    items = _context_items(retrieval_response.get("items") or [], offset=offset)
+    items = _context_items(
+        retrieval_response.get("items") or [],
+        offset=offset,
+        query_tokens=retrieval_response["query_tokens"],
+    )
     context_packet_hash = _context_packet_hash(retrieval_response, items)
     return {
         "schema_id": SCHEMA_ID,
@@ -176,9 +182,16 @@ def _assert_retrieval_authority(retrieval_response: Mapping[str, Any]) -> None:
         )
 
 
-def _context_items(items: list[Mapping[str, Any]], *, offset: int) -> list[dict[str, Any]]:
+def _context_items(
+    items: list[Mapping[str, Any]],
+    *,
+    offset: int,
+    query_tokens: list[Any],
+) -> list[dict[str, Any]]:
     packet_items: list[dict[str, Any]] = []
     for index, item in enumerate(items):
+        text = str(item.get("text") or "")
+        frequencies = Counter(normalize_query_tokens(text))
         packet_items.append(
             {
                 "rank_position": offset + index + 1,
@@ -189,7 +202,10 @@ def _context_items(items: list[Mapping[str, Any]], *, offset: int) -> list[dict[
                 "char_start": int(item["char_start"]),
                 "char_end": int(item["char_end"]),
                 "segment_hash": str(item["segment_hash"]),
-                "text_excerpt": str(item.get("text") or "")[:MAX_TEXT_EXCERPT_CHARS],
+                "text_excerpt": text[:MAX_TEXT_EXCERPT_CHARS],
+                "query_term_frequencies": {
+                    str(token): int(frequencies.get(str(token), 0)) for token in query_tokens
+                },
                 "matched_unique_query_terms": int(item["matched_unique_query_terms"]),
                 "summed_term_frequency": int(item["summed_term_frequency"]),
             }

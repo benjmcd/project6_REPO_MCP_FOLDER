@@ -47,6 +47,7 @@ def test_fake_provider_prepare_is_deterministic_idempotent_and_redacted() -> Non
     assert first.audit_receipt["provider_object_write_enabled"] is False
     assert "signature=redacted" in first.provider_url_redacted
     assert first.token_for_test not in json.dumps(first.to_prepare_response(request_id="req-1"), sort_keys=True)
+    assert first.token_for_test not in repr(first)
     _assert_forbidden_response_surface_absent(first.to_prepare_response(request_id="req-1"))
 
 
@@ -106,6 +107,7 @@ def test_fake_provider_supports_failure_injection_without_secret_leakage() -> No
 
     assert error.value.error_code == "provider_private_signed_url_fake_provider_unavailable"
     assert error.value.status == PROVIDER_PRIVATE_SIGNED_URL_BLOCKED_STATE
+    assert error.value.to_response()["denial_audit_receipt"]["event_status"] == "denied"
     _assert_forbidden_response_surface_absent(error.value.to_response())
 
 
@@ -126,6 +128,16 @@ def test_fake_provider_enforces_ttl_expiry_replay_and_revocation() -> None:
         provider_signed_url_receipt_id=receipt.provider_signed_url_receipt_id,
         now_epoch=NOW_EPOCH + 60,
     )["provider_signed_url_state"] == PROVIDER_PRIVATE_SIGNED_URL_EXPIRED_STATE
+    repeat = provider.prepare(_prepare_request(requested_ttl_seconds=60))
+    assert repeat.provider_signed_url_state == PROVIDER_PRIVATE_SIGNED_URL_EXPIRED_STATE
+    with pytest.raises(ProviderPrivateSignedUrlError) as repeat_expired_error:
+        provider.use(
+            provider_signed_url_receipt_id=repeat.provider_signed_url_receipt_id,
+            provider_private_signed_url_token=repeat.token_for_test,
+            now_epoch=NOW_EPOCH + 1,
+            current_authority=_authority(),
+        )
+    assert repeat_expired_error.value.error_code == "provider_private_signed_url_expired"
 
     replay_provider = ProviderPrivateSignedUrlFakeProvider()
     replay_receipt = replay_provider.prepare(_prepare_request(client_request_id="req-replay"))
@@ -155,6 +167,12 @@ def test_fake_provider_enforces_ttl_expiry_replay_and_revocation() -> None:
     )
     assert revoked.provider_signed_url_state == PROVIDER_PRIVATE_SIGNED_URL_REVOKED_STATE
     assert revoked.revoked_reason_hash
+    repeat_revoke = revoke_provider.revoke(
+        provider_signed_url_receipt_id=revoke_receipt.provider_signed_url_receipt_id,
+        revocation_reason="different operator reason must not rewrite receipt",
+        now_epoch=NOW_EPOCH + 21,
+    )
+    assert repeat_revoke.revoked_reason_hash == revoked.revoked_reason_hash
     with pytest.raises(ProviderPrivateSignedUrlError) as revoked_error:
         revoke_provider.use(
             provider_signed_url_receipt_id=revoke_receipt.provider_signed_url_receipt_id,

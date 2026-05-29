@@ -591,6 +591,7 @@ const State = {
     sourceDirectoryPackageSupersessionPreview: null,
     sourceDirectoryPackageSupersessionPreviewError: null,
     sourceDirectoryPackageSupersessionPreviewPending: false,
+    sourceDirectoryPackageSupersessionPreviewPendingRequestToken: null,
     sourceDirectoryPackageSupersessionPreviewRequestToken: 0,
     replacementPackageArtifactMaterialization: null,
     replacementPackageArtifactMaterializationError: null,
@@ -1238,6 +1239,7 @@ const SUBLAYER_MODALITY_META = {
 const OPERATION_DOCK_STEPS = [
     { id: 'intent-band', key: 'intent', label: 'Intent', shortLabel: 'Intent', canvasLink: '3A intake setup', canvasTarget: '3a', canvasRole: 'Sublayer 3A intake/specification field' },
     { id: 'source-intake-rendered-controls', key: 'source_intake', label: 'Source Intake Controls', shortLabel: 'Source Intake', canvasLink: '3A source intake', canvasTarget: '3a', canvasRole: 'Sublayer 3A source intake upload/inventory/preview controls' },
+    { id: 'source-directory-ingestion-rendered-controls', key: 'source_directory', label: 'Source Directory Ingestion', shortLabel: 'Directory', canvasLink: '3A source directory', canvasTarget: '3a', canvasRole: 'Sublayer 3A server-configured source-directory scan/status controls' },
     { id: 'gate-b-band', key: 'gate_b', label: 'Gate B Material Ledger', shortLabel: 'Gate B', canvasLink: '3A material ledger', canvasTarget: '3a', canvasRole: 'Sublayer 3A session-scoped material ledger' },
     { id: 'gate-c-band', key: 'gate_c', label: 'Gate C Typing Review', shortLabel: 'Gate C', canvasLink: '3B modality grouping', canvasTarget: '3b', canvasRole: 'Sublayer 3B modality object banks' },
     { id: 'plan-band', key: 'plan', label: 'Plan Preview And Approval', shortLabel: 'Plan', canvasLink: '3C process planning', canvasTarget: '3c-process', canvasRole: 'Sublayer 3C process/status planes' },
@@ -1255,6 +1257,12 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+function renderedInputValue(input, ...fallbacks) {
+    if (input) return String(input.value || '').trim();
+    const fallback = fallbacks.find((value) => value != null && value !== '');
+    return String(fallback || '').trim();
 }
 
 function isSharedThemePreference(value) {
@@ -2788,6 +2796,16 @@ function providerPrivateReceiptSnapshot(provider) {
         provider_signed_url_state: provider.provider_signed_url_state || null,
         source_artifact_hash: provider.source_artifact_hash || null,
         source_artifact_size_bytes: provider.source_artifact_size_bytes ?? null,
+        source_directory_hybrid_provider_private_signed_url_enabled: (
+            provider.source_directory_hybrid_provider_private_signed_url_enabled === true
+        ),
+        source_directory_package_supersession_provider_private_signed_url_enabled: (
+            provider.source_directory_package_supersession_provider_private_signed_url_enabled === true
+        ),
+        authority_rail: provider.authority_rail || null,
+        source_directory_package_supersession_authority: (
+            provider.source_directory_package_supersession_authority || null
+        ),
         updated_at: new Date().toISOString(),
     };
 }
@@ -2906,6 +2924,15 @@ function clearProviderPublicUrlState() {
     State.providerPublicUrlPending = false;
 }
 
+function clearCandidateBFinalProofInspectionState() {
+    State.candidateBDefaultPromotionFinalProof = null;
+    State.candidateBDefaultPromotionFinalProofError = null;
+    State.candidateBDefaultPromotionFinalProofPending = false;
+    State.candidateBDefaultPromotionFinalProofStatus = null;
+    State.candidateBDefaultPromotionFinalProofStatusError = null;
+    State.candidateBDefaultPromotionFinalProofStatusPending = false;
+}
+
 function clearResultReviewState({ keepSummary = false } = {}) {
     if (!keepSummary) {
         State.sessionSummary = null;
@@ -2935,6 +2962,7 @@ function clearResultReviewState({ keepSummary = false } = {}) {
     State.packageSupersessionPreviewPending = false;
     clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
+    clearCandidateBFinalProofInspectionState();
     State.handoffExportPrepare = null;
     State.handoffExportPrepareError = null;
     State.handoffExportPreparePending = false;
@@ -3151,6 +3179,7 @@ function canRefreshSessionSummary() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageNamespaceBusy()
@@ -3173,6 +3202,7 @@ function canInspectResultStatus() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageNamespaceBusy()
@@ -3437,7 +3467,12 @@ function isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)
 }
 
 function replacementPackageSetAuthorityPreviewState() {
-    return sourceDirectoryPackageSupersessionPreviewState() || packageSupersessionPreviewState() || null;
+    const sourceDirectoryPreview = sourceDirectoryPackageSupersessionPreviewState();
+    const packagePreview = packageSupersessionPreviewState();
+    if (sourceDirectoryPreview && isSourceDirectoryQualitativePackageAuthoritySelected()) {
+        return sourceDirectoryPreview;
+    }
+    return packagePreview || sourceDirectoryPreview || null;
 }
 
 function isSourceDirectoryPackageSupersessionPreviewSelected(preview = replacementPackageSetAuthorityPreviewState()) {
@@ -3519,7 +3554,17 @@ function isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external
 }
 
 function sourceDirectoryHybridExternalExportDownloadPrepareState() {
-    return State.sourceDirectoryHybridMiddleLifecycle?.externalExportDownloadPrepare || null;
+    const lifecycle = State.sourceDirectoryHybridMiddleLifecycle || null;
+    if (!lifecycle) return null;
+    const sourceSessionId = State.sourceDirectoryHybridAuthoritySourceSessionId;
+    const activeSessionId = currentSessionId();
+    const lifecycleSessionId = lifecycle.session_id
+        || lifecycle.externalExportDownloadPrepare?.session_id
+        || lifecycle.deliveryAuthority?.session_id
+        || null;
+    if (sourceSessionId && activeSessionId && sourceSessionId !== activeSessionId) return null;
+    if (lifecycleSessionId && activeSessionId && lifecycleSessionId !== activeSessionId) return null;
+    return lifecycle.externalExportDownloadPrepare || null;
 }
 
 function isSourceDirectoryHybridExternalExportDownloadPrepareState(external = externalExportDownloadPrepareState() || {}) {
@@ -3587,9 +3632,10 @@ function isSourceDirectoryPackageSupersessionCommitState(commit = packageSuperse
 
 function providerPrivateSignedUrlAuthorityState() {
     return State.providerPrivateSignedUrlRevoke
-        || State.providerPrivateSignedUrlUse
         || State.providerPrivateSignedUrlStatus
+        || State.providerPrivateSignedUrlUse
         || State.providerPrivateSignedUrlPrepare
+        || State.providerPrivateSignedUrlReceiptRecovery
         || null;
 }
 
@@ -3606,10 +3652,13 @@ function providerPrivateSignedUrlSelectedArtifactFamily() {
 function providerPrivateSignedUrlActiveArtifactFamily() {
     const selected = providerPrivateSignedUrlSelectedArtifactFamily();
     if (selected !== PROVIDER_PRIVATE_ARTIFACT_FAMILY_AUTO) return selected;
+    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+        return PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_HYBRID;
+    }
     if (isSourceDirectoryPackageSupersessionProviderPrivateState()) {
         return PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_PACKAGE;
     }
-    if (isSourceDirectoryHybridExternalExportDownloadPrepareState()) {
+    if (sourceDirectoryHybridProviderPrivateSignedUrlReady()) {
         return PROVIDER_PRIVATE_ARTIFACT_FAMILY_SOURCE_DIRECTORY_HYBRID;
     }
     if (sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady()) {
@@ -3695,7 +3744,9 @@ function clearSourceDirectoryPackageSupersessionPreviewState() {
     nextSourceDirectoryPackageSupersessionPreviewRequestToken();
     State.sourceDirectoryPackageSupersessionPreview = null;
     State.sourceDirectoryPackageSupersessionPreviewError = null;
-    State.sourceDirectoryPackageSupersessionPreviewPending = false;
+    if (!State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken) {
+        State.sourceDirectoryPackageSupersessionPreviewPending = false;
+    }
 }
 
 function safePackagePayloadRefForDisplay(value) {
@@ -3812,19 +3863,24 @@ function replacementPackageNamespaceCandidateRows() {
     ));
 }
 
-function selectedReplacementPackageNamespaceRow() {
-    const rows = replacementPackageNamespaceCandidateRows();
-    if (!rows.length) return null;
-    const recordedKinds = new Set(
+function replacementPackageNamespaceRecordedKinds() {
+    return new Set(
         [
             ...State.replacementPackageNamespaceHistory,
             State.replacementPackageNamespace,
+            State.sessionSummary?.replacement_package_namespace,
         ]
             .filter(Boolean)
             .map((row) => row.package_kind)
             .filter(Boolean),
     );
-    return rows.find((row) => row.package_kind && !recordedKinds.has(row.package_kind)) || rows[0];
+}
+
+function selectedReplacementPackageNamespaceRow() {
+    const rows = replacementPackageNamespaceCandidateRows();
+    if (!rows.length) return null;
+    const recordedKinds = replacementPackageNamespaceRecordedKinds();
+    return rows.find((row) => row.package_kind && !recordedKinds.has(row.package_kind)) || null;
 }
 
 function renderReplacementPackageRows(rows) {
@@ -3856,6 +3912,7 @@ function renderPackageSupersessionDependencyRows(rows) {
 }
 
 function packageLifecycleDashboardState(preview, construction, submit) {
+    const hasLifecycleRows = packageLifecycleOutputRows().length > 0;
     const replacementAuthority = replacementPackageSetAuthorityState() || {};
     const supersessionCommit = packageSupersessionCommitState() || {};
     if (packageSupersessionCommitBusy()) return { label: 'package_supersession_commit_recording', pill: 'preview' };
@@ -3891,12 +3948,21 @@ function packageLifecycleDashboardState(preview, construction, submit) {
         return { label: 'package_lifecycle_blocked', pill: 'blocked' };
     }
     if (submit.package_review_submit_enabled === true) {
+        if (!hasLifecycleRows) {
+            return { label: 'package_lifecycle_rows_unavailable', pill: 'blocked' };
+        }
         return { label: submit.state || 'package_review_submit_ready', pill: 'ok' };
     }
     if (construction.state === 'package_constructed' || construction.next_state === 'package_constructed') {
+        if (!hasLifecycleRows) {
+            return { label: 'package_lifecycle_rows_unavailable', pill: 'blocked' };
+        }
         return { label: 'package_lifecycle_constructed', pill: 'ok' };
     }
     if (preview.package_review_preview_enabled === true) {
+        if (!hasLifecycleRows) {
+            return { label: 'package_lifecycle_rows_unavailable', pill: 'blocked' };
+        }
         return { label: preview.next_state || 'package_lifecycle_preview_ready', pill: 'preview' };
     }
     return { label: 'package_lifecycle_waiting_for_server_state', pill: 'blocked' };
@@ -4196,6 +4262,8 @@ function canGenerateExternalExportDownloadSignedReference() {
     const external = externalExportDownloadPrepareState() || {};
     return Boolean(
         recordedExternalExportDownloadPrepare()
+        && !isSourceDirectoryQualitativeExternalExportDownloadPrepareState(external)
+        && !isSourceDirectoryHybridExternalExportDownloadPrepareState(external)
         && externalExportDownloadDeliveryUiAdmitted(external)
         && !State.externalExportDownloadSignedReference?.signed_reference_token
         && !State.externalExportDownloadPreparePending
@@ -4228,8 +4296,8 @@ function providerPrivateSignedUrlReceiptId() {
 
 function providerPrivateSignedUrlLatestState() {
     return State.providerPrivateSignedUrlRevoke?.provider_signed_url_state
-        || State.providerPrivateSignedUrlUse?.provider_signed_url_state
         || State.providerPrivateSignedUrlStatus?.provider_signed_url_state
+        || State.providerPrivateSignedUrlUse?.provider_signed_url_state
         || State.providerPrivateSignedUrlPrepare?.provider_signed_url_state
         || State.providerPrivateSignedUrlReceiptRecovery?.provider_signed_url_state
         || null;
@@ -4302,9 +4370,20 @@ function canPrepareProviderPrivateSignedUrl() {
     );
 }
 
+function sourceDirectoryProviderPrivateSignedUrlAuthorityReady() {
+    if (providerPrivateSignedUrlUsesSourceDirectoryHybridFamily()) {
+        return sourceDirectoryHybridProviderPrivateSignedUrlReady();
+    }
+    if (providerPrivateSignedUrlUsesSourceDirectoryPackageFamily()) {
+        return sourceDirectoryPackageSupersessionProviderPrivateSignedUrlReady();
+    }
+    return true;
+}
+
 function canInspectProviderPrivateSignedUrl() {
     return Boolean(
         providerPrivateSignedUrlReceiptId()
+        && sourceDirectoryProviderPrivateSignedUrlAuthorityReady()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.providerPrivateSignedUrlPending
@@ -4341,6 +4420,7 @@ function canRevokeProviderPrivateSignedUrl() {
     return Boolean(
         providerPrivateSignedUrlReceiptId()
         && providerPrivateSignedUrlLatestState() !== 'provider_private_signed_url_revoked'
+        && sourceDirectoryProviderPrivateSignedUrlAuthorityReady()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
         && !State.providerPrivateSignedUrlPending
@@ -4836,6 +4916,13 @@ function canSubmitPackageSupersessionPreview() {
     );
 }
 
+function packagePreviewSubmissionPending() {
+    return Boolean(
+        State.packageSupersessionPreviewPending
+        || State.sourceDirectoryPackageSupersessionPreviewPending
+    );
+}
+
 function canSubmitReplacementPackageSetAuthority() {
     const authority = selectedResultAuthority();
     const preview = replacementPackageSetAuthorityPreviewState() || {};
@@ -4847,8 +4934,7 @@ function canSubmitReplacementPackageSetAuthority() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
-        && !State.packageSupersessionPreviewPending
-        && !State.sourceDirectoryPackageSupersessionPreviewPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageNamespaceBusy()
@@ -4893,8 +4979,7 @@ function canSubmitPackageSupersessionCommit() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
-        && !State.packageSupersessionPreviewPending
-        && !State.sourceDirectoryPackageSupersessionPreviewPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageArtifactManifestBusy()
@@ -4964,7 +5049,7 @@ function canSubmitReplacementPackageArtifactManifest() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
-        && !State.packageSupersessionPreviewPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageArtifactManifestBusy()
@@ -5001,7 +5086,7 @@ function canSubmitReplacementPackageNamespace() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
-        && !State.packageSupersessionPreviewPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageArtifactManifestBusy()
@@ -5030,6 +5115,7 @@ function canSubmitHandoffExportPrepare() {
             && !State.packageReviewPreviewPending
             && !State.packageConstructionPending
             && !State.packageReviewSubmitPending
+            && !packagePreviewSubmissionPending()
             && !replacementPackageSetAuthorityBusy()
             && !packageSupersessionCommitBusy()
             && !replacementPackageArtifactManifestBusy()
@@ -5061,6 +5147,7 @@ function canSubmitHandoffExportPrepare() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageArtifactManifestBusy()
@@ -5137,6 +5224,7 @@ function canSubmitExternalExportDownloadPrepare() {
             && !State.packageReviewPreviewPending
             && !State.packageConstructionPending
             && !State.packageReviewSubmitPending
+            && !packagePreviewSubmissionPending()
             && !replacementPackageSetAuthorityBusy()
             && !packageSupersessionCommitBusy()
             && !replacementPackageNamespaceBusy()
@@ -5180,6 +5268,7 @@ function canSubmitExternalExportDownloadPrepare() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !packageSupersessionCommitBusy()
         && !replacementPackageNamespaceBusy()
@@ -5215,6 +5304,7 @@ function canSubmitExternalExportDownloadDelivery() {
             && !State.packageReviewPreviewPending
             && !State.packageConstructionPending
             && !State.packageReviewSubmitPending
+            && !packagePreviewSubmissionPending()
             && !replacementPackageSetAuthorityBusy()
             && !packageSupersessionCommitBusy()
             && !replacementPackageNamespaceBusy()
@@ -5258,6 +5348,7 @@ function canSubmitExternalExportDownloadDelivery() {
         && !State.packageReviewPreviewPending
         && !State.packageConstructionPending
         && !State.packageReviewSubmitPending
+        && !packagePreviewSubmissionPending()
         && !replacementPackageSetAuthorityBusy()
         && !State.handoffExportPreparePending
         && !State.apsHandoffDispatchPending
@@ -7063,7 +7154,12 @@ function packageReviewPanelState() {
         return { label: 'package_review_preview_inspecting', pill: 'preview', message: 'Inspecting read-only package-review readiness.' };
     }
     if (State.packageReviewSubmit?.package_review_state || submit.submit_record_ref) {
-        return { label: State.packageReviewSubmit?.package_review_state || submit.state || 'package_review_recorded', pill: 'ok', message: 'Server state already contains a package-review submit record.' };
+        const submitState = State.packageReviewSubmit?.package_review_state || submit.package_review_state || submit.state;
+        return {
+            label: submitState || 'package_review_recorded',
+            pill: submitState === 'package_review_approved' ? 'ok' : 'blocked',
+            message: 'Server state already contains a package-review submit record.',
+        };
     }
     if (State.packageReviewSubmitError || State.packageConstructionError || State.packageReviewPreviewError) {
         return { label: 'package_review_blocked', pill: 'blocked', message: 'Server authority rejected or blocked the latest package action.' };
@@ -8468,7 +8564,6 @@ function candidateBRuntimeDownstreamProofPayload() {
         operator_decision: CANDIDATE_B_RUNTIME_DOWNSTREAM_PROOF_OPERATOR_DECISION,
         candidate_b_run_id: values.candidateBRunId,
         bridge_receipt_id: values.bridgeReceiptId,
-        candidate_b_visual_lane_status_evidence: State.candidateBVisualLaneStatus,
         coverage_evidence: JSON.parse(values.coverageEvidenceJson),
         operator_confirmation: true,
     };
@@ -8538,8 +8633,14 @@ function candidateBDefaultPromotionFinalProofStatusInputValues() {
     const runtimeInput = document.getElementById('candidate-b-final-proof-runtime-receipt-id');
     const proofInput = document.getElementById('candidate-b-final-proof-receipt-id');
     return {
-        runtimeReceiptId: (runtimeInput?.value || State.candidateBDefaultPromotionFinalProofStatusInput.runtimeReceiptId || '').trim(),
-        proofReceiptId: (proofInput?.value || State.candidateBDefaultPromotionFinalProofStatusInput.proofReceiptId || '').trim(),
+        runtimeReceiptId: renderedInputValue(
+            runtimeInput,
+            State.candidateBDefaultPromotionFinalProofStatusInput.runtimeReceiptId,
+        ),
+        proofReceiptId: renderedInputValue(
+            proofInput,
+            State.candidateBDefaultPromotionFinalProofStatusInput.proofReceiptId,
+        ),
     };
 }
 
@@ -8551,20 +8652,12 @@ function candidateBOperatorStatusInputValues() {
     const bundleReceiptInput = document.getElementById('candidate-b-operator-status-bundle-receipt-id');
     const runtimeReceiptInput = document.getElementById('candidate-b-operator-status-runtime-receipt-id');
     return {
-        baselineRunId: (baselineInput?.value || State.candidateBOperatorStatusInput.baselineRunId || '').trim(),
-        candidateARunId: (candidateAInput?.value || State.candidateBOperatorStatusInput.candidateARunId || '').trim(),
-        candidateBBundleId: (bundleInput?.value || State.candidateBOperatorStatusInput.candidateBBundleId || '').trim(),
-        candidateBRunId: (runInput?.value || State.candidateBOperatorStatusInput.candidateBRunId || '').trim(),
-        bundleReceiptId: (
-            bundleReceiptInput?.value
-            || State.candidateBOperatorStatusInput.bundleReceiptId
-            || ''
-        ).trim(),
-        runtimeReceiptId: (
-            runtimeReceiptInput?.value
-            || State.candidateBOperatorStatusInput.runtimeReceiptId
-            || ''
-        ).trim(),
+        baselineRunId: renderedInputValue(baselineInput, State.candidateBOperatorStatusInput.baselineRunId),
+        candidateARunId: renderedInputValue(candidateAInput, State.candidateBOperatorStatusInput.candidateARunId),
+        candidateBBundleId: renderedInputValue(bundleInput, State.candidateBOperatorStatusInput.candidateBBundleId),
+        candidateBRunId: renderedInputValue(runInput, State.candidateBOperatorStatusInput.candidateBRunId),
+        bundleReceiptId: renderedInputValue(bundleReceiptInput, State.candidateBOperatorStatusInput.bundleReceiptId),
+        runtimeReceiptId: renderedInputValue(runtimeReceiptInput, State.candidateBOperatorStatusInput.runtimeReceiptId),
     };
 }
 
@@ -9166,12 +9259,25 @@ function candidateBBroaderScopeSelectorUseStatusPayload() {
     };
 }
 
-function candidateBBroaderScopeSelectorActivationInputValues() {
-    const selectorUseStatus = State.candidateBBroaderScopeSelectorUseStatus;
+function candidateBBroaderScopeSelectorActivationDefaults(
+    selectorUseStatus = State.candidateBBroaderScopeSelectorUseStatus,
+) {
     const runtimeBinding = selectorUseStatus?.runtime_selection_receipt_binding || {};
     const selectedClasses = Array.isArray(selectorUseStatus?.selected_scope_classes)
         ? selectorUseStatus.selected_scope_classes.join(', ')
         : '';
+    return {
+        selectorUseStatusHash: selectorUseStatus?.selector_use_status_hash || '',
+        selectorUseReceiptId: selectorUseStatus?.selector_use_receipt_id || '',
+        selectorUseReceiptHash: selectorUseStatus?.selector_use_receipt_hash || '',
+        runtimeSelectionReceiptId: runtimeBinding.runtime_selection_receipt_id || '',
+        runtimeSelectionReceiptHash: runtimeBinding.runtime_selection_receipt_hash || '',
+        selectedScopeClasses: selectedClasses,
+    };
+}
+
+function candidateBBroaderScopeSelectorActivationInputValues() {
+    const defaults = candidateBBroaderScopeSelectorActivationDefaults();
     const statusHashInput = document.getElementById('candidate-b-broader-scope-selector-activation-status-hash');
     const selectorUseReceiptInput = document.getElementById('candidate-b-broader-scope-selector-activation-selector-use-receipt-id');
     const selectorUseHashInput = document.getElementById('candidate-b-broader-scope-selector-activation-selector-use-receipt-hash');
@@ -9179,43 +9285,24 @@ function candidateBBroaderScopeSelectorActivationInputValues() {
     const runtimeHashInput = document.getElementById('candidate-b-broader-scope-selector-activation-runtime-receipt-hash');
     const selectedInput = document.getElementById('candidate-b-broader-scope-selector-activation-selected-classes');
     const stored = State.candidateBBroaderScopeSelectorActivationInput;
+    const readValue = (input, storedValue, authorityValue) => (
+        authorityValue || input?.value || storedValue || ''
+    ).trim();
     return {
-        selectorUseStatusHash: (
-            statusHashInput?.value
-            || stored.selectorUseStatusHash
-            || selectorUseStatus?.selector_use_status_hash
-            || ''
-        ).trim(),
-        selectorUseReceiptId: (
-            selectorUseReceiptInput?.value
-            || stored.selectorUseReceiptId
-            || selectorUseStatus?.selector_use_receipt_id
-            || ''
-        ).trim(),
-        selectorUseReceiptHash: (
-            selectorUseHashInput?.value
-            || stored.selectorUseReceiptHash
-            || selectorUseStatus?.selector_use_receipt_hash
-            || ''
-        ).trim(),
-        runtimeSelectionReceiptId: (
-            runtimeReceiptInput?.value
-            || stored.runtimeSelectionReceiptId
-            || runtimeBinding.runtime_selection_receipt_id
-            || ''
-        ).trim(),
-        runtimeSelectionReceiptHash: (
-            runtimeHashInput?.value
-            || stored.runtimeSelectionReceiptHash
-            || runtimeBinding.runtime_selection_receipt_hash
-            || ''
-        ).trim(),
-        selectedScopeClasses: (
-            selectedInput?.value
-            || stored.selectedScopeClasses
-            || selectedClasses
-            || ''
-        ).trim(),
+        selectorUseStatusHash: readValue(statusHashInput, stored.selectorUseStatusHash, defaults.selectorUseStatusHash),
+        selectorUseReceiptId: readValue(selectorUseReceiptInput, stored.selectorUseReceiptId, defaults.selectorUseReceiptId),
+        selectorUseReceiptHash: readValue(selectorUseHashInput, stored.selectorUseReceiptHash, defaults.selectorUseReceiptHash),
+        runtimeSelectionReceiptId: readValue(
+            runtimeReceiptInput,
+            stored.runtimeSelectionReceiptId,
+            defaults.runtimeSelectionReceiptId,
+        ),
+        runtimeSelectionReceiptHash: readValue(
+            runtimeHashInput,
+            stored.runtimeSelectionReceiptHash,
+            defaults.runtimeSelectionReceiptHash,
+        ),
+        selectedScopeClasses: readValue(selectedInput, stored.selectedScopeClasses, defaults.selectedScopeClasses),
     };
 }
 
@@ -10617,6 +10704,21 @@ function canInspectCandidateBDefaultPromotionFinalProofStatus(contract = candida
     );
 }
 
+function candidateBOperatorStatusEvidenceMatches(values) {
+    const visual = State.candidateBVisualLaneStatus || {};
+    const runtimeProof = State.candidateBRuntimeDownstreamProof || {};
+    return Boolean(
+        visual.status === 'available'
+        && visual.candidate_b_run_id === values.candidateBRunId
+        && visual.bridge_receipt_id === values.runtimeReceiptId
+        && runtimeProof.status === 'proven'
+        && runtimeProof.candidate_b_run_id === values.candidateBRunId
+        && runtimeProof.bridge_receipt_id === values.runtimeReceiptId
+        && runtimeProof.proof_receipt_id
+        && runtimeProof.proof_hash
+    );
+}
+
 function canInspectCandidateBOperatorStatus(contract = candidateBDefaultPromotionReadinessContract()) {
     const values = candidateBOperatorStatusInputValues();
     return Boolean(
@@ -10628,8 +10730,7 @@ function canInspectCandidateBOperatorStatus(contract = candidateBDefaultPromotio
         && values.candidateBRunId
         && values.bundleReceiptId
         && values.runtimeReceiptId
-        && State.candidateBVisualLaneStatus?.status === 'available'
-        && State.candidateBRuntimeDownstreamProof?.status === 'proven'
+        && candidateBOperatorStatusEvidenceMatches(values)
         && !State.candidateBOperatorStatusPending
     );
 }
@@ -11093,6 +11194,7 @@ function canRecordCandidateBFullCorpusRepeatabilityAcceptanceCheckpoint(contract
 
 function canRecordCandidateBFullCorpusRepeatabilityAcceptanceCloseout(contract = candidateBDefaultPromotionReadinessContract()) {
     const acceptanceReceipt = State.candidateBFullCorpusRepeatabilityAcceptanceCheckpoint || {};
+    const closeoutReceipt = State.candidateBFullCorpusRepeatabilityAcceptanceCloseout || {};
     const acceptanceCheckpoint = acceptanceReceipt.repeatability_acceptance_checkpoint || {};
     const comparison = acceptanceCheckpoint.comparison || {};
     const disposition = String(acceptanceCheckpoint.acceptance_disposition || '').trim();
@@ -11109,6 +11211,8 @@ function canRecordCandidateBFullCorpusRepeatabilityAcceptanceCloseout(contract =
         && comparison.same_compare_target_set_hash === true
         && comparison.same_material_relative_name === true
         && comparison.same_runtime_root_lifecycle_policy === true
+        && !closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_id
+        && !closeoutReceipt.repeatability_acceptance_operator_closeout_receipt_hash
         && !State.candidateBFullCorpusRepeatabilityAcceptanceCloseoutPending
         && !State.candidateBFullCorpusRepeatabilityAcceptanceCheckpointPending
         && !State.candidateBFullCorpusRepeatabilityRerunTrialPending
@@ -17995,6 +18099,58 @@ function renderCandidateBDefaultPromotionStatusPanel() {
     `;
 }
 
+function setButtonDisabled(buttonId, disabled) {
+    const button = document.getElementById(buttonId);
+    if (button) {
+        button.disabled = Boolean(disabled);
+    }
+}
+
+function updateCandidateBDefaultPromotionStatusControls(
+    contract = candidateBDefaultPromotionReadinessContract(),
+) {
+    setButtonDisabled(
+        'candidate-b-broader-scope-runtime-submit',
+        !canRecordCandidateBBroaderScopeRuntime(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-selector-use-submit',
+        !canRecordCandidateBBroaderScopeSelectorUse(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-selector-use-status-submit',
+        !canInspectCandidateBBroaderScopeSelectorUseStatus(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-selector-activation-submit',
+        !canRecordCandidateBBroaderScopeSelectorActivation(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-activation-consumption-submit',
+        !canRecordCandidateBBroaderScopeActivationConsumption(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-consumption-receipt-use-submit',
+        !canRecordCandidateBBroaderScopeConsumptionReceiptUse(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-consumption-receipt-use-status-submit',
+        !canInspectCandidateBBroaderScopeConsumptionReceiptUseStatus(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-operator-repeatability-trial-submit',
+        !canRecordCandidateBBroaderScopeOperatorRepeatabilityTrial(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-promotion-readiness-submit',
+        !canRecordCandidateBBroaderScopePromotionReadiness(contract),
+    );
+    setButtonDisabled(
+        'candidate-b-broader-scope-default-promotion-submit',
+        !canRecordCandidateBBroaderScopeDefaultPromotion(contract),
+    );
+}
+
 async function inspectCandidateBArtifactFamilyStatus(event) {
     event.preventDefault();
     const contract = candidateBDefaultPromotionReadinessContract();
@@ -18040,6 +18196,8 @@ async function inspectCandidateBVisualLaneStatus(event) {
     const payload = candidateBVisualLaneStatusPayload();
     State.candidateBVisualLaneStatusPending = true;
     State.candidateBVisualLaneStatusError = null;
+    State.candidateBRuntimeDownstreamProof = null;
+    State.candidateBRuntimeDownstreamProofError = null;
     renderCandidateBDefaultPromotionStatusPanel();
     try {
         State.candidateBVisualLaneStatus = await postJson(path, payload);
@@ -22097,6 +22255,11 @@ function operationDockStatus(step) {
             : { state: 'ready', label: 'ready', detail: 'Run preflight to load source and material previews.' };
     case 'source_intake':
         return { state: 'ready', label: 'ready', detail: 'Upload, inventory, and preview use existing server-authoritative source-intake APIs.' };
+    case 'source_directory':
+        if (State.gateB?.session_id) return { state: 'live', label: 'admitted', detail: 'A source-directory preview has been admitted to Gate B.' };
+        if (State.sourceDirectoryIngestionBatchStatus?.source_ingestion_batch_id) return { state: 'live', label: 'batch inspected', detail: 'Server source-directory batch status is loaded.' };
+        if (State.sourceDirectoryIngestionBatch?.source_ingestion_batch_id) return { state: 'live', label: 'batch scanned', detail: 'Server source-directory batch scan is loaded.' };
+        return { state: 'ready', label: 'server configured', detail: 'Scan or inspect the server-configured source-directory batch.' };
     case 'gate_b':
         if (sessionReady) return { state: 'live', label: 'session scoped', detail: 'Gate B has a session-scoped material boundary.' };
         if ((State.materialPreview?.material_candidates || []).length) return { state: 'ready', label: 'review ready', detail: 'Material preview is loaded and ready for Gate B decisions.' };
@@ -22306,7 +22469,7 @@ function providerPrivateSignedUrlDisplayValue(value) {
 }
 
 function renderProviderPrivateSignedUrlPanel() {
-    const provider = State.providerPrivateSignedUrlRevoke || State.providerPrivateSignedUrlUse || State.providerPrivateSignedUrlStatus || State.providerPrivateSignedUrlPrepare || {};
+    const provider = providerPrivateSignedUrlAuthorityState() || {};
     const panelState = providerPrivateSignedUrlPanelState();
     const audit = provider.audit_receipt || {};
     const rows = {
@@ -22468,6 +22631,7 @@ function setGateControls() {
     const sessionId = currentSessionId();
     const authority = selectedResultAuthority();
     const reviewRecorded = Boolean(recordedResultReview());
+    const externalPrepare = externalExportDownloadPrepareState() || {};
     const resultReviewControlsEnabled = Boolean(
         State.resultStatus?.result_status_available === true
         && !reviewRecorded
@@ -22536,6 +22700,8 @@ function setGateControls() {
     );
     const externalExportDownloadSignedReferenceControlsEnabled = Boolean(
         recordedExternalExportDownloadPrepare()
+        && !isSourceDirectoryQualitativeExternalExportDownloadPrepareState(externalPrepare)
+        && !isSourceDirectoryHybridExternalExportDownloadPrepareState(externalPrepare)
         && externalExportDownloadDeliveryUiAdmitted()
         && !State.externalExportDownloadPreparePending
         && !State.externalExportDownloadDeliveryPending
@@ -22807,7 +22973,9 @@ function packageSupersessionPreviewPayload(authority = selectedResultAuthority()
     const handoff = handoffExportPrepareState() || {};
     const aps = apsHandoffDispatchState() || {};
     const external = externalExportDownloadPrepareState() || {};
-    const connector = State.sessionSummary?.connector_dispatch_record || {};
+    const connector = State.sessionSummary?.connector_local_destination_receipt
+        || State.sessionSummary?.connector_dispatch_record
+        || {};
     const payload = {
         client_request_id: requestId(),
         session_id: authority.sessionId,
@@ -24733,6 +24901,7 @@ async function submitPackageSupersessionPreview() {
     if (!canSubmitPackageSupersessionPreview()) return;
     State.packageSupersessionPreviewPending = true;
     State.packageSupersessionPreviewError = null;
+    State.packageSupersessionPreview = null;
     clearSourceDirectoryPackageSupersessionPreviewState();
     clearReplacementPackageSetAuthorityState();
     renderAll();
@@ -24761,6 +24930,7 @@ async function submitSourceDirectoryPackageSupersessionPreview() {
     if (!canSubmitSourceDirectoryPackageSupersessionPreview()) return;
     const requestToken = nextSourceDirectoryPackageSupersessionPreviewRequestToken();
     State.sourceDirectoryPackageSupersessionPreviewPending = true;
+    State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken = requestToken;
     State.sourceDirectoryPackageSupersessionPreviewError = null;
     State.sourceDirectoryPackageSupersessionPreview = null;
     clearReplacementPackageSetAuthorityState();
@@ -24786,8 +24956,9 @@ async function submitSourceDirectoryPackageSupersessionPreview() {
         addEvent(`Source-directory package supersession preview blocked: ${error.message}`);
         renderAll();
     } finally {
-        if (isCurrentSourceDirectoryPackageSupersessionPreviewRequest(requestToken)) {
+        if (State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken === requestToken) {
             State.sourceDirectoryPackageSupersessionPreviewPending = false;
+            State.sourceDirectoryPackageSupersessionPreviewPendingRequestToken = null;
         }
         setBusy(elements.sourceDirectoryPackageSupersessionPreviewSubmit, false, 'Preview Source-Directory Supersession');
         renderAll();
@@ -25380,6 +25551,7 @@ async function submitSourceDirectoryHybridMiddleLifecycle(event) {
         elements.sourceDirectoryHybridInternalWebhookAuthority.value = deliveryAuthorityText;
         State.sourceDirectoryHybridMiddleLifecycle = {
             state: 'source_directory_hybrid_middle_lifecycle_prepared',
+            session_id: currentSessionId(),
             retrieval,
             contextPacket,
             analysis,
@@ -26124,7 +26296,6 @@ async function useProviderPublicUrlDecision() {
     const payload = providerPublicUrlUsePayload();
     State.providerPublicUrlPending = true;
     State.providerPublicUrlError = null;
-    State.providerPublicUrlStatus = null;
     renderAll();
     setBusy(elements.providerPublicUrlUse, true, 'Use Redacted Decision');
     try {
@@ -26132,6 +26303,7 @@ async function useProviderPublicUrlDecision() {
             '/handoff/export/download/provider-public-url/use',
             payload,
         );
+        State.providerPublicUrlStatus = null;
         addEvent('Provider-public URL redacted use decision recorded without raw URL exposure.');
         renderAll();
     } catch (error) {
@@ -26679,7 +26851,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
     ) {
         State.candidateBBroaderScopeRuntimeInput = candidateBBroaderScopeRuntimeInputValues();
         State.candidateBBroaderScopeRuntimeError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-selector-use-receipt-id'
@@ -26689,7 +26861,15 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopeSelectorUseInputEdited = true;
         State.candidateBBroaderScopeSelectorUseInput = candidateBBroaderScopeSelectorUseInputValues();
         State.candidateBBroaderScopeSelectorUseError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        State.candidateBBroaderScopeSelectorUseStatus = null;
+        State.candidateBBroaderScopeSelectorUseStatusError = null;
+        State.candidateBBroaderScopeSelectorActivation = null;
+        State.candidateBBroaderScopeSelectorActivationError = null;
+        State.candidateBBroaderScopeActivationConsumption = null;
+        State.candidateBBroaderScopeActivationConsumptionError = null;
+        State.candidateBBroaderScopeConsumptionReceiptUse = null;
+        State.candidateBBroaderScopeConsumptionReceiptUseError = null;
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-selector-use-status-receipt-id'
@@ -26699,7 +26879,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
     ) {
         State.candidateBBroaderScopeSelectorUseStatusInput = candidateBBroaderScopeSelectorUseStatusInputValues();
         State.candidateBBroaderScopeSelectorUseStatusError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-selector-activation-status-hash'
@@ -26711,7 +26891,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
     ) {
         State.candidateBBroaderScopeSelectorActivationInput = candidateBBroaderScopeSelectorActivationInputValues();
         State.candidateBBroaderScopeSelectorActivationError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-activation-consumption-activation-receipt-id'
@@ -26727,7 +26907,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopeActivationConsumptionError = null;
         State.candidateBBroaderScopeConsumptionReceiptUse = null;
         State.candidateBBroaderScopeConsumptionReceiptUseError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-consumption-receipt-use-consumption-receipt-id'
@@ -26770,7 +26950,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
             readinessAuditHash: '',
             selectedScopeClasses: '',
         };
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-consumption-receipt-use-status-use-receipt-id'
@@ -26798,7 +26978,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopePromotionReadinessError = null;
         State.candidateBBroaderScopeDefaultPromotion = null;
         State.candidateBBroaderScopeDefaultPromotionError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-operator-repeatability-trial-selected-classes'
@@ -26814,7 +26994,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopePromotionReadinessError = null;
         State.candidateBBroaderScopeDefaultPromotion = null;
         State.candidateBBroaderScopeDefaultPromotionError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-promotion-readiness-trial-receipt-id'
@@ -26831,7 +27011,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         State.candidateBBroaderScopePromotionReadinessError = null;
         State.candidateBBroaderScopeDefaultPromotion = null;
         State.candidateBBroaderScopeDefaultPromotionError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
     if (
         target.id === 'candidate-b-broader-scope-default-promotion-readiness-audit-id'
@@ -26846,7 +27026,7 @@ elements.candidateBDefaultPromotionStatusPanel.addEventListener('input', (event)
         );
         State.candidateBBroaderScopeDefaultPromotion = null;
         State.candidateBBroaderScopeDefaultPromotionError = null;
-        renderCandidateBDefaultPromotionStatusPanel();
+        updateCandidateBDefaultPromotionStatusControls();
     }
 });
 elements.resultReviewDecision.addEventListener('change', setGateControls);

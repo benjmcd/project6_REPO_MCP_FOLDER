@@ -868,7 +868,7 @@ def _runtime_downstream_coverage_evidence(retained_artifact_family_hash: str) ->
     for step in sorted(layer3_candidate_b_downstream_proof.REQUIRED_COVERAGE):
         entry = {
             "status": "proven",
-            "evidence_ref": f"candidate-b-full-corpus-runtime-downstream-proof://{step}",
+            "evidence_ref": f"candidate-b-runtime-downstream-proof://{step}",
             "evidence_hash": hashlib.sha256(step.encode("utf-8")).hexdigest(),
             "raw_local_path_exposed": False,
             "raw_url_exposed": False,
@@ -1430,6 +1430,46 @@ def test_candidate_b_full_corpus_runtime_bridge_uses_triplet_and_reaches_gate_b(
     assert proof_body["provider_object_writes_enabled"] is False
     assert proof_body["connector_dispatch_enabled"] is False
     assert proof_body["candidate_b_default_promotion_enabled"] is False
+
+
+def test_candidate_b_full_corpus_runtime_bridge_rejects_duplicate_target_ordinals(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(settings, "layer3_candidate_b_runtime_bridge_dir", str(tmp_path / "bridge"))
+    baseline = _full_corpus_runtime_binding(
+        tmp_path,
+        label="baseline",
+        run_id=BASELINE_FULL_CORPUS_RUN_ID,
+        document_processing_engine="baseline",
+        visual_lane_mode="baseline",
+    )
+    baseline.summary["target_outcomes"][1]["ordinal"] = baseline.summary["target_outcomes"][0]["ordinal"]
+    bindings = {
+        BASELINE_FULL_CORPUS_RUN_ID: baseline,
+        CANDIDATE_A_FULL_CORPUS_RUN_ID: _full_corpus_runtime_binding(
+            tmp_path,
+            label="candidate_a",
+            run_id=CANDIDATE_A_FULL_CORPUS_RUN_ID,
+            document_processing_engine="baseline",
+            visual_lane_mode="candidate_a_page_evidence_v1",
+        ),
+        CANDIDATE_B_FULL_CORPUS_RUN_ID: _full_corpus_runtime_binding(
+            tmp_path,
+            label="candidate_b",
+            run_id=CANDIDATE_B_FULL_CORPUS_RUN_ID,
+            document_processing_engine="candidate_b_opendataloader_pdf",
+            visual_lane_mode="candidate_b_opendataloader_page_evidence_v1",
+        ),
+    }
+    _patch_full_corpus_runtime_bridge(monkeypatch, bindings)
+
+    with pytest.raises(layer3_candidate_b_runtime_bridge.CandidateBRuntimeBridgeError) as exc:
+        layer3_candidate_b_runtime_bridge.prepare_candidate_b_runtime_material_bridge(
+            _full_corpus_bridge_payload()
+        )
+
+    assert exc.value.code == "candidate_b_full_corpus_bridge_baseline_target_duplicate_ordinal"
 
 
 def test_candidate_b_runtime_curated_markdown_completes_layer3_downstream_path(

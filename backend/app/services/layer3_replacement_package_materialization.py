@@ -806,6 +806,26 @@ def materialize_replacement_package_artifacts(db: Session, payload: dict[str, An
         db.commit()
     except IntegrityError:
         db.rollback()
+        existing_for_request = (
+            db.query(L3ReplacementPackageArtifactMaterialization)
+            .filter(L3ReplacementPackageArtifactMaterialization.client_request_id == request_id)
+            .one_or_none()
+        )
+        if existing_for_request is not None:
+            if existing_for_request.materialization_basis_hash == materialization_basis_hash:
+                return _materialization_response(
+                    request_id=request_id,
+                    status="already_materialized",
+                    materialization=existing_for_request,
+                )
+            raise Layer3WorkbenchError(
+                "replacement_package_artifact_materialization_client_request_conflict",
+                "client_request_id already belongs to a different replacement package artifact materialization.",
+                status="conflict",
+                http_status=409,
+                blocked_fields=["client_request_id"],
+                next_allowed_actions=["submit_new_client_request_id"],
+            )
         existing = (
             db.query(L3ReplacementPackageArtifactMaterialization)
             .filter(

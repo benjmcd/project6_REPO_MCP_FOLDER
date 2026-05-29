@@ -24,8 +24,17 @@ _DELIVERY_REF_KEYS = (
     "prepare_record_ref",
     "dispatch_record_ref",
     "submit_record_ref",
-    "reconciliation_record_id",
 )
+_RECORDED_STATES = {
+    "package_construction": {"package_constructed"},
+    "package_review_submit": {"package_review_submit_recorded", "package_review_approved"},
+    "handoff_export_prepare": {"handoff_export_prepared"},
+    "aps_handoff_dispatch": {"aps_handoff_dispatched"},
+    "external_export_download": {"external_export_download_prepared", "external_export_download_delivered"},
+    "server_owned_local_outbox_write": {"server_owned_local_outbox_write_recorded"},
+    "local_outbox_provider_private_handoff": {"local_outbox_provider_private_handoff_prepared"},
+    "external_local_export": {"external_local_export_recorded"},
+}
 
 
 def _as_dict(value: Any) -> dict[str, Any]:
@@ -58,16 +67,21 @@ def _state_of(value: dict[str, Any]) -> str | None:
     return None
 
 
-def _has_ref(value: dict[str, Any]) -> bool:
-    return any(bool(value.get(key)) for key in _DELIVERY_REF_KEYS)
+def _has_ref(value: dict[str, Any], ref_keys: Iterable[str]) -> bool:
+    return any(bool(value.get(key)) for key in ref_keys)
 
 
-def _authority_summary(value: dict[str, Any]) -> dict[str, Any]:
+def _authority_summary(
+    value: dict[str, Any],
+    *,
+    ref_keys: Iterable[str],
+    recorded_states: Iterable[str],
+) -> dict[str, Any]:
     state = _state_of(value)
     return {
         "state": state,
         "available": bool(value.get("available")),
-        "recorded": bool(_has_ref(value) or (state and state.endswith("_recorded"))),
+        "recorded": bool(_has_ref(value, ref_keys) or (state in set(recorded_states))),
         "blocked_reason": value.get("blocked_reason"),
     }
 
@@ -217,16 +231,46 @@ def analysis_environment_projection(
     )
 
     package_authority = {
-        "package_construction": _authority_summary(_as_dict(package_construction)),
-        "package_review_submit": _authority_summary(_as_dict(package_review_submit)),
-        "handoff_export_prepare": _authority_summary(_as_dict(handoff_export_prepare)),
-        "aps_handoff_dispatch": _authority_summary(_as_dict(aps_handoff_dispatch)),
-        "external_export_download": _authority_summary(_as_dict(external_export_download)),
-        "server_owned_local_outbox_write": _authority_summary(_as_dict(server_owned_local_outbox_write)),
-        "local_outbox_provider_private_handoff": _authority_summary(
-            _as_dict(local_outbox_provider_private_handoff)
+        "package_construction": _authority_summary(
+            _as_dict(package_construction),
+            ref_keys=("construction_basis_hash",),
+            recorded_states=_RECORDED_STATES["package_construction"],
         ),
-        "external_local_export": _authority_summary(_as_dict(external_local_export)),
+        "package_review_submit": _authority_summary(
+            _as_dict(package_review_submit),
+            ref_keys=("submit_record_ref",),
+            recorded_states=_RECORDED_STATES["package_review_submit"],
+        ),
+        "handoff_export_prepare": _authority_summary(
+            _as_dict(handoff_export_prepare),
+            ref_keys=("prepare_record_ref",),
+            recorded_states=_RECORDED_STATES["handoff_export_prepare"],
+        ),
+        "aps_handoff_dispatch": _authority_summary(
+            _as_dict(aps_handoff_dispatch),
+            ref_keys=("dispatch_record_ref",),
+            recorded_states=_RECORDED_STATES["aps_handoff_dispatch"],
+        ),
+        "external_export_download": _authority_summary(
+            _as_dict(external_export_download),
+            ref_keys=("external_export_download_record_ref",),
+            recorded_states=_RECORDED_STATES["external_export_download"],
+        ),
+        "server_owned_local_outbox_write": _authority_summary(
+            _as_dict(server_owned_local_outbox_write),
+            ref_keys=("server_owned_local_outbox_write_receipt_id",),
+            recorded_states=_RECORDED_STATES["server_owned_local_outbox_write"],
+        ),
+        "local_outbox_provider_private_handoff": _authority_summary(
+            _as_dict(local_outbox_provider_private_handoff),
+            ref_keys=("provider_private_handoff_receipt_id",),
+            recorded_states=_RECORDED_STATES["local_outbox_provider_private_handoff"],
+        ),
+        "external_local_export": _authority_summary(
+            _as_dict(external_local_export),
+            ref_keys=("external_local_export_receipt_id",),
+            recorded_states=_RECORDED_STATES["external_local_export"],
+        ),
     }
     projection_state = (
         "blocked"

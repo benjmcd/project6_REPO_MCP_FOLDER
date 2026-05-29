@@ -385,6 +385,12 @@ def _load_or_write_scheduler_lease_receipt(
         queue_state_receipt_id=str(queue_state_receipt["queue_state_receipt_id"]),
         queue_state_authority_hash=str(queue_state_receipt["queue_state_authority_hash"]),
     )
+    _acquire_scheduler_lease_index(
+        root=root,
+        scheduler_lease_receipt_id=scheduler_lease_receipt_id,
+        queue_state_receipt_id=str(queue_state_receipt["queue_state_receipt_id"]),
+        queue_state_authority_hash=str(queue_state_receipt["queue_state_authority_hash"]),
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
     receipt_input = {
         "schema_id": SCHEMA_ID,
@@ -482,6 +488,38 @@ def _reject_competing_scheduler_lease(
                     "existing_scheduler_lease_receipt_id": existing_id,
                 },
             )
+
+
+def _acquire_scheduler_lease_index(
+    *,
+    root: Path,
+    scheduler_lease_receipt_id: str,
+    queue_state_receipt_id: str,
+    queue_state_authority_hash: str,
+) -> None:
+    index_hash = workflow_status._stable_hash(
+        {
+            "queue_state_receipt_id": queue_state_receipt_id,
+            "queue_state_authority_hash": queue_state_authority_hash,
+            "exclusive_queue_state_lease": True,
+        }
+    )
+    index_dir = root / f"{SCHEDULER_LEASE_RECEIPT_PREFIX}-queue-state-index-{index_hash[:24]}"
+    try:
+        index_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError as exc:
+        _reject_competing_scheduler_lease(
+            root=root,
+            scheduler_lease_receipt_id=scheduler_lease_receipt_id,
+            queue_state_receipt_id=queue_state_receipt_id,
+            queue_state_authority_hash=queue_state_authority_hash,
+        )
+        raise CandidateBFullCorpusOperatorWorkflowSchedulerLeaseError(
+            "candidate_b_full_corpus_operator_workflow_scheduler_lease_conflict",
+            "The selected Candidate B workflow queue-state receipt already has a server-owned scheduler lease.",
+            http_status=409,
+            details={"scheduler_lease_index": index_dir.name},
+        ) from exc
 
 
 def _validate_scheduler_lease_receipt(

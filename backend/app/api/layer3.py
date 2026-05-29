@@ -5032,6 +5032,7 @@ class Layer3CandidateBFullCorpusOperatorWorkflowHistoryResponse(Layer3BaseRespon
     operator_supplied_raw_url_admitted: bool
     cancel_runtime_admitted: bool
     retry_runtime_admitted: bool
+    retry_progress_checkpoint_runtime_admitted: bool
     retry_terminal_status_projection_runtime_admitted: bool
     execution_boundary_runtime_admitted: bool
     process_execution_runtime_admitted: bool

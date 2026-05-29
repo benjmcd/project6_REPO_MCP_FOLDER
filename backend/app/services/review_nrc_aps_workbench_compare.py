@@ -509,6 +509,40 @@ def _candidate_b_trace_link(bundle_id: str, fixture_id: str) -> str:
     return f"/review/nrc-aps/candidate-b-trace?{urlencode({'candidate_b_bundle_id': bundle_id, 'fixture_id': fixture_id})}"
 
 
+def _candidate_b_bundle_trace_ready(bundle: _BundleArtifacts, compare_doc: dict[str, Any]) -> bool:
+    candidate_b = compare_doc.get("candidate_b")
+    if not isinstance(candidate_b, dict):
+        return False
+    raw_root = str(bundle.compare.get("raw_output_root") or "").strip()
+    if not raw_root:
+        return False
+    raw_json_ref = str(candidate_b.get("raw_json_ref") or "").strip().replace("\\", "/")
+    raw_markdown_ref = str(candidate_b.get("raw_markdown_ref") or "").strip().replace("\\", "/")
+    if not raw_json_ref or not raw_markdown_ref:
+        return False
+    retained_inventory = bundle.retain.get("raw_file_inventory")
+    if not isinstance(retained_inventory, list):
+        return False
+    retained_refs = {
+        str(entry.get("path") or "").strip().replace("\\", "/")
+        for entry in retained_inventory
+        if isinstance(entry, dict)
+    }
+    if raw_json_ref not in retained_refs or raw_markdown_ref not in retained_refs:
+        return False
+    annotated_status = str(candidate_b.get("annotated_pdf_status") or "").strip()
+    annotated_ref = str(candidate_b.get("annotated_pdf_ref") or "").strip().replace("\\", "/")
+    if annotated_status == "present" and annotated_ref not in retained_refs:
+        return False
+    return True
+
+
+def _candidate_b_trace_link_if_ready(bundle: _BundleArtifacts, compare_doc: dict[str, Any], fixture_id: str) -> str | None:
+    if not _candidate_b_bundle_trace_ready(bundle, compare_doc):
+        return None
+    return _candidate_b_trace_link(bundle.bundle_id, fixture_id)
+
+
 def _summary_badges(bundle: _BundleArtifacts, compare_doc: dict[str, Any]) -> list[NrcApsWorkbenchCompareBadgeOut]:
     interference_ok = bool(bundle.compare.get("interference_check_passed"))
     decision = str(bundle.compare.get("decision_recommendation") or "unknown").strip() or "unknown"
@@ -754,7 +788,7 @@ def compose_workbench_compare_manifest(
         deep_links=NrcApsWorkbenchCompareDeepLinksOut(
             baseline_trace=_trace_link(baseline_binding.run_id, baseline_target.target_id),
             candidate_a_trace=_trace_link(candidate_a_binding.run_id, candidate_a_target.target_id),
-            candidate_b_trace=_candidate_b_trace_link(bundle.bundle_id, fixture_id),
+            candidate_b_trace=_candidate_b_trace_link_if_ready(bundle, compare_doc, fixture_id),
         ),
     )
 
@@ -915,7 +949,7 @@ def compose_workbench_compare_tab(
             storage_root=candidate_a_binding.storage_dir,
         )
 
-    candidate_b_link: str
+    candidate_b_link: str | None
     candidate_b_manifest = None
     candidate_b_diagnostics = None
     candidate_b_normalized = None
@@ -958,7 +992,7 @@ def compose_workbench_compare_tab(
         if bundle is None or not isinstance(candidate_b_selected, dict):
             raise ValueError("candidate_b_bundle_unavailable")
         compare_doc = candidate_b_selected
-        candidate_b_link = _candidate_b_trace_link(bundle.bundle_id, fixture_id)
+        candidate_b_link = _candidate_b_trace_link_if_ready(bundle, compare_doc, fixture_id)
 
     columns: dict[str, NrcApsWorkbenchCompareColumnOut] = {}
 

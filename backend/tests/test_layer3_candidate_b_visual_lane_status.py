@@ -23,6 +23,17 @@ from main import app
 STATUS_ENDPOINT = "/api/v1/layer3/source/ingestion/candidate-b/visual-lane/status"
 CANDIDATE_B_RUN_ID = "candidate-b-runtime-run"
 CANDIDATE_B_VISUAL_LANE_MODE = "candidate_b_opendataloader_page_evidence_v1"
+INVALID_RUNTIME_STORAGE_IDS = [
+    "cb-runtime-l3/receipt",
+    r"cb-runtime-l3\receipt",
+    "cb-runtime-l3-..",
+    "cb-runtime-l3-.",
+    ".",
+    "/cb-runtime-l3-receipt",
+    "C:cb-runtime-l3-receipt",
+    "cb-runtime-l3-C:receipt",
+    "cb-bundle-l3-wrong-prefix",
+]
 
 
 @pytest.fixture()
@@ -45,6 +56,19 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def _write_runtime_receipt(*, visual_lane_mode: str = CANDIDATE_B_VISUAL_LANE_MODE) -> str:
+    visual_lane_evidence = {
+        "visual_lane_mode": visual_lane_mode,
+        "candidate_b_visual_lane_selected": visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE,
+        "candidate_b_visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
+        "visual_ref_total": 3 if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE else 0,
+        "candidate_b_visual_ref_total": 3 if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE else 0,
+        "candidate_b_retained_source_pdf_ref_count": (
+            1 if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE else 0
+        ),
+        "source_pdf_material_text_payload_enabled": False,
+        "image_material_text_payload_enabled": False,
+        "evidence_source": "runtime_summary_advanced_metrics",
+    }
     receipt_input = {
         "schema_id": layer3_candidate_b_runtime_bridge.SCHEMA_ID,
         "schema_version": layer3_candidate_b_runtime_bridge.SCHEMA_VERSION,
@@ -59,6 +83,7 @@ def _write_runtime_receipt(*, visual_lane_mode: str = CANDIDATE_B_VISUAL_LANE_MO
         "runtime_review_root_storage_authority_hash": "2" * 64,
         "admitted_file_subset_hash": "3" * 64,
         "governed_retained_artifact_family_hash": "4" * 64,
+        "candidate_b_visual_lane_evidence": visual_lane_evidence,
         "redaction_policy_id": layer3_candidate_b_runtime_bridge.REDACTION_POLICY_ID,
     }
     receipt_hash = _stable_hash(receipt_input)
@@ -67,22 +92,31 @@ def _write_runtime_receipt(*, visual_lane_mode: str = CANDIDATE_B_VISUAL_LANE_MO
         **receipt_input,
         "bridge_receipt_id": receipt_id,
         "bridge_receipt_hash": receipt_hash,
-        "candidate_b_visual_lane_evidence": {
-            "visual_lane_mode": visual_lane_mode,
-            "candidate_b_visual_lane_selected": visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE,
-            "candidate_b_visual_lane_mode": CANDIDATE_B_VISUAL_LANE_MODE,
-            "visual_ref_total": 3 if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE else 0,
-            "candidate_b_visual_ref_total": 3 if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE else 0,
-            "candidate_b_retained_source_pdf_ref_count": (
-                1 if visual_lane_mode == CANDIDATE_B_VISUAL_LANE_MODE else 0
-            ),
-            "source_pdf_material_text_payload_enabled": False,
-            "image_material_text_payload_enabled": False,
-            "evidence_source": "runtime_summary_advanced_metrics",
-        },
+        "candidate_b_visual_lane_evidence": visual_lane_evidence,
     }
     _write_json(Path(settings.layer3_candidate_b_runtime_bridge_dir) / receipt_id / "receipt.json", receipt)
     return receipt_id
+
+
+def _runtime_receipt_hash(receipt: dict[str, Any]) -> str:
+    keys = (
+        "schema_id",
+        "schema_version",
+        "bridge_mode",
+        "candidate_b_run_id",
+        "baseline_run_id",
+        "candidate_a_run_id",
+        "candidate_b_source_kind",
+        "document_processing_engine",
+        "visual_lane_mode",
+        "compare_target_set_hash",
+        "runtime_review_root_storage_authority_hash",
+        "admitted_file_subset_hash",
+        "governed_retained_artifact_family_hash",
+        "candidate_b_visual_lane_evidence",
+        "redaction_policy_id",
+    )
+    return _stable_hash({key: receipt[key] for key in keys})
 
 
 def _payload(receipt_id: str) -> dict[str, Any]:
@@ -143,6 +177,21 @@ def test_candidate_b_visual_lane_status_fails_closed_on_stale_hash(client: TestC
     assert response.json()["error"]["code"] == "candidate_b_visual_lane_status_bridge_receipt_hash_mismatch"
 
 
+def test_candidate_b_visual_lane_status_fails_closed_on_tampered_visual_evidence_hash(
+    client: TestClient,
+) -> None:
+    receipt_id = _write_runtime_receipt()
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["candidate_b_visual_lane_evidence"]["candidate_b_visual_ref_total"] = 4
+    _write_json(receipt_path, receipt)
+
+    response = client.post(STATUS_ENDPOINT, json=_payload(receipt_id))
+
+    assert response.status_code == 409, response.text
+    assert response.json()["error"]["code"] == "candidate_b_visual_lane_status_bridge_receipt_hash_mismatch"
+
+
 @pytest.mark.parametrize(
     "field",
     ["visual_ref_total", "candidate_b_visual_ref_total", "candidate_b_retained_source_pdf_ref_count"],
@@ -155,6 +204,7 @@ def test_candidate_b_visual_lane_status_fails_closed_without_retained_visual_evi
     receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / receipt_id / "receipt.json"
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     receipt["candidate_b_visual_lane_evidence"][field] = 0
+    receipt["bridge_receipt_hash"] = _runtime_receipt_hash(receipt)
     _write_json(receipt_path, receipt)
 
     response = client.post(STATUS_ENDPOINT, json=_payload(receipt_id))
@@ -165,7 +215,30 @@ def test_candidate_b_visual_lane_status_fails_closed_without_retained_visual_evi
     assert body["error"]["details"]["field"] == field
 
 
-@pytest.mark.parametrize("receipt_id", ["../cb-runtime-l3-proof", "cb-bundle-l3-wrong-prefix"])
+@pytest.mark.parametrize(
+    "count_value",
+    ["not-a-number", {"count": 1}, 1.5, True, -1],
+)
+def test_candidate_b_visual_lane_status_rejects_malformed_visual_evidence_count(
+    client: TestClient,
+    count_value: Any,
+) -> None:
+    receipt_id = _write_runtime_receipt()
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / receipt_id / "receipt.json"
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    receipt["candidate_b_visual_lane_evidence"]["candidate_b_visual_ref_total"] = count_value
+    receipt["bridge_receipt_hash"] = _runtime_receipt_hash(receipt)
+    _write_json(receipt_path, receipt)
+
+    response = client.post(STATUS_ENDPOINT, json=_payload(receipt_id))
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["error"]["code"] == "candidate_b_visual_lane_status_evidence_count_invalid"
+    assert body["error"]["details"]["field"] == "candidate_b_visual_ref_total"
+
+
+@pytest.mark.parametrize("receipt_id", INVALID_RUNTIME_STORAGE_IDS)
 def test_candidate_b_visual_lane_status_rejects_path_like_or_wrong_prefix_receipt_id(
     client: TestClient, receipt_id: str
 ) -> None:
@@ -173,6 +246,29 @@ def test_candidate_b_visual_lane_status_rejects_path_like_or_wrong_prefix_receip
 
     assert response.status_code == 409, response.text
     assert response.json()["error"]["code"] == "candidate_b_visual_lane_status_bridge_receipt_id_invalid"
+
+
+def test_candidate_b_visual_lane_status_handles_utf8_decode_failure(client: TestClient) -> None:
+    receipt_id = _write_runtime_receipt()
+    receipt_path = Path(settings.layer3_candidate_b_runtime_bridge_dir) / receipt_id / "receipt.json"
+    receipt_path.write_bytes(b"\xff\xfe\x00")
+
+    response = client.post(STATUS_ENDPOINT, json=_payload(receipt_id))
+
+    assert response.status_code == 409, response.text
+    body = response.json()
+    assert body["error"]["code"] == "candidate_b_visual_lane_status_bridge_receipt_unreadable"
+    assert body["error"]["details"]["reason"] == "UnicodeDecodeError"
+
+
+def test_candidate_b_visual_lane_status_rejects_missing_receipt_id(client: TestClient) -> None:
+    payload = _payload("cb-runtime-l3-placeholder")
+    payload.pop("bridge_receipt_id")
+
+    response = client.post(STATUS_ENDPOINT, json=payload)
+
+    assert response.status_code == 422, response.text
+    assert any(item["loc"][-1] == "bridge_receipt_id" for item in response.json()["detail"])
 
 
 def test_candidate_b_visual_lane_status_rejects_selector_path_and_url_fields(client: TestClient) -> None:

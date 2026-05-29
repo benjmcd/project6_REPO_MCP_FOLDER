@@ -226,14 +226,17 @@ def test_validate_wb_prep_returns_canonical_selection(tmp_path: Path, monkeypatc
     assert payload["required_follow_through_fixture_ids_present"] == ["fontish", "ml17123a319"]
     assert payload["candidate_b_trace"]["default_tab"] == "annotated_pdf"
     assert payload["recommended_urls"]["workbench_compare"].startswith("/review/nrc-aps/workbench-compare?")
+    expected_checkout_root = str(checkout_root.resolve())
     expected_python = validate_wb_prep._command_path(
-        validate_wb_prep.EXPECTED_INTERPRETER,
+        validate_wb_prep._expected_interpreter_for_checkout(checkout_root),
         checkout_root=checkout_root,
     )
     assert payload["operator_handoff"]["selected_source_kind"] == "bundle"
     assert payload["operator_handoff"]["rerun_selected_validation"]["argv"] == [
         expected_python,
         ".\\tools\\validate_wb_prep.py",
+        "--checkout-root",
+        expected_checkout_root,
         "--baseline-run-id",
         "baseline-run-001",
         "--candidate-a-run-id",
@@ -243,9 +246,12 @@ def test_validate_wb_prep_returns_canonical_selection(tmp_path: Path, monkeypatc
         "--fixture-id",
         "fontish",
     ]
-    assert payload["operator_handoff"]["canonical_prep_sequences"]["bundle_source"][-1]["powershell"] == (
-        f"{expected_python} .\\tools\\validate_wb_prep.py"
-    )
+    assert payload["operator_handoff"]["canonical_prep_sequences"]["bundle_source"][-1]["argv"][:4] == [
+        expected_python,
+        ".\\tools\\validate_wb_prep.py",
+        "--checkout-root",
+        expected_checkout_root,
+    ]
     assert payload["operator_handoff"]["canonical_prep_sequences"]["bundle_source"][0]["argv"][:2] == [
         expected_python,
         ".\\tools\\seed_wb_compare.py",
@@ -335,13 +341,16 @@ def test_validate_wb_prep_accepts_candidate_b_runtime_source(
         == "candidate_b_opendataloader_pdf"
     )
     expected_python = validate_wb_prep._command_path(
-        validate_wb_prep.EXPECTED_INTERPRETER,
+        validate_wb_prep._expected_interpreter_for_checkout(checkout_root),
         checkout_root=checkout_root,
     )
+    expected_checkout_root = str(checkout_root.resolve())
     assert payload["operator_handoff"]["selected_source_kind"] == "runtime"
     assert payload["operator_handoff"]["rerun_selected_validation"]["argv"] == [
         expected_python,
         ".\\tools\\validate_wb_prep.py",
+        "--checkout-root",
+        expected_checkout_root,
         "--baseline-run-id",
         "baseline-run-001",
         "--candidate-a-run-id",
